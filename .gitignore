@@ -1,1 +1,4 @@
 build/
+*.ddd
+*.dia
+todo
