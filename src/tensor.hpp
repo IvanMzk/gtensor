@@ -3,6 +3,7 @@
 
 #include <memory>
 #include "impl_stensor.hpp"
+#include "tensor_operators.hpp"
 
 namespace gtensor{
 

@@ -62,9 +62,9 @@ TEST_CASE("test_expression_impl_construct","[test_expression_impl]"){
     using gtensor::tensor_impl_base;
     using gtensor::config::default_config;
     using shape_type = typename default_config<value_type>::shape_type;
-    using expresion_impl_type = expression_impl<value_type, add, default_config>;
-    using stensor_impl_type = stensor_impl<value_type, default_config>;
     using tensor_impl_base_type = tensor_impl_base<value_type, default_config>;
+    using stensor_impl_type = stensor_impl<value_type, default_config>;
+    using expresion_impl_type = expression_impl<value_type, add, default_config, std::shared_ptr<tensor_impl_base_type>, std::shared_ptr<tensor_impl_base_type>>;
 
     std::shared_ptr<tensor_impl_base_type> t1{new stensor_impl_type{{1,2,3}}};   //(1,3)
     std::shared_ptr<tensor_impl_base_type> t2{new stensor_impl_type{{1},{2},{3}}};   //(3,1)

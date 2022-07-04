@@ -62,35 +62,34 @@ template<typename...Ops> inline constexpr bool is_valid_operands = (is_valid_ope
 
 
 
-template<typename ValT, typename F, template<typename> typename Cfg>
-class expression_impl : public tensor_impl_base<ValT,Cfg>, public walker_constructor{
+template<typename ValT, typename F, template<typename> typename Cfg, typename...Ops>
+class expression_impl : public tensor_impl_base<ValT,Cfg>{
     using config_type = Cfg<ValT>;
     using value_type = ValT;
     using index_type = typename config_type::index_type;
     using shape_type = typename config_type::shape_type;
     using descriptor_type = stensor_descriptor<value_type, Cfg>;
     using storage_type = typename config_type::storage_type;
-    using operand_type = walker_constructor;
+    static_assert(detail::is_valid_operands<Ops...>);
 
-    std::unique_ptr<walker_impl_base> create_walker()const override{
+    std::unique_ptr<walker_impl_base<ValT,Cfg>> create_walker()const override{
         return nullptr;
     }
     descriptor_type descriptor;
-    std::vector<std::shared_ptr<operand_type>> operands;
+    std::tuple<Ops...> operands;
     F f{};
     storage_type cache{};    
-public:        
-    template<typename...Ops>
-    expression_impl(const Ops&...operands_):
+public:            
+    expression_impl(Ops&...operands_):
         descriptor{detail::broadcast(operands_->shape()...)},
-        operands{std::dynamic_pointer_cast<operand_type>(operands_)...}
+        operands{operands_...}
     {
-        static_assert(detail::is_valid_operands<Ops...>);
+        
     }
 
     index_type size()const override{return descriptor.size();}
     index_type dim()const override{return descriptor.dim();}
-    shape_type shape()const override{return descriptor.shape();}
+    const shape_type& shape()const override{return descriptor.shape();}
     bool is_cached()const{return cache.size();}
     bool is_trivial()const {return is_cached();}
     std::string to_str()const override{
