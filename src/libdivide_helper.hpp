@@ -3,6 +3,7 @@
 
 #include <type_traits>
 #include "libdivide.h"
+#include "config.hpp"
 
 namespace gtensor{
 namespace detail{
@@ -11,59 +12,74 @@ template<typename> inline constexpr bool is_libdivide_div = false;
 template<typename T, libdivide::Branching Algo> inline constexpr bool is_libdivide_div<libdivide::divider<T,Algo>> = true;
 
 template<template<typename> typename D, template<typename...> typename U, typename T>
-auto make_libdiv_strides(const U<T>& strides){
+auto make_libdiv_vector_helper(const U<T>& src){
     using div_type = D<T>;
-    using strides_type = std::vector<div_type>;
-    strides_type res{};
-    res.reserve(strides.size());
-    for(const auto& i:strides){
+    std::vector<div_type> res{};
+    res.reserve(src.size());
+    for(const auto& i:src){
         res.push_back(div_type(i));
     }
     return res;
 }
 
-template<template<typename...> typename U, typename T>
-auto make_brfl_strides(const U<T>& strides){
-    return make_libdiv_strides<libdivide::divider>(strides);
+template<typename CfgT, template<typename...> typename U, typename T, std::enable_if_t<is_mode_div_libdivide<CfgT>, int> =0 >
+auto make_libdive_vector(const U<T>& src){
+    return make_libdiv_vector_helper<libdivide::divider>(src);
 }
-template<template<typename...> typename U, typename T>
-auto make_brfr_strides(const U<T>& strides){
-    return make_libdiv_strides<libdivide::branchfree_divider>(strides);
+template<typename CfgT, template<typename...> typename U, typename T, std::enable_if_t<is_mode_div_native<CfgT>, int> =0 >
+auto make_libdive_vector(const U<T>& src){
+    using div_type = libdivide::divider<T>;
+    return std::vector<div_type>{};
 }
 
 
+// template<template<typename...> typename U, typename T>
+// auto make_brfr_strides(const U<T>& strides){
+//     return make_libdiv_strides<libdivide::branchfree_divider>(strides);
+// }
+
+/*
+* convert flat index to multi index given strides
+* result multiindex is of same type as strides container
+*/
 template<template<typename...> typename U, typename T, std::enable_if_t<!is_libdivide_div<T> ,int> =0 >
 auto flat_to_multi(const U<T>& strides, typename const U<T>::value_type& idx){
     using shape_type = U<T>;
     using index_type = typename U<T>::value_type;
     shape_type res(strides.size(), index_type(0));    
     index_type idx_{idx};
-    auto st_it = strides.end();
-    auto res_it = res.end();
+    auto st_it = strides.begin();
+    auto res_it = res.begin();
     while(idx_ != 0){
-        auto q = idx_ / *--st_it;
+        auto q = idx_ / *st_it;
         idx_ %= *st_it;
-        *--res_it = q;
-    }    
+        *res_it = q;
+        ++st_it,++res_it;
+    }        
     return res;
 }
 
+/*
+* convert flat index to multi index given strides as container of libdivide objects
+* need explicity specialize return type container for multiindex
+*/
 template<typename ShT, template<typename...> typename U, typename T, std::enable_if_t<is_libdivide_div<T> ,int> =0 >
-auto flat_to_multi(const U<T>& strides, typename const T::value_type& idx){
-    //using shape_type = U<T>;
+auto flat_to_multi(const U<T>& strides, typename const T::value_type& idx){    
     using shape_type = ShT;
     using index_type = typename T::value_type;
     shape_type res(strides.size(), index_type(0));    
     index_type idx_{idx};
-    auto st_it = strides.end();
-    auto res_it = res.end();
+    auto st_it = strides.begin();
+    auto res_it = res.begin();
     while(idx_ != 0){
-        auto q = idx_ / *--st_it;
+        auto q = idx_ / *st_it;
         idx_ -= (*st_it).divisor()*q;
-        *--res_it = q;
-    }    
+        *res_it = q;
+        ++st_it,++res_it;
+    }        
     return res;
 }
+
 
 
 
