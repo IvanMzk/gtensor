@@ -16,6 +16,7 @@ target_sources(Test_selected PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_init_list.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_stensor_impl.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_tensor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_slice.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_expression_impl.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test.cpp
 )

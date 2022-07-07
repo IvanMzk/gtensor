@@ -14,8 +14,7 @@ public:
     virtual void step(index_type direction) = 0;
     virtual void step_back(index_type direction) = 0;
     virtual void reset(index_type direction) = 0;
-    virtual void reset() = 0;    
-    //virtual walker_impl_base<ValT,Cfg>* clone() const = 0;    //will be used in walker abstruction copy constructor
+    virtual void reset() = 0;        
     virtual value_type operator*() const = 0;
 };
 
