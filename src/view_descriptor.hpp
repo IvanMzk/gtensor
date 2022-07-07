@@ -24,30 +24,49 @@ class view_slice_descriptor<ValT, Cfg>{
     libdiv_vector_type strides_libdiv_{detail::make_libdive_vector<config_type>(strides_)};
 
 public:
-    template<typename SShT, typename CSShT>
-    view_slice_descriptor(SShT&& shape__, CSShT&& cstrides__,  index_type offset__):
-        shape_{std::forward<SShT>(shape__)},
-        cstrides_{std::forward<CSShT>(cstrides__)},
+    template<typename ShT, typename StT>
+    view_slice_descriptor(ShT&& shape__, StT&& cstrides__,  index_type offset__):
+        shape_{std::forward<ShT>(shape__)},
+        cstrides_{std::forward<StT>(cstrides__)},
         offset_{offset__}
     {}
 
-    index_type convert(const shape_type& idx)const{
+    index_type convert(const shape_type& idx)const{return convert_helper(idx);}
+    index_type convert(const index_type& idx)const{return convert_helper(idx);}
+
+private:
+    index_type convert_helper(const shape_type& idx)const{
         return std::inner_product(idx.begin(), idx.end(), cstrides_.begin(), offset_);
     }
     template<typename C = config_type, std::enable_if_t<detail::is_mode_div_libdivide<C>, int> =0 >
-    index_type convert(const index_type& idx)const{
-        return convert(gtensor::detail::flat_to_multi<shape_type>(strides_libdiv_, idx));
+    index_type convert_helper(const index_type& idx)const{
+        return convert_helper(gtensor::detail::flat_to_multi<shape_type>(strides_libdiv_, idx));
     }
     template<typename C = config_type, std::enable_if_t<detail::is_mode_div_native<C>, int> =0 >
-    index_type convert(const index_type& idx)const{
-        return convert(gtensor::detail::flat_to_multi(strides_, idx));
+    index_type convert_helper(const index_type& idx)const{
+        return convert_helper(gtensor::detail::flat_to_multi(strides_, idx));
     }
 };
 
 /*view of view descriptor specialization*/
-template<typename ValT, template<typename> typename Cfg, typename Prev> 
-class view_slice_descriptor<ValT, Cfg, Prev> : view_slice_descriptor<ValT,Cfg>{
+template<typename ValT, template<typename> typename Cfg, typename PrevT> 
+class view_slice_descriptor<ValT, Cfg, PrevT> : view_slice_descriptor<ValT,Cfg>{
+    using base_type = view_slice_descriptor<ValT,Cfg>;
+    using config_type = Cfg<ValT>;        
+    using value_type = ValT;
+    using index_type = typename config_type::index_type;
+    using shape_type = typename config_type::shape_type;
+    using prev_descriptor_type = PrevT;
+    prev_descriptor_type prev_descriptor;
+public:
+    template<typename ShT, typename StT, typename DtT>
+    view_slice_descriptor(ShT&& shape__, StT&& cstrides__,  index_type offset__, DtT&& prev_descriptor__):
+        base_type{std::forward<ShT>(shape__), std::forward<StT>(cstrides__), offset__},
+        prev_descriptor{std::forward<DtT>(prev_descriptor__)}
+    {}
 
+    index_type convert(const shape_type& idx)const{return prev_descriptor.convert(base_type::convert(idx));}
+    index_type convert(const index_type& idx)const{return prev_descriptor.convert(base_type::convert(idx));}
 };
 
 
