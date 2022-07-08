@@ -1,5 +1,5 @@
-#ifndef VIEW_DESCRIPTOR_HPP_
-#define VIEW_DESCRIPTOR_HPP_
+#ifndef VIEW_SLICE_DESCRIPTOR_HPP_
+#define VIEW_SLICE_DESCRIPTOR_HPP_
 
 #include <numeric>
 #include "stensor_descriptor.hpp"
@@ -8,7 +8,7 @@ namespace gtensor{
 
 template<typename ValT, template<typename> typename Cfg, typename...PrevT> class view_slice_descriptor;
 
-/*not view of view descriptor specialization*/
+/*not view of view slice and transpose descriptor specialization*/
 template<typename ValT, template<typename> typename Cfg> 
 class view_slice_descriptor<ValT, Cfg>{
     using config_type = Cfg<ValT>;        
@@ -30,9 +30,16 @@ public:
         cstrides_{std::forward<StT>(cstrides__)},
         offset_{offset__}
     {}
-
+    
+    index_type convert_by_prev(const index_type& idx)const{return idx;}
     index_type convert(const shape_type& idx)const{return convert_helper(idx);}
     index_type convert(const index_type& idx)const{return convert_helper(idx);}
+    index_type dim()const{return shape_.size();}
+    index_type size()const{return detail::make_size(shape_,strides_);}
+    index_type offset()const{return offset_;}
+    const shape_type& shape()const{return shape_;};
+    const shape_type& strides()const{return strides_;};
+    const shape_type& cstrides()const{return cstrides_;};
 
 private:
     index_type convert_helper(const shape_type& idx)const{
@@ -48,7 +55,7 @@ private:
     }
 };
 
-/*view of view descriptor specialization*/
+/*view of view slice and transpose descriptor specialization*/
 template<typename ValT, template<typename> typename Cfg, typename PrevT> 
 class view_slice_descriptor<ValT, Cfg, PrevT> : view_slice_descriptor<ValT,Cfg>{
     using base_type = view_slice_descriptor<ValT,Cfg>;
@@ -64,9 +71,16 @@ public:
         base_type{std::forward<ShT>(shape__), std::forward<StT>(cstrides__), offset__},
         prev_descriptor{std::forward<DtT>(prev_descriptor__)}
     {}
-
-    index_type convert(const shape_type& idx)const{return prev_descriptor.convert(base_type::convert(idx));}
-    index_type convert(const index_type& idx)const{return prev_descriptor.convert(base_type::convert(idx));}
+    
+    index_type convert_by_prev(const index_type& idx)const{return prev_descriptor.convert(idx);}
+    index_type convert(const shape_type& idx)const{return convert_by_prev(base_type::convert(idx));}
+    index_type convert(const index_type& idx)const{return convert_by_prev(base_type::convert(idx));}
+    using base_type::dim;
+    using base_type::size;
+    using base_type::offset;
+    using base_type::shape;
+    using base_type::strides;
+    using base_type::cstrides;
 };
 
 
