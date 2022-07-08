@@ -4,6 +4,33 @@
 #include "view_subdim_descriptor.hpp"
 #include "test_config.hpp"
 
+TEST_CASE("test_view_slice_descriptor_getters", "[test_view_descriptor]"){
+    using value_type = float;
+    using config_type = gtensor::config::default_config<value_type>;
+    using descriptor_type = gtensor::view_slice_descriptor<value_type, gtensor::config::default_config>;
+    using shape_type = typename config_type::shape_type;
+    using index_type = typename config_type::index_type;
+    using test_type = std::tuple<descriptor_type, shape_type, shape_type, shape_type, index_type, index_type,index_type>;
+    //0descriptor, 1expected_shape, 2expected_strides, 3expected_cstrides, 4expected_dim, 5expected_size, 6expected_offset
+    auto test_data = GENERATE(
+                                test_type{descriptor_type{shape_type{15},shape_type{-1},14},shape_type{15},shape_type{1},shape_type{-1},1,15,14},
+                                test_type{descriptor_type{shape_type{3,1,7},shape_type{7,7,1},0},shape_type{3,1,7},shape_type{7,7,1},shape_type{7,7,1},3,21,0},
+                                test_type{descriptor_type{shape_type{3,1,7},shape_type{7,7,-1},6},shape_type{3,1,7},shape_type{7,7,1},shape_type{7,7,-1},3,21,6}
+    );
+    auto descriptor = std::get<0>(test_data);
+    auto expected_shape = std::get<1>(test_data);
+    auto expected_strides = std::get<2>(test_data);
+    auto expected_cstrides = std::get<3>(test_data);
+    auto expected_dim = std::get<4>(test_data);
+    auto expected_size = std::get<5>(test_data);
+    auto expected_offset = std::get<6>(test_data);
+    REQUIRE(descriptor.shape() == expected_shape);
+    REQUIRE(descriptor.strides() == expected_strides);
+    REQUIRE(descriptor.cstrides() == expected_cstrides);
+    REQUIRE(descriptor.dim() == expected_dim);
+    REQUIRE(descriptor.size() == expected_size);
+    REQUIRE(descriptor.offset() == expected_offset);
+}
 
 TEMPLATE_TEST_CASE("test_view_slice_descriptor_convert", "[test_view_descriptor]", gtensor::config::mode_div_native, gtensor::config::mode_div_libdivide){
     using value_type = float;
@@ -60,6 +87,33 @@ TEMPLATE_TEST_CASE("test_view_slice_descriptor_prev_descriptor_convert", "[test_
     REQUIRE(descriptor.convert_by_prev(flat_idx) == expected_convert_by_prev_flat_idx);
 }
 
+TEST_CASE("test_view_subdim_descriptor_getters", "[test_view_descriptor]"){
+    using value_type = float;
+    using config_type = gtensor::config::default_config<value_type>;
+    using descriptor_type = gtensor::view_subdim_descriptor<value_type, gtensor::config::default_config>;
+    using shape_type = typename config_type::shape_type;
+    using index_type = typename config_type::index_type;
+    using test_type = std::tuple<descriptor_type, shape_type, shape_type, shape_type, index_type, index_type,index_type>;
+    //0descriptor, 1expected_shape, 2expected_strides, 3expected_cstrides, 4expected_dim, 5expected_size, 6expected_offset
+    auto test_data = GENERATE(
+                                test_type{descriptor_type{shape_type{15},0},shape_type{15},shape_type{1},shape_type{1},1,15,0},
+                                test_type{descriptor_type{shape_type{3,1,7},0},shape_type{3,1,7},shape_type{7,7,1},shape_type{7,7,1},3,21,0},
+                                test_type{descriptor_type{shape_type{4,5},40},shape_type{4,5},shape_type{5,1},shape_type{5,1},2,20,40}
+    );
+    auto descriptor = std::get<0>(test_data);
+    auto expected_shape = std::get<1>(test_data);
+    auto expected_strides = std::get<2>(test_data);
+    auto expected_cstrides = std::get<3>(test_data);
+    auto expected_dim = std::get<4>(test_data);
+    auto expected_size = std::get<5>(test_data);
+    auto expected_offset = std::get<6>(test_data);
+    REQUIRE(descriptor.shape() == expected_shape);
+    REQUIRE(descriptor.strides() == expected_strides);
+    REQUIRE(descriptor.cstrides() == expected_cstrides);
+    REQUIRE(descriptor.dim() == expected_dim);
+    REQUIRE(descriptor.size() == expected_size);
+    REQUIRE(descriptor.offset() == expected_offset);
+}
 
 TEMPLATE_TEST_CASE("test_view_subdim_descriptor_convert", "[test_view_descriptor]", gtensor::config::mode_div_native, gtensor::config::mode_div_libdivide){
     using value_type = float;
@@ -99,8 +153,8 @@ TEMPLATE_TEST_CASE("test_view_subdim_descriptor_prev_descriptor_convert", "[test
     //descriptor{shape,offset}
     //0descriptor,1multi_idx,2flat_idx,3converted_multi_idx,4converted_flat_idx,5converted_by_prev
     auto test_data = GENERATE(
-                                test_type{descriptor_type{shape_type{5,3},0, prev_descriptor_type{shape_type{15},shape_type{-1},15}},shape_type{0,0},0,15,15,15},
-                                test_type{descriptor_type{shape_type{5,3},0, prev_descriptor_type{shape_type{15},shape_type{-1},15}},shape_type{3,2},7,4,8,8},
+                                test_type{descriptor_type{shape_type{5,3},0, prev_descriptor_type{shape_type{15},shape_type{-1},14}},shape_type{0,0},0,14,14,14},
+                                test_type{descriptor_type{shape_type{5,3},0, prev_descriptor_type{shape_type{15},shape_type{-1},14}},shape_type{3,2},7,3,7,7},
                                 test_type{descriptor_type{shape_type{3,15},0,prev_descriptor_type{shape_type{3,3,5},shape_type{15,5,1},5}}, shape_type{1,8},22,28,27,27}
     );
     auto descriptor = std::get<0>(test_data);
