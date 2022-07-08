@@ -1,8 +1,10 @@
 #ifndef CONFIG_HPP_
 #define CONFIG_HPP_
 
-#include "uvector.h"
 #include <vector>
+#include "uvector.h"
+#include "forward_decl.hpp"
+
 namespace gtensor{
 
 namespace config{
@@ -45,10 +47,18 @@ struct default_config{
     using div_mode = mode_div_libdivide;
     //using div_mode = mode_div_native;
     
-    using index_type = std::int64_t;
     using difference_type = std::int64_t;
+    using index_type = difference_type;
     using storage_type = std::vector<value_type>;
     using shape_type = trivial_type_vector::uvector<index_type>;
+
+    using nop_type = NOP;
+    using slice_type = slice<index_type, nop_type>;
+    using slice_item_type = detail::slice_item<index_type, nop_type>;
+    using slice_init_type = std::initializer_list<slice_item_type>;
+    using slices_init_type = std::initializer_list<slice_init_type>;
+    using slices_collection_type = std::vector<slice_type>;    
+
 };
 
 }

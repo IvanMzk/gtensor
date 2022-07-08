@@ -14,9 +14,15 @@ namespace gtensor{
 */
 template<typename ValT, template<typename> typename Cfg>
 class tensor{
+    using tensor_type = tensor<ValT,Cfg>;
     using config_type = Cfg<ValT>;
     using impl_base_type = tensor_impl_base<ValT, Cfg>;
     using stensor_impl_type = stensor_impl<ValT, Cfg>;
+    using slice_type = typename config_type::slice_type;
+    using slices_init_type = typename config_type::slices_init_type;
+    using slices_collection_type = typename config_type::slices_collection_type;
+    
+
     friend class tensor_operators_impl;
     std::shared_ptr<impl_base_type> impl;
     
@@ -46,6 +52,28 @@ public:
     auto dim()const{return impl->dim();}
     auto shape()const{return impl->shape();}
     auto create_walker()const{return impl->create_walker();}
+
+    tensor_type operator()(slices_init_type subs)const{        
+        return tensor_type{impl->create_view_slice(subs)};
+    }
+    template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,slice_type>...>,int> = 0 >
+    tensor_type operator()(const Subs&...subs)const{
+        return tensor_type{impl->create_view_slice(slices_collection_type{subs...})};
+    }
+    template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,index_type>...>,int> = 0 >
+    tensor_type operator()(const Subs&...subs)const{
+        return tensor_type{impl->create_view_subdim(shape_type{subs...})};
+    }        
+    template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,index_type>...>,int> = 0 >
+    tensor_type reshape(const Subs&...subs)const{
+        return tensor_type{impl->create_view_reshape(shape_type{subs...})};
+    }
+    template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,index_type>...>,int> = 0 >
+    tensor_type transpose(const Subs&...subs)const{
+        return tensor_type{impl->create_view_transpose(shape_type{subs...})};
+    }
+
+
     friend std::ostream& operator<<(std::ostream& os, const tensor& lhs){return os<<lhs.impl->to_str();}
 };
 

@@ -26,7 +26,14 @@ struct config_tmpl_{
     using difference_type = typename gtensor::config::default_config<T>::difference_type;
     using index_type = typename gtensor::config::default_config<T>::index_type;
     using storage_type = typename gtensor::config::default_config<T>::storage_type;
-    using shape_type = typename gtensor::config::default_config<T>::shape_type;    
+    using shape_type = typename gtensor::config::default_config<T>::shape_type;
+
+    using nop_type = typename gtensor::config::default_config<T>::nop_type;;
+    using slice_type = typename gtensor::config::default_config<T>::slice_type;;
+    using slice_item_type = typename gtensor::config::default_config<T>::slice_item_type;
+    using slice_init_type = typename gtensor::config::default_config<T>::slice_init_type;
+    using slices_init_type = typename gtensor::config::default_config<T>::slices_init_type;
+    using slices_collection_type = typename gtensor::config::default_config<T>::slices_collection_type;
 };    
 
 template<typename M>
