@@ -49,7 +49,8 @@ struct default_config{
     
     using difference_type = std::int64_t;
     using index_type = difference_type;
-    using storage_type = std::vector<value_type>;
+    using storage_type = gtensor::detail::shareable_storage<std::vector<value_type>>;
+    //using storage_type = std::vector<value_type>;
     using shape_type = trivial_type_vector::uvector<index_type>;
 
     using nop_type = NOP;

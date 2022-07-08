@@ -1,6 +1,7 @@
 #ifndef IMPL_STENSOR_HPP_
 #define IMPL_STENSOR_HPP_
 
+#include "shareable_storage.hpp"
 #include "impl_tensor_base.hpp"
 #include "stensor_descriptor.hpp"
 #include "tensor_init_list.hpp"

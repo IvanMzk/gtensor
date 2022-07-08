@@ -1,6 +1,7 @@
 #ifndef IMPL_EXPRESSION_HPP_
 #define IMPL_EXPRESSION_HPP_
 
+#include "shareable_storage.hpp"
 #include "impl_tensor_base.hpp"
 #include "stensor_descriptor.hpp"
 #include "impl_walker_base.hpp"

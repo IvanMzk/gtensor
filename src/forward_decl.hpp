@@ -12,6 +12,7 @@ template<typename DifT, typename N> struct slice;
 
 namespace detail{
 template<typename DifT, typename N> struct slice_item;
+template<typename ImplT> class shareable_storage;
 }
 
 

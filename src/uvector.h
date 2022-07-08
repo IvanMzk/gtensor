@@ -242,26 +242,25 @@ public:
 		}
 	}
 		
-	uvector(const std::vector<Tp,Alloc>& v, const allocator_type& allocator = Alloc()):
-	Alloc(allocator),
-	_begin(allocate(v.size())),
-	_end(_begin + v.size()),
-	_endOfStorage(_end)
-	{
-		//std::cout<<"uvector(const std::vector<Tp,Alloc>& v, const allocator_type& allocator = Alloc()):"<<size()<<v.size();
-		memcpy(_begin, v.data(), v.size() * sizeof(Tp));
-	}
+	// /*Construct uvector from std::vector*/
+	// uvector(const std::vector<Tp,Alloc>& v, const allocator_type& allocator = Alloc()):
+	// Alloc(allocator),
+	// _begin(allocate(v.size())),
+	// _end(_begin + v.size()),
+	// _endOfStorage(_end)
+	// {
+	// 	memcpy(_begin, v.data(), v.size() * sizeof(Tp));
+	// }
 	
-	uvector(std::vector<Tp,Alloc>&& v, const allocator_type& allocator = Alloc()):
-	Alloc(allocator),
-	_begin(allocate(v.size())),
-	_end(_begin + v.size()),
-	_endOfStorage(_end)
-	{
-		//std::cout<<"uvector(std::vector<Tp,Alloc>&& v, const allocator_type& allocator = Alloc()):";
-		memcpy(_begin, v.data(), v.size() * sizeof(Tp));
-		v.clear();
-	}
+	// uvector(std::vector<Tp,Alloc>&& v, const allocator_type& allocator = Alloc()):
+	// Alloc(allocator),
+	// _begin(allocate(v.size())),
+	// _end(_begin + v.size()),
+	// _endOfStorage(_end)
+	// {
+	// 	memcpy(_begin, v.data(), v.size() * sizeof(Tp));
+	// 	v.clear();
+	// }
 	
 	/** @brief Destructor. */
 	~uvector() noexcept
