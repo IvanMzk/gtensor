@@ -13,6 +13,7 @@ target_sources(Test PRIVATE
 target_sources(Test_selected PRIVATE
 
     ${CMAKE_CURRENT_SOURCE_DIR}/test_shareable_storage.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_view_factory.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_view_descriptor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_libdivide_helper.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_stensor_descriptor.cpp
