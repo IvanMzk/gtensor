@@ -84,7 +84,7 @@ class expression_impl : public tensor_impl_base<ValT,Cfg>{
     F f{};
     storage_type cache{};    
 public:            
-    expression_impl(Ops&...operands_):
+    explicit expression_impl(Ops&...operands_):
         descriptor{detail::broadcast(operands_->shape()...)},
         operands{operands_...}
     {

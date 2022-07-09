@@ -22,9 +22,9 @@ public:
     virtual index_type size()const = 0;
     virtual index_type dim()const = 0;
     virtual const shape_type& shape()const = 0;
-    virtual std::string to_str()const = 0;
+    virtual std::string to_str()const = 0;    
     virtual std::unique_ptr<walker_impl_base<ValT,Cfg>> create_walker()const = 0;
-
+    
     virtual std::shared_ptr<impl_base_type> create_view_slice(slices_init_type)const = 0;
     virtual std::shared_ptr<impl_base_type> create_view_slice(const slices_collection_type&)const = 0;
     virtual std::shared_ptr<impl_base_type> create_view_transpose(const shape_type&)const = 0;

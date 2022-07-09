@@ -3,7 +3,6 @@
 #include "impl_stensor.hpp"
 #include <tuple>
 
-
 TEST_CASE("test_stensor_impl_construct_from_list","[test_stensor_impl]"){
     using value_type = float;
     using gtensor::stensor_impl;
