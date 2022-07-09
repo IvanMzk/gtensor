@@ -4,6 +4,7 @@
 #include <memory>
 #include "impl_stensor.hpp"
 #include "tensor_operators.hpp"
+#include "slice.hpp"
 
 namespace gtensor{
 
@@ -53,25 +54,35 @@ public:
     auto shape()const{return impl->shape();}
     auto create_walker()const{return impl->create_walker();}
 
-    tensor_type operator()(slices_init_type subs)const{        
-        return tensor_type{impl->create_view_slice(subs)};
+    tensor_type operator()(slices_init_type subs)const{
+        detail::check_slices_number(subs);        
+        slices_collection_type filled_subs = detail::fill_slices<slice_type>(shape(),subs);
+        detail::check_slices(shape(), filled_subs);
+        return tensor_type{impl->create_view_slice(filled_subs)};
     }
     template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,slice_type>...>,int> = 0 >
     tensor_type operator()(const Subs&...subs)const{
-        return tensor_type{impl->create_view_slice(slices_collection_type{subs...})};
+        detail::check_slices_number(subs...);
+        slices_collection_type filled_subs = detail::fill_slices<slice_type>(shape(),subs...);
+        detail::check_slices(shape(), filled_subs);
+        return tensor_type{impl->create_view_slice(filled_subs)};
+    }
+    template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,index_type>...>,int> = 0 >
+    tensor_type transpose(const Subs&...subs)const{
+        detail::check_transpose_subs(dim(),subs...);
+        return tensor_type{impl->create_view_transpose(shape_type{subs...})};
     }
     template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,index_type>...>,int> = 0 >
     tensor_type operator()(const Subs&...subs)const{
+        detail::check_subdim_subs(shape(), subs...);
         return tensor_type{impl->create_view_subdim(shape_type{subs...})};
     }        
     template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,index_type>...>,int> = 0 >
     tensor_type reshape(const Subs&...subs)const{
+        detail::check_reshape_subs(size(), subs...);
         return tensor_type{impl->create_view_reshape(shape_type{subs...})};
     }
-    template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,index_type>...>,int> = 0 >
-    tensor_type transpose(const Subs&...subs)const{
-        return tensor_type{impl->create_view_transpose(shape_type{subs...})};
-    }
+    
 
 
     friend std::ostream& operator<<(std::ostream& os, const tensor& lhs){return os<<lhs.impl->to_str();}

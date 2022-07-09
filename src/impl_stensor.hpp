@@ -25,7 +25,6 @@ class stensor_impl : public tensor_impl_base<ValT,Cfg>{
     using shape_type = typename config_type::shape_type;
     using storage_type = typename config_type::storage_type;
     using descriptor_type = stensor_descriptor<value_type, Cfg>;
-    using slices_init_type = typename config_type::slices_init_type;
     using slices_collection_type = typename config_type::slices_collection_type;
 
     std::unique_ptr<walker_impl_base<ValT, Cfg>> create_walker()const override{
@@ -52,7 +51,6 @@ public:
     index_type dim()const override{return descriptor.dim();}
     const shape_type& shape()const override{return descriptor.shape();}
 
-    std::shared_ptr<impl_base_type> create_view_slice(slices_init_type)const override{return nullptr;}
     std::shared_ptr<impl_base_type> create_view_slice(const slices_collection_type&)const override{return nullptr;}
     std::shared_ptr<impl_base_type> create_view_transpose(const shape_type&)const override{return nullptr;}
     std::shared_ptr<impl_base_type> create_view_subdim(const shape_type&)const override{return nullptr;}

@@ -72,7 +72,6 @@ class expression_impl : public tensor_impl_base<ValT,Cfg>{
     using shape_type = typename config_type::shape_type;
     using descriptor_type = stensor_descriptor<value_type, Cfg>;
     using storage_type = typename config_type::storage_type;
-    using slices_init_type = typename config_type::slices_init_type;
     using slices_collection_type = typename config_type::slices_collection_type;
     static_assert(detail::is_valid_operands<Ops...>);
 
@@ -97,7 +96,6 @@ public:
     bool is_cached()const{return cache.size();}
     bool is_trivial()const {return is_cached();}
 
-    std::shared_ptr<impl_base_type> create_view_slice(slices_init_type)const override{return nullptr;}
     std::shared_ptr<impl_base_type> create_view_slice(const slices_collection_type&)const override{return nullptr;}
     std::shared_ptr<impl_base_type> create_view_transpose(const shape_type&)const override{return nullptr;}
     std::shared_ptr<impl_base_type> create_view_subdim(const shape_type&)const override{return nullptr;}
