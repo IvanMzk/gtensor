@@ -49,46 +49,37 @@ inline ShT make_view_slice_cstrides(const ShT& pstrides, const SubsT& subs){
     return res;
 }
 
-/*make transposed*/
+/*make transposed 
+* indeces is positions of source shape elements in transposed shape
+* if indeces is empty transposed shape is reverse of source
+*/
 template<typename ShT>
-ShT transpose(const ShT& src_shape){
-    ShT res{src_shape.rbegin(), src_shape.rend()};
-    return res;
-}
-template<typename ShT, typename...Idx>
-ShT transpose(const ShT& src_shape, const Idx&...idx){    
+ShT transpose(const ShT& src, const ShT& indeces){
     ShT res{};
-    res.reserve(sizeof...(Idx));
-    transpose_(src_shape, res, idx...);
+    res.reserve(src.size());
+    if (indeces.empty()){
+        res.assign(src.rbegin(), src.rend());
+    }else{
+        std::for_each(indeces.begin(), indeces.end(), [&src, &res](const auto& pos){res.push_back(src[pos]);});
+    }
     return res;
 }
-template<typename ShT, typename I, typename...Idx>
-inline void transpose_(const ShT& src_shape, ShT& dst_shape, const I& i, const Idx&...idx){
-    transpose_(src_shape,dst_shape, idx...);
-    auto d{src_shape.size()-1};    
-    dst_shape.push_back(src_shape[d-i]);
-}
-template<typename ShT>
-inline void transpose_(const ShT&, ShT&){}
 
 /*make view subdim shape*/
-template<typename ShT, typename...Ts, typename std::enable_if_t<std::conjunction_v<std::is_convertible<Ts, typename ShT::value_type>...>,int> = 0 >
-inline ShT make_view_shape(const ShT& pshape, const Ts&...subs){
-    return ShT(pshape.data(), pshape.data()+pshape.size()-sizeof...(subs));
-}
 template<typename ShT>
-inline ShT make_view_shape(const ShT& pshape){return pshape;}
-/*make subdim view offset*/
-template<typename ShT, typename...Ts, typename std::enable_if_t<std::conjunction_v<std::is_convertible<Ts, typename ShT::value_type>...>,int> = 0 >
-inline typename ShT::value_type make_view_offset(const ShT& pstrides, const Ts&...subs){
+inline ShT make_view_subdim_shape(const ShT& pshape, const ShT& subs){
+    if (subs.empty()){
+        return pshape;
+    }else{
+        return ShT(pshape.data()+subs.size(), pshape.data()+pshape.size());
+    }
+}
+/*make view subdim offset*/
+template<typename ShT>
+inline typename ShT::value_type make_view_subdim_offset(const ShT& pstrides, const ShT& subs){
     using index_type = typename ShT::value_type;
-    index_type res{0};
-    make_view_offset_<1>(res,pstrides,subs...);
-    return res;
+    return std::inner_product(subs.begin(),subs.end(),pstrides.begin(),index_type(0));
 }
-template<typename ShT>
-inline typename ShT::value_type make_view_offset(const ShT&){return ShT::value_type(0);}
-
 
 }   //end of namespace detail
 
