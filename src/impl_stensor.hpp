@@ -6,6 +6,7 @@
 #include "stensor_descriptor.hpp"
 #include "tensor_init_list.hpp"
 #include "impl_walker_base.hpp"
+#include "view_factory.hpp"
 
 namespace gtensor{
 
@@ -26,12 +27,14 @@ class stensor_impl : public tensor_impl_base<ValT,Cfg>{
     using storage_type = typename config_type::storage_type;
     using descriptor_type = stensor_descriptor<value_type, Cfg>;
     using slices_collection_type = typename config_type::slices_collection_type;
+    using view_factory_type = view_factory<value_type,Cfg>;
 
     std::unique_ptr<walker_impl_base<ValT, Cfg>> create_walker()const override{
         return nullptr;
     }
     descriptor_type descriptor;
     storage_type elements;
+    std::shared_ptr<view_factory_type> view_maker{view_factory_type::create_factory(*this,descriptor,elements)};
 
     template<typename Nested>
     stensor_impl(std::initializer_list<Nested> init_data, int):
@@ -51,10 +54,10 @@ public:
     index_type dim()const override{return descriptor.dim();}
     const shape_type& shape()const override{return descriptor.shape();}
 
-    std::shared_ptr<impl_base_type> create_view_slice(const slices_collection_type&)const override{return nullptr;}
-    std::shared_ptr<impl_base_type> create_view_transpose(const shape_type&)const override{return nullptr;}
-    std::shared_ptr<impl_base_type> create_view_subdim(const shape_type&)const override{return nullptr;}
-    std::shared_ptr<impl_base_type> create_view_reshape(const shape_type&)const override{return nullptr;}
+    std::shared_ptr<impl_base_type> create_view_slice(const slices_collection_type& subs)const override{return view_maker->create_view_slice(subs);}
+    std::shared_ptr<impl_base_type> create_view_transpose(const shape_type& subs)const override{return view_maker->create_view_transpose(subs);}
+    std::shared_ptr<impl_base_type> create_view_subdim(const shape_type& subs)const override{return view_maker->create_view_subdim(subs);}
+    std::shared_ptr<impl_base_type> create_view_reshape(const shape_type& subs)const override{return view_maker->create_view_reshape(subs);}
 
     std::string to_str()const override{
         std::stringstream ss{};

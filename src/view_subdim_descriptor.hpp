@@ -36,6 +36,11 @@ public:
     const shape_type& shape()const{return shape_;};
     const shape_type& strides()const{return strides_;};
     const shape_type& cstrides()const{return strides_;};
+    std::string to_str()const{
+        std::stringstream ss{};
+        ss<<"("<<[&ss,this](){for(const auto& i : shape()){ss<<i<<",";} return ")";}();
+        return ss.str();
+    }
 
 private:
     index_type convert_helper(const shape_type& idx)const{
@@ -69,6 +74,7 @@ public:
     using base_type::shape;
     using base_type::strides;
     using base_type::cstrides;
+    using base_type::to_str;
 };
 
 

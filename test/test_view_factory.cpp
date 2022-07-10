@@ -143,3 +143,5 @@ TEMPLATE_PRODUCT_TEST_CASE("test_transpose","[test_view_factory]", (std::vector,
     auto expected_transposed = std::get<2>(test_data);
     REQUIRE(transpose(source, indeces) == expected_transposed);    
 }
+
+
