@@ -36,6 +36,7 @@ public:
     index_type size()const override{return descriptor.size();}
     index_type dim()const override{return descriptor.dim();}
     const shape_type& shape()const override{return descriptor.shape();}
+    bool is_cached()const{return cache.size();}
 
     std::shared_ptr<impl_base_type> create_view_slice(const slices_collection_type&)const override{return nullptr;}
     std::shared_ptr<impl_base_type> create_view_transpose(const shape_type&)const override{return nullptr;}
