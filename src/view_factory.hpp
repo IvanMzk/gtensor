@@ -100,6 +100,7 @@ class view_factory_base{
     using shape_type = typename config_type::shape_type;
     using slices_collection_type = typename config_type::slices_collection_type;
 public:
+    virtual ~view_factory_base(){}
     virtual std::shared_ptr<impl_base_type> create_view_slice(const slices_collection_type&, bool move = false) = 0;
     virtual std::shared_ptr<impl_base_type> create_view_transpose(const shape_type&, bool move = false) = 0;
     virtual std::shared_ptr<impl_base_type> create_view_subdim(const shape_type&, bool move = false) = 0;

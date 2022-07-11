@@ -75,7 +75,7 @@ class expression_impl : public tensor_impl_base<ValT,Cfg>{
     using slices_collection_type = typename config_type::slices_collection_type;    
     static_assert(detail::is_valid_operands<Ops...>);
 
-    std::unique_ptr<walker_impl_base<ValT,Cfg>> create_walker()const override{
+    walker<ValT,Cfg> create_walker()const override{
         return nullptr;
     }
     descriptor_type descriptor;

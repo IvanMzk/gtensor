@@ -9,6 +9,7 @@ template<typename ValT, template<typename> typename Cfg> class stensor_impl;
 template<typename ValT, template<typename> typename Cfg, typename DescT, typename StorT> class view_impl;
 template<typename ValT, template<typename> typename Cfg> class tensor;
 template<typename ValT, template<typename> typename Cfg> class walker_impl_base;
+template<typename ValT, template<typename> typename Cfg> class walker;
 template<typename DifT, typename N> struct slice;
 
 namespace detail{

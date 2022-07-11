@@ -22,7 +22,7 @@ class view_impl : public tensor_impl_base<ValT, Cfg> {
     view_storage_type elements;
     storage_type cache{};
 
-    std::unique_ptr<walker_impl_base<ValT, Cfg>> create_walker()const override{
+    walker<ValT,Cfg> create_walker()const override{
         return nullptr;
     }
 
