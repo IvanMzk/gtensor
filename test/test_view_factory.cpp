@@ -51,6 +51,26 @@ TEMPLATE_TEST_CASE("test_make_view_subdim_shape","[test_view_factory]", trivial_
     REQUIRE(make_view_subdim_shape(parent_shape, subs) == expected_shape);
 }
 
+TEMPLATE_TEST_CASE("test_make_view_reshape_shape","[test_view_factory]", trivial_type_vector::uvector<std::int64_t>, std::vector<std::int64_t>){
+    using index_type = typename TestType::value_type;
+    using shape_type = TestType;
+    using slice_type = gtensor::slice<index_type>;
+    using gtensor::detail::make_view_reshape_shape;
+    using test_type = std::tuple<shape_type, shape_type, shape_type>;
+    //0parent_shape,1subs,2expected_shape
+    auto test_data = GENERATE(                                    
+        test_type{shape_type{11,1},shape_type{}, shape_type{11,1}},
+        test_type{shape_type{11,1},shape_type{11}, shape_type{11}},
+        test_type{shape_type{1,11},shape_type{11,1}, shape_type{11,1}},
+        test_type{shape_type{3,4,10,2},shape_type{}, shape_type{3,4,10,2}},
+        test_type{shape_type{3,4,10,2},shape_type{20,12}, shape_type{20,12}}
+    );
+    auto parent_shape = std::get<0>(test_data);
+    auto subs = std::get<1>(test_data);
+    auto expected_shape = std::get<2>(test_data);
+    REQUIRE(make_view_reshape_shape(parent_shape, subs) == expected_shape);
+}
+
 TEMPLATE_TEST_CASE("test_make_view_slice_offset","[test_view_factory]", trivial_type_vector::uvector<std::int64_t>, std::vector<std::int64_t>){
     using index_type = typename TestType::value_type;
     using shape_type = TestType;
@@ -143,5 +163,4 @@ TEMPLATE_PRODUCT_TEST_CASE("test_transpose","[test_view_factory]", (std::vector,
     auto expected_transposed = std::get<2>(test_data);
     REQUIRE(transpose(source, indeces) == expected_transposed);    
 }
-
 

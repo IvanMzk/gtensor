@@ -34,16 +34,30 @@ class stensor_impl : public tensor_impl_base<ValT,Cfg>{
     }
     descriptor_type descriptor;
     storage_type elements;
-    std::shared_ptr<view_factory_type> view_maker{view_factory_type::create_factory(*this,descriptor,elements)};
+    view_factory_type view_maker;
 
     template<typename Nested>
     stensor_impl(std::initializer_list<Nested> init_data, int):
         descriptor{detail::list_parse<index_type,shape_type>(init_data)},
-        elements(descriptor.size())
+        elements(descriptor.size()),
+        view_maker{*this,descriptor,elements}
     {detail::fill_from_list(init_data, elements.begin());}
 
 public:
+    stensor_impl& operator=(const stensor_impl& other) = delete;
+    stensor_impl& operator=(stensor_impl&& other) = delete;
     stensor_impl() = default;
+    stensor_impl(const stensor_impl& other):
+        descriptor{other.descriptor},
+        elements{other.elements},
+        view_maker{*this,descriptor,elements}
+    {}
+    stensor_impl(stensor_impl&& other):
+        descriptor{std::move(other.descriptor)},
+        elements{std::move(other.elements)},
+        view_maker{*this,descriptor,elements}
+    {}
+
     stensor_impl(typename detail::nested_initializer_list_type<value_type,1>::type init_data):stensor_impl(init_data,0){}
     stensor_impl(typename detail::nested_initializer_list_type<value_type,2>::type init_data):stensor_impl(init_data,0){}
     stensor_impl(typename detail::nested_initializer_list_type<value_type,3>::type init_data):stensor_impl(init_data,0){}
@@ -54,10 +68,10 @@ public:
     index_type dim()const override{return descriptor.dim();}
     const shape_type& shape()const override{return descriptor.shape();}
 
-    std::shared_ptr<impl_base_type> create_view_slice(const slices_collection_type& subs)const override{return view_maker->create_view_slice(subs);}
-    std::shared_ptr<impl_base_type> create_view_transpose(const shape_type& subs)const override{return view_maker->create_view_transpose(subs);}
-    std::shared_ptr<impl_base_type> create_view_subdim(const shape_type& subs)const override{return view_maker->create_view_subdim(subs);}
-    std::shared_ptr<impl_base_type> create_view_reshape(const shape_type& subs)const override{return view_maker->create_view_reshape(subs);}
+    std::shared_ptr<impl_base_type> create_view_slice(const slices_collection_type& subs)const override{return view_maker.create_view_slice(subs);}
+    std::shared_ptr<impl_base_type> create_view_transpose(const shape_type& subs)const override{return view_maker.create_view_transpose(subs);}
+    std::shared_ptr<impl_base_type> create_view_subdim(const shape_type& subs)const override{return view_maker.create_view_subdim(subs);}
+    std::shared_ptr<impl_base_type> create_view_reshape(const shape_type& subs)const override{return view_maker.create_view_reshape(subs);}
 
     std::string to_str()const override{
         std::stringstream ss{};
