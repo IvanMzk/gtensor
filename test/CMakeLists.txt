@@ -23,5 +23,6 @@ target_sources(Test_selected PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/test_stensor_impl.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/test_view.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_walker.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test.cpp
 )

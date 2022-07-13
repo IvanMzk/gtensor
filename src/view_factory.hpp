@@ -328,12 +328,12 @@ class view_factory{
     }
     
 public:    
+    view_factory() = default;
     view_factory(const view_factory&) = delete;
     view_factory& operator=(const view_factory&) = delete;
     view_factory(view_factory&&) = delete;
     view_factory& operator=(view_factory&&) = delete;
 
-    view_factory() = default;
     template<typename...T, typename DescT, typename StorT>
     view_factory(const stensor_impl<T...>& parent, DescT& descriptor, StorT& elements){
         reset_factory(parent,descriptor,elements);

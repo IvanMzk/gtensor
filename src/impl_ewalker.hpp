@@ -32,7 +32,6 @@ class evaluating_walker_impl : public walker_impl_base<ValT, Cfg>{
     void reset_helper(std::index_sequence<I...>){(std::get<I>(walkers).reset(),...);}    
     template<std::size_t...I>
     value_type deref_helper(std::index_sequence<I...>) const {return f(*std::get<I>(walkers)...);}
-    std::unique_ptr<walker_impl_base<ValT,Cfg>> clone()const{return std::make_unique<evaluating_walker_impl>(*this);}
 public:
     evaluating_walker_impl(const shape_type& shape_, const F& f_, Wks&&...walkers_):
         shape{&shape_},
