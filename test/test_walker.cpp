@@ -52,18 +52,24 @@ TEMPLATE_TEST_CASE("test_walker","test_walker",
                     test_walker_::not_trivial_expression_maker<float>
                     ){
     using value_type = typename TestType::value_type;
-
-    auto walker_parent = TestType{}();
-    REQUIRE(*walker_parent.create_walker() == value_type{1});
-    REQUIRE(*walker_parent.create_walker().walk(0,1) == value_type{1});
-    REQUIRE(*walker_parent.create_walker().walk(1,1) == value_type{4});
-    REQUIRE(*walker_parent.create_walker().walk(2,1) == value_type{2});
-    REQUIRE(*walker_parent.create_walker().walk(1,1).walk(2,2) == value_type{6});
-    REQUIRE(*walker_parent.create_walker().walk(3,1).walk(2,2) == value_type{3});
-    REQUIRE(*walker_parent.create_walker().walk(1,1).reset(1) == value_type{1});
-    REQUIRE(*walker_parent.create_walker().walk(1,1).walk(2,2).reset(0) == value_type{6});
-    REQUIRE(*walker_parent.create_walker().walk(1,1).walk(2,2).reset(3) == value_type{6});
-    REQUIRE(*walker_parent.create_walker().walk(1,1).walk(2,2).reset(1) == value_type{3});
-    REQUIRE(*walker_parent.create_walker().walk(1,1).walk(2,2).reset(2) == value_type{4});
-    REQUIRE(*walker_parent.create_walker().walk(1,1).walk(2,2).reset() == value_type{1});
+    using test_type = std::tuple<value_type,value_type>;
+    //walk through {{{1,2,3},{4,5,6}}}  sh(1,2,3)
+    //0deref,1expected_deref
+    auto test_data = GENERATE(
+        test_type{*TestType{}().create_walker(), value_type{1}},
+        test_type{*TestType{}().create_walker().walk(0,1), value_type{1}},
+        test_type{*TestType{}().create_walker().walk(1,1), value_type{4}},
+        test_type{*TestType{}().create_walker().walk(2,1), value_type{2}},
+        test_type{*TestType{}().create_walker().walk(1,1).walk(2,2), value_type{6}},
+        test_type{*TestType{}().create_walker().walk(3,1).walk(2,2), value_type{3}},
+        test_type{*TestType{}().create_walker().walk(1,1).reset(1), value_type{1}},
+        test_type{*TestType{}().create_walker().walk(1,1).walk(2,2).reset(0), value_type{6}},
+        test_type{*TestType{}().create_walker().walk(1,1).walk(2,2).reset(3), value_type{6}},
+        test_type{*TestType{}().create_walker().walk(1,1).walk(2,2).reset(1), value_type{3}},
+        test_type{*TestType{}().create_walker().walk(1,1).walk(2,2).reset(2), value_type{4}},
+        test_type{*TestType{}().create_walker().walk(1,1).walk(2,2).reset(), value_type{1}}
+    );
+    auto deref = std::get<0>(test_data);
+    auto expected_deref = std::get<1>(test_data);
+    REQUIRE(deref == expected_deref);    
 }
