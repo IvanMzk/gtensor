@@ -4,7 +4,7 @@
 #include "shareable_storage.hpp"
 #include "impl_tensor_base.hpp"
 #include "stensor_descriptor.hpp"
-#include "impl_walker_base.hpp"
+#include "walker_factory.hpp"
 
 namespace gtensor{
 
@@ -63,7 +63,7 @@ template<typename...Ops> inline constexpr bool is_valid_operands = (is_valid_ope
 
 
 
-template<typename ValT, typename F, template<typename> typename Cfg, typename...Ops>
+template<typename ValT, template<typename> typename Cfg, typename F, typename...Ops>
 class expression_impl : public tensor_impl_base<ValT,Cfg>{
     using impl_base_type = tensor_impl_base<ValT,Cfg>;
     using config_type = Cfg<ValT>;
@@ -72,23 +72,37 @@ class expression_impl : public tensor_impl_base<ValT,Cfg>{
     using shape_type = typename config_type::shape_type;
     using descriptor_type = stensor_descriptor<value_type, Cfg>;
     using storage_type = typename config_type::storage_type;
-    using slices_collection_type = typename config_type::slices_collection_type;    
+    using slices_collection_type = typename config_type::slices_collection_type; 
+    using walker_factory_type = walker_factory<ValT,Cfg>; 
     static_assert(detail::is_valid_operands<Ops...>);
 
-    walker<ValT,Cfg> create_walker()const override{
-        return nullptr;
-    }
     descriptor_type descriptor;
     std::tuple<Ops...> operands;
     F f{};
-    storage_type cache{};    
+    storage_type cache{};
+    walker_factory_type walker_maker;
 public:            
     explicit expression_impl(Ops&...operands_):
         descriptor{detail::broadcast(operands_->shape()...)},
-        operands{operands_...}
-    {
-        
-    }
+        operands{operands_...},
+        walker_maker{*this, descriptor, f, cache, operands}
+    {}
+    expression_impl(const expression_impl& other):
+        descriptor{other.descriptor},
+        operands{other.operands},
+        f{other.f},
+        cache{other.cache},
+        walker_maker{*this, descriptor, f, cache, operands}
+    {}
+    expression_impl(expression_impl&& other):
+        descriptor{std::move(other.descriptor)},
+        operands{std::move(other.operands)},
+        f{std::move(other.f)},
+        cache{std::move(other.cache)},
+        walker_maker{*this, descriptor, f, cache, operands}
+    {}
+
+
 
     index_type size()const override{return descriptor.size();}
     index_type dim()const override{return descriptor.dim();}
@@ -96,6 +110,7 @@ public:
     bool is_cached()const{return cache.size();}
     bool is_trivial()const {return is_cached();}
 
+    walker<ValT,Cfg> create_walker()const override{return walker_maker.create_walker();}
     std::shared_ptr<impl_base_type> create_view_slice(const slices_collection_type&)const override{return nullptr;}
     std::shared_ptr<impl_base_type> create_view_transpose(const shape_type&)const override{return nullptr;}
     std::shared_ptr<impl_base_type> create_view_subdim(const shape_type&)const override{return nullptr;}
