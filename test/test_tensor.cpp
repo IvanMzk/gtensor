@@ -51,7 +51,11 @@ TEST_CASE("test_tensor_construct_using_operator","[test_tensor]"){
                                 test_type(tensor_type{{1,2,3}}, tensor_type{1,2,3}, shape_type{1,3}, 3 , 2),
                                 test_type(tensor_type{{1,2,3}}, tensor_type{{1},{2},{3}}, shape_type{3,3}, 9 , 2),
                                 test_type(tensor_type{{1,2,3},{4,5,6}}, tensor_type{{1},{2}}, shape_type{2,3}, 6 , 2),
-                                test_type(tensor_type{{{1,2,3},{4,5,6}}}, tensor_type{1,2,3}, shape_type{1,2,3}, 6 , 3)
+                                test_type(tensor_type{{{1,2,3},{4,5,6}}}, tensor_type{1,2,3}, shape_type{1,2,3}, 6 , 3),
+                                test_type(tensor_type{1}+tensor_type{1}, tensor_type{1} ,shape_type{1}, 1 , 1),
+                                test_type(tensor_type{1,2,3}+tensor_type{1,2,3}, tensor_type{1} ,shape_type{3}, 3 , 1),
+                                test_type(tensor_type{1,2,3}+tensor_type{{1},{2},{3}}, tensor_type{1,2,3} ,shape_type{3,3}, 9 , 2),
+                                test_type(tensor_type{1,2,3}+tensor_type{{1},{2},{3}}, tensor_type{1,2,3}+tensor_type{1} ,shape_type{3,3}, 9 , 2)
                             );
     
     auto operand1 = std::get<0>(test_data);
