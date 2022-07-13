@@ -10,12 +10,13 @@ class walker_impl_base{
     using index_type = typename config_type::index_type;    
 public:
     virtual ~walker_impl_base(){}
-    virtual void walk(index_type direction, index_type steps) = 0;
-    virtual void step(index_type direction) = 0;
-    virtual void step_back(index_type direction) = 0;
-    virtual void reset(index_type direction) = 0;
+    virtual void walk(const index_type& direction, const index_type& steps) = 0;
+    virtual void step(const index_type& direction) = 0;
+    virtual void step_back(const index_type& direction) = 0;
+    virtual void reset(const index_type& direction) = 0;
     virtual void reset() = 0;        
     virtual value_type operator*() const = 0;
+    virtual std::unique_ptr<walker_impl_base<ValT,Cfg>> clone()const = 0;
 };
 
 
@@ -31,11 +32,29 @@ public:
     walker(std::unique_ptr<impl_base_type>&& impl_):
         impl{std::move(impl_)}
     {}
-    void walk(const index_type& direction, const index_type& steps){impl->walk(direction,steps);}
-    void step(const index_type& direction){impl->step(direction);}
-    void step_back(const index_type& direction){impl->step_back(direction);}
-    void reset(const index_type& direction){impl->reset(direction);}
-    void reset(){impl->reset();}    
+    walker(const walker& other):
+        impl{other.impl->clone()}
+    {}
+    walker& walk(const index_type& direction, const index_type& steps){
+        impl->walk(direction,steps);
+        return *this;
+    }
+    walker& step(const index_type& direction){
+        impl->step(direction);
+        return *this;
+    }
+    walker& step_back(const index_type& direction){
+        impl->step_back(direction);
+        return *this;
+    }
+    walker& reset(const index_type& direction){
+        impl->reset(direction);
+        return *this;
+    }
+    walker& reset(){
+        impl->reset();
+        return *this;
+    }    
     value_type operator*() const{return impl->operator*();}    
 };
 

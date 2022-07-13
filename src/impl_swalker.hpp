@@ -19,12 +19,14 @@ class storage_walker_impl : public walker_impl_base<ValT, Cfg>{
     const shape_type* shape;
     const shape_type* strides;
     const value_type* data;
-    index_type dim{shape->size()};
+    index_type dim{static_cast<index_type>(shape->size())};
     const value_type* cursor{data};
 
-    auto shape_element(const index_type direction){return (*shape)[direction];}
-    auto strides_element(const index_type direction){return (*strides)[direction];}
+    auto shape_element(const index_type direction)const{return (*shape)[direction];}
+    auto strides_element(const index_type direction)const{return (*strides)[direction];}
     bool can_walk(const index_type& direction)const{return direction < dim && shape_element(direction) != index_type(1);}
+    std::unique_ptr<walker_impl_base<ValT,Cfg>> clone()const{return std::make_unique<storage_walker_impl>(*this);}
+
 
 public:    
     storage_walker_impl(const shape_type& shape_, const shape_type& strides_,  const value_type* data_):

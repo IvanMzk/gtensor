@@ -10,13 +10,15 @@ class evaluating_walker_impl : public walker_impl_base<ValT, Cfg>{
     using config_type = Cfg<ValT>;        
     using value_type = ValT;
     using index_type = typename config_type::index_type;
+    using shape_type = typename config_type::shape_type;
     
     const shape_type* shape;
     F f;
     std::tuple<Wks...> walkers;    
-    index_type dim{shape->size()};
+    index_type dim{static_cast<index_type>(shape->size())};
 
-    auto shape_element(const index_type& direction){return (*shape)[direction];}
+
+    auto shape_element(const index_type& direction)const{return (*shape)[direction];}
     bool can_walk(const index_type& direction)const{return direction < dim && shape_element(direction) != index_type(1);}
     template<std::size_t...I>
     void walk_helper(const index_type& direction, const index_type& steps, std::index_sequence<I...>){(std::get<I>(walkers).walk(direction,steps),...);}
@@ -30,6 +32,7 @@ class evaluating_walker_impl : public walker_impl_base<ValT, Cfg>{
     void reset_helper(std::index_sequence<I...>){(std::get<I>(walkers).reset(),...);}    
     template<std::size_t...I>
     value_type deref_helper(std::index_sequence<I...>) const {return f(*std::get<I>(walkers)...);}
+    std::unique_ptr<walker_impl_base<ValT,Cfg>> clone()const{return std::make_unique<evaluating_walker_impl>(*this);}
 public:
     evaluating_walker_impl(const shape_type& shape_, const F& f_, Wks&&...walkers_):
         shape{&shape_},
