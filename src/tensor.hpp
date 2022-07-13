@@ -32,6 +32,7 @@ class tensor{
         impl{new stensor_impl_type(init_data)}
     {}
     
+protected:
     std::shared_ptr<impl_base_type> get_impl()const{return impl;}
 
 public:        
@@ -52,7 +53,6 @@ public:
     auto size()const{return impl->size();}
     auto dim()const{return impl->dim();}
     auto shape()const{return impl->shape();}
-    auto create_walker()const{return impl->create_walker();}
 
     tensor_type operator()(slices_init_type subs)const{
         detail::check_slices_number(subs);        

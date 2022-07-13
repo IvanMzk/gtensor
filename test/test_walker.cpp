@@ -4,16 +4,25 @@
 
 namespace test_walker_{
 
-using gtensor::stensor_impl;
-using gtensor::expression_impl;
+using gtensor::tensor;
 using gtensor::config::default_config;
+
+template<typename ValT, template<typename> typename Cfg>
+struct test_tensor : public tensor<ValT,Cfg>{
+    using base_type = tensor<ValT,Cfg>;
+    using tensor::tensor;
+    test_tensor(const base_type& base):
+        base_type{base}
+    {}
+    auto create_walker()const{return get_impl()->create_walker();}    
+};
 
 
 //make 3d stensor with data {{{1,2,3},{4,5,6}}}
 template<typename ValT>
 struct stensor_maker{
     using value_type = ValT;
-    using tensor_type = gtensor::tensor<ValT,default_config>;
+    using tensor_type = test_tensor<ValT,default_config>;
     tensor_type operator()(){return tensor_type{{{1,2,3},{4,5,6}}};}
 };
 
@@ -21,7 +30,7 @@ struct stensor_maker{
 template<typename ValT>
 struct trivial_expression_maker{
     using value_type = ValT;
-    using tensor_type = gtensor::tensor<ValT,default_config>;
+    using tensor_type = test_tensor<ValT,default_config>;
     tensor_type operator()(){return tensor_type{{{-1,-1,-1},{-1,-1,-1}}} + tensor_type{{{1,2,3},{1,2,3}}} + tensor_type{{{1,1,1},{4,4,4}}};}
 };
 
@@ -29,7 +38,7 @@ struct trivial_expression_maker{
 template<typename ValT>
 struct not_trivial_expression_maker{
     using value_type = ValT;
-    using tensor_type = gtensor::tensor<ValT,default_config>;
+    using tensor_type = test_tensor<ValT,default_config>;
     tensor_type operator()(){return tensor_type{2} * tensor_type{-1,-1,-1} + tensor_type{{{1,2,3},{1,2,3}}} + tensor_type{{{0,0,0},{3,3,3}}} + tensor_type{5,5,5} - tensor_type{3} ;}
 };
 
@@ -37,19 +46,12 @@ struct not_trivial_expression_maker{
 }   //end of namespace test_walker_
 
 
-
 TEMPLATE_TEST_CASE("test_walker","test_walker", 
-                    test_walker_::stensor_maker<float>, 
+                    test_walker_::stensor_maker<float>,
                     test_walker_::trivial_expression_maker<float>,
                     test_walker_::not_trivial_expression_maker<float>
                     ){
     using value_type = typename TestType::value_type;
-    using gtensor::stensor_impl;
-    using gtensor::config::default_config;
-    using config_type = default_config<value_type>;
-    using stensor_type = stensor_impl<value_type, default_config>;    
-    using walker_type = gtensor::walker<value_type,default_config>;
-    using test_type = std::tuple<walker_type, value_type>;    
 
     auto walker_parent = TestType{}();
     REQUIRE(*walker_parent.create_walker() == value_type{1});
