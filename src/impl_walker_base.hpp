@@ -16,6 +16,7 @@ public:
     virtual void reset(const index_type& direction) = 0;
     virtual void reset() = 0;        
     virtual value_type operator*() const = 0;
+    virtual std::unique_ptr<walker_impl_base<ValT,Cfg>> clone()const = 0;
 };
 
 
@@ -30,7 +31,10 @@ class walker{
 public:    
     walker(std::unique_ptr<impl_base_type>&& impl_):
         impl{std::move(impl_)}
-    {}    
+    {}
+    walker(const walker& other):
+        impl{other.impl->clone()}
+    {}
     walker& walk(const index_type& direction, const index_type& steps){
         impl->walk(direction,steps);
         return *this;

@@ -25,6 +25,7 @@ class storage_walker_impl : public walker_impl_base<ValT, Cfg>{
     auto shape_element(const index_type direction)const{return (*shape)[direction];}
     auto strides_element(const index_type direction)const{return (*strides)[direction];}
     bool can_walk(const index_type& direction)const{return direction < dim && shape_element(direction) != index_type(1);}
+    std::unique_ptr<walker_impl_base<ValT,Cfg>> clone()const override{return std::make_unique<storage_walker_impl<ValT,Cfg>>(*this);}
 
 public:    
     storage_walker_impl(const shape_type& shape_, const shape_type& strides_,  const value_type* data_):
