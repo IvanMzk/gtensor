@@ -1,7 +1,8 @@
+#include <iostream>
 #include "catch.hpp"
 #include "stensor_descriptor.hpp"
-#include "config.hpp"
-#include <iostream>
+#include "test_config.hpp"
+
 
 
 TEMPLATE_PRODUCT_TEST_CASE("test_make_strides","[test_stensor_descriptor]", (std::vector,trivial_type_vector::uvector),(std::size_t, std::int64_t)){
@@ -48,12 +49,12 @@ TEMPLATE_PRODUCT_TEST_CASE("test_make_size_using_strides","[test_stensor_descrip
     REQUIRE(size_result == size_expected);
 }
 
-TEST_CASE("test_stensor_descriptor","[test_stensor_descriptor]"){
+TEMPLATE_TEST_CASE("test_stensor_descriptor_native_div","[test_stensor_descriptor]", gtensor::config::mode_div_native){
     using value_type = float;
     using gtensor::stensor_descriptor;
     using gtensor::config::default_config;
     using config_type = default_config<value_type>;
-    using descriptor_type = stensor_descriptor<value_type, default_config>;
+    using descriptor_type = stensor_descriptor<value_type, test_config::config_tmpl_div_mode_selector<TestType>::config_tmpl>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     using test_type = std::tuple<descriptor_type, shape_type, shape_type, index_type, index_type>;
@@ -77,6 +78,40 @@ TEST_CASE("test_stensor_descriptor","[test_stensor_descriptor]"){
     REQUIRE(descriptor.strides() == expected_strides);
     REQUIRE(descriptor.size() == expected_size);
     REQUIRE(descriptor.dim() == expected_dim);
+}
+
+TEMPLATE_TEST_CASE("test_stensor_descriptor_libdiv_div","[test_stensor_descriptor]", gtensor::config::mode_div_libdivide){
+    using value_type = float;
+    using gtensor::stensor_descriptor;
+    using config_type = test_config::config_tmpl_div_mode_selector<TestType>::config_tmpl<value_type>;
+    using descriptor_type = stensor_descriptor<value_type, test_config::config_tmpl_div_mode_selector<TestType>::config_tmpl>;
+    using shape_type = typename config_type::shape_type;
+    using index_type = typename config_type::index_type;
+    using libdivide_vector_type = gtensor::detail::libdivide_vector<index_type>;
+    using libdivide_divider_type = gtensor::detail::libdivide_divider<index_type>;
+    using test_type = std::tuple<descriptor_type, shape_type, shape_type, index_type, index_type, libdivide_vector_type>;
+    //0descriptor,1expected shape,2expected strides,3expected size,4expected dim,5expected_strides_libdivide
+    auto test_data = GENERATE(                                
+                                test_type(descriptor_type(),shape_type{},shape_type{},0,0,{}),
+                                test_type({shape_type{}},shape_type{},shape_type{},0,0,libdivide_vector_type{}),
+                                test_type({shape_type{1}},shape_type{1},shape_type{1},1,1,{libdivide_divider_type{1}}),
+                                test_type({shape_type{5}},shape_type{5},shape_type{1},5,1,{libdivide_divider_type{1}}),
+                                test_type({shape_type{1,1}},shape_type{1,1},shape_type{1,1},1,2,{libdivide_divider_type{1},libdivide_divider_type{1}}),
+                                test_type({shape_type{1,5}},shape_type{1,5},shape_type{5,1},5,2,{libdivide_divider_type{5},libdivide_divider_type{1}}),
+                                test_type({shape_type{5,1}},shape_type{5,1},shape_type{1,1},5,2,{libdivide_divider_type{1},libdivide_divider_type{1}}),
+                                test_type({shape_type{5,4,3}},shape_type{5,4,3},shape_type{12,3,1},60,3,{libdivide_divider_type{12},libdivide_divider_type{3},libdivide_divider_type{1}})
+                            );
+    auto descriptor = std::get<0>(test_data);
+    auto expected_shape = std::get<1>(test_data);
+    auto expected_strides = std::get<2>(test_data);
+    auto expected_size = std::get<3>(test_data);
+    auto expected_dim = std::get<4>(test_data);
+    auto expected_strides_libdivide = std::get<5>(test_data);
+    REQUIRE(descriptor.shape() == expected_shape);
+    REQUIRE(descriptor.strides() == expected_strides);
+    REQUIRE(descriptor.size() == expected_size);
+    REQUIRE(descriptor.dim() == expected_dim);
+    REQUIRE(descriptor.strides_libdivide() == expected_strides_libdivide);
 }
 
 // TEMPLATE_PRODUCT_TEST_CASE("test_make_shape","[test_stensor_descriptor]", (std::vector,trivial_type_vector::uvector),(std::size_t, std::uint32_t, int)){

@@ -10,6 +10,16 @@ namespace detail{
 
 template<typename> inline constexpr bool is_libdivide_div = false;
 template<typename T, libdivide::Branching Algo> inline constexpr bool is_libdivide_div<libdivide::divider<T,Algo>> = true;
+template<typename T> using libdivide_divider = libdivide::divider<T>;
+template<typename T> using libdivide_vector = std::vector<libdivide_divider<T>>;
+
+template<typename CfgT>
+struct libdiv_strides_traits{
+    template<typename> struct selector{using type = typename CfgT::shape_type;};
+    template<> struct selector<config::mode_div_native>{using type = typename CfgT::shape_type;};
+    template<> struct selector<config::mode_div_libdivide>{using type = libdivide_vector<typename CfgT::index_type>;};
+    using type = typename selector<typename CfgT::div_mode>::type;
+};
 
 template<template<typename> typename D, template<typename...> typename U, typename T>
 auto make_libdiv_vector_helper(const U<T>& src){
