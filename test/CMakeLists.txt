@@ -24,5 +24,6 @@ target_sources(Test_selected PRIVATE
 
     ${CMAKE_CURRENT_SOURCE_DIR}/test_view.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_walker.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_multiindex_iterator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test.cpp
 )
