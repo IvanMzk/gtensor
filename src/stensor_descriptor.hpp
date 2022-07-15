@@ -38,7 +38,7 @@ inline void make_shape_(ShT& res){}
 * parameters: shape
 */
 template<typename ShT>
-ShT make_strides(const ShT& shape, typename ShT::value_type min_stride = ShT::value_type(1)){
+inline ShT make_strides(const ShT& shape, typename ShT::value_type min_stride = ShT::value_type(1)){
     using index_type = typename ShT::value_type;
     if (!shape.empty()){
         ShT res(shape.size(), min_stride);
@@ -137,7 +137,6 @@ public:
     auto dim()const{return shape_.size();}
     const auto& shape()const{return shape_;}
     const auto& strides()const{return base_strides::strides();}
-    //template<typename C = config_type, std::enable_if_t<detail::is_mode_div_native<C> ,int> =0 >
     const auto& strides_libdivide()const{return base_strides::strides_libdivide();}
     std::string to_str()const{
         std::stringstream ss{};
