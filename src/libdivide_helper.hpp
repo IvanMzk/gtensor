@@ -42,11 +42,28 @@ auto make_libdive_vector(const U<T>& src){
     return std::vector<div_type>{};
 }
 
-
 // template<template<typename...> typename U, typename T>
 // auto make_brfr_strides(const U<T>& strides){
 //     return make_libdiv_strides<libdivide::branchfree_divider>(strides);
 // }
+
+/*
+* return quotient
+* reminder write back to dividend
+*/
+template<typename T>
+inline auto divide(T& dividend, const T& divider){
+    auto q = dividend/divider;
+    dividend -=q*divider;
+    return q;
+}
+template<typename T>
+inline auto divide(T& dividend, const libdivide_divider<T>& divider){
+    auto q = dividend/divider;
+    dividend -= q*divider.divisor();
+    return q;
+}
+
 
 /*
 * convert flat index to multi index given strides
@@ -54,57 +71,32 @@ auto make_libdive_vector(const U<T>& src){
 */
 template<template<typename...> typename U, typename T, std::enable_if_t<!is_libdivide_div<T> ,int> =0 >
 auto flat_to_multi(const U<T>& strides, typename const U<T>::value_type& idx){
-    using shape_type = U<T>;
-    using index_type = typename U<T>::value_type;
-    shape_type res(strides.size(), index_type(0));    
-    index_type idx_{idx};
-    auto st_it = strides.begin();
-    auto res_it = res.begin();
-    while(idx_ != 0){
-        auto q = idx_ / *st_it;
-        idx_ %= *st_it;
-        *res_it = q;
-        ++st_it,++res_it;
-    }        
-    return res;
+    return flat_to_multi_helper<U<T>>(strides,idx);
 }
-
 /*
 * convert flat index to multi index given strides as container of libdivide objects
 * need explicity specialize return type container for multiindex
 */
 template<typename ShT, template<typename...> typename U, typename T, std::enable_if_t<is_libdivide_div<T> ,int> =0 >
 auto flat_to_multi(const U<T>& strides, typename const T::value_type& idx){    
+    return flat_to_multi_helper<ShT>(strides,idx);
+}
+
+template<typename ShT, template<typename...> typename U, typename T, typename T1>
+auto flat_to_multi_helper(const U<T>& strides, const T1& idx){
     using shape_type = ShT;
-    using index_type = typename T::value_type;
+    using index_type = T1;
     shape_type res(strides.size(), index_type(0));    
     index_type idx_{idx};
     auto st_it = strides.begin();
     auto res_it = res.begin();
-    while(idx_ != 0){
-        auto q = idx_ / *st_it;
-        idx_ -= (*st_it).divisor()*q;
-        *res_it = q;
+    while(idx_ != 0){        
+        *res_it = divide(idx_,*st_it);
         ++st_it,++res_it;
     }        
     return res;
 }
 
-
-
-
-// template<typename Wkr, template<typename...> typename U, typename T, std::enable_if_t<!is_libdivide_div<T> ,int> =0 >
-// void walker_advance(Wkr& walker, const U<T>& strides, typename const U<T>::value_type& distance){    
-//     using index_type = typename U<T>::value_type;    
-//     index_type idx_{idx};
-//     auto st_it = strides.end();    
-//     while(idx_ != 0){
-//         auto q = idx_ / *--st_it;
-//         idx_ %= *st_it;
-//         *--res_it = q;
-//     }    
-//     return res;
-// }
 
 
 }   //end of namespace detail
