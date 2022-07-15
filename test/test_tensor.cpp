@@ -32,6 +32,10 @@ TEST_CASE("test_tensor_construct_from_list","[test_tensor]"){
     REQUIRE(t.shape() == expected_shape);
     REQUIRE(t.size() == expected_size);
     REQUIRE(t.dim() == expected_dim);
+    auto stor_ten = t.as_storage_tensor();
+    REQUIRE(stor_ten.shape() == expected_shape);
+    REQUIRE(stor_ten.size() == expected_size);
+    REQUIRE(stor_ten.dim() == expected_dim);
 }
 
 TEST_CASE("test_tensor_construct_using_operator","[test_tensor]"){
@@ -67,6 +71,8 @@ TEST_CASE("test_tensor_construct_using_operator","[test_tensor]"){
     REQUIRE(e.shape() == expected_shape);
     REQUIRE(e.size() == expected_size);
     REQUIRE(e.dim() == expected_dim);
+    auto expr = e.as_expression();
+    REQUIRE(expr.shape() == expected_shape);
+    REQUIRE(expr.size() == expected_size);
+    REQUIRE(expr.dim() == expected_dim);
 }
-
-

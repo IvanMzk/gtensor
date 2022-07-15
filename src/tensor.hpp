@@ -24,9 +24,11 @@ class tensor{
     using slices_collection_type = typename config_type::slices_collection_type;
     
 
+    friend std::ostream& operator<<(std::ostream& os, const tensor& lhs){return os<<lhs.impl->to_str();}
     friend class tensor_operators_impl;
-    std::shared_ptr<impl_base_type> impl;
     
+    std::shared_ptr<impl_base_type> impl;
+
     template<typename Nested>
     tensor(std::initializer_list<Nested> init_data, int):
         impl{new stensor_impl_type(init_data)}
@@ -53,6 +55,8 @@ public:
     auto size()const{return impl->size();}
     auto dim()const{return impl->dim();}
     auto shape()const{return impl->shape();}
+    auto as_expression()const{return expression<ValT,Cfg>{*this};}
+    auto as_storage_tensor()const{return storage_tensor<ValT,Cfg>{*this};}
 
     tensor_type operator()(slices_init_type subs)const{
         detail::check_slices_number(subs);        
@@ -83,9 +87,35 @@ public:
         return tensor_type{impl->create_view_reshape(shape_type{subs...})};
     }
     
+private:
+    
+    template<typename ValT, template<typename> typename Cfg>
+    class expression : public tensor<ValT,Cfg>{        
+        using base_type = tensor<ValT,Cfg>;        
+        const expression_impl_base<ValT,Cfg>* impl{get_impl()->as_expression()};
+    public:
+        expression(const base_type& base):
+            base_type{base}
+        {}
+        auto is_cached()const{return impl->is_cached();}
+        auto is_trivial()const{return impl->is_trivial();}
+        auto begin()const{return impl->begin();}
+        auto end()const{return impl->end();}
+    };
+    
+    template<typename ValT, template<typename> typename Cfg>
+    class storage_tensor : public tensor<ValT,Cfg>{        
+        using base_type = tensor<ValT,Cfg>;        
+        const stensor_impl_base<ValT,Cfg>* impl{get_impl()->as_storage_tensor()};
+    public:
+        storage_tensor(const base_type& base):
+            base_type{base}
+        {}
+        auto begin()const{return impl->begin();}
+        auto end()const{return impl->end();}
+    };
 
-
-    friend std::ostream& operator<<(std::ostream& os, const tensor& lhs){return os<<lhs.impl->to_str();}
+    
 };
 
 }   //end of namespace gtensor

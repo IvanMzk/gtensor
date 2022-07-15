@@ -15,7 +15,7 @@ class tensor_impl_base{
     using index_type = typename config_type::index_type;
     using shape_type = typename config_type::shape_type;
     using slices_collection_type = typename config_type::slices_collection_type;
-    
+
 public:
     virtual ~tensor_impl_base(){}    
     virtual index_type size()const = 0;
@@ -24,6 +24,8 @@ public:
     virtual const shape_type& strides()const = 0;
     virtual std::string to_str()const = 0;    
     virtual walker<ValT,Cfg> create_walker()const = 0;
+    const expression_impl_base<ValT,Cfg>* as_expression()const{return dynamic_cast<const expression_impl_base<ValT,Cfg>*>(this);}
+    const stensor_impl_base<ValT,Cfg>* as_storage_tensor()const{return dynamic_cast<const stensor_impl_base<ValT,Cfg>*>(this);}
 
     virtual std::shared_ptr<impl_base_type> create_view_slice(const slices_collection_type&)const = 0;
     virtual std::shared_ptr<impl_base_type> create_view_transpose(const shape_type&)const = 0;
