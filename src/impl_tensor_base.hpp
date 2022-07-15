@@ -32,6 +32,18 @@ public:
 
 };
 
+template<typename ValT, template<typename> typename Cfg>
+class expression_impl_base : public tensor_impl_base<ValT, Cfg>{
+    using iterator_type = multiindex_iterator_impl<ValT,Cfg,walker<ValT,Cfg>>;
+public:
+    virtual ~expression_impl_base(){}    
+    virtual iterator_type begin()const = 0;
+    virtual iterator_type end()const = 0;
+
+};
+
+
+
 }   //end of namespace gtensor
 
 #endif

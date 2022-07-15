@@ -1,4 +1,7 @@
 build/
 *.ddd
-*.dia
+*dia*
+*.dia.*
 todo
+project_diagrams.dia~
+project_diagrams.dia.autosave

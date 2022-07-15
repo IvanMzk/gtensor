@@ -5,6 +5,7 @@
 #include "impl_tensor_base.hpp"
 #include "stensor_descriptor.hpp"
 #include "walker_factory.hpp"
+#include "impl_multiindex_iterator.hpp"
 
 namespace gtensor{
 
@@ -64,7 +65,7 @@ template<typename...Ops> inline constexpr bool is_valid_operands = (is_valid_ope
 
 
 template<typename ValT, template<typename> typename Cfg, typename F, typename...Ops>
-class expression_impl : public tensor_impl_base<ValT,Cfg>{
+class expression_impl : public expression_impl_base<ValT,Cfg>{
     using impl_base_type = tensor_impl_base<ValT,Cfg>;
     using config_type = Cfg<ValT>;
     using value_type = ValT;
@@ -73,7 +74,8 @@ class expression_impl : public tensor_impl_base<ValT,Cfg>{
     using descriptor_type = stensor_descriptor<value_type, Cfg>;
     using storage_type = typename config_type::storage_type;
     using slices_collection_type = typename config_type::slices_collection_type; 
-    using walker_factory_type = walker_factory<ValT,Cfg>; 
+    using walker_factory_type = walker_factory<ValT,Cfg>;
+    using iterator_type = multiindex_iterator_impl<ValT,Cfg,walker<ValT,Cfg>>; 
     static_assert(detail::is_valid_operands<Ops...>);
 
     descriptor_type descriptor;
@@ -81,6 +83,17 @@ class expression_impl : public tensor_impl_base<ValT,Cfg>{
     F f{};
     storage_type cache{};
     walker_factory_type walker_maker;
+
+    template<typename C = config_type, std::enable_if_t<detail::is_mode_div_native<C> ,int> =0 >
+    auto create_iterator(const index_type& i)const{
+        return i==0 ? iterator_type{create_walker(), shape(), strides()} : iterator_type{create_walker(), shape(), strides(), i};
+    }
+    template<typename C = config_type, std::enable_if_t<detail::is_mode_div_libdivide<C> ,int> =0 >
+    auto create_iterator(const index_type& i)const{
+        return i==0 ? iterator_type{create_walker(), shape(), descriptor.strides_libdivide()} : iterator_type{create_walker(), shape(), descriptor.strides_libdivide(), i};
+    }
+        
+
 public:            
     explicit expression_impl(Ops&...operands_):
         descriptor{detail::broadcast(operands_->shape()...)},
@@ -110,6 +123,8 @@ public:
     const shape_type& strides()const override{return descriptor.strides();}
     bool is_cached()const{return cache.size();}
     bool is_trivial()const {return is_cached();}
+    iterator_type begin()const{return create_iterator(0);}    
+    iterator_type end()const{return create_iterator(size());}
 
     walker<ValT,Cfg> create_walker()const override{return walker_maker.create_walker();}
     std::shared_ptr<impl_base_type> create_view_slice(const slices_collection_type&)const override{return nullptr;}

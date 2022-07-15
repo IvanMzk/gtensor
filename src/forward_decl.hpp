@@ -11,6 +11,7 @@ template<typename ValT, template<typename> typename Cfg> class tensor;
 template<typename ValT, template<typename> typename Cfg> class walker_impl_base;
 template<typename ValT, template<typename> typename Cfg> class walker;
 template<typename DifT, typename N> struct slice;
+template<typename ValT, template<typename> typename Cfg, typename Wkr> class multiindex_iterator_impl;
 
 namespace detail{
 template<typename DifT, typename N> struct slice_item;
