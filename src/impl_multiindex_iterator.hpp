@@ -2,8 +2,13 @@
 #define IMPL_MULTIINDEX_ITERATOR_HPP_
 
 #include <iterator>
+#include "config.hpp"
+#include "libdivide_helper.hpp"
 
 namespace gtensor{
+
+namespace detail{
+}   //end of namespace detail
 
 /*
 * multiindex_iterator
@@ -15,11 +20,12 @@ class multiindex_iterator_impl{
     using difference_type = typename config_type::difference_type;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
+    using strides_type = typename detail::libdiv_strides_traits<config_type>::type;
     
 
     walker_type walker;
     const shape_type* shape;
-    const shape_type* strides;
+    const strides_type* strides;
     difference_type flat_index;
     index_type dim_dec{static_cast<index_type>(shape->size()-1)};
     shape_type multi_index = shape_type(dim_dec+2,index_type(1));
@@ -33,7 +39,7 @@ public:
 
     //begin constructor
     template<typename W>
-    multiindex_iterator_impl(W&& walker_, const shape_type& shape_, const shape_type& strides_):
+    multiindex_iterator_impl(W&& walker_, const shape_type& shape_, const strides_type& strides_):
         walker{std::forward<W>(walker_)},
         shape{&shape_},
         strides{&strides_},
@@ -41,7 +47,7 @@ public:
     {}
     //end constructor
     template<typename W>
-    multiindex_iterator_impl(W&& walker_, const shape_type& shape_, const shape_type& strides_, const index_type& size_):
+    multiindex_iterator_impl(W&& walker_, const shape_type& shape_, const strides_type& strides_, const difference_type& size_):
         walker{std::forward<W>(walker_)},
         shape{&shape_},
         strides{&strides_},
@@ -135,8 +141,7 @@ auto& multiindex_iterator_impl<ValT,Cfg,Wkr>::advance(difference_type n){
     auto sit_begin{(*strides).begin()};
     auto sit_end{(*strides).end()};
     for(index_type d{0};sit_begin!=sit_end; ++sit_begin,++d){
-        auto q = idx / *sit_begin;
-        idx %= *sit_begin;
+        auto q = detail::divide(idx,*sit_begin);
         if (q!=0){
             walker.walk(d,q);
             multi_index[d] = q+1;
@@ -144,8 +149,6 @@ auto& multiindex_iterator_impl<ValT,Cfg,Wkr>::advance(difference_type n){
     }    
     return *this;
 }
-
-
 
 
 }   //end of namespace gtensor
