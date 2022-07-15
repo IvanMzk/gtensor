@@ -115,8 +115,6 @@ public:
         walker_maker{*this, descriptor, f, cache, operands}
     {}
 
-
-
     index_type size()const override{return descriptor.size();}
     index_type dim()const override{return descriptor.dim();}
     const shape_type& shape()const override{return descriptor.shape();}

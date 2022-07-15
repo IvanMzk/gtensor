@@ -18,7 +18,7 @@ namespace detail{
 * implementation of tensor with storage
 */
 template<typename ValT, template<typename> typename Cfg>
-class stensor_impl : public tensor_impl_base<ValT,Cfg>{
+class stensor_impl : public stensor_impl_base<ValT,Cfg>{
     using impl_base_type = tensor_impl_base<ValT,Cfg>;
     using config_type = Cfg<ValT>;        
     using value_type = ValT;
@@ -70,6 +70,8 @@ public:
     index_type dim()const override{return descriptor.dim();}
     const shape_type& shape()const override{return descriptor.shape();}
     const shape_type& strides()const override{return descriptor.strides();}
+    typename storage_type::const_iterator begin()const override{return elements.begin();}
+    typename storage_type::const_iterator end()const override{return elements.end();}
 
     walker<ValT,Cfg> create_walker()const override{return walker_maker.create_walker();}
     std::shared_ptr<impl_base_type> create_view_slice(const slices_collection_type& subs)const override{return view_maker.create_view_slice(subs);}

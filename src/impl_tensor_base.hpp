@@ -39,7 +39,19 @@ public:
     virtual ~expression_impl_base(){}    
     virtual iterator_type begin()const = 0;
     virtual iterator_type end()const = 0;
+    virtual bool is_cached()const = 0;
+    virtual bool is_trivial()const = 0;
+};
 
+template<typename ValT, template<typename> typename Cfg>
+class stensor_impl_base : public tensor_impl_base<ValT, Cfg>{
+    using config_type = Cfg<ValT>;
+    using iterator_type = typename config_type::storage_type::iterator;
+    using const_iterator_type = typename config_type::storage_type::const_iterator;
+public:
+    virtual ~stensor_impl_base(){}
+    virtual const_iterator_type begin()const = 0;
+    virtual const_iterator_type end()const = 0;
 };
 
 
