@@ -76,3 +76,29 @@ TEST_CASE("test_tensor_construct_using_operator","[test_tensor]"){
     REQUIRE(expr.size() == expected_size);
     REQUIRE(expr.dim() == expected_dim);
 }
+
+TEST_CASE("test_expression_is_trivial","[test_tensor]"){
+    using value_type = float;
+    using gtensor::tensor;
+    using gtensor::config::default_config;
+    using config_type = default_config<value_type>;
+    using tensor_type = tensor<value_type, default_config>;
+    using shape_type = typename config_type::shape_type;
+    using index_type = typename config_type::index_type;
+    using test_type = std::tuple<tensor_type, bool>;
+    //tensor,expected_is_trivial
+    auto test_data = GENERATE(                                
+                                test_type(tensor_type{1}+tensor_type{1}, true),
+                                test_type(tensor_type{1,2,3,4,5}+tensor_type{1}, false),
+                                test_type(tensor_type{1,2,3,4,5}+tensor_type{1,2,3,4,5}, true),
+                                test_type(tensor_type{{1},{2},{3},{4},{5}}+tensor_type{{1,2,3,4,5}}, false),
+                                test_type(tensor_type{1,2,3}+tensor_type{1,2,3}+tensor_type{3,4,5}+tensor_type{3,4,5}, true),
+                                test_type((tensor_type{1,2,3}+tensor_type{1,2,3})+(tensor_type{3,4,5}+tensor_type{3,4,5}), true),
+                                test_type((tensor_type{1}+tensor_type{1,2,3})+(tensor_type{3,4,5}+tensor_type{3,4,5}), false)
+                            );
+    
+    auto t = std::get<0>(test_data);
+    auto expected_is_trivial = std::get<1>(test_data);
+    auto e = t.as_expression();
+    REQUIRE(e.is_trivial() == expected_is_trivial);    
+}

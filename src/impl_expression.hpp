@@ -21,7 +21,7 @@ namespace detail{
 * exception if shapes are not broadcastable
 */
 template<typename ShT>
-ShT broadcast(const ShT& shape1, const ShT& shape2){
+inline ShT broadcast(const ShT& shape1, const ShT& shape2){
     using shape_type = ShT;
     using index_type = typename ShT::value_type;
     if (shape1.size() == 0 || shape2.size() == 0){
@@ -62,15 +62,15 @@ ShT broadcast(const ShT& shape1, const ShT& shape2){
 * stensor and view are trivial
 */
 template<typename...T, typename...Ops>
-bool is_trivial(const expression_impl<T...>& root, const std::tuple<Ops...>& root_operands){
+inline bool is_trivial(const expression_impl<T...>& root, const std::tuple<Ops...>& root_operands){
     return is_trivial_helper(root,root_operands,std::make_index_sequence<sizeof...(Ops)>{});
 }
 template<typename...T, typename...Ops, std::size_t...I>
-bool is_trivial_helper(const expression_impl<T...>& root, const std::tuple<Ops...>& root_operands, std::index_sequence<I...>){
+inline bool is_trivial_helper(const expression_impl<T...>& root, const std::tuple<Ops...>& root_operands, std::index_sequence<I...>){
     return ((root.size()==std::get<I>(root_operands)->size())&&...) && (is_trivial_operand(std::get<I>(root_operands))&&...);
 }
 template<typename T>
-bool is_trivial_operand(const T& operand){
+inline bool is_trivial_operand(const T& operand){
     if (auto e = operand->as_expression()){
         return e->is_trivial(); 
     }else{
