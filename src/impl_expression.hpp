@@ -56,6 +56,30 @@ ShT broadcast(const ShT& shape1, const ShT& shape2){
     }
 }
 
+/*
+* is expression is trivial broadcast i.e. shapes of all nodes in expression tree is same
+* flat index access without walkers is used to evaluate broadcast expression
+* stensor and view are trivial
+*/
+template<typename...T, typename...Ops>
+bool is_trivial(const expression_impl<T...>& root, const std::tuple<Ops...>& root_operands){
+    return is_trivial_helper(root,root_operands,std::make_index_sequence<sizeof...(Ops)>{});
+}
+template<typename...T, typename...Ops, std::size_t...I>
+bool is_trivial_helper(const expression_impl<T...>& root, const std::tuple<Ops...>& root_operands, std::index_sequence<I...>){
+    return ((root.size()==std::get<I>(root_operands)->size())&&...) && (is_trivial_operand(std::get<I>(root_operands))&&...);
+}
+template<typename T>
+bool is_trivial_operand(const T& operand){
+    if (auto e = operand->as_expression()){
+        return e->is_trivial(); 
+    }else{
+        return true;
+    }
+}
+
+
+
 template<typename T> inline constexpr bool is_valid_operand = false;
 template<typename...T> inline constexpr bool is_valid_operand<std::shared_ptr<tensor_impl_base<T...>>> = true;
 template<typename...Ops> inline constexpr bool is_valid_operands = (is_valid_operand<Ops>&&...);
@@ -120,7 +144,7 @@ public:
     const shape_type& shape()const override{return descriptor.shape();}
     const shape_type& strides()const override{return descriptor.strides();}
     bool is_cached()const{return cache.size();}
-    bool is_trivial()const {return is_cached();}
+    bool is_trivial()const {return detail::is_trivial(*this,operands);}
     iterator_type begin()const{return create_iterator(0);}    
     iterator_type end()const{return create_iterator(size());}
 
