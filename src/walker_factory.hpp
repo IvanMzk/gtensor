@@ -5,12 +5,12 @@
 #include "forward_decl.hpp"
 #include "impl_swalker.hpp"
 #include "impl_ewalker.hpp"
+#include "impl_vwalker.hpp"
 
 
 namespace gtensor{
 
 namespace detail{
-
 
 
 }   //end of namespace detail
@@ -91,6 +91,32 @@ public:
     {}
 };
 
+template<typename ValT, template<typename> typename Cfg, typename ParentT, typename DescT, typename StorT, typename CacheT>
+class walker_of_view_factory : public walker_factory_base<ValT,Cfg>{    
+    using vwalker_type = vwalker_impl<ValT,Cfg,DescT,StorT>;
+    
+    const ParentT* parent;
+    const DescT* descriptor;
+    const StorT* elements;
+    storage_walker_factory<ValT,Cfg> storage_walker_maker;
+
+    walker<ValT, Cfg> create_vwalker_helper()const{
+        return std::unique_ptr<walker_impl_base<ValT,Cfg>>{new vwalker_type{*descriptor,*elements}};
+    }
+    walker<ValT, Cfg> create_walker()const override{
+        return parent->is_cached() ? storage_walker_maker.create_walker() : create_vwalker_helper();
+    }    
+public:
+    walker_of_view_factory(const ParentT& parent_, const DescT& descriptor_, const StorT elements_, const CacheT& cache_):
+        parent{&parent_},
+        descriptor{descriptor_},
+        elements{elements_},
+        storage_walker_maker{descriptor_.shape(), descriptor_.strides(), cache_.data()}
+    {}
+};
+
+
+
 template<typename ValT, template<typename> typename Cfg>
 class walker_factory : public walker_factory_base<ValT,Cfg>{
     using config_type = Cfg<ValT>;        
@@ -109,6 +135,11 @@ class walker_factory : public walker_factory_base<ValT,Cfg>{
         using parent_type = expression_impl<T...>;
         factory.reset(new walker_of_expression_factory<ValT,Cfg,parent_type,DescT,F,CacheT,Ops...>{parent_,descriptor_,f_,cache_,operands_});
     }
+    template<typename...T, typename DescT, typename StorT, typename CacheT>
+    void reset_factory(const view_impl<T...>& parent_, const DescT& descriptor_, const StorT& elements_, const CacheT& cache_){
+        using parent_type = view_impl<T...>;
+        factory.reset(new walker_of_view_factory<ValT,Cfg,parent_type,DescT,StorT,CacheT>{parent_,descriptor_,elements_,cache_});
+    }
 public:    
     walker<ValT, Cfg> create_walker()const override{return factory->create_walker();}
 
@@ -125,6 +156,10 @@ public:
     template<typename...T, typename DescT, typename F, typename CacheT, typename...Ops>
     walker_factory(const expression_impl<T...>& parent_, const DescT& descriptor_, const F& f_, const CacheT& cache_, const std::tuple<Ops...>& operands_){
         reset_factory(parent_,descriptor_,f_,cache_,operands_);
+    }
+    template<typename...T, typename DescT, typename StorT, typename CacheT>
+    walker_factory(const view_impl<T...>& parent_, const DescT& descriptor_, const StorT& elements_, const CacheT& cache_){
+        reset_factory(parent_,descriptor_,elements_,cache_);
     }
 };
 
