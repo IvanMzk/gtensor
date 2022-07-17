@@ -3,7 +3,6 @@
 #include "tensor.hpp"
 #include <tuple>
 
-
 TEST_CASE("test_tensor_construct_from_list","[test_tensor]"){
     using value_type = float;
     using gtensor::tensor;
@@ -158,4 +157,68 @@ TEST_CASE("test_expression_trivial_at","[test_tensor]"){
     auto expected_value = std::get<2>(test_data);
     auto e = t.as_expression();
     REQUIRE(e.trivial_at(index) == expected_value);
+}
+
+TEST_CASE("test_view_making_interface","[test_tensor]"){
+    using value_type = float;
+    using gtensor::tensor;
+    using gtensor::config::default_config;
+    using config_type = default_config<value_type>;
+    using tensor_type = tensor<value_type, default_config>;
+    using slice_type = typename config_type::slice_type;
+    using nop_type = typename config_type::nop_type;
+    using shape_type = typename config_type::shape_type;
+    using index_type = typename config_type::index_type;
+    using gtensor::subscript_exception;
+    using test_type = std::tuple<tensor_type, shape_type, index_type, index_type>;
+    nop_type nop;
+    SECTION("test_subscripts_correctenes_check"){
+        SECTION("view_slice"){
+            REQUIRE_NOTHROW(tensor_type{1}({}));
+            REQUIRE_THROWS_AS((tensor_type{1}({{},{}})),subscript_exception);
+            REQUIRE_NOTHROW(tensor_type{1}({{0,1}}));
+            REQUIRE_THROWS_AS((tensor_type{1}({{nop,2}})),subscript_exception);            
+            REQUIRE_NOTHROW(tensor_type{1,2,3,4,5}({}));
+            REQUIRE_THROWS_AS((tensor_type{1,2,3,4,5}({{0,4,-1}})),subscript_exception);
+            REQUIRE_THROWS_AS((tensor_type{1,2,3,4,5}({{0,0}})),subscript_exception);
+            REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}({{1,-1}}));
+            REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4},{5,6}}({{1,-1},{1,-1}})),subscript_exception);
+        }
+        SECTION("view_transpose"){
+            REQUIRE_NOTHROW(tensor_type{1}.transpose());            
+            REQUIRE_NOTHROW(tensor_type{1}.transpose(0));                        
+            REQUIRE_THROWS_AS((tensor_type{1}.transpose(1)),subscript_exception);
+            REQUIRE_THROWS_AS((tensor_type{1}.transpose(0,1)),subscript_exception);
+            REQUIRE_NOTHROW(tensor_type{{1,2},{3,4}}.transpose());
+            REQUIRE_NOTHROW(tensor_type{{1,2},{3,4}}.transpose(0,1));
+            REQUIRE_NOTHROW(tensor_type{{1,2},{3,4}}.transpose(1,0));
+            REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4}}.transpose(0)),subscript_exception);
+            REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4}}.transpose(1,1)),subscript_exception);
+        }
+        SECTION("view_subdim"){
+            REQUIRE_NOTHROW(tensor_type{1}());
+            REQUIRE_THROWS_AS((tensor_type{1}(0)),subscript_exception);
+            REQUIRE_THROWS_AS((tensor_type{1,2,3,4,5}(0)),subscript_exception);
+            REQUIRE_NOTHROW((tensor_type{{{1,2},{3,4},{5,6}}}(0)));
+            REQUIRE_NOTHROW((tensor_type{{{1,2},{3,4},{5,6}}}(0,0)));
+            REQUIRE_NOTHROW((tensor_type{{{1,2},{3,4},{5,6}}}(0,2)));
+            REQUIRE_THROWS_AS((tensor_type{{{1,2},{3,4},{5,6}}}(1)),subscript_exception);
+            REQUIRE_THROWS_AS((tensor_type{{{1,2},{3,4},{5,6}}}(0,3)),subscript_exception);
+            REQUIRE_THROWS_AS((tensor_type{{{1,2},{3,4},{5,6}}}(0,2,0)),subscript_exception);
+        }
+        SECTION("view_reshape"){
+            REQUIRE_NOTHROW(tensor_type{1}.reshape());
+            REQUIRE_NOTHROW(tensor_type{1}.reshape(1));
+            REQUIRE_THROWS_AS((tensor_type{1}.reshape(0)),subscript_exception);
+            REQUIRE_THROWS_AS((tensor_type{1}.reshape(2)),subscript_exception);
+            REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}.reshape());
+            REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}.reshape(6));
+            REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}.reshape(6,1));
+            REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}.reshape(1,6,1));
+            REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}.reshape(2,3));
+            REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}.reshape(3,2));
+            REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4},{5,6}}.reshape(10)),subscript_exception);
+            REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4},{5,6}}.reshape(3,3)),subscript_exception);
+        }
+    }
 }

@@ -80,6 +80,10 @@ public:
     tensor_type operator()(const Subs&...subs)const{
         detail::check_subdim_subs(shape(), subs...);
         return tensor_type{impl->create_view_subdim(shape_type{subs...})};
+    }            
+    tensor_type operator()()const{
+        detail::check_subdim_subs(shape());
+        return tensor_type{impl->create_view_subdim(shape_type{})};
     }        
     template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,index_type>...>,int> = 0 >
     tensor_type reshape(const Subs&...subs)const{

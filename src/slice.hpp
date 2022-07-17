@@ -1,5 +1,6 @@
 #ifndef SLICE_HPP_
 #define SLICE_HPP_
+#include <array>
 #include "config.hpp"
 
 namespace gtensor{
