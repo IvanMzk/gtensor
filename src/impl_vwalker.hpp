@@ -22,8 +22,9 @@ class vwalker_impl : public walker_impl_base<ValT, Cfg>{
     const storage_type* elements;
     const shape_type* shape{&descriptor->shape()};
     const shape_type* strides{&descriptor->cstrides()};
-    index_type cursor{0};
     index_type dim{descriptor->dim()};
+    index_type offset{descriptor->offset()};
+    index_type cursor{offset};
 
     auto shape_element(const index_type direction)const{return (*shape)[direction];}
     auto strides_element(const index_type direction)const{return (*strides)[direction];}
@@ -56,7 +57,7 @@ public:
             cursor-=(shape_element(direction)-1)*strides_element(direction);
         }
     }
-    void reset() override{cursor = 0;}
+    void reset() override{cursor = offset;}
     
     value_type operator*() const override{return elements->operator[](descriptor->convert_by_prev(cursor));}
 };
