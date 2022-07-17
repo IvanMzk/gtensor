@@ -20,20 +20,20 @@ class vwalker_impl : public walker_impl_base<ValT, Cfg>{
 
     const descriptor_type* descriptor; 
     const storage_type* elements;
-    const shape_type* shape{descriptor->shape()};
-    const shape_type* strides{descriptor->cstrides()};
+    const shape_type* shape{&descriptor->shape()};
+    const shape_type* strides{&descriptor->cstrides()};
     index_type cursor{0};
     index_type dim{descriptor->dim()};
 
     auto shape_element(const index_type direction)const{return (*shape)[direction];}
     auto strides_element(const index_type direction)const{return (*strides)[direction];}
     bool can_walk(const index_type& direction)const{return direction < dim && shape_element(direction) != index_type(1);}
-    std::unique_ptr<walker_impl_base<ValT,Cfg>> clone()const override{return std::make_unique<vwalker_impl<ValT,Cfg>>(*this);}
+    std::unique_ptr<walker_impl_base<ValT,Cfg>> clone()const override{return std::make_unique<vwalker_impl<ValT,Cfg,DescT,StorT>>(*this);}
 
 public:    
     vwalker_impl(const descriptor_type& descriptor_,  const storage_type& elements_):
         descriptor{&descriptor_},
-        elements{elements_}
+        elements{&elements_}
     {}
     
     void walk(const index_type& direction, const index_type& steps) override{

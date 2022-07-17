@@ -109,8 +109,8 @@ class walker_of_view_factory : public walker_factory_base<ValT,Cfg>{
 public:
     walker_of_view_factory(const ParentT& parent_, const DescT& descriptor_, const StorT elements_, const CacheT& cache_):
         parent{&parent_},
-        descriptor{descriptor_},
-        elements{elements_},
+        descriptor{&descriptor_},
+        elements{&elements_},
         storage_walker_maker{descriptor_.shape(), descriptor_.strides(), cache_.data()}
     {}
 };
