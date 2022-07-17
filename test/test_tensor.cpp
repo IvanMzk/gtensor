@@ -170,7 +170,6 @@ TEST_CASE("test_view_making_interface","[test_tensor]"){
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     using gtensor::subscript_exception;
-    using test_type = std::tuple<tensor_type, shape_type, index_type, index_type>;
     nop_type nop;
     SECTION("test_subscripts_correctenes_check"){
         SECTION("view_slice"){
@@ -220,5 +219,43 @@ TEST_CASE("test_view_making_interface","[test_tensor]"){
             REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4},{5,6}}.reshape(10)),subscript_exception);
             REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4},{5,6}}.reshape(3,3)),subscript_exception);
         }
+    }    
+    SECTION("test_slices_filling_and_result_view"){
+        using test_type = std::tuple<tensor_type, shape_type, index_type, index_type>;
+        //0view,1expected_shape,2expected size,3expected dim
+        auto test_data = GENERATE_COPY(
+            test_type{tensor_type{1}({{}}),shape_type{1}, 1, 1},
+            test_type{tensor_type{1}({{nop,nop,-1}}),shape_type{1}, 1, 1},
+            test_type{tensor_type{1,2,3,4,5}({{}}),shape_type{5}, 5, 1},
+            test_type{tensor_type{1,2,3,4,5}({{nop,nop,2}}),shape_type{3}, 3, 1},
+            test_type{tensor_type{1,2,3,4,5}({{nop,nop,-2}}),shape_type{3}, 3, 1},
+            test_type{tensor_type{{{1,2},{3,4},{5,6}}}({{},{},{0,-1}}),shape_type{1,3,1}, 3, 3},
+            test_type{tensor_type{{{1,2},{3,4},{5,6}}}({{},{1,-1},{0,-1}}),shape_type{1,1,1}, 1, 3},
+            test_type{tensor_type{1}.transpose(),shape_type{1}, 1, 1},
+            test_type{tensor_type{1}.transpose(0),shape_type{1}, 1, 1},
+            test_type{tensor_type{1,2,3,4,5}.transpose(),shape_type{5}, 5, 1},
+            test_type{tensor_type{{1,2,3,4,5}}.transpose(),shape_type{5,1}, 5, 2},
+            test_type{tensor_type{{1,2,3,4,5}}.transpose(1,0),shape_type{5,1}, 5, 2},
+            test_type{tensor_type{{1,2,3,4,5}}.transpose(1,0),shape_type{5,1}, 5, 2},
+            test_type{tensor_type{{1,2,3,4,5}}.transpose(0,1),shape_type{1,5}, 5, 2},
+            test_type{tensor_type{{{1,2},{3,4},{5,6}}}.transpose(),shape_type{2,3,1}, 6, 3},
+            test_type{tensor_type{{{1,2},{3,4},{5,6}}}.transpose(0,2,1),shape_type{1,2,3}, 6, 3},
+            test_type{tensor_type{{{1,2},{3,4},{5,6}}}(),shape_type{1,3,2}, 6, 3},
+            test_type{tensor_type{{{1,2},{3,4},{5,6}}}(0),shape_type{3,2}, 6, 2},
+            test_type{tensor_type{{{1,2},{3,4},{5,6}}}(0,1),shape_type{2}, 2, 1},
+            test_type{tensor_type{1}.reshape(),shape_type{1}, 1, 1},
+            test_type{tensor_type{1}.reshape(1),shape_type{1}, 1, 1},
+            test_type{tensor_type{{{1,2},{3,4},{5,6}}}.reshape(),shape_type{1,3,2}, 6, 3},
+            test_type{tensor_type{{{1,2},{3,4},{5,6}}}.reshape(6),shape_type{6}, 6, 1},
+            test_type{tensor_type{{{1,2},{3,4},{5,6}}}.reshape(2,1,3),shape_type{2,1,3}, 6, 3},
+            test_type{tensor_type{{{1,2},{3,4},{5,6}}}.reshape(6,1),shape_type{6,1}, 6, 2}
+        );
+        auto view = std::get<0>(test_data);
+        auto expected_shape = std::get<1>(test_data);
+        auto expected_size = std::get<2>(test_data);
+        auto expected_dim = std::get<3>(test_data);
+        REQUIRE(view.shape() == expected_shape);
+        REQUIRE(view.size() == expected_size);
+        REQUIRE(view.dim() == expected_dim);
     }
 }
