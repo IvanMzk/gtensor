@@ -38,6 +38,7 @@ public:
     const shape_type& shape()const override{return descriptor.shape();}
     const shape_type& strides()const override{return descriptor.strides();}
     bool is_cached()const{return cache.size();}
+    value_type trivial_at(const index_type& idx)const override{return value_type(0);}
 
     std::shared_ptr<impl_base_type> create_view_slice(const slices_collection_type&)const override{return nullptr;}
     std::shared_ptr<impl_base_type> create_view_transpose(const shape_type&)const override{return nullptr;}

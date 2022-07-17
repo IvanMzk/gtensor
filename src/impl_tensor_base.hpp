@@ -24,6 +24,8 @@ public:
     virtual const shape_type& strides()const = 0;
     virtual std::string to_str()const = 0;    
     virtual walker<ValT,Cfg> create_walker()const = 0;
+    virtual value_type trivial_at(const index_type& idx)const = 0;
+
     const expression_impl_base<ValT,Cfg>* as_expression()const{return dynamic_cast<const expression_impl_base<ValT,Cfg>*>(this);}
     const stensor_impl_base<ValT,Cfg>* as_storage_tensor()const{return dynamic_cast<const stensor_impl_base<ValT,Cfg>*>(this);}
 

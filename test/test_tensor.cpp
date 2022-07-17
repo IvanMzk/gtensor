@@ -128,3 +128,34 @@ TEST_CASE("test_expression_is_trivial","[test_tensor]"){
     auto e = t.as_expression();
     REQUIRE(e.is_trivial() == expected_is_trivial);    
 }
+
+TEST_CASE("test_expression_trivial_at","[test_tensor]"){
+    using value_type = float;
+    using gtensor::tensor;
+    using gtensor::config::default_config;
+    using config_type = default_config<value_type>;
+    using tensor_type = tensor<value_type, default_config>;
+    using shape_type = typename config_type::shape_type;
+    using index_type = typename config_type::index_type;
+    using test_type = std::tuple<tensor_type, index_type, value_type>;
+    //0tensor,1index,2expected_value
+    auto test_data = GENERATE(                                
+                                test_type(tensor_type{1}+tensor_type{1}, 0, value_type{2}),
+                                test_type(tensor_type{1}+tensor_type{1}+tensor_type{1}, 0, value_type{3}),
+                                test_type(tensor_type{1,2,3}+tensor_type{1,2,3}, 0, value_type{2}),
+                                test_type(tensor_type{1,2,3}+tensor_type{1,2,3}, 1, value_type{4}),
+                                test_type(tensor_type{1,2,3}+tensor_type{1,2,3}, 2, value_type{6}),                                                                
+                                test_type(tensor_type{1,2,3}+tensor_type{1,2,3}+tensor_type{3,4,5}+tensor_type{3,4,5}, 0, value_type{8}),
+                                test_type(tensor_type{1,2,3}+tensor_type{1,2,3}+tensor_type{3,4,5}+tensor_type{3,4,5}, 1, value_type{12}),
+                                test_type(tensor_type{1,2,3}+tensor_type{1,2,3}+tensor_type{3,4,5}+tensor_type{3,4,5}, 2, value_type{16}),
+                                test_type((tensor_type{1,2,3}+tensor_type{1,2,3})+(tensor_type{3,4,5}+tensor_type{3,4,5}),0, value_type{8}),
+                                test_type((tensor_type{1,2,3}+tensor_type{1,2,3})+(tensor_type{3,4,5}+tensor_type{3,4,5}),1, value_type{12}),
+                                test_type((tensor_type{1,2,3}+tensor_type{1,2,3})+(tensor_type{3,4,5}+tensor_type{3,4,5}),2, value_type{16})
+                            );
+    
+    auto t = std::get<0>(test_data);
+    auto index = std::get<1>(test_data);
+    auto expected_value = std::get<2>(test_data);
+    auto e = t.as_expression();
+    REQUIRE(e.trivial_at(index) == expected_value);
+}

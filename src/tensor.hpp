@@ -101,6 +101,7 @@ private:
         auto is_trivial()const{return impl->is_trivial();}
         auto begin()const{return impl->begin();}
         auto end()const{return impl->end();}
+        auto trivial_at(const index_type& idx)const{return impl->trivial_at(idx);}
     };
     
     template<typename ValT, template<typename> typename Cfg>
