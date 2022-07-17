@@ -10,7 +10,7 @@ namespace detail{
 
 
 template<typename ValT, template<typename> typename Cfg, typename DescT ,typename StorT>
-class slice_view_walker_impl : public walker_impl_base<ValT, Cfg>{
+class vwalker_impl : public walker_impl_base<ValT, Cfg>{
     using config_type = Cfg<ValT>;        
     using value_type = ValT;
     using index_type = typename config_type::index_type;
@@ -28,10 +28,10 @@ class slice_view_walker_impl : public walker_impl_base<ValT, Cfg>{
     auto shape_element(const index_type direction)const{return (*shape)[direction];}
     auto strides_element(const index_type direction)const{return (*strides)[direction];}
     bool can_walk(const index_type& direction)const{return direction < dim && shape_element(direction) != index_type(1);}
-    std::unique_ptr<walker_impl_base<ValT,Cfg>> clone()const override{return std::make_unique<slice_view_walker_impl<ValT,Cfg>>(*this);}
+    std::unique_ptr<walker_impl_base<ValT,Cfg>> clone()const override{return std::make_unique<vwalker_impl<ValT,Cfg>>(*this);}
 
 public:    
-    slice_view_walker_impl(const descriptor_type& descriptor_,  const storage_type& elements_):
+    vwalker_impl(const descriptor_type& descriptor_,  const storage_type& elements_):
         descriptor{&descriptor_},
         elements{elements_}
     {}
@@ -60,6 +60,7 @@ public:
     
     value_type operator*() const override{return elements->operator[](descriptor->convert_by_prev(cursor));}
 };
+
 
 }   //end of namespace gtensor
 
