@@ -60,7 +60,7 @@ public:
 
     std::string to_str()const override{
         std::stringstream ss{};
-        ss<<"{"<<[&ss,this](){ss<<descriptor.to_str(); return "}";}();
+        ss<<"{"<<[&ss,this](){ss<<descriptor.to_str(); for(const auto& i : elements){ss<<i<<",";} return "}";}();
         return ss.str();
     }
 
