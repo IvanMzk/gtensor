@@ -19,7 +19,7 @@ class ewalker_trivial_impl : public walker_impl_base<ValT, Cfg>{
 
     const shape_type* shape;
     const shape_type* strides;
-    const tensor_impl_base* parent;
+    const tensor_impl_base<ValT,Cfg>* parent;
     index_type cursor{0};
     index_type dim{static_cast<index_type>(shape->size())};
         
@@ -30,7 +30,7 @@ class ewalker_trivial_impl : public walker_impl_base<ValT, Cfg>{
     std::unique_ptr<walker_impl_base<ValT,Cfg>> clone()const override{return std::make_unique<ewalker_trivial_impl<ValT,Cfg>>(*this);}
 
 public:    
-    ewalker_trivial_impl(const shape_type& shape_, const shape_type& strides_,  const tensor_impl_base& parent_):
+    ewalker_trivial_impl(const shape_type& shape_, const shape_type& strides_,  const tensor_impl_base<ValT,Cfg>& parent_):
         shape{&shape_},
         strides{&strides_},
         parent{&parent_}

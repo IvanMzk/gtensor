@@ -6,6 +6,7 @@
 #include "impl_swalker.hpp"
 #include "impl_ewalker.hpp"
 #include "impl_vwalker.hpp"
+#include "impl_ewalker_trivial.hpp"
 
 
 namespace gtensor{
@@ -69,6 +70,28 @@ public:
     }
 };
 
+template<typename ValT, template<typename> typename Cfg>
+class trivial_ewalker_factory : public walker_factory_base<ValT,Cfg>{
+    using config_type = Cfg<ValT>;        
+    using value_type = ValT;
+    using shape_type = typename config_type::shape_type;
+    using trivial_ewalker_type = ewalker_trivial_impl<ValT,Cfg>;
+
+    const shape_type* shape;
+    const shape_type* strides;
+    const tensor_impl_base<ValT,Cfg>* parent;
+    
+public:
+    trivial_ewalker_factory(const shape_type& shape_, const shape_type& strides_, const tensor_impl_base<ValT,Cfg>& parent_):
+        shape{&shape_},
+        strides{&strides_},
+        parent{&parent_}
+    {}
+    walker<ValT, Cfg> create_walker()const override{
+        return std::unique_ptr<walker_impl_base<ValT,Cfg>>{new trivial_ewalker_type{*shape,*strides,*parent}};
+    }
+};
+
 template<typename ValT, template<typename> typename Cfg, typename ParentT, typename DescT, typename F, typename...Ops>
 class walker_of_expression_factory : public walker_factory_base<ValT,Cfg>{
     using config_type = Cfg<ValT>;        
@@ -79,16 +102,25 @@ class walker_of_expression_factory : public walker_factory_base<ValT,Cfg>{
     const ParentT* parent;
     storage_walker_factory<ValT,Cfg> storage_walker_maker;
     evaluating_walker_factory<ValT,Cfg,F,Ops...> evaluating_walker_maker;
+    trivial_ewalker_factory<ValT,Cfg> trivial_ewalker_maker;
 
     walker<ValT, Cfg> create_walker()const override{
-        return parent->is_cached() ? storage_walker_maker.create_walker() : evaluating_walker_maker.create_walker();
+        if (parent->is_cached()){
+            return storage_walker_maker.create_walker();
+        }else if(parent->is_trivial()){
+            return trivial_ewalker_maker.create_walker();
+        }else{
+            return evaluating_walker_maker.create_walker();
+        }
+        //return parent->is_cached() ? storage_walker_maker.create_walker() : evaluating_walker_maker.create_walker();
     }    
 public:
     template<typename CacheT>
     walker_of_expression_factory(const ParentT& parent_, const DescT& descriptor_, const F& f_, const CacheT& cache_, const std::tuple<Ops...>& operands_):
         parent{&parent_},
         storage_walker_maker{descriptor_.shape(), descriptor_.strides(), cache_.data()},
-        evaluating_walker_maker{descriptor_.shape(), f_, operands_}
+        evaluating_walker_maker{descriptor_.shape(), f_, operands_},
+        trivial_ewalker_maker{descriptor_.shape(), descriptor_.strides(), parent_}
     {}
 };
 
