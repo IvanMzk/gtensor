@@ -69,7 +69,7 @@ public:
     }
 };
 
-template<typename ValT, template<typename> typename Cfg, typename ParentT, typename DescT, typename F, typename CacheT, typename...Ops>
+template<typename ValT, template<typename> typename Cfg, typename ParentT, typename DescT, typename F, typename...Ops>
 class walker_of_expression_factory : public walker_factory_base<ValT,Cfg>{
     using config_type = Cfg<ValT>;        
     using value_type = ValT;
@@ -84,6 +84,7 @@ class walker_of_expression_factory : public walker_factory_base<ValT,Cfg>{
         return parent->is_cached() ? storage_walker_maker.create_walker() : evaluating_walker_maker.create_walker();
     }    
 public:
+    template<typename CacheT>
     walker_of_expression_factory(const ParentT& parent_, const DescT& descriptor_, const F& f_, const CacheT& cache_, const std::tuple<Ops...>& operands_):
         parent{&parent_},
         storage_walker_maker{descriptor_.shape(), descriptor_.strides(), cache_.data()},
@@ -91,7 +92,7 @@ public:
     {}
 };
 
-template<typename ValT, template<typename> typename Cfg, typename ParentT, typename DescT, typename StorT, typename CacheT>
+template<typename ValT, template<typename> typename Cfg, typename ParentT, typename DescT, typename StorT>
 class walker_of_view_factory : public walker_factory_base<ValT,Cfg>{    
     using vwalker_type = vwalker_impl<ValT,Cfg,DescT,StorT>;
     
@@ -107,6 +108,7 @@ class walker_of_view_factory : public walker_factory_base<ValT,Cfg>{
         return parent->is_cached() ? storage_walker_maker.create_walker() : create_vwalker_helper();
     }    
 public:
+    template<typename CacheT>
     walker_of_view_factory(const ParentT& parent_, const DescT& descriptor_, const StorT& elements_, const CacheT& cache_):
         parent{&parent_},
         descriptor{&descriptor_},
@@ -133,12 +135,12 @@ class walker_factory : public walker_factory_base<ValT,Cfg>{
     template<typename...T, typename DescT, typename F, typename CacheT, typename...Ops>
     void reset_factory(const expression_impl<T...>& parent_, const DescT& descriptor_, const F& f_, const CacheT& cache_, const std::tuple<Ops...>& operands_){
         using parent_type = expression_impl<T...>;
-        factory.reset(new walker_of_expression_factory<ValT,Cfg,parent_type,DescT,F,CacheT,Ops...>{parent_,descriptor_,f_,cache_,operands_});
+        factory.reset(new walker_of_expression_factory<ValT,Cfg,parent_type,DescT,F,Ops...>{parent_,descriptor_,f_,cache_,operands_});
     }
     template<typename...T, typename DescT, typename StorT, typename CacheT>
     void reset_factory(const view_impl<T...>& parent_, const DescT& descriptor_, const StorT& elements_, const CacheT& cache_){
         using parent_type = view_impl<T...>;
-        factory.reset(new walker_of_view_factory<ValT,Cfg,parent_type,DescT,StorT,CacheT>{parent_,descriptor_,elements_,cache_});
+        factory.reset(new walker_of_view_factory<ValT,Cfg,parent_type,DescT,StorT>{parent_,descriptor_,elements_,cache_});
     }
 public:    
     walker<ValT, Cfg> create_walker()const override{return factory->create_walker();}
