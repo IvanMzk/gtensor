@@ -8,9 +8,6 @@ target_compile_options(Test_selected PRIVATE -W1 -std:c++17 /Zc:__cplusplus "$<$
 target_sources(Test PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}/test.cpp
     
-)
-
-target_sources(Test_selected PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/test_shareable_storage.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_view_factory.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_view_descriptor.cpp
@@ -25,6 +22,9 @@ target_sources(Test_selected PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/test_view.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_libdivide.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_multiindex_iterator.cpp
+)
+
+target_sources(Test_selected PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/test_walker.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test.cpp
 )

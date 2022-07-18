@@ -25,19 +25,26 @@ struct stensor_maker{
     using tensor_type = test_tensor<ValT,default_config>;
     tensor_type operator()(){return tensor_type{{{1,2,3},{4,5,6}}};}
 };
-//make 3d trivial broadcast expression with data {{{1,2,3},{4,5,6}}}
+//make trivial broadcast expression with data {{{1,2,3},{4,5,6}}}
 template<typename ValT>
 struct trivial_expression_maker{
     using value_type = ValT;
     using tensor_type = test_tensor<ValT,default_config>;
     tensor_type operator()(){return tensor_type{{{-1,-1,-1},{-1,-1,-1}}} + tensor_type{{{1,2,3},{1,2,3}}} + tensor_type{{{1,1,1},{4,4,4}}};}
 };
-//make 3d complex expression with data {{{1,2,3},{4,5,6}}}
+//make expression with data {{{1,2,3},{4,5,6}}}
 template<typename ValT>
 struct not_trivial_expression_maker{
     using value_type = ValT;
     using tensor_type = test_tensor<ValT,default_config>;
     tensor_type operator()(){return tensor_type{2} * tensor_type{-1,-1,-1} + tensor_type{{{1,2,3},{1,2,3}}} + tensor_type{{{0,0,0},{3,3,3}}} + tensor_type{5,5,5} - tensor_type{3} ;}
+};
+//make expression with trivial subtree data {{{1,2,3},{4,5,6}}}
+template<typename ValT>
+struct trivial_subtree_expression_maker{
+    using value_type = ValT;
+    using tensor_type = test_tensor<ValT,default_config>;
+    tensor_type operator()(){return tensor_type{2} * tensor_type{-1,-1,-1} + (tensor_type{{{1,2,3},{1,2,3}}} + tensor_type{{{0,0,0},{3,3,3}}}) + tensor_type{5,5,5} - tensor_type{3} ;}
 };
 //make view slice with data {{{1,2,3},{4,5,6}}}
 template<typename ValT>
@@ -76,6 +83,7 @@ struct view_reshape_maker{
 TEMPLATE_TEST_CASE("test_walker","test_walker", 
                     test_walker_::stensor_maker<float>,
                     test_walker_::trivial_expression_maker<float>,
+                    test_walker_::trivial_subtree_expression_maker<float>,
                     test_walker_::not_trivial_expression_maker<float>,
                     test_walker_::view_slice_maker<float>,
                     test_walker_::view_transpose_maker<float>,
