@@ -100,14 +100,14 @@ class walker_of_view_factory : public walker_factory_base<ValT,Cfg>{
     const StorT* elements;
     storage_walker_factory<ValT,Cfg> storage_walker_maker;
 
-    walker<ValT, Cfg> create_vwalker_helper()const{
+    walker<ValT, Cfg> create_vwalker_helper()const{        
         return std::unique_ptr<walker_impl_base<ValT,Cfg>>{new vwalker_type{*descriptor,*elements}};
     }
-    walker<ValT, Cfg> create_walker()const override{
+    walker<ValT, Cfg> create_walker()const override{        
         return parent->is_cached() ? storage_walker_maker.create_walker() : create_vwalker_helper();
     }    
 public:
-    walker_of_view_factory(const ParentT& parent_, const DescT& descriptor_, const StorT elements_, const CacheT& cache_):
+    walker_of_view_factory(const ParentT& parent_, const DescT& descriptor_, const StorT& elements_, const CacheT& cache_):
         parent{&parent_},
         descriptor{&descriptor_},
         elements{&elements_},

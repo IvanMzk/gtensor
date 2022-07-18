@@ -55,6 +55,7 @@ public:
     auto size()const{return impl->size();}
     auto dim()const{return impl->dim();}
     auto shape()const{return impl->shape();}
+    auto to_str()const{return impl->to_str();}
     auto as_expression()const{return expression<ValT,Cfg>{*this};}
     auto as_storage_tensor()const{return storage_tensor<ValT,Cfg>{*this};}
 

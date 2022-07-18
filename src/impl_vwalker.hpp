@@ -59,7 +59,9 @@ public:
     }
     void reset() override{cursor = offset;}
     
-    value_type operator*() const override{return elements->operator[](descriptor->convert_by_prev(cursor));}
+    value_type operator*() const override{        
+        return elements->operator[](descriptor->convert_by_prev(cursor));
+    }
 };
 
 
