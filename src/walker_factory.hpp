@@ -117,8 +117,6 @@ public:
     {}
 };
 
-
-
 template<typename ValT, template<typename> typename Cfg>
 class walker_factory : public walker_factory_base<ValT,Cfg>{
     using config_type = Cfg<ValT>;        
