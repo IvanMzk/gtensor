@@ -27,19 +27,19 @@ class stensor_impl : public stensor_impl_base<ValT,Cfg>{
     using storage_type = typename config_type::storage_type;
     using descriptor_type = stensor_descriptor<value_type, Cfg>;
     using slices_collection_type = typename config_type::slices_collection_type;
-    using view_factory_type = view_factory<value_type,Cfg>;
+    using view_factory_type = view_factory_base<value_type,Cfg>;
     using walker_factory_type = walker_factory<value_type,Cfg>;
 
     descriptor_type descriptor;
     storage_type elements;
-    view_factory_type view_maker;
+    std::unique_ptr<view_factory_type> view_maker;
     walker_factory_type walker_maker;
 
     template<typename Nested>
     stensor_impl(std::initializer_list<Nested> init_data, int):
         descriptor{detail::list_parse<index_type,shape_type>(init_data)},
         elements(descriptor.size()),
-        view_maker{*this,descriptor,elements},
+        view_maker{view_factory_type::create_factory(*this,descriptor,elements)},
         walker_maker{*this,descriptor,elements}
     {detail::fill_from_list(init_data, elements.begin());}
 
@@ -50,13 +50,13 @@ public:
     stensor_impl(const stensor_impl& other):
         descriptor{other.descriptor},
         elements{other.elements},
-        view_maker{*this,descriptor,elements},
+        view_maker{view_factory_type::create_factory(*this,descriptor,elements)},
         walker_maker{*this,descriptor,elements}
     {}
     stensor_impl(stensor_impl&& other):
         descriptor{std::move(other.descriptor)},
         elements{std::move(other.elements)},
-        view_maker{*this,descriptor,elements},
+        view_maker{view_factory_type::create_factory(*this,descriptor,elements)},
         walker_maker{*this,descriptor,elements}
     {}
 
@@ -75,10 +75,10 @@ public:
     typename storage_type::const_iterator end()const override{return elements.end();}
 
     walker<ValT,Cfg> create_walker()const override{return walker_maker.create_walker();}
-    std::shared_ptr<impl_base_type> create_view_slice(const slices_collection_type& subs)const override{return view_maker.create_view_slice(subs);}
-    std::shared_ptr<impl_base_type> create_view_transpose(const shape_type& subs)const override{return view_maker.create_view_transpose(subs);}
-    std::shared_ptr<impl_base_type> create_view_subdim(const shape_type& subs)const override{return view_maker.create_view_subdim(subs);}
-    std::shared_ptr<impl_base_type> create_view_reshape(const shape_type& subs)const override{return view_maker.create_view_reshape(subs);}
+    std::shared_ptr<impl_base_type> create_view_slice(const slices_collection_type& subs)const override{return view_maker->create_view_slice(subs);}
+    std::shared_ptr<impl_base_type> create_view_transpose(const shape_type& subs)const override{return view_maker->create_view_transpose(subs);}
+    std::shared_ptr<impl_base_type> create_view_subdim(const shape_type& subs)const override{return view_maker->create_view_subdim(subs);}
+    std::shared_ptr<impl_base_type> create_view_reshape(const shape_type& subs)const override{return view_maker->create_view_reshape(subs);}
 
     std::string to_str()const override{
         std::stringstream ss{};

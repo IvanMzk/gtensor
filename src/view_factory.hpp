@@ -104,7 +104,15 @@ public:
     virtual std::shared_ptr<impl_base_type> create_view_slice(const slices_collection_type&, bool move = false) = 0;
     virtual std::shared_ptr<impl_base_type> create_view_transpose(const shape_type&, bool move = false) = 0;
     virtual std::shared_ptr<impl_base_type> create_view_subdim(const shape_type&, bool move = false) = 0;
-    virtual std::shared_ptr<impl_base_type> create_view_reshape(const shape_type&, bool move = false) = 0;    
+    virtual std::shared_ptr<impl_base_type> create_view_reshape(const shape_type&, bool move = false) = 0;
+
+    template<typename...T, typename DescT, typename StorT>
+    static std::unique_ptr<view_factory_base> create_factory(const stensor_impl<T...>& parent, DescT& descriptor, StorT& elements);
+    template<typename...T, typename DescT, typename StorT, typename CacheT>
+    static std::unique_ptr<view_factory_base> create_factory(const expression_impl<T...>& parent, DescT& descriptor, StorT& elements, CacheT& cache);
+    template<typename...T, typename DescT, typename StorT, typename CacheT>
+    static std::unique_ptr<view_factory_base> create_factory(const view_impl<T...>& parent, DescT& descriptor, StorT& elements, CacheT& cache);
+    
 };
 
 template<typename ValT, template<typename> typename Cfg, typename DescT, typename StorT>
@@ -315,55 +323,22 @@ class view_of_view_factory : public view_factory_base<ValT, Cfg>{
     std::shared_ptr<impl_base_type> create_view_reshape(const shape_type& subs, bool move = false)override{return get_factory()->create_view_reshape(subs,move);}
 };
 
+
 template<typename ValT, template<typename> typename Cfg>
-class view_factory{
-    using impl_base_type = tensor_impl_base<ValT,Cfg>;
-    using config_type = Cfg<ValT>;        
-    using shape_type = typename config_type::shape_type;
-    using slices_collection_type = typename config_type::slices_collection_type;
-
-    std::unique_ptr<view_factory_base<ValT, Cfg>> factory{nullptr};
-    
-    template<typename...T, typename DescT, typename StorT>
-    void reset_factory(const stensor_impl<T...>& parent, DescT& descriptor, StorT& elements){
-        factory.reset(new view_simple_descriptor_factory<ValT, Cfg, DescT, StorT>{descriptor,elements});
-    }
-    template<typename...T, typename DescT, typename StorT, typename CacheT>
-    void reset_factory(const expression_impl<T...>& parent, DescT& descriptor, StorT& elements, CacheT& cache){
-        factory.reset(new view_of_expression_factory<ValT, Cfg, DescT, CacheT>(descriptor,elements, cache, parent.is_cached()));
-    }
-    template<typename...T, typename DescT, typename StorT, typename CacheT>
-    void reset_factory(const view_impl<T...>& parent, DescT& descriptor, StorT& elements, CacheT& cache){
-        factory.reset(new view_of_view_factory<ValT, Cfg, DescT, CacheT>(descriptor,elements, cache, parent.is_cached()));
-    }
-    
-public:    
-    view_factory() = default;
-    view_factory(const view_factory&) = delete;
-    view_factory& operator=(const view_factory&) = delete;
-    view_factory(view_factory&&) = delete;
-    view_factory& operator=(view_factory&&) = delete;
-
-    template<typename...T, typename DescT, typename StorT>
-    view_factory(const stensor_impl<T...>& parent, DescT& descriptor, StorT& elements){
-        reset_factory(parent,descriptor,elements);
-    }
-    template<typename...T, typename DescT, typename StorT, typename CacheT>
-    view_factory(const expression_impl<T...>& parent, DescT& descriptor, StorT& elements, CacheT& cache){
-        reset_factory(parent,descriptor,elements,cache);
-    }
-    template<typename...T, typename DescT, typename StorT, typename CacheT>
-    view_factory(const view_impl<T...>& parent, DescT& descriptor, StorT& elements, CacheT& cache){
-        reset_factory(parent,descriptor,elements,cache);
-    }
-        
-    std::shared_ptr<impl_base_type> create_view_slice(const slices_collection_type& subs, bool move = false)const{return factory->create_view_slice(subs,move);}
-    std::shared_ptr<impl_base_type> create_view_transpose(const shape_type& subs, bool move = false)const{return factory->create_view_transpose(subs,move);}
-    std::shared_ptr<impl_base_type> create_view_subdim(const shape_type& subs, bool move = false)const{return factory->create_view_subdim(subs,move);}
-    std::shared_ptr<impl_base_type> create_view_reshape(const shape_type& subs, bool move = false)const{return factory->create_view_reshape(subs,move);}
-};
-
-
+template<typename...T, typename DescT, typename StorT>
+static std::unique_ptr<view_factory_base<ValT,Cfg>> view_factory_base<ValT,Cfg>::create_factory(const stensor_impl<T...>& parent, DescT& descriptor, StorT& elements){
+    return std::make_unique<view_simple_descriptor_factory<ValT, Cfg, DescT, StorT>>(descriptor,elements);
+}
+template<typename ValT, template<typename> typename Cfg>
+template<typename...T, typename DescT, typename StorT, typename CacheT>
+static std::unique_ptr<view_factory_base<ValT,Cfg>> view_factory_base<ValT,Cfg>::create_factory(const expression_impl<T...>& parent, DescT& descriptor, StorT& elements, CacheT& cache){
+    return std::make_unique<view_of_expression_factory<ValT, Cfg, DescT, CacheT>>(descriptor,elements, cache, parent.is_cached());
+}
+template<typename ValT, template<typename> typename Cfg>
+template<typename...T, typename DescT, typename StorT, typename CacheT>
+static std::unique_ptr<view_factory_base<ValT,Cfg>> view_factory_base<ValT,Cfg>::create_factory(const view_impl<T...>& parent, DescT& descriptor, StorT& elements, CacheT& cache){
+    return std::make_unique<view_of_view_factory<ValT, Cfg, DescT, CacheT>>(parent, descriptor,elements, cache);
+}
 
 
 }   //end of namespace gtensor
