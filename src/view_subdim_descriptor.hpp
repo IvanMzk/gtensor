@@ -3,6 +3,7 @@
 
 #include <numeric>
 #include "stensor_descriptor.hpp"
+#include "view_descriptor_base.hpp"
 
 namespace gtensor{
 
@@ -10,7 +11,8 @@ template<typename ValT, template<typename> typename Cfg, typename...PrevT> class
 
 /*not view of view subdim and reshape descriptor specialization*/
 template<typename ValT, template<typename> typename Cfg> 
-class view_subdim_descriptor<ValT, Cfg>{
+class view_subdim_descriptor<ValT, Cfg> : public view_descriptor_base<ValT,Cfg>
+{
     using config_type = Cfg<ValT>;        
     using value_type = ValT;
     using index_type = typename config_type::index_type;
@@ -50,7 +52,8 @@ private:
 
 /*view of view subdim and reshape descriptor specialization*/
 template<typename ValT, template<typename> typename Cfg, typename PrevT> 
-class view_subdim_descriptor<ValT, Cfg, PrevT> : view_subdim_descriptor<ValT,Cfg>{
+class view_subdim_descriptor<ValT, Cfg, PrevT> : public view_subdim_descriptor<ValT,Cfg>
+{
     using base_type = view_subdim_descriptor<ValT,Cfg>;
     using config_type = Cfg<ValT>;        
     using value_type = ValT;

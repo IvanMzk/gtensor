@@ -3,6 +3,7 @@
 
 #include <numeric>
 #include "stensor_descriptor.hpp"
+#include "view_descriptor_base.hpp"
 
 namespace gtensor{
 
@@ -10,7 +11,10 @@ template<typename ValT, template<typename> typename Cfg, typename...PrevT> class
 
 /*not view of view slice and transpose descriptor specialization*/
 template<typename ValT, template<typename> typename Cfg> 
-class view_slice_descriptor<ValT, Cfg> : detail::descriptor_strides<ValT,Cfg,typename Cfg<ValT>::div_mode>{
+class view_slice_descriptor<ValT, Cfg> : 
+    private detail::descriptor_strides<ValT,Cfg,typename Cfg<ValT>::div_mode>,
+    public view_descriptor_base<ValT,Cfg>
+{
     using base_strides = detail::descriptor_strides<ValT,Cfg,typename Cfg<ValT>::div_mode>;
     using config_type = Cfg<ValT>;        
     using value_type = ValT;
@@ -38,7 +42,6 @@ public:
     index_type offset()const{return offset_;}
     const shape_type& shape()const{return shape_;};
     const shape_type& strides()const{return base_strides::strides();};
-    const auto& strides_libdivide()const{return base_strides::strides_libdivide();}
     const shape_type& cstrides()const{return cstrides_;};
     std::string to_str()const{
         std::stringstream ss{};
@@ -47,6 +50,7 @@ public:
     }        
 
 private:
+    const auto& strides_libdivide()const{return base_strides::strides_libdivide();}
     index_type convert_helper(const shape_type& idx)const{
         return std::inner_product(idx.begin(), idx.end(), cstrides_.begin(), offset_);
     }
@@ -62,7 +66,8 @@ private:
 
 /*view of view slice and transpose descriptor specialization*/
 template<typename ValT, template<typename> typename Cfg, typename PrevT> 
-class view_slice_descriptor<ValT, Cfg, PrevT> : view_slice_descriptor<ValT,Cfg>{
+class view_slice_descriptor<ValT, Cfg, PrevT> : public view_slice_descriptor<ValT,Cfg>
+{
     using base_type = view_slice_descriptor<ValT,Cfg>;
     using config_type = Cfg<ValT>;        
     using value_type = ValT;
