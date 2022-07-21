@@ -2,16 +2,15 @@
 #define VIEW_SUBDIM_DESCRIPTOR_HPP_
 
 #include <numeric>
+#include <memory>
 #include "stensor_descriptor.hpp"
 #include "view_descriptor_base.hpp"
 
 namespace gtensor{
 
-template<typename ValT, template<typename> typename Cfg, typename...PrevT> class view_subdim_descriptor;
-
 /*not view of view subdim and reshape descriptor specialization*/
 template<typename ValT, template<typename> typename Cfg> 
-class view_subdim_descriptor<ValT, Cfg> : public view_descriptor_base<ValT,Cfg>
+class view_subdim_descriptor : public view_descriptor_base<ValT,Cfg>
 {
     using config_type = Cfg<ValT>;        
     using value_type = ValT;
@@ -29,16 +28,16 @@ public:
         offset_{offset__}
     {}
 
-    index_type convert_by_prev(const index_type& idx)const{return idx;}
-    index_type convert(const shape_type& idx)const{return convert_helper(idx);}
-    index_type convert(const index_type& idx)const{return idx+offset_;}
-    index_type dim()const{return shape_.size();}
-    index_type size()const{return detail::make_size(shape_,strides_);}
-    index_type offset()const{return offset_;}
-    const shape_type& shape()const{return shape_;};
-    const shape_type& strides()const{return strides_;};
-    const shape_type& cstrides()const{return strides_;};
-    std::string to_str()const{
+    index_type convert_by_prev(const index_type& idx)const override{return idx;}
+    index_type convert(const shape_type& idx)const override{return convert_helper(idx);}
+    index_type convert(const index_type& idx)const override{return idx+offset_;}
+    index_type dim()const override{return shape_.size();}
+    index_type size()const override{return detail::make_size(shape_,strides_);}
+    index_type offset()const override{return offset_;}
+    const shape_type& shape()const override{return shape_;};
+    const shape_type& strides()const override{return strides_;};
+    const shape_type& cstrides()const override{return strides_;};
+    std::string to_str()const override{
         std::stringstream ss{};
         ss<<"("<<[&ss,this](){for(const auto& i : shape()){ss<<i<<",";} return ")";}();
         return ss.str();
@@ -51,24 +50,24 @@ private:
 };
 
 /*view of view subdim and reshape descriptor specialization*/
-template<typename ValT, template<typename> typename Cfg, typename PrevT> 
-class view_subdim_descriptor<ValT, Cfg, PrevT> : public view_subdim_descriptor<ValT,Cfg>
+template<typename ValT, template<typename> typename Cfg> 
+class view_view_subdim_descriptor : public view_subdim_descriptor<ValT,Cfg>
 {
     using base_type = view_subdim_descriptor<ValT,Cfg>;
     using config_type = Cfg<ValT>;        
     using value_type = ValT;
     using index_type = typename config_type::index_type;
     using shape_type = typename config_type::shape_type;
-    using prev_descriptor_type = PrevT;
-    prev_descriptor_type prev_descriptor;
+    
+    std::shared_ptr<view_descriptor_base> prev_descriptor;
 public:
     template<typename ShT, typename DtT>
-    view_subdim_descriptor(ShT&& shape__, index_type offset__, DtT&& prev_descriptor__):
+    view_view_subdim_descriptor(ShT&& shape__, index_type offset__, DtT&& prev_descriptor__):
         base_type{std::forward<ShT>(shape__), offset__},
         prev_descriptor{std::forward<DtT>(prev_descriptor__)}
     {}
     
-    index_type convert_by_prev(const index_type& idx)const{return prev_descriptor.convert(idx);}
+    index_type convert_by_prev(const index_type& idx)const{return prev_descriptor->convert(idx);}
     index_type convert(const shape_type& idx)const{return convert_by_prev(base_type::convert(idx));}
     index_type convert(const index_type& idx)const{return convert_by_prev(base_type::convert(idx));}
     using base_type::dim;
