@@ -121,8 +121,7 @@ class stensor_descriptor : detail::descriptor_strides<ValT,Cfg,typename Cfg<ValT
     using value_type = ValT;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
-    shape_type shape_;
-    index_type size_{detail::make_size(shape_,base_strides::strides())};
+    shape_type shape_;    
 public:
     stensor_descriptor() = default;       
     stensor_descriptor(const shape_type& shape__):
@@ -133,7 +132,7 @@ public:
         base_strides{shape__},
         shape_{std::move(shape__)}
     {}
-    auto size()const{return size_;}
+    auto size()const{return detail::make_size(shape_,base_strides::strides());}
     auto dim()const{return shape_.size();}
     const auto& shape()const{return shape_;}
     const auto& strides()const{return base_strides::strides();}
