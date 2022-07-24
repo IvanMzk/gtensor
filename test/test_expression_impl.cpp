@@ -84,4 +84,5 @@ TEST_CASE("test_expression_impl_construct","[test_expression_impl]"){
     REQUIRE(e.shape() == expected_shape);
     REQUIRE(e.dim() == expected_dim);
     REQUIRE(e.size() == expected_size);
+    REQUIRE(e.tensor_kind() == gtensor::detail::tensor_kinds::expression);
 }

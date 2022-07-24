@@ -32,6 +32,8 @@ TEST_CASE("test_stensor_impl_construct_from_list","[test_stensor_impl]"){
     REQUIRE(t.shape() == expected_shape);
     REQUIRE(t.size() == expected_size);
     REQUIRE(t.dim() == expected_dim);
+    REQUIRE(t.tensor_kind() == gtensor::detail::tensor_kinds::storage_tensor);
+
 }
 
 
