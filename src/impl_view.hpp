@@ -41,6 +41,7 @@ public:
         cache{std::move(other.cache)},
     {}
 
+    detail::tensor_kinds tensor_kind()const override{return detail::tensor_kinds::view;}
     index_type size()const override{return descriptor.size();}
     index_type dim()const override{return descriptor.dim();}
     const shape_type& shape()const override{return descriptor.shape();}

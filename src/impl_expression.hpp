@@ -117,7 +117,7 @@ class expression_impl : public expression_impl_base<ValT,Cfg>{
         return i==0 ? iterator_type{create_walker(), shape(), descriptor.strides_libdivide()} : iterator_type{create_walker(), shape(), descriptor.strides_libdivide(), i};
     } 
     template<std::size_t...I>
-    value_type trivial_at_helper(const index_type& idx, std::index_sequence<I...>)const{return f(std::get<I>(operands)->trivial_at(idx)...);}
+    value_type trivial_at_helper(const index_type& idx, std::index_sequence<I...>)const{return f(std::get<I>(operands)->trivial_at(idx)...);}    
 
 public:            
     explicit expression_impl(Ops&...operands_):
@@ -140,6 +140,7 @@ public:
         walker_maker{*this, descriptor, f, cache, operands}
     {}
 
+    detail::tensor_kinds tensor_kind()const override{return detail::tensor_kinds::expression;}
     index_type size()const override{return descriptor.size();}
     index_type dim()const override{return descriptor.dim();}
     const shape_type& shape()const override{return descriptor.shape();}

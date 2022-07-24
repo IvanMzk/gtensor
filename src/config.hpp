@@ -66,8 +66,8 @@ struct default_config{
 
 namespace detail{
 
-enum class view_kind {slice, transpose, subdim, reshape};
-enum class tensor_kind {stensor, expression, view};
+enum class view_kinds {slice, transpose, subdim, reshape};
+enum class tensor_kinds {storage_tensor, expression, view};
 
 template<typename C> inline constexpr bool is_caching_always = std::is_same_v<C::caching_mode,gtensor::config::mode_caching_always>;
 template<typename C> inline constexpr bool is_mode_div_libdivide = std::is_same_v<C::div_mode,gtensor::config::mode_div_libdivide>;
