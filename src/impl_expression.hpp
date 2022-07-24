@@ -152,10 +152,7 @@ public:
     value_type trivial_at(const index_type& idx)const override{return trivial_at_helper(idx,std::make_index_sequence<sizeof...(Ops)>{});}
 
     walker<ValT,Cfg> create_walker()const override{return walker_maker.create_walker();}
-    std::shared_ptr<impl_base_type> create_view_slice(const slices_collection_type&)const override{return nullptr;}
-    std::shared_ptr<impl_base_type> create_view_transpose(const shape_type&)const override{return nullptr;}
-    std::shared_ptr<impl_base_type> create_view_subdim(const shape_type&)const override{return nullptr;}
-    std::shared_ptr<impl_base_type> create_view_reshape(const shape_type&)const override{return nullptr;}
+    
 
     std::string to_str()const override{
         std::stringstream ss{};

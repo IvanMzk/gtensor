@@ -30,11 +30,6 @@ public:
     const expression_impl_base<ValT,Cfg>* as_expression()const{return dynamic_cast<const expression_impl_base<ValT,Cfg>*>(this);}
     const stensor_impl_base<ValT,Cfg>* as_storage_tensor()const{return dynamic_cast<const stensor_impl_base<ValT,Cfg>*>(this);}
 
-    virtual std::shared_ptr<impl_base_type> create_view_slice(const slices_collection_type&)const = 0;
-    virtual std::shared_ptr<impl_base_type> create_view_transpose(const shape_type&)const = 0;
-    virtual std::shared_ptr<impl_base_type> create_view_subdim(const shape_type&)const = 0;
-    virtual std::shared_ptr<impl_base_type> create_view_reshape(const shape_type&)const = 0;
-
 };
 
 template<typename ValT, template<typename> typename Cfg>

@@ -50,11 +50,6 @@ public:
     value_type trivial_at(const index_type& idx)const override{return value_type(0);}
     walker<ValT,Cfg> create_walker()const override{return nullptr;}
 
-    std::shared_ptr<impl_base_type> create_view_slice(const slices_collection_type&)const override{return nullptr;}
-    std::shared_ptr<impl_base_type> create_view_transpose(const shape_type&)const override{return nullptr;}
-    std::shared_ptr<impl_base_type> create_view_subdim(const shape_type&)const override{return nullptr;}
-    std::shared_ptr<impl_base_type> create_view_reshape(const shape_type&)const override{return nullptr;}
-
     std::string to_str()const override{
         std::stringstream ss{};
         ss<<"{"<<[&ss,this](){ss<<descriptor.to_str(); for(const auto& i : elements){ss<<i<<",";} return "}";}();

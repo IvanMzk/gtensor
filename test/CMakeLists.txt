@@ -14,8 +14,6 @@ target_sources(Test PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/test_stensor_descriptor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_init_list.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_slice.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_expression_impl.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_stensor_impl.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/test_view.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_libdivide.cpp
@@ -25,6 +23,8 @@ target_sources(Test PRIVATE
 )
 
 target_sources(Test_selected PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_expression_impl.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_stensor_impl.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_view_descriptor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test.cpp
 )
