@@ -26,17 +26,14 @@ class stensor_impl : public stensor_impl_base<ValT,Cfg>{
     using storage_type = typename config_type::storage_type;
     using descriptor_type = stensor_descriptor<value_type, Cfg>;
     using slices_collection_type = typename config_type::slices_collection_type;    
-    using walker_factory_type = walker_factory<value_type,Cfg>;
 
     descriptor_type descriptor;
-    storage_type elements;
-    walker_factory_type walker_maker;
+    storage_type elements;    
 
     template<typename Nested>
     stensor_impl(std::initializer_list<Nested> init_data, int):
         descriptor{detail::list_parse<index_type,shape_type>(init_data)},
-        elements(descriptor.size()),        
-        walker_maker{*this,descriptor,elements}
+        elements(descriptor.size())
     {detail::fill_from_list(init_data, elements.begin());}
 
 public:
@@ -45,13 +42,11 @@ public:
     stensor_impl() = default;
     stensor_impl(const stensor_impl& other):
         descriptor{other.descriptor},
-        elements{other.elements},        
-        walker_maker{*this,descriptor,elements}
+        elements{other.elements}        
     {}
     stensor_impl(stensor_impl&& other):
         descriptor{std::move(other.descriptor)},
-        elements{std::move(other.elements)},        
-        walker_maker{*this,descriptor,elements}
+        elements{std::move(other.elements)}        
     {}
 
     stensor_impl(typename detail::nested_initializer_list_type<value_type,1>::type init_data):stensor_impl(init_data,0){}
@@ -71,7 +66,9 @@ public:
     typename storage_type::const_iterator begin()const override{return elements.begin();}
     typename storage_type::const_iterator end()const override{return elements.end();}
 
-    walker<ValT,Cfg> create_walker()const override{return walker_maker.create_walker();}
+    storage_walker_impl<ValT,Cfg> create_storage_walker()const override{
+        return storage_walker_factory<ValT,Cfg>::create_walker(shape(),strides(),elements.data());
+    }
     
 
     std::string to_str()const override{

@@ -8,6 +8,7 @@ template<typename ValT, template<typename> typename Cfg> class expression_impl_b
 template<typename ValT, template<typename> typename Cfg> class stensor_impl_base;
 template<typename ValT, template<typename> typename Cfg, typename F, typename...Ops> class expression_impl;
 template<typename ValT, template<typename> typename Cfg> class stensor_impl;
+template<typename ValT, template<typename> typename Cfg> class storage_walker_impl;
 template<typename ValT, template<typename> typename Cfg, typename DescT> class view_impl;
 template<typename ValT, template<typename> typename Cfg> class tensor;
 template<typename ValT, template<typename> typename Cfg> class walker_impl_base;

@@ -18,10 +18,10 @@ target_sources(Test PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/test_view.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_libdivide.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_multiindex_iterator.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_walker.cpp
 )
 
 target_sources(Test_selected PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_walker.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_tensor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_expression_impl.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_stensor_impl.cpp

@@ -23,7 +23,7 @@ public:
     virtual const shape_type& shape()const = 0;
     virtual const shape_type& strides()const = 0;
     virtual std::string to_str()const = 0;    
-    virtual walker<ValT,Cfg> create_walker()const = 0;
+    
     virtual value_type trivial_at(const index_type& idx)const = 0;
     virtual detail::tensor_kinds tensor_kind()const = 0; 
 
@@ -37,8 +37,8 @@ class expression_impl_base : public tensor_impl_base<ValT, Cfg>{
     using iterator_type = multiindex_iterator_impl<ValT,Cfg,walker<ValT,Cfg>>;
 public:
     virtual ~expression_impl_base(){}    
-    virtual iterator_type begin()const = 0;
-    virtual iterator_type end()const = 0;
+    // virtual iterator_type begin()const = 0;
+    // virtual iterator_type end()const = 0;
     virtual bool is_cached()const = 0;
     virtual bool is_trivial()const = 0;
 };
@@ -48,10 +48,15 @@ class stensor_impl_base : public tensor_impl_base<ValT, Cfg>{
     using config_type = Cfg<ValT>;
     using iterator_type = typename config_type::storage_type::iterator;
     using const_iterator_type = typename config_type::storage_type::const_iterator;
+    
+    virtual storage_walker_impl<ValT,Cfg> create_storage_walker()const = 0;
+
 public:
     virtual ~stensor_impl_base(){}
     virtual const_iterator_type begin()const = 0;
     virtual const_iterator_type end()const = 0;
+    auto create_walker()const{return create_storage_walker();}
+    
 };
 
 
