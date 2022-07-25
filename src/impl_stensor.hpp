@@ -60,6 +60,8 @@ public:
     stensor_impl(typename detail::nested_initializer_list_type<value_type,4>::type init_data):stensor_impl(init_data,0){}
     stensor_impl(typename detail::nested_initializer_list_type<value_type,5>::type init_data):stensor_impl(init_data,0){}
 
+    const value_type* data()const{return elements.data();}
+
     detail::tensor_kinds tensor_kind()const override{return detail::tensor_kinds::storage_tensor;}
     index_type size()const override{return descriptor.size();}
     index_type dim()const override{return descriptor.dim();}
