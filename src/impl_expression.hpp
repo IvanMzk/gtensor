@@ -97,40 +97,36 @@ class expression_impl : public expression_impl_base<ValT,Cfg>{
     using shape_type = typename config_type::shape_type;
     using descriptor_type = stensor_descriptor<value_type, Cfg>;
     using storage_type = typename config_type::storage_type;
-    using slices_collection_type = typename config_type::slices_collection_type; 
-    using walker_factory_type = walker_factory<ValT,Cfg>;
+    using slices_collection_type = typename config_type::slices_collection_type;     
     using iterator_type = multiindex_iterator_impl<ValT,Cfg,walker<ValT,Cfg>>; 
     static_assert(detail::is_valid_operands<Ops...>);
 
     descriptor_type descriptor;
     std::tuple<Ops...> operands;
     F f{};
-    storage_type cache{};
-    walker_factory_type walker_maker;
+    storage_type cache{};    
 
-    template<typename C = config_type, std::enable_if_t<detail::is_mode_div_native<C> ,int> =0 >
-    auto create_iterator(const index_type& i)const{
-        return i==0 ? iterator_type{create_walker(), shape(), strides()} : iterator_type{create_walker(), shape(), strides(), i};
-    }
-    template<typename C = config_type, std::enable_if_t<detail::is_mode_div_libdivide<C> ,int> =0 >
-    auto create_iterator(const index_type& i)const{
-        return i==0 ? iterator_type{create_walker(), shape(), descriptor.strides_libdivide()} : iterator_type{create_walker(), shape(), descriptor.strides_libdivide(), i};
-    } 
+    // template<typename C = config_type, std::enable_if_t<detail::is_mode_div_native<C> ,int> =0 >
+    // auto create_iterator(const index_type& i)const{
+    //     return i==0 ? iterator_type{create_walker(), shape(), strides()} : iterator_type{create_walker(), shape(), strides(), i};
+    // }
+    // template<typename C = config_type, std::enable_if_t<detail::is_mode_div_libdivide<C> ,int> =0 >
+    // auto create_iterator(const index_type& i)const{
+    //     return i==0 ? iterator_type{create_walker(), shape(), descriptor.strides_libdivide()} : iterator_type{create_walker(), shape(), descriptor.strides_libdivide(), i};
+    // } 
     template<std::size_t...I>
     value_type trivial_at_helper(const index_type& idx, std::index_sequence<I...>)const{return f(std::get<I>(operands)->trivial_at(idx)...);}    
 
 public:            
     explicit expression_impl(Ops&...operands_):
         descriptor{detail::broadcast(operands_->shape()...)},
-        operands{operands_...},
-        walker_maker{*this, descriptor, f, cache, operands}
+        operands{operands_...}
     {}
     expression_impl(const expression_impl& other):
         descriptor{other.descriptor},
         operands{other.operands},
         f{other.f},
-        cache{other.cache},
-        walker_maker{*this, descriptor, f, cache, operands}
+        cache{other.cache}
     {}
     expression_impl(expression_impl&& other):
         descriptor{std::move(other.descriptor)},
@@ -147,11 +143,11 @@ public:
     const shape_type& strides()const override{return descriptor.strides();}
     bool is_cached()const{return cache.size();}
     bool is_trivial()const {return detail::is_trivial(*this,operands);}
-    iterator_type begin()const{return create_iterator(0);}    
-    iterator_type end()const{return create_iterator(size());}
+    // iterator_type begin()const{return create_iterator(0);}    
+    // iterator_type end()const{return create_iterator(size());}
     value_type trivial_at(const index_type& idx)const override{return trivial_at_helper(idx,std::make_index_sequence<sizeof...(Ops)>{});}
 
-    walker<ValT,Cfg> create_walker()const override{return walker_maker.create_walker();}
+    //walker<ValT,Cfg> create_walker()const{return std::unique_ptr<walker_impl_base<ValT, Cfg>>{}};
     
 
     std::string to_str()const override{

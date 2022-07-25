@@ -48,7 +48,7 @@ public:
     const shape_type& strides()const override{return descriptor.strides();}
     bool is_cached()const{return cache.size();}
     value_type trivial_at(const index_type& idx)const override{return value_type(0);}
-    walker<ValT,Cfg> create_walker()const override{return nullptr;}
+    walker<ValT,Cfg> create_walker()const{return nullptr;}
 
     std::string to_str()const override{
         std::stringstream ss{};
