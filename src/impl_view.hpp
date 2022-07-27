@@ -11,7 +11,11 @@ namespace gtensor{
 * ParentT is tensor_impl_base or derived
 */
 template<typename ValT, template<typename> typename Cfg, typename DescT>
-class view_impl : public tensor_impl_base<ValT, Cfg> {
+class view_impl : 
+    public tensor_impl_base<ValT, Cfg>,
+    public view_impl_base<ValT,Cfg>,
+    public storage_tensor_impl_base<ValT,Cfg>
+{
     using impl_base_type = tensor_impl_base<ValT,Cfg>;
     using config_type = Cfg<ValT>;        
     using value_type = ValT;

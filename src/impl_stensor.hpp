@@ -17,7 +17,11 @@ namespace detail{
 * implementation of tensor with storage
 */
 template<typename ValT, template<typename> typename Cfg>
-class stensor_impl : public stensor_impl_base<ValT,Cfg>{
+class stensor_impl : 
+public tensor_impl_base<ValT,Cfg>,
+public storage_tensor_impl_base<ValT,Cfg>
+
+{
     using impl_base_type = tensor_impl_base<ValT,Cfg>;
     using config_type = Cfg<ValT>;        
     using value_type = ValT;

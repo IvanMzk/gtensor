@@ -105,21 +105,21 @@ private:
         {}
         auto is_cached()const{return impl->is_cached();}
         auto is_trivial()const{return impl->is_trivial();}
-        auto begin()const{return impl->begin();}
-        auto end()const{return impl->end();}
-        auto trivial_at(const index_type& idx)const{return impl->trivial_at(idx);}
+        // auto begin()const{return impl->begin();}
+        // auto end()const{return impl->end();}
+        auto trivial_at(const index_type& idx)const{return base_type::impl->trivial_at(idx);}
     };
     
     template<typename ValT, template<typename> typename Cfg>
     class storage_tensor : public tensor<ValT,Cfg>{        
         using base_type = tensor<ValT,Cfg>;        
-        const stensor_impl_base<ValT,Cfg>* impl{get_impl()->as_storage_tensor()};
+        const storage_tensor_impl_base<ValT,Cfg>* impl{get_impl()->as_storage_tensor()};
     public:
         storage_tensor(const base_type& base):
             base_type{base}
         {}
-        auto begin()const{return impl->begin();}
-        auto end()const{return impl->end();}
+        // auto begin()const{return impl->begin();}
+        // auto end()const{return impl->end();}
     };
 
     

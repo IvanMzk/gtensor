@@ -5,7 +5,7 @@ namespace gtensor{
 
 template<typename ValT, template<typename> typename Cfg> class tensor_impl_base;
 template<typename ValT, template<typename> typename Cfg> class expression_impl_base;
-template<typename ValT, template<typename> typename Cfg> class stensor_impl_base;
+template<typename ValT, template<typename> typename Cfg> class storage_tensor_impl_base;
 template<typename ValT, template<typename> typename Cfg, typename F, typename...Ops> class expression_impl;
 template<typename ValT, template<typename> typename Cfg> class stensor_impl;
 template<typename ValT, template<typename> typename Cfg> class storage_walker_impl;

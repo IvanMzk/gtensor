@@ -28,12 +28,13 @@ public:
     virtual detail::tensor_kinds tensor_kind()const = 0; 
 
     const expression_impl_base<ValT,Cfg>* as_expression()const{return dynamic_cast<const expression_impl_base<ValT,Cfg>*>(this);}
-    const stensor_impl_base<ValT,Cfg>* as_storage_tensor()const{return dynamic_cast<const stensor_impl_base<ValT,Cfg>*>(this);}
+    const storage_tensor_impl_base<ValT,Cfg>* as_storage_tensor()const{return dynamic_cast<const storage_tensor_impl_base<ValT,Cfg>*>(this);}
 
 };
 
 template<typename ValT, template<typename> typename Cfg>
-class expression_impl_base : public tensor_impl_base<ValT, Cfg>{
+class expression_impl_base
+{
     using iterator_type = multiindex_iterator_impl<ValT,Cfg,walker<ValT,Cfg>>;
 public:
     virtual ~expression_impl_base(){}    
@@ -44,7 +45,31 @@ public:
 };
 
 template<typename ValT, template<typename> typename Cfg>
-class stensor_impl_base : public tensor_impl_base<ValT, Cfg>{
+class trivial_impl_base
+{
+    using iterator_type = multiindex_iterator_impl<ValT,Cfg,walker<ValT,Cfg>>;
+public:
+    virtual ~trivial_impl_base(){}    
+    // virtual iterator_type begin()const = 0;
+    // virtual iterator_type end()const = 0;
+    virtual bool is_cached()const = 0;
+    virtual bool is_trivial()const = 0;
+};
+
+template<typename ValT, template<typename> typename Cfg>
+class view_impl_base
+{
+    using iterator_type = multiindex_iterator_impl<ValT,Cfg,walker<ValT,Cfg>>;
+public:
+    virtual ~view_impl_base(){}    
+    // virtual iterator_type begin()const = 0;
+    // virtual iterator_type end()const = 0;
+    virtual bool is_cached()const = 0;    
+};
+
+template<typename ValT, template<typename> typename Cfg>
+class storage_tensor_impl_base 
+{
     using config_type = Cfg<ValT>;
     using iterator_type = typename config_type::storage_type::iterator;
     using const_iterator_type = typename config_type::storage_type::const_iterator;
@@ -52,9 +77,9 @@ class stensor_impl_base : public tensor_impl_base<ValT, Cfg>{
     virtual storage_walker_impl<ValT,Cfg> create_storage_walker()const = 0;
 
 public:
-    virtual ~stensor_impl_base(){}
-    virtual const_iterator_type begin()const = 0;
-    virtual const_iterator_type end()const = 0;
+    virtual ~storage_tensor_impl_base(){}
+    // virtual const_iterator_type begin()const = 0;
+    // virtual const_iterator_type end()const = 0;
     auto create_walker()const{return create_storage_walker();}
     
 };

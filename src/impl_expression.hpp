@@ -89,7 +89,12 @@ template<typename...Ops> inline constexpr bool is_valid_operands = (is_valid_ope
 
 
 template<typename ValT, template<typename> typename Cfg, typename F, typename...Ops>
-class expression_impl : public expression_impl_base<ValT,Cfg>{
+class expression_impl : 
+    public tensor_impl_base<ValT,Cfg>,
+    public expression_impl_base<ValT,Cfg>,
+    public trivial_impl_base<ValT,Cfg>,
+    public storage_tensor_impl_base<ValT,Cfg>
+{
     using impl_base_type = tensor_impl_base<ValT,Cfg>;
     using config_type = Cfg<ValT>;
     using value_type = ValT;
