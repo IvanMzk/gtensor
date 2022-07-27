@@ -60,9 +60,12 @@ public:
     virtual std::string to_str()const = 0;    
     
     virtual value_type trivial_at(const index_type& idx)const = 0;
-    virtual detail::tensor_kinds tensor_kind()const = 0; 
+    virtual detail::tensor_kinds tensor_kind()const = 0;
+    virtual bool is_storage()const = 0;
+    virtual bool is_trivial()const = 0;
 
     auto as_expression()const{return dynamic_cast<const expression_impl_base<ValT,Cfg>*>(this);}
+    auto as_expression_trivial()const{return dynamic_cast<const trivial_impl_base<ValT,Cfg>*>(this);}
     auto as_storage_tensor()const{return dynamic_cast<const storage_tensor_impl_base<ValT,Cfg>*>(this);}
     auto as_view()const{return dynamic_cast<const view_impl_base<ValT,Cfg>*>(this);}
 
@@ -87,9 +90,7 @@ class trivial_impl_base
 public:
     virtual ~trivial_impl_base(){}    
     // virtual iterator_type begin()const = 0;
-    // virtual iterator_type end()const = 0;
-    virtual bool is_cached()const = 0;
-    virtual bool is_trivial()const = 0;
+    // virtual iterator_type end()const = 0;    
 };
 
 template<typename ValT, template<typename> typename Cfg>

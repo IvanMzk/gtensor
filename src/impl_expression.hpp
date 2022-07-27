@@ -126,6 +126,8 @@ class expression_impl :
         return storage_walker_factory<ValT,Cfg>::create_walker(shape(),strides(),cache.data());
     }   
 
+    bool is_storage()const override{return is_cached();}    
+
 public:            
     explicit expression_impl(Ops&...operands_):
         descriptor{detail::broadcast(operands_->shape()...)},
@@ -141,8 +143,7 @@ public:
         descriptor{std::move(other.descriptor)},
         operands{std::move(other.operands)},
         f{std::move(other.f)},
-        cache{std::move(other.cache)},
-        walker_maker{*this, descriptor, f, cache, operands}
+        cache{std::move(other.cache)}
     {}
 
     detail::tensor_kinds tensor_kind()const override{return detail::tensor_kinds::expression;}
@@ -150,8 +151,8 @@ public:
     index_type dim()const override{return descriptor.dim();}
     const shape_type& shape()const override{return descriptor.shape();}
     const shape_type& strides()const override{return descriptor.strides();}
-    bool is_cached()const{return cache.size();}
-    bool is_trivial()const {return detail::is_trivial(*this,operands);}
+    bool is_cached()const override{return cache.size();}
+    bool is_trivial()const override{return detail::is_trivial(*this,operands);}
     // iterator_type begin()const{return create_iterator(0);}    
     // iterator_type end()const{return create_iterator(size());}
     value_type trivial_at(const index_type& idx)const override{return trivial_at_helper(idx,std::make_index_sequence<sizeof...(Ops)>{});}

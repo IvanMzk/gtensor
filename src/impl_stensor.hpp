@@ -40,6 +40,9 @@ public storage_tensor_impl_base<ValT,Cfg>
         elements(descriptor.size())
     {detail::fill_from_list(init_data, elements.begin());}
 
+    bool is_storage()const override{return true;}
+    bool is_trivial()const override{return true;}
+
     storage_walker_impl<ValT,Cfg> create_storage_walker()const override{
         return storage_walker_factory<ValT,Cfg>::create_walker(shape(),strides(),elements.data());
     }

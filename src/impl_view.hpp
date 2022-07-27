@@ -31,10 +31,12 @@ class view_impl :
     storage_walker_impl<ValT,Cfg> create_storage_walker()const override{
         return storage_walker_factory<ValT,Cfg>::create_walker(shape(),strides(),cache.data());
     }
-
-    bool is_storage_parent()const{return detail::is_storage_tensor(*parent) || detail::is_expression_cached(*parent);}
+    
+    bool is_storage_parent()const{return parent->tensor_kind() == detail::tensor_kinds::storage_tensor || parent->tensor_kind() == detail::tensor_kinds::expression && parent->is_storage();}
     bool is_cached()const{return cache.size();}
-    bool is_view_of_storage()const override{return is_storage_parent() || is_cached();}
+    bool is_view_of_storage()const override{return is_storage();}
+    bool is_storage()const override{return is_storage_parent() || is_cached();}
+    bool is_trivial()const override{return true;}
 
 public:
     template<typename DtT>
