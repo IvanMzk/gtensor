@@ -120,7 +120,11 @@ class expression_impl :
     //     return i==0 ? iterator_type{create_walker(), shape(), descriptor.strides_libdivide()} : iterator_type{create_walker(), shape(), descriptor.strides_libdivide(), i};
     // } 
     template<std::size_t...I>
-    value_type trivial_at_helper(const index_type& idx, std::index_sequence<I...>)const{return f(std::get<I>(operands)->trivial_at(idx)...);}    
+    value_type trivial_at_helper(const index_type& idx, std::index_sequence<I...>)const{return f(std::get<I>(operands)->trivial_at(idx)...);} 
+    
+    storage_walker_impl<ValT,Cfg> create_storage_walker()const override{
+        return storage_walker_factory<ValT,Cfg>::create_walker(shape(),strides(),cache.data());
+    }
 
 public:            
     explicit expression_impl(Ops&...operands_):
@@ -152,7 +156,7 @@ public:
     // iterator_type end()const{return create_iterator(size());}
     value_type trivial_at(const index_type& idx)const override{return trivial_at_helper(idx,std::make_index_sequence<sizeof...(Ops)>{});}
 
-    //walker<ValT,Cfg> create_walker()const{return std::unique_ptr<walker_impl_base<ValT, Cfg>>{}};
+    
     
 
     std::string to_str()const override{

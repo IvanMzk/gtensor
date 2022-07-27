@@ -28,6 +28,10 @@ class view_impl :
     std::shared_ptr<impl_base_type> parent;
     storage_type cache{};
 
+    storage_walker_impl<ValT,Cfg> create_storage_walker()const override{
+        return storage_walker_factory<ValT,Cfg>::create_walker(shape(),strides(),cache.data());
+    }
+
 public:
     template<typename DtT>
     view_impl(DtT&& descriptor_, const std::shared_ptr<impl_base_type>& parent_):

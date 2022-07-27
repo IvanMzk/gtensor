@@ -40,6 +40,12 @@ public storage_tensor_impl_base<ValT,Cfg>
         elements(descriptor.size())
     {detail::fill_from_list(init_data, elements.begin());}
 
+    storage_walker_impl<ValT,Cfg> create_storage_walker()const override{
+        return storage_walker_factory<ValT,Cfg>::create_walker(shape(),strides(),elements.data());
+    }
+    // typename storage_type::const_iterator begin()const override{return elements.begin();}
+    // typename storage_type::const_iterator end()const override{return elements.end();}
+
 public:
     stensor_impl& operator=(const stensor_impl& other) = delete;
     stensor_impl& operator=(stensor_impl&& other) = delete;
@@ -67,12 +73,6 @@ public:
     const shape_type& shape()const override{return descriptor.shape();}
     const shape_type& strides()const override{return descriptor.strides();}
     value_type trivial_at(const index_type& idx)const override{return elements[idx];}
-    typename storage_type::const_iterator begin()const override{return elements.begin();}
-    typename storage_type::const_iterator end()const override{return elements.end();}
-
-    storage_walker_impl<ValT,Cfg> create_storage_walker()const override{
-        return storage_walker_factory<ValT,Cfg>::create_walker(shape(),strides(),elements.data());
-    }
     
 
     std::string to_str()const override{

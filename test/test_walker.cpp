@@ -7,7 +7,8 @@ namespace test_walker_{
 
 using gtensor::tensor;
 using gtensor::config::default_config;
-using gtensor::stensor_impl_base;
+using gtensor::storage_tensor_impl_base;
+using gtensor::tensor_impl_base;
 using gtensor::walker;
 using gtensor::walker_impl_base;
 using gtensor::storage_walker_impl;
@@ -19,8 +20,11 @@ struct storage_walker_test_tensor : public tensor<ValT,Cfg>{
     storage_walker_test_tensor(const base_type& base):
         base_type{base}
     {}
+    const auto& as_storage_tensor(const tensor_impl_base<ValT,Cfg>& t)const{
+        return dynamic_cast<const storage_tensor_impl_base<ValT,Cfg>&>(t);
+    }
     storage_walker_impl<ValT,Cfg> create_native_walker()const{
-        return static_cast<stensor_impl_base<ValT,Cfg>*>(get_impl().get())->create_walker();
+        return as_storage_tensor(*get_impl()).create_walker();
     }
     walker<ValT,Cfg> create_walker()const{
         return std::make_unique<storage_walker_impl<ValT,Cfg>>(create_native_walker());
