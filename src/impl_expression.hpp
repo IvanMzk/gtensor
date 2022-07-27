@@ -124,7 +124,7 @@ class expression_impl :
     
     storage_walker_impl<ValT,Cfg> create_storage_walker()const override{
         return storage_walker_factory<ValT,Cfg>::create_walker(shape(),strides(),cache.data());
-    }
+    }   
 
 public:            
     explicit expression_impl(Ops&...operands_):

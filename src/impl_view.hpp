@@ -32,6 +32,10 @@ class view_impl :
         return storage_walker_factory<ValT,Cfg>::create_walker(shape(),strides(),cache.data());
     }
 
+    bool is_storage_parent()const{return detail::is_storage_tensor(*parent) || detail::is_expression_cached(*parent);}
+    bool is_cached()const{return cache.size();}
+    bool is_view_of_storage()const override{return is_storage_parent() || is_cached();}
+
 public:
     template<typename DtT>
     view_impl(DtT&& descriptor_, const std::shared_ptr<impl_base_type>& parent_):
@@ -54,7 +58,6 @@ public:
     index_type dim()const override{return descriptor.dim();}
     const shape_type& shape()const override{return descriptor.shape();}
     const shape_type& strides()const override{return descriptor.strides();}
-    bool is_cached()const{return cache.size();}
     value_type trivial_at(const index_type& idx)const override{return value_type(0);}
     walker<ValT,Cfg> create_walker()const{return nullptr;}
 

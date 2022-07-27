@@ -7,6 +7,41 @@
 
 namespace gtensor{
 
+namespace detail{
+
+template<typename ValT, template<typename> typename Cfg>
+inline bool is_storage_tensor(const tensor_impl_base<ValT,Cfg>& t){
+    return t.tensor_kind() == tensor_kinds::storage_tensor;
+}
+
+template<typename ValT, template<typename> typename Cfg>
+inline bool is_expression(const tensor_impl_base<ValT,Cfg>& t){
+    return t.tensor_kind() == tensor_kinds::expression;
+}
+
+template<typename ValT, template<typename> typename Cfg>
+inline bool is_expression_cached(const tensor_impl_base<ValT,Cfg>& t){
+    return is_expression(t) && t.as_expression()->is_cached();
+}
+
+template<typename ValT, template<typename> typename Cfg>
+inline bool is_expression_trivial(const tensor_impl_base<ValT,Cfg>& t){
+    return is_expression(t) && t.as_expression()->is_trivial();
+}
+
+template<typename ValT, template<typename> typename Cfg>
+inline bool is_view(const tensor_impl_base<ValT,Cfg>& t){
+    return t.tensor_kind() == tensor_kinds::view;
+}
+
+template<typename ValT, template<typename> typename Cfg>
+inline bool is_view_of_storage(const tensor_impl_base<ValT,Cfg>& t){
+    return is_view(t) && t.as_view()->is_view_of_storage();
+}
+
+}   //end of namespace detail
+
+
 template<typename ValT, template<typename> typename Cfg>
 class tensor_impl_base{
     using impl_base_type = tensor_impl_base<ValT,Cfg>;
@@ -27,8 +62,9 @@ public:
     virtual value_type trivial_at(const index_type& idx)const = 0;
     virtual detail::tensor_kinds tensor_kind()const = 0; 
 
-    const expression_impl_base<ValT,Cfg>* as_expression()const{return dynamic_cast<const expression_impl_base<ValT,Cfg>*>(this);}
-    const storage_tensor_impl_base<ValT,Cfg>* as_storage_tensor()const{return dynamic_cast<const storage_tensor_impl_base<ValT,Cfg>*>(this);}
+    auto as_expression()const{return dynamic_cast<const expression_impl_base<ValT,Cfg>*>(this);}
+    auto as_storage_tensor()const{return dynamic_cast<const storage_tensor_impl_base<ValT,Cfg>*>(this);}
+    auto as_view()const{return dynamic_cast<const view_impl_base<ValT,Cfg>*>(this);}
 
 };
 
@@ -64,7 +100,7 @@ public:
     virtual ~view_impl_base(){}    
     // virtual iterator_type begin()const = 0;
     // virtual iterator_type end()const = 0;
-    virtual bool is_cached()const = 0;    
+    virtual bool is_view_of_storage() const = 0;
 };
 
 template<typename ValT, template<typename> typename Cfg>
