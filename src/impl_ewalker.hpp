@@ -13,9 +13,9 @@ class evaluating_walker_impl : public walker_impl_base<ValT, Cfg>{
     using shape_type = typename config_type::shape_type;
     
     const shape_type* shape;
-    F f;
     std::tuple<Wks...> walkers;    
     index_type dim{static_cast<index_type>(shape->size())};
+    F f{};
 
 
     auto shape_element(const index_type& direction)const{return (*shape)[direction];}
@@ -34,9 +34,8 @@ class evaluating_walker_impl : public walker_impl_base<ValT, Cfg>{
     value_type deref_helper(std::index_sequence<I...>) const {return f(*std::get<I>(walkers)...);}
     std::unique_ptr<walker_impl_base<ValT,Cfg>> clone()const override{return std::make_unique<evaluating_walker_impl<ValT,Cfg,F,Wks...>>(*this);}
 public:
-    evaluating_walker_impl(const shape_type& shape_, const F& f_, Wks&&...walkers_):
+    evaluating_walker_impl(const shape_type& shape_, Wks&&...walkers_):
         shape{&shape_},
-        f{f_},
         walkers{std::move(walkers_)...}
     {}
     
