@@ -7,6 +7,7 @@
 #include "impl_ewalker.hpp"
 #include "impl_vwalker.hpp"
 #include "impl_ewalker_trivial.hpp"
+#include "dispatcher.hpp"
 
 
 namespace gtensor{
@@ -35,6 +36,50 @@ class storage_walker_factory
 public: 
     static storage_walker_impl<ValT, Cfg> create_walker(const shape_type& shape, const shape_type& strides, const value_type* data){
         return storage_walker_impl<ValT,Cfg>{shape, strides, data};
+    }
+};
+
+template<typename ValT, template<typename> typename Cfg>
+class trivial_walker_factory
+{
+    using config_type = Cfg<ValT>;        
+    using value_type = ValT;
+    using shape_type = typename config_type::shape_type;
+public: 
+    static ewalker_trivial_impl<ValT, Cfg> create_walker(const shape_type& shape, const shape_type& strides, const tensor_impl_base<ValT,Cfg>& parent){
+        return ewalker_trivial_impl<ValT,Cfg>{shape, strides, parent};
+    }
+};
+
+template<typename ValT, template<typename> typename Cfg>
+class evaluating_walker_factory
+{
+    using config_type = Cfg<ValT>;        
+    using value_type = ValT;
+    using shape_type = typename config_type::shape_type;
+    
+    template<typename F>
+    struct walker_maker{
+        const shape_type& shape;
+        walker_maker(const shape_type& shape_):
+            shape{shape_}
+        {}
+        template<typename...Args>
+        walker<ValT,Cfg> operator()(const Args&...args)const{
+            using evaluating_walker_type = evaluating_walker_impl<ValT,Cfg,F,decltype(std::declval<Args>().create_walker())...>;
+            return std::unique_ptr<walker_impl_base<ValT,Cfg>>{new evaluating_walker_type{shape,args.create_walker()...}};
+        }
+    };
+    template<typename MakerT, typename...Ops, std::size_t...I>
+    static walker<ValT, Cfg> create_walker_helper(const MakerT& maker, const std::tuple<Ops...>& operands, std::index_sequence<I...>){
+        using dispatcher_type = detail::dispatcher<ValT,Cfg>;
+        return dispatcher_type::call(maker, *std::get<I>(operands)...);
+    }
+public: 
+    template<typename F, typename...Ops>
+    static walker<ValT, Cfg> create_walker(const shape_type& shape, const F&, const std::tuple<Ops...>& operands){
+        using maker_type = walker_maker<F>;
+        return create_walker_helper(maker_type{shape}, operands, std::make_index_sequence<sizeof...(Ops)>{});
     }
 };
 
