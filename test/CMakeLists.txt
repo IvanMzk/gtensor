@@ -21,6 +21,7 @@ target_sources(Test PRIVATE
 )
 
 target_sources(Test_selected PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_dispatcher.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_walker.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_tensor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_expression_impl.cpp
