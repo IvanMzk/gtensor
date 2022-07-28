@@ -16,7 +16,7 @@ class dispatcher{
     using base_type = tensor_impl_base<ValT,Cfg>;    
 
     template<typename FirstT, typename F>
-    static auto dispatch_second(const FirstT& first, const base_type& second, F f){
+    static auto dispatch_second(F& f, const FirstT& first, const base_type& second){
         if (second.is_storage())
         {
             return f(first, *second.as_storage_tensor());
@@ -40,23 +40,23 @@ class dispatcher{
         }
     }        
     template<typename F>
-    static auto dispatch_first(const base_type& first, const base_type& second, F f){
+    static auto dispatch_first(F& f, const base_type& first, const base_type& second){
         if (first.is_storage())
         {
-            return dispatch_second(*first.as_storage_tensor(), second, f);
+            return dispatch_second(f, *first.as_storage_tensor(), second);
         }
         else if (first.tensor_kind() == tensor_kinds::expression)
         {
             if (first.is_trivial()){
-                return dispatch_second(*first.as_expression_trivial(), second, f);
+                return dispatch_second(f, *first.as_expression_trivial(), second);
             }            
             else{
-                return dispatch_second(*first.as_expression(), second, f);
+                return dispatch_second(f, *first.as_expression(), second);
             }
         }
         else if (first.tensor_kind() == tensor_kinds::view)
         {
-            return dispatch_second(*first.as_view(), second, f);
+            return dispatch_second(f, *first.as_view(), second);
         }
         else
         {
@@ -65,8 +65,8 @@ class dispatcher{
     }    
 public:    
     template<typename F>
-    static auto call(const base_type& first, const base_type& second, F f){
-        return dispatch_first(first,second, f);
+    static auto call(F& f, const base_type& first, const base_type& second){
+        return dispatch_first(f,first,second);
     }
 };
 
