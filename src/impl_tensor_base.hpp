@@ -8,37 +8,6 @@
 namespace gtensor{
 
 namespace detail{
-
-template<typename ValT, template<typename> typename Cfg>
-inline bool is_storage_tensor(const tensor_impl_base<ValT,Cfg>& t){
-    return t.tensor_kind() == tensor_kinds::storage_tensor;
-}
-
-template<typename ValT, template<typename> typename Cfg>
-inline bool is_expression(const tensor_impl_base<ValT,Cfg>& t){
-    return t.tensor_kind() == tensor_kinds::expression;
-}
-
-template<typename ValT, template<typename> typename Cfg>
-inline bool is_expression_cached(const tensor_impl_base<ValT,Cfg>& t){
-    return is_expression(t) && t.as_expression()->is_cached();
-}
-
-template<typename ValT, template<typename> typename Cfg>
-inline bool is_expression_trivial(const tensor_impl_base<ValT,Cfg>& t){
-    return is_expression(t) && t.as_expression()->is_trivial();
-}
-
-template<typename ValT, template<typename> typename Cfg>
-inline bool is_view(const tensor_impl_base<ValT,Cfg>& t){
-    return t.tensor_kind() == tensor_kinds::view;
-}
-
-template<typename ValT, template<typename> typename Cfg>
-inline bool is_view_of_storage(const tensor_impl_base<ValT,Cfg>& t){
-    return is_view(t) && t.as_view()->is_view_of_storage();
-}
-
 }   //end of namespace detail
 
 
@@ -74,21 +43,25 @@ public:
 template<typename ValT, template<typename> typename Cfg>
 class expression_impl_base
 {
-    using iterator_type = multiindex_iterator_impl<ValT,Cfg,walker<ValT,Cfg>>;
+    using iterator_type = multiindex_iterator_impl<ValT,Cfg,walker<ValT,Cfg>>;    
+    virtual walker<ValT,Cfg> create_evaluating_walker()const = 0;
 public:
     virtual ~expression_impl_base(){}    
     // virtual iterator_type begin()const = 0;
     // virtual iterator_type end()const = 0;
     virtual bool is_cached()const = 0;
     virtual bool is_trivial()const = 0;
+    auto create_walker()const{return create_evaluating_walker();}
 };
 
 template<typename ValT, template<typename> typename Cfg>
 class trivial_impl_base
 {
     using iterator_type = multiindex_iterator_impl<ValT,Cfg,walker<ValT,Cfg>>;
+    virtual ewalker_trivial_impl<ValT,Cfg> create_trivial_walker()const = 0;
 public:
-    virtual ~trivial_impl_base(){}    
+    virtual ~trivial_impl_base(){}
+    auto create_walker()const{return create_trivial_walker();}
     // virtual iterator_type begin()const = 0;
     // virtual iterator_type end()const = 0;    
 };
@@ -97,8 +70,10 @@ template<typename ValT, template<typename> typename Cfg>
 class view_impl_base
 {
     using iterator_type = multiindex_iterator_impl<ValT,Cfg,walker<ValT,Cfg>>;
+    virtual vwalker_impl<ValT,Cfg> create_view_walker()const = 0;
 public:
-    virtual ~view_impl_base(){}    
+    virtual ~view_impl_base(){}
+    auto create_walker()const{return create_view_walker();}
     // virtual iterator_type begin()const = 0;
     // virtual iterator_type end()const = 0;
     virtual bool is_view_of_storage() const = 0;

@@ -124,7 +124,13 @@ class expression_impl :
     
     storage_walker_impl<ValT,Cfg> create_storage_walker()const override{
         return storage_walker_factory<ValT,Cfg>::create_walker(shape(),strides(),cache.data());
-    }   
+    }
+    walker<ValT,Cfg> create_evaluating_walker()const override{
+        return evaluating_walker_factory<ValT,Cfg>::create_walker(shape(),f,operands);
+    }
+    ewalker_trivial_impl<ValT,Cfg> create_trivial_walker()const override{
+        return trivial_walker_factory<ValT,Cfg>::create_walker(shape(), strides(), *this);
+    }
 
     bool is_storage()const override{return is_cached();}    
 

@@ -31,6 +31,9 @@ class view_impl :
     storage_walker_impl<ValT,Cfg> create_storage_walker()const override{
         return storage_walker_factory<ValT,Cfg>::create_walker(shape(),strides(),cache.data());
     }
+    vwalker_impl<ValT,Cfg> create_view_walker()const override{
+        return vwalker_impl<ValT,Cfg>{shape(),descriptor.cstrides(),descriptor.offset()};
+    }
     
     bool is_storage_parent()const{return parent->tensor_kind() == detail::tensor_kinds::storage_tensor || parent->tensor_kind() == detail::tensor_kinds::expression && parent->is_storage();}
     bool is_cached()const{return cache.size();}
