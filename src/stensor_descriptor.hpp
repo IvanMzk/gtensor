@@ -75,48 +75,33 @@ inline auto make_size(const ShT& shape){
     }
 }
 
-template<typename ValT,  template<typename> typename Cfg, typename Mode> class descriptor_strides;
 
 template<typename ValT,  template<typename> typename Cfg> 
-class descriptor_strides<ValT,Cfg,config::mode_div_libdivide>{
+class descriptor_strides
+{
     using config_type = Cfg<ValT>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     shape_type strides_;
-    detail::libdivide_vector<index_type> strides_libdivide_;
 protected:
     descriptor_strides() = default;            
-    descriptor_strides(const shape_type& shape__):
-        strides_{detail::make_strides(shape__)},
-        strides_libdivide_{detail::make_libdiv_vector_helper<libdivide::divider>(strides_)}
-    {}
-    const auto&  strides_libdivide()const{return strides_libdivide_;}
-    const auto&  strides()const{return strides_;}
-};
-
-template<typename ValT,  template<typename> typename Cfg> 
-class descriptor_strides<ValT,Cfg,config::mode_div_native>{
-    using config_type = Cfg<ValT>;
-    using shape_type = typename config_type::shape_type;
-    using index_type = typename config_type::index_type;
-    shape_type strides_;
-protected:
-    descriptor_strides() = default;      
     descriptor_strides(const shape_type& shape__):
         strides_{detail::make_strides(shape__)}
     {}
     const auto&  strides()const{return strides_;}
 };
 
-
-
 }   //end of namespace detail
 
 
 
 template<typename ValT, template<typename> typename Cfg>
-class stensor_descriptor : detail::descriptor_strides<ValT,Cfg,typename Cfg<ValT>::div_mode>{
-    using base_strides = detail::descriptor_strides<ValT,Cfg,typename Cfg<ValT>::div_mode>;
+class stensor_descriptor :
+    detail::descriptor_strides<ValT,Cfg>,
+    detail::collection_libdivide_extension<ValT,Cfg,typename Cfg<ValT>::div_mode>
+{
+    using base_strides = detail::descriptor_strides<ValT,Cfg>;
+    using base_strides_libdivide = detail::collection_libdivide_extension<ValT,Cfg,typename Cfg<ValT>::div_mode>;
     using config_type = Cfg<ValT>;
     using value_type = ValT;
     using shape_type = typename config_type::shape_type;
@@ -126,17 +111,19 @@ public:
     stensor_descriptor() = default;       
     stensor_descriptor(const shape_type& shape__):
         base_strides{shape__},
+        base_strides_libdivide{base_strides::strides()},
         shape_{shape__}
     {}
     stensor_descriptor(shape_type&& shape__):
         base_strides{shape__},
+        base_strides_libdivide{base_strides::strides()},
         shape_{std::move(shape__)}
     {}
     auto size()const{return detail::make_size(shape_,base_strides::strides());}
     auto dim()const{return shape_.size();}
     const auto& shape()const{return shape_;}
     const auto& strides()const{return base_strides::strides();}
-    const auto& strides_libdivide()const{return base_strides::strides_libdivide();}
+    const auto& strides_libdivide()const{return base_strides_libdivide::dividers_libdivide();}
     std::string to_str()const{
         std::stringstream ss{};
         ss<<"("<<[&ss,this](){for(const auto& i : shape()){ss<<i<<",";} return ")";}();

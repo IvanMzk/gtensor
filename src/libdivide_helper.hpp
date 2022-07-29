@@ -97,6 +97,34 @@ auto flat_to_multi_helper(const U<T>& strides, const T1& idx){
     return res;
 }
 
+template<typename ValT,  template<typename> typename Cfg, typename Mode> class collection_libdivide_extension;
+
+template<typename ValT,  template<typename> typename Cfg> 
+class collection_libdivide_extension<ValT,Cfg,config::mode_div_libdivide>
+{
+    using config_type = Cfg<ValT>;
+    using shape_type = typename config_type::shape_type;
+    using index_type = typename config_type::index_type;
+    detail::libdivide_vector<index_type> dividers_libdivide_;
+protected:
+    collection_libdivide_extension() = default;            
+    collection_libdivide_extension(const shape_type& dividers):        
+        dividers_libdivide_{detail::make_libdiv_vector_helper<libdivide::divider>(dividers)}
+    {}
+    const auto&  dividers_libdivide()const{return dividers_libdivide_;}
+};
+
+template<typename ValT,  template<typename> typename Cfg> 
+class collection_libdivide_extension<ValT,Cfg,config::mode_div_native>
+{
+    using config_type = Cfg<ValT>;
+    using shape_type = typename config_type::shape_type;
+    using index_type = typename config_type::index_type;
+protected:
+    collection_libdivide_extension() = default;      
+    collection_libdivide_extension(const shape_type&)
+    {}
+};
 
 
 }   //end of namespace detail
