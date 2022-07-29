@@ -35,6 +35,8 @@ public:
     walker(const walker& other):
         impl{other.impl->clone()}
     {}
+    walker(walker&& other) = default;
+            
     walker& walk(const index_type& direction, const index_type& steps){
         impl->walk(direction,steps);
         return *this;
