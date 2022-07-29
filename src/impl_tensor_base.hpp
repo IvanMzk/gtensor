@@ -87,12 +87,14 @@ class storage_tensor_impl_base
     using const_iterator_type = typename config_type::storage_type::const_iterator;
     
     virtual storage_walker_impl<ValT,Cfg> create_storage_walker()const = 0;
+    virtual const ValT* storage_data()const = 0;
 
 public:
     virtual ~storage_tensor_impl_base(){}
     // virtual const_iterator_type begin()const = 0;
     // virtual const_iterator_type end()const = 0;
     auto create_walker()const{return create_storage_walker();}
+    auto data()const{return storage_data();}
     
 };
 

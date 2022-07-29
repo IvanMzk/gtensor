@@ -40,6 +40,7 @@ class view_impl :
     bool is_view_of_storage()const override{return is_storage();}
     bool is_storage()const override{return is_storage_parent() || is_cached();}
     bool is_trivial()const override{return true;}
+    const value_type* storage_data()const{return cache.data();}
 
 public:
     template<typename DtT>

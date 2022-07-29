@@ -132,7 +132,8 @@ class expression_impl :
         return trivial_walker_factory<ValT,Cfg>::create_walker(shape(), strides(), *this);
     }
 
-    bool is_storage()const override{return is_cached();}    
+    bool is_storage()const override{return is_cached();}
+    const value_type* storage_data()const{return cache.data();}
 
 public:            
     explicit expression_impl(Ops&...operands_):
