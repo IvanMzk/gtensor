@@ -85,35 +85,35 @@ struct trivial_subtree_expression_maker{
     using tensor_type = evaluating_walker_test_tensor<ValT,default_config>;
     tensor_type operator()(){return tensor_type{2} * tensor_type{-1,-1,-1} + (tensor_type{{{1,2,3},{1,2,3}}} + tensor_type{{{0,0,0},{3,3,3}}}) + tensor_type{5,5,5} - tensor_type{3} ;}
 };
-// //make view slice with data {{{1,2,3},{4,5,6}}}
-// template<typename ValT>
-// struct view_slice_maker{
-//     using value_type = ValT;
-//     using tensor_type = test_tensor<ValT,default_config>;
-//     typename default_config<ValT>::nop_type nop;
-//     tensor_type operator()(){return tensor_type{{{0,0,0,0,0,0},{0,0,0,0,0,0}},{{1,0,2,0,3,0},{4,0,5,0,6,0}}}({{1,2},{},{nop,nop,2}});}
-// };
-// //make view transpose with data {{{1,2,3},{4,5,6}}}
-// template<typename ValT>
-// struct view_transpose_maker{
-//     using value_type = ValT;
-//     using tensor_type = test_tensor<ValT,default_config>;
-//     tensor_type operator()(){return tensor_type{{{1},{4}},{{2},{5}},{{3},{6}}}.transpose();}
-// };
-// //make view subdim with data {{{1,2,3},{4,5,6}}}
-// template<typename ValT>
-// struct view_subdim_maker{
-//     using value_type = ValT;
-//     using tensor_type = test_tensor<ValT,default_config>;
-//     tensor_type operator()(){return tensor_type{{{{0,0,0},{0,0,0}}},{{{1,2,3},{4,5,6}}}}(1);}
-// };
-// //make view reshape with data {{{1,2,3},{4,5,6}}}
-// template<typename ValT>
-// struct view_reshape_maker{
-//     using value_type = ValT;
-//     using tensor_type = test_tensor<ValT,default_config>;
-//     tensor_type operator()(){return tensor_type{{{1},{2},{3}},{{4},{5},{6}}}.reshape(1,2,3);}
-// };
+//make view slice of stensor with data {{{1,2,3},{4,5,6}}}
+template<typename ValT>
+struct view_slice_of_stensor_maker{
+    using value_type = ValT;
+    using tensor_type = storage_walker_test_tensor<ValT,default_config>;
+    typename default_config<ValT>::nop_type nop;
+    tensor_type operator()(){return tensor_type{{{0,0,0,0,0,0},{0,0,0,0,0,0}},{{1,0,2,0,3,0},{4,0,5,0,6,0}}}({{1,2},{},{nop,nop,2}});}
+};
+//make view transpose of stensor with data {{{1,2,3},{4,5,6}}}
+template<typename ValT>
+struct view_transpose_of_stensor_maker{
+    using value_type = ValT;
+    using tensor_type = storage_walker_test_tensor<ValT,default_config>;
+    tensor_type operator()(){return tensor_type{{{1},{4}},{{2},{5}},{{3},{6}}}.transpose();}
+};
+//make view subdim of stensor with data {{{1,2,3},{4,5,6}}}
+template<typename ValT>
+struct view_subdim_of_stensor_maker{
+    using value_type = ValT;
+    using tensor_type = storage_walker_test_tensor<ValT,default_config>;
+    tensor_type operator()(){return tensor_type{{{{0,0,0},{0,0,0}}},{{{1,2,3},{4,5,6}}}}(1);}
+};
+//make view reshape of stensor with data {{{1,2,3},{4,5,6}}}
+template<typename ValT>
+struct view_reshape_of_stensor_maker{
+    using value_type = ValT;
+    using tensor_type = storage_walker_test_tensor<ValT,default_config>;
+    tensor_type operator()(){return tensor_type{{{1},{2},{3}},{{4},{5},{6}}}.reshape(1,2,3);}
+};
 
 
 }   //end of namespace test_walker_
@@ -123,11 +123,11 @@ TEMPLATE_TEST_CASE("test_walker","test_walker",
                     test_walker_::stensor_maker<float>,
                     test_walker_::not_trivial_expression_maker<float>,
                     test_walker_::trivial_subtree_expression_maker<float>,
-                    test_walker_::trivial_expression_maker<float>
-                    // test_walker_::view_slice_maker<float>,
-                    // test_walker_::view_transpose_maker<float>,
-                    // test_walker_::view_subdim_maker<float>,
-                    // test_walker_::view_reshape_maker<float>
+                    test_walker_::trivial_expression_maker<float>,
+                    test_walker_::view_slice_of_stensor_maker<float>,
+                    test_walker_::view_transpose_of_stensor_maker<float>,
+                    test_walker_::view_subdim_of_stensor_maker<float>,
+                    test_walker_::view_reshape_of_stensor_maker<float>
                     ){
     using value_type = typename TestType::value_type;
     using test_type = std::tuple<value_type,value_type>;

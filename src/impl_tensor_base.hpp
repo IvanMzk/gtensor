@@ -73,10 +73,10 @@ class view_impl_base
     virtual vwalker_impl<ValT,Cfg> create_view_walker()const = 0;
 public:
     virtual ~view_impl_base(){}
+    virtual bool is_cached()const = 0;
     auto create_walker()const{return create_view_walker();}
     // virtual iterator_type begin()const = 0;
-    // virtual iterator_type end()const = 0;
-    virtual bool is_view_of_storage() const = 0;
+    // virtual iterator_type end()const = 0;    
 };
 
 template<typename ValT, template<typename> typename Cfg>
