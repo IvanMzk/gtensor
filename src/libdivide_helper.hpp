@@ -126,6 +126,36 @@ protected:
     {}
 };
 
+template<typename ValT,  template<typename> typename Cfg, typename Mode> class reference_libdivide_extension;
+
+template<typename ValT,  template<typename> typename Cfg> 
+class reference_libdivide_extension<ValT,Cfg,config::mode_div_libdivide>
+{
+    using config_type = Cfg<ValT>;
+    using shape_type = typename config_type::shape_type;
+    using index_type = typename config_type::index_type;
+    using libdivide_collection_type = detail::libdivide_vector<index_type>;
+    const libdivide_collection_type* dividers_libdivide_;
+protected:
+    reference_libdivide_extension() = default;            
+    reference_libdivide_extension(const libdivide_collection_type& dividers_libdivide__):
+        dividers_libdivide_{&dividers_libdivide__}
+    {}
+    const auto&  dividers_libdivide()const{return *dividers_libdivide_;}
+};
+
+template<typename ValT,  template<typename> typename Cfg> 
+class reference_libdivide_extension<ValT,Cfg,config::mode_div_native>
+{
+    using config_type = Cfg<ValT>;
+    using index_type = typename config_type::index_type;
+    using libdivide_collection_type = detail::libdivide_vector<index_type>;
+protected:
+    reference_libdivide_extension() = default;      
+    reference_libdivide_extension(const libdivide_collection_type&)
+    {}
+};
+
 
 }   //end of namespace detail
 }   //end of namespace gtensor
