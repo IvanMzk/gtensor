@@ -64,34 +64,34 @@ public:
     view_impl(DtT&& descriptor_, const std::shared_ptr<impl_base_type>& parent_):
         descriptor{std::forward<DtT>(descriptor_)},
         parent{parent_}
-    {}
-    view_impl(const view_impl& other):
-        descriptor{other.descriptor},
-        parent{other.parent},
-        cache{other.cache}
-    {}
-    view_impl(view_impl&& other):
-        descriptor{std::move(other.descriptor)},
-        parent{std::move(other.parent)},
-        cache{std::move(other.cache)},
-    {}
+    {}    
 
     detail::tensor_kinds tensor_kind()const override{return detail::tensor_kinds::view;}
     index_type size()const override{return descriptor.size();}
     index_type dim()const override{return descriptor.dim();}
     const shape_type& shape()const override{return descriptor.shape();}
     const shape_type& strides()const override{return descriptor.strides();}
-    value_type trivial_at(const index_type& idx)const override{return value_type(0);}
-    walker<ValT,Cfg> create_walker()const{return nullptr;}
+    value_type trivial_at(const index_type& idx)const override{return value_type(0);}    
 
     std::string to_str()const override{
         std::stringstream ss{};
         ss<<"{"<<[&ss,this](){ss<<descriptor.to_str(); return "}";}();
         return ss.str();
     }
-
-
 };
+
+// template<typename ValT, template<typename> typename Cfg, typename DescT>
+// class view_of_expression_impl : public view_impl<ValT, Cfg, DescT>
+// {
+//     using base_type = view_impl<ValT, Cfg, DescT>;
+// public:
+//     template<typename DtT>
+//     view_of_expression_impl(DtT&& descriptor_, const std::shared_ptr<impl_base_type>& parent_):
+//         base_type{std::forward<DtT>(descriptor_), parent_}        
+//     {}    
+
+// };
+
 
 }   //end of namespace gtensor
 
