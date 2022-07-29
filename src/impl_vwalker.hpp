@@ -2,13 +2,17 @@
 #define IMPL_VWALKER_HPP_
 
 #include "impl_walker_base.hpp"
+#include "libdivide_helper.hpp"
 
 namespace gtensor{
 
 namespace detail{
 }   //end of namespace detail
 
-
+/*
+* abstract base class for view of expression walker class, view of view walker class
+* operator* not implemented
+*/
 template<typename ValT, template<typename> typename Cfg>
 class vwalker_impl : public walker_impl_base<ValT, Cfg>{
     using config_type = Cfg<ValT>;        
@@ -25,7 +29,6 @@ class vwalker_impl : public walker_impl_base<ValT, Cfg>{
     auto shape_element(const index_type direction)const{return (*shape)[direction];}
     auto strides_element(const index_type direction)const{return (*strides)[direction];}
     bool can_walk(const index_type& direction)const{return direction < dim && shape_element(direction) != index_type(1);}
-    std::unique_ptr<walker_impl_base<ValT,Cfg>> clone()const override{return std::make_unique<vwalker_impl<ValT,Cfg>>(*this);}
 
 public:    
     vwalker_impl(const shape_type& shape_,  const shape_type& strides_, const index_type& offset_):
@@ -55,11 +58,34 @@ public:
         }
     }
     void reset() override{cursor = offset;}
+};
+
+template<typename ValT, template<typename> typename Cfg>
+class view_expression_walker_impl : private vwalker_impl<ValT, Cfg>
+{
+    using base_type = vwalker_impl<ValT, Cfg>;
+    using config_type = Cfg<ValT>;        
+    using value_type = ValT;
+    using index_type = typename config_type::index_type;
+    using shape_type = typename config_type::shape_type;
+    using strides_type = typename detail::libdiv_strides_traits<config_type>::type;
+
+    walker<ValT,Cfg> parent_walker;
+    std::unique_ptr<walker_impl_base<ValT,Cfg>> clone()const override{return std::make_unique<view_expression_walker_impl<ValT,Cfg>>(*this);}
+
+public:    
+    view_expression_walker_impl(const shape_type& shape_,  const shape_type& strides_, const index_type& offset_, walker<ValT,Cfg>&& parent_walker_):
+        base_type{shape_,strides_,offset_},
+        parent_walker{std::move(parent_walker_)}        
+    {}
+    using base_type::walk;
+    using base_type::step;
+    using base_type::step_back;
+    using base_type::reset;
     
     value_type operator*() const override{        
         return 0;
     }
-};
 
 }   //end of namespace gtensor
 
