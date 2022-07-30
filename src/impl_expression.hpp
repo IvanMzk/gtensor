@@ -93,7 +93,8 @@ class expression_impl :
     public tensor_impl_base<ValT,Cfg>,
     public expression_impl_base<ValT,Cfg>,
     public trivial_impl_base<ValT,Cfg>,
-    public storage_tensor_impl_base<ValT,Cfg>
+    public storage_tensor_impl_base<ValT,Cfg>,
+    public view_index_converter<ValT,Cfg>
 {
     using impl_base_type = tensor_impl_base<ValT,Cfg>;
     using config_type = Cfg<ValT>;
@@ -132,12 +133,14 @@ class expression_impl :
         return trivial_walker_factory<ValT,Cfg>::create_walker(shape(), strides(), *this);
     }
 
+    index_type view_index_convert(const index_type& idx)const override{return idx;}
     bool is_storage()const override{return is_cached();}
     const value_type* storage_data()const override{return cache.data();}
     
     const expression_impl_base<ValT,Cfg>* as_expression()const override{return static_cast<const expression_impl_base<ValT,Cfg>*>(this);}
     const trivial_impl_base<ValT,Cfg>* as_expression_trivial()const override{return static_cast<const trivial_impl_base<ValT,Cfg>*>(this);}
     const storage_tensor_impl_base<ValT,Cfg>* as_storage_tensor()const override{return static_cast<const storage_tensor_impl_base<ValT,Cfg>*>(this);}
+    const view_index_converter<ValT,Cfg>* as_index_converter()const override{return static_cast<const view_index_converter<ValT,Cfg>*>(this);}
 
 public:            
     explicit expression_impl(Ops&...operands_):

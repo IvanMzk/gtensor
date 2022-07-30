@@ -18,7 +18,8 @@ template<typename ValT, template<typename> typename Cfg, typename DescT>
 class view_impl : 
     public tensor_impl_base<ValT, Cfg>,
     public view_impl_base<ValT,Cfg>,
-    public storage_tensor_impl_base<ValT,Cfg>
+    public storage_tensor_impl_base<ValT,Cfg>,
+    public view_index_converter<ValT,Cfg>
 {
     using impl_base_type = tensor_impl_base<ValT,Cfg>;
     using config_type = Cfg<ValT>;        
@@ -31,6 +32,7 @@ class view_impl :
     DescT descriptor;
     std::shared_ptr<impl_base_type> parent;
     const impl_base_type* view_root{parent->tensor_kind() == detail::tensor_kinds::view ? static_cast<const view_impl*>(parent.get())->get_view_root() : parent.get()};
+    const view_index_converter<ValT,Cfg>* parent_converter{parent->as_index_converter()};
     storage_type cache{};
 
     storage_walker_impl<ValT,Cfg> create_storage_walker()const override{
@@ -53,12 +55,15 @@ class view_impl :
             parent->tensor_kind() == detail::tensor_kinds::expression && parent->is_storage() ||
             parent->tensor_kind() == detail::tensor_kinds::view && parent->as_view()->is_cached();
     }
+    const storage_tensor_impl_base<ValT,Cfg>* as_storage_tensor()const override{return static_cast<const storage_tensor_impl_base<ValT,Cfg>*>(this);}
+    const view_impl_base<ValT,Cfg>* as_view()const override{return static_cast<const view_impl_base<ValT,Cfg>*>(this);}
+    const view_index_converter<ValT,Cfg>* as_index_converter()const override{return static_cast<const view_index_converter<ValT,Cfg>*>(this);}
+
+    index_type view_index_convert(const index_type& idx)const override{return parent_converter->convert(descriptor.convert(idx));}
     bool is_cached()const override{return cache.size();}    
     bool is_storage()const override{return is_storage_parent() || is_cached();}
     bool is_trivial()const override{return true;}
     const value_type* storage_data()const override{return cache.data();}
-    const storage_tensor_impl_base<ValT,Cfg>* as_storage_tensor()const override{return static_cast<const storage_tensor_impl_base<ValT,Cfg>*>(this);}
-    const view_impl_base<ValT,Cfg>* as_view()const override{return static_cast<const view_impl_base<ValT,Cfg>*>(this);}
     const impl_base_type* get_view_root()const{return view_root;}
 
 public:

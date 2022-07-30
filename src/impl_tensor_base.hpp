@@ -37,6 +37,7 @@ public:
     virtual const trivial_impl_base<ValT,Cfg>* as_expression_trivial()const{return nullptr;}
     virtual const storage_tensor_impl_base<ValT,Cfg>* as_storage_tensor()const{return nullptr;}
     virtual const view_impl_base<ValT,Cfg>* as_view()const{return nullptr;}
+    virtual const view_index_converter<ValT,Cfg>* as_index_converter()const{return nullptr;}
 };
 
 template<typename ValT, template<typename> typename Cfg>
@@ -106,6 +107,18 @@ public:
     // virtual const_iterator_type end()const = 0;
     auto create_walker()const{return create_storage_walker();}
     auto data()const{return storage_data();}
+    
+};
+
+template<typename ValT, template<typename> typename Cfg>
+class view_index_converter
+{
+    using index_type = typename Cfg<ValT>::index_type;
+    virtual index_type view_index_convert(const index_type&)const = 0;
+
+public:
+    virtual ~view_index_converter(){}        
+    auto convert(const index_type& idx)const{return view_index_convert(idx);}
     
 };
 
