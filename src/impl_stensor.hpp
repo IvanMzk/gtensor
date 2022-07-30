@@ -42,7 +42,8 @@ public storage_tensor_impl_base<ValT,Cfg>
 
     bool is_storage()const override{return true;}
     bool is_trivial()const override{return true;}
-    const value_type* storage_data()const{return elements.data();}
+    const value_type* storage_data()const override{return elements.data();}
+    const storage_tensor_impl_base<ValT,Cfg>* as_storage_tensor()const override{return static_cast<const storage_tensor_impl_base<ValT,Cfg>*>(this);}
 
     storage_walker_impl<ValT,Cfg> create_storage_walker()const override{
         return storage_walker_factory<ValT,Cfg>::create_walker(shape(),strides(),elements.data());

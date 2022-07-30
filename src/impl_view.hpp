@@ -55,7 +55,9 @@ class view_impl :
     bool is_cached()const override{return cache.size();}    
     bool is_storage()const override{return is_storage_parent() || is_cached();}
     bool is_trivial()const override{return true;}
-    const value_type* storage_data()const{return cache.data();}
+    const value_type* storage_data()const override{return cache.data();}
+    const storage_tensor_impl_base<ValT,Cfg>* as_storage_tensor()const override{return static_cast<const storage_tensor_impl_base<ValT,Cfg>*>(this);}
+    const view_impl_base<ValT,Cfg>* as_view()const override{return static_cast<const view_impl_base<ValT,Cfg>*>(this);}
 
 public:
     template<typename DtT>

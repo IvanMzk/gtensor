@@ -33,11 +33,10 @@ public:
     virtual bool is_storage()const = 0;
     virtual bool is_trivial()const = 0;
 
-    auto as_expression()const{return dynamic_cast<const expression_impl_base<ValT,Cfg>*>(this);}
-    auto as_expression_trivial()const{return dynamic_cast<const trivial_impl_base<ValT,Cfg>*>(this);}
-    auto as_storage_tensor()const{return dynamic_cast<const storage_tensor_impl_base<ValT,Cfg>*>(this);}
-    auto as_view()const{return dynamic_cast<const view_impl_base<ValT,Cfg>*>(this);}
-
+    virtual const expression_impl_base<ValT,Cfg>* as_expression()const{return nullptr;}
+    virtual const trivial_impl_base<ValT,Cfg>* as_expression_trivial()const{return nullptr;}
+    virtual const storage_tensor_impl_base<ValT,Cfg>* as_storage_tensor()const{return nullptr;}
+    virtual const view_impl_base<ValT,Cfg>* as_view()const{return nullptr;}
 };
 
 template<typename ValT, template<typename> typename Cfg>

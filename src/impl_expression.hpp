@@ -133,7 +133,11 @@ class expression_impl :
     }
 
     bool is_storage()const override{return is_cached();}
-    const value_type* storage_data()const{return cache.data();}
+    const value_type* storage_data()const override{return cache.data();}
+    
+    const expression_impl_base<ValT,Cfg>* as_expression()const override{return static_cast<const expression_impl_base<ValT,Cfg>*>(this);}
+    const trivial_impl_base<ValT,Cfg>* as_expression_trivial()const override{return static_cast<const trivial_impl_base<ValT,Cfg>*>(this);}
+    const storage_tensor_impl_base<ValT,Cfg>* as_storage_tensor()const override{return static_cast<const storage_tensor_impl_base<ValT,Cfg>*>(this);}
 
 public:            
     explicit expression_impl(Ops&...operands_):
