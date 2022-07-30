@@ -30,6 +30,7 @@ class view_impl :
 
     DescT descriptor;
     std::shared_ptr<impl_base_type> parent;
+    const impl_base_type* view_root{parent->tensor_kind() == detail::tensor_kinds::view ? static_cast<const view_impl*>(parent.get())->get_view_root() : parent.get()};
     storage_type cache{};
 
     storage_walker_impl<ValT,Cfg> create_storage_walker()const override{
