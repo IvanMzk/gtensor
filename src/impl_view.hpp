@@ -59,6 +59,7 @@ class view_impl :
     const value_type* storage_data()const override{return cache.data();}
     const storage_tensor_impl_base<ValT,Cfg>* as_storage_tensor()const override{return static_cast<const storage_tensor_impl_base<ValT,Cfg>*>(this);}
     const view_impl_base<ValT,Cfg>* as_view()const override{return static_cast<const view_impl_base<ValT,Cfg>*>(this);}
+    const impl_base_type* get_view_root()const{return view_root;}
 
 public:
     template<typename DtT>
