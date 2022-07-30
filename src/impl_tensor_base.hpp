@@ -78,6 +78,18 @@ public:
     // virtual iterator_type end()const = 0;    
 };
 
+// template<typename ValT, template<typename> typename Cfg>
+// class view_expression_impl_base
+// {    
+//     virtual view_expression_walker_impl<ValT,Cfg> create_view_expression_walker()const = 0;
+// public:
+//     virtual ~view_expression_impl_base(){}
+//     virtual bool is_cached()const = 0;
+//     auto create_walker()const{return create_view_expression_walker();}
+//     // virtual iterator_type begin()const = 0;
+//     // virtual iterator_type end()const = 0;    
+// };
+
 template<typename ValT, template<typename> typename Cfg>
 class storage_tensor_impl_base 
 {
