@@ -68,7 +68,7 @@ class evaluating_storage_impl_base{
 public:
     virtual ~evaluating_storage_impl_base(){}    
     virtual std::unique_ptr<evaluating_storage_impl_base<ValT,Cfg>> clone(int)const = 0;
-    virtual value_type operator[](const index_type&)const = 0;
+    virtual value_type operator[](index_type) = 0;
 };
 
 template<typename ValT, template<typename> typename Cfg>
@@ -88,7 +88,7 @@ public:
     {}
     evaluating_storage(evaluating_storage&& other) = default;
             
-    value_type operator[](const index_type& idx){return impl->operator[](idx);}
+    value_type operator[](index_type idx){return impl->operator[](idx);}
 };
 
 

@@ -18,11 +18,8 @@ class evaluating_walker_impl : public walker_impl_base<ValT, Cfg>{
     index_type dim{static_cast<index_type>(shape->size())};
     F f{};
 
-
     auto shape_element(const index_type& direction)const{return (*shape)[direction];}
     bool can_walk(const index_type& direction)const{return direction < dim && shape_element(direction) != index_type(1);}
-    template<std::size_t...I>
-    void walk_helper(const index_type& direction, const index_type& steps, std::index_sequence<I...>){(std::get<I>(walkers).walk(direction,steps),...);}
     template<std::size_t...I>
     void step_helper(const index_type& direction, std::index_sequence<I...>){(std::get<I>(walkers).step(direction),...);}    
     template<std::size_t...I>
@@ -33,7 +30,10 @@ class evaluating_walker_impl : public walker_impl_base<ValT, Cfg>{
     void reset_helper(std::index_sequence<I...>){(std::get<I>(walkers).reset(),...);}    
     template<std::size_t...I>
     value_type deref_helper(std::index_sequence<I...>) const {return f(*std::get<I>(walkers)...);}
-    std::unique_ptr<walker_impl_base<ValT,Cfg>> clone()const override{return std::make_unique<evaluating_walker_impl<ValT,Cfg,F,Wks...>>(*this);}
+    std::unique_ptr<walker_impl_base<ValT,Cfg>> clone()const override{return std::make_unique<evaluating_walker_impl<ValT,Cfg,F,Wks...>>(*this);}    
+protected:
+    template<std::size_t...I>
+    void walk_helper(const index_type& direction, const index_type& steps, std::index_sequence<I...>){(std::get<I>(walkers).walk(direction,steps),...);}
 public:
     evaluating_walker_impl(const shape_type& shape_, Wks&&...walkers_):
         shape{&shape_},
@@ -77,8 +77,30 @@ class evaluating_storage_impl :
     using strides_type = typename detail::libdiv_strides_traits<config_type>::type;
     
     const strides_type* strides;
+    value_type data_cache{evaluate_at(0)};
+    index_type index_cache{0};
     std::unique_ptr<evaluating_storage_impl_base<ValT,Cfg>> clone(int)const override{return std::make_unique<evaluating_storage_impl<ValT,Cfg,F,Wks...>>(*this);}
-    value_type operator[](const index_type&)const override{return 0;}
+    value_type operator[](index_type idx)override{
+        if (index_cache == idx){
+            return data_cache;
+        }else{
+            return evaluate_at(idx);
+        }
+    }
+    value_type evaluate_at(index_type idx){
+        index_cache = idx;
+        base_type::reset();
+        auto sit_begin{(*strides).begin()};
+        auto sit_end{(*strides).end()};
+        for(index_type d{0};sit_begin!=sit_end; ++sit_begin,++d){
+            auto q = detail::divide(idx,*sit_begin);
+            if (q!=0){
+                base_type::walk_helper(d,q,std::make_index_sequence<sizeof...(Wks)>{});                
+            }
+        }
+        data_cache = base_type::operator*();
+        return data_cache;
+    }
 
 public:
     evaluating_storage_impl(const shape_type& shape_, const strides_type& strides_, Wks&&...walkers_):
