@@ -2,6 +2,7 @@
 #define IMPL_EWALKER_HPP_
 
 #include "impl_walker_base.hpp"
+#include "libdivide_helper.hpp"
 
 namespace gtensor{
 
@@ -61,6 +62,30 @@ public:
     }
     void reset()override{reset_helper(std::make_index_sequence<sizeof...(Wks)>{});}
     value_type operator*() const override{return deref_helper(std::make_index_sequence<sizeof...(Wks)>{});}
+};
+
+template<typename ValT, template<typename> typename Cfg, typename F, typename...Wks>
+class evaluating_storage_impl : 
+    public evaluating_storage_impl_base<ValT, Cfg>,
+    private evaluating_walker_impl<ValT, Cfg, F, Wks...>
+{
+    using base_type = evaluating_walker_impl<ValT, Cfg, F, Wks...>;
+    using config_type = Cfg<ValT>;        
+    using value_type = ValT;
+    using index_type = typename config_type::index_type;
+    using shape_type = typename config_type::shape_type;
+    using strides_type = typename detail::libdiv_strides_traits<config_type>::type;
+    
+    const strides_type* strides;
+    std::unique_ptr<walker_impl_base<ValT,Cfg>> clone()const override{return std::make_unique<evaluating_storage_impl<ValT,Cfg,F,Wks...>>(*this);}
+    value_type operator[](const index_type&)const override{return 0;}
+
+public:
+    evaluating_storage_impl(const shape_type& shape_, const strides_type& strides_, Wks&&...walkers_):
+        base_type{shape_, std::move(walkers_)...},
+        strides{&strides_}
+    {}
+
 };
 
 
