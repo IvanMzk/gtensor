@@ -75,11 +75,37 @@ class evaluating_walker_factory
         using dispatcher_type = detail::dispatcher<ValT,Cfg>;
         return dispatcher_type::call(maker, *std::get<I>(operands)...);
     }
+    
+    template<typename StT, typename F>
+    struct storage_maker{
+        using strides_type = StT;
+        const shape_type& shape;
+        const strides_type& strides;
+        storage_maker(const shape_type& shape_, const strides_type& strides_):
+            shape{shape_},
+            strides{strides_}
+        {}
+        template<typename...Args>
+        evaluating_storage<ValT,Cfg> operator()(const Args&...args)const{
+            using evaluating_storage_type = evaluating_storage_impl<ValT,Cfg,F,decltype(std::declval<Args>().create_walker())...>;
+            return std::unique_ptr<evaluating_storage_impl_base<ValT,Cfg>>{new evaluating_storage_type{shape,strides,args.create_walker()...}};
+        }
+    };
+    template<typename MakerT, typename...Ops, std::size_t...I>
+    static evaluating_storage<ValT,Cfg> create_storage_helper(const MakerT& maker, const std::tuple<Ops...>& operands, std::index_sequence<I...>){
+        using dispatcher_type = detail::dispatcher<ValT,Cfg>;
+        return dispatcher_type::call(maker, *std::get<I>(operands)...);
+    }
 public: 
     template<typename F, typename...Ops>
     static walker<ValT, Cfg> create_walker(const shape_type& shape, const F&, const std::tuple<Ops...>& operands){
         using maker_type = walker_maker<F>;
         return create_walker_helper(maker_type{shape}, operands, std::make_index_sequence<sizeof...(Ops)>{});
+    }
+    template<typename StT, typename F, typename...Ops>
+    static evaluating_storage<ValT,Cfg> create_storage(const shape_type& shape, const StT& strides, const F&, const std::tuple<Ops...>& operands){
+        using maker_type = storage_maker<StT, F>;
+        return create_storage_helper(maker_type{shape, strides}, operands, std::make_index_sequence<sizeof...(Ops)>{});
     }
 };
 
