@@ -60,6 +60,37 @@ public:
     value_type operator*() const{return impl->operator*();}    
 };
 
+template<typename ValT, template<typename> typename Cfg>
+class evaluating_storage_impl_base{
+    using config_type = Cfg<ValT>;        
+    using value_type = ValT;
+    using index_type = typename config_type::index_type;    
+public:
+    virtual ~evaluating_storage_impl_base(){}    
+    virtual std::unique_ptr<evaluating_storage_impl_base<ValT,Cfg>> clone()const = 0;
+    virtual value_type operator[](const index_type&)const = 0;
+};
+
+template<typename ValT, template<typename> typename Cfg>
+class evaluating_storage{
+    using config_type = Cfg<ValT>;        
+    using value_type = ValT;
+    using index_type = typename config_type::index_type;
+    using impl_base_type = evaluating_storage_impl_base<ValT, Cfg>;
+    
+    std::unique_ptr<impl_base_type> impl;
+public:    
+    evaluating_storage(std::unique_ptr<impl_base_type>&& impl_):
+        impl{std::move(impl_)}
+    {}
+    evaluating_storage(const evaluating_storage& other):
+        impl{other.impl->clone()}
+    {}
+    evaluating_storage(evaluating_storage&& other) = default;
+            
+    value_type operator[](const index_type& idx){return impl->operator[](idx);}
+};
+
 
 }   //end of namespace gtensor
 
