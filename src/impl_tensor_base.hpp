@@ -45,6 +45,7 @@ class expression_impl_base
 {
     using iterator_type = multiindex_iterator_impl<ValT,Cfg,walker<ValT,Cfg>>;    
     virtual walker<ValT,Cfg> create_evaluating_walker()const = 0;
+    virtual evaluating_storage<ValT,Cfg> create_evaluating_storage()const = 0;
 public:
     virtual ~expression_impl_base(){}    
     // virtual iterator_type begin()const = 0;
@@ -52,6 +53,7 @@ public:
     virtual bool is_cached()const = 0;
     virtual bool is_trivial()const = 0;
     auto create_walker()const{return create_evaluating_walker();}
+    auto create_storage()const{return create_evaluating_storage();}
 };
 
 template<typename ValT, template<typename> typename Cfg>
