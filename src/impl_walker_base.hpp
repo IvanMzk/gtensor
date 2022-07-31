@@ -67,7 +67,7 @@ class evaluating_storage_impl_base{
     using index_type = typename config_type::index_type;    
 public:
     virtual ~evaluating_storage_impl_base(){}    
-    virtual std::unique_ptr<evaluating_storage_impl_base<ValT,Cfg>> clone()const = 0;
+    virtual std::unique_ptr<evaluating_storage_impl_base<ValT,Cfg>> clone(int)const = 0;
     virtual value_type operator[](const index_type&)const = 0;
 };
 
@@ -84,7 +84,7 @@ public:
         impl{std::move(impl_)}
     {}
     evaluating_storage(const evaluating_storage& other):
-        impl{other.impl->clone()}
+        impl{other.impl->clone(0)}
     {}
     evaluating_storage(evaluating_storage&& other) = default;
             

@@ -77,7 +77,7 @@ class evaluating_storage_impl :
     using strides_type = typename detail::libdiv_strides_traits<config_type>::type;
     
     const strides_type* strides;
-    std::unique_ptr<walker_impl_base<ValT,Cfg>> clone()const override{return std::make_unique<evaluating_storage_impl<ValT,Cfg,F,Wks...>>(*this);}
+    std::unique_ptr<evaluating_storage_impl_base<ValT,Cfg>> clone(int)const override{return std::make_unique<evaluating_storage_impl<ValT,Cfg,F,Wks...>>(*this);}
     value_type operator[](const index_type&)const override{return 0;}
 
 public:
