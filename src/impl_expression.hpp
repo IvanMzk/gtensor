@@ -78,11 +78,27 @@ inline bool is_trivial_operand(const T& operand){
     }
 }
 
-
-
 template<typename T> inline constexpr bool is_valid_operand = false;
 template<typename...T> inline constexpr bool is_valid_operand<std::shared_ptr<tensor_impl_base<T...>>> = true;
 template<typename...Ops> inline constexpr bool is_valid_operands = (is_valid_operand<Ops>&&...);
+
+template<typename ValT, template<typename> typename Cfg, std::enable_if_t<detail::is_mode_div_native<Cfg<ValT>> ,int> =0 >
+inline const auto& strides_div(const stensor_descriptor<ValT, Cfg>& desc){
+    return desc.strides();
+}
+template<typename ValT, template<typename> typename Cfg, std::enable_if_t<detail::is_mode_div_libdivide<Cfg<ValT>> ,int> =0 >
+inline const auto& strides_div(const stensor_descriptor<ValT, Cfg>& desc){
+    return desc.strides_libdivide();
+}
+// template<typename ValT, template<typename> typename Cfg, std::enable_if_t<detail::is_mode_div_native<Cfg<ValT>> ,int> =0 >
+// inline const auto& strides_to_divide(const stensor_descriptor<ValT, Cfg>& desc){
+//     return desc.strides();
+// }
+// template<typename ValT, template<typename> typename Cfg, std::enable_if_t<detail::is_mode_div_libdivide<Cfg<ValT>> ,int> =0 >
+// inline const auto& strides_to_divide(const stensor_descriptor<ValT, Cfg>& desc){
+//     return desc.strides_libdivide();
+// }
+
 
 }   //end of namespace detail
 
@@ -131,6 +147,9 @@ class expression_impl :
     }
     ewalker_trivial_impl<ValT,Cfg> create_trivial_walker()const override{
         return trivial_walker_factory<ValT,Cfg>::create_walker(shape(), strides(), *this);
+    }
+    evaluating_storage<ValT,Cfg> create_evaluating_storage()const override{
+        return evaluating_walker_factory<ValT,Cfg>::create_storage(shape(), detail::strides_div(descriptor), f,operands);
     }
 
     index_type view_index_convert(const index_type& idx)const override{return idx;}
