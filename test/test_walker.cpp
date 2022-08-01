@@ -13,6 +13,8 @@ using gtensor::walker;
 using gtensor::walker_impl_base;
 using gtensor::storage_walker_impl;
 using gtensor::ewalker_trivial_impl;
+using gtensor::evaluating_storage;
+
 
 template<typename ValT, template<typename> typename Cfg>
 struct storage_walker_test_tensor : public tensor<ValT,Cfg>{
@@ -54,6 +56,9 @@ struct evaluating_walker_test_tensor : public tensor<ValT,Cfg>{
     walker<ValT,Cfg> create_walker()const{
         return get_impl()->as_expression()->create_walker();
     }
+    evaluating_storage<ValT,Cfg> create_storage()const{
+        return get_impl()->as_expression()->create_storage();
+    }
 };
 
 
@@ -66,9 +71,16 @@ struct stensor_maker{
 };
 //make trivial broadcast expression with data {{{1,2,3},{4,5,6}}}
 template<typename ValT>
-struct trivial_expression_maker{
+struct trivial_expression_maker_trivial_walker{
     using value_type = ValT;
     using tensor_type = trivial_walker_test_tensor<ValT,default_config>;
+    tensor_type operator()(){return tensor_type{{{-1,-1,-1},{-1,-1,-1}}} + tensor_type{{{1,2,3},{1,2,3}}} + tensor_type{{{1,1,1},{4,4,4}}};}
+};
+//make trivial broadcast expression with data {{{1,2,3},{4,5,6}}}
+template<typename ValT>
+struct trivial_expression_maker_ewalker{
+    using value_type = ValT;
+    using tensor_type = evaluating_walker_test_tensor<ValT,default_config>;
     tensor_type operator()(){return tensor_type{{{-1,-1,-1},{-1,-1,-1}}} + tensor_type{{{1,2,3},{1,2,3}}} + tensor_type{{{1,1,1},{4,4,4}}};}
 };
 //make expression with data {{{1,2,3},{4,5,6}}}
@@ -123,7 +135,8 @@ TEMPLATE_TEST_CASE("test_walker","test_walker",
                     test_walker_::stensor_maker<float>,
                     test_walker_::not_trivial_expression_maker<float>,
                     test_walker_::trivial_subtree_expression_maker<float>,
-                    test_walker_::trivial_expression_maker<float>,
+                    test_walker_::trivial_expression_maker_ewalker<float>,
+                    test_walker_::trivial_expression_maker_trivial_walker<float>,
                     test_walker_::view_slice_of_stensor_maker<float>,
                     test_walker_::view_transpose_of_stensor_maker<float>,
                     test_walker_::view_subdim_of_stensor_maker<float>,
@@ -134,7 +147,7 @@ TEMPLATE_TEST_CASE("test_walker","test_walker",
     using gtensor::config::default_config;
     using config_type = default_config<value_type>;
     using tensor_type = gtensor::tensor<value_type, default_config>;
-
+    
     auto test_data = GENERATE(
         test_type{*TestType{}().create_walker(), value_type{1}},
         test_type{*TestType{}().create_walker().walk(0,1), value_type{1}},
@@ -152,4 +165,26 @@ TEMPLATE_TEST_CASE("test_walker","test_walker",
     auto deref = std::get<0>(test_data);
     auto expected_deref = std::get<1>(test_data);
     REQUIRE(deref == expected_deref);
+}
+
+TEMPLATE_TEST_CASE("test_evaluating_storage","test_walker",
+                    test_walker_::not_trivial_expression_maker<float>,
+                    test_walker_::trivial_subtree_expression_maker<float>,
+                    test_walker_::trivial_expression_maker_ewalker<float>
+                    ){
+    using value_type = typename TestType::value_type;
+    using test_type = std::tuple<value_type,value_type>;
+
+    //0result,1expected
+    auto test_data = GENERATE(
+        test_type{TestType{}().create_storage()[0],value_type{1}},
+        test_type{TestType{}().create_storage()[5],value_type{6}},
+        test_type{TestType{}().create_storage()[1],value_type{2}},
+        test_type{TestType{}().create_storage()[2],value_type{3}},
+        test_type{TestType{}().create_storage()[4],value_type{5}},
+        test_type{TestType{}().create_storage()[3],value_type{4}}
+    );
+    auto result = std::get<0>(test_data);
+    auto expected = std::get<1>(test_data);
+    REQUIRE(result == expected);
 }
