@@ -35,9 +35,12 @@ public:
 
     virtual const expression_impl_base<ValT,Cfg>* as_expression()const{return nullptr;}
     virtual const trivial_impl_base<ValT,Cfg>* as_expression_trivial()const{return nullptr;}
+    
     virtual const storage_tensor_impl_base<ValT,Cfg>* as_storage_tensor()const{return nullptr;}
-    virtual const view_impl_base<ValT,Cfg>* as_view()const{return nullptr;}
     virtual const view_index_converter<ValT,Cfg>* as_index_converter()const{return nullptr;}
+    
+    virtual const view_impl_base<ValT,Cfg>* as_view()const{return nullptr;}
+    virtual const view_expression_impl_base<ValT,Cfg>* as_view_expression()const{return nullptr;}
 };
 
 template<typename ValT, template<typename> typename Cfg>
@@ -72,26 +75,26 @@ template<typename ValT, template<typename> typename Cfg>
 class view_impl_base
 {
     using iterator_type = multiindex_iterator_impl<ValT,Cfg,walker<ValT,Cfg>>;
-    virtual vwalker_impl<ValT,Cfg> create_view_walker()const = 0;
+    //virtual vwalker_impl<ValT,Cfg> create_view_walker()const = 0;
 public:
     virtual ~view_impl_base(){}
     virtual bool is_cached()const = 0;
-    auto create_walker()const{return create_view_walker();}
+    virtual detail::tensor_kinds view_root_kind()const = 0;
+    //auto create_walker()const{return create_view_walker();}
     // virtual iterator_type begin()const = 0;
     // virtual iterator_type end()const = 0;    
 };
 
-// template<typename ValT, template<typename> typename Cfg>
-// class view_expression_impl_base
-// {    
-//     virtual view_expression_walker_impl<ValT,Cfg> create_view_expression_walker()const = 0;
-// public:
-//     virtual ~view_expression_impl_base(){}
-//     virtual bool is_cached()const = 0;
-//     auto create_walker()const{return create_view_expression_walker();}
-//     // virtual iterator_type begin()const = 0;
-//     // virtual iterator_type end()const = 0;    
-// };
+template<typename ValT, template<typename> typename Cfg>
+class view_expression_impl_base
+{    
+    virtual view_expression_walker_impl<ValT,Cfg> create_view_expression_walker()const = 0;
+public:
+    virtual ~view_expression_impl_base(){}    
+    auto create_walker()const{return create_view_expression_walker();}
+    // virtual iterator_type begin()const = 0;
+    // virtual iterator_type end()const = 0;    
+};
 
 template<typename ValT, template<typename> typename Cfg>
 class storage_tensor_impl_base 

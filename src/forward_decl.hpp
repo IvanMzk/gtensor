@@ -8,6 +8,7 @@ template<typename ValT, template<typename> typename Cfg> class storage_tensor_im
 template<typename ValT, template<typename> typename Cfg> class expression_impl_base;
 template<typename ValT, template<typename> typename Cfg> class trivial_impl_base;
 template<typename ValT, template<typename> typename Cfg> class view_impl_base;
+template<typename ValT, template<typename> typename Cfg> class view_expression_impl_base;
 template<typename ValT, template<typename> typename Cfg> class view_index_converter;
 template<typename ValT, template<typename> typename Cfg, typename F, typename...Ops> class expression_impl;
 template<typename ValT, template<typename> typename Cfg> class stensor_impl;
@@ -19,6 +20,7 @@ template<typename ValT, template<typename> typename Cfg> class walker_impl_base;
 template<typename ValT, template<typename> typename Cfg> class storage_walker_impl;
 template<typename ValT, template<typename> typename Cfg> class ewalker_trivial_impl;
 template<typename ValT, template<typename> typename Cfg> class vwalker_impl;
+template<typename ValT, template<typename> typename Cfg> class view_expression_walker_impl;
 template<typename DifT, typename N> struct slice;
 template<typename ValT, template<typename> typename Cfg, typename Wkr> class multiindex_iterator_impl;
 
