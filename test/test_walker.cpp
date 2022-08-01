@@ -14,6 +14,7 @@ using gtensor::walker_impl_base;
 using gtensor::storage_walker_impl;
 using gtensor::ewalker_trivial_impl;
 using gtensor::evaluating_storage;
+using gtensor::view_expression_walker_impl;
 
 
 template<typename ValT, template<typename> typename Cfg>
@@ -61,6 +62,21 @@ struct evaluating_walker_test_tensor : public tensor<ValT,Cfg>{
     }
 };
 
+template<typename ValT, template<typename> typename Cfg>
+struct view_expression_walker_test_tensor : public tensor<ValT,Cfg>{
+    using base_type = tensor<ValT,Cfg>;
+    using tensor::tensor;
+    view_expression_walker_test_tensor(const base_type& base):
+        base_type{base}
+    {}
+    view_expression_walker_impl<ValT,Cfg> create_native_walker()const{
+        return get_impl()->as_view_expression()->create_walker();
+    }
+    walker<ValT,Cfg> create_walker()const{
+        return std::make_unique<view_expression_walker_impl<ValT,Cfg>>(create_native_walker());
+    }    
+};
+
 
 //make 3d stensor with data {{{1,2,3},{4,5,6}}}
 template<typename ValT>
@@ -105,6 +121,28 @@ struct view_slice_of_stensor_maker{
     typename default_config<ValT>::nop_type nop;
     tensor_type operator()(){return tensor_type{{{0,0,0,0,0,0},{0,0,0,0,0,0}},{{1,0,2,0,3,0},{4,0,5,0,6,0}}}({{1,2},{},{nop,nop,2}});}
 };
+//make view slice of non trivial expression with data {{{1,2,3},{4,5,6}}}
+template<typename ValT>
+struct view_slice_of_expression_maker{
+    using value_type = ValT;
+    using tensor_type = view_expression_walker_test_tensor<ValT,default_config>;
+    typename default_config<ValT>::nop_type nop;    
+    tensor_type operator()(){
+        auto e = tensor_type{2} * tensor_type{{1,1,1,1,1,1}} + tensor_type{{{0,0,0,0,0,0},{0,0,0,0,0,0}},{{1,0,2,0,3,0},{4,0,5,0,6,0}}} - tensor_type{{{3,3,3,3,3,3}}} + tensor_type{1};
+        return e({{1,2},{},{nop,nop,2}});        
+    }
+};
+//make view slice of view of non trivial expression with data {{{1,2,3},{4,5,6}}}
+template<typename ValT>
+struct view_view_slice_of_expression_maker{
+    using value_type = ValT;
+    using tensor_type = view_expression_walker_test_tensor<ValT,default_config>;
+    typename default_config<ValT>::nop_type nop;    
+    tensor_type operator()(){
+        auto e = tensor_type{2} * tensor_type{{1,1,1,1,1,1}} + tensor_type{{{0,0,0,0,0,0},{0,0,0,0,0,0}},{{3,0,2,0,1,0},{6,0,5,0,4,0}}} - tensor_type{{{3,3,3,3,3,3}}} + tensor_type{1};
+        return e({{1,2},{},{nop,nop,2}})({{},{},{nop,nop,-1}});
+    }
+};
 //make view transpose of stensor with data {{{1,2,3},{4,5,6}}}
 template<typename ValT>
 struct view_transpose_of_stensor_maker{
@@ -138,6 +176,8 @@ TEMPLATE_TEST_CASE("test_walker","test_walker",
                     test_walker_::trivial_expression_maker_ewalker<float>,
                     test_walker_::trivial_expression_maker_trivial_walker<float>,
                     test_walker_::view_slice_of_stensor_maker<float>,
+                    test_walker_::view_slice_of_expression_maker<float>,
+                    test_walker_::view_view_slice_of_expression_maker<float>,
                     test_walker_::view_transpose_of_stensor_maker<float>,
                     test_walker_::view_subdim_of_stensor_maker<float>,
                     test_walker_::view_reshape_of_stensor_maker<float>
@@ -146,7 +186,7 @@ TEMPLATE_TEST_CASE("test_walker","test_walker",
     using test_type = std::tuple<value_type,value_type>;
     using gtensor::config::default_config;
     using config_type = default_config<value_type>;
-    using tensor_type = gtensor::tensor<value_type, default_config>;
+    using tensor_type = gtensor::tensor<value_type, default_config>;    
     
     auto test_data = GENERATE(
         test_type{*TestType{}().create_walker(), value_type{1}},
