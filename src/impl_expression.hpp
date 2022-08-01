@@ -166,18 +166,6 @@ public:
         descriptor{detail::broadcast(operands_->shape()...)},
         operands{operands_...}
     {}
-    expression_impl(const expression_impl& other):
-        descriptor{other.descriptor},
-        operands{other.operands},
-        f{other.f},
-        cache{other.cache}
-    {}
-    expression_impl(expression_impl&& other):
-        descriptor{std::move(other.descriptor)},
-        operands{std::move(other.operands)},
-        f{std::move(other.f)},
-        cache{std::move(other.cache)}
-    {}
 
     detail::tensor_kinds tensor_kind()const override{return detail::tensor_kinds::expression;}
     index_type size()const override{return descriptor.size();}
