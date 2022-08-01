@@ -30,10 +30,18 @@ class dispatcher{
                 return f(first, *second.as_expression());
             }
         }
-        else if (second.tensor_kind() == tensor_kinds::view)
+        else if (auto v = second.as_view())
         {
-            return f(first, *second.as_view());
-        }
+            if (v->view_root_kind() == tensor_kinds::expression){
+                if (second.is_trivial()){
+                    throw dispatch_exception("type is not supported by dispatcher");
+                }else{
+                    return f(first, *second.as_view_expression());
+                }
+            }else{
+                throw dispatch_exception("type is not supported by dispatcher");
+            }
+        }        
         else
         {
             throw dispatch_exception("type is not supported by dispatcher");
@@ -53,10 +61,19 @@ class dispatcher{
             else{
                 return dispatch_second(f, *first.as_expression(), second);
             }
-        }
-        else if (first.tensor_kind() == tensor_kinds::view)
+        }        
+        else if (auto v = first.as_view())
         {
-            return dispatch_second(f, *first.as_view(), second);
+            if (v->view_root_kind() == tensor_kinds::expression){
+                if (first.is_trivial()){
+                    throw dispatch_exception("type is not supported by dispatcher");
+                }else{
+                    return dispatch_second(f, *first.as_view_expression(), second);
+                }
+            }
+            else{
+                throw dispatch_exception("type is not supported by dispatcher");
+            }
         }
         else
         {
