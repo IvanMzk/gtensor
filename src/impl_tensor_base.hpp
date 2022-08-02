@@ -136,7 +136,7 @@ class walker_maker
 
 public:
     virtual ~walker_maker(){}        
-    auto make_walker()const{return create_polymorphic_walker();}
+    auto create_walker()const{return create_polymorphic_walker();}
     
 };
 

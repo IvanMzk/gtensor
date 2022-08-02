@@ -45,13 +45,21 @@ class stensor_impl :
     const view_index_converter<ValT,Cfg>* as_index_converter()const override{return static_cast<const view_index_converter<ValT,Cfg>*>(this);}
     const walker_maker<ValT,Cfg>* as_walker_maker()const{return static_cast<const walker_maker<ValT,Cfg>*>(this);}
 
+    storage_walker_impl<ValT,Cfg> create_storage_walker()const override{
+        return storage_walker_factory<ValT,Cfg>::create_walker(shape(),strides(),elements.data());
+    }
+    
+    walker<ValT, Cfg> create_polymorphic_walker()const override{
+        return polymorphic_walker_factory<ValT,Cfg>::create_walker(*this, descriptor ,elements.data());
+    }
+    
     bool is_storage()const override{return true;}
     bool is_trivial()const override{return true;}
     const value_type* storage_data()const override{return elements.data();}
     index_type view_index_convert(const index_type& idx)const override{return idx;}
-    storage_walker_impl<ValT,Cfg> create_storage_walker()const override{
-        return storage_walker_factory<ValT,Cfg>::create_walker(shape(),strides(),elements.data());
-    }
+    
+
+
 
 
     // typename storage_type::const_iterator begin()const override{return elements.begin();}

@@ -48,7 +48,10 @@ class view_impl :
         }
     }
     view_expression_walker_impl<ValT,Cfg> create_view_expression_walker()const override{
-        return view_expression_walker_impl<ValT,Cfg>{shape(),descriptor.cstrides(),descriptor.offset(), parent_converter, view_root->as_expression()->create_storage()};        
+        return view_expression_walker_impl<ValT,Cfg>{shape(),descriptor.cstrides(),descriptor.offset(), parent_converter, view_root->as_expression()->create_storage()};
+    }
+    walker<ValT, Cfg> create_polymorphic_walker()const override{
+        return nullptr;
     }
     
     const storage_tensor_impl_base<ValT,Cfg>* as_storage_tensor()const override{return static_cast<const storage_tensor_impl_base<ValT,Cfg>*>(this);}
