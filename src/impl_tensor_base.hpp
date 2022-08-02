@@ -41,6 +41,8 @@ public:
     
     virtual const view_impl_base<ValT,Cfg>* as_view()const{return nullptr;}
     virtual const view_expression_impl_base<ValT,Cfg>* as_view_expression()const{return nullptr;}
+    
+    virtual const walker_maker<ValT,Cfg>* as_walker_maker()const{return nullptr;}
 };
 
 template<typename ValT, template<typename> typename Cfg>
@@ -126,6 +128,19 @@ public:
     auto convert(const index_type& idx)const{return view_index_convert(idx);}
     
 };
+
+template<typename ValT, template<typename> typename Cfg>
+class walker_maker
+{    
+    virtual walker<ValT, Cfg> create_polymorphic_walker()const = 0;
+
+public:
+    virtual ~walker_maker(){}        
+    auto make_walker()const{return create_polymorphic_walker();}
+    
+};
+
+
 
 
 

@@ -110,7 +110,8 @@ class expression_impl :
     public expression_impl_base<ValT,Cfg>,
     public trivial_impl_base<ValT,Cfg>,
     public storage_tensor_impl_base<ValT,Cfg>,
-    public view_index_converter<ValT,Cfg>
+    public view_index_converter<ValT,Cfg>,
+    public walker_maker<ValT, Cfg>
 {
     using impl_base_type = tensor_impl_base<ValT,Cfg>;
     using config_type = Cfg<ValT>;
@@ -160,6 +161,7 @@ class expression_impl :
     const trivial_impl_base<ValT,Cfg>* as_expression_trivial()const override{return static_cast<const trivial_impl_base<ValT,Cfg>*>(this);}
     const storage_tensor_impl_base<ValT,Cfg>* as_storage_tensor()const override{return static_cast<const storage_tensor_impl_base<ValT,Cfg>*>(this);}
     const view_index_converter<ValT,Cfg>* as_index_converter()const override{return static_cast<const view_index_converter<ValT,Cfg>*>(this);}
+    const walker_maker<ValT,Cfg>* as_walker_maker()const{return static_cast<const walker_maker<ValT,Cfg>*>(this);}
 
 public:            
     explicit expression_impl(Ops&...operands_):

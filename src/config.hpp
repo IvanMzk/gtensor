@@ -44,8 +44,8 @@ struct default_config{
     //using trivial_broadcast_eval_mode = mode_trivial_broadcast_eval_multi;
     //using trivial_broadcast_eval_mode = mode_trivial_broadcast_eval_flat;
     
-    //using div_mode = mode_div_libdivide;
-    using div_mode = mode_div_native;
+    using div_mode = mode_div_libdivide;
+    //using div_mode = mode_div_native;
     
     using difference_type = std::int64_t;
     using index_type = difference_type;
