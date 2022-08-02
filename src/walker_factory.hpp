@@ -112,6 +112,56 @@ public:
 
 
 
+template<typename ValT, template<typename> typename Cfg>
+class polymorphic_walker_factory
+{
+    using config_type = Cfg<ValT>;        
+    using value_type = ValT;
+    using shape_type = typename config_type::shape_type;    
+    using index_type = typename config_type::index_type;    
+
+    static walker<ValT,Cfg> create_walker_helper(const tensor_impl_base<ValT,Cfg>& parent, const value_type* data){
+        return std::unique_ptr<walker_impl_base<ValT,Cfg>>{new storage_walker_impl<ValT,Cfg>{parent.shape(),parent.strides(),data}};
+    }
+    template<typename F, typename...Ops>
+    static walker<ValT,Cfg> create_walker_helper(const tensor_impl_base<ValT,Cfg>& parent, 
+                                                    const shape_type& shape,
+                                                    const shape_type& strides, 
+                                                    const F& f, 
+                                                    const std::tuple<Ops...>& operands, 
+                                                    const value_type* cache)
+    {        
+        if (parent.is_storage()){
+            create_walker_helper(parent,shape,strides,cache);
+        }else if(parent.is_trivial()){
+            return std::unique_ptr<walker_impl_base<ValT,Cfg>>{new ewalker_trivial_impl<ValT,Cfg>{shape,strides,parent}};
+        }else{
+            return create_evaluating_walker_helper(shape, f, operands, std::make_index_sequence<sizeof...(Ops)>{});
+        }
+    }
+    // static walker<ValT,Cfg> create_walker_helper(const tensor_impl_base<ValT,Cfg>& parent, 
+    //                                                 const shape_type& shape,
+    //                                                 const shape_type& strides,
+    //                                                 const shape_type& cstrides,
+    //                                                 const index_type& offset,
+
+    
+
+
+    template<typename F, typename...Ops, std::size_t...I>
+    static walker<ValT,Cfg> create_evaluating_walker_helper(const shape_type& shape, const F&, const std::tuple<Ops...>& operands, std::index_sequence<I...>){
+        using evaluating_walker_type = evaluating_walker_impl<ValT,Cfg,F,decltype(std::declval<Ops>()->as_walker_maker()->create_walker())...>;
+        return std::unique_ptr<walker_impl_base<ValT,Cfg>>{new evaluating_walker_type{shape,std::get<I>(operands)->as_walker_maker()->create_walker()...}};
+    }
+
+
+public:
+    template<typename...Args>
+    static walker<ValT, Cfg> create_walker(const tensor_impl_base<ValT,Cfg>& parent, Args&&...args){
+        return create_walker_helper(parent, std::forward<Args>(args)...);
+    }
+};
+
 
 
 
