@@ -31,7 +31,7 @@ class view_impl :
     using storage_type = typename config_type::storage_type;
     using slices_collection_type = typename config_type::slices_collection_type;
 
-    DescT descriptor;
+    DescT descriptor_;
     std::shared_ptr<impl_base_type> parent;
     const impl_base_type* view_root{parent->tensor_kind() == detail::tensor_kinds::view ? static_cast<const view_impl*>(parent.get())->get_view_root() : parent.get()};
     const view_index_converter<ValT,Cfg>* parent_converter{parent->as_index_converter()};
@@ -39,16 +39,16 @@ class view_impl :
 
     storage_walker_impl<ValT,Cfg> create_storage_walker()const override{
         if (is_cached()){
-            return storage_walker_factory<ValT,Cfg>::create_walker(shape(),strides(), cache.data()+descriptor.offset());
+            return storage_walker_factory<ValT,Cfg>::create_walker(shape(),strides(), cache.data()+descriptor_.offset());
         }else if(is_storage_parent()){
-            return storage_walker_factory<ValT,Cfg>::create_walker(shape(),descriptor.cstrides(), parent->as_storage_tensor()->data()+descriptor.offset());
+            return storage_walker_factory<ValT,Cfg>::create_walker(shape(),descriptor_.cstrides(), parent->as_storage_tensor()->data()+descriptor_.offset());
         }
         else{
             throw view_impl_exception("storage_walker cant be created, view not cached and parent not storage");
         }
     }
     view_expression_walker_impl<ValT,Cfg> create_view_expression_walker()const override{
-        return view_expression_walker_impl<ValT,Cfg>{shape(),descriptor.cstrides(),descriptor.offset(), parent_converter, view_root->as_expression()->create_storage()};
+        return view_expression_walker_impl<ValT,Cfg>{shape(),descriptor_.cstrides(),descriptor_.offset(), parent_converter, view_root->as_expression()->create_storage()};
     }
     walker<ValT, Cfg> create_polymorphic_walker()const override{
         return nullptr;
@@ -67,7 +67,7 @@ class view_impl :
             parent->tensor_kind() == detail::tensor_kinds::view && parent->as_view()->is_cached();
     }
 
-    index_type view_index_convert(const index_type& idx)const override{return parent_converter->convert(descriptor.convert(idx));}
+    index_type view_index_convert(const index_type& idx)const override{return parent_converter->convert(descriptor_.convert(idx));}
     bool is_cached()const override{return cache.size();}
     detail::tensor_kinds view_root_kind()const override{return view_root->tensor_kind();}
     bool is_storage()const override{return is_storage_parent() || is_cached();}
@@ -77,21 +77,22 @@ class view_impl :
 
 public:
     template<typename DtT>
-    view_impl(DtT&& descriptor_, const std::shared_ptr<impl_base_type>& parent_):
-        descriptor{std::forward<DtT>(descriptor_)},
+    view_impl(DtT&& descriptor__, const std::shared_ptr<impl_base_type>& parent_):
+        descriptor_{std::forward<DtT>(descriptor__)},
         parent{parent_}
     {}    
 
     detail::tensor_kinds tensor_kind()const override{return detail::tensor_kinds::view;}
-    index_type size()const override{return descriptor.size();}
-    index_type dim()const override{return descriptor.dim();}
-    const shape_type& shape()const override{return descriptor.shape();}
-    const shape_type& strides()const override{return descriptor.strides();}
+    const descriptor_base<ValT,Cfg>& descriptor()const override{return descriptor_;}
+    index_type size()const override{return descriptor_.size();}
+    index_type dim()const override{return descriptor_.dim();}
+    const shape_type& shape()const override{return descriptor_.shape();}
+    const shape_type& strides()const override{return descriptor_.strides();}
     value_type trivial_at(const index_type& idx)const override{return value_type(0);}    
 
     std::string to_str()const override{
         std::stringstream ss{};
-        ss<<"{"<<[&ss,this](){ss<<descriptor.to_str(); return "}";}();
+        ss<<"{"<<[&ss,this](){ss<<descriptor_.to_str(); return "}";}();
         return ss.str();
     }
 };

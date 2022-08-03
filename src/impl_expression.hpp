@@ -124,7 +124,7 @@ class expression_impl :
     using iterator_type = multiindex_iterator_impl<ValT,Cfg,walker<ValT,Cfg>>; 
     static_assert(detail::is_valid_operands<Ops...>);
 
-    descriptor_type descriptor;
+    descriptor_type descriptor_;
     std::tuple<Ops...> operands;
     F f{};
     storage_type cache{};    
@@ -135,7 +135,7 @@ class expression_impl :
     // }
     // template<typename C = config_type, std::enable_if_t<detail::is_mode_div_libdivide<C> ,int> =0 >
     // auto create_iterator(const index_type& i)const{
-    //     return i==0 ? iterator_type{create_walker(), shape(), descriptor.strides_libdivide()} : iterator_type{create_walker(), shape(), descriptor.strides_libdivide(), i};
+    //     return i==0 ? iterator_type{create_walker(), shape(), descriptor_.strides_libdivide()} : iterator_type{create_walker(), shape(), descriptor_.strides_libdivide(), i};
     // } 
     template<std::size_t...I>
     value_type trivial_at_helper(const index_type& idx, std::index_sequence<I...>)const{return f(std::get<I>(operands)->trivial_at(idx)...);} 
@@ -150,10 +150,11 @@ class expression_impl :
         return trivial_walker_factory<ValT,Cfg>::create_walker(shape(), strides(), *this);
     }
     evaluating_storage<ValT,Cfg> create_evaluating_storage()const override{
-        return evaluating_walker_factory<ValT,Cfg>::create_storage(shape(), detail::strides_div(descriptor), f,operands);
+        return evaluating_walker_factory<ValT,Cfg>::create_storage(shape(), detail::strides_div(descriptor_), f,operands);
     }
     walker<ValT, Cfg> create_polymorphic_walker()const override{
-        return polymorphic_walker_factory<ValT,Cfg>::create_walker(*this, shape(),strides(),f,operands,cache.data());
+        //return polymorphic_walker_factory<ValT,Cfg>::create_walker(*this, shape(),strides(),f,operands,cache.data());
+        return nullptr;
     }    
 
     index_type view_index_convert(const index_type& idx)const override{return idx;}
@@ -168,15 +169,16 @@ class expression_impl :
 
 public:            
     explicit expression_impl(Ops&...operands_):
-        descriptor{detail::broadcast(operands_->shape()...)},
+        descriptor_{detail::broadcast(operands_->shape()...)},
         operands{operands_...}
     {}
 
     detail::tensor_kinds tensor_kind()const override{return detail::tensor_kinds::expression;}
-    index_type size()const override{return descriptor.size();}
-    index_type dim()const override{return descriptor.dim();}
-    const shape_type& shape()const override{return descriptor.shape();}
-    const shape_type& strides()const override{return descriptor.strides();}
+    const descriptor_base<ValT,Cfg>& descriptor()const override{return descriptor_;}
+    index_type size()const override{return descriptor_.size();}
+    index_type dim()const override{return descriptor_.dim();}
+    const shape_type& shape()const override{return descriptor_.shape();}
+    const shape_type& strides()const override{return descriptor_.strides();}
     bool is_cached()const override{return cache.size();}
     bool is_trivial()const override{return detail::is_trivial(*this,operands);}
     // iterator_type begin()const{return create_iterator(0);}    
@@ -188,7 +190,7 @@ public:
 
     std::string to_str()const override{
         std::stringstream ss{};
-        ss<<"{"<<[&ss,this](){ss<<descriptor.to_str(); return "}";}();
+        ss<<"{"<<[&ss,this](){ss<<descriptor_.to_str(); return "}";}();
         return ss.str();
     }
 };

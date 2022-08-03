@@ -32,13 +32,13 @@ class stensor_impl :
     using descriptor_type = stensor_descriptor<value_type, Cfg>;
     using slices_collection_type = typename config_type::slices_collection_type;
 
-    descriptor_type descriptor;
+    descriptor_type descriptor_;
     storage_type elements;    
 
     template<typename Nested>
     stensor_impl(std::initializer_list<Nested> init_data, int):
-        descriptor{detail::list_parse<index_type,shape_type>(init_data)},
-        elements(descriptor.size())
+        descriptor_{detail::list_parse<index_type,shape_type>(init_data)},
+        elements(descriptor_.size())
     {detail::fill_from_list(init_data, elements.begin());}
 
     const storage_tensor_impl_base<ValT,Cfg>* as_storage_tensor()const override{return static_cast<const storage_tensor_impl_base<ValT,Cfg>*>(this);}
@@ -50,7 +50,8 @@ class stensor_impl :
     }
     
     walker<ValT, Cfg> create_polymorphic_walker()const override{
-        return polymorphic_walker_factory<ValT,Cfg>::create_walker(*this, descriptor ,elements.data());
+        //return polymorphic_walker_factory<ValT,Cfg>::create_walker(*this, descriptor_ ,elements.data());
+        return nullptr;
     }
     
     bool is_storage()const override{return true;}
@@ -66,18 +67,7 @@ class stensor_impl :
     // typename storage_type::const_iterator end()const override{return elements.end();}
 
 public:
-    stensor_impl& operator=(const stensor_impl& other) = delete;
-    stensor_impl& operator=(stensor_impl&& other) = delete;
     stensor_impl() = default;
-    stensor_impl(const stensor_impl& other):
-        descriptor{other.descriptor},
-        elements{other.elements}        
-    {}
-    stensor_impl(stensor_impl&& other):
-        descriptor{std::move(other.descriptor)},
-        elements{std::move(other.elements)}        
-    {}
-
     stensor_impl(typename detail::nested_initializer_list_type<value_type,1>::type init_data):stensor_impl(init_data,0){}
     stensor_impl(typename detail::nested_initializer_list_type<value_type,2>::type init_data):stensor_impl(init_data,0){}
     stensor_impl(typename detail::nested_initializer_list_type<value_type,3>::type init_data):stensor_impl(init_data,0){}
@@ -87,16 +77,17 @@ public:
     const value_type* data()const{return elements.data();}
 
     detail::tensor_kinds tensor_kind()const override{return detail::tensor_kinds::storage_tensor;}
-    index_type size()const override{return descriptor.size();}
-    index_type dim()const override{return descriptor.dim();}
-    const shape_type& shape()const override{return descriptor.shape();}
-    const shape_type& strides()const override{return descriptor.strides();}
+    const descriptor_base<ValT,Cfg>& descriptor()const override{return descriptor_;}
+    index_type size()const override{return descriptor_.size();}
+    index_type dim()const override{return descriptor_.dim();}
+    const shape_type& shape()const override{return descriptor_.shape();}
+    const shape_type& strides()const override{return descriptor_.strides();}
     value_type trivial_at(const index_type& idx)const override{return elements[idx];}
     
 
     std::string to_str()const override{
         std::stringstream ss{};
-        ss<<"{"<<[&ss,this](){ss<<descriptor.to_str(); for(const auto& i:elements){ss<<i<<",";} return "}";}();
+        ss<<"{"<<[&ss,this](){ss<<descriptor_.to_str(); for(const auto& i:elements){ss<<i<<",";} return "}";}();
         return ss.str();
     }
 };
