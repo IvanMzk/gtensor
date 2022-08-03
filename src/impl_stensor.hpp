@@ -50,8 +50,7 @@ class stensor_impl :
     }
     
     walker<ValT, Cfg> create_polymorphic_walker()const override{
-        //return polymorphic_walker_factory<ValT,Cfg>::create_walker(*this, descriptor_ ,elements.data());
-        return nullptr;
+        return polymorphic_walker_factory<ValT,Cfg>::create_walker(*this, shape(), strides(), elements.data());
     }
     
     bool is_storage()const override{return true;}

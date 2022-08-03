@@ -40,7 +40,7 @@ class view_impl :
     storage_walker_impl<ValT,Cfg> create_storage_walker()const override{
         if (is_cached()){
             return storage_walker_factory<ValT,Cfg>::create_walker(shape(),strides(), cache.data()+descriptor_.offset());
-        }else if(is_storage_parent()){
+        }else if(detail::is_storage(*parent)){
             return storage_walker_factory<ValT,Cfg>::create_walker(shape(),descriptor_.cstrides(), parent->as_storage_tensor()->data()+descriptor_.offset());
         }
         else{
@@ -51,7 +51,8 @@ class view_impl :
         return view_expression_walker_impl<ValT,Cfg>{shape(),descriptor_.cstrides(),descriptor_.offset(), parent_converter, view_root->as_expression()->create_storage()};
     }
     walker<ValT, Cfg> create_polymorphic_walker()const override{
-        return nullptr;
+        return polymorphic_walker_factory<ValT,Cfg>::create_walker(*this, *parent, *view_root, cache.data());
+        //return nullptr;
     }
     
     const storage_tensor_impl_base<ValT,Cfg>* as_storage_tensor()const override{return static_cast<const storage_tensor_impl_base<ValT,Cfg>*>(this);}
@@ -59,18 +60,11 @@ class view_impl :
     const view_index_converter<ValT,Cfg>* as_index_converter()const override{return static_cast<const view_index_converter<ValT,Cfg>*>(this);}
     const view_expression_impl_base<ValT,Cfg>* as_view_expression()const{return static_cast<const view_expression_impl_base<ValT,Cfg>*>(this);}
     const walker_maker<ValT,Cfg>* as_walker_maker()const{return static_cast<const walker_maker<ValT,Cfg>*>(this);}
-    
-    bool is_storage_parent()const{
-        return 
-            parent->tensor_kind() == detail::tensor_kinds::storage_tensor || 
-            parent->tensor_kind() == detail::tensor_kinds::expression && parent->is_storage() ||
-            parent->tensor_kind() == detail::tensor_kinds::view && parent->as_view()->is_cached();
-    }
-
+        
     index_type view_index_convert(const index_type& idx)const override{return parent_converter->convert(descriptor_.convert(idx));}
     bool is_cached()const override{return cache.size();}
     detail::tensor_kinds view_root_kind()const override{return view_root->tensor_kind();}
-    bool is_storage()const override{return is_storage_parent() || is_cached();}
+    bool is_storage()const override{return detail::is_storage(*parent) || is_cached();}
     bool is_trivial()const override{return true;}
     const value_type* storage_data()const override{return cache.data();}
     const impl_base_type* get_view_root()const{return view_root;}

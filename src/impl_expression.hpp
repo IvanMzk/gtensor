@@ -153,8 +153,7 @@ class expression_impl :
         return evaluating_walker_factory<ValT,Cfg>::create_storage(shape(), detail::strides_div(descriptor_), f,operands);
     }
     walker<ValT, Cfg> create_polymorphic_walker()const override{
-        //return polymorphic_walker_factory<ValT,Cfg>::create_walker(*this, shape(),strides(),f,operands,cache.data());
-        return nullptr;
+        return polymorphic_walker_factory<ValT,Cfg>::create_walker(*this,f,operands,cache.data());        
     }    
 
     index_type view_index_convert(const index_type& idx)const override{return idx;}
