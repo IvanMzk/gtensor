@@ -16,7 +16,6 @@ using gtensor::ewalker_trivial_impl;
 using gtensor::evaluating_storage;
 using gtensor::view_expression_walker_impl;
 
-
 template<typename ValT, template<typename> typename Cfg>
 struct storage_walker_test_tensor : public tensor<ValT,Cfg>{
     using base_type = tensor<ValT,Cfg>;
@@ -77,55 +76,73 @@ struct view_expression_walker_test_tensor : public tensor<ValT,Cfg>{
     }    
 };
 
+template<typename ValT, template<typename> typename Cfg>
+struct polymorphic_walker_test_tensor : public tensor<ValT,Cfg>{
+    using base_type = tensor<ValT,Cfg>;
+    using tensor::tensor;
+    polymorphic_walker_test_tensor(const base_type& base):
+        base_type{base}
+    {}    
+    walker<ValT,Cfg> create_walker()const{
+        return get_impl()->as_walker_maker()->create_walker();
+    }    
+};
+
 
 //make 3d stensor with data {{{1,2,3},{4,5,6}}}
-template<typename ValT>
+template<typename ValT, typename TestTensorT>
 struct stensor_maker{
     using value_type = ValT;
-    using tensor_type = storage_walker_test_tensor<ValT,default_config>;
+    using tensor_type = TestTensorT;    
     tensor_type operator()(){return tensor_type{{{1,2,3},{4,5,6}}};}
 };
-//make trivial broadcast expression with data {{{1,2,3},{4,5,6}}}
-template<typename ValT>
-struct trivial_expression_maker_trivial_walker{
-    using value_type = ValT;
-    using tensor_type = trivial_walker_test_tensor<ValT,default_config>;
-    tensor_type operator()(){return tensor_type{{{-1,-1,-1},{-1,-1,-1}}} + tensor_type{{{1,2,3},{1,2,3}}} + tensor_type{{{1,1,1},{4,4,4}}};}
-};
-//make trivial broadcast expression with data {{{1,2,3},{4,5,6}}}
-template<typename ValT>
-struct trivial_expression_maker_ewalker{
-    using value_type = ValT;
-    using tensor_type = evaluating_walker_test_tensor<ValT,default_config>;
-    tensor_type operator()(){return tensor_type{{{-1,-1,-1},{-1,-1,-1}}} + tensor_type{{{1,2,3},{1,2,3}}} + tensor_type{{{1,1,1},{4,4,4}}};}
-};
 //make expression with data {{{1,2,3},{4,5,6}}}
-template<typename ValT>
+template<typename ValT, typename TestTensorT>
 struct not_trivial_expression_maker{
     using value_type = ValT;
-    using tensor_type = evaluating_walker_test_tensor<ValT,default_config>;
+    using tensor_type = TestTensorT;
+    //evaluating_walker_test_tensor<ValT,default_config>;
     tensor_type operator()(){return tensor_type{2} * tensor_type{-1,-1,-1} + tensor_type{{{1,2,3},{1,2,3}}} + tensor_type{{{0,0,0},{3,3,3}}} + tensor_type{5,5,5} - tensor_type{3} ;}
 };
 //make expression with trivial subtree data {{{1,2,3},{4,5,6}}}
-template<typename ValT>
+template<typename ValT, typename TestTensorT>
 struct trivial_subtree_expression_maker{
     using value_type = ValT;
-    using tensor_type = evaluating_walker_test_tensor<ValT,default_config>;
+    using tensor_type = TestTensorT;
+    //evaluating_walker_test_tensor<ValT,default_config>;
     tensor_type operator()(){return tensor_type{2} * tensor_type{-1,-1,-1} + (tensor_type{{{1,2,3},{1,2,3}}} + tensor_type{{{0,0,0},{3,3,3}}}) + tensor_type{5,5,5} - tensor_type{3} ;}
 };
+//make trivial broadcast expression with data {{{1,2,3},{4,5,6}}}
+template<typename ValT, typename TestTensorT>
+struct trivial_expression_maker_ewalker{
+    using value_type = ValT;
+    using tensor_type = TestTensorT;
+    //evaluating_walker_test_tensor<ValT,default_config>;
+    tensor_type operator()(){return tensor_type{{{-1,-1,-1},{-1,-1,-1}}} + tensor_type{{{1,2,3},{1,2,3}}} + tensor_type{{{1,1,1},{4,4,4}}};}
+};
+//make trivial broadcast expression with data {{{1,2,3},{4,5,6}}}
+template<typename ValT, typename TestTensorT>
+struct trivial_expression_maker_trivial_walker{
+    using value_type = ValT;
+    using tensor_type = TestTensorT;
+    //trivial_walker_test_tensor<ValT,default_config>;
+    tensor_type operator()(){return tensor_type{{{-1,-1,-1},{-1,-1,-1}}} + tensor_type{{{1,2,3},{1,2,3}}} + tensor_type{{{1,1,1},{4,4,4}}};}
+};
 //make view slice of stensor with data {{{1,2,3},{4,5,6}}}
-template<typename ValT>
+template<typename ValT, typename TestTensorT>
 struct view_slice_of_stensor_maker{
     using value_type = ValT;
-    using tensor_type = storage_walker_test_tensor<ValT,default_config>;
+    using tensor_type = TestTensorT;
+    //storage_walker_test_tensor<ValT,default_config>;
     typename default_config<ValT>::nop_type nop;
     tensor_type operator()(){return tensor_type{{{0,0,0,0,0,0},{0,0,0,0,0,0}},{{1,0,2,0,3,0},{4,0,5,0,6,0}}}({{1,2},{},{nop,nop,2}});}
 };
 //make view slice of non trivial expression with data {{{1,2,3},{4,5,6}}}
-template<typename ValT>
+template<typename ValT, typename TestTensorT>
 struct view_slice_of_expression_maker{
     using value_type = ValT;
-    using tensor_type = view_expression_walker_test_tensor<ValT,default_config>;
+    using tensor_type = TestTensorT;
+    //view_expression_walker_test_tensor<ValT,default_config>;
     typename default_config<ValT>::nop_type nop;    
     tensor_type operator()(){
         auto e = tensor_type{2} * tensor_type{{1,1,1,1,1,1}} + tensor_type{{{0,0,0,0,0,0},{0,0,0,0,0,0}},{{1,0,2,0,3,0},{4,0,5,0,6,0}}} - tensor_type{{{3,3,3,3,3,3}}} + tensor_type{1};
@@ -133,10 +150,11 @@ struct view_slice_of_expression_maker{
     }
 };
 //make view slice of view of non trivial expression with data {{{1,2,3},{4,5,6}}}
-template<typename ValT>
+template<typename ValT, typename TestTensorT>
 struct view_view_slice_of_expression_maker{
     using value_type = ValT;
-    using tensor_type = view_expression_walker_test_tensor<ValT,default_config>;
+    using tensor_type = TestTensorT;
+    //view_expression_walker_test_tensor<ValT,default_config>;
     typename default_config<ValT>::nop_type nop;    
     tensor_type operator()(){
         auto e = tensor_type{2} * tensor_type{{1,1,1,1,1,1}} + tensor_type{{{0,0,0,0,0,0},{0,0,0,0,0,0}},{{3,0,2,0,1,0},{6,0,5,0,4,0}}} - tensor_type{{{3,3,3,3,3,3}}} + tensor_type{1};
@@ -144,24 +162,27 @@ struct view_view_slice_of_expression_maker{
     }
 };
 //make view transpose of stensor with data {{{1,2,3},{4,5,6}}}
-template<typename ValT>
+template<typename ValT, typename TestTensorT>
 struct view_transpose_of_stensor_maker{
     using value_type = ValT;
-    using tensor_type = storage_walker_test_tensor<ValT,default_config>;
+    using tensor_type = TestTensorT;
+    //storage_walker_test_tensor<ValT,default_config>;
     tensor_type operator()(){return tensor_type{{{1},{4}},{{2},{5}},{{3},{6}}}.transpose();}
 };
 //make view subdim of stensor with data {{{1,2,3},{4,5,6}}}
-template<typename ValT>
+template<typename ValT, typename TestTensorT>
 struct view_subdim_of_stensor_maker{
     using value_type = ValT;
-    using tensor_type = storage_walker_test_tensor<ValT,default_config>;
+    using tensor_type = TestTensorT;
+    //storage_walker_test_tensor<ValT,default_config>;
     tensor_type operator()(){return tensor_type{{{{0,0,0},{0,0,0}}},{{{1,2,3},{4,5,6}}}}(1);}
 };
 //make view reshape of stensor with data {{{1,2,3},{4,5,6}}}
-template<typename ValT>
+template<typename ValT, typename TestTensorT>
 struct view_reshape_of_stensor_maker{
     using value_type = ValT;
-    using tensor_type = storage_walker_test_tensor<ValT,default_config>;
+    using tensor_type = TestTensorT;
+    //storage_walker_test_tensor<ValT,default_config>;
     tensor_type operator()(){return tensor_type{{{1},{2},{3}},{{4},{5},{6}}}.reshape(1,2,3);}
 };
 
@@ -170,17 +191,29 @@ struct view_reshape_of_stensor_maker{
 
 
 TEMPLATE_TEST_CASE("test_walker","test_walker",
-                    test_walker_::stensor_maker<float>,
-                    test_walker_::not_trivial_expression_maker<float>,
-                    test_walker_::trivial_subtree_expression_maker<float>,
-                    test_walker_::trivial_expression_maker_ewalker<float>,
-                    test_walker_::trivial_expression_maker_trivial_walker<float>,
-                    test_walker_::view_slice_of_stensor_maker<float>,
-                    test_walker_::view_slice_of_expression_maker<float>,
-                    test_walker_::view_view_slice_of_expression_maker<float>,
-                    test_walker_::view_transpose_of_stensor_maker<float>,
-                    test_walker_::view_subdim_of_stensor_maker<float>,
-                    test_walker_::view_reshape_of_stensor_maker<float>
+                    (test_walker_::stensor_maker<float, test_walker_::storage_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::not_trivial_expression_maker<float, test_walker_::evaluating_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::trivial_subtree_expression_maker<float, test_walker_::evaluating_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::trivial_expression_maker_ewalker<float, test_walker_::evaluating_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::trivial_expression_maker_trivial_walker<float, test_walker_::trivial_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::view_slice_of_stensor_maker<float, test_walker_::storage_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::view_slice_of_expression_maker<float, test_walker_::view_expression_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::view_view_slice_of_expression_maker<float, test_walker_::view_expression_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::view_transpose_of_stensor_maker<float, test_walker_::storage_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::view_subdim_of_stensor_maker<float, test_walker_::storage_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::view_reshape_of_stensor_maker<float, test_walker_::storage_walker_test_tensor<float, test_walker_::default_config>>),
+
+                    (test_walker_::stensor_maker<float, test_walker_::polymorphic_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::not_trivial_expression_maker<float, test_walker_::polymorphic_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::trivial_subtree_expression_maker<float, test_walker_::polymorphic_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::trivial_expression_maker_ewalker<float, test_walker_::polymorphic_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::trivial_expression_maker_trivial_walker<float, test_walker_::polymorphic_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::view_slice_of_stensor_maker<float, test_walker_::polymorphic_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::view_slice_of_expression_maker<float, test_walker_::polymorphic_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::view_view_slice_of_expression_maker<float, test_walker_::polymorphic_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::view_transpose_of_stensor_maker<float, test_walker_::polymorphic_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::view_subdim_of_stensor_maker<float, test_walker_::polymorphic_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::view_reshape_of_stensor_maker<float, test_walker_::polymorphic_walker_test_tensor<float, test_walker_::default_config>>)
                     ){
     using value_type = typename TestType::value_type;
     using test_type = std::tuple<value_type,value_type>;
@@ -208,9 +241,9 @@ TEMPLATE_TEST_CASE("test_walker","test_walker",
 }
 
 TEMPLATE_TEST_CASE("test_evaluating_storage","test_walker",
-                    test_walker_::not_trivial_expression_maker<float>,
-                    test_walker_::trivial_subtree_expression_maker<float>,
-                    test_walker_::trivial_expression_maker_ewalker<float>
+                    (test_walker_::not_trivial_expression_maker<float, test_walker_::evaluating_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::trivial_subtree_expression_maker<float, test_walker_::evaluating_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::trivial_expression_maker_ewalker<float, test_walker_::evaluating_walker_test_tensor<float, test_walker_::default_config>>)
                     ){
     using value_type = typename TestType::value_type;
     using test_type = std::tuple<value_type,value_type>;

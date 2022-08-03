@@ -129,17 +129,21 @@ class polymorphic_walker_factory
         return std::unique_ptr<walker_impl_base<ValT,Cfg>>{new storage_walker_impl<ValT,Cfg>{shape,strides,data}};
     }    
     template<typename F, typename...Ops>
-    static walker<ValT,Cfg> create_walker_helper(const tensor_impl_base<ValT,Cfg>& expression,const F& f, const std::tuple<Ops...>& operands, const value_type* cache)
-    {        
+    static walker<ValT,Cfg> create_walker_helper(const tensor_impl_base<ValT,Cfg>& expression,const F& f, const std::tuple<Ops...>& operands, const value_type* cache){        
         if (expression.is_storage()){
-            create_walker_helper(expression, expression.descriptor().shape(), expression.descriptor().strides(), cache);
+            return create_walker_helper(expression, expression.descriptor().shape(), expression.descriptor().strides(), cache);
         }else if(expression.is_trivial()){
             return std::unique_ptr<walker_impl_base<ValT,Cfg>>{new ewalker_trivial_impl<ValT,Cfg>{expression.descriptor().shape(),expression.descriptor().strides(),expression}};
         }else{
             return create_evaluating_walker_helper(expression.descriptor().shape(), f, operands, std::make_index_sequence<sizeof...(Ops)>{});
         }
     }
-    static walker<ValT,Cfg> create_walker_helper(const tensor_impl_base<ValT,Cfg>& view, const tensor_impl_base<ValT,Cfg>& view_parent, const tensor_impl_base<ValT,Cfg>& view_root, const value_type* cache){
+    static walker<ValT,Cfg> create_walker_helper(
+                                                const tensor_impl_base<ValT,Cfg>& view, 
+                                                const tensor_impl_base<ValT,Cfg>& view_parent, 
+                                                const tensor_impl_base<ValT,Cfg>& view_root, 
+                                                const value_type* cache)
+    {
         if (detail::is_storage(view)){
             return create_walker_helper(view, view.descriptor().shape(), view.descriptor().strides(), cache);
         }else if(detail::is_storage(view_parent)){
@@ -153,6 +157,8 @@ class polymorphic_walker_factory
                 view_root.as_expression()->create_storage()
                 }
             };
+        }else{
+            return nullptr;
         }
     }
 
