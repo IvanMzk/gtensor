@@ -1,138 +1,49 @@
 #ifndef TENSOR_SLICE_HPP_
 #define TENSOR_SLICE_HPP_
 
-#include <stdexcept>
-#include <string>
-#include <sstream>
+#include <numeric>
+#include "descriptor_base.hpp"
 #include "libdivide_helper.hpp"
-
 
 namespace gtensor{
 
-class stensor_descriptor_exception : public std::runtime_error{
-    public: stensor_descriptor_exception(const char* what):runtime_error(what){}
-};
-
-namespace detail{
-/*
-* in: shape elements in right order, max stride element first
-* out: shape container filled with shape elements in reverse order, min stride element first
-*/
-template<typename ShT, typename...Dims>
-ShT make_shape(const Dims&...dims){
-    ShT res{};
-    res.reserve(sizeof...(Dims));
-    make_shape_(res,dims...);
-    return res;
-}
-template<typename ShT, typename Dim, typename...Dims>
-inline void make_shape_(ShT& res, const Dim& d, const Dims&...dims){
-    make_shape_(res,dims...);
-    res.push_back(d);
-}
-template<typename ShT>
-inline void make_shape_(ShT& res){}
-
-/*
-* create strides
-* parameters: shape
-*/
-template<typename ShT>
-inline ShT make_strides(const ShT& shape, typename ShT::value_type min_stride = ShT::value_type(1)){
-    using index_type = typename ShT::value_type;
-    if (!shape.empty()){
-        ShT res(shape.size(), min_stride);
-        auto shape_begin{shape.begin()};
-        auto shape_end{shape.end()};
-        auto res_end{res.end()};
-        --res_end;
-        while (shape_begin!=--shape_end){
-            min_stride*=*shape_end;
-            *--res_end = min_stride;
-        }
-        return res;
-    }
-    else{
-        return ShT{};
-    }    
-}
-
-template<typename ShT>
-inline auto make_size(const ShT& shape, const ShT& strides){
-    using index_type = typename ShT::value_type;
-    return shape.empty() ? index_type(0) : shape.front()*strides.front();
-}
-/*get size not taking strides into account*/
-template<typename ShT>
-inline auto make_size(const ShT& shape){
-    if (shape.size() != 0){    
-        ShT::value_type res{1};
-        for(const auto& i:shape)
-            res*=i;
-        return res;
-    }else{
-        return ShT::value_type(0);
-    }
-}
-
-
-template<typename ValT,  template<typename> typename Cfg> 
-class descriptor_strides
-{
-    using config_type = Cfg<ValT>;
-    using shape_type = typename config_type::shape_type;
-    using index_type = typename config_type::index_type;
-    shape_type strides_;
-protected:
-    descriptor_strides() = default;            
-    descriptor_strides(const shape_type& shape__):
-        strides_{detail::make_strides(shape__)}
-    {}
-    const auto&  strides()const{return strides_;}
-};
-
-}   //end of namespace detail
-
-
-
 template<typename ValT, template<typename> typename Cfg>
 class stensor_descriptor :
-    detail::descriptor_strides<ValT,Cfg>,
-    detail::collection_libdivide_extension<ValT,Cfg,typename Cfg<ValT>::div_mode>
+    public descriptor_base<ValT,Cfg>,
+    private basic_descriptor<ValT,Cfg>,
+    private detail::collection_libdivide_extension<ValT,Cfg,typename Cfg<ValT>::div_mode>
 {
-    using base_strides = detail::descriptor_strides<ValT,Cfg>;
+    using base_descriptor = basic_descriptor<ValT,Cfg>;
     using base_strides_libdivide = detail::collection_libdivide_extension<ValT,Cfg,typename Cfg<ValT>::div_mode>;
     using config_type = Cfg<ValT>;
     using value_type = ValT;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
-    shape_type shape_;    
+
+    index_type convert_helper(const shape_type& idx)const{
+        return std::inner_product(idx.begin(), idx.end(), cstrides().begin(), index_type{0});
+    }    
+
 public:
     stensor_descriptor() = default;       
-    stensor_descriptor(const shape_type& shape__):
-        base_strides{shape__},
-        base_strides_libdivide{base_strides::strides()},
-        shape_{shape__}
-    {}
-    stensor_descriptor(shape_type&& shape__):
-        base_strides{shape__},
-        base_strides_libdivide{base_strides::strides()},
-        shape_{std::move(shape__)}
-    {}
-    auto size()const{return detail::make_size(shape_,base_strides::strides());}
-    auto dim()const{return shape_.size();}
-    const auto& shape()const{return shape_;}
-    const auto& strides()const{return base_strides::strides();}
-    const auto& strides_libdivide()const{return base_strides_libdivide::dividers_libdivide();}
-    std::string to_str()const{
-        std::stringstream ss{};
-        ss<<"("<<[&ss,this](){for(const auto& i : shape()){ss<<i<<",";} return ")";}();
-        return ss.str();
-    }        
+    template<typename ShT>
+    stensor_descriptor(ShT&& shape__):
+        base_descriptor{std::forward<ShT>(shape__)},
+        base_strides_libdivide{base_descriptor::strides()}
+    {}    
+    
+    index_type dim()const{return base_descriptor::dim();}
+    index_type size()const{return base_descriptor::size();}
+    const shape_type& shape()const{return base_descriptor::shape();}
+    const shape_type& strides()const{return base_descriptor::strides();}
+    std::string to_str()const{return base_descriptor::to_str();}
+
+    index_type offset()const{return index_type{0};}
+    const shape_type& cstrides()const{return strides();}
+    const auto& strides_libdivide()const{return base_strides_libdivide::dividers_libdivide();}    
+    index_type convert(const index_type& idx)const{return idx;}
+    index_type convert(const shape_type& idx)const{return convert_helper(idx);}
 };
-
-
-
 
 }   //end of namespace gtensor
 #endif

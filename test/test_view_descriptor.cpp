@@ -30,6 +30,7 @@ TEST_CASE("test_view_slice_descriptor_getters", "[test_view_descriptor]"){
     REQUIRE(descriptor.dim() == expected_dim);
     REQUIRE(descriptor.size() == expected_size);
     REQUIRE(descriptor.offset() == expected_offset);
+    //gtensor::descriptor_base<value_type,gtensor::config::default_config>* pd = &descriptor;
 }
 
 TEMPLATE_TEST_CASE("test_view_slice_descriptor_convert", "[test_view_descriptor]", gtensor::config::mode_div_native, gtensor::config::mode_div_libdivide){
