@@ -7,19 +7,19 @@
 namespace gtensor{
 
 template<typename ValT, template<typename> typename Cfg, typename F, typename...Wks>
-class evaluating_walker_impl : public walker_impl_base<ValT, Cfg>{
+class evaluating_walker_impl : 
+    public walker_impl_base<ValT, Cfg>,
+    walker_shape<ValT,Cfg>
+{
+    using base_walker_shape = walker_shape<ValT,Cfg>;
     using config_type = Cfg<ValT>;        
     using value_type = ValT;
     using index_type = typename config_type::index_type;
     using shape_type = typename config_type::shape_type;
-    
-    const shape_type* shape;
-    std::tuple<Wks...> walkers;    
-    index_type dim{static_cast<index_type>(shape->size())};
+        
+    std::tuple<Wks...> walkers;
     F f{};
-
-    auto shape_element(const index_type& direction)const{return (*shape)[direction];}
-    bool can_walk(const index_type& direction)const{return direction < dim && shape_element(direction) != index_type(1);}
+        
     template<std::size_t...I>
     void step_helper(const index_type& direction, std::index_sequence<I...>){(std::get<I>(walkers).step(direction),...);}    
     template<std::size_t...I>
@@ -36,7 +36,7 @@ protected:
     void walk_helper(const index_type& direction, const index_type& steps, std::index_sequence<I...>){(std::get<I>(walkers).walk(direction,steps),...);}
 public:
     evaluating_walker_impl(const shape_type& shape_, Wks&&...walkers_):
-        shape{&shape_},
+        base_walker_shape{static_cast<index_type>(shape_.size()), shape_},
         walkers{std::move(walkers_)...}
     {}
     

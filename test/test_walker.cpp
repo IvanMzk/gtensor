@@ -192,8 +192,8 @@ struct view_reshape_of_stensor_maker{
 
 
 TEMPLATE_TEST_CASE("test_walker","test_walker",
-                    (test_walker_::stensor_maker<float, test_walker_::storage_walker_test_tensor<float, test_walker_::default_config>>)
-                    // (test_walker_::not_trivial_expression_maker<float, test_walker_::evaluating_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::stensor_maker<float, test_walker_::storage_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::not_trivial_expression_maker<float, test_walker_::evaluating_walker_test_tensor<float, test_walker_::default_config>>)
                     // (test_walker_::trivial_subtree_expression_maker<float, test_walker_::evaluating_walker_test_tensor<float, test_walker_::default_config>>),
                     // (test_walker_::trivial_expression_maker_ewalker<float, test_walker_::evaluating_walker_test_tensor<float, test_walker_::default_config>>),
                     // (test_walker_::trivial_expression_maker_trivial_walker<float, test_walker_::trivial_walker_test_tensor<float, test_walker_::default_config>>),
