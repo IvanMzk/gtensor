@@ -4,6 +4,36 @@
 namespace gtensor{
 
 template<typename ValT, template<typename> typename Cfg>
+class basic_walker
+{
+    using config_type = Cfg<ValT>;        
+    using index_type = typename config_type::index_type;
+    using shape_type = typename config_type::shape_type;
+
+    index_type dim;    
+    const index_type* shape_last;
+    const index_type* strides_last;    
+
+protected:
+    //direction must be in range [0,dim-1]
+    //0 direction corresponding to last shape element - direction with minimal stride
+    //1 direction corresponding to shape element befor last
+    //...
+    //dim-1 direction correcponding to 0 shape element - direction with max stride
+    auto shape_element(const index_type direction)const{return *(shape_last-direction);}
+    auto strides_element(const index_type direction)const{return *(strides_last-direction);}
+    bool can_walk(const index_type& direction)const{return direction < dim && shape_element(direction) != index_type(1);}
+
+public:    
+    basic_walker(const index_type& dim_, const shape_type& shape_, const shape_type& strides_):
+        dim{dim_},
+        shape_last{shape_.data()+dim-index_type{1}},
+        strides_last{strides_.data()+dim-index_type{1}}
+    {}    
+};
+
+
+template<typename ValT, template<typename> typename Cfg>
 class walker_impl_base{
     using config_type = Cfg<ValT>;        
     using value_type = ValT;
