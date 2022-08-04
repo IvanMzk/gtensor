@@ -17,11 +17,17 @@ template<typename ValT, template<typename> typename Cfg, typename Wkr>
 class multiindex_iterator_impl{
     using walker_type = Wkr;
     using config_type = Cfg<ValT>;
-    using difference_type = typename config_type::difference_type;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     using strides_type = typename detail::libdiv_strides_traits<config_type>::type;
-    
+
+public:
+    using iterator_category = std::random_access_iterator_tag;
+    using value_type = ValT;
+    using difference_type = typename config_type::difference_type;
+    using pointer = value_type*;
+    using reference = value_type&;
+    using const_reference = const value_type&;
 
     walker_type walker;
     const shape_type* shape;
@@ -32,10 +38,7 @@ class multiindex_iterator_impl{
 
     auto& advance(difference_type);
 
-public:
-    using value_type = ValT;
-    using difference_type = typename config_type::difference_type;
-    using iterator_category = std::random_access_iterator_tag;
+public:    
 
     //begin constructor
     template<typename W>
