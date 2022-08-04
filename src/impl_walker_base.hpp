@@ -3,16 +3,18 @@
 
 namespace gtensor{
 
-template<typename ValT, template<typename> typename Cfg>
+template<typename ValT, template<typename> typename Cfg, typename CursorT>
 class basic_walker
 {
     using config_type = Cfg<ValT>;        
     using index_type = typename config_type::index_type;
     using shape_type = typename config_type::shape_type;
 
-    index_type dim;    
+    index_type dim;
     const index_type* shape_last;
-    const index_type* strides_last;    
+    const index_type* strides_last;
+    CursorT offset;
+    CursorT cursor_{offset};
 
 protected:
     //direction must be in range [0,dim-1]
@@ -24,11 +26,35 @@ protected:
     auto strides_element(const index_type direction)const{return *(strides_last-direction);}
     bool can_walk(const index_type& direction)const{return direction < dim && shape_element(direction) != index_type(1);}
 
+    void walk(const index_type& direction, const index_type& steps){
+        if (can_walk(direction)){
+            cursor_+=steps*strides_element(direction);
+        }   
+    }
+    void step(const index_type& direction){
+        if (can_walk(direction)){
+            cursor_+=strides_element(direction);
+        }
+    }
+    void step_back(const index_type& direction){        
+        if (can_walk(direction)){
+            cursor_-=strides_element(direction);
+        }            
+    }
+    void reset(const index_type& direction){
+        if (can_walk(direction)){
+            cursor_-=(shape_element(direction)-1)*strides_element(direction);
+        }
+    }
+    void reset(){cursor_ = offset;}
+    CursorT cursor()const{return cursor_;}
+
 public:    
-    basic_walker(const index_type& dim_, const shape_type& shape_, const shape_type& strides_):
+    basic_walker(const index_type& dim_, const shape_type& shape_, const shape_type& strides_, const CursorT& offset_):
         dim{dim_},
         shape_last{shape_.data()+dim-index_type{1}},
-        strides_last{strides_.data()+dim-index_type{1}}
+        strides_last{strides_.data()+dim-index_type{1}},
+        offset{offset_}
     {}    
 };
 
