@@ -102,7 +102,8 @@ struct not_trivial_expression_maker{
     using value_type = ValT;
     using tensor_type = TestTensorT;
     //evaluating_walker_test_tensor<ValT,default_config>;
-    tensor_type operator()(){return tensor_type{2} * tensor_type{-1,-1,-1} + tensor_type{{{1,2,3},{1,2,3}}} + tensor_type{{{0,0,0},{3,3,3}}} + tensor_type{5,5,5} - tensor_type{3} ;}
+    //tensor_type operator()(){return tensor_type{2} * tensor_type{-1,-1,-1} + tensor_type{{{1,2,3},{1,2,3}}} + tensor_type{{{0,0,0},{3,3,3}}} + tensor_type{5,5,5} - tensor_type{3} ;}
+    tensor_type operator()(){return tensor_type{{{0},{3}}} + tensor_type{1,2,3};}
 };
 //make expression with trivial subtree data {{{1,2,3},{4,5,6}}}
 template<typename ValT, typename TestTensorT>
