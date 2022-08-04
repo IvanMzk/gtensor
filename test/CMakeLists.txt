@@ -19,15 +19,15 @@ target_sources(Test PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/test_multiindex_iterator.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/test_dispatcher.cpp
-)
-
-target_sources(Test_selected PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/benchmark_walker.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_walker.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_tensor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_expression_impl.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_stensor_impl.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_view_descriptor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_stensor_descriptor.cpp
+)
+
+target_sources(Test_selected PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_walker.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test.cpp
 )
