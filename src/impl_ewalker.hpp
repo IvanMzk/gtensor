@@ -34,6 +34,7 @@ class evaluating_walker_impl :
 protected:
     template<std::size_t...I>
     void walk_helper(const index_type& direction, const index_type& steps, std::index_sequence<I...>){(std::get<I>(walkers).walk(direction,steps),...);}
+    using base_walker_shape::dim;
 public:
     evaluating_walker_impl(const shape_type& shape_, Wks&&...walkers_):
         base_walker_shape{static_cast<index_type>(shape_.size()), shape_},
@@ -92,7 +93,7 @@ class evaluating_storage_impl :
         base_type::reset();
         auto sit_begin{(*strides).begin()};
         auto sit_end{(*strides).end()};
-        for(index_type d{0};sit_begin!=sit_end; ++sit_begin,++d){
+        for(index_type d{base_type::dim()-1};sit_begin!=sit_end; ++sit_begin,--d){
             auto q = detail::divide(idx,*sit_begin);
             if (q!=0){
                 base_type::walk_helper(d,q,std::make_index_sequence<sizeof...(Wks)>{});                

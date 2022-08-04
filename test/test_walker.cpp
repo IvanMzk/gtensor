@@ -241,24 +241,24 @@ TEMPLATE_TEST_CASE("test_walker","test_walker",
     REQUIRE(deref == expected_deref);
 }
 
-// TEMPLATE_TEST_CASE("test_evaluating_storage","test_walker",
-//                     (test_walker_::not_trivial_expression_maker<float, test_walker_::evaluating_walker_test_tensor<float, test_walker_::default_config>>),
-//                     (test_walker_::trivial_subtree_expression_maker<float, test_walker_::evaluating_walker_test_tensor<float, test_walker_::default_config>>),
-//                     (test_walker_::trivial_expression_maker_ewalker<float, test_walker_::evaluating_walker_test_tensor<float, test_walker_::default_config>>)
-//                     ){
-//     using value_type = typename TestType::value_type;
-//     using test_type = std::tuple<value_type,value_type>;
+TEMPLATE_TEST_CASE("test_evaluating_storage","test_walker",
+                    (test_walker_::not_trivial_expression_maker<float, test_walker_::evaluating_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::trivial_subtree_expression_maker<float, test_walker_::evaluating_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::trivial_expression_maker_ewalker<float, test_walker_::evaluating_walker_test_tensor<float, test_walker_::default_config>>)
+                    ){
+    using value_type = typename TestType::value_type;
+    using test_type = std::tuple<value_type,value_type>;
 
-//     //0result,1expected
-//     auto test_data = GENERATE(
-//         test_type{TestType{}().create_storage()[0],value_type{1}},
-//         test_type{TestType{}().create_storage()[5],value_type{6}},
-//         test_type{TestType{}().create_storage()[1],value_type{2}},
-//         test_type{TestType{}().create_storage()[2],value_type{3}},
-//         test_type{TestType{}().create_storage()[4],value_type{5}},
-//         test_type{TestType{}().create_storage()[3],value_type{4}}
-//     );
-//     auto result = std::get<0>(test_data);
-//     auto expected = std::get<1>(test_data);
-//     REQUIRE(result == expected);
-// }
+    //0result,1expected
+    auto test_data = GENERATE(
+        test_type{TestType{}().create_storage()[0],value_type{1}},
+        test_type{TestType{}().create_storage()[5],value_type{6}},
+        test_type{TestType{}().create_storage()[1],value_type{2}},
+        test_type{TestType{}().create_storage()[2],value_type{3}},
+        test_type{TestType{}().create_storage()[4],value_type{5}},
+        test_type{TestType{}().create_storage()[3],value_type{4}}
+    );
+    auto result = std::get<0>(test_data);
+    auto expected = std::get<1>(test_data);
+    REQUIRE(result == expected);
+}
