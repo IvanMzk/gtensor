@@ -3,29 +3,57 @@
 
 namespace gtensor{
 
-template<typename ValT, template<typename> typename Cfg, typename CursorT>
-class basic_walker
+template<typename ValT, template<typename> typename Cfg>
+class walker_shape
 {
     using config_type = Cfg<ValT>;        
     using index_type = typename config_type::index_type;
     using shape_type = typename config_type::shape_type;
 
-    index_type dim;
+    index_type dim_;
     const index_type* shape_last;
-    const index_type* strides_last;
-    CursorT offset;
-    CursorT cursor_{offset};
 
 protected:
     //direction must be in range [0,dim-1]
     //0 direction corresponding to last shape element - direction with minimal stride
     //1 direction corresponding to shape element befor last
     //...
-    //dim-1 direction correcponding to 0 shape element - direction with max stride
-    auto shape_element(const index_type direction)const{return *(shape_last-direction);}
-    auto strides_element(const index_type direction)const{return *(strides_last-direction);}
-    bool can_walk(const index_type& direction)const{return direction < dim && shape_element(direction) != index_type(1);}
+    //dim-1 direction correcponding to 0 shape element - direction with max stride    
+    index_type shape_element(const index_type direction)const{return *(shape_last-direction);}
+    bool can_walk(const index_type& direction)const{return direction < dim_ && shape_element(direction) != index_type(1);}
+    index_type dim()const{return dim_;}
+    
+    walker_shape(const index_type& dim__, const shape_type& shape_):
+        dim_{dim__},
+        shape_last{shape_.data()+dim_-index_type{1}}        
+    {}       
+};
 
+template<typename ValT, template<typename> typename Cfg, typename CursorT>
+class basic_walker : walker_shape<ValT,Cfg>
+{
+    using walker_shape_base = walker_shape<ValT,Cfg>;
+    using config_type = Cfg<ValT>;        
+    using index_type = typename config_type::index_type;
+    using shape_type = typename config_type::shape_type;
+    
+    const index_type* strides_last;
+    CursorT offset;
+    CursorT cursor_{offset};
+
+protected:
+    basic_walker(const index_type& dim_, const shape_type& shape_, const shape_type& strides_, const CursorT& offset_):
+        walker_shape_base{dim_, shape_},        
+        strides_last{strides_.data()+dim()-index_type{1}},
+        offset{offset_}
+    {}    
+
+    //direction must be in range [0,dim-1]
+    //0 direction corresponding to last shape element - direction with minimal stride
+    //1 direction corresponding to shape element befor last
+    //...
+    //dim-1 direction correcponding to 0 shape element - direction with max stride    
+    auto strides_element(const index_type direction)const{return *(strides_last-direction);}    
     void walk(const index_type& direction, const index_type& steps){
         if (can_walk(direction)){
             cursor_+=steps*strides_element(direction);
@@ -47,17 +75,9 @@ protected:
         }
     }
     void reset(){cursor_ = offset;}
+    
     CursorT cursor()const{return cursor_;}
-
-public:    
-    basic_walker(const index_type& dim_, const shape_type& shape_, const shape_type& strides_, const CursorT& offset_):
-        dim{dim_},
-        shape_last{shape_.data()+dim-index_type{1}},
-        strides_last{strides_.data()+dim-index_type{1}},
-        offset{offset_}
-    {}    
 };
-
 
 template<typename ValT, template<typename> typename Cfg>
 class walker_impl_base{
