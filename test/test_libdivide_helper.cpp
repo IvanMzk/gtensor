@@ -42,17 +42,17 @@ TEMPLATE_TEST_CASE("test_flat_to_multi_mode_libdivide", "[test_flat_to_multi]", 
     using config_type = test_config::config_tmpl_div_mode_selector<TestType>::config_tmpl<value_type>;    
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
-    using gtensor::detail::make_libdive_vector;
+    using gtensor::detail::make_libdivide_vector;
     using gtensor::detail::flat_to_multi;
-    using libdiv_vector_type = decltype(make_libdive_vector<config_type>(std::declval<shape_type>()));
+    using libdiv_vector_type = decltype(make_libdivide_vector(std::declval<shape_type>()));
     using test_type = std::tuple<index_type, libdiv_vector_type, shape_type>;
     //0flat_idx,1strides_libdiv,2expected_multi_idx
     auto test_data = GENERATE(
-                                test_type{0,make_libdive_vector<config_type>(shape_type{1}),shape_type{0}},
-                                test_type{5,make_libdive_vector<config_type>(shape_type{1}),shape_type{5}},
-                                test_type{5,make_libdive_vector<config_type>(shape_type{1,1}),shape_type{5,0}},
-                                test_type{5,make_libdive_vector<config_type>(shape_type{3,1}),shape_type{1,2}},
-                                test_type{34,make_libdive_vector<config_type>(shape_type{12,3,1}),shape_type{2,3,1}}
+                                test_type{0,make_libdivide_vector(shape_type{1}),shape_type{0}},
+                                test_type{5,make_libdivide_vector(shape_type{1}),shape_type{5}},
+                                test_type{5,make_libdivide_vector(shape_type{1,1}),shape_type{5,0}},
+                                test_type{5,make_libdivide_vector(shape_type{3,1}),shape_type{1,2}},
+                                test_type{34,make_libdivide_vector(shape_type{12,3,1}),shape_type{2,3,1}}
     );
 
     auto flat_idx = std::get<0>(test_data);

@@ -22,7 +22,7 @@ struct libdiv_strides_traits{
 };
 
 template<template<typename> typename D, template<typename...> typename U, typename T>
-auto make_libdiv_vector_helper(const U<T>& src){
+auto make_libdivide_vector_helper(const U<T>& src){
     using div_type = D<T>;
     std::vector<div_type> res{};
     res.reserve(src.size());
@@ -32,14 +32,18 @@ auto make_libdiv_vector_helper(const U<T>& src){
     return res;
 }
 
+template<template<typename...> typename U, typename T>
+auto make_libdivide_vector(const U<T>& src){
+    return make_libdivide_vector_helper<libdivide::divider>(src);
+}
+
 template<typename CfgT, template<typename...> typename U, typename T, std::enable_if_t<is_mode_div_libdivide<CfgT>, int> =0 >
-auto make_libdive_vector(const U<T>& src){
-    return make_libdiv_vector_helper<libdivide::divider>(src);
+auto make_dividers(const U<T>& src){
+    return make_libdivide_vector(src);
 }
 template<typename CfgT, template<typename...> typename U, typename T, std::enable_if_t<is_mode_div_native<CfgT>, int> =0 >
-auto make_libdive_vector(const U<T>& src){
-    using div_type = libdivide::divider<T>;
-    return std::vector<div_type>{};
+auto make_dividers(const U<T>& src){    
+    return src;
 }
 
 // template<template<typename...> typename U, typename T>
@@ -109,7 +113,7 @@ class collection_libdivide_extension<ValT,Cfg,config::mode_div_libdivide>
 protected:
     collection_libdivide_extension() = default;            
     collection_libdivide_extension(const shape_type& dividers):        
-        dividers_libdivide_{detail::make_libdiv_vector_helper<libdivide::divider>(dividers)}
+        dividers_libdivide_{detail::make_libdivide_vector(dividers)}
     {}
     const auto&  dividers_libdivide()const{return dividers_libdivide_;}
 };
