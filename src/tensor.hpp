@@ -47,6 +47,11 @@ public:
         impl{std::move(impl_)}
     {}
 
+    template<typename...Dims>
+    tensor(const value_type& v, const Dims&...dims):
+        impl{new stensor_impl_type(v, dims...)}
+    {}
+
     tensor(typename detail::nested_initializer_list_type<value_type,1>::type init_data):tensor(init_data,0){}
     tensor(typename detail::nested_initializer_list_type<value_type,2>::type init_data):tensor(init_data,0){}
     tensor(typename detail::nested_initializer_list_type<value_type,3>::type init_data):tensor(init_data,0){}

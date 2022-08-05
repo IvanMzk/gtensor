@@ -36,11 +36,11 @@ class stensor_impl :
     storage_type elements;    
 
     template<typename Nested>
-    stensor_impl(std::initializer_list<Nested> init_data, int):
+    stensor_impl(std::initializer_list<Nested> init_data,int):
         descriptor_{detail::list_parse<index_type,shape_type>(init_data)},
         elements(descriptor_.size())
     {detail::fill_from_list(init_data, elements.begin());}
-
+    
     const storage_tensor_impl_base<ValT,Cfg>* as_storage_tensor()const override{return static_cast<const storage_tensor_impl_base<ValT,Cfg>*>(this);}
     const view_index_converter<ValT,Cfg>* as_index_converter()const override{return static_cast<const view_index_converter<ValT,Cfg>*>(this);}
     const walker_maker<ValT,Cfg>* as_walker_maker()const{return static_cast<const walker_maker<ValT,Cfg>*>(this);}
@@ -72,6 +72,12 @@ public:
     stensor_impl(typename detail::nested_initializer_list_type<value_type,3>::type init_data):stensor_impl(init_data,0){}
     stensor_impl(typename detail::nested_initializer_list_type<value_type,4>::type init_data):stensor_impl(init_data,0){}
     stensor_impl(typename detail::nested_initializer_list_type<value_type,5>::type init_data):stensor_impl(init_data,0){}
+
+    template<typename...Dims>
+    stensor_impl(const value_type& v, const Dims&...dims):
+        descriptor_{shape_type{dims...}},
+        elements(descriptor_.size(), v)
+    {}
 
     const value_type* data()const{return elements.data();}
 
