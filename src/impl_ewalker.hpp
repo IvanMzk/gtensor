@@ -7,16 +7,15 @@
 namespace gtensor{
 
 template<typename ValT, template<typename> typename Cfg, typename F, typename...Wks>
-class evaluating_walker_impl : 
-    public walker_impl_base<ValT, Cfg>,
-    walker_shape<ValT,Cfg>
+class evaluating_walker_impl : public walker_impl_base<ValT, Cfg>
 {
-    using base_walker_shape = walker_shape<ValT,Cfg>;
     using config_type = Cfg<ValT>;        
     using value_type = ValT;
     using index_type = typename config_type::index_type;
     using shape_type = typename config_type::shape_type;
-        
+
+    index_type dim_;
+    detail::shape_inverter<ValT,Cfg> shape;
     std::tuple<Wks...> walkers;
     F f{};
         
@@ -34,30 +33,31 @@ class evaluating_walker_impl :
 protected:
     template<std::size_t...I>
     void walk_helper(const index_type& direction, const index_type& steps, std::index_sequence<I...>){(std::get<I>(walkers).walk(direction,steps),...);}
-    using base_walker_shape::dim;
+    index_type dim()const{return dim_;}
 public:
     evaluating_walker_impl(const shape_type& shape_, Wks&&...walkers_):
-        base_walker_shape{static_cast<index_type>(shape_.size()), shape_},
+        dim_{static_cast<index_type>(shape_.size())},
+        shape{shape_},
         walkers{std::move(walkers_)...}
     {}
     
     void walk(const index_type& direction, const index_type& steps)override{
-        if (can_walk(direction)){
+        if (detail::can_walk(direction,dim_,shape.element(direction))){
             walk_helper(direction,steps,std::make_index_sequence<sizeof...(Wks)>{});
         }
     }
     void step(const index_type& direction)override{
-        if (can_walk(direction)){
+        if (detail::can_walk(direction,dim_,shape.element(direction))){
             step_helper(direction,std::make_index_sequence<sizeof...(Wks)>{});
         }
     }
     void step_back(const index_type& direction)override{
-        if (can_walk(direction)){
+        if (detail::can_walk(direction,dim_,shape.element(direction))){
             step_back_helper(direction,std::make_index_sequence<sizeof...(Wks)>{});
         }
     }
     void reset(const index_type& direction)override{
-        if (can_walk(direction)){
+        if (detail::can_walk(direction,dim_,shape.element(direction))){
             reset_helper(direction,std::make_index_sequence<sizeof...(Wks)>{});
         }
     }

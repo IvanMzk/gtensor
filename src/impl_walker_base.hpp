@@ -3,75 +3,76 @@
 
 namespace gtensor{
 
+namespace detail{
+
+template<typename IdxT>
+inline bool can_walk(const IdxT& direction, const IdxT& dim, const IdxT& direction_dim){
+    return direction < dim && direction_dim != IdxT(1);
+}
+
 template<typename ValT, template<typename> typename Cfg>
-class walker_shape
+class shape_inverter
 {
     using config_type = Cfg<ValT>;        
     using index_type = typename config_type::index_type;
     using shape_type = typename config_type::shape_type;
-
-    index_type dim_;
+    
     const index_type* shape_last;
 
-protected:
+public:
+    shape_inverter(const shape_type& shape_):
+        shape_last{shape_.data()+shape_.size()-1}
+    {}       
+
     //direction must be in range [0,dim-1]
     //0 direction corresponding to last shape element - direction with minimal stride
     //1 direction corresponding to shape element befor last
     //...
     //dim-1 direction correcponding to 0 shape element - direction with max stride    
-    index_type shape_element(const index_type direction)const{return *(shape_last-direction);}
-    bool can_walk(const index_type& direction)const{return direction < dim_ && shape_element(direction) != index_type(1);}
-    index_type dim()const{return dim_;}
-    
-    walker_shape(const index_type& dim__, const shape_type& shape_):
-        dim_{dim__},
-        shape_last{shape_.data()+dim_-index_type{1}}        
-    {}       
+    index_type element(const index_type& direction)const{return *(shape_last-direction);}
 };
 
+}   //end of namespace detail
+
 template<typename ValT, template<typename> typename Cfg, typename CursorT>
-class basic_walker : walker_shape<ValT,Cfg>
+class basic_walker
 {
-    using walker_shape_base = walker_shape<ValT,Cfg>;
     using config_type = Cfg<ValT>;        
     using index_type = typename config_type::index_type;
     using shape_type = typename config_type::shape_type;
     
-    const index_type* strides_last;
+    index_type dim;
+    detail::shape_inverter<ValT,Cfg> shape;
+    detail::shape_inverter<ValT,Cfg> strides;
     CursorT offset;
     CursorT cursor_{offset};
 
 protected:
     basic_walker(const index_type& dim_, const shape_type& shape_, const shape_type& strides_, const CursorT& offset_):
-        walker_shape_base{dim_, shape_},        
-        strides_last{strides_.data()+dim()-index_type{1}},
+        dim{dim_},
+        shape{shape_},
+        strides{strides_},
         offset{offset_}
     {}    
-
-    //direction must be in range [0,dim-1]
-    //0 direction corresponding to last shape element - direction with minimal stride
-    //1 direction corresponding to shape element befor last
-    //...
-    //dim-1 direction correcponding to 0 shape element - direction with max stride    
-    auto strides_element(const index_type direction)const{return *(strides_last-direction);}    
+    
     void walk(const index_type& direction, const index_type& steps){
-        if (can_walk(direction)){
-            cursor_+=steps*strides_element(direction);
+        if (detail::can_walk(direction, dim, shape.element(direction))){
+            cursor_+=steps*strides.element(direction);
         }   
     }
     void step(const index_type& direction){
-        if (can_walk(direction)){
-            cursor_+=strides_element(direction);
+        if (detail::can_walk(direction, dim, shape.element(direction))){
+            cursor_+=strides.element(direction);
         }
     }
     void step_back(const index_type& direction){        
-        if (can_walk(direction)){
-            cursor_-=strides_element(direction);
+        if (detail::can_walk(direction, dim, shape.element(direction))){
+            cursor_-=strides.element(direction);
         }            
     }
     void reset(const index_type& direction){
-        if (can_walk(direction)){
-            cursor_-=(shape_element(direction)-1)*strides_element(direction);
+        if (detail::can_walk(direction, dim, shape.element(direction))){
+            cursor_-=(shape.element(direction)-1)*strides.element(direction);
         }
     }
     void reset(){cursor_ = offset;}
