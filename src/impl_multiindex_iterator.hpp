@@ -4,6 +4,7 @@
 #include <iterator>
 #include "config.hpp"
 #include "libdivide_helper.hpp"
+#include "impl_walker_base.hpp"
 
 namespace gtensor{
 
@@ -30,10 +31,11 @@ public:
     using const_reference = const value_type&;
 
     walker_type walker;
-    const shape_type* shape;
+    index_type dim_dec;
+    detail::shape_inverter<ValT,Cfg> shape;
     const strides_type* strides;
     difference_type flat_index;
-    index_type dim_dec{static_cast<index_type>(shape->size()-1)};
+    
     shape_type multi_index = shape_type(dim_dec+2,index_type(1));
 
     auto& advance(difference_type);
@@ -44,7 +46,8 @@ public:
     template<typename W>
     multiindex_iterator_impl(W&& walker_, const shape_type& shape_, const strides_type& strides_):
         walker{std::forward<W>(walker_)},
-        shape{&shape_},
+        dim_dec{static_cast<index_type>(shape_.size()-1)},
+        shape{shape_},
         strides{&strides_},
         flat_index{0}
     {}
@@ -52,7 +55,8 @@ public:
     template<typename W>
     multiindex_iterator_impl(W&& walker_, const shape_type& shape_, const strides_type& strides_, const difference_type& size_):
         walker{std::forward<W>(walker_)},
-        shape{&shape_},
+        dim_dec{static_cast<index_type>(shape_.size()-1)},
+        shape{shape_},
         strides{&strides_},
         flat_index{size_}
     {
@@ -86,15 +90,15 @@ public:
 
 template<typename ValT, template<typename> typename Cfg, typename Wkr>
 auto& multiindex_iterator_impl<ValT,Cfg,Wkr>::operator++(){
-    index_type d{dim_dec};
+    index_type d{0};
     auto idx_first = multi_index.begin();
     auto idx_it = std::prev(multi_index.end());
     while(idx_it!=idx_first){
-        if (*idx_it == (*shape)[d]){
+        if (*idx_it == shape.element(d)){
             walker.reset(d);
             *idx_it = index_type(1);
+            ++d;
             --idx_it;
-            --d;
             if (idx_it == idx_first){
                 ++flat_index;
                 ++(*idx_it);
@@ -112,15 +116,15 @@ auto& multiindex_iterator_impl<ValT,Cfg,Wkr>::operator++(){
 
 template<typename ValT, template<typename> typename Cfg, typename Wkr>
 auto& multiindex_iterator_impl<ValT,Cfg,Wkr>::operator--(){
-    index_type d{dim_dec};
+    index_type d{0};
     auto idx_first = multi_index.begin();
     auto idx_it = std::prev(multi_index.end());
     while(idx_it!=idx_first){
         if (*idx_it==index_type(1)){
-            walker.walk(d,(*shape)[d]-1);
-            *idx_it = (*shape)[d];
+            walker.walk(d,shape.element(d)-1);
+            *idx_it = shape.element(d);
+            ++d;
             --idx_it;
-            --d;
             if (idx_it == idx_first){
                 --flat_index;
                 --(*idx_it);
@@ -141,13 +145,15 @@ auto& multiindex_iterator_impl<ValT,Cfg,Wkr>::advance(difference_type n){
     index_type idx{flat_index + n};
     flat_index = idx;
     walker.reset();
-    auto sit_begin{(*strides).begin()};
-    auto sit_end{(*strides).end()};
-    for(index_type d{0};sit_begin!=sit_end; ++sit_begin,++d){
-        auto q = detail::divide(idx,*sit_begin);
+    auto strides_it{(*strides).begin()};
+    auto strides_end{(*strides).end()};
+    auto multi_it{multi_index.begin()};
+    ++multi_it;
+    for(index_type d{dim_dec};strides_it!=strides_end; ++strides_it,++multi_it,--d){
+        auto q = detail::divide(idx,*strides_it);
         if (q!=0){
             walker.walk(d,q);
-            multi_index[d] = q+1;
+            *multi_it = q+1;
         }
     }    
     return *this;
