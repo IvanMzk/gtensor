@@ -39,8 +39,9 @@ class storage_walker_factory
     using value_type = ValT;
     using shape_type = typename config_type::shape_type;
 public: 
-    static storage_walker_impl<ValT, Cfg> create_walker(const shape_type& shape, const shape_type& strides, const value_type* data){
-        return storage_walker_impl<ValT,Cfg>{shape, strides, data};
+    static auto create_walker(const shape_type& shape, const shape_type& strides, const value_type* data){
+        //return storage_walker_impl<ValT,Cfg>{shape, strides, data};
+        return storage_walker_inline_impl<ValT,Cfg>{shape, strides, data};
     }
 };
 

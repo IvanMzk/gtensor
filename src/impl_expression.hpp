@@ -122,7 +122,7 @@ class expression_impl :
     using storage_type = typename config_type::storage_type;
     using slices_collection_type = typename config_type::slices_collection_type;     
     using iterator_type = multiindex_iterator_impl<ValT,Cfg,walker<ValT,Cfg>>; 
-    static_assert(detail::is_valid_operands<Ops...>);
+    //static_assert(detail::is_valid_operands<Ops...>);
 
     descriptor_type descriptor_;
     std::tuple<Ops...> operands;
@@ -140,7 +140,7 @@ class expression_impl :
     template<std::size_t...I>
     value_type trivial_at_helper(const index_type& idx, std::index_sequence<I...>)const{return f(std::get<I>(operands)->trivial_at(idx)...);} 
     
-    storage_walker_impl<ValT,Cfg> create_storage_walker()const override{
+    storage_walker_inline_impl<ValT,Cfg> create_storage_walker()const override{
         return storage_walker_factory<ValT,Cfg>::create_walker(shape(),strides(),cache.data());
     }
     walker<ValT,Cfg> create_evaluating_walker()const override{
@@ -160,16 +160,23 @@ class expression_impl :
     bool is_storage()const override{return is_cached();}
     const value_type* storage_data()const override{return cache.data();}
     
-    const expression_impl_base<ValT,Cfg>* as_expression()const override{return static_cast<const expression_impl_base<ValT,Cfg>*>(this);}
     const trivial_impl_base<ValT,Cfg>* as_expression_trivial()const override{return static_cast<const trivial_impl_base<ValT,Cfg>*>(this);}
     const storage_tensor_impl_base<ValT,Cfg>* as_storage_tensor()const override{return static_cast<const storage_tensor_impl_base<ValT,Cfg>*>(this);}
     const view_index_converter<ValT,Cfg>* as_index_converter()const override{return static_cast<const view_index_converter<ValT,Cfg>*>(this);}
-    const walker_maker<ValT,Cfg>* as_walker_maker()const{return static_cast<const walker_maker<ValT,Cfg>*>(this);}
+protected:
+    
+    template<std::size_t I>
+    auto operand()const{return std::get<I>(operands);}
+    const auto& concrete_descriptor()const{return descriptor_;}
 
 public:            
-    explicit expression_impl(Ops&...operands_):
+    const expression_impl_base<ValT,Cfg>* as_expression()const override{return static_cast<const expression_impl_base<ValT,Cfg>*>(this);}
+    const walker_maker<ValT,Cfg>* as_walker_maker()const{return static_cast<const walker_maker<ValT,Cfg>*>(this);}
+    
+    template<typename...O>
+    explicit expression_impl(O&&...operands_):
         descriptor_{detail::broadcast(operands_->shape()...)},
-        operands{operands_...}
+        operands{std::forward<O>(operands_)...}
     {}
 
     detail::tensor_kinds tensor_kind()const override{return detail::tensor_kinds::expression;}

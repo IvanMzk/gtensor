@@ -43,9 +43,8 @@ class stensor_impl :
     
     const storage_tensor_impl_base<ValT,Cfg>* as_storage_tensor()const override{return static_cast<const storage_tensor_impl_base<ValT,Cfg>*>(this);}
     const view_index_converter<ValT,Cfg>* as_index_converter()const override{return static_cast<const view_index_converter<ValT,Cfg>*>(this);}
-    const walker_maker<ValT,Cfg>* as_walker_maker()const{return static_cast<const walker_maker<ValT,Cfg>*>(this);}
 
-    storage_walker_impl<ValT,Cfg> create_storage_walker()const override{
+    storage_walker_inline_impl<ValT,Cfg> create_storage_walker()const override{
         return storage_walker_factory<ValT,Cfg>::create_walker(shape(),strides(),elements.data());
     }
     
@@ -59,13 +58,15 @@ class stensor_impl :
     index_type view_index_convert(const index_type& idx)const override{return idx;}
     
 
-
+protected:
 
 
     // typename storage_type::const_iterator begin()const override{return elements.begin();}
     // typename storage_type::const_iterator end()const override{return elements.end();}
 
 public:
+    const walker_maker<ValT,Cfg>* as_walker_maker()const{return static_cast<const walker_maker<ValT,Cfg>*>(this);}
+    
     stensor_impl() = default;
     stensor_impl(typename detail::nested_initializer_list_type<value_type,1>::type init_data):stensor_impl(init_data,0){}
     stensor_impl(typename detail::nested_initializer_list_type<value_type,2>::type init_data):stensor_impl(init_data,0){}

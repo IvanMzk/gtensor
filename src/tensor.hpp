@@ -36,7 +36,7 @@ class tensor{
     {}
     
 protected:
-    std::shared_ptr<impl_base_type> get_impl()const{return impl;}
+    const std::shared_ptr<impl_base_type>& get_impl()const{return impl;}
 
 public:        
     using value_type = ValT;

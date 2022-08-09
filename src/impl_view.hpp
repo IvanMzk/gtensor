@@ -37,7 +37,7 @@ class view_impl :
     const view_index_converter<ValT,Cfg>* parent_converter{parent->as_index_converter()};
     storage_type cache{};
 
-    storage_walker_impl<ValT,Cfg> create_storage_walker()const override{
+    storage_walker_inline_impl<ValT,Cfg> create_storage_walker()const override{
         if (is_cached()){
             return storage_walker_factory<ValT,Cfg>::create_walker(shape(),strides(), cache.data()+descriptor_.offset());
         }else if(detail::is_storage(*parent)){
