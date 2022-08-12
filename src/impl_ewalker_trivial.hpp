@@ -2,7 +2,7 @@
 #define IMPL_EWALKER_TRIVIAL_HPP_
 
 #include "impl_walker_base.hpp"
-#include "impl_tensor_base.hpp"
+#include "tensor_base.hpp"
 
 namespace gtensor{
 
@@ -21,12 +21,12 @@ class ewalker_trivial_impl :
     using index_type = typename config_type::index_type;
     using shape_type = typename config_type::shape_type;
 
-    const tensor_impl_base<ValT,Cfg>* parent;
+    const tensor_base<ValT,Cfg>* parent;
         
     std::unique_ptr<walker_impl_base<ValT,Cfg>> clone()const override{return std::make_unique<ewalker_trivial_impl<ValT,Cfg>>(*this);}
 
 public:    
-    ewalker_trivial_impl(const shape_type& shape_, const shape_type& strides_,  const tensor_impl_base<ValT,Cfg>& parent_):
+    ewalker_trivial_impl(const shape_type& shape_, const shape_type& strides_,  const tensor_base<ValT,Cfg>& parent_):
         base_basic_walker{static_cast<index_type>(shape_.size()), shape_, strides_, index_type{0}},
         parent{&parent_}
     {}

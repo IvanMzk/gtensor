@@ -1,7 +1,7 @@
 #include <typeindex>
 #include "catch.hpp"
 #include "tensor.hpp"
-#include "impl_expression.hpp"
+#include "expression_tensor.hpp"
 #include "dispatcher.hpp"
 
 
@@ -33,25 +33,25 @@ TEST_CASE("test_dispatcher","[test_dispatcher]"){
     using value_type = float;
     using gtensor::binary_operations::add;
     using gtensor::storage_tensor;
-    using gtensor::tensor_impl_base;
+    using gtensor::tensor_base;
     using gtensor::config::default_config;
     using config_type = gtensor::config::default_config<value_type>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
-    using tensor_impl_base_type = tensor_impl_base<value_type, default_config>;
+    using tensor_base_type = tensor_base<value_type, default_config>;
     using storage_tensor_type = storage_tensor<value_type, default_config>;
     using test_dispatcher::test_expression_tensor;
-    using test_expression_tensor_type = test_expression_tensor<value_type, default_config, add, std::shared_ptr<tensor_impl_base_type>, std::shared_ptr<tensor_impl_base_type>>;    
+    using test_expression_tensor_type = test_expression_tensor<value_type, default_config, add, std::shared_ptr<tensor_base_type>, std::shared_ptr<tensor_base_type>>;    
     using gtensor::detail::tensor_kinds;
     using view_factory_type = gtensor::view_factory<value_type,default_config>;
 
-    auto t1 = std::static_pointer_cast<tensor_impl_base_type>(std::shared_ptr<storage_tensor_type>{new storage_tensor_type{1,2,3}});
-    auto t2 = std::static_pointer_cast<tensor_impl_base_type>(std::shared_ptr<storage_tensor_type>{new storage_tensor_type{{1},{2},{3}}});    
+    auto t1 = std::static_pointer_cast<tensor_base_type>(std::shared_ptr<storage_tensor_type>{new storage_tensor_type{1,2,3}});
+    auto t2 = std::static_pointer_cast<tensor_base_type>(std::shared_ptr<storage_tensor_type>{new storage_tensor_type{{1},{2},{3}}});    
 
-    auto e_trivial = std::static_pointer_cast<tensor_impl_base_type>(std::shared_ptr<test_expression_tensor_type>(new test_expression_tensor_type{false, t1,t1}));
-    auto e = std::static_pointer_cast<tensor_impl_base_type>(std::shared_ptr<test_expression_tensor_type>(new test_expression_tensor_type{false, t1,t2}));
-    auto ce_trivial = std::static_pointer_cast<tensor_impl_base_type>(std::shared_ptr<test_expression_tensor_type>(new test_expression_tensor_type{true, t1,t1}));
-    auto ce = std::static_pointer_cast<tensor_impl_base_type>(std::shared_ptr<test_expression_tensor_type>(new test_expression_tensor_type{true, t1,t2}));
+    auto e_trivial = std::static_pointer_cast<tensor_base_type>(std::shared_ptr<test_expression_tensor_type>(new test_expression_tensor_type{false, t1,t1}));
+    auto e = std::static_pointer_cast<tensor_base_type>(std::shared_ptr<test_expression_tensor_type>(new test_expression_tensor_type{false, t1,t2}));
+    auto ce_trivial = std::static_pointer_cast<tensor_base_type>(std::shared_ptr<test_expression_tensor_type>(new test_expression_tensor_type{true, t1,t1}));
+    auto ce = std::static_pointer_cast<tensor_base_type>(std::shared_ptr<test_expression_tensor_type>(new test_expression_tensor_type{true, t1,t2}));
 
     auto v_of_t = view_factory_type::create_view_subdim(t2,shape_type{});
     auto v_of_e = view_factory_type::create_view_subdim(e,shape_type{});
@@ -59,7 +59,7 @@ TEST_CASE("test_dispatcher","[test_dispatcher]"){
     auto v_of_v = view_factory_type::create_view_subdim(v_of_t,shape_type{});
 
     SECTION("test_inputs"){
-        using test_type = std::tuple<std::shared_ptr<tensor_impl_base_type>&,tensor_kinds,bool,bool>;
+        using test_type = std::tuple<std::shared_ptr<tensor_base_type>&,tensor_kinds,bool,bool>;
         //tensor,expected_tensor_kind,expected_is_storage,expected_is_trivial
         auto test_data = GENERATE_REF(
             test_type{t1,tensor_kinds::storage_tensor,true,true},

@@ -2,7 +2,7 @@
 #define IMPL_VIEW_HPP_
 
 #include "shareable_storage.hpp"
-#include "impl_tensor_base.hpp"
+#include "tensor_base.hpp"
 #include "walker_factory.hpp"
 
 namespace gtensor{
@@ -16,14 +16,14 @@ class view_tensor_exception : public std::runtime_error{
 */
 template<typename ValT, template<typename> typename Cfg, typename DescT>
 class view_tensor : 
-    public tensor_impl_base<ValT, Cfg>,
+    public tensor_base<ValT, Cfg>,
     public view_impl_base<ValT,Cfg>,
     public storage_tensor_impl_base<ValT,Cfg>,
     public view_index_converter<ValT,Cfg>,
     public view_expression_impl_base<ValT,Cfg>,
     public walker_maker<ValT, Cfg>
 {
-    using impl_base_type = tensor_impl_base<ValT,Cfg>;
+    using tensor_base_type = tensor_base<ValT,Cfg>;
     using config_type = Cfg<ValT>;        
     using value_type = ValT;
     using index_type = typename config_type::index_type;
@@ -32,8 +32,8 @@ class view_tensor :
     using slices_collection_type = typename config_type::slices_collection_type;
 
     DescT descriptor_;
-    std::shared_ptr<impl_base_type> parent;
-    const impl_base_type* view_root{parent->tensor_kind() == detail::tensor_kinds::view ? static_cast<const view_tensor*>(parent.get())->get_view_root() : parent.get()};
+    std::shared_ptr<tensor_base_type> parent;
+    const tensor_base_type* view_root{parent->tensor_kind() == detail::tensor_kinds::view ? static_cast<const view_tensor*>(parent.get())->get_view_root() : parent.get()};
     const view_index_converter<ValT,Cfg>* parent_converter{parent->as_index_converter()};
     storage_type cache{};
 
@@ -67,11 +67,11 @@ class view_tensor :
     bool is_storage()const override{return detail::is_storage(*parent) || is_cached();}
     bool is_trivial()const override{return true;}
     const value_type* storage_data()const override{return cache.data();}
-    const impl_base_type* get_view_root()const{return view_root;}
+    const tensor_base_type* get_view_root()const{return view_root;}
 
 public:
     template<typename DtT>
-    view_tensor(DtT&& descriptor__, const std::shared_ptr<impl_base_type>& parent_):
+    view_tensor(DtT&& descriptor__, const std::shared_ptr<tensor_base_type>& parent_):
         descriptor_{std::forward<DtT>(descriptor__)},
         parent{parent_}
     {}    
@@ -97,7 +97,7 @@ public:
 //     using base_type = view_impl<ValT, Cfg, DescT>;
 // public:
 //     template<typename DtT>
-//     view_of_expression_impl(DtT&& descriptor_, const std::shared_ptr<impl_base_type>& parent_):
+//     view_of_expression_impl(DtT&& descriptor_, const std::shared_ptr<tensor_base_type>& parent_):
 //         base_type{std::forward<DtT>(descriptor_), parent_}        
 //     {}    
 

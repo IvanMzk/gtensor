@@ -2,7 +2,7 @@
 #define IMPL_VWALKER_HPP_
 
 #include "impl_walker_base.hpp"
-#include "impl_tensor_base.hpp"
+#include "tensor_base.hpp"
 
 namespace gtensor{
 

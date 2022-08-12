@@ -8,7 +8,7 @@ namespace test_walker_{
 using gtensor::tensor;
 using gtensor::config::default_config;
 using gtensor::storage_tensor_impl_base;
-using gtensor::tensor_impl_base;
+using gtensor::tensor_base;
 using gtensor::walker;
 using gtensor::walker_impl_base;
 using gtensor::storage_walker_impl;

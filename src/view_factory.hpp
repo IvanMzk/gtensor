@@ -3,7 +3,7 @@
 
 #include "view_slice_descriptor.hpp"
 #include "view_subdim_descriptor.hpp"
-#include "impl_view.hpp"
+#include "view_tensor.hpp"
 
 
 namespace gtensor{
@@ -95,16 +95,16 @@ inline ShT make_view_reshape_shape(const ShT& pshape, const ShT& subs){
 
 template<typename ValT, template<typename> typename Cfg>
 class view_factory_base{
-    using impl_base_type = tensor_impl_base<ValT,Cfg>;
+    using tensor_base_type = tensor_base<ValT,Cfg>;
     using config_type = Cfg<ValT>;        
     using shape_type = typename config_type::shape_type;
     using slices_collection_type = typename config_type::slices_collection_type;
 public:
     virtual ~view_factory_base(){}
-    virtual std::shared_ptr<impl_base_type> create_view_slice(const std::shared_ptr<impl_base_type>&, const slices_collection_type&)const = 0;
-    virtual std::shared_ptr<impl_base_type> create_view_transpose(const std::shared_ptr<impl_base_type>&, const shape_type&)const = 0;
-    virtual std::shared_ptr<impl_base_type> create_view_subdim(const std::shared_ptr<impl_base_type>&, const shape_type&)const = 0;
-    virtual std::shared_ptr<impl_base_type> create_view_reshape(const std::shared_ptr<impl_base_type>&, const shape_type&)const = 0;
+    virtual std::shared_ptr<tensor_base_type> create_view_slice(const std::shared_ptr<tensor_base_type>&, const slices_collection_type&)const = 0;
+    virtual std::shared_ptr<tensor_base_type> create_view_transpose(const std::shared_ptr<tensor_base_type>&, const shape_type&)const = 0;
+    virtual std::shared_ptr<tensor_base_type> create_view_subdim(const std::shared_ptr<tensor_base_type>&, const shape_type&)const = 0;
+    virtual std::shared_ptr<tensor_base_type> create_view_reshape(const std::shared_ptr<tensor_base_type>&, const shape_type&)const = 0;
     
     static std::shared_ptr<view_factory_base> create_factory();
 };
@@ -113,7 +113,7 @@ template<typename ValT, template<typename> typename Cfg>
 class view_factory
 {
     using config_type = Cfg<ValT>;
-    using impl_base_type = tensor_impl_base<ValT,Cfg>;
+    using tensor_base_type = tensor_base<ValT,Cfg>;
     using index_type = typename config_type::index_type;
     using shape_type = typename config_type::shape_type;
     using slices_collection_type = typename config_type::slices_collection_type;
@@ -122,44 +122,44 @@ class view_factory
     using view_slice_type = gtensor::view_tensor<ValT,Cfg,view_slice_descriptor_type>;
     using view_subdim_type = gtensor::view_tensor<ValT,Cfg,view_subdim_descriptor_type>;
     
-    static view_slice_descriptor_type create_view_slice_descriptor(const std::shared_ptr<impl_base_type>& parent, const slices_collection_type& subs){        
+    static view_slice_descriptor_type create_view_slice_descriptor(const std::shared_ptr<tensor_base_type>& parent, const slices_collection_type& subs){        
         return view_slice_descriptor_type{
             detail::make_view_slice_shape(parent->shape(),subs), 
             detail::make_view_slice_cstrides(parent->strides(),subs),
             detail::make_view_slice_offset(parent->strides(),subs)
         };
     }    
-    static view_slice_descriptor_type create_view_transpose_descriptor(const std::shared_ptr<impl_base_type>& parent, const shape_type& subs){
+    static view_slice_descriptor_type create_view_transpose_descriptor(const std::shared_ptr<tensor_base_type>& parent, const shape_type& subs){
         return view_slice_descriptor_type{
             detail::transpose(parent->shape(),subs), 
             detail::transpose(parent->strides(),subs),
             index_type(0)
         };
     }
-    static view_subdim_descriptor_type create_view_subdim_descriptor(const std::shared_ptr<impl_base_type>& parent, const shape_type& subs){
+    static view_subdim_descriptor_type create_view_subdim_descriptor(const std::shared_ptr<tensor_base_type>& parent, const shape_type& subs){
         return view_subdim_descriptor_type{
             detail::make_view_subdim_shape(parent->shape(),subs), 
             detail::make_view_subdim_offset(parent->strides(),subs)
         };
     }
-    static view_subdim_descriptor_type create_view_reshape_descriptor(const std::shared_ptr<impl_base_type>& parent, const shape_type& subs){
+    static view_subdim_descriptor_type create_view_reshape_descriptor(const std::shared_ptr<tensor_base_type>& parent, const shape_type& subs){
         return view_subdim_descriptor_type{
             detail::make_view_reshape_shape(parent->shape(),subs),
             index_type(0)
         };
     }
 public:
-    static std::shared_ptr<impl_base_type> create_view_slice(const std::shared_ptr<impl_base_type>& parent, const slices_collection_type& subs){
-        return std::static_pointer_cast<impl_base_type>(std::make_shared<view_slice_type>(create_view_slice_descriptor(parent, subs),parent));
+    static std::shared_ptr<tensor_base_type> create_view_slice(const std::shared_ptr<tensor_base_type>& parent, const slices_collection_type& subs){
+        return std::static_pointer_cast<tensor_base_type>(std::make_shared<view_slice_type>(create_view_slice_descriptor(parent, subs),parent));
     }
-    static std::shared_ptr<impl_base_type> create_view_transpose(const std::shared_ptr<impl_base_type>& parent, const shape_type& subs){
-        return std::static_pointer_cast<impl_base_type>(std::make_shared<view_slice_type>(create_view_transpose_descriptor(parent, subs),parent));
+    static std::shared_ptr<tensor_base_type> create_view_transpose(const std::shared_ptr<tensor_base_type>& parent, const shape_type& subs){
+        return std::static_pointer_cast<tensor_base_type>(std::make_shared<view_slice_type>(create_view_transpose_descriptor(parent, subs),parent));
     }
-    static std::shared_ptr<impl_base_type> create_view_subdim(const std::shared_ptr<impl_base_type>& parent, const shape_type& subs){
-        return std::static_pointer_cast<impl_base_type>(std::make_shared<view_subdim_type>(create_view_subdim_descriptor(parent, subs),parent));
+    static std::shared_ptr<tensor_base_type> create_view_subdim(const std::shared_ptr<tensor_base_type>& parent, const shape_type& subs){
+        return std::static_pointer_cast<tensor_base_type>(std::make_shared<view_subdim_type>(create_view_subdim_descriptor(parent, subs),parent));
     }
-    static std::shared_ptr<impl_base_type> create_view_reshape(const std::shared_ptr<impl_base_type>& parent, const shape_type& subs){
-        return std::static_pointer_cast<impl_base_type>(std::make_shared<view_subdim_type>(create_view_reshape_descriptor(parent, subs),parent));
+    static std::shared_ptr<tensor_base_type> create_view_reshape(const std::shared_ptr<tensor_base_type>& parent, const shape_type& subs){
+        return std::static_pointer_cast<tensor_base_type>(std::make_shared<view_subdim_type>(create_view_reshape_descriptor(parent, subs),parent));
     }
 };
 
@@ -174,7 +174,7 @@ public:
 //     using index_type = typename config_type::index_type;
 //     using shape_type = typename config_type::shape_type;
 //     using slices_collection_type = typename config_type::slices_collection_type;
-//     using impl_base_type = tensor_impl_base<ValT,Cfg>;
+//     using tensor_base_type = tensor_impl_base<ValT,Cfg>;
 //     using view_slice_descriptor_type = view_slice_descriptor<ValT,Cfg,DescT>;
 //     using view_subdim_descriptor_type = view_subdim_descriptor<ValT,Cfg,DescT>;
 //     using view_slice_type = gtensor::view_impl<ValT,Cfg,view_slice_descriptor_type, StorT>;
@@ -232,26 +232,26 @@ public:
 //             view_subdim_descriptor_type{detail::make_view_reshape_shape(descriptor->shape(),subs),index_type(0),*descriptor};
 //     }
 
-//     std::shared_ptr<impl_base_type> create_view_slice(const slices_collection_type& subs, bool move = false) override{
-//         return std::static_pointer_cast<impl_base_type>(move ? 
+//     std::shared_ptr<tensor_base_type> create_view_slice(const slices_collection_type& subs, bool move = false) override{
+//         return std::static_pointer_cast<tensor_base_type>(move ? 
 //             std::make_shared<view_slice_type>(create_view_slice_descriptor(subs,move),std::move(*elements)):
 //             std::make_shared<view_slice_type>(create_view_slice_descriptor(subs,move),*elements)
 //         );        
 //     }
-//     std::shared_ptr<impl_base_type> create_view_transpose(const shape_type& subs, bool move = false) override{
-//         return std::static_pointer_cast<impl_base_type>(move ?
+//     std::shared_ptr<tensor_base_type> create_view_transpose(const shape_type& subs, bool move = false) override{
+//         return std::static_pointer_cast<tensor_base_type>(move ?
 //             std::make_shared<view_slice_type>(create_view_transpose_descriptor(subs,move),std::move(*elements)):
 //             std::make_shared<view_slice_type>(create_view_transpose_descriptor(subs,move),*elements):
 //         );        
 //     }
-//     std::shared_ptr<impl_base_type> create_view_subdim(const shape_type& subs, bool move = false) override{
-//         return std::static_pointer_cast<impl_base_type>(move ?
+//     std::shared_ptr<tensor_base_type> create_view_subdim(const shape_type& subs, bool move = false) override{
+//         return std::static_pointer_cast<tensor_base_type>(move ?
 //             std::make_shared<view_subdim_type>(create_view_subdim_descriptor(subs,move),std::move(*elements)):
 //             std::make_shared<view_subdim_type>(create_view_subdim_descriptor(subs,move),*elements)
 //         );        
 //     }
-//     std::shared_ptr<impl_base_type> create_view_reshape(const shape_type& subs, bool move = false) override{
-//         return std::static_pointer_cast<impl_base_type>(move ?
+//     std::shared_ptr<tensor_base_type> create_view_reshape(const shape_type& subs, bool move = false) override{
+//         return std::static_pointer_cast<tensor_base_type>(move ?
 //             std::make_shared<view_subdim_type>(create_view_reshape_descriptor(subs,move),std::move(*elements)):
 //             std::make_shared<view_subdim_type>(create_view_reshape_descriptor(subs,move),*elements)
 //         );                
@@ -265,7 +265,7 @@ public:
 
 // template<typename ValT, template<typename> typename Cfg, typename DescT, typename StorT, typename CacheT>
 // class view_of_expression_factory : public view_factory_base<ValT, Cfg>{
-//     using impl_base_type = tensor_impl_base<ValT,Cfg>;
+//     using tensor_base_type = tensor_impl_base<ValT,Cfg>;
 //     using slices_collection_type = typename config_type::slices_collection_type;
 //     using shape_type = typename config_type::shape_type;
 //     using view_cached_factory_type = view_simple_descriptor_factory<ValT,Cfg,DescT,CacheT>;
@@ -277,15 +277,15 @@ public:
 //         factory{is_cached_ ? new view_cached_factory_type{descriptor_,cache_} : new view_not_cached_factory_type{descriptor_,elements_} };
 //     {}
 
-//     std::shared_ptr<impl_base_type> create_view_slice(const slices_collection_type& subs, bool move = false)override{return factory->create_view_slice(subs,move);}
-//     std::shared_ptr<impl_base_type> create_view_transpose(const shape_type& subs, bool move = false)override{return factory->create_view_transpose(subs,move);}
-//     std::shared_ptr<impl_base_type> create_view_subdim(const shape_type& subs, bool move = false)override{return factory->create_view_subdim(subs,move);}
-//     std::shared_ptr<impl_base_type> create_view_reshape(const shape_type& subs, bool move = false)override{return factory->create_view_reshape(subs,move);}
+//     std::shared_ptr<tensor_base_type> create_view_slice(const slices_collection_type& subs, bool move = false)override{return factory->create_view_slice(subs,move);}
+//     std::shared_ptr<tensor_base_type> create_view_transpose(const shape_type& subs, bool move = false)override{return factory->create_view_transpose(subs,move);}
+//     std::shared_ptr<tensor_base_type> create_view_subdim(const shape_type& subs, bool move = false)override{return factory->create_view_subdim(subs,move);}
+//     std::shared_ptr<tensor_base_type> create_view_reshape(const shape_type& subs, bool move = false)override{return factory->create_view_reshape(subs,move);}
 // };
 
 // template<typename ValT, template<typename> typename Cfg, typename ParentT, typename DescT, typename StorT, typename CacheT>
 // class view_of_view_factory : public view_factory_base<ValT, Cfg>{
-//     using impl_base_type = tensor_impl_base<ValT,Cfg>;
+//     using tensor_base_type = tensor_impl_base<ValT,Cfg>;
 //     using slices_collection_type = typename config_type::slices_collection_type;
 //     using shape_type = typename config_type::shape_type;
 
@@ -307,10 +307,10 @@ public:
 //         view_of_view_maker{&descriptor_, &elements_}        
 //     {}
 
-//     std::shared_ptr<impl_base_type> create_view_slice(const slices_collection_type& subs, bool move = false)override{return get_factory()->create_view_slice(subs,move);}
-//     std::shared_ptr<impl_base_type> create_view_transpose(const shape_type& subs, bool move = false)override{return get_factory()->create_view_transpose(subs,move);}
-//     std::shared_ptr<impl_base_type> create_view_subdim(const shape_type& subs, bool move = false)override{return get_factory()->create_view_subdim(subs,move);}
-//     std::shared_ptr<impl_base_type> create_view_reshape(const shape_type& subs, bool move = false)override{return get_factory()->create_view_reshape(subs,move);}
+//     std::shared_ptr<tensor_base_type> create_view_slice(const slices_collection_type& subs, bool move = false)override{return get_factory()->create_view_slice(subs,move);}
+//     std::shared_ptr<tensor_base_type> create_view_transpose(const shape_type& subs, bool move = false)override{return get_factory()->create_view_transpose(subs,move);}
+//     std::shared_ptr<tensor_base_type> create_view_subdim(const shape_type& subs, bool move = false)override{return get_factory()->create_view_subdim(subs,move);}
+//     std::shared_ptr<tensor_base_type> create_view_reshape(const shape_type& subs, bool move = false)override{return get_factory()->create_view_reshape(subs,move);}
 // };
 
 

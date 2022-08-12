@@ -2,7 +2,7 @@
 #define IMPL_EXPRESSION_HPP_
 
 #include "shareable_storage.hpp"
-#include "impl_tensor_base.hpp"
+#include "tensor_base.hpp"
 #include "stensor_descriptor.hpp"
 #include "walker_factory.hpp"
 #include "impl_multiindex_iterator.hpp"
@@ -79,7 +79,7 @@ inline bool is_trivial_operand(const T& operand){
 }
 
 template<typename T> inline constexpr bool is_valid_operand = false;
-template<typename...T> inline constexpr bool is_valid_operand<std::shared_ptr<tensor_impl_base<T...>>> = true;
+template<typename...T> inline constexpr bool is_valid_operand<std::shared_ptr<tensor_base<T...>>> = true;
 template<typename...Ops> inline constexpr bool is_valid_operands = (is_valid_operand<Ops>&&...);
 
 template<typename ValT, template<typename> typename Cfg, std::enable_if_t<detail::is_mode_div_native<Cfg<ValT>> ,int> =0 >
@@ -106,14 +106,13 @@ inline const auto& strides_div(const stensor_descriptor<ValT, Cfg>& desc){
 
 template<typename ValT, template<typename> typename Cfg, typename F, typename...Ops>
 class expression_tensor : 
-    public tensor_impl_base<ValT,Cfg>,
+    public tensor_base<ValT,Cfg>,
     public expression_impl_base<ValT,Cfg>,
     public trivial_impl_base<ValT,Cfg>,
     public storage_tensor_impl_base<ValT,Cfg>,
     public view_index_converter<ValT,Cfg>,
     public walker_maker<ValT, Cfg>
-{
-    using impl_base_type = tensor_impl_base<ValT,Cfg>;
+{    
     using config_type = Cfg<ValT>;
     using value_type = ValT;
     using index_type = typename config_type::index_type;

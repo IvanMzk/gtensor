@@ -1,7 +1,7 @@
 #ifndef DISPATCHER_HPP_
 #define DISPATCHER_HPP_
 
-#include "impl_tensor_base.hpp"
+#include "tensor_base.hpp"
 
 namespace gtensor{
 
@@ -13,7 +13,7 @@ class dispatch_exception : public std::runtime_error{
 
 template<typename ValT, template<typename> typename Cfg>
 class dispatcher{
-    using base_type = tensor_impl_base<ValT,Cfg>;    
+    using base_type = tensor_base<ValT,Cfg>;    
 
     template<typename FirstT, typename F>
     static auto dispatch_second(F& f, const FirstT& first, const base_type& second){

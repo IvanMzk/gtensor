@@ -18,7 +18,7 @@ template<typename ValT, template<typename> typename Cfg>
 class tensor{
     using tensor_type = tensor<ValT,Cfg>;
     using config_type = Cfg<ValT>;
-    using impl_base_type = tensor_impl_base<ValT, Cfg>;
+    using tensor_base_type = tensor_base<ValT, Cfg>;
     using storage_tensor_type = storage_tensor<ValT, Cfg>;
     using slice_type = typename config_type::slice_type;
     using slices_init_type = typename config_type::slices_init_type;
@@ -28,7 +28,7 @@ class tensor{
     friend std::ostream& operator<<(std::ostream& os, const tensor& lhs){return os<<lhs.impl->to_str();}
     friend class tensor_operators_impl;
     
-    std::shared_ptr<impl_base_type> impl;    
+    std::shared_ptr<tensor_base_type> impl;    
 
     template<typename Nested>
     tensor(std::initializer_list<Nested> init_data, int):
@@ -36,14 +36,14 @@ class tensor{
     {}
     
 protected:
-    const std::shared_ptr<impl_base_type>& get_impl()const{return impl;}
+    const std::shared_ptr<tensor_base_type>& get_impl()const{return impl;}
 
 public:        
     using value_type = ValT;
     using index_type = typename config_type::index_type;
     using shape_type = typename config_type::shape_type;
     
-    tensor(std::shared_ptr<impl_base_type>&& impl_):
+    tensor(std::shared_ptr<tensor_base_type>&& impl_):
         impl{std::move(impl_)}
     {}
 

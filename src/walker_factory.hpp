@@ -15,7 +15,7 @@ namespace gtensor{
 namespace detail{
 
  template<typename ValT, template<typename> typename Cfg>
- bool is_storage(const tensor_impl_base<ValT,Cfg>& t){
+ bool is_storage(const tensor_base<ValT,Cfg>& t){
     return t.tensor_kind() == detail::tensor_kinds::storage_tensor || 
         t.tensor_kind() == detail::tensor_kinds::expression && t.is_storage() ||
         t.tensor_kind() == detail::tensor_kinds::view && t.as_view()->is_cached();
@@ -52,7 +52,7 @@ class trivial_walker_factory
     using value_type = ValT;
     using shape_type = typename config_type::shape_type;
 public: 
-    static ewalker_trivial_impl<ValT, Cfg> create_walker(const shape_type& shape, const shape_type& strides, const tensor_impl_base<ValT,Cfg>& parent){
+    static ewalker_trivial_impl<ValT, Cfg> create_walker(const shape_type& shape, const shape_type& strides, const tensor_base<ValT,Cfg>& parent){
         return ewalker_trivial_impl<ValT,Cfg>{shape, strides, parent};
     }
 };
@@ -126,11 +126,11 @@ class polymorphic_walker_factory
     using shape_type = typename config_type::shape_type;    
     using index_type = typename config_type::index_type;    
 
-    static walker<ValT,Cfg> create_walker_helper(const tensor_impl_base<ValT,Cfg>&, const shape_type& shape, const shape_type& strides, const value_type* data){
+    static walker<ValT,Cfg> create_walker_helper(const tensor_base<ValT,Cfg>&, const shape_type& shape, const shape_type& strides, const value_type* data){
         return std::unique_ptr<walker_impl_base<ValT,Cfg>>{new storage_walker_impl<ValT,Cfg>{shape,strides,data}};
     }    
     template<typename F, typename...Ops>
-    static walker<ValT,Cfg> create_walker_helper(const tensor_impl_base<ValT,Cfg>& expression,const F& f, const std::tuple<Ops...>& operands, const value_type* cache){        
+    static walker<ValT,Cfg> create_walker_helper(const tensor_base<ValT,Cfg>& expression,const F& f, const std::tuple<Ops...>& operands, const value_type* cache){        
         if (expression.is_storage()){
             return create_walker_helper(expression, expression.descriptor().shape(), expression.descriptor().strides(), cache);
         }else if(expression.is_trivial()){
@@ -140,9 +140,9 @@ class polymorphic_walker_factory
         }
     }
     static walker<ValT,Cfg> create_walker_helper(
-                                                const tensor_impl_base<ValT,Cfg>& view, 
-                                                const tensor_impl_base<ValT,Cfg>& view_parent, 
-                                                const tensor_impl_base<ValT,Cfg>& view_root, 
+                                                const tensor_base<ValT,Cfg>& view, 
+                                                const tensor_base<ValT,Cfg>& view_parent, 
+                                                const tensor_base<ValT,Cfg>& view_root, 
                                                 const value_type* cache)
     {
         if (detail::is_storage(view)){
@@ -175,7 +175,7 @@ class polymorphic_walker_factory
 
 public:
     template<typename...Args>
-    static walker<ValT, Cfg> create_walker(const tensor_impl_base<ValT,Cfg>& t, Args&&...args){
+    static walker<ValT, Cfg> create_walker(const tensor_base<ValT,Cfg>& t, Args&&...args){
         return create_walker_helper(t, std::forward<Args>(args)...);
     }
 };

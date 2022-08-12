@@ -2,7 +2,7 @@
 #define IMPL_STENSOR_HPP_
 
 #include "shareable_storage.hpp"
-#include "impl_tensor_base.hpp"
+#include "tensor_base.hpp"
 #include "stensor_descriptor.hpp"
 #include "tensor_init_list.hpp"
 #include "walker_factory.hpp"
@@ -18,12 +18,11 @@ namespace detail{
 */
 template<typename ValT, template<typename> typename Cfg>
 class storage_tensor : 
-    public tensor_impl_base<ValT,Cfg>,
+    public tensor_base<ValT,Cfg>,
     public storage_tensor_impl_base<ValT,Cfg>,
     public view_index_converter<ValT,Cfg>,
     public walker_maker<ValT, Cfg>
 {
-    using impl_base_type = tensor_impl_base<ValT,Cfg>;
     using config_type = Cfg<ValT>;        
     using value_type = ValT;
     using index_type = typename config_type::index_type;

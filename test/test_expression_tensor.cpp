@@ -59,15 +59,15 @@ TEST_CASE("test_expression_tensor_construct","[test_expression_tensor]"){
     using gtensor::binary_operations::add;
     using gtensor::expression_tensor;
     using gtensor::storage_tensor;
-    using gtensor::tensor_impl_base;
+    using gtensor::tensor_base;
     using gtensor::config::default_config;
     using config_type = gtensor::config::default_config<value_type>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
-    using tensor_impl_base_type = tensor_impl_base<value_type, default_config>;
+    using tensor_base_type = tensor_base<value_type, default_config>;
     using storage_tensor_type = storage_tensor<value_type, default_config>;
-    using expression_tensor_type = expression_tensor<value_type, default_config, add, std::shared_ptr<tensor_impl_base_type>, std::shared_ptr<tensor_impl_base_type>>;
-    using test_type = std::tuple<std::shared_ptr<tensor_impl_base_type>, std::shared_ptr<tensor_impl_base_type>, shape_type, index_type, index_type>;
+    using expression_tensor_type = expression_tensor<value_type, default_config, add, std::shared_ptr<tensor_base_type>, std::shared_ptr<tensor_base_type>>;
+    using test_type = std::tuple<std::shared_ptr<tensor_base_type>, std::shared_ptr<tensor_base_type>, shape_type, index_type, index_type>;
     //0operand,1operand,2expected_shape,3expected_dim,4expected_size
     auto test_data = GENERATE(
         test_type{new storage_tensor_type{1,2,3}, new storage_tensor_type{3,2,1}, shape_type{3}, 1, 3},

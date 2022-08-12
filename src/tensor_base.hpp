@@ -12,8 +12,7 @@ namespace detail{
 
 
 template<typename ValT, template<typename> typename Cfg>
-class tensor_impl_base{
-    using impl_base_type = tensor_impl_base<ValT,Cfg>;
+class tensor_base{    
     using config_type = Cfg<ValT>;
     using value_type = ValT;
     using index_type = typename config_type::index_type;
@@ -21,7 +20,7 @@ class tensor_impl_base{
     using slices_collection_type = typename config_type::slices_collection_type;
 
 public:
-    virtual ~tensor_impl_base(){}    
+    virtual ~tensor_base(){}    
     virtual index_type size()const = 0;
     virtual index_type dim()const = 0;
     virtual const shape_type& shape()const = 0;
