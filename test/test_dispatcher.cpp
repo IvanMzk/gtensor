@@ -6,13 +6,13 @@
 
 
 namespace test_dispatcher{
-using gtensor::expression_impl;
+using gtensor::expression_tensor;
 
 template<typename ValT, template<typename> typename Cfg, typename F, typename...Ops>
-struct test_expression_impl : public expression_impl<ValT,Cfg,F,Ops...>{
-    using base_type = expression_impl<ValT,Cfg,F,Ops...>;
+struct test_expression_tensor : public expression_tensor<ValT,Cfg,F,Ops...>{
+    using base_type = expression_tensor<ValT,Cfg,F,Ops...>;
     bool is_storage_;
-    test_expression_impl(bool is_storage__, Ops&...operands):
+    test_expression_tensor(bool is_storage__, Ops&...operands):
         base_type{operands...},
         is_storage_{is_storage__}
     {}
@@ -40,18 +40,18 @@ TEST_CASE("test_dispatcher","[test_dispatcher]"){
     using index_type = typename config_type::index_type;
     using tensor_impl_base_type = tensor_impl_base<value_type, default_config>;
     using stensor_impl_type = stensor_impl<value_type, default_config>;
-    using test_dispatcher::test_expression_impl;
-    using test_expression_impl_type = test_expression_impl<value_type, default_config, add, std::shared_ptr<tensor_impl_base_type>, std::shared_ptr<tensor_impl_base_type>>;    
+    using test_dispatcher::test_expression_tensor;
+    using test_expression_tensor_type = test_expression_tensor<value_type, default_config, add, std::shared_ptr<tensor_impl_base_type>, std::shared_ptr<tensor_impl_base_type>>;    
     using gtensor::detail::tensor_kinds;
     using view_factory_type = gtensor::view_factory<value_type,default_config>;
 
     auto t1 = std::static_pointer_cast<tensor_impl_base_type>(std::shared_ptr<stensor_impl_type>{new stensor_impl_type{1,2,3}});
     auto t2 = std::static_pointer_cast<tensor_impl_base_type>(std::shared_ptr<stensor_impl_type>{new stensor_impl_type{{1},{2},{3}}});    
 
-    auto e_trivial = std::static_pointer_cast<tensor_impl_base_type>(std::shared_ptr<test_expression_impl_type>(new test_expression_impl_type{false, t1,t1}));
-    auto e = std::static_pointer_cast<tensor_impl_base_type>(std::shared_ptr<test_expression_impl_type>(new test_expression_impl_type{false, t1,t2}));
-    auto ce_trivial = std::static_pointer_cast<tensor_impl_base_type>(std::shared_ptr<test_expression_impl_type>(new test_expression_impl_type{true, t1,t1}));
-    auto ce = std::static_pointer_cast<tensor_impl_base_type>(std::shared_ptr<test_expression_impl_type>(new test_expression_impl_type{true, t1,t2}));
+    auto e_trivial = std::static_pointer_cast<tensor_impl_base_type>(std::shared_ptr<test_expression_tensor_type>(new test_expression_tensor_type{false, t1,t1}));
+    auto e = std::static_pointer_cast<tensor_impl_base_type>(std::shared_ptr<test_expression_tensor_type>(new test_expression_tensor_type{false, t1,t2}));
+    auto ce_trivial = std::static_pointer_cast<tensor_impl_base_type>(std::shared_ptr<test_expression_tensor_type>(new test_expression_tensor_type{true, t1,t1}));
+    auto ce = std::static_pointer_cast<tensor_impl_base_type>(std::shared_ptr<test_expression_tensor_type>(new test_expression_tensor_type{true, t1,t2}));
 
     auto v_of_t = view_factory_type::create_view_subdim(t2,shape_type{});
     auto v_of_e = view_factory_type::create_view_subdim(e,shape_type{});

@@ -3,12 +3,12 @@
 #include <tuple>
 #include <memory>
 #include "impl_stensor.hpp"
-#include "impl_expression.hpp"
+#include "expression_tensor.hpp"
 #include "operations.hpp"
 
 
 
-TEMPLATE_PRODUCT_TEST_CASE("test_expression_impl_broadcast","[test_expression_impl]", (std::vector,trivial_type_vector::uvector),(std::size_t, std::int64_t)){
+TEMPLATE_PRODUCT_TEST_CASE("test_expression_tensor_broadcast","[test_expression_tensor]", (std::vector,trivial_type_vector::uvector),(std::size_t, std::int64_t)){
     using shape_type = TestType;
     using test_type = std::tuple<shape_type, shape_type, shape_type>;
     using gtensor::detail::broadcast;
@@ -31,7 +31,7 @@ TEMPLATE_PRODUCT_TEST_CASE("test_expression_impl_broadcast","[test_expression_im
     REQUIRE(broadcast(shape1, shape2) == expected_broadcast_shape);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("test_expression_impl_broadcast_not_broadcastable","[test_expression_impl]", (std::vector,trivial_type_vector::uvector),(std::size_t, std::int64_t)){
+TEMPLATE_PRODUCT_TEST_CASE("test_expression_tensor_broadcast_not_broadcastable","[test_expression_tensor]", (std::vector,trivial_type_vector::uvector),(std::size_t, std::int64_t)){
     using shape_type = TestType;
     using test_type = std::tuple<shape_type, shape_type>;
     using gtensor::detail::broadcast;
@@ -54,10 +54,10 @@ TEMPLATE_PRODUCT_TEST_CASE("test_expression_impl_broadcast_not_broadcastable","[
     REQUIRE_THROWS_AS(broadcast(shape1, shape2), broadcast_exception);
 }
 
-TEST_CASE("test_expression_impl_construct","[test_expression_impl]"){
+TEST_CASE("test_expression_tensor_construct","[test_expression_tensor]"){
     using value_type = float;
     using gtensor::binary_operations::add;
-    using gtensor::expression_impl;
+    using gtensor::expression_tensor;
     using gtensor::stensor_impl;
     using gtensor::tensor_impl_base;
     using gtensor::config::default_config;
@@ -66,7 +66,7 @@ TEST_CASE("test_expression_impl_construct","[test_expression_impl]"){
     using index_type = typename config_type::index_type;
     using tensor_impl_base_type = tensor_impl_base<value_type, default_config>;
     using stensor_impl_type = stensor_impl<value_type, default_config>;
-    using expression_impl_type = expression_impl<value_type, default_config, add, std::shared_ptr<tensor_impl_base_type>, std::shared_ptr<tensor_impl_base_type>>;
+    using expression_tensor_type = expression_tensor<value_type, default_config, add, std::shared_ptr<tensor_impl_base_type>, std::shared_ptr<tensor_impl_base_type>>;
     using test_type = std::tuple<std::shared_ptr<tensor_impl_base_type>, std::shared_ptr<tensor_impl_base_type>, shape_type, index_type, index_type>;
     //0operand,1operand,2expected_shape,3expected_dim,4expected_size
     auto test_data = GENERATE(
@@ -80,7 +80,7 @@ TEST_CASE("test_expression_impl_construct","[test_expression_impl]"){
     auto expected_shape = std::get<2>(test_data);
     auto expected_dim = std::get<3>(test_data);
     auto expected_size = std::get<4>(test_data);
-    expression_impl_type e{operand1, operand2};
+    expression_tensor_type e{operand1, operand2};
     REQUIRE(e.shape() == expected_shape);
     REQUIRE(e.dim() == expected_dim);
     REQUIRE(e.size() == expected_size);

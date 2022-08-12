@@ -62,11 +62,11 @@ inline ShT broadcast(const ShT& shape1, const ShT& shape2){
 * stensor and view are trivial
 */
 template<typename...T, typename...Ops>
-inline bool is_trivial(const expression_impl<T...>& root, const std::tuple<Ops...>& root_operands){
+inline bool is_trivial(const expression_tensor<T...>& root, const std::tuple<Ops...>& root_operands){
     return is_trivial_helper(root,root_operands,std::make_index_sequence<sizeof...(Ops)>{});
 }
 template<typename...T, typename...Ops, std::size_t...I>
-inline bool is_trivial_helper(const expression_impl<T...>& root, const std::tuple<Ops...>& root_operands, std::index_sequence<I...>){
+inline bool is_trivial_helper(const expression_tensor<T...>& root, const std::tuple<Ops...>& root_operands, std::index_sequence<I...>){
     return ((root.size()==std::get<I>(root_operands)->size())&&...) && (is_trivial_operand(std::get<I>(root_operands))&&...);
 }
 template<typename T>
@@ -105,7 +105,7 @@ inline const auto& strides_div(const stensor_descriptor<ValT, Cfg>& desc){
 
 
 template<typename ValT, template<typename> typename Cfg, typename F, typename...Ops>
-class expression_impl : 
+class expression_tensor : 
     public tensor_impl_base<ValT,Cfg>,
     public expression_impl_base<ValT,Cfg>,
     public trivial_impl_base<ValT,Cfg>,
@@ -174,7 +174,7 @@ public:
     const walker_maker<ValT,Cfg>* as_walker_maker()const{return static_cast<const walker_maker<ValT,Cfg>*>(this);}
     
     template<typename...O>
-    explicit expression_impl(O&&...operands_):
+    explicit expression_tensor(O&&...operands_):
         descriptor_{detail::broadcast(operands_->shape()...)},
         operands{std::forward<O>(operands_)...}
     {}

@@ -71,7 +71,7 @@ auto make_symmetric_tree(const T1& t1, const T2& t2){
 
 namespace true_expression_template{
 using gtensor::stensor_impl;
-using gtensor::expression_impl;
+using gtensor::expression_tensor;
 using gtensor::storage_walker_factory;
 using gtensor::evaluating_walker_impl;
 using gtensor::storage_walker_impl;
@@ -194,10 +194,10 @@ public:
 };
 
 template<typename ValT, template<typename> typename Cfg, typename F, typename...Ops>
-class test_expression : public expression_impl<ValT,Cfg,F,Ops...>
+class test_expression : public expression_tensor<ValT,Cfg,F,Ops...>
 {
 
-    using base_expression = expression_impl<ValT,Cfg,F,Ops...>;
+    using base_expression = expression_tensor<ValT,Cfg,F,Ops...>;
     using config_type = Cfg<ValT>;
     using value_type = ValT;
     using index_type = typename config_type::index_type;
