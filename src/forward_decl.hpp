@@ -14,7 +14,7 @@ template<typename ValT, template<typename> typename Cfg> class walker_maker;
 template<typename ValT, template<typename> typename Cfg, typename F, typename...Ops> class expression_tensor;
 template<typename ValT, template<typename> typename Cfg> class storage_tensor;
 template<typename ValT, template<typename> typename Cfg> class descriptor_base;
-template<typename ValT, template<typename> typename Cfg, typename DescT> class view_impl;
+template<typename ValT, template<typename> typename Cfg, typename DescT> class view_tensor;
 template<typename ValT, template<typename> typename Cfg> class tensor;
 template<typename ValT, template<typename> typename Cfg> class walker;
 template<typename ValT, template<typename> typename Cfg> class evaluating_storage;

@@ -7,15 +7,15 @@
 
 namespace gtensor{
 
-class view_impl_exception : public std::runtime_error{
-    public: view_impl_exception(const char* what):runtime_error(what){}
+class view_tensor_exception : public std::runtime_error{
+    public: view_tensor_exception(const char* what):runtime_error(what){}
 };
 
 /*
 * ParentT is tensor_impl_base or derived
 */
 template<typename ValT, template<typename> typename Cfg, typename DescT>
-class view_impl : 
+class view_tensor : 
     public tensor_impl_base<ValT, Cfg>,
     public view_impl_base<ValT,Cfg>,
     public storage_tensor_impl_base<ValT,Cfg>,
@@ -33,7 +33,7 @@ class view_impl :
 
     DescT descriptor_;
     std::shared_ptr<impl_base_type> parent;
-    const impl_base_type* view_root{parent->tensor_kind() == detail::tensor_kinds::view ? static_cast<const view_impl*>(parent.get())->get_view_root() : parent.get()};
+    const impl_base_type* view_root{parent->tensor_kind() == detail::tensor_kinds::view ? static_cast<const view_tensor*>(parent.get())->get_view_root() : parent.get()};
     const view_index_converter<ValT,Cfg>* parent_converter{parent->as_index_converter()};
     storage_type cache{};
 
@@ -44,7 +44,7 @@ class view_impl :
             return storage_walker_factory<ValT,Cfg>::create_walker(shape(),descriptor_.cstrides(), parent->as_storage_tensor()->data()+descriptor_.offset());
         }
         else{
-            throw view_impl_exception("storage_walker cant be created, view not cached and parent not storage");
+            throw view_tensor_exception("storage_walker cant be created, view not cached and parent not storage");
         }
     }
     view_expression_walker_impl<ValT,Cfg> create_view_expression_walker()const override{
@@ -71,7 +71,7 @@ class view_impl :
 
 public:
     template<typename DtT>
-    view_impl(DtT&& descriptor__, const std::shared_ptr<impl_base_type>& parent_):
+    view_tensor(DtT&& descriptor__, const std::shared_ptr<impl_base_type>& parent_):
         descriptor_{std::forward<DtT>(descriptor__)},
         parent{parent_}
     {}    
