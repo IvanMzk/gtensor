@@ -1,14 +1,14 @@
 #include "catch.hpp"
 #include "config.hpp"
-#include "impl_stensor.hpp"
+#include "storage_tensor.hpp"
 #include <tuple>
 
-TEST_CASE("test_stensor_impl_construct_from_list","[test_stensor_impl]"){
+TEST_CASE("test_storage_tensor_construct_from_list","[test_storage_tensor]"){
     using value_type = float;
-    using gtensor::stensor_impl;
+    using gtensor::storage_tensor;
     using gtensor::config::default_config;
     using config_type = default_config<value_type>;
-    using stensor_type = stensor_impl<value_type, default_config>;
+    using stensor_type = storage_tensor<value_type, default_config>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     using test_type = std::tuple<stensor_type, shape_type, index_type, index_type>;

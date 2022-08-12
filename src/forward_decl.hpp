@@ -12,7 +12,7 @@ template<typename ValT, template<typename> typename Cfg> class view_expression_i
 template<typename ValT, template<typename> typename Cfg> class view_index_converter;
 template<typename ValT, template<typename> typename Cfg> class walker_maker;
 template<typename ValT, template<typename> typename Cfg, typename F, typename...Ops> class expression_tensor;
-template<typename ValT, template<typename> typename Cfg> class stensor_impl;
+template<typename ValT, template<typename> typename Cfg> class storage_tensor;
 template<typename ValT, template<typename> typename Cfg> class descriptor_base;
 template<typename ValT, template<typename> typename Cfg, typename DescT> class view_impl;
 template<typename ValT, template<typename> typename Cfg> class tensor;

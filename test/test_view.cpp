@@ -4,10 +4,10 @@
 
 TEST_CASE("test_view_of_stensor","[test_view]"){
     using value_type = float;
-    using gtensor::stensor_impl;
+    using gtensor::storage_tensor;
     using gtensor::config::default_config;
     using config_type = default_config<value_type>;
-    using stensor_type = stensor_impl<value_type, default_config>;
+    using stensor_type = storage_tensor<value_type, default_config>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     using slices_collection_type = typename config_type::slices_collection_type;

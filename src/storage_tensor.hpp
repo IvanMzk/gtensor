@@ -17,7 +17,7 @@ namespace detail{
 * implementation of tensor with storage
 */
 template<typename ValT, template<typename> typename Cfg>
-class stensor_impl : 
+class storage_tensor : 
     public tensor_impl_base<ValT,Cfg>,
     public storage_tensor_impl_base<ValT,Cfg>,
     public view_index_converter<ValT,Cfg>,
@@ -36,7 +36,7 @@ class stensor_impl :
     storage_type elements;    
 
     template<typename Nested>
-    stensor_impl(std::initializer_list<Nested> init_data,int):
+    storage_tensor(std::initializer_list<Nested> init_data,int):
         descriptor_{detail::list_parse<index_type,shape_type>(init_data)},
         elements(descriptor_.size())
     {detail::fill_from_list(init_data, elements.begin());}
@@ -67,15 +67,15 @@ protected:
 public:
     const walker_maker<ValT,Cfg>* as_walker_maker()const{return static_cast<const walker_maker<ValT,Cfg>*>(this);}
     
-    stensor_impl() = default;
-    stensor_impl(typename detail::nested_initializer_list_type<value_type,1>::type init_data):stensor_impl(init_data,0){}
-    stensor_impl(typename detail::nested_initializer_list_type<value_type,2>::type init_data):stensor_impl(init_data,0){}
-    stensor_impl(typename detail::nested_initializer_list_type<value_type,3>::type init_data):stensor_impl(init_data,0){}
-    stensor_impl(typename detail::nested_initializer_list_type<value_type,4>::type init_data):stensor_impl(init_data,0){}
-    stensor_impl(typename detail::nested_initializer_list_type<value_type,5>::type init_data):stensor_impl(init_data,0){}
+    storage_tensor() = default;
+    storage_tensor(typename detail::nested_initializer_list_type<value_type,1>::type init_data):storage_tensor(init_data,0){}
+    storage_tensor(typename detail::nested_initializer_list_type<value_type,2>::type init_data):storage_tensor(init_data,0){}
+    storage_tensor(typename detail::nested_initializer_list_type<value_type,3>::type init_data):storage_tensor(init_data,0){}
+    storage_tensor(typename detail::nested_initializer_list_type<value_type,4>::type init_data):storage_tensor(init_data,0){}
+    storage_tensor(typename detail::nested_initializer_list_type<value_type,5>::type init_data):storage_tensor(init_data,0){}
 
     template<typename...Dims>
-    stensor_impl(const value_type& v, const Dims&...dims):
+    storage_tensor(const value_type& v, const Dims&...dims):
         descriptor_{shape_type{dims...}},
         elements(descriptor_.size(), v)
     {}

@@ -2,7 +2,7 @@
 #include "config.hpp"
 #include <tuple>
 #include <memory>
-#include "impl_stensor.hpp"
+#include "storage_tensor.hpp"
 #include "expression_tensor.hpp"
 #include "operations.hpp"
 
@@ -58,22 +58,22 @@ TEST_CASE("test_expression_tensor_construct","[test_expression_tensor]"){
     using value_type = float;
     using gtensor::binary_operations::add;
     using gtensor::expression_tensor;
-    using gtensor::stensor_impl;
+    using gtensor::storage_tensor;
     using gtensor::tensor_impl_base;
     using gtensor::config::default_config;
     using config_type = gtensor::config::default_config<value_type>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     using tensor_impl_base_type = tensor_impl_base<value_type, default_config>;
-    using stensor_impl_type = stensor_impl<value_type, default_config>;
+    using storage_tensor_type = storage_tensor<value_type, default_config>;
     using expression_tensor_type = expression_tensor<value_type, default_config, add, std::shared_ptr<tensor_impl_base_type>, std::shared_ptr<tensor_impl_base_type>>;
     using test_type = std::tuple<std::shared_ptr<tensor_impl_base_type>, std::shared_ptr<tensor_impl_base_type>, shape_type, index_type, index_type>;
     //0operand,1operand,2expected_shape,3expected_dim,4expected_size
     auto test_data = GENERATE(
-        test_type{new stensor_impl_type{1,2,3}, new stensor_impl_type{3,2,1}, shape_type{3}, 1, 3},
-        test_type{new stensor_impl_type{1,2,3}, new stensor_impl_type{3}, shape_type{3}, 1, 3},
-        test_type{new stensor_impl_type{{1,2,3},{4,5,6}}, new stensor_impl_type{1,2,3}, shape_type{2,3}, 2, 6},
-        test_type{new stensor_impl_type{{1,2,3}}, new stensor_impl_type{{1},{2},{3}}, shape_type{3,3}, 2, 9}
+        test_type{new storage_tensor_type{1,2,3}, new storage_tensor_type{3,2,1}, shape_type{3}, 1, 3},
+        test_type{new storage_tensor_type{1,2,3}, new storage_tensor_type{3}, shape_type{3}, 1, 3},
+        test_type{new storage_tensor_type{{1,2,3},{4,5,6}}, new storage_tensor_type{1,2,3}, shape_type{2,3}, 2, 6},
+        test_type{new storage_tensor_type{{1,2,3}}, new storage_tensor_type{{1},{2},{3}}, shape_type{3,3}, 2, 9}
     );
     auto operand1 = std::get<0>(test_data);
     auto operand2 = std::get<1>(test_data);

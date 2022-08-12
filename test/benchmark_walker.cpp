@@ -70,7 +70,7 @@ auto make_symmetric_tree(const T1& t1, const T2& t2){
 }   //end of namespace benchmark_walker
 
 namespace true_expression_template{
-using gtensor::stensor_impl;
+using gtensor::storage_tensor;
 using gtensor::expression_tensor;
 using gtensor::storage_walker_factory;
 using gtensor::evaluating_walker_impl;
@@ -164,9 +164,9 @@ public:
 
 
 template<typename ValT, template<typename> typename Cfg>
-class test_stensor : public stensor_impl<ValT,Cfg>
+class test_stensor : public storage_tensor<ValT,Cfg>
 { 
-    using base_stensor = stensor_impl<ValT,Cfg>;
+    using base_stensor = storage_tensor<ValT,Cfg>;
     using config_type = Cfg<ValT>;        
     using value_type = ValT;
     using index_type = typename config_type::index_type;
@@ -246,7 +246,7 @@ public:
 
 template<typename ValT, template<typename> typename Cfg, typename ImplT = test_stensor<ValT,Cfg>>
 class static_tensor{
-    using base_stensor = stensor_impl<ValT,Cfg>;
+    using base_stensor = storage_tensor<ValT,Cfg>;
     using config_type = Cfg<ValT>;        
     using value_type = ValT;
     using index_type = typename config_type::index_type;

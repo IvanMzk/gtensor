@@ -32,21 +32,21 @@ struct test_operation{
 TEST_CASE("test_dispatcher","[test_dispatcher]"){
     using value_type = float;
     using gtensor::binary_operations::add;
-    using gtensor::stensor_impl;
+    using gtensor::storage_tensor;
     using gtensor::tensor_impl_base;
     using gtensor::config::default_config;
     using config_type = gtensor::config::default_config<value_type>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     using tensor_impl_base_type = tensor_impl_base<value_type, default_config>;
-    using stensor_impl_type = stensor_impl<value_type, default_config>;
+    using storage_tensor_type = storage_tensor<value_type, default_config>;
     using test_dispatcher::test_expression_tensor;
     using test_expression_tensor_type = test_expression_tensor<value_type, default_config, add, std::shared_ptr<tensor_impl_base_type>, std::shared_ptr<tensor_impl_base_type>>;    
     using gtensor::detail::tensor_kinds;
     using view_factory_type = gtensor::view_factory<value_type,default_config>;
 
-    auto t1 = std::static_pointer_cast<tensor_impl_base_type>(std::shared_ptr<stensor_impl_type>{new stensor_impl_type{1,2,3}});
-    auto t2 = std::static_pointer_cast<tensor_impl_base_type>(std::shared_ptr<stensor_impl_type>{new stensor_impl_type{{1},{2},{3}}});    
+    auto t1 = std::static_pointer_cast<tensor_impl_base_type>(std::shared_ptr<storage_tensor_type>{new storage_tensor_type{1,2,3}});
+    auto t2 = std::static_pointer_cast<tensor_impl_base_type>(std::shared_ptr<storage_tensor_type>{new storage_tensor_type{{1},{2},{3}}});    
 
     auto e_trivial = std::static_pointer_cast<tensor_impl_base_type>(std::shared_ptr<test_expression_tensor_type>(new test_expression_tensor_type{false, t1,t1}));
     auto e = std::static_pointer_cast<tensor_impl_base_type>(std::shared_ptr<test_expression_tensor_type>(new test_expression_tensor_type{false, t1,t2}));
