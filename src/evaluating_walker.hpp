@@ -7,6 +7,64 @@
 namespace gtensor{
 
 template<typename ValT, template<typename> typename Cfg, typename F, typename...Wks>
+class evaluating_walker
+{
+    using config_type = Cfg<ValT>;        
+    using value_type = ValT;
+    using index_type = typename config_type::index_type;
+    using shape_type = typename config_type::shape_type;
+
+    index_type dim_;
+    detail::shape_inverter<ValT,Cfg> shape;
+    std::tuple<Wks...> walkers;
+    F f{};
+        
+    template<std::size_t...I>
+    void step_helper(const index_type& direction, std::index_sequence<I...>){(std::get<I>(walkers).step(direction),...);}    
+    template<std::size_t...I>
+    void step_back_helper(const index_type& direction, std::index_sequence<I...>){(std::get<I>(walkers).step_back(direction),...);}    
+    template<std::size_t...I>
+    void reset_helper(const index_type& direction, std::index_sequence<I...>){(std::get<I>(walkers).reset(direction),...);}
+    template<std::size_t...I>
+    void reset_helper(std::index_sequence<I...>){(std::get<I>(walkers).reset(),...);}    
+    template<std::size_t...I>
+    value_type deref_helper(std::index_sequence<I...>) const {return f(*std::get<I>(walkers)...);}
+protected:
+    template<std::size_t...I>
+    void walk_helper(const index_type& direction, const index_type& steps, std::index_sequence<I...>){(std::get<I>(walkers).walk(direction,steps),...);}
+    index_type dim()const{return dim_;}
+public:
+    evaluating_walker(const shape_type& shape_, Wks&&...walkers_):
+        dim_{static_cast<index_type>(shape_.size())},
+        shape{shape_},
+        walkers{std::move(walkers_)...}
+    {}
+    
+    void walk(const index_type& direction, const index_type& steps){
+        if (detail::can_walk(direction,dim_,shape.element(direction))){
+            walk_helper(direction,steps,std::make_index_sequence<sizeof...(Wks)>{});
+        }
+    }
+    void step(const index_type& direction){
+        if (detail::can_walk(direction,dim_,shape.element(direction))){
+            step_helper(direction,std::make_index_sequence<sizeof...(Wks)>{});
+        }
+    }
+    void step_back(const index_type& direction){
+        if (detail::can_walk(direction,dim_,shape.element(direction))){
+            step_back_helper(direction,std::make_index_sequence<sizeof...(Wks)>{});
+        }
+    }
+    void reset(const index_type& direction){
+        if (detail::can_walk(direction,dim_,shape.element(direction))){
+            reset_helper(direction,std::make_index_sequence<sizeof...(Wks)>{});
+        }
+    }
+    void reset(){reset_helper(std::make_index_sequence<sizeof...(Wks)>{});}
+    value_type operator*() const {return deref_helper(std::make_index_sequence<sizeof...(Wks)>{});}
+};
+
+template<typename ValT, template<typename> typename Cfg, typename F, typename...Wks>
 class evaluating_walker_polymorphic : public walker_base<ValT, Cfg>
 {
     using config_type = Cfg<ValT>;        
