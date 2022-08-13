@@ -39,7 +39,7 @@ public:
     virtual const evaluating_trivial_base<ValT,Cfg>* as_evaluating_trivial()const{return nullptr;}    
     virtual const converting_base<ValT,Cfg>* as_converting()const{return nullptr;}
     
-    virtual const view_expression_impl_base<ValT,Cfg>* as_view_expression()const{return nullptr;}
+    virtual const viewing_evaluating_base<ValT,Cfg>* as_viewing_evaluating()const{return nullptr;}
         
 };
 
@@ -105,11 +105,11 @@ public:
 
 
 template<typename ValT, template<typename> typename Cfg>
-class view_expression_impl_base
+class viewing_evaluating_base
 {    
     virtual viewing_evaluating_walker<ValT,Cfg> create_view_expression_walker()const = 0;
 public:
-    virtual ~view_expression_impl_base(){}    
+    virtual ~viewing_evaluating_base(){}    
     auto create_walker()const{return create_view_expression_walker();}
     // virtual iterator_type begin()const = 0;
     // virtual iterator_type end()const = 0;    

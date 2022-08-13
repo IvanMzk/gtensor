@@ -7,7 +7,7 @@ template<typename ValT, template<typename> typename Cfg> class tensor_base;
 template<typename ValT, template<typename> typename Cfg> class storing_base;
 template<typename ValT, template<typename> typename Cfg> class evaluating_base;
 template<typename ValT, template<typename> typename Cfg> class evaluating_trivial_base;
-template<typename ValT, template<typename> typename Cfg> class view_expression_impl_base;
+template<typename ValT, template<typename> typename Cfg> class viewing_evaluating_base;
 template<typename ValT, template<typename> typename Cfg> class converting_base;
 template<typename ValT, template<typename> typename Cfg, typename F, typename...Ops> class expression_tensor;
 template<typename ValT, template<typename> typename Cfg> class storage_tensor;

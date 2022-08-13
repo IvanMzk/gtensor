@@ -36,7 +36,7 @@ class dispatcher{
                 if (second.is_trivial()){
                     throw dispatch_exception("type is not supported by dispatcher");
                 }else{
-                    return f(first, *second.as_view_expression());
+                    return f(first, *second.as_viewing_evaluating());
                 }
             }else{
                 throw dispatch_exception("type is not supported by dispatcher");
@@ -68,7 +68,7 @@ class dispatcher{
                 if (first.is_trivial()){
                     throw dispatch_exception("type is not supported by dispatcher");
                 }else{
-                    return dispatch_second(f, *first.as_view_expression(), second);
+                    return dispatch_second(f, *first.as_viewing_evaluating(), second);
                 }
             }
             else{
