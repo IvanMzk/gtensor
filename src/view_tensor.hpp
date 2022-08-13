@@ -47,8 +47,8 @@ class view_tensor :
             throw view_tensor_exception("storage_walker cant be created, view not cached and parent not storage");
         }
     }
-    view_expression_walker_impl<ValT,Cfg> create_view_expression_walker()const override{
-        return view_expression_walker_impl<ValT,Cfg>{shape(),descriptor_.cstrides(),descriptor_.offset(), parent_converter, view_root->as_evaluating()->create_storage()};
+    viewing_evaluating_walker<ValT,Cfg> create_view_expression_walker()const override{
+        return viewing_evaluating_walker<ValT,Cfg>{shape(),descriptor_.cstrides(),descriptor_.offset(), parent_converter, view_root->as_evaluating()->create_storage()};
     }
     walker<ValT, Cfg> create_polymorphic_walker()const override{
         return polymorphic_walker_factory<ValT,Cfg>::create_walker(*this, *parent, *view_root, cache.data());

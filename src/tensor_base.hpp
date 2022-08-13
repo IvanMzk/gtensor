@@ -125,7 +125,7 @@ public:
 template<typename ValT, template<typename> typename Cfg>
 class view_expression_impl_base
 {    
-    virtual view_expression_walker_impl<ValT,Cfg> create_view_expression_walker()const = 0;
+    virtual viewing_evaluating_walker<ValT,Cfg> create_view_expression_walker()const = 0;
 public:
     virtual ~view_expression_impl_base(){}    
     auto create_walker()const{return create_view_expression_walker();}

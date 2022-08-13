@@ -1,5 +1,5 @@
-#ifndef IMPL_VWALKER_HPP_
-#define IMPL_VWALKER_HPP_
+#ifndef VIEWING_WALKER_HPP_
+#define VIEWING_WALKER_HPP_
 
 #include "walker_base.hpp"
 #include "tensor_base.hpp"
@@ -11,7 +11,7 @@ namespace detail{
 
 
 template<typename ValT, template<typename> typename Cfg>
-class view_expression_walker_impl : 
+class viewing_evaluating_walker : 
     public walker_base<ValT, Cfg>,
     private basic_walker<ValT, Cfg, typename Cfg<ValT>::index_type>
 {
@@ -23,10 +23,10 @@ class view_expression_walker_impl :
 
     mutable evaluating_indexer<ValT,Cfg> estorage;
     const converting_base<ValT,Cfg>* converter;
-    std::unique_ptr<walker_base<ValT,Cfg>> clone()const override{return std::make_unique<view_expression_walker_impl<ValT,Cfg>>(*this);}
+    std::unique_ptr<walker_base<ValT,Cfg>> clone()const override{return std::make_unique<viewing_evaluating_walker<ValT,Cfg>>(*this);}
 
 public:        
-    view_expression_walker_impl(const shape_type& shape_,  const shape_type& strides_, const index_type& offset_, const converting_base<ValT,Cfg>* converter_, evaluating_indexer<ValT,Cfg> estorage_):
+    viewing_evaluating_walker(const shape_type& shape_,  const shape_type& strides_, const index_type& offset_, const converting_base<ValT,Cfg>* converter_, evaluating_indexer<ValT,Cfg> estorage_):
         base_basic_walker{static_cast<index_type>(shape_.size()), shape_, strides_, offset_},
         converter{converter_},
         estorage{std::move(estorage_)}

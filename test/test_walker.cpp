@@ -14,7 +14,7 @@ using gtensor::walker_base;
 using gtensor::storage_walker_polymorphic;
 using gtensor::evaluating_trivial_walker;
 using gtensor::evaluating_indexer;
-using gtensor::view_expression_walker_impl;
+using gtensor::viewing_evaluating_walker;
 
 template<typename ValT, template<typename> typename Cfg>
 struct storage_walker_test_tensor : public tensor<ValT,Cfg>{
@@ -68,11 +68,11 @@ struct view_expression_walker_test_tensor : public tensor<ValT,Cfg>{
     view_expression_walker_test_tensor(const base_type& base):
         base_type{base}
     {}
-    view_expression_walker_impl<ValT,Cfg> create_native_walker()const{
+    viewing_evaluating_walker<ValT,Cfg> create_native_walker()const{
         return get_impl()->as_view_expression()->create_walker();
     }
     walker<ValT,Cfg> create_walker()const{
-        return std::make_unique<view_expression_walker_impl<ValT,Cfg>>(create_native_walker());
+        return std::make_unique<viewing_evaluating_walker<ValT,Cfg>>(create_native_walker());
     }    
 };
 

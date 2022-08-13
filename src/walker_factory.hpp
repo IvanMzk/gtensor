@@ -5,7 +5,7 @@
 #include "forward_decl.hpp"
 #include "storage_walker.hpp"
 #include "evaluating_walker.hpp"
-#include "impl_vwalker.hpp"
+#include "viewing_walker.hpp"
 #include "evaluating_trivial_walker.hpp"
 #include "dispatcher.hpp"
 
@@ -150,7 +150,7 @@ class polymorphic_walker_factory
         }else if(detail::is_storage(view_parent)){
             return create_walker_helper(view, view.descriptor().shape(), view.descriptor().cstrides(), view_parent.as_storing()->data()+view.descriptor().offset());
         }else if(view_root.tensor_kind() == detail::tensor_kinds::expression){
-            return std::unique_ptr<walker_base<ValT,Cfg>>{new view_expression_walker_impl<ValT,Cfg>{
+            return std::unique_ptr<walker_base<ValT,Cfg>>{new viewing_evaluating_walker<ValT,Cfg>{
                 view.descriptor().shape(),
                 view.descriptor().cstrides(),
                 view.descriptor().offset(), 
