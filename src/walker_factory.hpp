@@ -40,7 +40,7 @@ class storage_walker_factory
     using shape_type = typename config_type::shape_type;
 public: 
     static auto create_walker(const shape_type& shape, const shape_type& strides, const value_type* data){
-        //return storage_walker_impl<ValT,Cfg>{shape, strides, data};
+        //return storage_walker_polymorphic<ValT,Cfg>{shape, strides, data};
         return storage_walker<ValT,Cfg>{shape, strides, data};
     }
 };
@@ -127,7 +127,7 @@ class polymorphic_walker_factory
     using index_type = typename config_type::index_type;    
 
     static walker<ValT,Cfg> create_walker_helper(const tensor_base<ValT,Cfg>&, const shape_type& shape, const shape_type& strides, const value_type* data){
-        return std::unique_ptr<walker_base<ValT,Cfg>>{new storage_walker_impl<ValT,Cfg>{shape,strides,data}};
+        return std::unique_ptr<walker_base<ValT,Cfg>>{new storage_walker_polymorphic<ValT,Cfg>{shape,strides,data}};
     }    
     template<typename F, typename...Ops>
     static walker<ValT,Cfg> create_walker_helper(const tensor_base<ValT,Cfg>& expression,const F& f, const std::tuple<Ops...>& operands, const value_type* cache){        

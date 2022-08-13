@@ -74,7 +74,7 @@ using gtensor::storage_tensor;
 using gtensor::expression_tensor;
 using gtensor::storage_walker_factory;
 using gtensor::evaluating_walker_impl;
-using gtensor::storage_walker_impl;
+using gtensor::storage_walker_polymorphic;
 using gtensor::binary_operations::add;
 using gtensor::multiindex_iterator_impl;
 using gtensor::walker_maker;
@@ -188,7 +188,7 @@ public:
     {}    
     auto create_concrete_walker()const{
         return concrete_storage_walker<ValT, Cfg>{shape(),strides(),data()};
-        //return storage_walker_impl<ValT,Cfg>{shape(), strides(), data()};
+        //return storage_walker_polymorphic<ValT,Cfg>{shape(), strides(), data()};
         //return storage_walker_factory<ValT,Cfg>::create_walker(shape(),strides(),data());
     }  
 };

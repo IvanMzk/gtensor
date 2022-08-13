@@ -11,7 +11,7 @@ using gtensor::storing_base;
 using gtensor::tensor_base;
 using gtensor::walker;
 using gtensor::walker_base;
-using gtensor::storage_walker_impl;
+using gtensor::storage_walker_polymorphic;
 using gtensor::ewalker_trivial_impl;
 using gtensor::evaluating_storage;
 using gtensor::view_expression_walker_impl;
@@ -23,11 +23,11 @@ struct storage_walker_test_tensor : public tensor<ValT,Cfg>{
     storage_walker_test_tensor(const base_type& base):
         base_type{base}
     {}    
-    storage_walker_impl<ValT,Cfg> create_native_walker()const{
+    storage_walker_polymorphic<ValT,Cfg> create_native_walker()const{
         return get_impl()->as_storage_tensor()->create_walker();
     }
     walker<ValT,Cfg> create_walker()const{
-        return std::make_unique<storage_walker_impl<ValT,Cfg>>(create_native_walker());
+        return std::make_unique<storage_walker_polymorphic<ValT,Cfg>>(create_native_walker());
     }
 };
 
