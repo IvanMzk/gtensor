@@ -108,7 +108,7 @@ template<typename ValT, template<typename> typename Cfg, typename F, typename...
 class expression_tensor : 
     public tensor_base<ValT,Cfg>,
     public evaluating_base<ValT,Cfg>,
-    public trivial_impl_base<ValT,Cfg>,
+    public evaluating_trivial_base<ValT,Cfg>,
     public storing_base<ValT,Cfg>,
     public view_index_converter<ValT,Cfg>,
     public walker_maker<ValT, Cfg>
@@ -159,7 +159,7 @@ class expression_tensor :
     bool is_storage()const override{return is_cached();}
     const value_type* storage_data()const override{return cache.data();}
     
-    const trivial_impl_base<ValT,Cfg>* as_evaluating_trivial()const override{return static_cast<const trivial_impl_base<ValT,Cfg>*>(this);}
+    const evaluating_trivial_base<ValT,Cfg>* as_evaluating_trivial()const override{return static_cast<const evaluating_trivial_base<ValT,Cfg>*>(this);}
     const storing_base<ValT,Cfg>* as_storing()const override{return static_cast<const storing_base<ValT,Cfg>*>(this);}
     const view_index_converter<ValT,Cfg>* as_index_converter()const override{return static_cast<const view_index_converter<ValT,Cfg>*>(this);}
 protected:

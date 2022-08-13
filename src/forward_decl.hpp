@@ -6,7 +6,7 @@ namespace gtensor{
 template<typename ValT, template<typename> typename Cfg> class tensor_base;
 template<typename ValT, template<typename> typename Cfg> class storing_base;
 template<typename ValT, template<typename> typename Cfg> class evaluating_base;
-template<typename ValT, template<typename> typename Cfg> class trivial_impl_base;
+template<typename ValT, template<typename> typename Cfg> class evaluating_trivial_base;
 template<typename ValT, template<typename> typename Cfg> class view_impl_base;
 template<typename ValT, template<typename> typename Cfg> class view_expression_impl_base;
 template<typename ValT, template<typename> typename Cfg> class view_index_converter;

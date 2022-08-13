@@ -34,7 +34,7 @@ public:
     virtual bool is_trivial()const = 0;
 
     virtual const evaluating_base<ValT,Cfg>* as_evaluating()const{return nullptr;}
-    virtual const trivial_impl_base<ValT,Cfg>* as_evaluating_trivial()const{return nullptr;}
+    virtual const evaluating_trivial_base<ValT,Cfg>* as_evaluating_trivial()const{return nullptr;}
     
     virtual const storing_base<ValT,Cfg>* as_storing()const{return nullptr;}
     virtual const view_index_converter<ValT,Cfg>* as_index_converter()const{return nullptr;}
@@ -82,12 +82,12 @@ public:
 };
 
 template<typename ValT, template<typename> typename Cfg>
-class trivial_impl_base
+class evaluating_trivial_base
 {
     using iterator_type = multiindex_iterator_impl<ValT,Cfg,walker<ValT,Cfg>>;
     virtual ewalker_trivial_impl<ValT,Cfg> create_trivial_walker()const = 0;
 public:
-    virtual ~trivial_impl_base(){}
+    virtual ~evaluating_trivial_base(){}
     auto create_walker()const{return create_trivial_walker();}
     // virtual iterator_type begin()const = 0;
     // virtual iterator_type end()const = 0;    
