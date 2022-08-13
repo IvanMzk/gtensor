@@ -40,7 +40,7 @@ class storage_tensor :
         elements(descriptor_.size())
     {detail::fill_from_list(init_data, elements.begin());}
     
-    const storing_base<ValT,Cfg>* as_storage_tensor()const override{return static_cast<const storing_base<ValT,Cfg>*>(this);}
+    const storing_base<ValT,Cfg>* as_storing()const override{return static_cast<const storing_base<ValT,Cfg>*>(this);}
     const view_index_converter<ValT,Cfg>* as_index_converter()const override{return static_cast<const view_index_converter<ValT,Cfg>*>(this);}
 
     storage_walker_inline_impl<ValT,Cfg> create_storage_walker()const override{

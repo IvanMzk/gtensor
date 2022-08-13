@@ -148,7 +148,7 @@ class polymorphic_walker_factory
         if (detail::is_storage(view)){
             return create_walker_helper(view, view.descriptor().shape(), view.descriptor().strides(), cache);
         }else if(detail::is_storage(view_parent)){
-            return create_walker_helper(view, view.descriptor().shape(), view.descriptor().cstrides(), view_parent.as_storage_tensor()->data()+view.descriptor().offset());
+            return create_walker_helper(view, view.descriptor().shape(), view.descriptor().cstrides(), view_parent.as_storing()->data()+view.descriptor().offset());
         }else if(view_root.tensor_kind() == detail::tensor_kinds::expression){
             return std::unique_ptr<walker_impl_base<ValT,Cfg>>{new view_expression_walker_impl<ValT,Cfg>{
                 view.descriptor().shape(),

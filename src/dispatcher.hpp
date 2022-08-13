@@ -19,7 +19,7 @@ class dispatcher{
     static auto dispatch_second(F& f, const FirstT& first, const base_type& second){
         if (second.is_storage())
         {
-            return f(first, *second.as_storage_tensor());
+            return f(first, *second.as_storing());
         }
         else if (second.tensor_kind() == tensor_kinds::expression)
         {
@@ -51,7 +51,7 @@ class dispatcher{
     static auto dispatch_first(F& f, const base_type& first, const base_type& second){
         if (first.is_storage())
         {
-            return dispatch_second(f, *first.as_storage_tensor(), second);
+            return dispatch_second(f, *first.as_storing(), second);
         }
         else if (first.tensor_kind() == tensor_kinds::expression)
         {

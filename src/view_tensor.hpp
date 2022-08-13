@@ -41,7 +41,7 @@ class view_tensor :
         if (is_cached()){
             return storage_walker_factory<ValT,Cfg>::create_walker(shape(),strides(), cache.data()+descriptor_.offset());
         }else if(detail::is_storage(*parent)){
-            return storage_walker_factory<ValT,Cfg>::create_walker(shape(),descriptor_.cstrides(), parent->as_storage_tensor()->data()+descriptor_.offset());
+            return storage_walker_factory<ValT,Cfg>::create_walker(shape(),descriptor_.cstrides(), parent->as_storing()->data()+descriptor_.offset());
         }
         else{
             throw view_tensor_exception("storage_walker cant be created, view not cached and parent not storage");
@@ -55,7 +55,7 @@ class view_tensor :
         //return nullptr;
     }
     
-    const storing_base<ValT,Cfg>* as_storage_tensor()const override{return static_cast<const storing_base<ValT,Cfg>*>(this);}
+    const storing_base<ValT,Cfg>* as_storing()const override{return static_cast<const storing_base<ValT,Cfg>*>(this);}
     const view_impl_base<ValT,Cfg>* as_view()const override{return static_cast<const view_impl_base<ValT,Cfg>*>(this);}
     const view_index_converter<ValT,Cfg>* as_index_converter()const override{return static_cast<const view_index_converter<ValT,Cfg>*>(this);}
     const view_expression_impl_base<ValT,Cfg>* as_view_expression()const{return static_cast<const view_expression_impl_base<ValT,Cfg>*>(this);}

@@ -160,7 +160,7 @@ class expression_tensor :
     const value_type* storage_data()const override{return cache.data();}
     
     const trivial_impl_base<ValT,Cfg>* as_expression_trivial()const override{return static_cast<const trivial_impl_base<ValT,Cfg>*>(this);}
-    const storing_base<ValT,Cfg>* as_storage_tensor()const override{return static_cast<const storing_base<ValT,Cfg>*>(this);}
+    const storing_base<ValT,Cfg>* as_storing()const override{return static_cast<const storing_base<ValT,Cfg>*>(this);}
     const view_index_converter<ValT,Cfg>* as_index_converter()const override{return static_cast<const view_index_converter<ValT,Cfg>*>(this);}
 protected:
     
