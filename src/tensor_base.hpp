@@ -37,7 +37,7 @@ public:
     virtual const evaluating_trivial_base<ValT,Cfg>* as_evaluating_trivial()const{return nullptr;}
     
     virtual const storing_base<ValT,Cfg>* as_storing()const{return nullptr;}
-    virtual const converting_base<ValT,Cfg>* as_index_converter()const{return nullptr;}
+    virtual const converting_base<ValT,Cfg>* as_converting()const{return nullptr;}
     
     virtual const view_impl_base<ValT,Cfg>* as_view()const{return nullptr;}
     virtual const view_expression_impl_base<ValT,Cfg>* as_view_expression()const{return nullptr;}

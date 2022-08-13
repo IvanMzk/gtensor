@@ -154,7 +154,7 @@ class polymorphic_walker_factory
                 view.descriptor().shape(),
                 view.descriptor().cstrides(),
                 view.descriptor().offset(), 
-                view_parent.as_index_converter(), 
+                view_parent.as_converting(), 
                 view_root.as_evaluating()->create_storage()
                 }
             };

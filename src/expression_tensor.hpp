@@ -161,7 +161,7 @@ class expression_tensor :
     
     const evaluating_trivial_base<ValT,Cfg>* as_evaluating_trivial()const override{return static_cast<const evaluating_trivial_base<ValT,Cfg>*>(this);}
     const storing_base<ValT,Cfg>* as_storing()const override{return static_cast<const storing_base<ValT,Cfg>*>(this);}
-    const converting_base<ValT,Cfg>* as_index_converter()const override{return static_cast<const converting_base<ValT,Cfg>*>(this);}
+    const converting_base<ValT,Cfg>* as_converting()const override{return static_cast<const converting_base<ValT,Cfg>*>(this);}
 protected:
     
     template<std::size_t I>

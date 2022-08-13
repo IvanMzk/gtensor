@@ -34,7 +34,7 @@ class view_tensor :
     DescT descriptor_;
     std::shared_ptr<tensor_base_type> parent;
     const tensor_base_type* view_root{parent->tensor_kind() == detail::tensor_kinds::view ? static_cast<const view_tensor*>(parent.get())->get_view_root() : parent.get()};
-    const converting_base<ValT,Cfg>* parent_converter{parent->as_index_converter()};
+    const converting_base<ValT,Cfg>* parent_converter{parent->as_converting()};
     storage_type cache{};
 
     storage_walker_inline_impl<ValT,Cfg> create_storage_walker()const override{
@@ -57,7 +57,7 @@ class view_tensor :
     
     const storing_base<ValT,Cfg>* as_storing()const override{return static_cast<const storing_base<ValT,Cfg>*>(this);}
     const view_impl_base<ValT,Cfg>* as_view()const override{return static_cast<const view_impl_base<ValT,Cfg>*>(this);}
-    const converting_base<ValT,Cfg>* as_index_converter()const override{return static_cast<const converting_base<ValT,Cfg>*>(this);}
+    const converting_base<ValT,Cfg>* as_converting()const override{return static_cast<const converting_base<ValT,Cfg>*>(this);}
     const view_expression_impl_base<ValT,Cfg>* as_view_expression()const{return static_cast<const view_expression_impl_base<ValT,Cfg>*>(this);}
     const walker_maker<ValT,Cfg>* as_walker_maker()const{return static_cast<const walker_maker<ValT,Cfg>*>(this);}
         
