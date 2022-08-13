@@ -1,7 +1,7 @@
 #include <tuple>
 #include "catch.hpp"
 #include "tensor.hpp"
-#include "impl_walker_base.hpp"
+#include "walker_base.hpp"
 
 namespace test_walker_{
 
@@ -10,7 +10,7 @@ using gtensor::config::default_config;
 using gtensor::storing_base;
 using gtensor::tensor_base;
 using gtensor::walker;
-using gtensor::walker_impl_base;
+using gtensor::walker_base;
 using gtensor::storage_walker_impl;
 using gtensor::ewalker_trivial_impl;
 using gtensor::evaluating_storage;

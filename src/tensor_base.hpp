@@ -64,7 +64,6 @@ public:
     
 };
 
-
 template<typename ValT, template<typename> typename Cfg>
 class evaluating_base
 {
@@ -94,6 +93,18 @@ public:
 };
 
 template<typename ValT, template<typename> typename Cfg>
+class converting_base
+{
+    using index_type = typename Cfg<ValT>::index_type;
+    virtual index_type view_index_convert(const index_type&)const = 0;
+
+public:
+    virtual ~converting_base(){}        
+    auto convert(const index_type& idx)const{return view_index_convert(idx);}
+    
+};
+
+template<typename ValT, template<typename> typename Cfg>
 class view_impl_base
 {
     using iterator_type = multiindex_iterator_impl<ValT,Cfg,walker<ValT,Cfg>>;
@@ -120,17 +131,7 @@ public:
 
 
 
-template<typename ValT, template<typename> typename Cfg>
-class converting_base
-{
-    using index_type = typename Cfg<ValT>::index_type;
-    virtual index_type view_index_convert(const index_type&)const = 0;
 
-public:
-    virtual ~converting_base(){}        
-    auto convert(const index_type& idx)const{return view_index_convert(idx);}
-    
-};
 
 template<typename ValT, template<typename> typename Cfg>
 class walker_maker

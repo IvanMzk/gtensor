@@ -4,7 +4,7 @@
 #include <iterator>
 #include "config.hpp"
 #include "libdivide_helper.hpp"
-#include "impl_walker_base.hpp"
+#include "walker_base.hpp"
 
 namespace gtensor{
 

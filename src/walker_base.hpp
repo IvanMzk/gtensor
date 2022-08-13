@@ -1,5 +1,5 @@
-#ifndef IMPL_WALKER_BASE_HPP_
-#define IMPL_WALKER_BASE_HPP_
+#ifndef WALKER_BASE_HPP_
+#define WALKER_BASE_HPP_
 
 namespace gtensor{
 
@@ -81,19 +81,19 @@ protected:
 };
 
 template<typename ValT, template<typename> typename Cfg>
-class walker_impl_base{
+class walker_base{
     using config_type = Cfg<ValT>;        
     using value_type = ValT;
     using index_type = typename config_type::index_type;    
 public:
-    virtual ~walker_impl_base(){}
+    virtual ~walker_base(){}
     virtual void walk(const index_type& direction, const index_type& steps) = 0;
     virtual void step(const index_type& direction) = 0;
     virtual void step_back(const index_type& direction) = 0;
     virtual void reset(const index_type& direction) = 0;
     virtual void reset() = 0;        
     virtual value_type operator*() const = 0;
-    virtual std::unique_ptr<walker_impl_base<ValT,Cfg>> clone()const = 0;
+    virtual std::unique_ptr<walker_base<ValT,Cfg>> clone()const = 0;
 };
 
 
@@ -102,7 +102,7 @@ class walker{
     using config_type = Cfg<ValT>;        
     using value_type = ValT;
     using index_type = typename config_type::index_type;
-    using impl_base_type = walker_impl_base<ValT, Cfg>;
+    using impl_base_type = walker_base<ValT, Cfg>;
     
     std::unique_ptr<impl_base_type> impl;
 public:    

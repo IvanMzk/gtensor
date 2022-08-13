@@ -1,7 +1,7 @@
 #ifndef IMPL_EWALKER_TRIVIAL_HPP_
 #define IMPL_EWALKER_TRIVIAL_HPP_
 
-#include "impl_walker_base.hpp"
+#include "walker_base.hpp"
 #include "tensor_base.hpp"
 
 namespace gtensor{
@@ -12,7 +12,7 @@ namespace detail{
 
 template<typename ValT, template<typename> typename Cfg>
 class ewalker_trivial_impl : 
-    public walker_impl_base<ValT, Cfg>,
+    public walker_base<ValT, Cfg>,
     private basic_walker<ValT, Cfg, typename Cfg<ValT>::index_type>
 {
     using base_basic_walker = basic_walker<ValT, Cfg, typename Cfg<ValT>::index_type>;
@@ -23,7 +23,7 @@ class ewalker_trivial_impl :
 
     const tensor_base<ValT,Cfg>* parent;
         
-    std::unique_ptr<walker_impl_base<ValT,Cfg>> clone()const override{return std::make_unique<ewalker_trivial_impl<ValT,Cfg>>(*this);}
+    std::unique_ptr<walker_base<ValT,Cfg>> clone()const override{return std::make_unique<ewalker_trivial_impl<ValT,Cfg>>(*this);}
 
 public:    
     ewalker_trivial_impl(const shape_type& shape_, const shape_type& strides_,  const tensor_base<ValT,Cfg>& parent_):

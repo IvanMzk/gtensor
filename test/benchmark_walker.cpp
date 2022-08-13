@@ -2,7 +2,7 @@
 //#pragma inline_depth(255)
 #include "catch.hpp"
 #include "tensor.hpp"
-#include "impl_walker_base.hpp"
+#include "walker_base.hpp"
 #include "impl_multiindex_iterator.hpp"
 #include "test_config.hpp"
 #include <iterator>

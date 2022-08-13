@@ -1,13 +1,13 @@
 #ifndef IMPL_EWALKER_HPP_
 #define IMPL_EWALKER_HPP_
 
-#include "impl_walker_base.hpp"
+#include "walker_base.hpp"
 #include "libdivide_helper.hpp"
 
 namespace gtensor{
 
 template<typename ValT, template<typename> typename Cfg, typename F, typename...Wks>
-class evaluating_walker_impl : public walker_impl_base<ValT, Cfg>
+class evaluating_walker_impl : public walker_base<ValT, Cfg>
 {
     using config_type = Cfg<ValT>;        
     using value_type = ValT;
@@ -29,7 +29,7 @@ class evaluating_walker_impl : public walker_impl_base<ValT, Cfg>
     void reset_helper(std::index_sequence<I...>){(std::get<I>(walkers).reset(),...);}    
     template<std::size_t...I>
     value_type deref_helper(std::index_sequence<I...>) const {return f(*std::get<I>(walkers)...);}
-    std::unique_ptr<walker_impl_base<ValT,Cfg>> clone()const override{return std::make_unique<evaluating_walker_impl<ValT,Cfg,F,Wks...>>(*this);}    
+    std::unique_ptr<walker_base<ValT,Cfg>> clone()const override{return std::make_unique<evaluating_walker_impl<ValT,Cfg,F,Wks...>>(*this);}    
 protected:
     template<std::size_t...I>
     void walk_helper(const index_type& direction, const index_type& steps, std::index_sequence<I...>){(std::get<I>(walkers).walk(direction,steps),...);}

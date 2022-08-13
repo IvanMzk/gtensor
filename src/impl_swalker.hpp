@@ -1,7 +1,7 @@
 #ifndef IMPL_SWALKER_HPP_
 #define IMPL_SWALKER_HPP_
 
-#include "impl_walker_base.hpp"
+#include "walker_base.hpp"
 
 namespace gtensor{
 
@@ -11,7 +11,7 @@ namespace detail{
 
 template<typename ValT, template<typename> typename Cfg>
 class storage_walker_impl : 
-    public walker_impl_base<ValT, Cfg>,
+    public walker_base<ValT, Cfg>,
     private basic_walker<ValT,Cfg, const ValT*>
 {   
     using base_basic_walker = basic_walker<ValT, Cfg, const ValT*>;
@@ -20,7 +20,7 @@ class storage_walker_impl :
     using index_type = typename config_type::index_type;
     using shape_type = typename config_type::shape_type;
     
-    std::unique_ptr<walker_impl_base<ValT,Cfg>> clone()const override{return std::make_unique<storage_walker_impl<ValT,Cfg>>(*this);}
+    std::unique_ptr<walker_base<ValT,Cfg>> clone()const override{return std::make_unique<storage_walker_impl<ValT,Cfg>>(*this);}
 
 public:    
     storage_walker_impl(const shape_type& shape_, const shape_type& strides_,  const value_type* data_):
