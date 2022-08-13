@@ -43,7 +43,7 @@ class storage_tensor :
     const storing_base<ValT,Cfg>* as_storing()const override{return static_cast<const storing_base<ValT,Cfg>*>(this);}
     const converting_base<ValT,Cfg>* as_converting()const override{return static_cast<const converting_base<ValT,Cfg>*>(this);}
 
-    storage_walker_inline_impl<ValT,Cfg> create_storage_walker()const override{
+    storage_walker<ValT,Cfg> create_storage_walker()const override{
         return storage_walker_factory<ValT,Cfg>::create_walker(shape(),strides(),elements.data());
     }
     

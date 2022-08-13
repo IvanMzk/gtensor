@@ -3,7 +3,7 @@
 
 #include <memory>
 #include "forward_decl.hpp"
-#include "impl_swalker.hpp"
+#include "storage_walker.hpp"
 #include "impl_ewalker.hpp"
 #include "impl_vwalker.hpp"
 #include "impl_ewalker_trivial.hpp"
@@ -41,7 +41,7 @@ class storage_walker_factory
 public: 
     static auto create_walker(const shape_type& shape, const shape_type& strides, const value_type* data){
         //return storage_walker_impl<ValT,Cfg>{shape, strides, data};
-        return storage_walker_inline_impl<ValT,Cfg>{shape, strides, data};
+        return storage_walker<ValT,Cfg>{shape, strides, data};
     }
 };
 

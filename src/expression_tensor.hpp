@@ -139,7 +139,7 @@ class expression_tensor :
     template<std::size_t...I>
     value_type trivial_at_helper(const index_type& idx, std::index_sequence<I...>)const{return f(std::get<I>(operands)->trivial_at(idx)...);} 
     
-    storage_walker_inline_impl<ValT,Cfg> create_storage_walker()const override{
+    storage_walker<ValT,Cfg> create_storage_walker()const override{
         return storage_walker_factory<ValT,Cfg>::create_walker(shape(),strides(),cache.data());
     }
     walker<ValT,Cfg> create_evaluating_walker()const override{
