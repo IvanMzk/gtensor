@@ -77,7 +77,6 @@ using gtensor::evaluating_walker_polymorphic;
 using gtensor::storage_walker_polymorphic;
 using gtensor::binary_operations::add;
 using gtensor::multiindex_iterator;
-using gtensor::walker_maker;
 using gtensor::basic_walker;
 
 

@@ -40,8 +40,7 @@ public:
     virtual const converting_base<ValT,Cfg>* as_converting()const{return nullptr;}
     
     virtual const view_expression_impl_base<ValT,Cfg>* as_view_expression()const{return nullptr;}
-    
-    virtual const walker_maker<ValT,Cfg>* as_walker_maker()const{return nullptr;}
+        
 };
 
 template<typename ValT, template<typename> typename Cfg>
@@ -115,24 +114,6 @@ public:
     // virtual iterator_type begin()const = 0;
     // virtual iterator_type end()const = 0;    
 };
-
-
-
-
-
-template<typename ValT, template<typename> typename Cfg>
-class walker_maker
-{    
-    virtual walker<ValT, Cfg> create_polymorphic_walker()const = 0;
-
-public:
-    virtual ~walker_maker(){}        
-    auto create_walker()const{return create_polymorphic_walker();}
-    
-};
-
-
-
 
 
 }   //end of namespace gtensor

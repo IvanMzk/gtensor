@@ -110,8 +110,7 @@ class expression_tensor :
     public evaluating_base<ValT,Cfg>,
     public evaluating_trivial_base<ValT,Cfg>,
     public storing_base<ValT,Cfg>,
-    public converting_base<ValT,Cfg>,
-    public walker_maker<ValT, Cfg>
+    public converting_base<ValT,Cfg>    
 {    
     using config_type = Cfg<ValT>;
     using value_type = ValT;
@@ -169,8 +168,7 @@ protected:
     const auto& concrete_descriptor()const{return descriptor_;}
 
 public:            
-    const evaluating_base<ValT,Cfg>* as_evaluating()const override{return static_cast<const evaluating_base<ValT,Cfg>*>(this);}
-    const walker_maker<ValT,Cfg>* as_walker_maker()const{return static_cast<const walker_maker<ValT,Cfg>*>(this);}
+    const evaluating_base<ValT,Cfg>* as_evaluating()const override{return static_cast<const evaluating_base<ValT,Cfg>*>(this);}    
     
     template<typename...O>
     explicit expression_tensor(O&&...operands_):

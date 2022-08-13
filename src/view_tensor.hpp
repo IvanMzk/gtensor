@@ -19,8 +19,7 @@ class view_tensor :
     public tensor_base<ValT, Cfg>,    
     public storing_base<ValT,Cfg>,
     public converting_base<ValT,Cfg>,
-    public view_expression_impl_base<ValT,Cfg>,
-    public walker_maker<ValT, Cfg>
+    public view_expression_impl_base<ValT,Cfg>    
 {
     using tensor_base_type = tensor_base<ValT,Cfg>;
     using config_type = Cfg<ValT>;        
@@ -56,8 +55,7 @@ class view_tensor :
     
     const storing_base<ValT,Cfg>* as_storing()const override{return static_cast<const storing_base<ValT,Cfg>*>(this);}    
     const converting_base<ValT,Cfg>* as_converting()const override{return static_cast<const converting_base<ValT,Cfg>*>(this);}
-    const view_expression_impl_base<ValT,Cfg>* as_view_expression()const{return static_cast<const view_expression_impl_base<ValT,Cfg>*>(this);}
-    const walker_maker<ValT,Cfg>* as_walker_maker()const{return static_cast<const walker_maker<ValT,Cfg>*>(this);}
+    const view_expression_impl_base<ValT,Cfg>* as_view_expression()const{return static_cast<const view_expression_impl_base<ValT,Cfg>*>(this);}    
         
     index_type view_index_convert(const index_type& idx)const override{return parent_converter->convert(descriptor_.convert(idx));}
     bool is_cached()const override{return cache.size();}

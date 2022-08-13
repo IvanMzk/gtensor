@@ -20,8 +20,7 @@ template<typename ValT, template<typename> typename Cfg>
 class storage_tensor : 
     public tensor_base<ValT,Cfg>,
     public storing_base<ValT,Cfg>,
-    public converting_base<ValT,Cfg>,
-    public walker_maker<ValT, Cfg>
+    public converting_base<ValT,Cfg>    
 {
     using config_type = Cfg<ValT>;        
     using value_type = ValT;
@@ -63,8 +62,7 @@ protected:
     // typename storage_type::const_iterator begin()const override{return elements.begin();}
     // typename storage_type::const_iterator end()const override{return elements.end();}
 
-public:
-    const walker_maker<ValT,Cfg>* as_walker_maker()const{return static_cast<const walker_maker<ValT,Cfg>*>(this);}
+public:    
     
     storage_tensor() = default;
     storage_tensor(typename detail::nested_initializer_list_type<value_type,1>::type init_data):storage_tensor(init_data,0){}
