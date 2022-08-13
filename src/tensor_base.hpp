@@ -33,13 +33,12 @@ public:
     virtual bool is_storage()const = 0;
     virtual bool is_trivial()const = 0;
 
-    virtual const evaluating_base<ValT,Cfg>* as_evaluating()const{return nullptr;}
-    virtual const evaluating_trivial_base<ValT,Cfg>* as_evaluating_trivial()const{return nullptr;}
     
     virtual const storing_base<ValT,Cfg>* as_storing()const{return nullptr;}
+    virtual const evaluating_base<ValT,Cfg>* as_evaluating()const{return nullptr;}
+    virtual const evaluating_trivial_base<ValT,Cfg>* as_evaluating_trivial()const{return nullptr;}    
     virtual const converting_base<ValT,Cfg>* as_converting()const{return nullptr;}
     
-    virtual const view_impl_base<ValT,Cfg>* as_view()const{return nullptr;}
     virtual const view_expression_impl_base<ValT,Cfg>* as_view_expression()const{return nullptr;}
     
     virtual const walker_maker<ValT,Cfg>* as_walker_maker()const{return nullptr;}
@@ -105,22 +104,6 @@ public:
 };
 
 
-
-
-
-template<typename ValT, template<typename> typename Cfg>
-class view_impl_base
-{
-    using iterator_type = multiindex_iterator<ValT,Cfg,walker<ValT,Cfg>>;
-    //virtual vwalker_impl<ValT,Cfg> create_view_walker()const = 0;
-public:
-    virtual ~view_impl_base(){}
-    virtual bool is_cached()const = 0;
-    virtual detail::tensor_kinds view_root_kind()const = 0;
-    //auto create_walker()const{return create_view_walker();}
-    // virtual iterator_type begin()const = 0;
-    // virtual iterator_type end()const = 0;    
-};
 
 template<typename ValT, template<typename> typename Cfg>
 class view_expression_impl_base
