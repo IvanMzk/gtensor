@@ -24,10 +24,10 @@ class dispatcher{
         else if (second.tensor_kind() == tensor_kinds::expression)
         {
             if (second.is_trivial()){
-                return f(first, *second.as_expression_trivial());
+                return f(first, *second.as_evaluating_trivial());
             }            
             else{
-                return f(first, *second.as_expression());
+                return f(first, *second.as_evaluating());
             }
         }
         else if (auto v = second.as_view())
@@ -56,10 +56,10 @@ class dispatcher{
         else if (first.tensor_kind() == tensor_kinds::expression)
         {
             if (first.is_trivial()){
-                return dispatch_second(f, *first.as_expression_trivial(), second);
+                return dispatch_second(f, *first.as_evaluating_trivial(), second);
             }            
             else{
-                return dispatch_second(f, *first.as_expression(), second);
+                return dispatch_second(f, *first.as_evaluating(), second);
             }
         }        
         else if (auto v = first.as_view())

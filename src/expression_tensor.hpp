@@ -71,7 +71,7 @@ inline bool is_trivial_helper(const expression_tensor<T...>& root, const std::tu
 }
 template<typename T>
 inline bool is_trivial_operand(const T& operand){
-    if (auto e = operand->as_expression()){
+    if (auto e = operand->as_evaluating()){
         return e->is_trivial(); 
     }else{
         return true;
@@ -159,7 +159,7 @@ class expression_tensor :
     bool is_storage()const override{return is_cached();}
     const value_type* storage_data()const override{return cache.data();}
     
-    const trivial_impl_base<ValT,Cfg>* as_expression_trivial()const override{return static_cast<const trivial_impl_base<ValT,Cfg>*>(this);}
+    const trivial_impl_base<ValT,Cfg>* as_evaluating_trivial()const override{return static_cast<const trivial_impl_base<ValT,Cfg>*>(this);}
     const storing_base<ValT,Cfg>* as_storing()const override{return static_cast<const storing_base<ValT,Cfg>*>(this);}
     const view_index_converter<ValT,Cfg>* as_index_converter()const override{return static_cast<const view_index_converter<ValT,Cfg>*>(this);}
 protected:
@@ -169,7 +169,7 @@ protected:
     const auto& concrete_descriptor()const{return descriptor_;}
 
 public:            
-    const expression_impl_base<ValT,Cfg>* as_expression()const override{return static_cast<const expression_impl_base<ValT,Cfg>*>(this);}
+    const expression_impl_base<ValT,Cfg>* as_evaluating()const override{return static_cast<const expression_impl_base<ValT,Cfg>*>(this);}
     const walker_maker<ValT,Cfg>* as_walker_maker()const{return static_cast<const walker_maker<ValT,Cfg>*>(this);}
     
     template<typename...O>

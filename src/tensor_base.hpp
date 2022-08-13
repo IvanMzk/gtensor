@@ -33,8 +33,8 @@ public:
     virtual bool is_storage()const = 0;
     virtual bool is_trivial()const = 0;
 
-    virtual const expression_impl_base<ValT,Cfg>* as_expression()const{return nullptr;}
-    virtual const trivial_impl_base<ValT,Cfg>* as_expression_trivial()const{return nullptr;}
+    virtual const expression_impl_base<ValT,Cfg>* as_evaluating()const{return nullptr;}
+    virtual const trivial_impl_base<ValT,Cfg>* as_evaluating_trivial()const{return nullptr;}
     
     virtual const storing_base<ValT,Cfg>* as_storing()const{return nullptr;}
     virtual const view_index_converter<ValT,Cfg>* as_index_converter()const{return nullptr;}

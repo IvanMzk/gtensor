@@ -103,7 +103,7 @@ private:
     template<typename ValT, template<typename> typename Cfg>
     class expression : public tensor<ValT,Cfg>{        
         using base_type = tensor<ValT,Cfg>;        
-        const expression_impl_base<ValT,Cfg>* impl{get_impl()->as_expression()};
+        const expression_impl_base<ValT,Cfg>* impl{get_impl()->as_evaluating()};
     public:
         expression(const base_type& base):
             base_type{base}
