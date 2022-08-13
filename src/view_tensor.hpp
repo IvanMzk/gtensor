@@ -18,7 +18,7 @@ template<typename ValT, template<typename> typename Cfg, typename DescT>
 class view_tensor : 
     public tensor_base<ValT, Cfg>,
     public view_impl_base<ValT,Cfg>,
-    public storage_tensor_impl_base<ValT,Cfg>,
+    public storing_base<ValT,Cfg>,
     public view_index_converter<ValT,Cfg>,
     public view_expression_impl_base<ValT,Cfg>,
     public walker_maker<ValT, Cfg>
@@ -55,7 +55,7 @@ class view_tensor :
         //return nullptr;
     }
     
-    const storage_tensor_impl_base<ValT,Cfg>* as_storage_tensor()const override{return static_cast<const storage_tensor_impl_base<ValT,Cfg>*>(this);}
+    const storing_base<ValT,Cfg>* as_storage_tensor()const override{return static_cast<const storing_base<ValT,Cfg>*>(this);}
     const view_impl_base<ValT,Cfg>* as_view()const override{return static_cast<const view_impl_base<ValT,Cfg>*>(this);}
     const view_index_converter<ValT,Cfg>* as_index_converter()const override{return static_cast<const view_index_converter<ValT,Cfg>*>(this);}
     const view_expression_impl_base<ValT,Cfg>* as_view_expression()const{return static_cast<const view_expression_impl_base<ValT,Cfg>*>(this);}

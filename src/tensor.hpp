@@ -118,7 +118,7 @@ private:
     template<typename ValT, template<typename> typename Cfg>
     class storage_tensor : public tensor<ValT,Cfg>{        
         using base_type = tensor<ValT,Cfg>;        
-        const storage_tensor_impl_base<ValT,Cfg>* impl{get_impl()->as_storage_tensor()};
+        const storing_base<ValT,Cfg>* impl{get_impl()->as_storage_tensor()};
     public:
         storage_tensor(const base_type& base):
             base_type{base}

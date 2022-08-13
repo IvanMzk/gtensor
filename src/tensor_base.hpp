@@ -36,7 +36,7 @@ public:
     virtual const expression_impl_base<ValT,Cfg>* as_expression()const{return nullptr;}
     virtual const trivial_impl_base<ValT,Cfg>* as_expression_trivial()const{return nullptr;}
     
-    virtual const storage_tensor_impl_base<ValT,Cfg>* as_storage_tensor()const{return nullptr;}
+    virtual const storing_base<ValT,Cfg>* as_storage_tensor()const{return nullptr;}
     virtual const view_index_converter<ValT,Cfg>* as_index_converter()const{return nullptr;}
     
     virtual const view_impl_base<ValT,Cfg>* as_view()const{return nullptr;}
@@ -44,6 +44,26 @@ public:
     
     virtual const walker_maker<ValT,Cfg>* as_walker_maker()const{return nullptr;}
 };
+
+template<typename ValT, template<typename> typename Cfg>
+class storing_base 
+{
+    using config_type = Cfg<ValT>;
+    using iterator_type = typename config_type::storage_type::iterator;
+    using const_iterator_type = typename config_type::storage_type::const_iterator;
+    
+    virtual storage_walker_inline_impl<ValT,Cfg> create_storage_walker()const = 0;
+    virtual const ValT* storage_data()const = 0;
+
+public:
+    virtual ~storing_base(){}
+    // virtual const_iterator_type begin()const = 0;
+    // virtual const_iterator_type end()const = 0;
+    auto create_walker()const{return create_storage_walker();}
+    auto data()const{return storage_data();}
+    
+};
+
 
 template<typename ValT, template<typename> typename Cfg>
 class expression_impl_base
@@ -98,24 +118,7 @@ public:
     // virtual iterator_type end()const = 0;    
 };
 
-template<typename ValT, template<typename> typename Cfg>
-class storage_tensor_impl_base 
-{
-    using config_type = Cfg<ValT>;
-    using iterator_type = typename config_type::storage_type::iterator;
-    using const_iterator_type = typename config_type::storage_type::const_iterator;
-    
-    virtual storage_walker_inline_impl<ValT,Cfg> create_storage_walker()const = 0;
-    virtual const ValT* storage_data()const = 0;
 
-public:
-    virtual ~storage_tensor_impl_base(){}
-    // virtual const_iterator_type begin()const = 0;
-    // virtual const_iterator_type end()const = 0;
-    auto create_walker()const{return create_storage_walker();}
-    auto data()const{return storage_data();}
-    
-};
 
 template<typename ValT, template<typename> typename Cfg>
 class view_index_converter
