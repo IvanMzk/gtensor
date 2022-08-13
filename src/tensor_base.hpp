@@ -37,7 +37,7 @@ public:
     virtual const evaluating_trivial_base<ValT,Cfg>* as_evaluating_trivial()const{return nullptr;}
     
     virtual const storing_base<ValT,Cfg>* as_storing()const{return nullptr;}
-    virtual const view_index_converter<ValT,Cfg>* as_index_converter()const{return nullptr;}
+    virtual const converting_base<ValT,Cfg>* as_index_converter()const{return nullptr;}
     
     virtual const view_impl_base<ValT,Cfg>* as_view()const{return nullptr;}
     virtual const view_expression_impl_base<ValT,Cfg>* as_view_expression()const{return nullptr;}
@@ -121,13 +121,13 @@ public:
 
 
 template<typename ValT, template<typename> typename Cfg>
-class view_index_converter
+class converting_base
 {
     using index_type = typename Cfg<ValT>::index_type;
     virtual index_type view_index_convert(const index_type&)const = 0;
 
 public:
-    virtual ~view_index_converter(){}        
+    virtual ~converting_base(){}        
     auto convert(const index_type& idx)const{return view_index_convert(idx);}
     
 };

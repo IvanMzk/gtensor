@@ -9,7 +9,7 @@ template<typename ValT, template<typename> typename Cfg> class evaluating_base;
 template<typename ValT, template<typename> typename Cfg> class evaluating_trivial_base;
 template<typename ValT, template<typename> typename Cfg> class view_impl_base;
 template<typename ValT, template<typename> typename Cfg> class view_expression_impl_base;
-template<typename ValT, template<typename> typename Cfg> class view_index_converter;
+template<typename ValT, template<typename> typename Cfg> class converting_base;
 template<typename ValT, template<typename> typename Cfg> class walker_maker;
 template<typename ValT, template<typename> typename Cfg, typename F, typename...Ops> class expression_tensor;
 template<typename ValT, template<typename> typename Cfg> class storage_tensor;

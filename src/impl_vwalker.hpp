@@ -22,11 +22,11 @@ class view_expression_walker_impl :
     using shape_type = typename config_type::shape_type;
 
     mutable evaluating_storage<ValT,Cfg> estorage;
-    const view_index_converter<ValT,Cfg>* converter;
+    const converting_base<ValT,Cfg>* converter;
     std::unique_ptr<walker_impl_base<ValT,Cfg>> clone()const override{return std::make_unique<view_expression_walker_impl<ValT,Cfg>>(*this);}
 
 public:        
-    view_expression_walker_impl(const shape_type& shape_,  const shape_type& strides_, const index_type& offset_, const view_index_converter<ValT,Cfg>* converter_, evaluating_storage<ValT,Cfg> estorage_):
+    view_expression_walker_impl(const shape_type& shape_,  const shape_type& strides_, const index_type& offset_, const converting_base<ValT,Cfg>* converter_, evaluating_storage<ValT,Cfg> estorage_):
         base_basic_walker{static_cast<index_type>(shape_.size()), shape_, strides_, offset_},
         converter{converter_},
         estorage{std::move(estorage_)}

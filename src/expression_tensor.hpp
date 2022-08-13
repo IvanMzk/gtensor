@@ -110,7 +110,7 @@ class expression_tensor :
     public evaluating_base<ValT,Cfg>,
     public evaluating_trivial_base<ValT,Cfg>,
     public storing_base<ValT,Cfg>,
-    public view_index_converter<ValT,Cfg>,
+    public converting_base<ValT,Cfg>,
     public walker_maker<ValT, Cfg>
 {    
     using config_type = Cfg<ValT>;
@@ -161,7 +161,7 @@ class expression_tensor :
     
     const evaluating_trivial_base<ValT,Cfg>* as_evaluating_trivial()const override{return static_cast<const evaluating_trivial_base<ValT,Cfg>*>(this);}
     const storing_base<ValT,Cfg>* as_storing()const override{return static_cast<const storing_base<ValT,Cfg>*>(this);}
-    const view_index_converter<ValT,Cfg>* as_index_converter()const override{return static_cast<const view_index_converter<ValT,Cfg>*>(this);}
+    const converting_base<ValT,Cfg>* as_index_converter()const override{return static_cast<const converting_base<ValT,Cfg>*>(this);}
 protected:
     
     template<std::size_t I>
