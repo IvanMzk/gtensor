@@ -1,5 +1,5 @@
-#ifndef IMPL_EWALKER_HPP_
-#define IMPL_EWALKER_HPP_
+#ifndef EVALUATING_WALKER_HPP_
+#define EVALUATING_WALKER_HPP_
 
 #include "walker_base.hpp"
 #include "libdivide_helper.hpp"
@@ -7,7 +7,7 @@
 namespace gtensor{
 
 template<typename ValT, template<typename> typename Cfg, typename F, typename...Wks>
-class evaluating_walker_impl : public walker_base<ValT, Cfg>
+class evaluating_walker_polymorphic : public walker_base<ValT, Cfg>
 {
     using config_type = Cfg<ValT>;        
     using value_type = ValT;
@@ -29,13 +29,13 @@ class evaluating_walker_impl : public walker_base<ValT, Cfg>
     void reset_helper(std::index_sequence<I...>){(std::get<I>(walkers).reset(),...);}    
     template<std::size_t...I>
     value_type deref_helper(std::index_sequence<I...>) const {return f(*std::get<I>(walkers)...);}
-    std::unique_ptr<walker_base<ValT,Cfg>> clone()const override{return std::make_unique<evaluating_walker_impl<ValT,Cfg,F,Wks...>>(*this);}    
+    std::unique_ptr<walker_base<ValT,Cfg>> clone()const override{return std::make_unique<evaluating_walker_polymorphic<ValT,Cfg,F,Wks...>>(*this);}    
 protected:
     template<std::size_t...I>
     void walk_helper(const index_type& direction, const index_type& steps, std::index_sequence<I...>){(std::get<I>(walkers).walk(direction,steps),...);}
     index_type dim()const{return dim_;}
 public:
-    evaluating_walker_impl(const shape_type& shape_, Wks&&...walkers_):
+    evaluating_walker_polymorphic(const shape_type& shape_, Wks&&...walkers_):
         dim_{static_cast<index_type>(shape_.size())},
         shape{shape_},
         walkers{std::move(walkers_)...}
@@ -68,9 +68,9 @@ public:
 template<typename ValT, template<typename> typename Cfg, typename F, typename...Wks>
 class evaluating_storage_impl : 
     public evaluating_storage_impl_base<ValT, Cfg>,
-    private evaluating_walker_impl<ValT, Cfg, F, Wks...>
+    private evaluating_walker_polymorphic<ValT, Cfg, F, Wks...>
 {
-    using base_type = evaluating_walker_impl<ValT, Cfg, F, Wks...>;
+    using base_type = evaluating_walker_polymorphic<ValT, Cfg, F, Wks...>;
     using config_type = Cfg<ValT>;        
     using value_type = ValT;
     using index_type = typename config_type::index_type;

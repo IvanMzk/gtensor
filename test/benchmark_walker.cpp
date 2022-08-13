@@ -73,7 +73,7 @@ namespace true_expression_template{
 using gtensor::storage_tensor;
 using gtensor::expression_tensor;
 using gtensor::storage_walker_factory;
-using gtensor::evaluating_walker_impl;
+using gtensor::evaluating_walker_polymorphic;
 using gtensor::storage_walker_polymorphic;
 using gtensor::binary_operations::add;
 using gtensor::multiindex_iterator_impl;
@@ -209,7 +209,7 @@ public:
 private:
     template<std::size_t...I>
     auto create_concrete_walker_helper(std::index_sequence<I...>)const{
-        //using walker_type = evaluating_walker_impl<ValT,Cfg,F, decltype(std::declval<Ops>()->create_concrete_walker())...>;
+        //using walker_type = evaluating_walker_polymorphic<ValT,Cfg,F, decltype(std::declval<Ops>()->create_concrete_walker())...>;
         using walker_type = concrete_evaluating_walker<ValT,Cfg,F, decltype(std::declval<Ops>()->create_concrete_walker())...>;
         return walker_type{shape(),operand<I>()->create_concrete_walker()...};
     }    

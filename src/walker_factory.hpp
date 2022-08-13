@@ -4,7 +4,7 @@
 #include <memory>
 #include "forward_decl.hpp"
 #include "storage_walker.hpp"
-#include "impl_ewalker.hpp"
+#include "evaluating_walker.hpp"
 #include "impl_vwalker.hpp"
 #include "impl_ewalker_trivial.hpp"
 #include "dispatcher.hpp"
@@ -72,7 +72,7 @@ class evaluating_walker_factory
         {}
         template<typename...Args>
         walker<ValT,Cfg> operator()(const Args&...args)const{
-            using evaluating_walker_type = evaluating_walker_impl<ValT,Cfg,F,decltype(std::declval<Args>().create_walker())...>;
+            using evaluating_walker_type = evaluating_walker_polymorphic<ValT,Cfg,F,decltype(std::declval<Args>().create_walker())...>;
             return std::unique_ptr<walker_base<ValT,Cfg>>{new evaluating_walker_type{shape,args.create_walker()...}};
         }
     };
@@ -168,7 +168,7 @@ class polymorphic_walker_factory
 
     template<typename F, typename...Ops, std::size_t...I>
     static walker<ValT,Cfg> create_evaluating_walker_helper(const shape_type& shape, const F&, const std::tuple<Ops...>& operands, std::index_sequence<I...>){
-        using evaluating_walker_type = evaluating_walker_impl<ValT,Cfg,F,decltype(std::declval<Ops>()->as_walker_maker()->create_walker())...>;
+        using evaluating_walker_type = evaluating_walker_polymorphic<ValT,Cfg,F,decltype(std::declval<Ops>()->as_walker_maker()->create_walker())...>;
         return std::unique_ptr<walker_base<ValT,Cfg>>{new evaluating_walker_type{shape,std::get<I>(operands)->as_walker_maker()->create_walker()...}};
     }
 
@@ -191,7 +191,7 @@ public:
 //     using config_type = Cfg<ValT>;        
 //     using value_type = ValT;
 //     using shape_type = typename config_type::shape_type;
-//     using evaluating_walker_type = evaluating_walker_impl<ValT,Cfg,F,decltype(std::declval<Ops>()->create_walker())...>;
+//     using evaluating_walker_type = evaluating_walker_polymorphic<ValT,Cfg,F,decltype(std::declval<Ops>()->create_walker())...>;
 
 //     const shape_type* shape;
 //     const F* f;
