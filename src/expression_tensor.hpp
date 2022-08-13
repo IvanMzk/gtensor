@@ -107,7 +107,7 @@ inline const auto& strides_div(const stensor_descriptor<ValT, Cfg>& desc){
 template<typename ValT, template<typename> typename Cfg, typename F, typename...Ops>
 class expression_tensor : 
     public tensor_base<ValT,Cfg>,
-    public expression_impl_base<ValT,Cfg>,
+    public evaluating_base<ValT,Cfg>,
     public trivial_impl_base<ValT,Cfg>,
     public storing_base<ValT,Cfg>,
     public view_index_converter<ValT,Cfg>,
@@ -169,7 +169,7 @@ protected:
     const auto& concrete_descriptor()const{return descriptor_;}
 
 public:            
-    const expression_impl_base<ValT,Cfg>* as_evaluating()const override{return static_cast<const expression_impl_base<ValT,Cfg>*>(this);}
+    const evaluating_base<ValT,Cfg>* as_evaluating()const override{return static_cast<const evaluating_base<ValT,Cfg>*>(this);}
     const walker_maker<ValT,Cfg>* as_walker_maker()const{return static_cast<const walker_maker<ValT,Cfg>*>(this);}
     
     template<typename...O>

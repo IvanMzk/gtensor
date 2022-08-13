@@ -84,7 +84,7 @@ TEST_CASE("test_dispatcher","[test_dispatcher]"){
 
     SECTION("test_dispatcher"){
         using storage_type = gtensor::storing_base<value_type, default_config>;
-        using expression_type = gtensor::expression_impl_base<value_type, default_config>;
+        using expression_type = gtensor::evaluating_base<value_type, default_config>;
         using trivial_type = gtensor::trivial_impl_base<value_type, default_config>;
         using view_type = gtensor::view_impl_base<value_type, default_config>;
         using test_dispatcher::test_operation;

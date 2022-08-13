@@ -33,7 +33,7 @@ public:
     virtual bool is_storage()const = 0;
     virtual bool is_trivial()const = 0;
 
-    virtual const expression_impl_base<ValT,Cfg>* as_evaluating()const{return nullptr;}
+    virtual const evaluating_base<ValT,Cfg>* as_evaluating()const{return nullptr;}
     virtual const trivial_impl_base<ValT,Cfg>* as_evaluating_trivial()const{return nullptr;}
     
     virtual const storing_base<ValT,Cfg>* as_storing()const{return nullptr;}
@@ -66,13 +66,13 @@ public:
 
 
 template<typename ValT, template<typename> typename Cfg>
-class expression_impl_base
+class evaluating_base
 {
     using iterator_type = multiindex_iterator_impl<ValT,Cfg,walker<ValT,Cfg>>;    
     virtual walker<ValT,Cfg> create_evaluating_walker()const = 0;
     virtual evaluating_storage<ValT,Cfg> create_evaluating_storage()const = 0;
 public:
-    virtual ~expression_impl_base(){}    
+    virtual ~evaluating_base(){}    
     // virtual iterator_type begin()const = 0;
     // virtual iterator_type end()const = 0;
     virtual bool is_cached()const = 0;
