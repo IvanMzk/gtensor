@@ -148,7 +148,7 @@ class expression_tensor :
     ewalker_trivial_impl<ValT,Cfg> create_trivial_walker()const override{
         return trivial_walker_factory<ValT,Cfg>::create_walker(shape(), strides(), *this);
     }
-    evaluating_storage<ValT,Cfg> create_evaluating_storage()const override{
+    evaluating_indexer<ValT,Cfg> create_evaluating_storage()const override{
         return evaluating_walker_factory<ValT,Cfg>::create_storage(shape(), detail::strides_div(descriptor_), f,operands);
     }
     walker<ValT, Cfg> create_polymorphic_walker()const override{

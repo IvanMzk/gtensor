@@ -17,7 +17,7 @@ template<typename ValT, template<typename> typename Cfg> class descriptor_base;
 template<typename ValT, template<typename> typename Cfg, typename DescT> class view_tensor;
 template<typename ValT, template<typename> typename Cfg> class tensor;
 template<typename ValT, template<typename> typename Cfg> class walker;
-template<typename ValT, template<typename> typename Cfg> class evaluating_storage;
+template<typename ValT, template<typename> typename Cfg> class evaluating_indexer;
 template<typename ValT, template<typename> typename Cfg> class walker_base;
 template<typename ValT, template<typename> typename Cfg> class storage_walker_polymorphic;
 template<typename ValT, template<typename> typename Cfg> class storage_walker;

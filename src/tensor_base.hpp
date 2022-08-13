@@ -69,7 +69,7 @@ class evaluating_base
 {
     using iterator_type = multiindex_iterator_impl<ValT,Cfg,walker<ValT,Cfg>>;    
     virtual walker<ValT,Cfg> create_evaluating_walker()const = 0;
-    virtual evaluating_storage<ValT,Cfg> create_evaluating_storage()const = 0;
+    virtual evaluating_indexer<ValT,Cfg> create_evaluating_storage()const = 0;
 public:
     virtual ~evaluating_base(){}    
     // virtual iterator_type begin()const = 0;

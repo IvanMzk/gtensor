@@ -13,7 +13,7 @@ using gtensor::walker;
 using gtensor::walker_base;
 using gtensor::storage_walker_polymorphic;
 using gtensor::ewalker_trivial_impl;
-using gtensor::evaluating_storage;
+using gtensor::evaluating_indexer;
 using gtensor::view_expression_walker_impl;
 
 template<typename ValT, template<typename> typename Cfg>
@@ -56,7 +56,7 @@ struct evaluating_walker_test_tensor : public tensor<ValT,Cfg>{
     walker<ValT,Cfg> create_walker()const{
         return get_impl()->as_expression()->create_walker();
     }
-    evaluating_storage<ValT,Cfg> create_storage()const{
+    evaluating_indexer<ValT,Cfg> create_storage()const{
         return get_impl()->as_expression()->create_storage();
     }
 };
@@ -241,7 +241,7 @@ TEMPLATE_TEST_CASE("test_walker","test_walker",
     REQUIRE(deref == expected_deref);
 }
 
-TEMPLATE_TEST_CASE("test_evaluating_storage","test_walker",
+TEMPLATE_TEST_CASE("test_evaluating_indexer","test_walker",
                     (test_walker_::not_trivial_expression_maker<float, test_walker_::evaluating_walker_test_tensor<float, test_walker_::default_config>>),
                     (test_walker_::trivial_subtree_expression_maker<float, test_walker_::evaluating_walker_test_tensor<float, test_walker_::default_config>>),
                     (test_walker_::trivial_expression_maker_ewalker<float, test_walker_::evaluating_walker_test_tensor<float, test_walker_::default_config>>)

@@ -75,12 +75,14 @@ class evaluating_walker_polymorphic :
     using index_type = typename config_type::index_type;
     using shape_type = typename config_type::shape_type;
 
+    std::unique_ptr<walker_base<ValT,Cfg>> clone()const override{return std::make_unique<evaluating_walker_polymorphic>(*this);}
+
 public:
     evaluating_walker_polymorphic(const shape_type& shape_, Wks&&...walkers_):
         base_evaluating_walker{shape_, std::move(walkers_)...}        
     {}
     
-    void walk(const index_type& direction, const index_type& steps)override{return base_evaluating_walker::walk(direction,shape);}
+    void walk(const index_type& direction, const index_type& steps)override{return base_evaluating_walker::walk(direction,steps);}
     void step(const index_type& direction)override{return base_evaluating_walker::step(direction);}
     void step_back(const index_type& direction)override{return base_evaluating_walker::step_back(direction);}
     void reset(const index_type& direction)override{return base_evaluating_walker::reset(direction);}
@@ -89,12 +91,12 @@ public:
 };
 
 template<typename ValT, template<typename> typename Cfg, typename F, typename...Wks>
-class evaluating_storage_impl : 
-    public evaluating_storage_impl_base<ValT, Cfg>,
-    private evaluating_walker_polymorphic<ValT, Cfg, F, Wks...>
+class evaluating_notrivial_indexer : 
+    public evaluating_indexer_base<ValT, Cfg>,
+    private evaluating_walker<ValT, Cfg, F, Wks...>
 {
-    using base_type = evaluating_walker_polymorphic<ValT, Cfg, F, Wks...>;
-    using config_type = Cfg<ValT>;        
+    using base_type = evaluating_walker<ValT, Cfg, F, Wks...>;
+    using config_type = Cfg<ValT>;
     using value_type = ValT;
     using index_type = typename config_type::index_type;
     using shape_type = typename config_type::shape_type;
@@ -103,7 +105,7 @@ class evaluating_storage_impl :
     const strides_type* strides;
     value_type data_cache{evaluate_at(0)};
     index_type index_cache{0};
-    std::unique_ptr<evaluating_storage_impl_base<ValT,Cfg>> clone(int)const override{return std::make_unique<evaluating_storage_impl<ValT,Cfg,F,Wks...>>(*this);}
+    std::unique_ptr<evaluating_indexer_base<ValT,Cfg>> clone(int)const override{return std::make_unique<evaluating_notrivial_indexer<ValT,Cfg,F,Wks...>>(*this);}
     value_type operator[](index_type idx)override{
         if (index_cache == idx){
             return data_cache;
@@ -127,7 +129,7 @@ class evaluating_storage_impl :
     }
 
 public:
-    evaluating_storage_impl(const shape_type& shape_, const strides_type& strides_, Wks&&...walkers_):
+    evaluating_notrivial_indexer(const shape_type& shape_, const strides_type& strides_, Wks&&...walkers_):
         base_type{shape_, std::move(walkers_)...},
         strides{&strides_}
     {}
