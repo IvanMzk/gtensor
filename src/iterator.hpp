@@ -1,5 +1,5 @@
-#ifndef IMPL_MULTIINDEX_ITERATOR_HPP_
-#define IMPL_MULTIINDEX_ITERATOR_HPP_
+#ifndef ITERATOR_HPP_
+#define ITERATOR_HPP_
 
 #include <iterator>
 #include "config.hpp"
@@ -15,7 +15,7 @@ namespace detail{
 * multiindex_iterator
 */
 template<typename ValT, template<typename> typename Cfg, typename Wkr>
-class multiindex_iterator_impl{
+class multiindex_iterator{
     using walker_type = Wkr;
     using config_type = Cfg<ValT>;
     using shape_type = typename config_type::shape_type;
@@ -44,7 +44,7 @@ public:
 
     //begin constructor
     template<typename W>
-    multiindex_iterator_impl(W&& walker_, const shape_type& shape_, const strides_type& strides_):
+    multiindex_iterator(W&& walker_, const shape_type& shape_, const strides_type& strides_):
         walker{std::forward<W>(walker_)},
         dim_dec{static_cast<index_type>(shape_.size()-1)},
         shape{shape_},
@@ -53,7 +53,7 @@ public:
     {}
     //end constructor
     template<typename W>
-    multiindex_iterator_impl(W&& walker_, const shape_type& shape_, const strides_type& strides_, const difference_type& size_):
+    multiindex_iterator(W&& walker_, const shape_type& shape_, const strides_type& strides_, const difference_type& size_):
         walker{std::forward<W>(walker_)},
         dim_dec{static_cast<index_type>(shape_.size()-1)},
         shape{shape_},
@@ -63,8 +63,8 @@ public:
         ++multi_index.front();
     }
     
-    bool operator==(const multiindex_iterator_impl& it)const{return flat_index == it.flat_index;}    
-    bool operator!=(const multiindex_iterator_impl& it)const{return flat_index != it.flat_index;}
+    bool operator==(const multiindex_iterator& it)const{return flat_index == it.flat_index;}    
+    bool operator!=(const multiindex_iterator& it)const{return flat_index != it.flat_index;}
 
     auto& operator++();
     auto& operator--();
@@ -81,15 +81,15 @@ public:
     value_type operator[](difference_type n)const{return *(*this+n);}
     value_type operator*() const{return *walker;}
 
-    inline difference_type friend operator-(const multiindex_iterator_impl& lhs, const multiindex_iterator_impl& rhs){return lhs.flat_index - rhs.flat_index;}
-    inline bool friend operator>(const multiindex_iterator_impl& lhs, const multiindex_iterator_impl& rhs){return (lhs - rhs) > difference_type(0);}
-    inline bool friend operator<(const multiindex_iterator_impl& lhs, const multiindex_iterator_impl& rhs){return (rhs - lhs) > difference_type(0);}
-    inline bool friend operator>=(const multiindex_iterator_impl& lhs, const multiindex_iterator_impl& rhs){return !(lhs < rhs);}
-    inline bool friend operator<=(const multiindex_iterator_impl& lhs, const multiindex_iterator_impl& rhs){return !(lhs > rhs);}
+    inline difference_type friend operator-(const multiindex_iterator& lhs, const multiindex_iterator& rhs){return lhs.flat_index - rhs.flat_index;}
+    inline bool friend operator>(const multiindex_iterator& lhs, const multiindex_iterator& rhs){return (lhs - rhs) > difference_type(0);}
+    inline bool friend operator<(const multiindex_iterator& lhs, const multiindex_iterator& rhs){return (rhs - lhs) > difference_type(0);}
+    inline bool friend operator>=(const multiindex_iterator& lhs, const multiindex_iterator& rhs){return !(lhs < rhs);}
+    inline bool friend operator<=(const multiindex_iterator& lhs, const multiindex_iterator& rhs){return !(lhs > rhs);}
 };
 
 template<typename ValT, template<typename> typename Cfg, typename Wkr>
-auto& multiindex_iterator_impl<ValT,Cfg,Wkr>::operator++(){
+auto& multiindex_iterator<ValT,Cfg,Wkr>::operator++(){
     index_type d{0};
     auto idx_first = multi_index.begin();
     auto idx_it = std::prev(multi_index.end());
@@ -115,7 +115,7 @@ auto& multiindex_iterator_impl<ValT,Cfg,Wkr>::operator++(){
 }
 
 template<typename ValT, template<typename> typename Cfg, typename Wkr>
-auto& multiindex_iterator_impl<ValT,Cfg,Wkr>::operator--(){
+auto& multiindex_iterator<ValT,Cfg,Wkr>::operator--(){
     index_type d{0};
     auto idx_first = multi_index.begin();
     auto idx_it = std::prev(multi_index.end());
@@ -141,7 +141,7 @@ auto& multiindex_iterator_impl<ValT,Cfg,Wkr>::operator--(){
 }
 
 template<typename ValT, template<typename> typename Cfg, typename Wkr>
-auto& multiindex_iterator_impl<ValT,Cfg,Wkr>::advance(difference_type n){
+auto& multiindex_iterator<ValT,Cfg,Wkr>::advance(difference_type n){
     index_type idx{flat_index + n};
     flat_index = idx;
     walker.reset();

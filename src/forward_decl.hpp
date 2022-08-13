@@ -25,7 +25,7 @@ template<typename ValT, template<typename> typename Cfg> class evaluating_trivia
 template<typename ValT, template<typename> typename Cfg> class vwalker_impl;
 template<typename ValT, template<typename> typename Cfg> class viewing_evaluating_walker;
 template<typename DifT, typename N> struct slice;
-template<typename ValT, template<typename> typename Cfg, typename Wkr> class multiindex_iterator_impl;
+template<typename ValT, template<typename> typename Cfg, typename Wkr> class multiindex_iterator;
 
 namespace detail{
 template<typename DifT, typename N> struct slice_item;

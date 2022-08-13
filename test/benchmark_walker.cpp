@@ -3,12 +3,12 @@
 #include "catch.hpp"
 #include "tensor.hpp"
 #include "walker_base.hpp"
-#include "impl_multiindex_iterator.hpp"
+#include "iterator.hpp"
 #include "test_config.hpp"
 #include <iterator>
 
 namespace benchmark_walker{
-using gtensor::multiindex_iterator_impl;
+using gtensor::multiindex_iterator;
 using gtensor::walker;
 using gtensor::tensor;
 
@@ -16,7 +16,7 @@ template<typename ValT, template<typename> typename Cfg>
 struct inline_walker_test_tensor : public tensor<ValT,Cfg>{
     using base_type = tensor<ValT,Cfg>;
     using config_type = Cfg<ValT>;
-    using iterator_type = multiindex_iterator_impl<ValT,Cfg,walker<ValT,Cfg>>;
+    using iterator_type = multiindex_iterator<ValT,Cfg,walker<ValT,Cfg>>;
     using strides_type = typename gtensor::detail::libdiv_strides_traits<inline_walker_test_tensor::config_type>::type;
     
     strides_type strides{gtensor::detail::make_dividers<inline_walker_test_tensor::config_type>(get_impl()->strides())};
@@ -34,7 +34,7 @@ template<typename ValT, template<typename> typename Cfg>
 struct noinline_walker_test_tensor : public tensor<ValT,Cfg>{
     using base_type = tensor<ValT,Cfg>;
     using config_type = Cfg<ValT>;
-    using iterator_type = multiindex_iterator_impl<ValT,Cfg,walker<ValT,Cfg>>;
+    using iterator_type = multiindex_iterator<ValT,Cfg,walker<ValT,Cfg>>;
     using strides_type = typename gtensor::detail::libdiv_strides_traits<noinline_walker_test_tensor::config_type>::type;
     
     strides_type strides{gtensor::detail::make_dividers<noinline_walker_test_tensor::config_type>(get_impl()->strides())};
@@ -76,7 +76,7 @@ using gtensor::storage_walker_factory;
 using gtensor::evaluating_walker_polymorphic;
 using gtensor::storage_walker_polymorphic;
 using gtensor::binary_operations::add;
-using gtensor::multiindex_iterator_impl;
+using gtensor::multiindex_iterator;
 using gtensor::walker_maker;
 using gtensor::basic_walker;
 
@@ -235,11 +235,11 @@ public:
     
     auto create_concrete_walker()const{return create_concrete_walker_helper(std::make_index_sequence<sizeof...(Ops)>{});}
     auto begin()const{
-        using iterator_type = multiindex_iterator_impl<ValT,Cfg,decltype(std::declval<test_expression>().create_concrete_walker())>;
+        using iterator_type = multiindex_iterator<ValT,Cfg,decltype(std::declval<test_expression>().create_concrete_walker())>;
         return iterator_type{create_concrete_walker(),shape(),gtensor::detail::strides_div(concrete_descriptor())};
     }
     auto end()const{
-        using iterator_type = multiindex_iterator_impl<ValT,Cfg,decltype(std::declval<test_expression>().create_concrete_walker())>;
+        using iterator_type = multiindex_iterator<ValT,Cfg,decltype(std::declval<test_expression>().create_concrete_walker())>;
         return iterator_type{create_concrete_walker(),shape(),gtensor::detail::strides_div(concrete_descriptor()),size()};
     }
 };

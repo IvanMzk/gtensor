@@ -5,7 +5,7 @@
 #include "tensor_base.hpp"
 #include "stensor_descriptor.hpp"
 #include "walker_factory.hpp"
-#include "impl_multiindex_iterator.hpp"
+#include "iterator.hpp"
 
 namespace gtensor{
 
@@ -120,7 +120,7 @@ class expression_tensor :
     using descriptor_type = stensor_descriptor<value_type, Cfg>;
     using storage_type = typename config_type::storage_type;
     using slices_collection_type = typename config_type::slices_collection_type;     
-    using iterator_type = multiindex_iterator_impl<ValT,Cfg,walker<ValT,Cfg>>; 
+    using iterator_type = multiindex_iterator<ValT,Cfg,walker<ValT,Cfg>>; 
     //static_assert(detail::is_valid_operands<Ops...>);
 
     descriptor_type descriptor_;

@@ -67,7 +67,7 @@ public:
 template<typename ValT, template<typename> typename Cfg>
 class evaluating_base
 {
-    using iterator_type = multiindex_iterator_impl<ValT,Cfg,walker<ValT,Cfg>>;    
+    using iterator_type = multiindex_iterator<ValT,Cfg,walker<ValT,Cfg>>;    
     virtual walker<ValT,Cfg> create_evaluating_walker()const = 0;
     virtual evaluating_indexer<ValT,Cfg> create_evaluating_storage()const = 0;
 public:
@@ -83,7 +83,7 @@ public:
 template<typename ValT, template<typename> typename Cfg>
 class evaluating_trivial_base
 {
-    using iterator_type = multiindex_iterator_impl<ValT,Cfg,walker<ValT,Cfg>>;
+    using iterator_type = multiindex_iterator<ValT,Cfg,walker<ValT,Cfg>>;
     virtual evaluating_trivial_walker<ValT,Cfg> create_trivial_walker()const = 0;
 public:
     virtual ~evaluating_trivial_base(){}
@@ -111,7 +111,7 @@ public:
 template<typename ValT, template<typename> typename Cfg>
 class view_impl_base
 {
-    using iterator_type = multiindex_iterator_impl<ValT,Cfg,walker<ValT,Cfg>>;
+    using iterator_type = multiindex_iterator<ValT,Cfg,walker<ValT,Cfg>>;
     //virtual vwalker_impl<ValT,Cfg> create_view_walker()const = 0;
 public:
     virtual ~view_impl_base(){}

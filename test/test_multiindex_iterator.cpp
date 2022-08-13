@@ -1,5 +1,5 @@
 #include "catch.hpp"
-#include "impl_multiindex_iterator.hpp"
+#include "iterator.hpp"
 #include "tensor.hpp"
 #include "test_config.hpp"
 
@@ -7,7 +7,7 @@ namespace test_multiindex_iterator_{
 
 using gtensor::tensor;
 using gtensor::config::default_config;
-using gtensor::multiindex_iterator_impl;
+using gtensor::multiindex_iterator;
 using gtensor::evaluating_base;
 using gtensor::walker;
 
@@ -16,7 +16,7 @@ struct test_tensor : public tensor<ValT,Cfg>{
     using base_type = tensor<ValT,Cfg>;
     using config_type = Cfg<ValT>;
     using expression_base = evaluating_base<ValT,Cfg>;
-    using iterator_type = multiindex_iterator_impl<ValT,Cfg,walker<ValT,Cfg>>;
+    using iterator_type = multiindex_iterator<ValT,Cfg,walker<ValT,Cfg>>;
     using strides_type = typename gtensor::detail::libdiv_strides_traits<test_tensor::config_type>::type;
 
     strides_type strides{gtensor::detail::make_dividers<test_tensor::config_type>(get_impl()->strides())};
