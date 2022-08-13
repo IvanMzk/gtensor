@@ -65,62 +65,27 @@ public:
 };
 
 template<typename ValT, template<typename> typename Cfg, typename F, typename...Wks>
-class evaluating_walker_polymorphic : public walker_base<ValT, Cfg>
+class evaluating_walker_polymorphic : 
+    public walker_base<ValT, Cfg>,
+    private evaluating_walker<ValT, Cfg, F, Wks...>
 {
+    using base_evaluating_walker = evaluating_walker<ValT, Cfg, F, Wks...>;
     using config_type = Cfg<ValT>;        
     using value_type = ValT;
     using index_type = typename config_type::index_type;
     using shape_type = typename config_type::shape_type;
 
-    index_type dim_;
-    detail::shape_inverter<ValT,Cfg> shape;
-    std::tuple<Wks...> walkers;
-    F f{};
-        
-    template<std::size_t...I>
-    void step_helper(const index_type& direction, std::index_sequence<I...>){(std::get<I>(walkers).step(direction),...);}    
-    template<std::size_t...I>
-    void step_back_helper(const index_type& direction, std::index_sequence<I...>){(std::get<I>(walkers).step_back(direction),...);}    
-    template<std::size_t...I>
-    void reset_helper(const index_type& direction, std::index_sequence<I...>){(std::get<I>(walkers).reset(direction),...);}
-    template<std::size_t...I>
-    void reset_helper(std::index_sequence<I...>){(std::get<I>(walkers).reset(),...);}    
-    template<std::size_t...I>
-    value_type deref_helper(std::index_sequence<I...>) const {return f(*std::get<I>(walkers)...);}
-    std::unique_ptr<walker_base<ValT,Cfg>> clone()const override{return std::make_unique<evaluating_walker_polymorphic<ValT,Cfg,F,Wks...>>(*this);}    
-protected:
-    template<std::size_t...I>
-    void walk_helper(const index_type& direction, const index_type& steps, std::index_sequence<I...>){(std::get<I>(walkers).walk(direction,steps),...);}
-    index_type dim()const{return dim_;}
 public:
     evaluating_walker_polymorphic(const shape_type& shape_, Wks&&...walkers_):
-        dim_{static_cast<index_type>(shape_.size())},
-        shape{shape_},
-        walkers{std::move(walkers_)...}
+        base_evaluating_walker{shape_, std::move(walkers_)...}        
     {}
     
-    void walk(const index_type& direction, const index_type& steps)override{
-        if (detail::can_walk(direction,dim_,shape.element(direction))){
-            walk_helper(direction,steps,std::make_index_sequence<sizeof...(Wks)>{});
-        }
-    }
-    void step(const index_type& direction)override{
-        if (detail::can_walk(direction,dim_,shape.element(direction))){
-            step_helper(direction,std::make_index_sequence<sizeof...(Wks)>{});
-        }
-    }
-    void step_back(const index_type& direction)override{
-        if (detail::can_walk(direction,dim_,shape.element(direction))){
-            step_back_helper(direction,std::make_index_sequence<sizeof...(Wks)>{});
-        }
-    }
-    void reset(const index_type& direction)override{
-        if (detail::can_walk(direction,dim_,shape.element(direction))){
-            reset_helper(direction,std::make_index_sequence<sizeof...(Wks)>{});
-        }
-    }
-    void reset()override{reset_helper(std::make_index_sequence<sizeof...(Wks)>{});}
-    value_type operator*() const override{return deref_helper(std::make_index_sequence<sizeof...(Wks)>{});}
+    void walk(const index_type& direction, const index_type& steps)override{return base_evaluating_walker::walk(direction,shape);}
+    void step(const index_type& direction)override{return base_evaluating_walker::step(direction);}
+    void step_back(const index_type& direction)override{return base_evaluating_walker::step_back(direction);}
+    void reset(const index_type& direction)override{return base_evaluating_walker::reset(direction);}
+    void reset()override{return base_evaluating_walker::reset();}
+    value_type operator*() const override{return base_evaluating_walker::operator*();}
 };
 
 template<typename ValT, template<typename> typename Cfg, typename F, typename...Wks>
