@@ -6,7 +6,7 @@
 #include "storage_walker.hpp"
 #include "evaluating_walker.hpp"
 #include "impl_vwalker.hpp"
-#include "impl_ewalker_trivial.hpp"
+#include "evaluating_trivial_walker.hpp"
 #include "dispatcher.hpp"
 
 
@@ -52,8 +52,8 @@ class trivial_walker_factory
     using value_type = ValT;
     using shape_type = typename config_type::shape_type;
 public: 
-    static ewalker_trivial_impl<ValT, Cfg> create_walker(const shape_type& shape, const shape_type& strides, const tensor_base<ValT,Cfg>& parent){
-        return ewalker_trivial_impl<ValT,Cfg>{shape, strides, parent};
+    static evaluating_trivial_walker<ValT, Cfg> create_walker(const shape_type& shape, const shape_type& strides, const tensor_base<ValT,Cfg>& parent){
+        return evaluating_trivial_walker<ValT,Cfg>{shape, strides, parent};
     }
 };
 
@@ -134,7 +134,7 @@ class polymorphic_walker_factory
         if (expression.is_storage()){
             return create_walker_helper(expression, expression.descriptor().shape(), expression.descriptor().strides(), cache);
         }else if(expression.is_trivial()){
-            return std::unique_ptr<walker_base<ValT,Cfg>>{new ewalker_trivial_impl<ValT,Cfg>{expression.descriptor().shape(),expression.descriptor().strides(),expression}};
+            return std::unique_ptr<walker_base<ValT,Cfg>>{new evaluating_trivial_walker<ValT,Cfg>{expression.descriptor().shape(),expression.descriptor().strides(),expression}};
         }else{
             return create_evaluating_walker_helper(expression.descriptor().shape(), f, operands, std::make_index_sequence<sizeof...(Ops)>{});
         }
@@ -217,7 +217,7 @@ public:
 //     using config_type = Cfg<ValT>;        
 //     using value_type = ValT;
 //     using shape_type = typename config_type::shape_type;
-//     using trivial_ewalker_type = ewalker_trivial_impl<ValT,Cfg>;
+//     using trivial_ewalker_type = evaluating_trivial_walker<ValT,Cfg>;
 
 //     const shape_type* shape;
 //     const shape_type* strides;

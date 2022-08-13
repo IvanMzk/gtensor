@@ -12,7 +12,7 @@ using gtensor::tensor_base;
 using gtensor::walker;
 using gtensor::walker_base;
 using gtensor::storage_walker_polymorphic;
-using gtensor::ewalker_trivial_impl;
+using gtensor::evaluating_trivial_walker;
 using gtensor::evaluating_indexer;
 using gtensor::view_expression_walker_impl;
 
@@ -38,11 +38,11 @@ struct trivial_walker_test_tensor : public tensor<ValT,Cfg>{
     trivial_walker_test_tensor(const base_type& base):
         base_type{base}
     {}    
-    ewalker_trivial_impl<ValT,Cfg> create_native_walker()const{
+    evaluating_trivial_walker<ValT,Cfg> create_native_walker()const{
         return get_impl()->as_expression_trivial()->create_walker();
     }
     walker<ValT,Cfg> create_walker()const{
-        return std::make_unique<ewalker_trivial_impl<ValT,Cfg>>(create_native_walker());
+        return std::make_unique<evaluating_trivial_walker<ValT,Cfg>>(create_native_walker());
     }
 };
 

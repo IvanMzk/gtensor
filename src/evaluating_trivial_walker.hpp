@@ -1,5 +1,5 @@
-#ifndef IMPL_EWALKER_TRIVIAL_HPP_
-#define IMPL_EWALKER_TRIVIAL_HPP_
+#ifndef EVALUATING_TRIVIAL_WALKER_HPP_
+#define EVALUATING_TRIVIAL_WALKER_HPP_
 
 #include "walker_base.hpp"
 #include "tensor_base.hpp"
@@ -11,7 +11,7 @@ namespace detail{
 
 
 template<typename ValT, template<typename> typename Cfg>
-class ewalker_trivial_impl : 
+class evaluating_trivial_walker : 
     public walker_base<ValT, Cfg>,
     private basic_walker<ValT, Cfg, typename Cfg<ValT>::index_type>
 {
@@ -23,10 +23,10 @@ class ewalker_trivial_impl :
 
     const tensor_base<ValT,Cfg>* parent;
         
-    std::unique_ptr<walker_base<ValT,Cfg>> clone()const override{return std::make_unique<ewalker_trivial_impl<ValT,Cfg>>(*this);}
+    std::unique_ptr<walker_base<ValT,Cfg>> clone()const override{return std::make_unique<evaluating_trivial_walker<ValT,Cfg>>(*this);}
 
 public:    
-    ewalker_trivial_impl(const shape_type& shape_, const shape_type& strides_,  const tensor_base<ValT,Cfg>& parent_):
+    evaluating_trivial_walker(const shape_type& shape_, const shape_type& strides_,  const tensor_base<ValT,Cfg>& parent_):
         base_basic_walker{static_cast<index_type>(shape_.size()), shape_, strides_, index_type{0}},
         parent{&parent_}
     {}

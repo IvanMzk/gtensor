@@ -21,7 +21,7 @@ template<typename ValT, template<typename> typename Cfg> class evaluating_indexe
 template<typename ValT, template<typename> typename Cfg> class walker_base;
 template<typename ValT, template<typename> typename Cfg> class storage_walker_polymorphic;
 template<typename ValT, template<typename> typename Cfg> class storage_walker;
-template<typename ValT, template<typename> typename Cfg> class ewalker_trivial_impl;
+template<typename ValT, template<typename> typename Cfg> class evaluating_trivial_walker;
 template<typename ValT, template<typename> typename Cfg> class vwalker_impl;
 template<typename ValT, template<typename> typename Cfg> class view_expression_walker_impl;
 template<typename DifT, typename N> struct slice;

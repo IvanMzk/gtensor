@@ -84,7 +84,7 @@ template<typename ValT, template<typename> typename Cfg>
 class evaluating_trivial_base
 {
     using iterator_type = multiindex_iterator_impl<ValT,Cfg,walker<ValT,Cfg>>;
-    virtual ewalker_trivial_impl<ValT,Cfg> create_trivial_walker()const = 0;
+    virtual evaluating_trivial_walker<ValT,Cfg> create_trivial_walker()const = 0;
 public:
     virtual ~evaluating_trivial_base(){}
     auto create_walker()const{return create_trivial_walker();}
@@ -103,6 +103,10 @@ public:
     auto convert(const index_type& idx)const{return view_index_convert(idx);}
     
 };
+
+
+
+
 
 template<typename ValT, template<typename> typename Cfg>
 class view_impl_base
