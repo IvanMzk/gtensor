@@ -70,12 +70,8 @@ inline bool is_trivial_helper(const expression_tensor<T...>& root, const std::tu
     return ((root.size()==std::get<I>(root_operands)->size())&&...) && (is_trivial_operand(std::get<I>(root_operands))&&...);
 }
 template<typename T>
-inline bool is_trivial_operand(const T& operand){
-    if (auto e = operand->as_evaluating()){
-        return e->is_trivial(); 
-    }else{
-        return true;
-    }
+inline bool is_trivial_operand(const T& operand){    
+    return operand->is_trivial(); 
 }
 
 template<typename T> inline constexpr bool is_valid_operand = false;
@@ -150,9 +146,7 @@ class expression_tensor :
     evaluating_indexer<ValT,Cfg> create_evaluating_storage()const override{
         return evaluating_walker_factory<ValT,Cfg>::create_storage(shape(), detail::strides_div(descriptor_), f,operands);
     }
-    walker<ValT, Cfg> create_polymorphic_walker()const override{
-        return polymorphic_walker_factory<ValT,Cfg>::create_walker(*this,f,operands,cache.data());        
-    }    
+    
 
     index_type view_index_convert(const index_type& idx)const override{return idx;}
     bool is_storage()const override{return is_cached();}

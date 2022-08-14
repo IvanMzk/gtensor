@@ -18,7 +18,7 @@ namespace detail{
  bool is_storage(const tensor_base<ValT,Cfg>& t){
     return t.tensor_kind() == detail::tensor_kinds::storage_tensor || 
         t.tensor_kind() == detail::tensor_kinds::expression && t.is_storage() ||
-        t.tensor_kind() == detail::tensor_kinds::view && t.as_view()->is_cached();
+        t.tensor_kind() == detail::tensor_kinds::view && t.is_cached();
 }
 
 

@@ -46,11 +46,8 @@ class storage_tensor :
         return storage_walker_factory<ValT,Cfg>::create_walker(shape(),strides(),elements.data());
     }
     
-    walker<ValT, Cfg> create_polymorphic_walker()const override{
-        return polymorphic_walker_factory<ValT,Cfg>::create_walker(*this, shape(), strides(), elements.data());
-    }
-    
-    bool is_storage()const override{return true;}
+    bool is_cached()const override{return true;}
+    bool is_storage()const override{return is_cached();}
     bool is_trivial()const override{return true;}
     const value_type* storage_data()const override{return elements.data();}
     index_type view_index_convert(const index_type& idx)const override{return idx;}

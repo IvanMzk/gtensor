@@ -34,7 +34,17 @@ class view_tensor :
     const tensor_base_type* view_root{parent->tensor_kind() == detail::tensor_kinds::view ? static_cast<const view_tensor*>(parent.get())->get_view_root() : parent.get()};
     const converting_base<ValT,Cfg>* parent_converter{parent->as_converting()};
     storage_type cache{};
+    
+    //tensor_base interface casts
+    const storing_base<ValT,Cfg>* as_storing()const override{return static_cast<const storing_base<ValT,Cfg>*>(this);}
+    const converting_base<ValT,Cfg>* as_converting()const override{return static_cast<const converting_base<ValT,Cfg>*>(this);}
+    const viewing_evaluating_base<ValT,Cfg>* as_viewing_evaluating()const{return static_cast<const viewing_evaluating_base<ValT,Cfg>*>(this);}
+    bool is_cached()const override{return cache.size();}    
+    bool is_storage()const override{return detail::is_storage(*parent) || is_cached();}
+    bool is_trivial()const override{return true;}
 
+    //storing_base interface implementation
+    const value_type* storage_data()const override{return cache.data();}
     storage_walker<ValT,Cfg> create_storage_walker()const override{
         if (is_cached()){
             return storage_walker_factory<ValT,Cfg>::create_walker(shape(),strides(), cache.data()+descriptor_.offset());
@@ -45,26 +55,18 @@ class view_tensor :
             throw view_tensor_exception("storage_walker cant be created, view not cached and parent not storage");
         }
     }
+    
+    //viewing_evaluating_base interface implementation
     viewing_evaluating_walker<ValT,Cfg> create_view_expression_walker()const override{
         return viewing_evaluating_walker<ValT,Cfg>{shape(),descriptor_.cstrides(),descriptor_.offset(), parent_converter, view_root->as_evaluating()->create_storage()};
     }
-    walker<ValT, Cfg> create_polymorphic_walker()const override{
-        return polymorphic_walker_factory<ValT,Cfg>::create_walker(*this, *parent, *view_root, cache.data());
-        //return nullptr;
-    }
     
-    const storing_base<ValT,Cfg>* as_storing()const override{return static_cast<const storing_base<ValT,Cfg>*>(this);}    
-    const converting_base<ValT,Cfg>* as_converting()const override{return static_cast<const converting_base<ValT,Cfg>*>(this);}
-    const viewing_evaluating_base<ValT,Cfg>* as_viewing_evaluating()const{return static_cast<const viewing_evaluating_base<ValT,Cfg>*>(this);}    
-        
+    //converting_base interface implementation    
     index_type view_index_convert(const index_type& idx)const override{return parent_converter->convert(descriptor_.convert(idx));}
-    bool is_cached()const override{return cache.size();}
-    detail::tensor_kinds view_root_kind()const override{return view_root->tensor_kind();}
-    bool is_storage()const override{return detail::is_storage(*parent) || is_cached();}
-    bool is_trivial()const override{return true;}
-    const value_type* storage_data()const override{return cache.data();}
-    const tensor_base_type* get_view_root()const{return view_root;}
 
+
+    
+    const tensor_base_type* get_view_root()const{return view_root;}
 public:
     template<typename DtT>
     view_tensor(DtT&& descriptor__, const std::shared_ptr<tensor_base_type>& parent_):

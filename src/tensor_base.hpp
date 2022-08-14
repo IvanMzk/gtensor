@@ -30,6 +30,9 @@ public:
     
     virtual value_type trivial_at(const index_type& idx)const = 0;
     virtual detail::tensor_kinds tensor_kind()const = 0;
+    
+    
+    virtual bool is_cached()const = 0;
     virtual bool is_storage()const = 0;
     virtual bool is_trivial()const = 0;
 
@@ -38,7 +41,6 @@ public:
     virtual const evaluating_base<ValT,Cfg>* as_evaluating()const{return nullptr;}
     virtual const evaluating_trivial_base<ValT,Cfg>* as_evaluating_trivial()const{return nullptr;}    
     virtual const converting_base<ValT,Cfg>* as_converting()const{return nullptr;}
-    
     virtual const viewing_evaluating_base<ValT,Cfg>* as_viewing_evaluating()const{return nullptr;}
         
 };
@@ -66,15 +68,15 @@ template<typename ValT, template<typename> typename Cfg>
 class evaluating_base
 {
     using iterator_type = multiindex_iterator<ValT,Cfg,walker<ValT,Cfg>>;    
-    virtual walker<ValT,Cfg> create_evaluating_walker()const = 0;
+    virtual walker<ValT,Cfg> create_evaluating_walker()const = 0;    
     virtual evaluating_indexer<ValT,Cfg> create_evaluating_storage()const = 0;
 public:
     virtual ~evaluating_base(){}    
     // virtual iterator_type begin()const = 0;
     // virtual iterator_type end()const = 0;
-    virtual bool is_cached()const = 0;
-    virtual bool is_trivial()const = 0;
-    auto create_walker()const{return create_evaluating_walker();}
+    // virtual bool is_cached()const = 0;
+    // virtual bool is_trivial()const = 0;
+    auto create_walker()const{return create_evaluating_walker();}    
     auto create_storage()const{return create_evaluating_storage();}
 };
 
@@ -82,10 +84,10 @@ template<typename ValT, template<typename> typename Cfg>
 class evaluating_trivial_base
 {
     using iterator_type = multiindex_iterator<ValT,Cfg,walker<ValT,Cfg>>;
-    virtual evaluating_trivial_walker<ValT,Cfg> create_trivial_walker()const = 0;
+    virtual evaluating_trivial_walker<ValT,Cfg> create_trivial_walker()const = 0;    
 public:
     virtual ~evaluating_trivial_base(){}
-    auto create_walker()const{return create_trivial_walker();}
+    auto create_walker()const{return create_trivial_walker();}    
     // virtual iterator_type begin()const = 0;
     // virtual iterator_type end()const = 0;    
 };
