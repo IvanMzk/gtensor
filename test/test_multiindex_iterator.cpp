@@ -26,8 +26,8 @@ struct test_tensor : public tensor<ValT,Cfg>{
         base_type{base}
     {}
     
-    auto begin()const{return iterator_type{get_impl()->as_expression()->create_walker(), get_impl()->shape(), strides};}
-    auto end()const{return iterator_type{get_impl()->as_expression()->create_walker(), get_impl()->shape(), strides, get_impl()->size()};}
+    auto begin()const{return iterator_type{get_impl()->as_evaluating()->create_walker(), get_impl()->shape(), strides};}
+    auto end()const{return iterator_type{get_impl()->as_evaluating()->create_walker(), get_impl()->shape(), strides, get_impl()->size()};}
 };
 
 template<typename ValT, template<typename> typename Cfg>
