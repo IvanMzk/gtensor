@@ -47,6 +47,9 @@ public:
     storage_walker_polymorphic(const shape_type& shape_, const shape_type& strides_,  const value_type* data_):
         base_storage_walker{shape_, strides_, data_}        
     {}
+    storage_walker_polymorphic(const base_storage_walker& base_):
+        base_storage_walker{base_}        
+    {}
     void walk(const index_type& direction, const index_type& steps)override{base_storage_walker::walk(direction,steps);}
     void step(const index_type& direction)override{base_storage_walker::step(direction);}
     void step_back(const index_type& direction)override{base_storage_walker::step_back(direction);}
