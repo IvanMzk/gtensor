@@ -61,18 +61,19 @@ inline ShT broadcast(const ShT& shape1, const ShT& shape2){
 * flat index access without walkers is used to evaluate broadcast expression
 * stensor and view are trivial
 */
-template<typename...T, typename...Ops>
-inline bool is_trivial(const expression_tensor<T...>& root, const std::tuple<Ops...>& root_operands){
-    return is_trivial_helper(root,root_operands,std::make_index_sequence<sizeof...(Ops)>{});
+template<typename IdxT, typename...Ops>
+inline bool is_trivial(const IdxT& root_size, const std::tuple<Ops...>& root_operands){
+    return is_trivial_helper(root_size,root_operands,std::make_index_sequence<sizeof...(Ops)>{});
 }
-template<typename...T, typename...Ops, std::size_t...I>
-inline bool is_trivial_helper(const expression_tensor<T...>& root, const std::tuple<Ops...>& root_operands, std::index_sequence<I...>){
-    return ((root.size()==std::get<I>(root_operands)->size())&&...) && (is_trivial_operand(std::get<I>(root_operands))&&...);
+template<typename IdxT, typename...Ops, std::size_t...I>
+inline bool is_trivial_helper(const IdxT& root_size, const std::tuple<Ops...>& root_operands, std::index_sequence<I...>){
+    return ((root_size==std::get<I>(root_operands)->size())&&...) && (is_trivial_operand(std::get<I>(root_operands))&&...);
 }
 template<typename T>
 inline bool is_trivial_operand(const T& operand){    
     return operand->is_trivial(); 
 }
+
 
 template<typename T> inline constexpr bool is_valid_operand = false;
 template<typename...T> inline constexpr bool is_valid_operand<std::shared_ptr<tensor_base<T...>>> = true;
@@ -86,26 +87,64 @@ template<typename ValT, template<typename> typename Cfg, std::enable_if_t<detail
 inline const auto& strides_div(const stensor_descriptor<ValT, Cfg>& desc){
     return desc.strides_libdivide();
 }
-// template<typename ValT, template<typename> typename Cfg, std::enable_if_t<detail::is_mode_div_native<Cfg<ValT>> ,int> =0 >
-// inline const auto& strides_to_divide(const stensor_descriptor<ValT, Cfg>& desc){
-//     return desc.strides();
-// }
-// template<typename ValT, template<typename> typename Cfg, std::enable_if_t<detail::is_mode_div_libdivide<Cfg<ValT>> ,int> =0 >
-// inline const auto& strides_to_divide(const stensor_descriptor<ValT, Cfg>& desc){
-//     return desc.strides_libdivide();
-// }
-
 
 }   //end of namespace detail
 
 
 
 template<typename ValT, template<typename> typename Cfg, typename F, typename...Ops>
-class expression_tensor : 
+class expression_tensor : public tensor_base<ValT,Cfg>
+{    
+    using config_type = Cfg<ValT>;
+    using value_type = ValT;
+    using index_type = typename config_type::index_type;
+    using shape_type = typename config_type::shape_type;
+    using descriptor_type = stensor_descriptor<value_type, Cfg>;
+    using iterator_type = multiindex_iterator<ValT,Cfg,walker<ValT,Cfg>>; 
+    //static_assert(detail::is_valid_operands<Ops...>);
+
+    std::unique_ptr<tensor_base<ValT,Cfg>> impl;
+    
+    const storing_base<ValT,Cfg>* as_storing()const override{return impl->as_storing();}
+    const evaluating_base<ValT,Cfg>* as_evaluating()const override{return impl->as_evaluating();}
+    const evaluating_trivial_base<ValT,Cfg>* as_evaluating_trivial()const override{return impl->as_evaluating_trivial();}
+    const converting_base<ValT,Cfg>* as_converting()const override{return impl->as_converting();}
+    
+    bool is_storage()const override{return impl->is_storage();}    
+    bool is_cached()const override{return impl->is_cached();}
+    bool is_trivial()const override{return impl->is_trivial();}
+    value_type trivial_at(const index_type& idx)const override{return impl->trivial_at(idx);}
+    
+protected:
+    
+    template<std::size_t I>
+    auto operand()const{return std::get<I>(operands);}
+    const auto& concrete_descriptor()const{return descriptor_;}
+
+public:            
+    
+    template<typename...O>
+    explicit expression_tensor(O&&...operands_):
+        impl{std::make_unique<evaluating_tensor<ValT,Cfg,F,Ops...>>(std::forward<O>(operands_)...)}
+    {}
+
+    detail::tensor_kinds tensor_kind()const override{return impl->tensor_kind();}
+    const descriptor_base<ValT,Cfg>& descriptor()const override{return impl->descriptor();}
+    index_type size()const override{return impl->size();}
+    index_type dim()const override{return impl->dim();}
+    const shape_type& shape()const override{return impl->shape();}
+    const shape_type& strides()const override{return impl->strides();}
+    std::string to_str()const override{return impl->to_str();}
+
+    // iterator_type begin()const{return create_iterator(0);}    
+    // iterator_type end()const{return create_iterator(size());}
+};
+
+template<typename ValT, template<typename> typename Cfg, typename F, typename...Ops>
+class evaluating_tensor : 
     public tensor_base<ValT,Cfg>,
     public evaluating_base<ValT,Cfg>,
     public evaluating_trivial_base<ValT,Cfg>,
-    public storing_base<ValT,Cfg>,
     public converting_base<ValT,Cfg>    
 {    
     using config_type = Cfg<ValT>;
@@ -113,30 +152,16 @@ class expression_tensor :
     using index_type = typename config_type::index_type;
     using shape_type = typename config_type::shape_type;
     using descriptor_type = stensor_descriptor<value_type, Cfg>;
-    using storage_type = typename config_type::storage_type;
-    using slices_collection_type = typename config_type::slices_collection_type;     
     using iterator_type = multiindex_iterator<ValT,Cfg,walker<ValT,Cfg>>; 
     //static_assert(detail::is_valid_operands<Ops...>);
 
     descriptor_type descriptor_;
     std::tuple<Ops...> operands;
-    F f{};
-    storage_type cache{};    
+    F f{};    
 
-    // template<typename C = config_type, std::enable_if_t<detail::is_mode_div_native<C> ,int> =0 >
-    // auto create_iterator(const index_type& i)const{
-    //     return i==0 ? iterator_type{create_walker(), shape(), strides()} : iterator_type{create_walker(), shape(), strides(), i};
-    // }
-    // template<typename C = config_type, std::enable_if_t<detail::is_mode_div_libdivide<C> ,int> =0 >
-    // auto create_iterator(const index_type& i)const{
-    //     return i==0 ? iterator_type{create_walker(), shape(), descriptor_.strides_libdivide()} : iterator_type{create_walker(), shape(), descriptor_.strides_libdivide(), i};
-    // } 
     template<std::size_t...I>
     value_type trivial_at_helper(const index_type& idx, std::index_sequence<I...>)const{return f(std::get<I>(operands)->trivial_at(idx)...);} 
-    
-    storage_walker<ValT,Cfg> create_storage_walker()const override{
-        return storage_walker_factory<ValT,Cfg>::create_walker(shape(),strides(),cache.data());
-    }
+        
     walker<ValT,Cfg> create_evaluating_walker()const override{
         return evaluating_walker_factory<ValT,Cfg>::create_walker(shape(),f,operands);
     }
@@ -146,14 +171,14 @@ class expression_tensor :
     evaluating_indexer<ValT,Cfg> create_evaluating_storage()const override{
         return evaluating_walker_factory<ValT,Cfg>::create_storage(shape(), detail::strides_div(descriptor_), f,operands);
     }
-    
-
     index_type view_index_convert(const index_type& idx)const override{return idx;}
+
     bool is_storage()const override{return is_cached();}
-    const value_type* storage_data()const override{return cache.data();}
+    bool is_cached()const override{return false;}
+    bool is_trivial()const override{return detail::is_trivial(size(),operands);}
     
+    const evaluating_base<ValT,Cfg>* as_evaluating()const override{return static_cast<const evaluating_base<ValT,Cfg>*>(this);}
     const evaluating_trivial_base<ValT,Cfg>* as_evaluating_trivial()const override{return static_cast<const evaluating_trivial_base<ValT,Cfg>*>(this);}
-    const storing_base<ValT,Cfg>* as_storing()const override{return static_cast<const storing_base<ValT,Cfg>*>(this);}
     const converting_base<ValT,Cfg>* as_converting()const override{return static_cast<const converting_base<ValT,Cfg>*>(this);}
 protected:
     
@@ -162,10 +187,9 @@ protected:
     const auto& concrete_descriptor()const{return descriptor_;}
 
 public:            
-    const evaluating_base<ValT,Cfg>* as_evaluating()const override{return static_cast<const evaluating_base<ValT,Cfg>*>(this);}    
     
     template<typename...O>
-    explicit expression_tensor(O&&...operands_):
+    explicit evaluating_tensor(O&&...operands_):
         descriptor_{detail::broadcast(operands_->shape()...)},
         operands{std::forward<O>(operands_)...}
     {}
@@ -176,20 +200,15 @@ public:
     index_type dim()const override{return descriptor_.dim();}
     const shape_type& shape()const override{return descriptor_.shape();}
     const shape_type& strides()const override{return descriptor_.strides();}
-    bool is_cached()const override{return cache.size();}
-    bool is_trivial()const override{return detail::is_trivial(*this,operands);}
-    // iterator_type begin()const{return create_iterator(0);}    
-    // iterator_type end()const{return create_iterator(size());}
     value_type trivial_at(const index_type& idx)const override{return trivial_at_helper(idx,std::make_index_sequence<sizeof...(Ops)>{});}
-
-    
-    
-
     std::string to_str()const override{
         std::stringstream ss{};
         ss<<"{"<<[&ss,this](){ss<<descriptor_.to_str(); return "}";}();
         return ss.str();
     }
+
+    // iterator_type begin()const{return create_iterator(0);}    
+    // iterator_type end()const{return create_iterator(size());}
 };
 
 
