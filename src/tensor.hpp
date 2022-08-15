@@ -2,6 +2,7 @@
 #define TENSOR_HPP_
 
 #include <memory>
+#include "wrapping_tensor.hpp"
 #include "storage_tensor.hpp"
 #include "tensor_operators.hpp"
 #include "slice.hpp"
@@ -20,6 +21,7 @@ class tensor{
     using config_type = Cfg<ValT>;
     using tensor_base_type = tensor_base<ValT, Cfg>;
     using storage_tensor_type = storage_tensor<ValT, Cfg>;
+    using wrapping_tensor_type = wrapping_tensor<ValT, Cfg>;
     using slice_type = typename config_type::slice_type;
     using slices_init_type = typename config_type::slices_init_type;
     using slices_collection_type = typename config_type::slices_collection_type;
@@ -32,7 +34,7 @@ class tensor{
 
     template<typename Nested>
     tensor(std::initializer_list<Nested> init_data, int):
-        impl{new storage_tensor_type(init_data)}
+        impl{std::make_shared<wrapping_tensor_type>(std::make_shared<storage_tensor_type>(init_data))}
     {}
     
 protected:
@@ -49,7 +51,7 @@ public:
 
     template<typename...Dims>
     tensor(const value_type& v, const Dims&...dims):
-        impl{new storage_tensor_type(v, dims...)}
+        impl{std::make_shared<wrapping_tensor_type>(std::make_shared<storage_tensor_type>(v, dims...))}
     {}
 
     tensor(typename detail::nested_initializer_list_type<value_type,1>::type init_data):tensor(init_data,0){}
