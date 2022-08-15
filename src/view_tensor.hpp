@@ -15,11 +15,7 @@ class view_tensor_exception : public std::runtime_error{
 * ParentT is tensor_impl_base or derived
 */
 template<typename ValT, template<typename> typename Cfg, typename DescT>
-class view_tensor : 
-    public tensor_base<ValT, Cfg>,    
-    public storing_base<ValT,Cfg>,
-    public converting_base<ValT,Cfg>,
-    public viewing_evaluating_base<ValT,Cfg>    
+class view_tensor : public tensor_base<ValT, Cfg>
 {
     using tensor_base_type = tensor_base<ValT,Cfg>;
     using config_type = Cfg<ValT>;        
@@ -27,49 +23,90 @@ class view_tensor :
     using index_type = typename config_type::index_type;
     using shape_type = typename config_type::shape_type;
     using storage_type = typename config_type::storage_type;
-    using slices_collection_type = typename config_type::slices_collection_type;
+
+    std::unique_ptr<tensor_base_type> impl;
+        
+    const storing_base<ValT,Cfg>* as_storing()const override{return impl->as_storing();}
+    const viewing_evaluating_base<ValT,Cfg>* as_viewing_evaluating()const{return impl->as_viewing_evaluating();}
+    const converting_base<ValT,Cfg>* as_converting()const override{return impl->as_converting();}
+
+    bool is_storage()const override{return impl->is_storage();}
+    bool is_cached()const override{return impl->is_cached();}
+    bool is_trivial()const override{return impl->is_trivial();}
+    value_type trivial_at(const index_type& idx)const override{return impl->trivial_at(idx);}
+
+public:
+    template<typename DtT>
+    view_tensor(DtT&& descriptor__, const std::shared_ptr<tensor_base_type>& parent_):
+        impl{std::make_unique<viewing_tensor<ValT,Cfg,DescT>>(std::forward<DtT>(descriptor__), parent_)}        
+    {}    
+
+    detail::tensor_kinds tensor_kind()const override{return impl->tensor_kind();}
+    const descriptor_base<ValT,Cfg>& descriptor()const override{return impl->descriptor();}
+    index_type size()const override{return impl->size();}
+    index_type dim()const override{return impl->dim();}
+    const shape_type& shape()const override{return impl->shape();}
+    const shape_type& strides()const override{return impl->strides();}
+    std::string to_str()const override{return impl->to_str();}    
+};
+
+template<typename ValT, template<typename> typename Cfg, typename DescT>
+class viewing_tensor : 
+    public tensor_base<ValT, Cfg>,    
+    public storing_base<ValT,Cfg>,
+    public viewing_evaluating_base<ValT,Cfg>,
+    public converting_base<ValT,Cfg>
+{
+    using tensor_base_type = tensor_base<ValT,Cfg>;
+    using config_type = Cfg<ValT>;        
+    using value_type = ValT;
+    using index_type = typename config_type::index_type;
+    using shape_type = typename config_type::shape_type;    
 
     DescT descriptor_;
     std::shared_ptr<tensor_base_type> parent;
     const tensor_base_type* view_root{parent->tensor_kind() == detail::tensor_kinds::view ? static_cast<const view_tensor*>(parent.get())->get_view_root() : parent.get()};
     const converting_base<ValT,Cfg>* parent_converter{parent->as_converting()};
-    storage_type cache{};
     
-    //tensor_base interface casts
-    const storing_base<ValT,Cfg>* as_storing()const override{return static_cast<const storing_base<ValT,Cfg>*>(this);}
-    const converting_base<ValT,Cfg>* as_converting()const override{return static_cast<const converting_base<ValT,Cfg>*>(this);}
+    //tensor_base interface
+
+    //parent of view must be storing_tensor
+    const storing_base<ValT,Cfg>* as_storing()const override{return is_storage() ? static_cast<const storing_base<ValT,Cfg>*>(this) : nullptr;}
+    //root of view must be evaluating_tensor
     const viewing_evaluating_base<ValT,Cfg>* as_viewing_evaluating()const{return static_cast<const viewing_evaluating_base<ValT,Cfg>*>(this);}
-    bool is_cached()const override{return cache.size();}    
-    bool is_storage()const override{return detail::is_storage(*parent) || is_cached();}
+    const converting_base<ValT,Cfg>* as_converting()const override{return static_cast<const converting_base<ValT,Cfg>*>(this);}
+    
+    bool is_cached()const override{return false;}    
     bool is_trivial()const override{return true;}
+    bool is_storage()const override{return detail::is_storage(*parent);}
 
     //storing_base interface implementation
-    const value_type* storage_data()const override{return cache.data();}
+    const value_type* storage_data()const override{return parent->as_storing()->data();}
+
     storage_walker<ValT,Cfg> create_storage_walker()const override{
-        if (is_cached()){
-            return storage_walker_factory<ValT,Cfg>::create_walker(shape(),strides(), cache.data()+descriptor_.offset());
-        }else if(detail::is_storage(*parent)){
-            return storage_walker_factory<ValT,Cfg>::create_walker(shape(),descriptor_.cstrides(), parent->as_storing()->data()+descriptor_.offset());
-        }
-        else{
-            throw view_tensor_exception("storage_walker cant be created, view not cached and parent not storage");
-        }
+        return storage_walker_factory<ValT,Cfg>::create_walker(shape(),descriptor_.cstrides(), parent->as_storing()->data()+descriptor_.offset());        
     }
     
     //viewing_evaluating_base interface implementation
     viewing_evaluating_walker<ValT,Cfg> create_view_expression_walker()const override{
-        return viewing_evaluating_walker<ValT,Cfg>{shape(),descriptor_.cstrides(),descriptor_.offset(), parent_converter, view_root->as_evaluating()->create_storage()};
+        std::cout<<std::endl<<"viewing_evaluating_walker<ValT,Cfg> create_view_expression_walker()const override{";
+        std::cout<<std::endl<<view_root;
+        std::cout<<std::endl<<view_root->as_evaluating();
+        auto w = viewing_evaluating_walker<ValT,Cfg>{shape(),descriptor_.cstrides(),descriptor_.offset(), parent_converter, view_root->as_evaluating()->create_storage()};
+        std::cout<<std::endl<<"viewing_evaluating_walker<ValT,Cfg> create_view_expression_walker()const override{";
+        return w;
     }
+    // viewing_evaluating_walker<ValT,Cfg> create_view_expression_walker()const override{
+    //     return viewing_evaluating_walker<ValT,Cfg>{shape(),descriptor_.cstrides(),descriptor_.offset(), parent_converter, view_root->as_evaluating()->create_storage()};
+    // }
     
     //converting_base interface implementation    
     index_type view_index_convert(const index_type& idx)const override{return parent_converter->convert(descriptor_.convert(idx));}
 
-
-    
     const tensor_base_type* get_view_root()const{return view_root;}
 public:
     template<typename DtT>
-    view_tensor(DtT&& descriptor__, const std::shared_ptr<tensor_base_type>& parent_):
+    viewing_tensor(DtT&& descriptor__, const std::shared_ptr<tensor_base_type>& parent_):
         descriptor_{std::forward<DtT>(descriptor__)},
         parent{parent_}
     {}    
@@ -88,18 +125,6 @@ public:
         return ss.str();
     }
 };
-
-// template<typename ValT, template<typename> typename Cfg, typename DescT>
-// class view_of_expression_impl : public view_impl<ValT, Cfg, DescT>
-// {
-//     using base_type = view_impl<ValT, Cfg, DescT>;
-// public:
-//     template<typename DtT>
-//     view_of_expression_impl(DtT&& descriptor_, const std::shared_ptr<tensor_base_type>& parent_):
-//         base_type{std::forward<DtT>(descriptor_), parent_}        
-//     {}    
-
-// };
 
 
 }   //end of namespace gtensor
