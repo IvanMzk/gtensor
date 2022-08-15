@@ -139,10 +139,11 @@ protected:
 
 public:            
     
-    template<typename...O>
-    explicit evaluating_tensor(O&&...operands_):
-        descriptor_{detail::broadcast(operands_->shape()...)},
-        operands{std::forward<O>(operands_)...}
+    //normally passed arguments are shared_ptr<tensor_wrapper>, but actual implementation of wrapper saves to operands
+    template<typename...Args>
+    explicit evaluating_tensor(const Args&...args):
+        descriptor_{detail::broadcast(args->impl()->shape()...)},
+        operands{args->impl()...}
     {}
 
     detail::tensor_kinds tensor_kind()const override{return detail::tensor_kinds::expression;}
