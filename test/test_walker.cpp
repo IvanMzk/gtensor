@@ -25,7 +25,7 @@ struct storage_walker_test_tensor : public tensor<ValT,Cfg>{
         base_type{base}
     {}    
     storage_walker<ValT,Cfg> create_native_walker()const{
-        return get_impl()->as_storing()->create_walker();
+        return impl()->as_storing()->create_walker();
     }
     walker<ValT,Cfg> create_walker()const{
         return std::make_unique<storage_walker_polymorphic<ValT,Cfg>>(create_native_walker());
@@ -40,7 +40,7 @@ struct trivial_walker_test_tensor : public tensor<ValT,Cfg>{
         base_type{base}
     {}    
     evaluating_trivial_walker<ValT,Cfg> create_native_walker()const{
-        return get_impl()->as_evaluating_trivial()->create_walker();
+        return impl()->as_evaluating_trivial()->create_walker();
     }
     walker<ValT,Cfg> create_walker()const{
         return std::make_unique<evaluating_trivial_walker<ValT,Cfg>>(create_native_walker());
@@ -55,10 +55,10 @@ struct evaluating_walker_test_tensor : public tensor<ValT,Cfg>{
         base_type{base}
     {}        
     walker<ValT,Cfg> create_walker()const{
-        return get_impl()->as_evaluating()->create_walker();
+        return impl()->as_evaluating()->create_walker();
     }
     evaluating_indexer<ValT,Cfg> create_storage()const{
-        return get_impl()->as_evaluating()->create_storage();
+        return impl()->as_evaluating()->create_storage();
     }
 };
 
@@ -71,13 +71,13 @@ struct view_expression_walker_test_tensor : public tensor<ValT,Cfg>{
     {}
     viewing_evaluating_walker<ValT,Cfg> create_native_walker()const{
         std::cout<<std::endl<<"viewing_evaluating_walker<ValT,Cfg> create_native_walker()const{";
-        std::cout<<std::endl<<get_impl()->as_viewing_evaluating();
-        auto w = get_impl()->as_viewing_evaluating()->create_walker();
+        std::cout<<std::endl<<impl()->as_viewing_evaluating();
+        auto w = impl()->as_viewing_evaluating()->create_walker();
         std::cout<<std::endl<<"viewing_evaluating_walker<ValT,Cfg> create_native_walker()const{";
         return w;
     }
     // viewing_evaluating_walker<ValT,Cfg> create_native_walker()const{
-    //     return get_impl()->as_viewing_evaluating()->create_walker();
+    //     return impl()->as_viewing_evaluating()->create_walker();
     // }
     walker<ValT,Cfg> create_walker()const{
         return std::make_unique<viewing_evaluating_walker<ValT,Cfg>>(create_native_walker());
@@ -188,14 +188,14 @@ struct view_reshape_of_stensor_maker{
 
 
 TEMPLATE_TEST_CASE("test_walker","test_walker",
-                    // (test_walker_::stensor_maker<float, test_walker_::storage_walker_test_tensor<float, test_walker_::default_config>>),
-                    // (test_walker_::not_trivial_expression_maker<float, test_walker_::evaluating_walker_test_tensor<float, test_walker_::default_config>>),
-                    // (test_walker_::trivial_subtree_expression_maker<float, test_walker_::evaluating_walker_test_tensor<float, test_walker_::default_config>>),
-                    // (test_walker_::trivial_expression_maker_ewalker<float, test_walker_::evaluating_walker_test_tensor<float, test_walker_::default_config>>),
-                    // (test_walker_::trivial_expression_maker_trivial_walker<float, test_walker_::trivial_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::stensor_maker<float, test_walker_::storage_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::not_trivial_expression_maker<float, test_walker_::evaluating_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::trivial_subtree_expression_maker<float, test_walker_::evaluating_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::trivial_expression_maker_ewalker<float, test_walker_::evaluating_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::trivial_expression_maker_trivial_walker<float, test_walker_::trivial_walker_test_tensor<float, test_walker_::default_config>>)
                     // (test_walker_::view_slice_of_stensor_maker<float, test_walker_::storage_walker_test_tensor<float, test_walker_::default_config>>),
                     // (test_walker_::view_slice_of_expression_maker<float, test_walker_::view_expression_walker_test_tensor<float, test_walker_::default_config>>),
-                    (test_walker_::view_view_slice_of_expression_maker<float, test_walker_::view_expression_walker_test_tensor<float, test_walker_::default_config>>)
+                    //(test_walker_::view_view_slice_of_expression_maker<float, test_walker_::view_expression_walker_test_tensor<float, test_walker_::default_config>>)
                     // (test_walker_::view_transpose_of_stensor_maker<float, test_walker_::storage_walker_test_tensor<float, test_walker_::default_config>>),
                     // (test_walker_::view_subdim_of_stensor_maker<float, test_walker_::storage_walker_test_tensor<float, test_walker_::default_config>>),
                     // (test_walker_::view_reshape_of_stensor_maker<float, test_walker_::storage_walker_test_tensor<float, test_walker_::default_config>>)                    

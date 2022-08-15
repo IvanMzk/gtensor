@@ -24,6 +24,11 @@ public:
     void reset_impl(std::shared_ptr<tensor_base_type>&& impl__){impl_.reset(impl__.get());}    
     auto impl()const{return impl_;}
 
+    const storing_base<ValT,Cfg>* as_storing()const{return impl()->as_storing();}
+    const evaluating_base<ValT,Cfg>* as_evaluating()const{return impl()->as_evaluating();}
+    const evaluating_trivial_base<ValT,Cfg>* as_evaluating_trivial()const{return impl()->as_evaluating_trivial();}    
+    const converting_base<ValT,Cfg>* as_converting()const{return impl()->as_converting();}
+    const viewing_evaluating_base<ValT,Cfg>* as_viewing_evaluating()const{return impl()->as_viewing_evaluating();}
 
     bool is_storage()const{return impl()->is_storage();}    
     bool is_cached()const{return impl()->is_cached();}
