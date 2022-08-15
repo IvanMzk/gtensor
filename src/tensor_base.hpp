@@ -104,8 +104,6 @@ public:
     
 };
 
-
-
 template<typename ValT, template<typename> typename Cfg>
 class viewing_evaluating_base
 {    
