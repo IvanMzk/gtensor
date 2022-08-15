@@ -91,55 +91,6 @@ inline const auto& strides_div(const stensor_descriptor<ValT, Cfg>& desc){
 }   //end of namespace detail
 
 
-
-template<typename ValT, template<typename> typename Cfg, typename F, typename...Ops>
-class expression_tensor : public tensor_base<ValT,Cfg>
-{    
-    using config_type = Cfg<ValT>;
-    using value_type = ValT;
-    using index_type = typename config_type::index_type;
-    using shape_type = typename config_type::shape_type;
-    using descriptor_type = stensor_descriptor<value_type, Cfg>;
-    using iterator_type = multiindex_iterator<ValT,Cfg,walker<ValT,Cfg>>; 
-    //static_assert(detail::is_valid_operands<Ops...>);
-
-    std::unique_ptr<tensor_base<ValT,Cfg>> impl;
-    
-    const storing_base<ValT,Cfg>* as_storing()const override{return impl->as_storing();}
-    const evaluating_base<ValT,Cfg>* as_evaluating()const override{return impl->as_evaluating();}
-    const evaluating_trivial_base<ValT,Cfg>* as_evaluating_trivial()const override{return impl->as_evaluating_trivial();}
-    const converting_base<ValT,Cfg>* as_converting()const override{return impl->as_converting();}
-    
-    bool is_storage()const override{return impl->is_storage();}    
-    bool is_cached()const override{return impl->is_cached();}
-    bool is_trivial()const override{return impl->is_trivial();}
-    value_type trivial_at(const index_type& idx)const override{return impl->trivial_at(idx);}
-    
-protected:
-    
-    template<std::size_t I>
-    auto operand()const{return std::get<I>(operands);}
-    const auto& concrete_descriptor()const{return descriptor_;}
-
-public:            
-    
-    template<typename...O>
-    explicit expression_tensor(O&&...operands_):
-        impl{std::make_unique<evaluating_tensor<ValT,Cfg,F,Ops...>>(std::forward<O>(operands_)...)}
-    {}
-
-    detail::tensor_kinds tensor_kind()const override{return impl->tensor_kind();}
-    const descriptor_base<ValT,Cfg>& descriptor()const override{return impl->descriptor();}
-    index_type size()const override{return impl->size();}
-    index_type dim()const override{return impl->dim();}
-    const shape_type& shape()const override{return impl->shape();}
-    const shape_type& strides()const override{return impl->strides();}
-    std::string to_str()const override{return impl->to_str();}
-
-    // iterator_type begin()const{return create_iterator(0);}    
-    // iterator_type end()const{return create_iterator(size());}
-};
-
 template<typename ValT, template<typename> typename Cfg, typename F, typename...Ops>
 class evaluating_tensor : 
     public tensor_base<ValT,Cfg>,
