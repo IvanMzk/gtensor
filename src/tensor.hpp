@@ -27,31 +27,31 @@ class tensor{
     using slices_collection_type = typename config_type::slices_collection_type;
     
 
-    friend std::ostream& operator<<(std::ostream& os, const tensor& lhs){return os<<lhs.impl->to_str();}
+    friend std::ostream& operator<<(std::ostream& os, const tensor& lhs){return os<<lhs.impl_->to_str();}
     friend class tensor_operators_impl;
     
-    std::shared_ptr<tensor_wrapper_type> impl;    
+    std::shared_ptr<tensor_wrapper_type> impl_;
 
     template<typename Nested>
     tensor(std::initializer_list<Nested> init_data, int):
-        impl{std::make_shared<tensor_wrapper_type>(std::make_shared<storage_tensor_type>(init_data))}
+        impl_{std::make_shared<tensor_wrapper_type>(std::make_shared<storage_tensor_type>(init_data))}
     {}
     
 protected:
-    const auto& get_impl()const{return impl;}
+    const auto& impl()const{return impl_;}
 
 public:        
     using value_type = ValT;
     using index_type = typename config_type::index_type;
     using shape_type = typename config_type::shape_type;
     
-    tensor(std::shared_ptr<tensor_base_type>&& impl_):
-        impl{std::move(impl_)}
+    tensor(std::shared_ptr<tensor_base_type>&& impl__):
+        impl_{std::move(impl__)}
     {}
 
     template<typename...Dims>
     tensor(const value_type& v, const Dims&...dims):
-        impl{std::make_shared<tensor_wrapper_type>(std::make_shared<storage_tensor_type>(v, dims...))}
+        impl_{std::make_shared<tensor_wrapper_type>(std::make_shared<storage_tensor_type>(v, dims...))}
     {}
 
     tensor(typename detail::nested_initializer_list_type<value_type,1>::type init_data):tensor(init_data,0){}
@@ -60,10 +60,10 @@ public:
     tensor(typename detail::nested_initializer_list_type<value_type,4>::type init_data):tensor(init_data,0){}
     tensor(typename detail::nested_initializer_list_type<value_type,5>::type init_data):tensor(init_data,0){}
     
-    auto size()const{return impl->size();}
-    auto dim()const{return impl->dim();}
-    auto shape()const{return impl->shape();}
-    auto to_str()const{return impl->to_str();}
+    auto size()const{return impl()->size();}
+    auto dim()const{return impl()->dim();}
+    auto shape()const{return impl()->shape();}
+    auto to_str()const{return impl()->to_str();}
     auto as_expression()const{return expression<ValT,Cfg>{*this};}
     auto as_storage_tensor()const{return storage_tensor<ValT,Cfg>{*this};}
 
@@ -109,11 +109,11 @@ private:
         expression(const base_type& base):
             base_type{base}
         {}
-        auto is_cached()const{return base_type::impl->is_cached();}
-        auto is_trivial()const{return base_type::impl->is_trivial();}
-        // auto begin()const{return impl->begin();}
-        // auto end()const{return impl->end();}
-        auto trivial_at(const index_type& idx)const{return base_type::impl->trivial_at(idx);}
+        auto is_cached()const{return base_type::impl()->is_cached();}
+        auto is_trivial()const{return base_type::impl()->is_trivial();}
+        // auto begin()const{return impl()->begin();}
+        // auto end()const{return impl()->end();}
+        auto trivial_at(const index_type& idx)const{return base_type::impl()->trivial_at(idx);}
     };
     
     template<typename ValT, template<typename> typename Cfg>
@@ -123,8 +123,8 @@ private:
         storage_tensor(const base_type& base):
             base_type{base}
         {}
-        // auto begin()const{return impl->begin();}
-        // auto end()const{return impl->end();}
+        // auto begin()const{return impl()->begin();}
+        // auto end()const{return impl()->end();}
     };
 
     
