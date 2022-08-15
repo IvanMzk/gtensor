@@ -46,7 +46,7 @@ public:
     using shape_type = typename config_type::shape_type;
     
     tensor(std::shared_ptr<tensor_base_type>&& impl__):
-        impl_{std::move(impl__)}
+        impl_{std::make_shared<tensor_wrapper_type>(std::move(impl__))}
     {}
 
     template<typename...Dims>
