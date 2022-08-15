@@ -1,5 +1,5 @@
-#ifndef IMPL_VIEW_HPP_
-#define IMPL_VIEW_HPP_
+#ifndef VIEWING_TENSOR_HPP_
+#define VIEWING_TENSOR_HPP_
 
 #include "shareable_storage.hpp"
 #include "tensor_base.hpp"
@@ -11,44 +11,6 @@ class view_tensor_exception : public std::runtime_error{
     public: view_tensor_exception(const char* what):runtime_error(what){}
 };
 
-/*
-* ParentT is tensor_impl_base or derived
-*/
-template<typename ValT, template<typename> typename Cfg, typename DescT>
-class view_tensor : public tensor_base<ValT, Cfg>
-{
-    using tensor_base_type = tensor_base<ValT,Cfg>;
-    using config_type = Cfg<ValT>;        
-    using value_type = ValT;
-    using index_type = typename config_type::index_type;
-    using shape_type = typename config_type::shape_type;
-    using storage_type = typename config_type::storage_type;
-
-    std::unique_ptr<tensor_base_type> impl;
-        
-    const storing_base<ValT,Cfg>* as_storing()const override{return impl->as_storing();}
-    const viewing_evaluating_base<ValT,Cfg>* as_viewing_evaluating()const{return impl->as_viewing_evaluating();}
-    const converting_base<ValT,Cfg>* as_converting()const override{return impl->as_converting();}
-
-    bool is_storage()const override{return impl->is_storage();}
-    bool is_cached()const override{return impl->is_cached();}
-    bool is_trivial()const override{return impl->is_trivial();}
-    value_type trivial_at(const index_type& idx)const override{return impl->trivial_at(idx);}
-
-public:
-    template<typename DtT>
-    view_tensor(DtT&& descriptor__, const std::shared_ptr<tensor_base_type>& parent_):
-        impl{std::make_unique<viewing_tensor<ValT,Cfg,DescT>>(std::forward<DtT>(descriptor__), parent_)}        
-    {}    
-
-    detail::tensor_kinds tensor_kind()const override{return impl->tensor_kind();}
-    const descriptor_base<ValT,Cfg>& descriptor()const override{return impl->descriptor();}
-    index_type size()const override{return impl->size();}
-    index_type dim()const override{return impl->dim();}
-    const shape_type& shape()const override{return impl->shape();}
-    const shape_type& strides()const override{return impl->strides();}
-    std::string to_str()const override{return impl->to_str();}    
-};
 
 template<typename ValT, template<typename> typename Cfg, typename DescT>
 class viewing_tensor : 
@@ -65,7 +27,7 @@ class viewing_tensor :
 
     DescT descriptor_;
     std::shared_ptr<tensor_base_type> parent;
-    const tensor_base_type* view_root{parent->tensor_kind() == detail::tensor_kinds::view ? static_cast<const view_tensor*>(parent.get())->get_view_root() : parent.get()};
+    const tensor_base_type* view_root{parent->tensor_kind() == detail::tensor_kinds::view ? static_cast<const viewing_tensor*>(parent.get())->get_view_root() : parent.get()};
     const converting_base<ValT,Cfg>* parent_converter{parent->as_converting()};
     
     //tensor_base interface
@@ -89,16 +51,8 @@ class viewing_tensor :
     
     //viewing_evaluating_base interface implementation
     viewing_evaluating_walker<ValT,Cfg> create_view_expression_walker()const override{
-        std::cout<<std::endl<<"viewing_evaluating_walker<ValT,Cfg> create_view_expression_walker()const override{";
-        std::cout<<std::endl<<view_root;
-        std::cout<<std::endl<<view_root->as_evaluating();
-        auto w = viewing_evaluating_walker<ValT,Cfg>{shape(),descriptor_.cstrides(),descriptor_.offset(), parent_converter, view_root->as_evaluating()->create_storage()};
-        std::cout<<std::endl<<"viewing_evaluating_walker<ValT,Cfg> create_view_expression_walker()const override{";
-        return w;
+        return viewing_evaluating_walker<ValT,Cfg>{shape(),descriptor_.cstrides(),descriptor_.offset(), parent_converter, view_root->as_evaluating()->create_storage()};
     }
-    // viewing_evaluating_walker<ValT,Cfg> create_view_expression_walker()const override{
-    //     return viewing_evaluating_walker<ValT,Cfg>{shape(),descriptor_.cstrides(),descriptor_.offset(), parent_converter, view_root->as_evaluating()->create_storage()};
-    // }
     
     //converting_base interface implementation    
     index_type view_index_convert(const index_type& idx)const override{return parent_converter->convert(descriptor_.convert(idx));}

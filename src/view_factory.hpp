@@ -3,7 +3,7 @@
 
 #include "view_slice_descriptor.hpp"
 #include "view_subdim_descriptor.hpp"
-#include "view_tensor.hpp"
+#include "viewing_tensor.hpp"
 
 
 namespace gtensor{
@@ -119,8 +119,8 @@ class view_factory
     using slices_collection_type = typename config_type::slices_collection_type;
     using view_slice_descriptor_type = view_slice_descriptor<ValT,Cfg>;
     using view_subdim_descriptor_type = view_subdim_descriptor<ValT,Cfg>;
-    using view_slice_type = gtensor::view_tensor<ValT,Cfg,view_slice_descriptor_type>;
-    using view_subdim_type = gtensor::view_tensor<ValT,Cfg,view_subdim_descriptor_type>;
+    using view_slice_type = gtensor::viewing_tensor<ValT,Cfg,view_slice_descriptor_type>;
+    using view_subdim_type = gtensor::viewing_tensor<ValT,Cfg,view_subdim_descriptor_type>;
     
     static view_slice_descriptor_type create_view_slice_descriptor(const std::shared_ptr<tensor_base_type>& parent, const slices_collection_type& subs){        
         return view_slice_descriptor_type{

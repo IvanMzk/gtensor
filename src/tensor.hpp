@@ -71,33 +71,33 @@ public:
         detail::check_slices_number(subs);        
         slices_collection_type filled_subs = detail::fill_slices<slice_type>(shape(),subs);
         detail::check_slices(shape(), filled_subs);        
-        return tensor_type{view_factory<ValT,Cfg>::create_view_slice(impl, filled_subs)};
+        return tensor_type{view_factory<ValT,Cfg>::create_view_slice(impl()->impl(), filled_subs)};
     }
     template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,slice_type>...>,int> = 0 >
     tensor_type operator()(const Subs&...subs)const{
         detail::check_slices_number(subs...);
         slices_collection_type filled_subs = detail::fill_slices<slice_type>(shape(),subs...);
         detail::check_slices(shape(), filled_subs);        
-        return tensor_type{view_factory<ValT,Cfg>::create_view_slice(impl, filled_subs)};
+        return tensor_type{view_factory<ValT,Cfg>::create_view_slice(impl()->impl(), filled_subs)};
     }
     template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,index_type>...>,int> = 0 >
     tensor_type transpose(const Subs&...subs)const{
         detail::check_transpose_subs(dim(),subs...);        
-        return tensor_type{view_factory<ValT,Cfg>::create_view_transpose(impl, shape_type{subs...})};
+        return tensor_type{view_factory<ValT,Cfg>::create_view_transpose(impl()->impl(), shape_type{subs...})};
     }
     template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,index_type>...>,int> = 0 >
     tensor_type operator()(const Subs&...subs)const{
         detail::check_subdim_subs(shape(), subs...);        
-        return tensor_type{view_factory<ValT,Cfg>::create_view_subdim(impl, shape_type{subs...})};
+        return tensor_type{view_factory<ValT,Cfg>::create_view_subdim(impl()->impl(), shape_type{subs...})};
     }            
     tensor_type operator()()const{
         detail::check_subdim_subs(shape());        
-        return tensor_type{view_factory<ValT,Cfg>::create_view_subdim(impl, shape_type{})};
+        return tensor_type{view_factory<ValT,Cfg>::create_view_subdim(impl()->impl(), shape_type{})};
     }        
     template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,index_type>...>,int> = 0 >
     tensor_type reshape(const Subs&...subs)const{
         detail::check_reshape_subs(size(), subs...);        
-        return tensor_type{view_factory<ValT,Cfg>::create_view_reshape(impl, shape_type{subs...})};
+        return tensor_type{view_factory<ValT,Cfg>::create_view_reshape(impl()->impl(), shape_type{subs...})};
     }
     
 private:

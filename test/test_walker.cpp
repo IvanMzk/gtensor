@@ -68,17 +68,10 @@ struct view_expression_walker_test_tensor : public tensor<ValT,Cfg>{
     using tensor::tensor;
     view_expression_walker_test_tensor(const base_type& base):
         base_type{base}
-    {}
+    {}    
     viewing_evaluating_walker<ValT,Cfg> create_native_walker()const{
-        std::cout<<std::endl<<"viewing_evaluating_walker<ValT,Cfg> create_native_walker()const{";
-        std::cout<<std::endl<<impl()->as_viewing_evaluating();
-        auto w = impl()->as_viewing_evaluating()->create_walker();
-        std::cout<<std::endl<<"viewing_evaluating_walker<ValT,Cfg> create_native_walker()const{";
-        return w;
+        return impl()->as_viewing_evaluating()->create_walker();
     }
-    // viewing_evaluating_walker<ValT,Cfg> create_native_walker()const{
-    //     return impl()->as_viewing_evaluating()->create_walker();
-    // }
     walker<ValT,Cfg> create_walker()const{
         return std::make_unique<viewing_evaluating_walker<ValT,Cfg>>(create_native_walker());
     }    
@@ -192,13 +185,13 @@ TEMPLATE_TEST_CASE("test_walker","test_walker",
                     (test_walker_::not_trivial_expression_maker<float, test_walker_::evaluating_walker_test_tensor<float, test_walker_::default_config>>),
                     (test_walker_::trivial_subtree_expression_maker<float, test_walker_::evaluating_walker_test_tensor<float, test_walker_::default_config>>),
                     (test_walker_::trivial_expression_maker_ewalker<float, test_walker_::evaluating_walker_test_tensor<float, test_walker_::default_config>>),
-                    (test_walker_::trivial_expression_maker_trivial_walker<float, test_walker_::trivial_walker_test_tensor<float, test_walker_::default_config>>)
-                    // (test_walker_::view_slice_of_stensor_maker<float, test_walker_::storage_walker_test_tensor<float, test_walker_::default_config>>),
-                    // (test_walker_::view_slice_of_expression_maker<float, test_walker_::view_expression_walker_test_tensor<float, test_walker_::default_config>>),
-                    //(test_walker_::view_view_slice_of_expression_maker<float, test_walker_::view_expression_walker_test_tensor<float, test_walker_::default_config>>)
-                    // (test_walker_::view_transpose_of_stensor_maker<float, test_walker_::storage_walker_test_tensor<float, test_walker_::default_config>>),
-                    // (test_walker_::view_subdim_of_stensor_maker<float, test_walker_::storage_walker_test_tensor<float, test_walker_::default_config>>),
-                    // (test_walker_::view_reshape_of_stensor_maker<float, test_walker_::storage_walker_test_tensor<float, test_walker_::default_config>>)                    
+                    (test_walker_::trivial_expression_maker_trivial_walker<float, test_walker_::trivial_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::view_slice_of_stensor_maker<float, test_walker_::storage_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::view_slice_of_expression_maker<float, test_walker_::view_expression_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::view_view_slice_of_expression_maker<float, test_walker_::view_expression_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::view_transpose_of_stensor_maker<float, test_walker_::storage_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::view_subdim_of_stensor_maker<float, test_walker_::storage_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::view_reshape_of_stensor_maker<float, test_walker_::storage_walker_test_tensor<float, test_walker_::default_config>>)                    
                     ){
     using value_type = typename TestType::value_type;
     using test_type = std::tuple<value_type,value_type>;
@@ -225,24 +218,24 @@ TEMPLATE_TEST_CASE("test_walker","test_walker",
     REQUIRE(deref == expected_deref);
 }
 
-// TEMPLATE_TEST_CASE("test_evaluating_indexer","test_walker",
-//                     (test_walker_::not_trivial_expression_maker<float, test_walker_::evaluating_walker_test_tensor<float, test_walker_::default_config>>),
-//                     (test_walker_::trivial_subtree_expression_maker<float, test_walker_::evaluating_walker_test_tensor<float, test_walker_::default_config>>),
-//                     (test_walker_::trivial_expression_maker_ewalker<float, test_walker_::evaluating_walker_test_tensor<float, test_walker_::default_config>>)
-//                     ){
-//     using value_type = typename TestType::value_type;
-//     using test_type = std::tuple<value_type,value_type>;
+TEMPLATE_TEST_CASE("test_evaluating_indexer","test_walker",
+                    (test_walker_::not_trivial_expression_maker<float, test_walker_::evaluating_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::trivial_subtree_expression_maker<float, test_walker_::evaluating_walker_test_tensor<float, test_walker_::default_config>>),
+                    (test_walker_::trivial_expression_maker_ewalker<float, test_walker_::evaluating_walker_test_tensor<float, test_walker_::default_config>>)
+                    ){
+    using value_type = typename TestType::value_type;
+    using test_type = std::tuple<value_type,value_type>;
 
-//     //0result,1expected
-//     auto test_data = GENERATE(
-//         test_type{TestType{}().create_storage()[0],value_type{1}},
-//         test_type{TestType{}().create_storage()[5],value_type{6}},
-//         test_type{TestType{}().create_storage()[1],value_type{2}},
-//         test_type{TestType{}().create_storage()[2],value_type{3}},
-//         test_type{TestType{}().create_storage()[4],value_type{5}},
-//         test_type{TestType{}().create_storage()[3],value_type{4}}
-//     );
-//     auto result = std::get<0>(test_data);
-//     auto expected = std::get<1>(test_data);
-//     REQUIRE(result == expected);
-// }
+    //0result,1expected
+    auto test_data = GENERATE(
+        test_type{TestType{}().create_storage()[0],value_type{1}},
+        test_type{TestType{}().create_storage()[5],value_type{6}},
+        test_type{TestType{}().create_storage()[1],value_type{2}},
+        test_type{TestType{}().create_storage()[2],value_type{3}},
+        test_type{TestType{}().create_storage()[4],value_type{5}},
+        test_type{TestType{}().create_storage()[3],value_type{4}}
+    );
+    auto result = std::get<0>(test_data);
+    auto expected = std::get<1>(test_data);
+    REQUIRE(result == expected);
+}
