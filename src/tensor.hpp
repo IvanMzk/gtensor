@@ -2,7 +2,7 @@
 #define TENSOR_HPP_
 
 #include <memory>
-#include "wrapping_tensor.hpp"
+#include "tensor_wrapper.hpp"
 #include "storage_tensor.hpp"
 #include "tensor_operators.hpp"
 #include "slice.hpp"
@@ -21,7 +21,7 @@ class tensor{
     using config_type = Cfg<ValT>;
     using tensor_base_type = tensor_base<ValT, Cfg>;
     using storage_tensor_type = storage_tensor<ValT, Cfg>;
-    using wrapping_tensor_type = wrapping_tensor<ValT, Cfg>;
+    using tensor_wrapper_type = tensor_wrapper<ValT, Cfg>;
     using slice_type = typename config_type::slice_type;
     using slices_init_type = typename config_type::slices_init_type;
     using slices_collection_type = typename config_type::slices_collection_type;
@@ -30,15 +30,15 @@ class tensor{
     friend std::ostream& operator<<(std::ostream& os, const tensor& lhs){return os<<lhs.impl->to_str();}
     friend class tensor_operators_impl;
     
-    std::shared_ptr<tensor_base_type> impl;    
+    std::shared_ptr<tensor_wrapper_type> impl;    
 
     template<typename Nested>
     tensor(std::initializer_list<Nested> init_data, int):
-        impl{std::make_shared<wrapping_tensor_type>(std::make_shared<storage_tensor_type>(init_data))}
+        impl{std::make_shared<tensor_wrapper_type>(std::make_shared<storage_tensor_type>(init_data))}
     {}
     
 protected:
-    const std::shared_ptr<tensor_base_type>& get_impl()const{return impl;}
+    const auto& get_impl()const{return impl;}
 
 public:        
     using value_type = ValT;
@@ -51,7 +51,7 @@ public:
 
     template<typename...Dims>
     tensor(const value_type& v, const Dims&...dims):
-        impl{std::make_shared<wrapping_tensor_type>(std::make_shared<storage_tensor_type>(v, dims...))}
+        impl{std::make_shared<tensor_wrapper_type>(std::make_shared<storage_tensor_type>(v, dims...))}
     {}
 
     tensor(typename detail::nested_initializer_list_type<value_type,1>::type init_data):tensor(init_data,0){}
@@ -104,8 +104,7 @@ private:
     
     template<typename ValT, template<typename> typename Cfg>
     class expression : public tensor<ValT,Cfg>{        
-        using base_type = tensor<ValT,Cfg>;        
-        const evaluating_base<ValT,Cfg>* impl{get_impl()->as_evaluating()};
+        using base_type = tensor<ValT,Cfg>;                
     public:
         expression(const base_type& base):
             base_type{base}
@@ -119,8 +118,7 @@ private:
     
     template<typename ValT, template<typename> typename Cfg>
     class storage_tensor : public tensor<ValT,Cfg>{        
-        using base_type = tensor<ValT,Cfg>;        
-        const storing_base<ValT,Cfg>* impl{get_impl()->as_storing()};
+        using base_type = tensor<ValT,Cfg>;                
     public:
         storage_tensor(const base_type& base):
             base_type{base}
