@@ -48,12 +48,12 @@ class storage_tensor :
     
     bool is_cached()const override{return true;}
     bool is_storage()const override{return is_cached();}
-    bool is_trivial()const override{return true;}
     const value_type* storage_data()const override{return elements.data();}
     index_type view_index_convert(const index_type& idx)const override{return idx;}
     
 
 protected:
+    bool is_trivial()const override{return true;}
 
 
     // typename storage_type::const_iterator begin()const override{return elements.begin();}

@@ -1,7 +1,6 @@
 #ifndef IMPL_EXPRESSION_HPP_
 #define IMPL_EXPRESSION_HPP_
 
-#include "shareable_storage.hpp"
 #include "tensor_base.hpp"
 #include "stensor_descriptor.hpp"
 #include "walker_factory.hpp"
@@ -56,6 +55,11 @@ inline ShT broadcast(const ShT& shape1, const ShT& shape2){
     }
 }
 
+template<typename...Ops, std::size_t...I>
+inline auto broadcast(const std::tuple<Ops...>& operands, std::index_sequence<I...>){
+    return broadcast(std::get<I>(operands)->shape()...);
+}
+
 /*
 * is expression is trivial broadcast i.e. shapes of all nodes in expression tree is same
 * flat index access without walkers is used to evaluate broadcast expression
@@ -88,6 +92,11 @@ inline const auto& strides_div(const stensor_descriptor<ValT, Cfg>& desc){
     return desc.strides_libdivide();
 }
 
+template<typename ValT, template<typename> typename Cfg>
+auto de_wrap(const std::shared_ptr<tensor_wrapper<ValT,Cfg>>& wrapper){return wrapper->impl();}
+template<typename ImplT>
+auto de_wrap(const std::shared_ptr<ImplT>& impl){return impl;}
+
 }   //end of namespace detail
 
 
@@ -106,8 +115,8 @@ class evaluating_tensor :
     using iterator_type = multiindex_iterator<ValT,Cfg,walker<ValT,Cfg>>; 
     //static_assert(detail::is_valid_operands<Ops...>);
 
-    descriptor_type descriptor_;
     std::tuple<Ops...> operands;
+    descriptor_type descriptor_;
     F f{};    
 
     template<std::size_t...I>
@@ -126,13 +135,13 @@ class evaluating_tensor :
 
     bool is_storage()const override{return is_cached();}
     bool is_cached()const override{return false;}
-    bool is_trivial()const override{return detail::is_trivial(size(),operands);}
     
     const evaluating_base<ValT,Cfg>* as_evaluating()const override{return static_cast<const evaluating_base<ValT,Cfg>*>(this);}
     const evaluating_trivial_base<ValT,Cfg>* as_evaluating_trivial()const override{return static_cast<const evaluating_trivial_base<ValT,Cfg>*>(this);}
     const converting_base<ValT,Cfg>* as_converting()const override{return static_cast<const converting_base<ValT,Cfg>*>(this);}
 protected:
     
+    bool is_trivial()const override{return detail::is_trivial(size(),operands);}
     template<std::size_t I>
     auto operand()const{return std::get<I>(operands);}
     const auto& concrete_descriptor()const{return descriptor_;}
@@ -142,8 +151,8 @@ public:
     //normally passed arguments are shared_ptr<tensor_wrapper>, but actual implementation of wrapper saves to operands
     template<typename...Args>
     explicit evaluating_tensor(const Args&...args):
-        descriptor_{detail::broadcast(args->impl()->shape()...)},
-        operands{args->impl()...}
+        operands{detail::de_wrap(args)...},
+        descriptor_{detail::broadcast(operands, std::make_index_sequence<sizeof...(Ops)>{})}
     {}
 
     detail::tensor_kinds tensor_kind()const override{return detail::tensor_kinds::expression;}

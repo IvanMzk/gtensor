@@ -10,7 +10,7 @@ template<typename ValT, template<typename> typename Cfg> class evaluating_trivia
 template<typename ValT, template<typename> typename Cfg> class viewing_evaluating_base;
 template<typename ValT, template<typename> typename Cfg> class converting_base;
 template<typename ValT, template<typename> typename Cfg, typename F, typename...Ops> class evaluating_tensor;
-template<typename ValT, template<typename> typename Cfg> class wrapping_tensor;
+template<typename ValT, template<typename> typename Cfg> class tensor_wrapper;
 template<typename ValT, template<typename> typename Cfg> class storage_tensor;
 template<typename ValT, template<typename> typename Cfg> class descriptor_base;
 template<typename ValT, template<typename> typename Cfg, typename DescT> class view_tensor;

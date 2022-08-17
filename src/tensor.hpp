@@ -38,7 +38,7 @@ class tensor{
     {}
     
 protected:
-    const auto& impl()const{return impl_;}
+    auto impl()const{return impl_;}
 
 public:        
     using value_type = ValT;
