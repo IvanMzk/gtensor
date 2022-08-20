@@ -19,15 +19,15 @@ struct test_tensor : public tensor<ValT,Cfg>{
     using iterator_type = multiindex_iterator<ValT,Cfg,walker<ValT,Cfg>>;
     using strides_type = typename gtensor::detail::libdiv_strides_traits<test_tensor::config_type>::type;
 
-    strides_type strides{gtensor::detail::make_dividers<test_tensor::config_type>(get_impl()->strides())};
+    strides_type strides{gtensor::detail::make_dividers<test_tensor::config_type>(impl()->strides())};
 
     using tensor::tensor;
     test_tensor(const base_type& base):
         base_type{base}
     {}
     
-    auto begin()const{return iterator_type{get_impl()->as_evaluating()->create_walker(), get_impl()->shape(), strides};}
-    auto end()const{return iterator_type{get_impl()->as_evaluating()->create_walker(), get_impl()->shape(), strides, get_impl()->size()};}
+    auto begin()const{return iterator_type{impl()->as_evaluating()->create_walker(), impl()->shape(), strides};}
+    auto end()const{return iterator_type{impl()->as_evaluating()->create_walker(), impl()->shape(), strides, impl()->size()};}
 };
 
 template<typename ValT, template<typename> typename Cfg>
