@@ -10,12 +10,11 @@ inline bool can_walk(const IdxT& direction, const IdxT& dim, const IdxT& directi
     return direction < dim && direction_dim != IdxT(1);
 }
 
-template<typename ValT, template<typename> typename Cfg>
+template<typename IdxT, typename ShT>
 class shape_inverter
-{
-    using config_type = Cfg<ValT>;        
-    using index_type = typename config_type::index_type;
-    using shape_type = typename config_type::shape_type;
+{    
+    using index_type = IdxT;
+    using shape_type = ShT;
     
     const index_type* shape_last;
 
@@ -42,8 +41,8 @@ class basic_walker
     using shape_type = typename config_type::shape_type;
     
     index_type dim;
-    detail::shape_inverter<ValT,Cfg> shape;
-    detail::shape_inverter<ValT,Cfg> strides;
+    detail::shape_inverter<index_type, shape_type> shape;
+    detail::shape_inverter<index_type, shape_type> strides;
     CursorT offset;
     CursorT cursor_{offset};
 

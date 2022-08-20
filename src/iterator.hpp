@@ -32,7 +32,7 @@ public:
 
     walker_type walker;
     index_type dim_dec;
-    detail::shape_inverter<ValT,Cfg> shape;
+    detail::shape_inverter<index_type,shape_type> shape;
     const strides_type* strides;
     difference_type flat_index;
     

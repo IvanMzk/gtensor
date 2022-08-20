@@ -15,7 +15,7 @@ class evaluating_walker
     using shape_type = typename config_type::shape_type;
 
     index_type dim_;
-    detail::shape_inverter<ValT,Cfg> shape;
+    detail::shape_inverter<index_type,shape_type> shape;
     std::tuple<Wks...> walkers;
     F f{};
         

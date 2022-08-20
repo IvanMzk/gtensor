@@ -143,7 +143,7 @@ protected:
     
     bool is_trivial()const override{return detail::is_trivial(size(),operands);}
     template<std::size_t I>
-    auto operand()const{return std::get<I>(operands);}
+    const auto& operand()const{return std::get<I>(operands);}
     const auto& concrete_descriptor()const{return descriptor_;}
 
 public:            
