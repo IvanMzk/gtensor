@@ -723,6 +723,7 @@ public:
     virtual ValT operator*() const = 0;
     virtual std::unique_ptr<evaluator_base> clone()const = 0;
     virtual void create_walkers_helper(std::vector<storage_walking_walker<index_type,shape_type>>& walkers) = 0;
+    virtual std::size_t storages_number()const = 0;
 };
 
 template<typename ValT, template<typename> typename Cfg>
@@ -744,7 +745,8 @@ public:
     ValT operator*() const{return impl_->operator*();}
     impl_base_type* impl()const{return impl_.get();}
     auto create_walkers(){
-        std::vector<storage_walking_walker<index_type,shape_type>> walkers{};
+        std::vector<storage_walking_walker<index_type,shape_type>> walkers{};        
+        walkers.reserve(impl()->storages_number());
         impl()->create_walkers_helper(walkers);
         return walkers;
     }
@@ -756,10 +758,11 @@ class evaluating_evaluator : public evaluator_base<ValT, Cfg>
     using index_type = typename Cfg<ValT>::index_type;
     using shape_type = typename Cfg<ValT>::shape_type;
 
+    std::size_t storages_number_;
     std::tuple<NodesT...> nodes;
-    F f{};            
-    template<std::size_t...I>
-    
+    F f{};
+
+    template<std::size_t...I>    
     ValT deref_helper(std::index_sequence<I...>) const {return f(*std::get<I>(nodes)...);}
     
     std::unique_ptr<evaluator_base> clone()const override{return std::make_unique<evaluating_evaluator>(*this);}
@@ -779,8 +782,17 @@ class evaluating_evaluator : public evaluator_base<ValT, Cfg>
         create_walkers_helper(walkers,std::make_index_sequence<sizeof...(NodesT)>{});
     }
 
+    template<typename ValT, template<typename> typename Cfg>
+    std::size_t storages_counter(const storage_accessor<ValT,Cfg>& w)const{return 1;}
+    
+    template<typename ValT, template<typename> typename Cfg>
+    std::size_t storages_counter(const evaluator<ValT,Cfg>& w)const{return w.impl()->storages_number();}
+
+    std::size_t storages_number()const override{return storages_number_;}
+
 public:
-    evaluating_evaluator(NodesT&&...nodes_):        
+    evaluating_evaluator(NodesT&&...nodes_):
+        storages_number_{(storages_counter(nodes_)+...)},
         nodes{std::move(nodes_)...}
     {}    
     ValT operator*() const override {return deref_helper(std::make_index_sequence<sizeof...(NodesT)>{});}
@@ -873,6 +885,7 @@ template<typename ValT, template<typename> typename Cfg>
 auto as_evaluating_split_walker_maker(const tensor_base<ValT,Cfg>& t){return dynamic_cast<const evaluating_split_walker_maker<ValT,Cfg>*>(&t);}
 
 
+
 class dispatcher{    
     template<typename FirstT, typename ValT2, template<typename> typename Cfg, typename F>
     static auto dispatch_second(F& f, const FirstT& first, const tensor_base<ValT2, Cfg>& second){
@@ -956,7 +969,7 @@ public:
     test_tensor(std::shared_ptr<tensor_base<ValT,Cfg>>&& impl__):
         tensor(std::move(impl__))
     {}
-
+    
     auto impl()const{return tensor::impl();}
     auto begin()const{
         return iterator_type{
@@ -972,9 +985,11 @@ public:
             strides,
             impl()->size()
         };
-    }
-    
+    }    
 };
+
+template<typename ValT, template<typename> typename Cfg>
+auto as_evaluating_split_walker_maker(const test_tensor<ValT,Cfg>& t){return dynamic_cast<const evaluating_split_walker_maker<ValT,Cfg>*>(t.impl()->impl().get());}
 
 template<typename ValT, template<typename> typename Cfg, typename F, typename...Ops>
 class test_evaluating_tensor : 
@@ -1126,21 +1141,335 @@ static inline auto operator+(const static_tensor<ValT1, Cfg, ImplT1>& op1, const
 
 }   //end of namespace true_expression_template
 
+namespace true_expression_template_split{
+using gtensor::storage_tensor;
+using gtensor::storage_walker;
+using gtensor::evaluating_tensor;
+using gtensor::evaluating_walker;
+using gtensor::storage_walker_factory;
+using gtensor::evaluating_walker_polymorphic;
+using gtensor::storage_walker_polymorphic;
+using gtensor::binary_operations::add;
+using gtensor::multiindex_iterator;
+using gtensor::basic_walker;
+
+template<typename IdxT, typename ShT>
+class storage_walking_walker
+{    
+    using index_type = IdxT;
+    using shape_type = ShT;
+    using shape_inverter_type = gtensor::detail::shape_inverter<index_type,shape_type>;
+        
+    index_type dim_;
+    shape_inverter_type shape_;
+    shape_inverter_type strides_;
+    index_type offset_;
+    index_type* cursor_;    
+
+public:
+    storage_walking_walker(const index_type& dim__, const shape_inverter_type& shape__, const shape_inverter_type& strides__, const index_type& offset__, index_type* cursor__):
+        dim_{dim__},
+        shape_{shape__},
+        strides_{strides__},
+        offset_{offset__},
+        cursor_{cursor__}
+    {}
+    storage_walking_walker(const shape_inverter_type& shape__, const shape_inverter_type& strides__):
+        shape_{shape__},
+        strides_{strides__}
+    {}
+    
+    void walk(const index_type& direction, const index_type& steps){
+        if (gtensor::detail::can_walk(direction, dim_, shape_.element(direction))){
+            *cursor_+=steps*strides_.element(direction);
+        }   
+    }
+    void step(const index_type& direction){
+        if (gtensor::detail::can_walk(direction, dim_, shape_.element(direction))){
+            *cursor_+=strides_.element(direction);
+        }
+    }
+    void step_back(const index_type& direction){        
+        if (gtensor::detail::can_walk(direction, dim_, shape_.element(direction))){
+            *cursor_-=strides_.element(direction);
+        }            
+    }
+    void reset(const index_type& direction){
+        if (gtensor::detail::can_walk(direction, dim_, shape_.element(direction))){
+            *cursor_-=(shape_.element(direction)-1)*strides_.element(direction);
+        }
+    }
+    void reset(){*cursor_ = offset;}    
+};
+
+template<typename ValT, template<typename> typename Cfg>
+class storage_accessor
+{   
+    using index_type = typename Cfg<ValT>::index_type;
+    using shape_type = typename Cfg<ValT>::shape_type;
+    
+    index_type dim_;
+    gtensor::detail::shape_inverter<index_type, shape_type> shape_;
+    gtensor::detail::shape_inverter<index_type, shape_type> strides_;
+    index_type offset_;
+    const ValT* data_;
+    index_type cursor_{offset_};
+
+public:    
+    storage_accessor(const shape_type& shape__, const shape_type& strides__, const index_type& offset__, const ValT* data__):
+        dim_{static_cast<index_type>(shape__.size())},
+        shape_{shape__},
+        strides_{strides__},
+        offset_{offset__},
+        data_{data__}
+    {}
+    auto create_walker(){return storage_walking_walker<index_type,shape_type>{dim_,shape_,strides_,offset_,&cursor_};}    
+    ValT operator*() const {return data_[cursor_];}
+};
+
+template<typename ValT, template<typename> typename Cfg, typename F, typename...NodesT>
+class evaluating_evaluator
+{
+    using index_type = typename Cfg<ValT>::index_type;
+    using shape_type = typename Cfg<ValT>::shape_type;
+
+    std::size_t storages_number_;
+    std::tuple<NodesT...> nodes;
+    F f{};
+
+    template<std::size_t...I>    
+    ValT deref_helper(std::index_sequence<I...>) const {return f(*std::get<I>(nodes)...);}    
+    
+    template<typename V, typename...Ts>
+    void create_walker(V& v, storage_accessor<Ts...>& w){v.push_back(w.create_walker());}
+    
+    template<typename V, typename...Ts>
+    void create_walker(V& v, evaluating_evaluator<Ts...>& w){w.create_walkers_helper(v);}
+    
+    template<std::size_t...I>    
+    void create_walkers_helper(std::vector<storage_walking_walker<index_type,shape_type>>& walkers, std::index_sequence<I...>){
+        (create_walker(walkers, std::get<I>(nodes)),...);
+    }
+    
+    template<typename...Ts>
+    std::size_t storages_counter(const storage_accessor<Ts...>& w)const{return 1;}
+    
+    template<typename...Ts>
+    std::size_t storages_counter(const evaluating_evaluator<Ts...>& w)const{return w.storages_number();}
+
+public:
+    evaluating_evaluator(NodesT&&...nodes_):
+        storages_number_{(storages_counter(nodes_)+...)},
+        nodes{std::move(nodes_)...}
+    {}    
+    
+    ValT operator*() const {return deref_helper(std::make_index_sequence<sizeof...(NodesT)>{});}
+    
+    std::size_t storages_number()const{return storages_number_;}
+    
+    void create_walkers_helper(std::vector<storage_walking_walker<index_type,shape_type>>& walkers){
+        create_walkers_helper(walkers,std::make_index_sequence<sizeof...(NodesT)>{});
+    }
+
+    auto create_walkers(){
+        std::vector<storage_walking_walker<index_type,shape_type>> walkers{};        
+        walkers.reserve(storages_number());
+        create_walkers_helper(walkers);
+        return walkers;
+    }
+};
+
+template<typename ValT, template<typename> typename Cfg, typename EvalT>
+class walker
+{
+    using config_type = Cfg<ValT>;
+    using value_type = ValT;
+    using index_type = typename config_type::index_type;
+    using shape_type = typename config_type::shape_type;
+    using evaluator_type = EvalT;
+
+    evaluator_type evaluator;
+    std::vector<storage_walking_walker<index_type,shape_type>> walkers{evaluator.create_walkers()};
+
+public:
+    walker(evaluator_type&& evaluator_):        
+        evaluator{std::move(evaluator_)}        
+    {}
+
+    walker(walker&& other):        
+        evaluator{std::move(other.evaluator)}
+    {}
+    
+    walker(const walker& other):        
+        evaluator{other.evaluator}
+    {}
+
+    walker& walk(const index_type& direction, const index_type& steps){
+        for (auto& walker : walkers)
+        {walker.walk(direction,steps);}
+        return *this;
+    }
+    walker& step(const index_type& direction){
+        for (auto& walker : walkers)
+        {walker.step(direction);}
+        return *this;
+    }
+    walker& step_back(const index_type& direction){
+        for (auto& walker : walkers)
+        {walker.step_back(direction);}
+        return *this;
+    }
+    walker& reset(const index_type& direction){
+        for (auto& walker : walkers)
+        {walker.reset(direction);}
+        return *this;
+    }
+    walker& reset(){
+        for (auto& walker : walkers)
+        {walker.reset();}
+        return *this;
+    }    
+    value_type operator*() const{return *evaluator;}
+};
+
+template<typename ValT, template<typename> typename Cfg>
+class test_stensor : public storage_tensor<ValT,Cfg>
+{ 
+    using base_stensor = storage_tensor<ValT,Cfg>;
+    using config_type = Cfg<ValT>;        
+    using value_type = ValT;
+    using index_type = typename config_type::index_type;
+    using shape_type = typename config_type::shape_type;    
+
+public:    
+    test_stensor() = default;
+    test_stensor(typename gtensor::detail::nested_initializer_list_type<value_type,1>::type init_data):base_stensor(init_data){}
+    test_stensor(typename gtensor::detail::nested_initializer_list_type<value_type,2>::type init_data):base_stensor(init_data){}
+    test_stensor(typename gtensor::detail::nested_initializer_list_type<value_type,3>::type init_data):base_stensor(init_data){}
+    test_stensor(typename gtensor::detail::nested_initializer_list_type<value_type,4>::type init_data):base_stensor(init_data){}
+    test_stensor(typename gtensor::detail::nested_initializer_list_type<value_type,5>::type init_data):base_stensor(init_data){}
+
+    template<typename...Dims>
+    test_stensor(const value_type& v, const Dims&...dims):
+        base_stensor(v, dims...)
+    {}    
+    auto create_concrete_walker()const{return storage_accessor<ValT, Cfg>{shape(), strides(), index_type{0}, data()};}  
+    bool is_trivial()const{return storage_tensor::is_trivial();}
+};
+
+template<typename ValT, template<typename> typename Cfg, typename F, typename...Ops>
+class test_etensor : public evaluating_tensor<ValT,Cfg,F,Ops...>
+{
+    template<std::size_t...I>
+    auto create_concrete_walker_helper(std::index_sequence<I...>)const{        
+        using walker_type = evaluating_evaluator<ValT,Cfg,F, decltype(std::declval<Ops>()->create_concrete_walker())...>;
+        return walker_type{operand<I>()->create_concrete_walker()...};
+    }    
+public:
+    using evaluating_tensor::evaluating_tensor;
+
+    bool is_trivial()const{return evaluating_tensor::is_trivial();}
+    
+    auto create_concrete_walker()const{return create_concrete_walker_helper(std::make_index_sequence<sizeof...(Ops)>{});}
+    auto begin()const{
+        using walker_type = walker<ValT, Cfg, decltype(std::declval<test_etensor>().create_concrete_walker())>;
+        using iterator_type = multiindex_iterator<ValT, Cfg, walker_type>;
+        return iterator_type{walker_type{create_concrete_walker()},shape(),gtensor::detail::strides_div(concrete_descriptor())};
+    }
+    auto end()const{
+        using walker_type = walker<ValT, Cfg, decltype(std::declval<test_etensor>().create_concrete_walker())>;
+        using iterator_type = multiindex_iterator<ValT, Cfg, walker_type>;
+        return iterator_type{walker_type{create_concrete_walker()},shape(),gtensor::detail::strides_div(concrete_descriptor()),size()};
+    }
+};
+
+template<typename ValT, template<typename> typename Cfg, typename ImplT = test_stensor<ValT,Cfg>>
+class static_tensor{
+    using base_stensor = storage_tensor<ValT,Cfg>;
+    using config_type = Cfg<ValT>;        
+    using value_type = ValT;
+    using index_type = typename config_type::index_type;
+    using shape_type = typename config_type::shape_type;    
+
+    std::shared_ptr<ImplT> impl_; 
+
+    template<typename Nested>
+    static_tensor(std::initializer_list<Nested> init_data,int):
+        impl_{new ImplT(init_data)}
+    {}   
+
+public:
+    static_tensor() = default;
+    static_tensor(std::shared_ptr<ImplT>&& impl__):
+        impl_{std::move(impl__)}
+    {}
+
+    static_tensor(typename gtensor::detail::nested_initializer_list_type<value_type,1>::type init_data):static_tensor(init_data,0){}
+    static_tensor(typename gtensor::detail::nested_initializer_list_type<value_type,2>::type init_data):static_tensor(init_data,0){}
+    static_tensor(typename gtensor::detail::nested_initializer_list_type<value_type,3>::type init_data):static_tensor(init_data,0){}
+    static_tensor(typename gtensor::detail::nested_initializer_list_type<value_type,4>::type init_data):static_tensor(init_data,0){}
+    static_tensor(typename gtensor::detail::nested_initializer_list_type<value_type,5>::type init_data):static_tensor(init_data,0){}
+
+    template<typename...Dims>
+    static_tensor(const value_type& v, const Dims&...dims):
+        impl_{new ImplT(v, dims...)}
+    {}
+    auto impl()const{return impl_;}    
+    const auto& shape()const{return impl()->shape();}
+    auto create_concrete_walker()const{return impl()->create_concrete_walker();}
+    auto begin()const{return impl()->begin();}
+    auto end()const{return impl()->end();}
+};
+
+template<typename ValT1, typename ValT2, typename ImplT1, typename ImplT2, template<typename> typename Cfg>
+static inline auto operator+(const static_tensor<ValT1, Cfg, ImplT1>& op1, const static_tensor<ValT2, Cfg, ImplT2>& op2){
+    using operation_type = add;
+    using result_type = decltype(std::declval<operation_type>()(std::declval<ValT1>(),std::declval<ValT2>()));
+    using operand1_type = std::shared_ptr<ImplT1>;
+    using operand2_type = std::shared_ptr<ImplT2>;
+    using exp_type = test_etensor<result_type, Cfg, operation_type, operand1_type, operand2_type>;
+    return static_tensor<result_type,Cfg, exp_type>{std::make_shared<exp_type>(op1.impl(),op2.impl())};
+}
+
+}   //end of namespace true_expression_template
+
 
 TEST_CASE("test_benchmark_helper_classes","[benchmark_walker]"){
     using value_type = float;
     using gtensor::config::default_config;
     using gtensor::multiindex_iterator;
     using separate_evaluation::walker;
-    using noinline_tensor_type = noinline_evaluation::test_tensor_noinline<value_type, default_config>;
-    using partly_inline_tensor_type = benchmark_walker::inline_walker_test_tensor<value_type, default_config>;
-    using full_inline_tensor_type = true_expression_template::static_tensor<value_type, default_config>;
+    
     using split_eval_tensor_type = separate_evaluation::test_tensor<value_type, default_config>;    
-    using split_eval_tensor_v1_type = separate_evaluation_v1::test_tensor<value_type, default_config>;    
-    using iterator_type = multiindex_iterator<value_type,default_config,walker<value_type,default_config>>;
+    using iterator_type = multiindex_iterator<value_type,default_config,walker<value_type,default_config>>;    
     
+
+
+    SECTION("test_split_eval_tensor_v1_starages_number"){
+        using split_eval_tensor_v1_type = separate_evaluation_v1::test_tensor<value_type, default_config>;
+        using separate_evaluation_v1::as_evaluating_split_walker_maker;
+        using test_type = std::tuple<std::size_t, std::size_t>;
+
+        auto get_n = [](const auto& e){return as_evaluating_split_walker_maker(e)->create_split_walker().impl()->storages_number();};
+        split_eval_tensor_v1_type t1{{1,2,3}};
+        split_eval_tensor_v1_type t2{{1},{2},{3}};
+        split_eval_tensor_v1_type t3{-2};
+
+        auto test_data = GENERATE_REF(
+            test_type{get_n(split_eval_tensor_v1_type{1,2,3} + split_eval_tensor_v1_type{1,2,3}), 2},
+            test_type{get_n(t1+t1), 2},
+            test_type{get_n(t1+t1+t1), 3},
+            test_type{get_n(t1+(t1+t1)+t2), 4},
+            test_type{get_n(t2+(t1+t1)+t3), 4}
+        );
+
+        auto storages_number = std::get<0>(test_data);
+        auto expected_storages_number = std::get<1>(test_data);
+        REQUIRE(storages_number == expected_storages_number);
+    }
     
-    SECTION("test_split_eval_tensor_v1_iterator"){        
+    SECTION("test_split_eval_tensor_v1_iterator"){
+        using split_eval_tensor_v1_type = separate_evaluation_v1::test_tensor<value_type, default_config>;
         split_eval_tensor_v1_type t1{{1,2,3}};
         split_eval_tensor_v1_type t2{{1},{2},{3}};
         split_eval_tensor_v1_type t3{-2};
@@ -1164,6 +1493,8 @@ TEST_CASE("test_benchmark_helper_classes","[benchmark_walker]"){
     }
 
     SECTION("test_noinline_tensor_iterator"){
+        using noinline_tensor_type = noinline_evaluation::test_tensor_noinline<value_type, default_config>;
+
         noinline_tensor_type t1{{1,2,3}};
         noinline_tensor_type t2{{1},{2},{3}};
         noinline_tensor_type t3{-2};
@@ -1171,6 +1502,8 @@ TEST_CASE("test_benchmark_helper_classes","[benchmark_walker]"){
         REQUIRE(std::equal(e.begin(), e.end(), std::vector<float>{1,2,3,3,4,5,5,6,7}.begin()));
     }
     SECTION("test_partly_inline_tensor_iterator"){
+        using partly_inline_tensor_type = benchmark_walker::inline_walker_test_tensor<value_type, default_config>;
+
         partly_inline_tensor_type t1{{1,2,3}};
         partly_inline_tensor_type t2{{1},{2},{3}};
         partly_inline_tensor_type t3{-2};
@@ -1178,9 +1511,20 @@ TEST_CASE("test_benchmark_helper_classes","[benchmark_walker]"){
         REQUIRE(std::equal(e.begin(), e.end(), std::vector<float>{1,2,3,3,4,5,5,6,7}.begin()));
     }
     SECTION("test_full_inline_walker_iterator"){
+        using full_inline_tensor_type = true_expression_template::static_tensor<value_type, default_config>;
+
         full_inline_tensor_type t1{1,2,3};
         full_inline_tensor_type t2{{1},{2},{3}};
         full_inline_tensor_type t3{-2};        
+        auto e = t2+t1+t2+t3;        
+        REQUIRE(std::equal(e.begin(), e.end(), std::vector<float>{1,2,3,3,4,5,5,6,7}.begin()));
+    }
+    SECTION("test_full_inline_split_walker_iterator"){
+        using full_inline_split_tensor_type = true_expression_template_split::static_tensor<value_type, default_config>;
+
+        full_inline_split_tensor_type t1{1,2,3};
+        full_inline_split_tensor_type t2{{1},{2},{3}};
+        full_inline_split_tensor_type t3{-2};        
         auto e = t2+t1+t2+t3;        
         REQUIRE(std::equal(e.begin(), e.end(), std::vector<float>{1,2,3,3,4,5,5,6,7}.begin()));
     }
@@ -1194,6 +1538,7 @@ TEMPLATE_TEST_CASE("benchmark_walker","[benchmark_walker]", gtensor::config::mod
     using noinline_tensor_type = noinline_evaluation::test_tensor_noinline<value_type, test_config::config_tmpl_div_mode_selector<TestType>::config_tmpl>;
     using partly_inline_tensor_type = benchmark_walker::inline_walker_test_tensor<value_type, test_config::config_tmpl_div_mode_selector<TestType>::config_tmpl>;
     using full_inline_tensor_type = true_expression_template::static_tensor<value_type, test_config::config_tmpl_div_mode_selector<TestType>::config_tmpl>;
+    using full_inline_split_tensor_type = true_expression_template_split::static_tensor<value_type, test_config::config_tmpl_div_mode_selector<TestType>::config_tmpl>;
     using split_eval_tensor_type = separate_evaluation::test_tensor<value_type, test_config::config_tmpl_div_mode_selector<TestType>::config_tmpl>; 
     using split_eval_tensor_v1_type = separate_evaluation_v1::test_tensor<value_type, test_config::config_tmpl_div_mode_selector<TestType>::config_tmpl>;
     using benchmark_walker::make_asymmetric_tree;
@@ -1260,6 +1605,10 @@ TEMPLATE_TEST_CASE("benchmark_walker","[benchmark_walker]", gtensor::config::mod
     full_inline_tensor_type t2_full(0, shape2);
     auto e_full = make_tree(t1_full,t2_full);    
     
+    full_inline_split_tensor_type t1_full_split(0, shape1);
+    full_inline_split_tensor_type t2_full_split(0, shape2);
+    auto e_full_split = make_tree(t1_full_split,t2_full_split);    
+    
     split_eval_tensor_v1_type t1_split_v1(0, shape1);
     split_eval_tensor_v1_type t2_split_v1(0, shape2);
     split_eval_tensor_v1_type e_split_v1 = make_tree(t1_split_v1, t2_split_v1);
@@ -1291,6 +1640,9 @@ TEMPLATE_TEST_CASE("benchmark_walker","[benchmark_walker]", gtensor::config::mod
     
     BENCHMARK_ADVANCED("full_inline_iterator_construction_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
         meter.measure([&iterate_with_deref, &e_full] { return iterate_with_deref(e_full); });
+    };    
+    BENCHMARK_ADVANCED("full_inline_split_iterator_construction_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+        meter.measure([&iterate_with_deref, &e_full_split] { return iterate_with_deref(e_full_split); });
     };    
     BENCHMARK_ADVANCED("split_v1_inline_iterator_construction_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
         meter.measure([&iterate_with_deref, &e_split_v1] { return iterate_with_deref(e_split_v1); });
