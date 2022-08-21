@@ -148,7 +148,6 @@ static inline auto operator+(const test_tensor_noinline<ValT1, Cfg>& op1, const 
 
 }   //end of namespace noinline_evaluation
 
-
 namespace separate_evaluation{
 
 using gtensor::storage_tensor;
@@ -1431,6 +1430,181 @@ static inline auto operator+(const static_tensor<ValT1, Cfg, ImplT1>& op1, const
     return static_tensor<result_type,Cfg, exp_type>{std::make_shared<exp_type>(op1.impl(),op2.impl())};
 }
 
+}   //end of namespace true_expression_template_split
+
+namespace true_expression_template_v1{
+using gtensor::storage_tensor;
+using gtensor::storage_walker;
+using gtensor::evaluating_tensor;
+
+using gtensor::storage_walker_factory;
+using gtensor::evaluating_walker_polymorphic;
+using gtensor::storage_walker_polymorphic;
+using gtensor::binary_operations::add;
+using gtensor::multiindex_iterator;
+using gtensor::basic_walker;
+
+template<typename IdxT>
+inline bool can_walk(const IdxT& , const IdxT& , const IdxT& ){
+    return true;
+    //return direction < dim && direction_dim != IdxT(1);
+}
+
+template<typename ValT, template<typename> typename Cfg, typename F, typename...Wks>
+class evaluating_walker
+{
+    using config_type = Cfg<ValT>;        
+    using value_type = ValT;
+    using index_type = typename config_type::index_type;
+    using shape_type = typename config_type::shape_type;
+
+    index_type dim_;
+    gtensor::detail::shape_inverter<index_type,shape_type> shape;
+    std::tuple<Wks...> walkers;
+    F f{};
+        
+    template<std::size_t...I>
+    void step_helper(const index_type& direction, std::index_sequence<I...>){(std::get<I>(walkers).step(direction),...);}    
+    template<std::size_t...I>
+    void step_back_helper(const index_type& direction, std::index_sequence<I...>){(std::get<I>(walkers).step_back(direction),...);}    
+    template<std::size_t...I>
+    void reset_helper(const index_type& direction, std::index_sequence<I...>){(std::get<I>(walkers).reset(direction),...);}
+    template<std::size_t...I>
+    void reset_helper(std::index_sequence<I...>){(std::get<I>(walkers).reset(),...);}    
+    template<std::size_t...I>
+    value_type deref_helper(std::index_sequence<I...>) const {return f(*std::get<I>(walkers)...);}
+protected:
+    template<std::size_t...I>
+    void walk_helper(const index_type& direction, const index_type& steps, std::index_sequence<I...>){(std::get<I>(walkers).walk(direction,steps),...);}
+    index_type dim()const{return dim_;}
+public:
+    evaluating_walker(const shape_type& shape_, Wks&&...walkers_):
+        dim_{static_cast<index_type>(shape_.size())},
+        shape{shape_},
+        walkers{std::move(walkers_)...}
+    {}
+    
+    void walk(const index_type& direction, const index_type& steps){
+        if (can_walk(direction,dim_,shape.element(direction))){
+            walk_helper(direction,steps,std::make_index_sequence<sizeof...(Wks)>{});
+        }
+    }
+    void step(const index_type& direction){
+        if (can_walk(direction,dim_,shape.element(direction))){
+            step_helper(direction,std::make_index_sequence<sizeof...(Wks)>{});
+        }
+    }
+    void step_back(const index_type& direction){
+        if (can_walk(direction,dim_,shape.element(direction))){
+            step_back_helper(direction,std::make_index_sequence<sizeof...(Wks)>{});
+        }
+    }
+    void reset(const index_type& direction){
+        if (can_walk(direction,dim_,shape.element(direction))){
+            reset_helper(direction,std::make_index_sequence<sizeof...(Wks)>{});
+        }
+    }
+    void reset(){reset_helper(std::make_index_sequence<sizeof...(Wks)>{});}
+    value_type operator*() const {return deref_helper(std::make_index_sequence<sizeof...(Wks)>{});}
+};
+
+template<typename ValT, template<typename> typename Cfg>
+class test_stensor : public storage_tensor<ValT,Cfg>
+{ 
+    using base_stensor = storage_tensor<ValT,Cfg>;
+    using config_type = Cfg<ValT>;        
+    using value_type = ValT;
+    using index_type = typename config_type::index_type;
+    using shape_type = typename config_type::shape_type;    
+
+public:    
+    test_stensor() = default;
+    test_stensor(typename gtensor::detail::nested_initializer_list_type<value_type,1>::type init_data):base_stensor(init_data){}
+    test_stensor(typename gtensor::detail::nested_initializer_list_type<value_type,2>::type init_data):base_stensor(init_data){}
+    test_stensor(typename gtensor::detail::nested_initializer_list_type<value_type,3>::type init_data):base_stensor(init_data){}
+    test_stensor(typename gtensor::detail::nested_initializer_list_type<value_type,4>::type init_data):base_stensor(init_data){}
+    test_stensor(typename gtensor::detail::nested_initializer_list_type<value_type,5>::type init_data):base_stensor(init_data){}
+
+    template<typename...Dims>
+    test_stensor(const value_type& v, const Dims&...dims):
+        base_stensor(v, dims...)
+    {}    
+    auto create_concrete_walker()const{return storage_walker<ValT, Cfg>{shape(),strides(),data()};}  
+    bool is_trivial()const{return storage_tensor::is_trivial();}
+};
+
+template<typename ValT, template<typename> typename Cfg, typename F, typename...Ops>
+class test_etensor : public evaluating_tensor<ValT,Cfg,F,Ops...>
+{
+    template<std::size_t...I>
+    auto create_concrete_walker_helper(std::index_sequence<I...>)const{        
+        using walker_type = evaluating_walker<ValT,Cfg,F, decltype(std::declval<Ops>()->create_concrete_walker())...>;
+        return walker_type{shape(),operand<I>()->create_concrete_walker()...};
+    }    
+public:
+    using evaluating_tensor::evaluating_tensor;
+
+    bool is_trivial()const{return evaluating_tensor::is_trivial();}
+    
+    auto create_concrete_walker()const{return create_concrete_walker_helper(std::make_index_sequence<sizeof...(Ops)>{});}
+    auto begin()const{
+        using iterator_type = multiindex_iterator<ValT,Cfg,decltype(std::declval<test_etensor>().create_concrete_walker())>;
+        return iterator_type{create_concrete_walker(),shape(),gtensor::detail::strides_div(concrete_descriptor())};
+    }
+    auto end()const{
+        using iterator_type = multiindex_iterator<ValT,Cfg,decltype(std::declval<test_etensor>().create_concrete_walker())>;
+        return iterator_type{create_concrete_walker(),shape(),gtensor::detail::strides_div(concrete_descriptor()),size()};
+    }
+};
+
+template<typename ValT, template<typename> typename Cfg, typename ImplT = test_stensor<ValT,Cfg>>
+class static_tensor{
+    using base_stensor = storage_tensor<ValT,Cfg>;
+    using config_type = Cfg<ValT>;        
+    using value_type = ValT;
+    using index_type = typename config_type::index_type;
+    using shape_type = typename config_type::shape_type;    
+
+    std::shared_ptr<ImplT> impl_; 
+
+    template<typename Nested>
+    static_tensor(std::initializer_list<Nested> init_data,int):
+        impl_{new ImplT(init_data)}
+    {}   
+
+public:
+    static_tensor() = default;
+    static_tensor(std::shared_ptr<ImplT>&& impl__):
+        impl_{std::move(impl__)}
+    {}
+
+    static_tensor(typename gtensor::detail::nested_initializer_list_type<value_type,1>::type init_data):static_tensor(init_data,0){}
+    static_tensor(typename gtensor::detail::nested_initializer_list_type<value_type,2>::type init_data):static_tensor(init_data,0){}
+    static_tensor(typename gtensor::detail::nested_initializer_list_type<value_type,3>::type init_data):static_tensor(init_data,0){}
+    static_tensor(typename gtensor::detail::nested_initializer_list_type<value_type,4>::type init_data):static_tensor(init_data,0){}
+    static_tensor(typename gtensor::detail::nested_initializer_list_type<value_type,5>::type init_data):static_tensor(init_data,0){}
+
+    template<typename...Dims>
+    static_tensor(const value_type& v, const Dims&...dims):
+        impl_{new ImplT(v, dims...)}
+    {}
+    auto impl()const{return impl_;}    
+    const auto& shape()const{return impl()->shape();}
+    auto create_concrete_walker()const{return impl()->create_concrete_walker();}
+    auto begin()const{return impl()->begin();}
+    auto end()const{return impl()->end();}
+};
+
+template<typename ValT1, typename ValT2, typename ImplT1, typename ImplT2, template<typename> typename Cfg>
+static inline auto operator+(const static_tensor<ValT1, Cfg, ImplT1>& op1, const static_tensor<ValT2, Cfg, ImplT2>& op2){
+    using operation_type = add;
+    using result_type = decltype(std::declval<operation_type>()(std::declval<ValT1>(),std::declval<ValT2>()));
+    using operand1_type = std::shared_ptr<ImplT1>;
+    using operand2_type = std::shared_ptr<ImplT2>;
+    using exp_type = test_etensor<result_type, Cfg, operation_type, operand1_type, operand2_type>;
+    return static_tensor<result_type,Cfg, exp_type>{std::make_shared<exp_type>(op1.impl(),op2.impl())};
+}
+
 }   //end of namespace true_expression_template
 
 
@@ -1528,6 +1702,15 @@ TEST_CASE("test_benchmark_helper_classes","[benchmark_walker]"){
         auto e = t2+t1+t2+t3;        
         REQUIRE(std::equal(e.begin(), e.end(), std::vector<float>{1,2,3,3,4,5,5,6,7}.begin()));
     }
+    SECTION("test_full_inline_v1_walker_iterator"){
+        using full_inline_tensor_v1_type = true_expression_template_v1::static_tensor<value_type, default_config>;
+
+        full_inline_tensor_v1_type t1{1,2,3};
+        full_inline_tensor_v1_type t2{{1},{2},{3}};
+        full_inline_tensor_v1_type t3{-2};        
+        auto e = t2+t1+t2+t3;        
+        REQUIRE(std::equal(e.begin(), e.end(), std::vector<float>{1,2,3,3,4,5,5,6,7}.begin()));
+    }
 }
 
 TEMPLATE_TEST_CASE("benchmark_walker","[benchmark_walker]", gtensor::config::mode_div_native){
@@ -1539,6 +1722,7 @@ TEMPLATE_TEST_CASE("benchmark_walker","[benchmark_walker]", gtensor::config::mod
     using partly_inline_tensor_type = benchmark_walker::inline_walker_test_tensor<value_type, test_config::config_tmpl_div_mode_selector<TestType>::config_tmpl>;
     using full_inline_tensor_type = true_expression_template::static_tensor<value_type, test_config::config_tmpl_div_mode_selector<TestType>::config_tmpl>;
     using full_inline_split_tensor_type = true_expression_template_split::static_tensor<value_type, test_config::config_tmpl_div_mode_selector<TestType>::config_tmpl>;
+    using full_inline_tensor_v1_type = true_expression_template_v1::static_tensor<value_type, test_config::config_tmpl_div_mode_selector<TestType>::config_tmpl>;
     using split_eval_tensor_type = separate_evaluation::test_tensor<value_type, test_config::config_tmpl_div_mode_selector<TestType>::config_tmpl>; 
     using split_eval_tensor_v1_type = separate_evaluation_v1::test_tensor<value_type, test_config::config_tmpl_div_mode_selector<TestType>::config_tmpl>;
     using benchmark_walker::make_asymmetric_tree;
@@ -1598,72 +1782,423 @@ TEMPLATE_TEST_CASE("benchmark_walker","[benchmark_walker]", gtensor::config::mod
     // shape_type shape1{1,10000};
     // shape_type shape2{10000,1};
 
-    static constexpr std::size_t tree_depth = 50;
-    auto make_tree = [](const auto& t1, const auto& t2){return make_asymmetric_tree<tree_depth>(t1,t2);};
+    enum class benchmark_kinds {iteration_and_dereference, iterator_construction_iteration_and_dereference};
+    auto benchmark_kind = benchmark_kinds::iterator_construction_iteration_and_dereference;
+    //auto benchmark_kind = benchmark_kinds::iteration_and_dereference;
 
-    full_inline_tensor_type t1_full(0, shape1);
-    full_inline_tensor_type t2_full(0, shape2);
-    auto e_full = make_tree(t1_full,t2_full);    
+    // SECTION("benchmark_shape(1,10000)_shape(10,10000)_asymmetric_tree_depth_50"){
+
+    //     shape_type shape1{1, 10000};
+    //     shape_type shape2{10,10000};
+
+    //     static constexpr std::size_t tree_depth = 50;
+    //     auto make_tree = [](const auto& t1, const auto& t2){return make_asymmetric_tree<tree_depth>(t1,t2);};
+
+    //     full_inline_tensor_type t1_full(0, shape1);
+    //     full_inline_tensor_type t2_full(0, shape2);
+    //     auto e_full = make_tree(t1_full,t2_full);    
+        
+    //     full_inline_split_tensor_type t1_full_split(0, shape1);
+    //     full_inline_split_tensor_type t2_full_split(0, shape2);
+    //     auto e_full_split = make_tree(t1_full_split,t2_full_split);    
+        
+    //     full_inline_tensor_v1_type t1_full_v1(0, shape1);
+    //     full_inline_tensor_v1_type t2_full_v1(0, shape2);
+    //     auto e_full_v1 = make_tree(t1_full_v1,t2_full_v1);    
+        
+    //     split_eval_tensor_v1_type t1_split_v1(0, shape1);
+    //     split_eval_tensor_v1_type t2_split_v1(0, shape2);
+    //     split_eval_tensor_v1_type e_split_v1 = make_tree(t1_split_v1, t2_split_v1);
+        
+    //     tensor_type t1(0, shape1);
+    //     tensor_type t2(0, shape2);
+    //     partly_inline_tensor_type e_inline = make_tree(t1,t2);
+        
+    //     noinline_tensor_type t1_noinline(0, shape1);
+    //     noinline_tensor_type t2_noinline(0, shape2);
+    //     noinline_tensor_type e_noinline = make_tree(t1_noinline,t2_noinline);    
+        
+    //     if (benchmark_kind == benchmark_kinds::iteration_and_dereference)
+    //     {
+    //         BENCHMARK_ADVANCED("full_inline_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+    //             auto v = make_iterators(meter.runs(),e_full);
+    //             meter.measure([&just_iterate_with_deref, &v](int i) { return just_iterate_with_deref(v[i].first, v[i].second); });
+    //         };
+    //         BENCHMARK_ADVANCED("full_inline_split_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+    //             auto v = make_iterators(meter.runs(),e_full_split);
+    //             meter.measure([&just_iterate_with_deref, &v](int i) { return just_iterate_with_deref(v[i].first, v[i].second); });
+    //         };
+    //         BENCHMARK_ADVANCED("full_inline_v1_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+    //             auto v = make_iterators(meter.runs(),e_full_v1);
+    //             meter.measure([&just_iterate_with_deref, &v](int i) { return just_iterate_with_deref(v[i].first, v[i].second); });
+    //         };
+    //         BENCHMARK_ADVANCED("split_v1_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {
+    //             auto v = make_iterators(meter.runs(),e_split_v1);
+    //             meter.measure([&just_iterate_with_deref, &v](int i) { return just_iterate_with_deref(v[i].first, v[i].second); });
+    //         };
+    //         BENCHMARK_ADVANCED("partly_inline_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {
+    //             auto v = make_iterators(meter.runs(),e_inline);
+    //             meter.measure([&just_iterate_with_deref, &v](int i) { return just_iterate_with_deref(v[i].first, v[i].second); });
+    //         };
+    //         BENCHMARK_ADVANCED("noinline_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {
+    //             auto v = make_iterators(meter.runs(),e_noinline);
+    //             meter.measure([&just_iterate_with_deref, &v](int i) { return just_iterate_with_deref(v[i].first, v[i].second); });
+    //         };
+    //     }
+
+    //     if (benchmark_kind == benchmark_kinds::iterator_construction_iteration_and_dereference)
+    //     {
+    //         BENCHMARK_ADVANCED("full_inline_iterator_construction_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+    //             meter.measure([&iterate_with_deref, &e_full] { return iterate_with_deref(e_full); });
+    //         };    
+    //         BENCHMARK_ADVANCED("full_inline_split_iterator_construction_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+    //             meter.measure([&iterate_with_deref, &e_full_split] { return iterate_with_deref(e_full_split); });
+    //         };    
+    //         BENCHMARK_ADVANCED("full_inline_v1_iterator_construction_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+    //             meter.measure([&iterate_with_deref, &e_full_v1] { return iterate_with_deref(e_full_v1); });
+    //         };    
+    //         BENCHMARK_ADVANCED("split_v1_inline_iterator_construction_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+    //             meter.measure([&iterate_with_deref, &e_split_v1] { return iterate_with_deref(e_split_v1); });
+    //         };
+    //         BENCHMARK_ADVANCED("partly_inline_iterator_construction_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+    //             meter.measure([&iterate_with_deref, &e_inline] { return iterate_with_deref(e_inline); });
+    //         };
+    //         BENCHMARK_ADVANCED("noinline_iterator_construction_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+    //             meter.measure([&iterate_with_deref, &e_noinline] { return iterate_with_deref(e_noinline); });
+    //         };    
+    //     }        
+    // }   //end of SECTION("benchmark_shape(1,10000)_shape(10,10000)_assymetric_tree_depth_50")
     
-    full_inline_split_tensor_type t1_full_split(0, shape1);
-    full_inline_split_tensor_type t2_full_split(0, shape2);
-    auto e_full_split = make_tree(t1_full_split,t2_full_split);    
+    // SECTION("benchmark_shape(1,10000)_shape(10,10000)_symmetric_tree_depth_8"){
+
+    //     shape_type shape1{1, 10000};
+    //     shape_type shape2{10,10000};
+
+    //     static constexpr std::size_t tree_depth = 8;
+    //     auto make_tree = [](const auto& t1, const auto& t2){return make_symmetric_tree<tree_depth>(t1,t2);};
+
+    //     full_inline_tensor_type t1_full(0, shape1);
+    //     full_inline_tensor_type t2_full(0, shape2);
+    //     auto e_full = make_tree(t1_full,t2_full);    
+        
+    //     full_inline_split_tensor_type t1_full_split(0, shape1);
+    //     full_inline_split_tensor_type t2_full_split(0, shape2);
+    //     auto e_full_split = make_tree(t1_full_split,t2_full_split);    
+        
+    //     full_inline_tensor_v1_type t1_full_v1(0, shape1);
+    //     full_inline_tensor_v1_type t2_full_v1(0, shape2);
+    //     auto e_full_v1 = make_tree(t1_full_v1,t2_full_v1);    
+        
+    //     split_eval_tensor_v1_type t1_split_v1(0, shape1);
+    //     split_eval_tensor_v1_type t2_split_v1(0, shape2);
+    //     split_eval_tensor_v1_type e_split_v1 = make_tree(t1_split_v1, t2_split_v1);
+        
+    //     tensor_type t1(0, shape1);
+    //     tensor_type t2(0, shape2);
+    //     partly_inline_tensor_type e_inline = make_tree(t1,t2);
+        
+    //     noinline_tensor_type t1_noinline(0, shape1);
+    //     noinline_tensor_type t2_noinline(0, shape2);
+    //     noinline_tensor_type e_noinline = make_tree(t1_noinline,t2_noinline);    
+        
+    //     if (benchmark_kind == benchmark_kinds::iteration_and_dereference)
+    //     {
+    //         BENCHMARK_ADVANCED("full_inline_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+    //             auto v = make_iterators(meter.runs(),e_full);
+    //             meter.measure([&just_iterate_with_deref, &v](int i) { return just_iterate_with_deref(v[i].first, v[i].second); });
+    //         };
+    //         BENCHMARK_ADVANCED("full_inline_split_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+    //             auto v = make_iterators(meter.runs(),e_full_split);
+    //             meter.measure([&just_iterate_with_deref, &v](int i) { return just_iterate_with_deref(v[i].first, v[i].second); });
+    //         };
+    //         BENCHMARK_ADVANCED("full_inline_v1_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+    //             auto v = make_iterators(meter.runs(),e_full_v1);
+    //             meter.measure([&just_iterate_with_deref, &v](int i) { return just_iterate_with_deref(v[i].first, v[i].second); });
+    //         };
+    //         BENCHMARK_ADVANCED("split_v1_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {
+    //             auto v = make_iterators(meter.runs(),e_split_v1);
+    //             meter.measure([&just_iterate_with_deref, &v](int i) { return just_iterate_with_deref(v[i].first, v[i].second); });
+    //         };
+    //         BENCHMARK_ADVANCED("partly_inline_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {
+    //             auto v = make_iterators(meter.runs(),e_inline);
+    //             meter.measure([&just_iterate_with_deref, &v](int i) { return just_iterate_with_deref(v[i].first, v[i].second); });
+    //         };
+    //         BENCHMARK_ADVANCED("noinline_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {
+    //             auto v = make_iterators(meter.runs(),e_noinline);
+    //             meter.measure([&just_iterate_with_deref, &v](int i) { return just_iterate_with_deref(v[i].first, v[i].second); });
+    //         };
+    //     }
+
+    //     if (benchmark_kind == benchmark_kinds::iterator_construction_iteration_and_dereference)
+    //     {
+    //         BENCHMARK_ADVANCED("full_inline_iterator_construction_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+    //             meter.measure([&iterate_with_deref, &e_full] { return iterate_with_deref(e_full); });
+    //         };    
+    //         BENCHMARK_ADVANCED("full_inline_split_iterator_construction_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+    //             meter.measure([&iterate_with_deref, &e_full_split] { return iterate_with_deref(e_full_split); });
+    //         };    
+    //         BENCHMARK_ADVANCED("full_inline_v1_iterator_construction_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+    //             meter.measure([&iterate_with_deref, &e_full_v1] { return iterate_with_deref(e_full_v1); });
+    //         };    
+    //         BENCHMARK_ADVANCED("split_v1_inline_iterator_construction_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+    //             meter.measure([&iterate_with_deref, &e_split_v1] { return iterate_with_deref(e_split_v1); });
+    //         };
+    //         BENCHMARK_ADVANCED("partly_inline_iterator_construction_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+    //             meter.measure([&iterate_with_deref, &e_inline] { return iterate_with_deref(e_inline); });
+    //         };
+    //         BENCHMARK_ADVANCED("noinline_iterator_construction_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+    //             meter.measure([&iterate_with_deref, &e_noinline] { return iterate_with_deref(e_noinline); });
+    //         };    
+    //     }        
+    // }   //end of SECTION("benchmark_shape(1,10000)_shape(10,10000)_symmetric_tree_depth_8")
     
-    split_eval_tensor_v1_type t1_split_v1(0, shape1);
-    split_eval_tensor_v1_type t2_split_v1(0, shape2);
-    split_eval_tensor_v1_type e_split_v1 = make_tree(t1_split_v1, t2_split_v1);
+    // SECTION("benchmark_shape(1,10000)_shape(10000,1)_symmetric_tree_depth_1"){
+
+    //     shape_type shape1{1, 10000};
+    //     shape_type shape2{10000,1};
+
+    //     static constexpr std::size_t tree_depth = 1;
+    //     auto make_tree = [](const auto& t1, const auto& t2){return make_symmetric_tree<tree_depth>(t1,t2);};
+
+    //     full_inline_tensor_type t1_full(0, shape1);
+    //     full_inline_tensor_type t2_full(0, shape2);
+    //     auto e_full = make_tree(t1_full,t2_full);    
+        
+    //     full_inline_split_tensor_type t1_full_split(0, shape1);
+    //     full_inline_split_tensor_type t2_full_split(0, shape2);
+    //     auto e_full_split = make_tree(t1_full_split,t2_full_split);    
+        
+    //     full_inline_tensor_v1_type t1_full_v1(0, shape1);
+    //     full_inline_tensor_v1_type t2_full_v1(0, shape2);
+    //     auto e_full_v1 = make_tree(t1_full_v1,t2_full_v1);    
+        
+    //     split_eval_tensor_v1_type t1_split_v1(0, shape1);
+    //     split_eval_tensor_v1_type t2_split_v1(0, shape2);
+    //     split_eval_tensor_v1_type e_split_v1 = make_tree(t1_split_v1, t2_split_v1);
+        
+    //     tensor_type t1(0, shape1);
+    //     tensor_type t2(0, shape2);
+    //     partly_inline_tensor_type e_inline = make_tree(t1,t2);
+        
+    //     noinline_tensor_type t1_noinline(0, shape1);
+    //     noinline_tensor_type t2_noinline(0, shape2);
+    //     noinline_tensor_type e_noinline = make_tree(t1_noinline,t2_noinline);    
+        
+    //     if (benchmark_kind == benchmark_kinds::iteration_and_dereference)
+    //     {
+    //         BENCHMARK_ADVANCED("full_inline_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+    //             auto v = make_iterators(meter.runs(),e_full);
+    //             meter.measure([&just_iterate_with_deref, &v](int i) { return just_iterate_with_deref(v[i].first, v[i].second); });
+    //         };
+    //         BENCHMARK_ADVANCED("full_inline_split_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+    //             auto v = make_iterators(meter.runs(),e_full_split);
+    //             meter.measure([&just_iterate_with_deref, &v](int i) { return just_iterate_with_deref(v[i].first, v[i].second); });
+    //         };
+    //         BENCHMARK_ADVANCED("full_inline_v1_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+    //             auto v = make_iterators(meter.runs(),e_full_v1);
+    //             meter.measure([&just_iterate_with_deref, &v](int i) { return just_iterate_with_deref(v[i].first, v[i].second); });
+    //         };
+    //         BENCHMARK_ADVANCED("split_v1_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {
+    //             auto v = make_iterators(meter.runs(),e_split_v1);
+    //             meter.measure([&just_iterate_with_deref, &v](int i) { return just_iterate_with_deref(v[i].first, v[i].second); });
+    //         };
+    //         BENCHMARK_ADVANCED("partly_inline_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {
+    //             auto v = make_iterators(meter.runs(),e_inline);
+    //             meter.measure([&just_iterate_with_deref, &v](int i) { return just_iterate_with_deref(v[i].first, v[i].second); });
+    //         };
+    //         BENCHMARK_ADVANCED("noinline_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {
+    //             auto v = make_iterators(meter.runs(),e_noinline);
+    //             meter.measure([&just_iterate_with_deref, &v](int i) { return just_iterate_with_deref(v[i].first, v[i].second); });
+    //         };
+    //     }
+
+    //     if (benchmark_kind == benchmark_kinds::iterator_construction_iteration_and_dereference)
+    //     {
+    //         BENCHMARK_ADVANCED("full_inline_iterator_construction_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+    //             meter.measure([&iterate_with_deref, &e_full] { return iterate_with_deref(e_full); });
+    //         };    
+    //         BENCHMARK_ADVANCED("full_inline_split_iterator_construction_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+    //             meter.measure([&iterate_with_deref, &e_full_split] { return iterate_with_deref(e_full_split); });
+    //         };    
+    //         BENCHMARK_ADVANCED("full_inline_v1_iterator_construction_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+    //             meter.measure([&iterate_with_deref, &e_full_v1] { return iterate_with_deref(e_full_v1); });
+    //         };    
+    //         BENCHMARK_ADVANCED("split_v1_inline_iterator_construction_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+    //             meter.measure([&iterate_with_deref, &e_split_v1] { return iterate_with_deref(e_split_v1); });
+    //         };
+    //         BENCHMARK_ADVANCED("partly_inline_iterator_construction_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+    //             meter.measure([&iterate_with_deref, &e_inline] { return iterate_with_deref(e_inline); });
+    //         };
+    //         BENCHMARK_ADVANCED("noinline_iterator_construction_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+    //             meter.measure([&iterate_with_deref, &e_noinline] { return iterate_with_deref(e_noinline); });
+    //         };    
+    //     }        
+    // }   //end of SECTION("benchmark_shape(1,10000)_shape(10000,1)_symmetric_tree_depth_1")
     
-    tensor_type t1(0, shape1);
-    tensor_type t2(0, shape2);
-    partly_inline_tensor_type e_inline = make_tree(t1,t2);
+    // SECTION("benchmark_shape(1,1,3,1,5,1,7,1,9,1)_shape(1,2,1,4,1,6,1,8,1,10)_symmetric_tree_depth_1"){
+
+    //     shape_type shape1{1,1,3,1,5,1,7,1,9,1};
+    //     shape_type shape2{1,2,1,4,1,6,1,8,1,10};
+
+    //     static constexpr std::size_t tree_depth = 1;
+    //     auto make_tree = [](const auto& t1, const auto& t2){return make_symmetric_tree<tree_depth>(t1,t2);};
+
+    //     full_inline_tensor_type t1_full(0, shape1);
+    //     full_inline_tensor_type t2_full(0, shape2);
+    //     auto e_full = make_tree(t1_full,t2_full);    
+        
+    //     full_inline_split_tensor_type t1_full_split(0, shape1);
+    //     full_inline_split_tensor_type t2_full_split(0, shape2);
+    //     auto e_full_split = make_tree(t1_full_split,t2_full_split);    
+        
+    //     full_inline_tensor_v1_type t1_full_v1(0, shape1);
+    //     full_inline_tensor_v1_type t2_full_v1(0, shape2);
+    //     auto e_full_v1 = make_tree(t1_full_v1,t2_full_v1);    
+        
+    //     split_eval_tensor_v1_type t1_split_v1(0, shape1);
+    //     split_eval_tensor_v1_type t2_split_v1(0, shape2);
+    //     split_eval_tensor_v1_type e_split_v1 = make_tree(t1_split_v1, t2_split_v1);
+        
+    //     tensor_type t1(0, shape1);
+    //     tensor_type t2(0, shape2);
+    //     partly_inline_tensor_type e_inline = make_tree(t1,t2);
+        
+    //     noinline_tensor_type t1_noinline(0, shape1);
+    //     noinline_tensor_type t2_noinline(0, shape2);
+    //     noinline_tensor_type e_noinline = make_tree(t1_noinline,t2_noinline);    
+        
+    //     if (benchmark_kind == benchmark_kinds::iteration_and_dereference)
+    //     {
+    //         BENCHMARK_ADVANCED("full_inline_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+    //             auto v = make_iterators(meter.runs(),e_full);
+    //             meter.measure([&just_iterate_with_deref, &v](int i) { return just_iterate_with_deref(v[i].first, v[i].second); });
+    //         };
+    //         BENCHMARK_ADVANCED("full_inline_split_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+    //             auto v = make_iterators(meter.runs(),e_full_split);
+    //             meter.measure([&just_iterate_with_deref, &v](int i) { return just_iterate_with_deref(v[i].first, v[i].second); });
+    //         };
+    //         BENCHMARK_ADVANCED("full_inline_v1_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+    //             auto v = make_iterators(meter.runs(),e_full_v1);
+    //             meter.measure([&just_iterate_with_deref, &v](int i) { return just_iterate_with_deref(v[i].first, v[i].second); });
+    //         };
+    //         BENCHMARK_ADVANCED("split_v1_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {
+    //             auto v = make_iterators(meter.runs(),e_split_v1);
+    //             meter.measure([&just_iterate_with_deref, &v](int i) { return just_iterate_with_deref(v[i].first, v[i].second); });
+    //         };
+    //         BENCHMARK_ADVANCED("partly_inline_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {
+    //             auto v = make_iterators(meter.runs(),e_inline);
+    //             meter.measure([&just_iterate_with_deref, &v](int i) { return just_iterate_with_deref(v[i].first, v[i].second); });
+    //         };
+    //         BENCHMARK_ADVANCED("noinline_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {
+    //             auto v = make_iterators(meter.runs(),e_noinline);
+    //             meter.measure([&just_iterate_with_deref, &v](int i) { return just_iterate_with_deref(v[i].first, v[i].second); });
+    //         };
+    //     }
+
+    //     if (benchmark_kind == benchmark_kinds::iterator_construction_iteration_and_dereference)
+    //     {
+    //         BENCHMARK_ADVANCED("full_inline_iterator_construction_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+    //             meter.measure([&iterate_with_deref, &e_full] { return iterate_with_deref(e_full); });
+    //         };    
+    //         BENCHMARK_ADVANCED("full_inline_split_iterator_construction_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+    //             meter.measure([&iterate_with_deref, &e_full_split] { return iterate_with_deref(e_full_split); });
+    //         };    
+    //         BENCHMARK_ADVANCED("full_inline_v1_iterator_construction_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+    //             meter.measure([&iterate_with_deref, &e_full_v1] { return iterate_with_deref(e_full_v1); });
+    //         };    
+    //         BENCHMARK_ADVANCED("split_v1_inline_iterator_construction_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+    //             meter.measure([&iterate_with_deref, &e_split_v1] { return iterate_with_deref(e_split_v1); });
+    //         };
+    //         BENCHMARK_ADVANCED("partly_inline_iterator_construction_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+    //             meter.measure([&iterate_with_deref, &e_inline] { return iterate_with_deref(e_inline); });
+    //         };
+    //         BENCHMARK_ADVANCED("noinline_iterator_construction_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+    //             meter.measure([&iterate_with_deref, &e_noinline] { return iterate_with_deref(e_noinline); });
+    //         };    
+    //     }        
+    // }   //end of SECTION("benchmark_shape(1,1,3,1,5,1,7,1,9,1)_shape(1,2,1,4,1,6,1,8,1,10)_symmetric_tree_depth_1")
     
-    noinline_tensor_type t1_noinline(0, shape1);
-    noinline_tensor_type t2_noinline(0, shape2);
-    noinline_tensor_type e_noinline = make_tree(t1_noinline,t2_noinline);    
-    
-    // BENCHMARK_ADVANCED("full_inline_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
-    //     auto v = make_iterators(meter.runs(),e_full);
-    //     meter.measure([&just_iterate_with_deref, &v](int i) { return just_iterate_with_deref(v[i].first, v[i].second); });
-    // };
-    // BENCHMARK_ADVANCED("split_v1_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {
-    //     auto v = make_iterators(meter.runs(),e_split_v1);
-    //     meter.measure([&just_iterate_with_deref, &v](int i) { return just_iterate_with_deref(v[i].first, v[i].second); });
-    // };
-    // BENCHMARK_ADVANCED("partly_inline_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {
-    //     auto v = make_iterators(meter.runs(),e_inline);
-    //     meter.measure([&just_iterate_with_deref, &v](int i) { return just_iterate_with_deref(v[i].first, v[i].second); });
-    // };
-    // BENCHMARK_ADVANCED("noinline_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {
-    //     auto v = make_iterators(meter.runs(),e_noinline);
-    //     meter.measure([&just_iterate_with_deref, &v](int i) { return just_iterate_with_deref(v[i].first, v[i].second); });
-    // };
-    
-    BENCHMARK_ADVANCED("full_inline_iterator_construction_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
-        meter.measure([&iterate_with_deref, &e_full] { return iterate_with_deref(e_full); });
-    };    
-    BENCHMARK_ADVANCED("full_inline_split_iterator_construction_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
-        meter.measure([&iterate_with_deref, &e_full_split] { return iterate_with_deref(e_full_split); });
-    };    
-    BENCHMARK_ADVANCED("split_v1_inline_iterator_construction_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
-        meter.measure([&iterate_with_deref, &e_split_v1] { return iterate_with_deref(e_split_v1); });
-    };
-    BENCHMARK_ADVANCED("partly_inline_iterator_construction_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
-        meter.measure([&iterate_with_deref, &e_inline] { return iterate_with_deref(e_inline); });
-    };
-    // BENCHMARK_ADVANCED("noinline_iterator_construction_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
-    //     meter.measure([&iterate_with_deref, &e_noinline] { return iterate_with_deref(e_noinline); });
-    // };    
-    
-    // BENCHMARK_ADVANCED("full_inline_iterator_construction_iteration_without_dereference")(Catch::Benchmark::Chronometer meter) {        
-    //     meter.measure([&iterate_without_deref, &e_full] { return iterate_without_deref(e_full); });
-    // };
-    // BENCHMARK_ADVANCED("split_v1_inline_iterator_construction_iteration_without_dereference")(Catch::Benchmark::Chronometer meter) {        
-    //     meter.measure([&iterate_without_deref, &e_split_v1] { return iterate_without_deref(e_split_v1); });
-    // };
-    // BENCHMARK_ADVANCED("partly_inline_iterator_construction_iteration_without_dereference")(Catch::Benchmark::Chronometer meter) {        
-    //     meter.measure([&iterate_without_deref, &e_inline] { return iterate_without_deref(e_inline); });
-    // };
-    // BENCHMARK_ADVANCED("noinline_iterator_construction_iteration_without_dereference")(Catch::Benchmark::Chronometer meter) {        
-    //     meter.measure([&iterate_without_deref, &e_noinline] { return iterate_without_deref(e_noinline); });
-    // };    
+    SECTION("benchmark_shape(1,3000)_shape(3000,1)_symmetric_tree_depth_5"){
+
+        shape_type shape1{1,3000};
+        shape_type shape2{3000,1};
+
+        static constexpr std::size_t tree_depth = 5;
+        auto make_tree = [](const auto& t1, const auto& t2){return make_symmetric_tree<tree_depth>(t1,t2);};
+
+        full_inline_tensor_type t1_full(0, shape1);
+        full_inline_tensor_type t2_full(0, shape2);
+        auto e_full = make_tree(t1_full,t2_full);    
+        
+        full_inline_split_tensor_type t1_full_split(0, shape1);
+        full_inline_split_tensor_type t2_full_split(0, shape2);
+        auto e_full_split = make_tree(t1_full_split,t2_full_split);    
+        
+        full_inline_tensor_v1_type t1_full_v1(0, shape1);
+        full_inline_tensor_v1_type t2_full_v1(0, shape2);
+        auto e_full_v1 = make_tree(t1_full_v1,t2_full_v1);    
+        
+        split_eval_tensor_v1_type t1_split_v1(0, shape1);
+        split_eval_tensor_v1_type t2_split_v1(0, shape2);
+        split_eval_tensor_v1_type e_split_v1 = make_tree(t1_split_v1, t2_split_v1);
+        
+        tensor_type t1(0, shape1);
+        tensor_type t2(0, shape2);
+        partly_inline_tensor_type e_inline = make_tree(t1,t2);
+        
+        noinline_tensor_type t1_noinline(0, shape1);
+        noinline_tensor_type t2_noinline(0, shape2);
+        noinline_tensor_type e_noinline = make_tree(t1_noinline,t2_noinline);    
+        
+        if (benchmark_kind == benchmark_kinds::iteration_and_dereference)
+        {
+            BENCHMARK_ADVANCED("full_inline_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+                auto v = make_iterators(meter.runs(),e_full);
+                meter.measure([&just_iterate_with_deref, &v](int i) { return just_iterate_with_deref(v[i].first, v[i].second); });
+            };
+            BENCHMARK_ADVANCED("full_inline_split_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+                auto v = make_iterators(meter.runs(),e_full_split);
+                meter.measure([&just_iterate_with_deref, &v](int i) { return just_iterate_with_deref(v[i].first, v[i].second); });
+            };
+            BENCHMARK_ADVANCED("full_inline_v1_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+                auto v = make_iterators(meter.runs(),e_full_v1);
+                meter.measure([&just_iterate_with_deref, &v](int i) { return just_iterate_with_deref(v[i].first, v[i].second); });
+            };
+            BENCHMARK_ADVANCED("split_v1_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {
+                auto v = make_iterators(meter.runs(),e_split_v1);
+                meter.measure([&just_iterate_with_deref, &v](int i) { return just_iterate_with_deref(v[i].first, v[i].second); });
+            };
+            BENCHMARK_ADVANCED("partly_inline_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {
+                auto v = make_iterators(meter.runs(),e_inline);
+                meter.measure([&just_iterate_with_deref, &v](int i) { return just_iterate_with_deref(v[i].first, v[i].second); });
+            };
+            BENCHMARK_ADVANCED("noinline_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {
+                auto v = make_iterators(meter.runs(),e_noinline);
+                meter.measure([&just_iterate_with_deref, &v](int i) { return just_iterate_with_deref(v[i].first, v[i].second); });
+            };
+        }
+
+        if (benchmark_kind == benchmark_kinds::iterator_construction_iteration_and_dereference)
+        {
+            BENCHMARK_ADVANCED("full_inline_iterator_construction_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+                meter.measure([&iterate_with_deref, &e_full] { return iterate_with_deref(e_full); });
+            };    
+            BENCHMARK_ADVANCED("full_inline_split_iterator_construction_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+                meter.measure([&iterate_with_deref, &e_full_split] { return iterate_with_deref(e_full_split); });
+            };    
+            BENCHMARK_ADVANCED("full_inline_v1_iterator_construction_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+                meter.measure([&iterate_with_deref, &e_full_v1] { return iterate_with_deref(e_full_v1); });
+            };    
+            BENCHMARK_ADVANCED("split_v1_inline_iterator_construction_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+                meter.measure([&iterate_with_deref, &e_split_v1] { return iterate_with_deref(e_split_v1); });
+            };
+            BENCHMARK_ADVANCED("partly_inline_iterator_construction_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+                meter.measure([&iterate_with_deref, &e_inline] { return iterate_with_deref(e_inline); });
+            };
+            BENCHMARK_ADVANCED("noinline_iterator_construction_iteration_and_dereference")(Catch::Benchmark::Chronometer meter) {        
+                meter.measure([&iterate_with_deref, &e_noinline] { return iterate_with_deref(e_noinline); });
+            };    
+        }        
+    }   //end of SECTION("benchmark_shape(1,3000)_shape(3000,1)_symmetric_tree_depth_5")
+
 }
