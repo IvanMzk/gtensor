@@ -29,12 +29,8 @@ using mode_trivial_broadcast_eval_combi = mode<trivial_broadcast_eval_modes, tri
 
 struct NOP{};
 
-/*
-* ValT type of tensor element
-*/
-template<typename ValT>
-struct default_config{    
-    using value_type = ValT;
+
+struct default_config{        
     
     using caching_mode = mode_caching_broadcast;
     //using caching_mode = typename mode_caching_always;
@@ -49,7 +45,8 @@ struct default_config{
     
     using difference_type = std::int64_t;
     using index_type = difference_type;
-    using storage_type = gtensor::detail::shareable_storage<std::vector<value_type>>;
+    template<typename ValT> using storage = gtensor::detail::shareable_storage<std::vector<ValT>>;
+    //using storage_type = gtensor::detail::shareable_storage<std::vector<value_type>>;
     //using storage_type = std::vector<value_type>;
     using shape_type = trivial_type_vector::uvector<index_type>;
 
