@@ -6,6 +6,7 @@
 #include "evaluating_tensor.hpp"
 #include "operations.hpp"
 #include "tensor_wrapper.hpp"
+#include "walker_factory.hpp"
 
 
 
@@ -68,7 +69,8 @@ TEST_CASE("test_evaluating_tensor_construct","[test_evaluating_tensor]"){
     using tensor_base_type = tensor_base<value_type, default_config>;
     using storage_tensor_type = storage_tensor<value_type, default_config>;
     using tensor_wrapper_type = gtensor::tensor_wrapper<value_type, default_config>;
-    using evaluating_tensor_type = evaluating_tensor<value_type, default_config, add, std::shared_ptr<tensor_base_type>, std::shared_ptr<tensor_base_type>>;
+    using walker_factory_type = gtensor::evaluating_walker_factory<value_type,default_config>;
+    using evaluating_tensor_type = evaluating_tensor<value_type, default_config, add, walker_factory_type, std::shared_ptr<tensor_base_type>, std::shared_ptr<tensor_base_type>>;
     using test_type = std::tuple<std::shared_ptr<tensor_wrapper_type>, std::shared_ptr<tensor_wrapper_type>, shape_type, index_type, index_type>;
 
     auto make_shared_wrapper = [](tensor_base_type* t){return std::make_shared<tensor_wrapper_type>(std::shared_ptr<tensor_base_type>(t));};

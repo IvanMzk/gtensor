@@ -91,13 +91,14 @@ auto de_wrap(const std::shared_ptr<ImplT>& impl){return impl;}
 }   //end of namespace detail
 
 
-template<typename ValT, template<typename> typename Cfg, typename F, typename...Ops>
+template<typename ValT, template<typename> typename Cfg, typename F, typename WFactoryT, typename...Ops>
 class evaluating_tensor : 
     public tensor_base<ValT,Cfg>,
     public evaluating_base<ValT,Cfg>,
     public evaluating_trivial_base<ValT,Cfg>,
     public converting_base<ValT,Cfg>    
 {    
+    using walker_factory_type = WFactoryT;
     using config_type = Cfg<ValT>;
     using value_type = ValT;
     using index_type = typename config_type::index_type;
@@ -114,13 +115,15 @@ class evaluating_tensor :
     value_type trivial_at_helper(const index_type& idx, std::index_sequence<I...>)const{return f(std::get<I>(operands)->trivial_at(idx)...);} 
         
     walker<ValT,Cfg> create_evaluating_walker()const override{
-        return evaluating_walker_factory<ValT,Cfg>::create_walker(descriptor_,f,operands);
+        return walker_factory_type::create_walker(descriptor_,f,operands);
+        //return evaluating_walker_factory<ValT,Cfg>::create_walker(descriptor_,f,operands);
     }
     evaluating_trivial_walker<ValT,Cfg> create_trivial_walker()const override{
         return trivial_walker_factory<ValT,Cfg>::create_walker(shape(), strides(), *this);
     }
     indexer<ValT,Cfg> create_evaluating_indexer()const override{
-        return evaluating_walker_factory<ValT,Cfg>::create_indexer(descriptor_, f,operands);
+        return walker_factory_type::create_indexer(descriptor_, f,operands);
+        //return evaluating_walker_factory<ValT,Cfg>::create_indexer(descriptor_, f,operands);
     }
     index_type view_index_convert(const index_type& idx)const override{return idx;}
 
