@@ -7,18 +7,17 @@
 
 namespace gtensor{
 
-template<typename ValT, template<typename> typename Cfg>
+template<typename ValT, typename CfgT>
 class stensor_descriptor :
-    public descriptor_base<ValT,Cfg>,
-    private basic_descriptor<ValT,Cfg>,
-    private detail::collection_libdivide_extension<ValT,Cfg,typename Cfg<ValT>::div_mode>
+    public descriptor_base<ValT,CfgT>,
+    private basic_descriptor<ValT,CfgT>,
+    private detail::collection_libdivide_extension<ValT,CfgT,typename CfgT::div_mode>
 {
-    using base_descriptor = basic_descriptor<ValT,Cfg>;
-    using base_strides_libdivide = detail::collection_libdivide_extension<ValT,Cfg,typename Cfg<ValT>::div_mode>;
-    using config_type = Cfg<ValT>;
+    using base_descriptor = basic_descriptor<ValT,CfgT>;
+    using base_strides_libdivide = detail::collection_libdivide_extension<ValT,CfgT,typename CfgT::div_mode>;    
     using value_type = ValT;
-    using shape_type = typename config_type::shape_type;
-    using index_type = typename config_type::index_type;
+    using shape_type = typename CfgT::shape_type;
+    using index_type = typename CfgT::index_type;
 
     index_type convert_helper(const shape_type& idx)const{
         return std::inner_product(idx.begin(), idx.end(), cstrides().begin(), index_type{0});
