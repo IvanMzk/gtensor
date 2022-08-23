@@ -72,12 +72,12 @@ class evaluating_walker_factory
         {}
         template<typename...Args>
         walker<ValT,Cfg> operator()(const Args&...args)const{
-            using evaluating_walker_type = evaluating_walker_polymorphic<ValT,Cfg,F,decltype(std::declval<Args>().create_walker())...>;
-            return std::unique_ptr<walker_base<ValT,Cfg>>{new evaluating_walker_type{shape,args.create_walker()...}};
+            using evaluating_walker_type = evaluating_walker<ValT,Cfg,F,decltype(std::declval<Args>().create_walker())...>;
+            return std::make_unique<evaluating_walker_polymorphic<ValT,Cfg,evaluating_walker_type>>(evaluating_walker_type{shape,args.create_walker()...});            
         }
     };
     template<typename MakerT, typename...Ops, std::size_t...I>
-    static walker<ValT, Cfg> create_walker_helper(const MakerT& maker, const std::tuple<Ops...>& operands, std::index_sequence<I...>){
+    static auto create_walker_helper(const MakerT& maker, const std::tuple<Ops...>& operands, std::index_sequence<I...>){
         using dispatcher_type = detail::dispatcher<ValT,Cfg>;
         return dispatcher_type::call(maker, *std::get<I>(operands)...);
     }
@@ -104,7 +104,7 @@ class evaluating_walker_factory
     }
 public: 
     template<typename F, typename...Ops>
-    static walker<ValT, Cfg> create_walker(const shape_type& shape, const F&, const std::tuple<Ops...>& operands){
+    static auto create_walker(const shape_type& shape, const F&, const std::tuple<Ops...>& operands){
         using maker_type = walker_maker<F>;
         return create_walker_helper(maker_type{shape}, operands, std::make_index_sequence<sizeof...(Ops)>{});
     }
