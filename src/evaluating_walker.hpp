@@ -92,8 +92,8 @@ public:
 };
 
 template<typename ValT, template<typename> typename Cfg, typename F, typename...Wks>
-class evaluating_notrivial_indexer : 
-    public evaluating_indexer_base<ValT, Cfg>,
+class evaluating_indexer : 
+    public indexer_base<ValT, Cfg>,
     private evaluating_walker<ValT, Cfg, F, Wks...>
 {
     using base_type = evaluating_walker<ValT, Cfg, F, Wks...>;
@@ -106,7 +106,7 @@ class evaluating_notrivial_indexer :
     const strides_type* strides;
     value_type data_cache{evaluate_at(0)};
     index_type index_cache{0};
-    std::unique_ptr<evaluating_indexer_base<ValT,Cfg>> clone(int)const override{return std::make_unique<evaluating_notrivial_indexer<ValT,Cfg,F,Wks...>>(*this);}
+    std::unique_ptr<indexer_base<ValT,Cfg>> clone(int)const override{return std::make_unique<evaluating_indexer<ValT,Cfg,F,Wks...>>(*this);}
     value_type operator[](index_type idx)override{
         if (index_cache == idx){
             return data_cache;
@@ -130,7 +130,7 @@ class evaluating_notrivial_indexer :
     }
 
 public:
-    evaluating_notrivial_indexer(const shape_type& shape_, const strides_type& strides_, Wks&&...walkers_):
+    evaluating_indexer(const shape_type& shape_, const strides_type& strides_, Wks&&...walkers_):
         base_type{shape_, std::move(walkers_)...},
         strides{&strides_}
     {}
