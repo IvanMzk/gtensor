@@ -64,30 +64,31 @@ public:
     value_type operator*() const {return deref_helper(std::make_index_sequence<sizeof...(Wks)>{});}
 };
 
-template<typename ValT, template<typename> typename Cfg, typename F, typename...Wks>
+template<typename ValT, template<typename> typename Cfg, typename ImplT>
 class evaluating_walker_polymorphic : 
-    public walker_base<ValT, Cfg>,
-    private evaluating_walker<ValT, Cfg, F, Wks...>
+    public walker_base<ValT, Cfg>    
 {
-    using base_evaluating_walker = evaluating_walker<ValT, Cfg, F, Wks...>;
+    using impl_type = ImplT;
     using config_type = Cfg<ValT>;        
     using value_type = ValT;
     using index_type = typename config_type::index_type;
     using shape_type = typename config_type::shape_type;
 
+    impl_type impl_;
+
     std::unique_ptr<walker_base<ValT,Cfg>> clone()const override{return std::make_unique<evaluating_walker_polymorphic>(*this);}
 
 public:
-    evaluating_walker_polymorphic(const shape_type& shape_, Wks&&...walkers_):
-        base_evaluating_walker{shape_, std::move(walkers_)...}        
+    evaluating_walker_polymorphic(impl_type&& impl__):
+        impl_{impl__}
     {}
     
-    void walk(const index_type& direction, const index_type& steps)override{return base_evaluating_walker::walk(direction,steps);}
-    void step(const index_type& direction)override{return base_evaluating_walker::step(direction);}
-    void step_back(const index_type& direction)override{return base_evaluating_walker::step_back(direction);}
-    void reset(const index_type& direction)override{return base_evaluating_walker::reset(direction);}
-    void reset()override{return base_evaluating_walker::reset();}
-    value_type operator*() const override{return base_evaluating_walker::operator*();}
+    void walk(const index_type& direction, const index_type& steps)override{return impl_.walk(direction,steps);}
+    void step(const index_type& direction)override{return impl_.step(direction);}
+    void step_back(const index_type& direction)override{return impl_.step_back(direction);}
+    void reset(const index_type& direction)override{return impl_.reset(direction);}
+    void reset()override{return impl_.reset();}
+    value_type operator*() const override{return impl_.operator*();}
 };
 
 template<typename ValT, template<typename> typename Cfg, typename F, typename...Wks>
