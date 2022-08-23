@@ -12,11 +12,9 @@ class dispatch_exception : public std::runtime_error{
 };
 
 template<typename ValT, template<typename> typename Cfg>
-class dispatcher{
-    using base_type = tensor_base<ValT,Cfg>;    
-
-    template<typename FirstT, typename F>
-    static auto dispatch_second(F& f, const FirstT& first, const base_type& second){
+class dispatcher{      
+    template<typename FirstT, typename ValT2, template<typename> typename Cfg, typename F>
+    static auto dispatch_second(F& f, const FirstT& first, const tensor_base<ValT2, Cfg>& second){
         if (second.is_storage())
         {
             return f(first, *second.as_storing());
@@ -38,8 +36,8 @@ class dispatcher{
             throw dispatch_exception("type is not supported by dispatcher");
         }
     }        
-    template<typename F>
-    static auto dispatch_first(F& f, const base_type& first, const base_type& second){
+    template<typename ValT1, typename ValT2, template<typename> typename Cfg, typename F>
+    static auto dispatch_first(F& f, const tensor_base<ValT1, Cfg>& first, const tensor_base<ValT2, Cfg>& second){
         if (first.is_storage())
         {
             return dispatch_second(f, *first.as_storing(), second);
@@ -62,87 +60,11 @@ class dispatcher{
         }
     }    
 public:    
-    template<typename F>
-    static auto call(F& f, const base_type& first, const base_type& second){
+    template<typename ValT1, typename ValT2, template<typename> typename Cfg, typename F>
+    static auto call(F& f, const tensor_base<ValT1, Cfg>& first, const tensor_base<ValT2, Cfg>& second){
         return dispatch_first(f,first,second);
     }
 };
-
-// template<typename ValT, template<typename> typename Cfg>
-// class dispatcher{
-//     using base_type = tensor_base<ValT,Cfg>;    
-
-//     template<typename FirstT, typename F>
-//     static auto dispatch_second(F& f, const FirstT& first, const base_type& second){
-//         if (second.is_storage())
-//         {
-//             return f(first, *second.as_storing());
-//         }
-//         else if (second.tensor_kind() == tensor_kinds::expression)
-//         {
-//             if (second.is_trivial()){
-//                 return f(first, *second.as_evaluating_trivial());
-//             }            
-//             else{
-//                 return f(first, *second.as_evaluating());
-//             }
-//         }
-//         else if (auto v = second.as_view())
-//         {
-//             if (v->view_root_kind() == tensor_kinds::expression){
-//                 if (second.is_trivial()){
-//                     throw dispatch_exception("type is not supported by dispatcher");
-//                 }else{
-//                     return f(first, *second.as_viewing_evaluating());
-//                 }
-//             }else{
-//                 throw dispatch_exception("type is not supported by dispatcher");
-//             }
-//         }        
-//         else
-//         {
-//             throw dispatch_exception("type is not supported by dispatcher");
-//         }
-//     }        
-//     template<typename F>
-//     static auto dispatch_first(F& f, const base_type& first, const base_type& second){
-//         if (first.is_storage())
-//         {
-//             return dispatch_second(f, *first.as_storing(), second);
-//         }
-//         else if (first.tensor_kind() == tensor_kinds::expression)
-//         {
-//             if (first.is_trivial()){
-//                 return dispatch_second(f, *first.as_evaluating_trivial(), second);
-//             }            
-//             else{
-//                 return dispatch_second(f, *first.as_evaluating(), second);
-//             }
-//         }        
-//         else if (auto v = first.as_view())
-//         {
-//             if (v->view_root_kind() == tensor_kinds::expression){
-//                 if (first.is_trivial()){
-//                     throw dispatch_exception("type is not supported by dispatcher");
-//                 }else{
-//                     return dispatch_second(f, *first.as_viewing_evaluating(), second);
-//                 }
-//             }
-//             else{
-//                 throw dispatch_exception("type is not supported by dispatcher");
-//             }
-//         }
-//         else
-//         {
-//             throw dispatch_exception("type is not supported by dispatcher");
-//         }
-//     }    
-// public:    
-//     template<typename F>
-//     static auto call(F& f, const base_type& first, const base_type& second){
-//         return dispatch_first(f,first,second);
-//     }
-// };
 
 }   //end of namespace detail
 
