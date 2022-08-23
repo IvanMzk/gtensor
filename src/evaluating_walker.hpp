@@ -29,17 +29,23 @@ class evaluating_walker
     void reset_helper(std::index_sequence<I...>){(std::get<I>(walkers).reset(),...);}    
     template<std::size_t...I>
     value_type deref_helper(std::index_sequence<I...>) const {return f(*std::get<I>(walkers)...);}
-protected:
     template<std::size_t...I>
     void walk_helper(const index_type& direction, const index_type& steps, std::index_sequence<I...>){(std::get<I>(walkers).walk(direction,steps),...);}
-    index_type dim()const{return dim_;}
+
 public:
+
     evaluating_walker(const shape_type& shape_, Wks&&...walkers_):
         dim_{static_cast<index_type>(shape_.size())},
         shape{shape_},
         walkers{std::move(walkers_)...}
     {}
-    
+
+    index_type dim()const{return dim_;}
+
+    //walk method without check to utilize in evaluating_indexer
+    void walk_without_check(const index_type& direction, const index_type& steps){
+        walk_helper(direction,steps,std::make_index_sequence<sizeof...(Wks)>{});        
+    }    
     void walk(const index_type& direction, const index_type& steps){
         if (detail::can_walk(direction,dim_,shape.element(direction))){
             walk_helper(direction,steps,std::make_index_sequence<sizeof...(Wks)>{});
@@ -65,8 +71,7 @@ public:
 };
 
 template<typename ValT, template<typename> typename Cfg, typename ImplT>
-class evaluating_walker_polymorphic : 
-    public walker_base<ValT, Cfg>    
+class evaluating_walker_polymorphic : public walker_base<ValT, Cfg>    
 {
     using impl_type = ImplT;
     using config_type = Cfg<ValT>;        
@@ -80,7 +85,7 @@ class evaluating_walker_polymorphic :
 
 public:
     evaluating_walker_polymorphic(impl_type&& impl__):
-        impl_{impl__}
+        impl_{std::move(impl__)}
     {}
     
     void walk(const index_type& direction, const index_type& steps)override{return impl_.walk(direction,steps);}
@@ -91,22 +96,25 @@ public:
     value_type operator*() const override{return impl_.operator*();}
 };
 
-template<typename ValT, template<typename> typename Cfg, typename F, typename...Wks>
-class evaluating_indexer : 
-    public indexer_base<ValT, Cfg>,
-    private evaluating_walker<ValT, Cfg, F, Wks...>
-{
-    using base_type = evaluating_walker<ValT, Cfg, F, Wks...>;
+template<typename ValT, template<typename> typename Cfg, typename WlkT>
+class evaluating_indexer : public indexer_base<ValT, Cfg>    
+{    
+    using walker_type = WlkT;
     using config_type = Cfg<ValT>;
     using value_type = ValT;
     using index_type = typename config_type::index_type;
     using shape_type = typename config_type::shape_type;
     using strides_type = typename detail::libdiv_strides_traits<config_type>::type;
     
+    walker_type walker_;
     const strides_type* strides;
     value_type data_cache{evaluate_at(0)};
     index_type index_cache{0};
-    std::unique_ptr<indexer_base<ValT,Cfg>> clone(int)const override{return std::make_unique<evaluating_indexer<ValT,Cfg,F,Wks...>>(*this);}
+
+    std::unique_ptr<indexer_base<ValT,Cfg>> clone(int)const override{return std::make_unique<evaluating_indexer>(*this);}
+
+    void walk(const index_type& direction, const index_type& steps){walker_.walk_without_check(direction,steps);}
+    
     value_type operator[](index_type idx)override{
         if (index_cache == idx){
             return data_cache;
@@ -114,24 +122,25 @@ class evaluating_indexer :
             return evaluate_at(idx);
         }
     }
+    
     value_type evaluate_at(index_type idx){
         index_cache = idx;
-        base_type::reset();
+        walker_.reset();
         auto sit_begin{(*strides).begin()};
         auto sit_end{(*strides).end()};
-        for(index_type d{base_type::dim()-1};sit_begin!=sit_end; ++sit_begin,--d){
+        for(index_type d{walker_.dim()-1};sit_begin!=sit_end; ++sit_begin,--d){
             auto q = detail::divide(idx,*sit_begin);
             if (q!=0){
-                base_type::walk_helper(d,q,std::make_index_sequence<sizeof...(Wks)>{});                
+                walk(d,q);
             }
         }
-        data_cache = base_type::operator*();
+        data_cache = walker_.operator*();
         return data_cache;
     }
 
 public:
-    evaluating_indexer(const shape_type& shape_, const strides_type& strides_, Wks&&...walkers_):
-        base_type{shape_, std::move(walkers_)...},
+    evaluating_indexer(const strides_type& strides_, walker_type&& walker__):
+        walker_{std::move(walker__)},
         strides{&strides_}
     {}
 
