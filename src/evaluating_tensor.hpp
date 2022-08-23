@@ -128,8 +128,8 @@ class evaluating_tensor :
     evaluating_trivial_walker<ValT,Cfg> create_trivial_walker()const override{
         return trivial_walker_factory<ValT,Cfg>::create_walker(shape(), strides(), *this);
     }
-    indexer<ValT,Cfg> create_evaluating_storage()const override{
-        return evaluating_walker_factory<ValT,Cfg>::create_storage(shape(), detail::strides_div(descriptor_), f,operands);
+    indexer<ValT,Cfg> create_evaluating_indexer()const override{
+        return evaluating_walker_factory<ValT,Cfg>::create_indexer(shape(), detail::strides_div(descriptor_), f,operands);
     }
     index_type view_index_convert(const index_type& idx)const override{return idx;}
 

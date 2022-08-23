@@ -51,7 +51,7 @@ class viewing_tensor :
     
     //viewing_evaluating_base interface implementation
     viewing_evaluating_walker<ValT,Cfg> create_view_expression_walker()const override{
-        return viewing_evaluating_walker<ValT,Cfg>{shape(),descriptor_.cstrides(),descriptor_.offset(), parent_converter, view_root->as_evaluating()->create_storage()};
+        return viewing_evaluating_walker<ValT,Cfg>{shape(),descriptor_.cstrides(),descriptor_.offset(), parent_converter, view_root->as_evaluating()->create_indexer()};
     }
     
     //converting_base interface implementation    

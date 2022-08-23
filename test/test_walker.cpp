@@ -58,7 +58,7 @@ struct evaluating_walker_test_tensor : public tensor<ValT,Cfg>{
         return impl()->as_evaluating()->create_walker();
     }
     indexer<ValT,Cfg> create_storage()const{
-        return impl()->as_evaluating()->create_storage();
+        return impl()->as_evaluating()->create_indexer();
     }
 };
 
