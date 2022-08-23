@@ -93,8 +93,9 @@ class evaluating_walker_factory
         {}
         template<typename...Args>
         indexer<ValT,Cfg> operator()(const Args&...args)const{
-            using indexer_type = evaluating_indexer<ValT,Cfg,F,decltype(std::declval<Args>().create_walker())...>;
-            return std::unique_ptr<indexer_base<ValT,Cfg>>{new indexer_type{shape,strides,args.create_walker()...}};
+            using evaluating_walker_type = evaluating_walker<ValT,Cfg,F,decltype(std::declval<Args>().create_walker())...>;
+            using evaluating_indexer_type = evaluating_indexer<ValT,Cfg,evaluating_walker_type>;
+            return std::make_unique<evaluating_indexer_type>(strides, evaluating_walker_type{shape,args.create_walker()...});            
         }
     };
     template<typename MakerT, typename...Ops, std::size_t...I>
