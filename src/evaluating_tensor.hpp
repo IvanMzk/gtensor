@@ -83,15 +83,6 @@ template<typename T> inline constexpr bool is_valid_operand = false;
 template<typename...T> inline constexpr bool is_valid_operand<std::shared_ptr<tensor_base<T...>>> = true;
 template<typename...Ops> inline constexpr bool is_valid_operands = (is_valid_operand<Ops>&&...);
 
-template<typename ValT, template<typename> typename Cfg, std::enable_if_t<detail::is_mode_div_native<Cfg<ValT>> ,int> =0 >
-inline const auto& strides_div(const stensor_descriptor<ValT, Cfg>& desc){
-    return desc.strides();
-}
-template<typename ValT, template<typename> typename Cfg, std::enable_if_t<detail::is_mode_div_libdivide<Cfg<ValT>> ,int> =0 >
-inline const auto& strides_div(const stensor_descriptor<ValT, Cfg>& desc){
-    return desc.strides_libdivide();
-}
-
 template<typename ValT, template<typename> typename Cfg>
 auto de_wrap(const std::shared_ptr<tensor_wrapper<ValT,Cfg>>& wrapper){return wrapper->impl();}
 template<typename ImplT>
@@ -123,13 +114,13 @@ class evaluating_tensor :
     value_type trivial_at_helper(const index_type& idx, std::index_sequence<I...>)const{return f(std::get<I>(operands)->trivial_at(idx)...);} 
         
     walker<ValT,Cfg> create_evaluating_walker()const override{
-        return evaluating_walker_factory<ValT,Cfg>::create_walker(shape(),f,operands);
+        return evaluating_walker_factory<ValT,Cfg>::create_walker(descriptor_,f,operands);
     }
     evaluating_trivial_walker<ValT,Cfg> create_trivial_walker()const override{
         return trivial_walker_factory<ValT,Cfg>::create_walker(shape(), strides(), *this);
     }
     indexer<ValT,Cfg> create_evaluating_indexer()const override{
-        return evaluating_walker_factory<ValT,Cfg>::create_indexer(shape(), detail::strides_div(descriptor_), f,operands);
+        return evaluating_walker_factory<ValT,Cfg>::create_indexer(descriptor_, f,operands);
     }
     index_type view_index_convert(const index_type& idx)const override{return idx;}
 

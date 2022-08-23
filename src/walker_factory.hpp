@@ -21,6 +21,14 @@ namespace detail{
         t.tensor_kind() == detail::tensor_kinds::view && t.is_cached();
 }
 
+template<typename ValT, template<typename> typename Cfg, std::enable_if_t<detail::is_mode_div_native<Cfg<ValT>> ,int> =0 >
+inline const auto& strides_div(const stensor_descriptor<ValT, Cfg>& desc){
+    return desc.strides();
+}
+template<typename ValT, template<typename> typename Cfg, std::enable_if_t<detail::is_mode_div_libdivide<Cfg<ValT>> ,int> =0 >
+inline const auto& strides_div(const stensor_descriptor<ValT, Cfg>& desc){
+    return desc.strides_libdivide();
+}
 
 }   //end of namespace detail
 
@@ -76,18 +84,13 @@ class evaluating_walker_factory
             return std::make_unique<evaluating_walker_polymorphic<ValT,Cfg,evaluating_walker_type>>(evaluating_walker_type{shape,args.create_walker()...});            
         }
     };
-    template<typename MakerT, typename...Ops, std::size_t...I>
-    static auto create_walker_helper(const MakerT& maker, const std::tuple<Ops...>& operands, std::index_sequence<I...>){
-        using dispatcher_type = detail::dispatcher<ValT,Cfg>;
-        return dispatcher_type::call(maker, *std::get<I>(operands)...);
-    }
     
     template<typename StT, typename F>
-    struct storage_maker{
+    struct indexer_maker{
         using strides_type = StT;
         const shape_type& shape;
         const strides_type& strides;
-        storage_maker(const shape_type& shape_, const strides_type& strides_):
+        indexer_maker(const shape_type& shape_, const strides_type& strides_):
             shape{shape_},
             strides{strides_}
         {}
@@ -97,22 +100,26 @@ class evaluating_walker_factory
             using evaluating_indexer_type = evaluating_indexer<ValT,Cfg,evaluating_walker_type>;
             return std::make_unique<evaluating_indexer_type>(strides, evaluating_walker_type{shape,args.create_walker()...});            
         }
-    };
+    };    
+
+    template<typename StT, typename F>
+    static auto maker_maker(const shape_type& shape, const StT& strides, F){return indexer_maker<StT,F>{shape,strides};}
+    template<typename F>
+    static auto maker_maker(const shape_type& shape, F){return walker_maker<F>{shape};}
+
     template<typename MakerT, typename...Ops, std::size_t...I>
-    static indexer<ValT,Cfg> create_storage_helper(const MakerT& maker, const std::tuple<Ops...>& operands, std::index_sequence<I...>){
-        using dispatcher_type = detail::dispatcher<ValT,Cfg>;
-        return dispatcher_type::call(maker, *std::get<I>(operands)...);
+    static auto create_helper(const MakerT& maker, const std::tuple<Ops...>& operands, std::index_sequence<I...>){        
+        return detail::dispatcher<ValT,Cfg>::call(maker, *std::get<I>(operands)...);
     }
+
 public: 
-    template<typename F, typename...Ops>
-    static auto create_walker(const shape_type& shape, const F&, const std::tuple<Ops...>& operands){
-        using maker_type = walker_maker<F>;
-        return create_walker_helper(maker_type{shape}, operands, std::make_index_sequence<sizeof...(Ops)>{});
+    template<typename DescT, typename F, typename...Ops>
+    static auto create_walker(const DescT& descriptor, const F&, const std::tuple<Ops...>& operands){
+        return create_helper(maker_maker(descriptor.shape(), F{}), operands, std::make_index_sequence<sizeof...(Ops)>{});        
     }
-    template<typename StT, typename F, typename...Ops>
-    static indexer<ValT,Cfg> create_storage(const shape_type& shape, const StT& strides, const F&, const std::tuple<Ops...>& operands){
-        using maker_type = storage_maker<StT, F>;
-        return create_storage_helper(maker_type{shape, strides}, operands, std::make_index_sequence<sizeof...(Ops)>{});
+    template<typename DescT, typename F, typename...Ops>
+    static indexer<ValT,Cfg> create_indexer(const DescT& descriptor, const F&, const std::tuple<Ops...>& operands){
+        return create_helper(maker_maker(descriptor.shape(), detail::strides_div(descriptor), F{}), operands, std::make_index_sequence<sizeof...(Ops)>{});        
     }
 };
 
