@@ -8,15 +8,14 @@ namespace gtensor{
 namespace detail{
 }   //end of namespace detail
 
-template<typename ValT, template<typename> typename Cfg>
+template<typename ValT, typename CfgT>
 class storage_walker :    
-    private basic_walker<ValT,Cfg, const ValT*>
+    private basic_walker<ValT,CfgT, const ValT*>
 {   
-    using base_basic_walker = basic_walker<ValT, Cfg, const ValT*>;
-    using config_type = Cfg<ValT>;        
+    using base_basic_walker = basic_walker<ValT, CfgT, const ValT*>;    
     using value_type = ValT;
-    using index_type = typename config_type::index_type;
-    using shape_type = typename config_type::shape_type;
+    using index_type = typename CfgT::index_type;
+    using shape_type = typename CfgT::shape_type;
 
 public:    
     storage_walker(const shape_type& shape_, const shape_type& strides_,  const value_type* data_):
@@ -30,18 +29,17 @@ public:
     value_type operator*() const {return *cursor();}
 };
 
-template<typename ValT, template<typename> typename Cfg>
+template<typename ValT, typename CfgT>
 class storage_walker_polymorphic : 
-    public walker_base<ValT, Cfg>,
-    private storage_walker<ValT,Cfg>
+    public walker_base<ValT, CfgT>,
+    private storage_walker<ValT,CfgT>
 {   
-    using base_storage_walker = storage_walker<ValT, Cfg>;
-    using config_type = Cfg<ValT>;        
+    using base_storage_walker = storage_walker<ValT, CfgT>;    
     using value_type = ValT;
-    using index_type = typename config_type::index_type;
-    using shape_type = typename config_type::shape_type;
+    using index_type = typename CfgT::index_type;
+    using shape_type = typename CfgT::shape_type;
     
-    std::unique_ptr<walker_base<ValT,Cfg>> clone()const override{return std::make_unique<storage_walker_polymorphic<ValT,Cfg>>(*this);}
+    std::unique_ptr<walker_base<ValT,CfgT>> clone()const override{return std::make_unique<storage_walker_polymorphic>(*this);}
 
 public:    
     storage_walker_polymorphic(const shape_type& shape_, const shape_type& strides_,  const value_type* data_):

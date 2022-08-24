@@ -40,16 +40,13 @@ public:
     virtual walker<ValT, Cfg> create_walker()const = 0;
 };
 
-template<typename ValT, template<typename> typename Cfg>
+template<typename ValT, typename CfgT>
 class storage_walker_factory
-{
-    using config_type = Cfg<ValT>;        
-    using value_type = ValT;
-    using shape_type = typename config_type::shape_type;
+{    
+    using shape_type = typename CfgT::shape_type;
 public: 
-    static auto create_walker(const shape_type& shape, const shape_type& strides, const value_type* data){
-        //return storage_walker_polymorphic<ValT,Cfg>{shape, strides, data};
-        return storage_walker<ValT,Cfg>{shape, strides, data};
+    static auto create_walker(const shape_type& shape, const shape_type& strides, const ValT* data){
+        return storage_walker<ValT,CfgT>{shape, strides, data};
     }
 };
 

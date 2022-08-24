@@ -33,12 +33,11 @@ public:
 
 }   //end of namespace detail
 
-template<typename ValT, template<typename> typename Cfg, typename CursorT>
+template<typename ValT, typename CfgT, typename CursorT>
 class basic_walker
-{
-    using config_type = Cfg<ValT>;        
-    using index_type = typename config_type::index_type;
-    using shape_type = typename config_type::shape_type;
+{    
+    using index_type = typename CfgT::index_type;
+    using shape_type = typename CfgT::shape_type;
     
     index_type dim;
     detail::shape_inverter<index_type, shape_type> shape;
@@ -79,11 +78,10 @@ protected:
     CursorT cursor()const{return cursor_;}
 };
 
-template<typename ValT, template<typename> typename Cfg>
-class walker_base{
-    using config_type = Cfg<ValT>;        
+template<typename ValT, typename CfgT>
+class walker_base{    
     using value_type = ValT;
-    using index_type = typename config_type::index_type;    
+    using index_type = typename CfgT::index_type;    
 public:
     virtual ~walker_base(){}
     virtual void walk(const index_type& direction, const index_type& steps) = 0;
@@ -92,16 +90,15 @@ public:
     virtual void reset(const index_type& direction) = 0;
     virtual void reset() = 0;        
     virtual value_type operator*() const = 0;
-    virtual std::unique_ptr<walker_base<ValT,Cfg>> clone()const = 0;
+    virtual std::unique_ptr<walker_base<ValT,CfgT>> clone()const = 0;
 };
 
 
-template<typename ValT, template<typename> typename Cfg>
-class walker{
-    using config_type = Cfg<ValT>;        
+template<typename ValT, typename CfgT>
+class walker{    
     using value_type = ValT;
-    using index_type = typename config_type::index_type;
-    using impl_base_type = walker_base<ValT, Cfg>;
+    using index_type = typename CfgT::index_type;
+    using impl_base_type = walker_base<ValT, CfgT>;
     
     std::unique_ptr<impl_base_type> impl;
 public:    
@@ -136,23 +133,21 @@ public:
     value_type operator*() const{return impl->operator*();}    
 };
 
-template<typename ValT, template<typename> typename Cfg>
-class indexer_base{
-    using config_type = Cfg<ValT>;        
+template<typename ValT, typename CfgT>
+class indexer_base{    
     using value_type = ValT;
-    using index_type = typename config_type::index_type;    
+    using index_type = typename CfgT::index_type;
 public:
     virtual ~indexer_base(){}    
-    virtual std::unique_ptr<indexer_base<ValT,Cfg>> clone(int)const = 0;
+    virtual std::unique_ptr<indexer_base<ValT,CfgT>> clone(int)const = 0;
     virtual value_type operator[](index_type) = 0;
 };
 
-template<typename ValT, template<typename> typename Cfg>
-class indexer{
-    using config_type = Cfg<ValT>;        
+template<typename ValT, typename CfgT>
+class indexer{    
     using value_type = ValT;
-    using index_type = typename config_type::index_type;
-    using impl_base_type = indexer_base<ValT, Cfg>;
+    using index_type = typename CfgT::index_type;
+    using impl_base_type = indexer_base<ValT, CfgT>;
     
     std::unique_ptr<impl_base_type> impl;
 public:    
