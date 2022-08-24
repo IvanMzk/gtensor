@@ -25,7 +25,7 @@ public:
     virtual const shape_type& shape()const = 0;
     virtual const shape_type& strides()const = 0;
     virtual std::string to_str()const = 0;
-    virtual const descriptor_base<ValT,Cfg>& descriptor()const = 0;
+    virtual const descriptor_base<ValT,CfgT>& descriptor()const = 0;
     
     virtual value_type trivial_at(const index_type& idx)const = 0;
     virtual detail::tensor_kinds tensor_kind()const = 0;
@@ -47,16 +47,11 @@ public:
 template<typename ValT, typename CfgT>
 class storing_base 
 {
-    using iterator_type = typename CfgT::storage_type::iterator;
-    using const_iterator_type = typename CfgT::storage_type::const_iterator;
-    
     virtual storage_walker<ValT,CfgT> create_storage_walker()const = 0;
     virtual const ValT* storage_data()const = 0;
 
 public:
     virtual ~storing_base(){}
-    // virtual const_iterator_type begin()const = 0;
-    // virtual const_iterator_type end()const = 0;
     auto create_walker()const{return create_storage_walker();}
     auto data()const{return storage_data();}
     
