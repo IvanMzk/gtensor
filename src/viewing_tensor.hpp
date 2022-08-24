@@ -12,31 +12,30 @@ class view_tensor_exception : public std::runtime_error{
 };
 
 
-template<typename ValT, template<typename> typename Cfg, typename DescT>
+template<typename ValT, typename CfgT, typename DescT>
 class viewing_tensor : 
-    public tensor_base<ValT, Cfg>,    
-    public storing_base<ValT,Cfg>,
-    public viewing_evaluating_base<ValT,Cfg>,
-    public converting_base<ValT,Cfg>
+    public tensor_base<ValT, CfgT>,
+    public storing_base<ValT,CfgT>,
+    public viewing_evaluating_base<ValT,CfgT>,
+    public converting_base<ValT,CfgT>
 {
-    using tensor_base_type = tensor_base<ValT,Cfg>;
-    using config_type = Cfg<ValT>;        
+    using tensor_base_type = tensor_base<ValT,CfgT>;    
     using value_type = ValT;
-    using index_type = typename config_type::index_type;
-    using shape_type = typename config_type::shape_type;    
+    using index_type = typename CfgT::index_type;
+    using shape_type = typename CfgT::shape_type;    
 
     DescT descriptor_;
     std::shared_ptr<tensor_base_type> parent;
     const tensor_base_type* view_root{parent->tensor_kind() == detail::tensor_kinds::view ? static_cast<const viewing_tensor*>(parent.get())->get_view_root() : parent.get()};
-    const converting_base<ValT,Cfg>* parent_converter{parent->as_converting()};
+    const converting_base<ValT,CfgT>* parent_converter{parent->as_converting()};
     
     //tensor_base interface
 
     //parent of view must be storing_tensor
-    const storing_base<ValT,Cfg>* as_storing()const override{return is_storage() ? static_cast<const storing_base<ValT,Cfg>*>(this) : nullptr;}
+    const storing_base<ValT,CfgT>* as_storing()const override{return is_storage() ? static_cast<const storing_base<ValT,CfgT>*>(this) : nullptr;}
     //root of view must be evaluating_tensor
-    const viewing_evaluating_base<ValT,Cfg>* as_viewing_evaluating()const{return static_cast<const viewing_evaluating_base<ValT,Cfg>*>(this);}
-    const converting_base<ValT,Cfg>* as_converting()const override{return static_cast<const converting_base<ValT,Cfg>*>(this);}
+    const viewing_evaluating_base<ValT,CfgT>* as_viewing_evaluating()const{return static_cast<const viewing_evaluating_base<ValT,CfgT>*>(this);}
+    const converting_base<ValT,CfgT>* as_converting()const override{return static_cast<const converting_base<ValT,CfgT>*>(this);}
     
     bool is_cached()const override{return false;}    
     bool is_trivial()const override{return true;}
@@ -45,13 +44,13 @@ class viewing_tensor :
     //storing_base interface implementation
     const value_type* storage_data()const override{return parent->as_storing()->data();}
 
-    storage_walker<ValT,Cfg> create_storage_walker()const override{
-        return storage_walker_factory<ValT,Cfg>::create_walker(shape(),descriptor_.cstrides(), parent->as_storing()->data()+descriptor_.offset());        
+    storage_walker<ValT,CfgT> create_storage_walker()const override{
+        return storage_walker_factory<ValT,CfgT>::create_walker(shape(),descriptor_.cstrides(), parent->as_storing()->data()+descriptor_.offset());        
     }
     
     //viewing_evaluating_base interface implementation
-    viewing_evaluating_walker<ValT,Cfg> create_view_expression_walker()const override{
-        return viewing_evaluating_walker<ValT,Cfg>{shape(),descriptor_.cstrides(),descriptor_.offset(), parent_converter, view_root->as_evaluating()->create_indexer()};
+    viewing_evaluating_walker<ValT,CfgT> create_view_expression_walker()const override{
+        return viewing_evaluating_walker<ValT,CfgT>{shape(),descriptor_.cstrides(),descriptor_.offset(), parent_converter, view_root->as_evaluating()->create_indexer()};
     }
     
     //converting_base interface implementation    
@@ -66,7 +65,7 @@ public:
     {}    
 
     detail::tensor_kinds tensor_kind()const override{return detail::tensor_kinds::view;}
-    const descriptor_base<ValT,Cfg>& descriptor()const override{return descriptor_;}
+    const descriptor_base<ValT,CfgT>& descriptor()const override{return descriptor_;}
     index_type size()const override{return descriptor_.size();}
     index_type dim()const override{return descriptor_.dim();}
     const shape_type& shape()const override{return descriptor_.shape();}

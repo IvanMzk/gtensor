@@ -7,16 +7,14 @@
 namespace gtensor{
 
 //view subdim and reshape descriptor
-template<typename ValT, template<typename> typename Cfg> 
+template<typename ValT, typename CfgT> 
 class view_subdim_descriptor : 
-    public descriptor_base<ValT,Cfg>,
-    private basic_descriptor<ValT,Cfg>
+    public descriptor_base<ValT,CfgT>,
+    private basic_descriptor<ValT,CfgT>
 {
-    using base_descriptor = basic_descriptor<ValT,Cfg>;
-    using config_type = Cfg<ValT>;        
     using value_type = ValT;
-    using index_type = typename config_type::index_type;
-    using shape_type = typename config_type::shape_type;
+    using index_type = typename CfgT::index_type;
+    using shape_type = typename CfgT::shape_type;
     
     index_type offset_;
 
@@ -27,15 +25,15 @@ class view_subdim_descriptor :
 public:
     template<typename ShT>
     view_subdim_descriptor(ShT&& shape__, index_type offset__):
-        base_descriptor{std::forward<ShT>(shape__)},
+        basic_descriptor{std::forward<ShT>(shape__)},
         offset_{offset__}
     {}
 
-    index_type dim()const{return base_descriptor::dim();}
-    index_type size()const{return base_descriptor::size();}
-    const shape_type& shape()const{return base_descriptor::shape();}
-    const shape_type& strides()const{return base_descriptor::strides();}
-    std::string to_str()const{return base_descriptor::to_str();}
+    index_type dim()const{return basic_descriptor::dim();}
+    index_type size()const{return basic_descriptor::size();}
+    const shape_type& shape()const{return basic_descriptor::shape();}
+    const shape_type& strides()const{return basic_descriptor::strides();}
+    std::string to_str()const{return basic_descriptor::to_str();}
 
     index_type offset()const{return offset_;}
     const shape_type& cstrides()const{return strides();}

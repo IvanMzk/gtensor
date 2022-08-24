@@ -15,16 +15,15 @@ namespace gtensor{
 * in aplication client use tensor abstraction objects with different implementations, can combine it using operators
 * client can evaluate tensor object with expression or view implementation to have tensor with stensor_impl implementation
 */
-template<typename ValT, template<typename> typename Cfg>
+template<typename ValT, typename CfgT>
 class tensor{
-    using tensor_type = tensor<ValT,Cfg>;
-    using config_type = Cfg<ValT>;
-    using tensor_base_type = tensor_base<ValT, Cfg>;
-    using storage_tensor_type = storage_tensor<ValT, Cfg>;
-    using tensor_wrapper_type = tensor_wrapper<ValT, Cfg>;
-    using slice_type = typename config_type::slice_type;
-    using slices_init_type = typename config_type::slices_init_type;
-    using slices_collection_type = typename config_type::slices_collection_type;
+    using tensor_type = tensor<ValT,CfgT>;    
+    using tensor_base_type = tensor_base<ValT, CfgT>;
+    using storage_tensor_type = storage_tensor<ValT, CfgT>;
+    using tensor_wrapper_type = tensor_wrapper<ValT, CfgT>;
+    using slice_type = typename CfgT::slice_type;
+    using slices_init_type = typename CfgT::slices_init_type;
+    using slices_collection_type = typename CfgT::slices_collection_type;
     
 
     friend std::ostream& operator<<(std::ostream& os, const tensor& lhs){return os<<lhs.impl_->to_str();}
@@ -42,8 +41,8 @@ protected:
 
 public:        
     using value_type = ValT;
-    using index_type = typename config_type::index_type;
-    using shape_type = typename config_type::shape_type;
+    using index_type = typename CfgT::index_type;
+    using shape_type = typename CfgT::shape_type;
     
     tensor(std::shared_ptr<tensor_base_type>&& impl__):
         impl_{std::make_shared<tensor_wrapper_type>(std::move(impl__))}
@@ -64,47 +63,47 @@ public:
     auto dim()const{return impl()->dim();}
     auto shape()const{return impl()->shape();}
     auto to_str()const{return impl()->to_str();}
-    auto as_expression()const{return expression<ValT,Cfg>{*this};}
-    auto as_storage_tensor()const{return storage_tensor<ValT,Cfg>{*this};}
+    auto as_expression()const{return expression<ValT,CfgT>{*this};}
+    auto as_storage_tensor()const{return storage_tensor<ValT,CfgT>{*this};}
 
     tensor_type operator()(slices_init_type subs)const{
         detail::check_slices_number(subs);        
         slices_collection_type filled_subs = detail::fill_slices<slice_type>(shape(),subs);
         detail::check_slices(shape(), filled_subs);        
-        return tensor_type{view_factory<ValT,Cfg>::create_view_slice(impl()->impl(), filled_subs)};
+        return tensor_type{view_factory<ValT,CfgT>::create_view_slice(impl()->impl(), filled_subs)};
     }
     template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,slice_type>...>,int> = 0 >
     tensor_type operator()(const Subs&...subs)const{
         detail::check_slices_number(subs...);
         slices_collection_type filled_subs = detail::fill_slices<slice_type>(shape(),subs...);
         detail::check_slices(shape(), filled_subs);        
-        return tensor_type{view_factory<ValT,Cfg>::create_view_slice(impl()->impl(), filled_subs)};
+        return tensor_type{view_factory<ValT,CfgT>::create_view_slice(impl()->impl(), filled_subs)};
     }
     template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,index_type>...>,int> = 0 >
     tensor_type transpose(const Subs&...subs)const{
         detail::check_transpose_subs(dim(),subs...);        
-        return tensor_type{view_factory<ValT,Cfg>::create_view_transpose(impl()->impl(), shape_type{subs...})};
+        return tensor_type{view_factory<ValT,CfgT>::create_view_transpose(impl()->impl(), shape_type{subs...})};
     }
     template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,index_type>...>,int> = 0 >
     tensor_type operator()(const Subs&...subs)const{
         detail::check_subdim_subs(shape(), subs...);        
-        return tensor_type{view_factory<ValT,Cfg>::create_view_subdim(impl()->impl(), shape_type{subs...})};
+        return tensor_type{view_factory<ValT,CfgT>::create_view_subdim(impl()->impl(), shape_type{subs...})};
     }            
     tensor_type operator()()const{
         detail::check_subdim_subs(shape());        
-        return tensor_type{view_factory<ValT,Cfg>::create_view_subdim(impl()->impl(), shape_type{})};
+        return tensor_type{view_factory<ValT,CfgT>::create_view_subdim(impl()->impl(), shape_type{})};
     }        
     template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,index_type>...>,int> = 0 >
     tensor_type reshape(const Subs&...subs)const{
         detail::check_reshape_subs(size(), subs...);        
-        return tensor_type{view_factory<ValT,Cfg>::create_view_reshape(impl()->impl(), shape_type{subs...})};
+        return tensor_type{view_factory<ValT,CfgT>::create_view_reshape(impl()->impl(), shape_type{subs...})};
     }
     
 private:
     
-    template<typename ValT, template<typename> typename Cfg>
-    class expression : public tensor<ValT,Cfg>{        
-        using base_type = tensor<ValT,Cfg>;                
+    template<typename ValT, typename CfgT>
+    class expression : public tensor<ValT,CfgT>{
+        using base_type = tensor<ValT,CfgT>;
     public:
         expression(const base_type& base):
             base_type{base}
@@ -116,9 +115,9 @@ private:
         auto trivial_at(const index_type& idx)const{return base_type::impl()->trivial_at(idx);}
     };
     
-    template<typename ValT, template<typename> typename Cfg>
-    class storage_tensor : public tensor<ValT,Cfg>{        
-        using base_type = tensor<ValT,Cfg>;                
+    template<typename ValT, typename CfgT>
+    class storage_tensor : public tensor<ValT,CfgT>{
+        using base_type = tensor<ValT,CfgT>;
     public:
         storage_tensor(const base_type& base):
             base_type{base}

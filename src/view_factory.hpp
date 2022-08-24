@@ -109,18 +109,17 @@ public:
     static std::shared_ptr<view_factory_base> create_factory();
 };
 
-template<typename ValT, template<typename> typename Cfg>
+template<typename ValT, typename CfgT>
 class view_factory
-{
-    using config_type = Cfg<ValT>;
-    using tensor_base_type = tensor_base<ValT,Cfg>;
-    using index_type = typename config_type::index_type;
-    using shape_type = typename config_type::shape_type;
-    using slices_collection_type = typename config_type::slices_collection_type;
-    using view_slice_descriptor_type = view_slice_descriptor<ValT,Cfg>;
-    using view_subdim_descriptor_type = view_subdim_descriptor<ValT,Cfg>;
-    using view_slice_type = gtensor::viewing_tensor<ValT,Cfg,view_slice_descriptor_type>;
-    using view_subdim_type = gtensor::viewing_tensor<ValT,Cfg,view_subdim_descriptor_type>;
+{    
+    using tensor_base_type = tensor_base<ValT,CfgT>;
+    using index_type = typename CfgT::index_type;
+    using shape_type = typename CfgT::shape_type;
+    using slices_collection_type = typename CfgT::slices_collection_type;
+    using view_slice_descriptor_type = view_slice_descriptor<ValT,CfgT>;
+    using view_subdim_descriptor_type = view_subdim_descriptor<ValT,CfgT>;
+    using view_slice_type = gtensor::viewing_tensor<ValT,CfgT,view_slice_descriptor_type>;
+    using view_subdim_type = gtensor::viewing_tensor<ValT,CfgT,view_subdim_descriptor_type>;
     
     static view_slice_descriptor_type create_view_slice_descriptor(const std::shared_ptr<tensor_base_type>& parent, const slices_collection_type& subs){        
         return view_slice_descriptor_type{

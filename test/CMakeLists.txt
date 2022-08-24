@@ -23,11 +23,11 @@ target_sources(Test PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/benchmark_walker.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_walker.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_tensor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_multiindex_iterator.cpp
 )
 
 target_sources(Test_selected PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_tensor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_evaluating_tensor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_storage_tensor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_stensor_descriptor.cpp

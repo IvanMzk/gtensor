@@ -6,9 +6,8 @@
 TEST_CASE("test_tensor_construct_from_list","[test_tensor]"){
     using value_type = float;
     using gtensor::tensor;
-    using gtensor::config::default_config;
-    using config_type = default_config<value_type>;
-    using tensor_type = tensor<value_type, default_config>;
+    using config_type = gtensor::config::default_config;
+    using tensor_type = tensor<value_type, config_type>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     using test_type = std::tuple<tensor_type, shape_type, index_type, index_type>;
@@ -40,9 +39,8 @@ TEST_CASE("test_tensor_construct_from_list","[test_tensor]"){
 TEST_CASE("test_tensor_construct_given_shape","[test_tensor]"){
     using value_type = float;
     using gtensor::tensor;
-    using gtensor::config::default_config;
-    using config_type = default_config<value_type>;
-    using tensor_type = tensor<value_type, default_config>;
+    using config_type = gtensor::config::default_config;
+    using tensor_type = tensor<value_type, config_type>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     using test_type = std::tuple<tensor_type, shape_type, index_type, index_type>;
@@ -70,9 +68,8 @@ TEST_CASE("test_tensor_construct_given_shape","[test_tensor]"){
 TEST_CASE("test_tensor_construct_using_operator","[test_tensor]"){
     using value_type = float;
     using gtensor::tensor;
-    using gtensor::config::default_config;
-    using config_type = default_config<value_type>;
-    using tensor_type = tensor<value_type, default_config>;
+    using config_type = gtensor::config::default_config;
+    using tensor_type = tensor<value_type, config_type>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     using test_type = std::tuple<tensor_type, tensor_type, shape_type, index_type, index_type>;
@@ -109,9 +106,8 @@ TEST_CASE("test_tensor_construct_using_operator","[test_tensor]"){
 TEST_CASE("test_tensor_construct_using_derived_operands","[test_tensor]"){
     using value_type = float;
     using gtensor::tensor;
-    using gtensor::config::default_config;
-    using config_type = default_config<value_type>;
-    using tensor_type = tensor<value_type, default_config>;
+    using config_type = gtensor::config::default_config;
+    using tensor_type = tensor<value_type, config_type>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;    
     using test_type = std::tuple<tensor_type, shape_type, index_type, index_type>;
@@ -135,9 +131,8 @@ TEST_CASE("test_tensor_construct_using_derived_operands","[test_tensor]"){
 TEST_CASE("test_expression_is_trivial","[test_tensor]"){
     using value_type = float;
     using gtensor::tensor;
-    using gtensor::config::default_config;
-    using config_type = default_config<value_type>;
-    using tensor_type = tensor<value_type, default_config>;
+    using config_type = gtensor::config::default_config;
+    using tensor_type = tensor<value_type, config_type>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     using test_type = std::tuple<tensor_type, bool>;
@@ -161,9 +156,8 @@ TEST_CASE("test_expression_is_trivial","[test_tensor]"){
 TEST_CASE("test_expression_trivial_at","[test_tensor]"){
     using value_type = float;
     using gtensor::tensor;
-    using gtensor::config::default_config;
-    using config_type = default_config<value_type>;
-    using tensor_type = tensor<value_type, default_config>;
+    using config_type = gtensor::config::default_config;
+    using tensor_type = tensor<value_type, config_type>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     using test_type = std::tuple<tensor_type, index_type, value_type>;
@@ -192,9 +186,8 @@ TEST_CASE("test_expression_trivial_at","[test_tensor]"){
 TEST_CASE("test_view_making_interface","[test_tensor]"){
     using value_type = float;
     using gtensor::tensor;
-    using gtensor::config::default_config;
-    using config_type = default_config<value_type>;
-    using tensor_type = tensor<value_type, default_config>;
+    using config_type = gtensor::config::default_config;
+    using tensor_type = tensor<value_type, config_type>;
     using slice_type = typename config_type::slice_type;
     using nop_type = typename config_type::nop_type;
     using shape_type = typename config_type::shape_type;
