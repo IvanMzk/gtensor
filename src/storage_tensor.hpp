@@ -16,19 +16,18 @@ namespace detail{
 /*
 * implementation of tensor with storage
 */
-template<typename ValT, template<typename> typename Cfg>
+template<typename ValT, typename CfgT>
 class storage_tensor : 
-    public tensor_base<ValT,Cfg>,
-    public storing_base<ValT,Cfg>,
-    public converting_base<ValT,Cfg>    
+    public tensor_base<ValT,CfgT>,
+    public storing_base<ValT,CfgT>,
+    public converting_base<ValT,CfgT>    
 {
-    using config_type = Cfg<ValT>;        
     using value_type = ValT;
-    using index_type = typename config_type::index_type;
-    using shape_type = typename config_type::shape_type;
-    using storage_type = typename config_type::storage_type;
-    using descriptor_type = stensor_descriptor<value_type, Cfg>;
-    using slices_collection_type = typename config_type::slices_collection_type;
+    using index_type = typename CfgT::index_type;
+    using shape_type = typename CfgT::shape_type;
+    using storage_type = typename CfgT::storage<value_type>;
+    using descriptor_type = stensor_descriptor<value_type, CfgT>;
+    using slices_collection_type = typename CfgT::slices_collection_type;
 
     descriptor_type descriptor_;
     storage_type elements;    
@@ -39,11 +38,11 @@ class storage_tensor :
         elements(descriptor_.size())
     {detail::fill_from_list(init_data, elements.begin());}
     
-    const storing_base<ValT,Cfg>* as_storing()const override{return static_cast<const storing_base<ValT,Cfg>*>(this);}
-    const converting_base<ValT,Cfg>* as_converting()const override{return static_cast<const converting_base<ValT,Cfg>*>(this);}
+    const storing_base<ValT,CfgT>* as_storing()const override{return static_cast<const storing_base<ValT,CfgT>*>(this);}
+    const converting_base<ValT,CfgT>* as_converting()const override{return static_cast<const converting_base<ValT,CfgT>*>(this);}
 
-    storage_walker<ValT,Cfg> create_storage_walker()const override{
-        return storage_walker_factory<ValT,Cfg>::create_walker(shape(),strides(),elements.data());
+    storage_walker<ValT,CfgT> create_storage_walker()const override{
+        return storage_walker_factory<ValT,CfgT>::create_walker(shape(),strides(),elements.data());
     }
     
     bool is_cached()const override{return true;}
@@ -77,7 +76,7 @@ public:
     const value_type* data()const{return elements.data();}
 
     detail::tensor_kinds tensor_kind()const override{return detail::tensor_kinds::storage_tensor;}
-    const descriptor_base<ValT,Cfg>& descriptor()const override{return descriptor_;}
+    const descriptor_base<ValT,CfgT>& descriptor()const override{return descriptor_;}
     index_type size()const override{return descriptor_.size();}
     index_type dim()const override{return descriptor_.dim();}
     const shape_type& shape()const override{return descriptor_.shape();}

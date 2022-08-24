@@ -11,13 +11,12 @@ namespace detail{
 }   //end of namespace detail
 
 
-template<typename ValT, template<typename> typename Cfg>
-class tensor_base{    
-    using config_type = Cfg<ValT>;
+template<typename ValT, typename CfgT>
+class tensor_base{        
     using value_type = ValT;
-    using index_type = typename config_type::index_type;
-    using shape_type = typename config_type::shape_type;
-    using slices_collection_type = typename config_type::slices_collection_type;
+    using index_type = typename CfgT::index_type;
+    using shape_type = typename CfgT::shape_type;
+    using slices_collection_type = typename CfgT::slices_collection_type;
 
 public:
     virtual ~tensor_base(){}    
@@ -37,22 +36,21 @@ public:
     virtual bool is_trivial()const = 0;
 
     
-    virtual const storing_base<ValT,Cfg>* as_storing()const{return nullptr;}
-    virtual const evaluating_base<ValT,Cfg>* as_evaluating()const{return nullptr;}
-    virtual const evaluating_trivial_base<ValT,Cfg>* as_evaluating_trivial()const{return nullptr;}    
-    virtual const converting_base<ValT,Cfg>* as_converting()const{return nullptr;}
-    virtual const viewing_evaluating_base<ValT,Cfg>* as_viewing_evaluating()const{return nullptr;}
+    virtual const storing_base<ValT,CfgT>* as_storing()const{return nullptr;}
+    virtual const evaluating_base<ValT,CfgT>* as_evaluating()const{return nullptr;}
+    virtual const evaluating_trivial_base<ValT,CfgT>* as_evaluating_trivial()const{return nullptr;}    
+    virtual const converting_base<ValT,CfgT>* as_converting()const{return nullptr;}
+    virtual const viewing_evaluating_base<ValT,CfgT>* as_viewing_evaluating()const{return nullptr;}
         
 };
 
-template<typename ValT, template<typename> typename Cfg>
+template<typename ValT, typename CfgT>
 class storing_base 
 {
-    using config_type = Cfg<ValT>;
-    using iterator_type = typename config_type::storage_type::iterator;
-    using const_iterator_type = typename config_type::storage_type::const_iterator;
+    using iterator_type = typename CfgT::storage_type::iterator;
+    using const_iterator_type = typename CfgT::storage_type::const_iterator;
     
-    virtual storage_walker<ValT,Cfg> create_storage_walker()const = 0;
+    virtual storage_walker<ValT,CfgT> create_storage_walker()const = 0;
     virtual const ValT* storage_data()const = 0;
 
 public:
@@ -64,38 +62,30 @@ public:
     
 };
 
-template<typename ValT, template<typename> typename Cfg>
+template<typename ValT, typename CfgT>
 class evaluating_base
-{
-    using iterator_type = multiindex_iterator<ValT,Cfg,walker<ValT,Cfg>>;    
-    virtual walker<ValT,Cfg> create_evaluating_walker()const = 0;    
-    virtual indexer<ValT,Cfg> create_evaluating_indexer()const = 0;
+{    
+    virtual walker<ValT,CfgT> create_evaluating_walker()const = 0;    
+    virtual indexer<ValT,CfgT> create_evaluating_indexer()const = 0;
 public:
-    virtual ~evaluating_base(){}    
-    // virtual iterator_type begin()const = 0;
-    // virtual iterator_type end()const = 0;
-    // virtual bool is_cached()const = 0;
-    // virtual bool is_trivial()const = 0;
+    virtual ~evaluating_base(){}     
     auto create_walker()const{return create_evaluating_walker();}    
     auto create_indexer()const{return create_evaluating_indexer();}
 };
 
-template<typename ValT, template<typename> typename Cfg>
+template<typename ValT, typename CfgT>
 class evaluating_trivial_base
 {
-    using iterator_type = multiindex_iterator<ValT,Cfg,walker<ValT,Cfg>>;
-    virtual evaluating_trivial_walker<ValT,Cfg> create_trivial_walker()const = 0;    
+    virtual evaluating_trivial_walker<ValT,CfgT> create_trivial_walker()const = 0;    
 public:
     virtual ~evaluating_trivial_base(){}
     auto create_walker()const{return create_trivial_walker();}    
-    // virtual iterator_type begin()const = 0;
-    // virtual iterator_type end()const = 0;    
 };
 
-template<typename ValT, template<typename> typename Cfg>
+template<typename ValT, typename CfgT>
 class converting_base
 {
-    using index_type = typename Cfg<ValT>::index_type;
+    using index_type = typename CfgT::index_type;
     virtual index_type view_index_convert(const index_type&)const = 0;
 
 public:
@@ -104,15 +94,13 @@ public:
     
 };
 
-template<typename ValT, template<typename> typename Cfg>
+template<typename ValT, typename CfgT>
 class viewing_evaluating_base
 {    
-    virtual viewing_evaluating_walker<ValT,Cfg> create_view_expression_walker()const = 0;
+    virtual viewing_evaluating_walker<ValT,CfgT> create_view_expression_walker()const = 0;
 public:
     virtual ~viewing_evaluating_base(){}    
     auto create_walker()const{return create_view_expression_walker();}
-    // virtual iterator_type begin()const = 0;
-    // virtual iterator_type end()const = 0;    
 };
 
 

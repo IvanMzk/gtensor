@@ -3,15 +3,15 @@
 
 namespace gtensor{
 
-template<typename ValT, template<typename> typename Cfg> class tensor_base;
-template<typename ValT, template<typename> typename Cfg> class storing_base;
-template<typename ValT, template<typename> typename Cfg> class evaluating_base;
-template<typename ValT, template<typename> typename Cfg> class evaluating_trivial_base;
-template<typename ValT, template<typename> typename Cfg> class viewing_evaluating_base;
-template<typename ValT, template<typename> typename Cfg> class converting_base;
+template<typename ValT, typename CfgT> class tensor_base;
+template<typename ValT, typename CfgT> class storing_base;
+template<typename ValT, typename CfgT> class evaluating_base;
+template<typename ValT, typename CfgT> class evaluating_trivial_base;
+template<typename ValT, typename CfgT> class viewing_evaluating_base;
+template<typename ValT, typename CfgT> class converting_base;
+template<typename ValT, typename CfgT> class storage_tensor;
 template<typename ValT, template<typename> typename Cfg, typename F, typename FactoryT, typename...Ops> class evaluating_tensor;
 template<typename ValT, template<typename> typename Cfg> class tensor_wrapper;
-template<typename ValT, template<typename> typename Cfg> class storage_tensor;
 template<typename ValT, typename CfgT> class descriptor_base;
 template<typename ValT, template<typename> typename Cfg, typename DescT> class view_tensor;
 template<typename ValT, template<typename> typename Cfg> class tensor;
