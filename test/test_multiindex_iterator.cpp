@@ -11,15 +11,14 @@ using gtensor::multiindex_iterator;
 using gtensor::evaluating_base;
 using gtensor::walker;
 
-template<typename ValT, template<typename> typename Cfg>
-struct test_tensor : public tensor<ValT,Cfg>{
-    using base_type = tensor<ValT,Cfg>;
-    using config_type = Cfg<ValT>;
-    using expression_base = evaluating_base<ValT,Cfg>;
-    using iterator_type = multiindex_iterator<ValT,Cfg,walker<ValT,Cfg>>;
-    using strides_type = typename gtensor::detail::libdiv_strides_traits<test_tensor::config_type>::type;
+template<typename ValT, typename CfgT>
+struct test_tensor : public tensor<ValT,CfgT>{
+    using base_type = tensor<ValT,CfgT>;    
+    using expression_base = evaluating_base<ValT,CfgT>;
+    using iterator_type = multiindex_iterator<ValT,CfgT,walker<ValT,CfgT>>;
+    using strides_type = typename gtensor::detail::libdiv_strides_traits<CfgT>::type;
 
-    strides_type strides{gtensor::detail::make_dividers<test_tensor::config_type>(impl()->strides())};
+    strides_type strides{gtensor::detail::make_dividers<CfgT>(impl()->strides())};
 
     using tensor::tensor;
     test_tensor(const base_type& base):
@@ -30,10 +29,10 @@ struct test_tensor : public tensor<ValT,Cfg>{
     auto end()const{return iterator_type{impl()->as_evaluating()->create_walker(), impl()->shape(), strides, impl()->size()};}
 };
 
-template<typename ValT, template<typename> typename Cfg>
+template<typename ValT, typename CfgT>
 struct expression_maker{
     using value_type = ValT;
-    using tensor_type = test_tensor<ValT,Cfg>;
+    using tensor_type = test_tensor<ValT,CfgT>;
     tensor_type operator()(){return tensor_type{2} * tensor_type{-1,-1,-1} + tensor_type{{{1,2,3},{1,2,3}}} + tensor_type{{{0,0,0},{3,3,3}}} + tensor_type{5,5,5} - tensor_type{3} ;}
 };
 
@@ -45,7 +44,7 @@ struct expression_maker{
 TEMPLATE_TEST_CASE("test_multiindex_iterator","[test_multiindex_iterator]",gtensor::config::mode_div_native, gtensor::config::mode_div_libdivide)
 {
     using value_type = float;
-    using emaker_type = test_multiindex_iterator_::expression_maker<value_type, test_config::config_tmpl_div_mode_selector<TestType>::config_tmpl>;
+    using emaker_type = test_multiindex_iterator_::expression_maker<value_type, test_config::config_div_mode_selector<TestType>::config_type>;
     SECTION("test_iter_deref"){
         using test_type = std::tuple<value_type, value_type>;
         //0deref,1expected_deref

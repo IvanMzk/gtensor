@@ -6,7 +6,7 @@
 
 TEST_CASE("test_view_slice_descriptor_getters", "[test_view_descriptor]"){
     using value_type = float;
-    using config_type = gtensor::config::default_config<value_type>;
+    using config_type = gtensor::config::default_config;
     using descriptor_type = gtensor::view_slice_descriptor<value_type, gtensor::config::default_config>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
@@ -35,8 +35,8 @@ TEST_CASE("test_view_slice_descriptor_getters", "[test_view_descriptor]"){
 
 TEMPLATE_TEST_CASE("test_view_slice_descriptor_convert", "[test_view_descriptor]", gtensor::config::mode_div_native, gtensor::config::mode_div_libdivide){
     using value_type = float;
-    using config_type = test_config::config_tmpl_div_mode_selector<TestType>::config_tmpl<value_type>;
-    using descriptor_type = gtensor::view_slice_descriptor<value_type, typename test_config::config_tmpl_div_mode_selector<TestType>::config_tmpl>;
+    using config_type = test_config::config_div_mode_selector<TestType>::config_type;
+    using descriptor_type = gtensor::view_slice_descriptor<value_type, config_type>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     using test_type = std::tuple<descriptor_type, shape_type, index_type, index_type, index_type,index_type>;
@@ -61,7 +61,7 @@ TEMPLATE_TEST_CASE("test_view_slice_descriptor_convert", "[test_view_descriptor]
 
 TEST_CASE("test_view_subdim_descriptor_getters", "[test_view_descriptor]"){
     using value_type = float;
-    using config_type = gtensor::config::default_config<value_type>;
+    using config_type = gtensor::config::default_config;
     using descriptor_type = gtensor::view_subdim_descriptor<value_type, gtensor::config::default_config>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
@@ -89,8 +89,8 @@ TEST_CASE("test_view_subdim_descriptor_getters", "[test_view_descriptor]"){
 
 TEMPLATE_TEST_CASE("test_view_subdim_descriptor_convert", "[test_view_descriptor]", gtensor::config::mode_div_native, gtensor::config::mode_div_libdivide){
     using value_type = float;
-    using config_type = test_config::config_tmpl_div_mode_selector<TestType>::config_tmpl<value_type>;
-    using descriptor_type = gtensor::view_subdim_descriptor<value_type, typename test_config::config_tmpl_div_mode_selector<TestType>::config_tmpl>;
+    using config_type = test_config::config_div_mode_selector<TestType>::config_type;
+    using descriptor_type = gtensor::view_subdim_descriptor<value_type, config_type>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     using test_type = std::tuple<descriptor_type, shape_type, index_type, index_type, index_type,index_type>;

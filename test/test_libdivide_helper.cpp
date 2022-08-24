@@ -17,7 +17,7 @@ TEMPLATE_TEST_CASE("test_is_libdivide_div","[test_libdivide]", std::int64_t, std
 
 TEMPLATE_TEST_CASE("test_flat_to_multi_mode_native", "[test_flat_to_multi]", gtensor::config::mode_div_native){
     using value_type = float;
-    using config_type = test_config::config_tmpl_div_mode_selector<TestType>::config_tmpl<value_type>;    
+    using config_type = test_config::config_div_mode_selector<TestType>::config_type;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     using test_type = std::tuple<index_type, shape_type, shape_type>;
@@ -39,7 +39,7 @@ TEMPLATE_TEST_CASE("test_flat_to_multi_mode_native", "[test_flat_to_multi]", gte
 }
 TEMPLATE_TEST_CASE("test_flat_to_multi_mode_libdivide", "[test_flat_to_multi]", gtensor::config::mode_div_libdivide){
     using value_type = float;
-    using config_type = test_config::config_tmpl_div_mode_selector<TestType>::config_tmpl<value_type>;    
+    using config_type = test_config::config_div_mode_selector<TestType>::config_type;    
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     using gtensor::detail::make_libdivide_vector;

@@ -17,63 +17,62 @@ using gtensor::evaluating_trivial_walker;
 using gtensor::indexer;
 using gtensor::viewing_evaluating_walker;
 
-template<typename ValT, template<typename> typename Cfg>
-struct storage_walker_test_tensor : public tensor<ValT,Cfg>{
-    using base_type = tensor<ValT,Cfg>;
+template<typename ValT, typename CfgT>
+struct storage_walker_test_tensor : public tensor<ValT,CfgT>{
     using tensor::tensor;
-    storage_walker_test_tensor(const base_type& base):
-        base_type{base}
+    storage_walker_test_tensor(const tensor& base):
+        tensor{base}
     {}    
-    storage_walker<ValT,Cfg> create_native_walker()const{
+    storage_walker<ValT,CfgT> create_native_walker()const{
         return impl()->as_storing()->create_walker();
     }
-    walker<ValT,Cfg> create_walker()const{
-        return std::make_unique<storage_walker_polymorphic<ValT,Cfg>>(create_native_walker());
+    walker<ValT,CfgT> create_walker()const{
+        return std::make_unique<storage_walker_polymorphic<ValT,CfgT>>(create_native_walker());
     }
 };
 
-template<typename ValT, template<typename> typename Cfg>
-struct trivial_walker_test_tensor : public tensor<ValT,Cfg>{
-    using base_type = tensor<ValT,Cfg>;
+template<typename ValT, typename CfgT>
+struct trivial_walker_test_tensor : public tensor<ValT,CfgT>{
+    using base_type = tensor<ValT,CfgT>;
     using tensor::tensor;
     trivial_walker_test_tensor(const base_type& base):
         base_type{base}
     {}    
-    evaluating_trivial_walker<ValT,Cfg> create_native_walker()const{
+    evaluating_trivial_walker<ValT,CfgT> create_native_walker()const{
         return impl()->as_evaluating_trivial()->create_walker();
     }
-    walker<ValT,Cfg> create_walker()const{
-        return std::make_unique<evaluating_trivial_walker<ValT,Cfg>>(create_native_walker());
+    walker<ValT,CfgT> create_walker()const{
+        return std::make_unique<evaluating_trivial_walker<ValT,CfgT>>(create_native_walker());
     }
 };
 
-template<typename ValT, template<typename> typename Cfg>
-struct evaluating_walker_test_tensor : public tensor<ValT,Cfg>{
-    using base_type = tensor<ValT,Cfg>;
+template<typename ValT, typename CfgT>
+struct evaluating_walker_test_tensor : public tensor<ValT,CfgT>{
+    using base_type = tensor<ValT,CfgT>;
     using tensor::tensor;
     evaluating_walker_test_tensor(const base_type& base):
         base_type{base}
     {}        
-    walker<ValT,Cfg> create_walker()const{
+    walker<ValT,CfgT> create_walker()const{
         return impl()->as_evaluating()->create_walker();
     }
-    indexer<ValT,Cfg> create_storage()const{
+    indexer<ValT,CfgT> create_storage()const{
         return impl()->as_evaluating()->create_indexer();
     }
 };
 
-template<typename ValT, template<typename> typename Cfg>
-struct view_expression_walker_test_tensor : public tensor<ValT,Cfg>{
-    using base_type = tensor<ValT,Cfg>;
+template<typename ValT, typename CfgT>
+struct view_expression_walker_test_tensor : public tensor<ValT,CfgT>{
+    using base_type = tensor<ValT,CfgT>;
     using tensor::tensor;
     view_expression_walker_test_tensor(const base_type& base):
         base_type{base}
     {}    
-    viewing_evaluating_walker<ValT,Cfg> create_native_walker()const{
+    viewing_evaluating_walker<ValT,CfgT> create_native_walker()const{
         return impl()->as_viewing_evaluating()->create_walker();
     }
-    walker<ValT,Cfg> create_walker()const{
-        return std::make_unique<viewing_evaluating_walker<ValT,Cfg>>(create_native_walker());
+    walker<ValT,CfgT> create_walker()const{
+        return std::make_unique<viewing_evaluating_walker<ValT,CfgT>>(create_native_walker());
     }    
 };
 
@@ -124,7 +123,7 @@ struct view_slice_of_stensor_maker{
     using value_type = ValT;
     using tensor_type = TestTensorT;
     //storage_walker_test_tensor<ValT,default_config>;
-    typename default_config<ValT>::nop_type nop;
+    typename default_config::nop_type nop;
     tensor_type operator()(){return tensor_type{{{0,0,0,0,0,0},{0,0,0,0,0,0}},{{1,0,2,0,3,0},{4,0,5,0,6,0}}}({{1,2},{},{nop,nop,2}});}
 };
 //make view slice of non trivial expression with data {{{1,2,3},{4,5,6}}}
@@ -133,7 +132,7 @@ struct view_slice_of_expression_maker{
     using value_type = ValT;
     using tensor_type = TestTensorT;
     //view_expression_walker_test_tensor<ValT,default_config>;
-    typename default_config<ValT>::nop_type nop;    
+    typename default_config::nop_type nop;    
     tensor_type operator()(){
         auto e = tensor_type{2} * tensor_type{{1,1,1,1,1,1}} + tensor_type{{{0,0,0,0,0,0},{0,0,0,0,0,0}},{{1,0,2,0,3,0},{4,0,5,0,6,0}}} - tensor_type{{{3,3,3,3,3,3}}} + tensor_type{1};
         return e({{1,2},{},{nop,nop,2}});        
@@ -145,7 +144,7 @@ struct view_view_slice_of_expression_maker{
     using value_type = ValT;
     using tensor_type = TestTensorT;
     //view_expression_walker_test_tensor<ValT,default_config>;
-    typename default_config<ValT>::nop_type nop;    
+    typename default_config::nop_type nop;    
     tensor_type operator()(){
         auto e = tensor_type{2} * tensor_type{{1,1,1,1,1,1}} + tensor_type{{{0,0,0,0,0,0},{0,0,0,0,0,0}},{{3,0,2,0,1,0},{6,0,5,0,4,0}}} - tensor_type{{{3,3,3,3,3,3}}} + tensor_type{1};
         return e({{1,2},{},{nop,nop,2}})({{},{},{nop,nop,-1}});
@@ -195,9 +194,6 @@ TEMPLATE_TEST_CASE("test_walker","test_walker",
                     ){
     using value_type = typename TestType::value_type;
     using test_type = std::tuple<value_type,value_type>;
-    using gtensor::config::default_config;
-    using config_type = default_config<value_type>;
-    using tensor_type = gtensor::tensor<value_type, default_config>;    
     
     auto test_data = GENERATE(
         test_type{*TestType{}().create_walker(), value_type{1}},

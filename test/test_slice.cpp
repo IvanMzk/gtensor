@@ -18,7 +18,7 @@ struct slice_item{
 };
 
 using value_type = float;
-using index_type = typename gtensor::config::default_config<value_type>::index_type;
+using index_type = typename gtensor::config::default_config::index_type;
 using slice_item_type =  typename test_slice_::slice_item<index_type>;
 using slice_init_type = typename std::initializer_list<slice_item_type>;
 
@@ -79,9 +79,8 @@ TEST_CASE("slice_init_type","[slice_init_type]"){
     
 }
 
-TEST_CASE("slice_item","[slice_item]"){
-    using value_type = float;
-    using index_type = typename gtensor::config::default_config<value_type>::index_type;
+TEST_CASE("slice_item","[slice_item]"){    
+    using index_type = typename gtensor::config::default_config::index_type;
     using slice_item_type =  typename test_slice_::slice_item<index_type>;
     SECTION("use_init_list"){
         using slice_init_type = typename std::initializer_list<slice_item_type>;
@@ -267,11 +266,10 @@ TEST_CASE("test_fill_slice","[test_slice]"){
 }
 
 TEST_CASE("test_fill_slices","[test_fill_slices]"){
-    using gtensor::detail::fill_slices;
-    using value_type = float;
+    using gtensor::detail::fill_slices;    
     using nop_type = gtensor::config::NOP;
-    using difference_type = typename gtensor::config::default_config<value_type>::difference_type;
-    using shape_type = typename gtensor::config::default_config<value_type>::shape_type;
+    using difference_type = typename gtensor::config::default_config::difference_type;
+    using shape_type = typename gtensor::config::default_config::shape_type;
     //using slice_item_type =  typename test_slice_::slice_item<difference_type>;
     using slice_item_type =  typename gtensor::detail::slice_item<difference_type, nop_type>;
     using slice_init_type = typename std::initializer_list<slice_item_type>;
@@ -299,8 +297,8 @@ TEST_CASE("test_fill_slices","[test_fill_slices]"){
 TEST_CASE("test_check_slice","[test_check_slice]"){
     using value_type = float;
     using nop_type = gtensor::config::NOP;
-    using difference_type = typename gtensor::config::default_config<value_type>::difference_type;
-    using shape_type = typename gtensor::config::default_config<value_type>::shape_type;
+    using difference_type = typename gtensor::config::default_config::difference_type;
+    using shape_type = typename gtensor::config::default_config::shape_type;
     using slice_type = typename gtensor::slice<difference_type>;
     using gtensor::detail::check_slice;
     nop_type nop{};
@@ -335,8 +333,8 @@ TEST_CASE("test_check_slice","[test_check_slice]"){
 TEST_CASE("test_is_slices", "[test_is_slices]"){
     using value_type = float;
     using nop_type = gtensor::config::NOP;
-    using difference_type = typename gtensor::config::default_config<value_type>::difference_type;
-    using shape_type = typename gtensor::config::default_config<value_type>::shape_type;
+    using difference_type = typename gtensor::config::default_config::difference_type;
+    using shape_type = typename gtensor::config::default_config::shape_type;
     using slice_type = typename gtensor::slice<difference_type>;
     using gtensor::detail::is_slice;
     using gtensor::detail::is_slices;
@@ -358,8 +356,8 @@ TEST_CASE("test_check_slices","[test_check_slices]"){
     using gtensor::detail::check_slices;
     using value_type = float;
     using nop_type = gtensor::config::NOP;
-    using difference_type = typename gtensor::config::default_config<value_type>::difference_type;
-    using shape_type = typename gtensor::config::default_config<value_type>::shape_type;
+    using difference_type = typename gtensor::config::default_config::difference_type;
+    using shape_type = typename gtensor::config::default_config::shape_type;
     using slice_type = typename gtensor::slice<difference_type>;
     REQUIRE_NOTHROW(check_slices(shape_type{5},std::vector<slice_type>{}));
     REQUIRE_NOTHROW(check_slices(shape_type{5},std::vector{slice_type{0,5,1}}));
@@ -377,8 +375,8 @@ TEST_CASE("test_check_slices_number","[test_check_slices]"){
     using gtensor::detail::check_slices_number;
     using value_type = float;
     using nop_type = gtensor::config::NOP;
-    using difference_type = typename gtensor::config::default_config<value_type>::difference_type;
-    using shape_type = typename gtensor::config::default_config<value_type>::shape_type;
+    using difference_type = typename gtensor::config::default_config::difference_type;
+    using shape_type = typename gtensor::config::default_config::shape_type;
     using slice_type = typename gtensor::slice<difference_type>;
     using slice_item_type =  typename gtensor::detail::slice_item<difference_type, nop_type>;
     using slice_init_type = typename std::initializer_list<slice_item_type>;
@@ -405,8 +403,8 @@ TEST_CASE("test_check_subdim_subs","[test_check_subdim_subs]"){
     using gtensor::detail::check_subdim_subs;
     using value_type = float;
     using nop_type = gtensor::config::NOP;
-    using difference_type = typename gtensor::config::default_config<value_type>::difference_type;
-    using shape_type = typename gtensor::config::default_config<value_type>::shape_type;    
+    using difference_type = typename gtensor::config::default_config::difference_type;
+    using shape_type = typename gtensor::config::default_config::shape_type;    
     REQUIRE_NOTHROW(check_subdim_subs(shape_type{5,4,3},4));
     REQUIRE_NOTHROW(check_subdim_subs(shape_type{5,4,3},4,3));
     
@@ -421,8 +419,8 @@ TEST_CASE("test_check_reshape_subs","[test_check_reshape_subs]"){
     using gtensor::detail::check_reshape_subs;
     using value_type = float;
     using nop_type = gtensor::config::NOP;
-    using difference_type = typename gtensor::config::default_config<value_type>::difference_type;
-    using shape_type = typename gtensor::config::default_config<value_type>::shape_type;    
+    using difference_type = typename gtensor::config::default_config::difference_type;
+    using shape_type = typename gtensor::config::default_config::shape_type;    
     REQUIRE_NOTHROW(check_reshape_subs(5));
     REQUIRE_NOTHROW(check_reshape_subs(5, 5));
     REQUIRE_NOTHROW(check_reshape_subs(20, 4,5));
@@ -443,8 +441,8 @@ TEST_CASE("test_check_transpose_subs","[test_check_transpose_subs]"){
     using gtensor::detail::check_transpose_subs;
     using value_type = float;
     using nop_type = gtensor::config::NOP;
-    using difference_type = typename gtensor::config::default_config<value_type>::difference_type;
-    using shape_type = typename gtensor::config::default_config<value_type>::shape_type;    
+    using difference_type = typename gtensor::config::default_config::difference_type;
+    using shape_type = typename gtensor::config::default_config::shape_type;    
     REQUIRE_NOTHROW(check_transpose_subs(1));
     REQUIRE_NOTHROW(check_transpose_subs(1,0));
     REQUIRE_NOTHROW(check_transpose_subs(3,0,1,2));
