@@ -61,16 +61,15 @@ TEST_CASE("test_evaluating_tensor_construct","[test_evaluating_tensor]"){
     using gtensor::binary_operations::add;
     using gtensor::evaluating_tensor;
     using gtensor::storage_tensor;
-    using gtensor::tensor_base;    
-    using gtensor::config::default_config;
-    using config_type = gtensor::config::default_config<value_type>;
+    using gtensor::tensor_base;        
+    using config_type = gtensor::config::default_config;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
-    using tensor_base_type = tensor_base<value_type, default_config>;
-    using storage_tensor_type = storage_tensor<value_type, default_config>;
-    using tensor_wrapper_type = gtensor::tensor_wrapper<value_type, default_config>;
-    using walker_factory_type = gtensor::evaluating_walker_factory<value_type,default_config>;
-    using evaluating_tensor_type = evaluating_tensor<value_type, default_config, add, walker_factory_type, std::shared_ptr<tensor_base_type>, std::shared_ptr<tensor_base_type>>;
+    using tensor_base_type = tensor_base<value_type, config_type>;
+    using storage_tensor_type = storage_tensor<value_type, config_type>;
+    using tensor_wrapper_type = gtensor::tensor_wrapper<value_type, config_type>;
+    using walker_factory_type = gtensor::evaluating_walker_factory<value_type,config_type>;
+    using evaluating_tensor_type = evaluating_tensor<value_type, config_type, add, walker_factory_type, std::shared_ptr<tensor_base_type>, std::shared_ptr<tensor_base_type>>;
     using test_type = std::tuple<std::shared_ptr<tensor_wrapper_type>, std::shared_ptr<tensor_wrapper_type>, shape_type, index_type, index_type>;
 
     auto make_shared_wrapper = [](tensor_base_type* t){return std::make_shared<tensor_wrapper_type>(std::shared_ptr<tensor_base_type>(t));};

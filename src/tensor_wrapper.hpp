@@ -5,15 +5,14 @@
 
 namespace gtensor{
 
-template<typename ValT, template<typename> typename Cfg>
+template<typename ValT, typename CfgT>
 class tensor_wrapper
 {
     
-    using tensor_base_type = tensor_base<ValT,Cfg>;
-    using config_type = Cfg<ValT>;
+    using tensor_base_type = tensor_base<ValT,CfgT>;    
     using value_type = ValT;
-    using index_type = typename config_type::index_type;
-    using shape_type = typename config_type::shape_type;
+    using index_type = typename CfgT::index_type;
+    using shape_type = typename CfgT::shape_type;
 
     std::shared_ptr<tensor_base_type> impl_;
 
@@ -24,11 +23,11 @@ public:
     void reset_impl(std::shared_ptr<tensor_base_type>&& impl__){impl_.reset(impl__.get());}    
     auto impl()const{return impl_;}
 
-    const storing_base<ValT,Cfg>* as_storing()const{return impl()->as_storing();}
-    const evaluating_base<ValT,Cfg>* as_evaluating()const{return impl()->as_evaluating();}
-    const evaluating_trivial_base<ValT,Cfg>* as_evaluating_trivial()const{return impl()->as_evaluating_trivial();}    
-    const converting_base<ValT,Cfg>* as_converting()const{return impl()->as_converting();}
-    const viewing_evaluating_base<ValT,Cfg>* as_viewing_evaluating()const{return impl()->as_viewing_evaluating();}
+    const storing_base<ValT,CfgT>* as_storing()const{return impl()->as_storing();}
+    const evaluating_base<ValT,CfgT>* as_evaluating()const{return impl()->as_evaluating();}
+    const evaluating_trivial_base<ValT,CfgT>* as_evaluating_trivial()const{return impl()->as_evaluating_trivial();}    
+    const converting_base<ValT,CfgT>* as_converting()const{return impl()->as_converting();}
+    const viewing_evaluating_base<ValT,CfgT>* as_viewing_evaluating()const{return impl()->as_viewing_evaluating();}
 
     bool is_storage()const{return impl()->is_storage();}    
     bool is_cached()const{return impl()->is_cached();}
@@ -36,7 +35,7 @@ public:
     value_type trivial_at(const index_type& idx)const{return impl()->trivial_at(idx);}
 
     detail::tensor_kinds tensor_kind()const{return impl()->tensor_kind();}
-    const descriptor_base<ValT,Cfg>& descriptor()const{return impl()->descriptor();}
+    const descriptor_base<ValT,CfgT>& descriptor()const{return impl()->descriptor();}
     index_type size()const{return impl()->size();}
     index_type dim()const{return impl()->dim();}
     const shape_type& shape()const{return impl()->shape();}

@@ -6,13 +6,12 @@
 
 namespace gtensor{
 
-template<typename ValT, template<typename> typename Cfg, typename F, typename...Wks>
+template<typename ValT, typename CfgT, typename F, typename...Wks>
 class evaluating_walker
-{
-    using config_type = Cfg<ValT>;        
+{    
     using value_type = ValT;
-    using index_type = typename config_type::index_type;
-    using shape_type = typename config_type::shape_type;
+    using index_type = typename CfgT::index_type;
+    using shape_type = typename CfgT::shape_type;
 
     index_type dim_;
     detail::shape_inverter<index_type,shape_type> shape;
@@ -70,18 +69,17 @@ public:
     value_type operator*() const {return deref_helper(std::make_index_sequence<sizeof...(Wks)>{});}
 };
 
-template<typename ValT, template<typename> typename Cfg, typename ImplT>
-class evaluating_walker_polymorphic : public walker_base<ValT, Cfg>    
+template<typename ValT, typename CfgT, typename ImplT>
+class evaluating_walker_polymorphic : public walker_base<ValT, CfgT>    
 {
     using impl_type = ImplT;
-    using config_type = Cfg<ValT>;        
     using value_type = ValT;
-    using index_type = typename config_type::index_type;
-    using shape_type = typename config_type::shape_type;
+    using index_type = typename CfgT::index_type;
+    using shape_type = typename CfgT::shape_type;
 
     impl_type impl_;
 
-    std::unique_ptr<walker_base<ValT,Cfg>> clone()const override{return std::make_unique<evaluating_walker_polymorphic>(*this);}
+    std::unique_ptr<walker_base<ValT,CfgT>> clone()const override{return std::make_unique<evaluating_walker_polymorphic>(*this);}
 
 public:
     evaluating_walker_polymorphic(impl_type&& impl__):
@@ -96,22 +94,21 @@ public:
     value_type operator*() const override{return impl_.operator*();}
 };
 
-template<typename ValT, template<typename> typename Cfg, typename WlkT>
-class evaluating_indexer : public indexer_base<ValT, Cfg>    
+template<typename ValT, typename CfgT, typename WlkT>
+class evaluating_indexer : public indexer_base<ValT, CfgT>    
 {    
-    using walker_type = WlkT;
-    using config_type = Cfg<ValT>;
+    using walker_type = WlkT;    
     using value_type = ValT;
-    using index_type = typename config_type::index_type;
-    using shape_type = typename config_type::shape_type;
-    using strides_type = typename detail::libdiv_strides_traits<config_type>::type;
+    using index_type = typename CfgT::index_type;
+    using shape_type = typename CfgT::shape_type;
+    using strides_type = typename detail::libdiv_strides_traits<CfgT>::type;
     
     walker_type walker_;
     const strides_type* strides;
     value_type data_cache{evaluate_at(0)};
     index_type index_cache{0};
 
-    std::unique_ptr<indexer_base<ValT,Cfg>> clone(int)const override{return std::make_unique<evaluating_indexer>(*this);}
+    std::unique_ptr<indexer_base<ValT,CfgT>> clone(int)const override{return std::make_unique<evaluating_indexer>(*this);}
 
     void walk(const index_type& direction, const index_type& steps){walker_.walk_without_check(direction,steps);}
     

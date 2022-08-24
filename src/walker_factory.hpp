@@ -14,19 +14,19 @@ namespace gtensor{
 
 namespace detail{
 
- template<typename ValT, template<typename> typename Cfg>
- bool is_storage(const tensor_base<ValT,Cfg>& t){
+ template<typename ValT, typename CfgT>
+ bool is_storage(const tensor_base<ValT,CfgT>& t){
     return t.tensor_kind() == detail::tensor_kinds::storage_tensor || 
         t.tensor_kind() == detail::tensor_kinds::expression && t.is_storage() ||
         t.tensor_kind() == detail::tensor_kinds::view && t.is_cached();
 }
 
-template<typename ValT, template<typename> typename Cfg, std::enable_if_t<detail::is_mode_div_native<Cfg<ValT>> ,int> =0 >
-inline const auto& strides_div(const stensor_descriptor<ValT, Cfg>& desc){
+template<typename ValT, typename CfgT, std::enable_if_t<detail::is_mode_div_native<CfgT> ,int> =0 >
+inline const auto& strides_div(const stensor_descriptor<ValT, CfgT>& desc){
     return desc.strides();
 }
-template<typename ValT, template<typename> typename Cfg, std::enable_if_t<detail::is_mode_div_libdivide<Cfg<ValT>> ,int> =0 >
-inline const auto& strides_div(const stensor_descriptor<ValT, Cfg>& desc){
+template<typename ValT, typename CfgT, std::enable_if_t<detail::is_mode_div_libdivide<CfgT> ,int> =0 >
+inline const auto& strides_div(const stensor_descriptor<ValT, CfgT>& desc){
     return desc.strides_libdivide();
 }
 
@@ -50,24 +50,22 @@ public:
     }
 };
 
-template<typename ValT, template<typename> typename Cfg>
+template<typename ValT, typename CfgT>
 class trivial_walker_factory
-{
-    using config_type = Cfg<ValT>;        
+{    
     using value_type = ValT;
-    using shape_type = typename config_type::shape_type;
+    using shape_type = typename CfgT::shape_type;
 public: 
-    static evaluating_trivial_walker<ValT, Cfg> create_walker(const shape_type& shape, const shape_type& strides, const tensor_base<ValT,Cfg>& parent){
-        return evaluating_trivial_walker<ValT,Cfg>{shape, strides, parent};
+    static evaluating_trivial_walker<ValT, CfgT> create_walker(const shape_type& shape, const shape_type& strides, const tensor_base<ValT,CfgT>& parent){
+        return evaluating_trivial_walker<ValT,CfgT>{shape, strides, parent};
     }
 };
 
-template<typename ValT, template<typename> typename Cfg>
+template<typename ValT, typename CfgT>
 class evaluating_walker_factory
-{
-    using config_type = Cfg<ValT>;        
+{    
     using value_type = ValT;
-    using shape_type = typename config_type::shape_type;
+    using shape_type = typename CfgT::shape_type;
     
     template<typename F>
     struct walker_maker{
@@ -76,9 +74,9 @@ class evaluating_walker_factory
             shape{shape_}
         {}
         template<typename...Args>
-        walker<ValT,Cfg> operator()(const Args&...args)const{
-            using evaluating_walker_type = evaluating_walker<ValT,Cfg,F,decltype(std::declval<Args>().create_walker())...>;
-            return std::make_unique<evaluating_walker_polymorphic<ValT,Cfg,evaluating_walker_type>>(evaluating_walker_type{shape,args.create_walker()...});            
+        walker<ValT,CfgT> operator()(const Args&...args)const{
+            using evaluating_walker_type = evaluating_walker<ValT,CfgT,F,decltype(std::declval<Args>().create_walker())...>;
+            return std::make_unique<evaluating_walker_polymorphic<ValT,CfgT,evaluating_walker_type>>(evaluating_walker_type{shape,args.create_walker()...});            
         }
     };
     
@@ -92,9 +90,9 @@ class evaluating_walker_factory
             strides{strides_}
         {}
         template<typename...Args>
-        indexer<ValT,Cfg> operator()(const Args&...args)const{
-            using evaluating_walker_type = evaluating_walker<ValT,Cfg,F,decltype(std::declval<Args>().create_walker())...>;
-            using evaluating_indexer_type = evaluating_indexer<ValT,Cfg,evaluating_walker_type>;
+        indexer<ValT,CfgT> operator()(const Args&...args)const{
+            using evaluating_walker_type = evaluating_walker<ValT,CfgT,F,decltype(std::declval<Args>().create_walker())...>;
+            using evaluating_indexer_type = evaluating_indexer<ValT,CfgT,evaluating_walker_type>;
             return std::make_unique<evaluating_indexer_type>(strides, evaluating_walker_type{shape,args.create_walker()...});            
         }
     };    
@@ -106,7 +104,7 @@ class evaluating_walker_factory
 
     template<typename MakerT, typename...Ops, std::size_t...I>
     static auto create_helper(const MakerT& maker, const std::tuple<Ops...>& operands, std::index_sequence<I...>){        
-        return detail::dispatcher<ValT,Cfg>::call(maker, *std::get<I>(operands)...);
+        return detail::dispatcher<ValT,CfgT>::call(maker, *std::get<I>(operands)...);
     }
 
 public: 
@@ -115,8 +113,8 @@ public:
         return create_helper(maker_maker(descriptor.shape(), F{}), operands, std::make_index_sequence<sizeof...(Ops)>{});        
     }
     template<typename DescT, typename F, typename...Ops>
-    static indexer<ValT,Cfg> create_indexer(const DescT& descriptor, const F&, const std::tuple<Ops...>& operands){
-        return create_helper(maker_maker(descriptor.shape(), detail::strides_div(descriptor), F{}), operands, std::make_index_sequence<sizeof...(Ops)>{});        
+    static indexer<ValT,CfgT> create_indexer(const DescT& descriptor, const F&, const std::tuple<Ops...>& operands){
+        return create_helper(maker_maker(descriptor.shape(), detail::strides_div(descriptor), F{}), operands, std::make_index_sequence<sizeof...(Ops)>{});
     }
 };
 

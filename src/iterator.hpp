@@ -14,18 +14,17 @@ namespace detail{
 /*
 * multiindex_iterator
 */
-template<typename ValT, template<typename> typename Cfg, typename Wkr>
+template<typename ValT, typename CfgT, typename Wkr>
 class multiindex_iterator{
-    using walker_type = Wkr;
-    using config_type = Cfg<ValT>;
-    using shape_type = typename config_type::shape_type;
-    using index_type = typename config_type::index_type;
-    using strides_type = typename detail::libdiv_strides_traits<config_type>::type;
+    using walker_type = Wkr;    
+    using shape_type = typename CfgT::shape_type;
+    using index_type = typename CfgT::index_type;
+    using strides_type = typename detail::libdiv_strides_traits<CfgT>::type;
 
 public:
     using iterator_category = std::random_access_iterator_tag;
     using value_type = ValT;
-    using difference_type = typename config_type::difference_type;
+    using difference_type = typename CfgT::difference_type;
     using pointer = value_type*;
     using reference = value_type&;
     using const_reference = const value_type&;
@@ -88,8 +87,8 @@ public:
     inline bool friend operator<=(const multiindex_iterator& lhs, const multiindex_iterator& rhs){return !(lhs > rhs);}
 };
 
-template<typename ValT, template<typename> typename Cfg, typename Wkr>
-auto& multiindex_iterator<ValT,Cfg,Wkr>::operator++(){
+template<typename ValT, typename CfgT, typename Wkr>
+auto& multiindex_iterator<ValT,CfgT,Wkr>::operator++(){
     index_type d{0};
     auto idx_first = multi_index.begin();
     auto idx_it = std::prev(multi_index.end());
@@ -114,8 +113,8 @@ auto& multiindex_iterator<ValT,Cfg,Wkr>::operator++(){
     return *this;
 }
 
-template<typename ValT, template<typename> typename Cfg, typename Wkr>
-auto& multiindex_iterator<ValT,Cfg,Wkr>::operator--(){
+template<typename ValT, typename CfgT, typename Wkr>
+auto& multiindex_iterator<ValT,CfgT,Wkr>::operator--(){
     index_type d{0};
     auto idx_first = multi_index.begin();
     auto idx_it = std::prev(multi_index.end());
@@ -140,8 +139,8 @@ auto& multiindex_iterator<ValT,Cfg,Wkr>::operator--(){
     return *this;
 }
 
-template<typename ValT, template<typename> typename Cfg, typename Wkr>
-auto& multiindex_iterator<ValT,Cfg,Wkr>::advance(difference_type n){
+template<typename ValT, typename CfgT, typename Wkr>
+auto& multiindex_iterator<ValT,CfgT,Wkr>::advance(difference_type n){
     index_type idx{flat_index + n};
     flat_index = idx;
     walker.reset();
