@@ -95,7 +95,7 @@ template<typename ValT, typename CfgT, typename F, typename WFactoryT, typename.
 class evaluating_tensor : 
     public tensor_base<ValT,CfgT>,
     public evaluating_base<ValT,CfgT>,
-    public evaluating_trivial_base<ValT,CfgT>,
+    //public evaluating_trivial_base<ValT,CfgT>,
     public converting_base<ValT,CfgT>    
 {    
     using walker_factory_type = WFactoryT;    
@@ -116,9 +116,9 @@ class evaluating_tensor :
     walker<ValT,CfgT> create_evaluating_walker()const override{
         return walker_factory_type::create_walker(descriptor_,f,operands);        
     }
-    evaluating_trivial_walker<ValT,CfgT> create_trivial_walker()const override{
-        return trivial_walker_factory<ValT,CfgT>::create_walker(shape(), strides(), *this);
-    }
+    // evaluating_trivial_walker<ValT,CfgT> create_trivial_walker()const override{
+    //     return trivial_walker_factory<ValT,CfgT>::create_walker(shape(), strides(), *this);
+    // }
     indexer<ValT,CfgT> create_evaluating_indexer()const override{
         return walker_factory_type::create_indexer(descriptor_, f,operands);
     }
@@ -128,7 +128,7 @@ class evaluating_tensor :
     bool is_cached()const override{return false;}
     
     const evaluating_base<ValT,CfgT>* as_evaluating()const override{return static_cast<const evaluating_base<ValT,CfgT>*>(this);}
-    const evaluating_trivial_base<ValT,CfgT>* as_evaluating_trivial()const override{return static_cast<const evaluating_trivial_base<ValT,CfgT>*>(this);}
+    //const evaluating_trivial_base<ValT,CfgT>* as_evaluating_trivial()const override{return static_cast<const evaluating_trivial_base<ValT,CfgT>*>(this);}
     const converting_base<ValT,CfgT>* as_converting()const override{return static_cast<const converting_base<ValT,CfgT>*>(this);}
 protected:
     

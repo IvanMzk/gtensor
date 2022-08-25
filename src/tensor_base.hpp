@@ -71,10 +71,10 @@ public:
 template<typename ValT, typename CfgT>
 class evaluating_trivial_base
 {
-    virtual evaluating_trivial_walker<ValT,CfgT> create_trivial_walker()const = 0;    
+    //virtual evaluating_trivial_walker<ValT,CfgT> create_trivial_walker()const = 0;    
 public:
     virtual ~evaluating_trivial_base(){}
-    auto create_walker()const{return create_trivial_walker();}    
+    //auto create_walker()const{return create_trivial_walker();}    
 };
 
 template<typename ValT, typename CfgT>

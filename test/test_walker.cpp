@@ -31,20 +31,20 @@ struct storage_walker_test_tensor : public tensor<ValT,CfgT>{
     }
 };
 
-template<typename ValT, typename CfgT>
-struct trivial_walker_test_tensor : public tensor<ValT,CfgT>{
-    using base_type = tensor<ValT,CfgT>;
-    using tensor::tensor;
-    trivial_walker_test_tensor(const base_type& base):
-        base_type{base}
-    {}    
-    evaluating_trivial_walker<ValT,CfgT> create_native_walker()const{
-        return impl()->as_evaluating_trivial()->create_walker();
-    }
-    walker<ValT,CfgT> create_walker()const{
-        return std::make_unique<evaluating_trivial_walker<ValT,CfgT>>(create_native_walker());
-    }
-};
+// template<typename ValT, typename CfgT>
+// struct trivial_walker_test_tensor : public tensor<ValT,CfgT>{
+//     using base_type = tensor<ValT,CfgT>;
+//     using tensor::tensor;
+//     trivial_walker_test_tensor(const base_type& base):
+//         base_type{base}
+//     {}    
+//     evaluating_trivial_walker<ValT,CfgT> create_native_walker()const{
+//         return impl()->as_evaluating_trivial()->create_walker();
+//     }
+//     walker<ValT,CfgT> create_walker()const{
+//         return std::make_unique<evaluating_trivial_walker<ValT,CfgT>>(create_native_walker());
+//     }
+// };
 
 template<typename ValT, typename CfgT>
 struct evaluating_walker_test_tensor : public tensor<ValT,CfgT>{
@@ -184,7 +184,7 @@ TEMPLATE_TEST_CASE("test_walker","test_walker",
                     (test_walker_::not_trivial_expression_maker<float, test_walker_::evaluating_walker_test_tensor<float, test_walker_::default_config>>),
                     (test_walker_::trivial_subtree_expression_maker<float, test_walker_::evaluating_walker_test_tensor<float, test_walker_::default_config>>),
                     (test_walker_::trivial_expression_maker_ewalker<float, test_walker_::evaluating_walker_test_tensor<float, test_walker_::default_config>>),
-                    (test_walker_::trivial_expression_maker_trivial_walker<float, test_walker_::trivial_walker_test_tensor<float, test_walker_::default_config>>),
+                    //(test_walker_::trivial_expression_maker_trivial_walker<float, test_walker_::trivial_walker_test_tensor<float, test_walker_::default_config>>),
                     (test_walker_::view_slice_of_stensor_maker<float, test_walker_::storage_walker_test_tensor<float, test_walker_::default_config>>),
                     (test_walker_::view_slice_of_expression_maker<float, test_walker_::view_expression_walker_test_tensor<float, test_walker_::default_config>>),
                     (test_walker_::view_view_slice_of_expression_maker<float, test_walker_::view_expression_walker_test_tensor<float, test_walker_::default_config>>),

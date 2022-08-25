@@ -50,16 +50,16 @@ public:
     }
 };
 
-template<typename ValT, typename CfgT>
-class trivial_walker_factory
-{    
-    using value_type = ValT;
-    using shape_type = typename CfgT::shape_type;
-public: 
-    static evaluating_trivial_walker<ValT, CfgT> create_walker(const shape_type& shape, const shape_type& strides, const tensor_base<ValT,CfgT>& parent){
-        return evaluating_trivial_walker<ValT,CfgT>{shape, strides, parent};
-    }
-};
+// template<typename ValT, typename CfgT>
+// class trivial_walker_factory
+// {    
+//     using value_type = ValT;
+//     using shape_type = typename CfgT::shape_type;
+// public: 
+//     static evaluating_trivial_walker<ValT, CfgT> create_walker(const shape_type& shape, const shape_type& strides, const tensor_base<ValT,CfgT>& parent){
+//         return evaluating_trivial_walker<ValT,CfgT>{shape, strides, parent};
+//     }
+// };
 
 template<typename ValT, typename CfgT>
 class evaluating_walker_factory
