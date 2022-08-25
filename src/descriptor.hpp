@@ -38,7 +38,7 @@ public:
 };
 
 template<typename CfgT>
-class descriptor_with_lidivide :
+class descriptor_with_libdivide :
     public basic_descriptor<CfgT>,    
     private detail::collection_libdivide_extension<CfgT,typename CfgT::div_mode>
 {
@@ -47,9 +47,9 @@ class descriptor_with_lidivide :
     using index_type = typename CfgT::index_type;    
 
 public:
-    descriptor_with_lidivide() = default;       
+    descriptor_with_libdivide() = default;       
     template<typename ShT>
-    descriptor_with_lidivide(ShT&& shape__):
+    descriptor_with_libdivide(ShT&& shape__):
         basic_descriptor{std::forward<ShT>(shape__)},
         base_strides_libdivide{basic_descriptor::strides()}
     {}    

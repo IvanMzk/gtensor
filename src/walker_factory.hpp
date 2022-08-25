@@ -22,11 +22,11 @@ namespace detail{
 }
 
 template<typename CfgT, std::enable_if_t<detail::is_mode_div_native<CfgT> ,int> =0 >
-inline const auto& strides_div(const descriptor_with_lidivide<CfgT>& desc){
+inline const auto& strides_div(const descriptor_with_libdivide<CfgT>& desc){
     return desc.strides();
 }
 template<typename CfgT, std::enable_if_t<detail::is_mode_div_libdivide<CfgT> ,int> =0 >
-inline const auto& strides_div(const descriptor_with_lidivide<CfgT>& desc){
+inline const auto& strides_div(const descriptor_with_libdivide<CfgT>& desc){
     return desc.strides_libdivide();
 }
 
