@@ -2,7 +2,7 @@
 #define IMPL_EXPRESSION_HPP_
 
 #include "tensor_base.hpp"
-#include "stensor_descriptor.hpp"
+#include "descriptor.hpp"
 #include "walker_factory.hpp"
 #include "iterator.hpp"
 
@@ -102,7 +102,7 @@ class evaluating_tensor :
     using value_type = ValT;
     using index_type = typename CfgT::index_type;
     using shape_type = typename CfgT::shape_type;
-    using descriptor_type = stensor_descriptor<CfgT>;
+    using descriptor_type = descriptor_with_lidivide<CfgT>;
     using iterator_type = multiindex_iterator<ValT,CfgT,walker<ValT,CfgT>>; 
     //static_assert(detail::is_valid_operands<Ops...>);
 

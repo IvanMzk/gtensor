@@ -26,6 +26,7 @@ template<typename ValT, typename CfgT> class vwalker_impl;
 template<typename DifT, typename N> struct slice;
 
 template<typename CfgT> class stensor_descriptor;
+template<typename CfgT> class descriptor_with_libdivide;
 template<typename CfgT> class descriptor_base;
 
 namespace detail{
