@@ -11,7 +11,7 @@ namespace gtensor{
 template<typename ValT, typename CfgT> 
 class view_slice_descriptor : 
     public descriptor_base<CfgT>,
-    private basic_descriptor<ValT,CfgT>,
+    private basic_descriptor<CfgT>,
     private detail::collection_libdivide_extension<ValT,CfgT,typename CfgT::div_mode>
 {
     using base_strides_libdivide = detail::collection_libdivide_extension<ValT,CfgT,typename CfgT::div_mode>;

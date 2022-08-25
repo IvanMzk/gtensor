@@ -109,15 +109,13 @@ public:
     virtual std::string to_str()const = 0;
 };
 
-template<typename ValT, typename CfgT>
+template<typename CfgT>
 class basic_descriptor : 
     private detail::descriptor_strides<CfgT>    
 {
     using base_strides = detail::descriptor_strides<CfgT>;
-    using config_type = CfgT;
-    using value_type = ValT;
-    using shape_type = typename config_type::shape_type;
-    using index_type = typename config_type::index_type;
+    using shape_type = typename CfgT::shape_type;
+    using index_type = typename CfgT::index_type;
 protected:
     shape_type shape_;    
     auto size()const{return detail::make_size(shape_,base_strides::strides());}

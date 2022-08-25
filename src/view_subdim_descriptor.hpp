@@ -10,7 +10,7 @@ namespace gtensor{
 template<typename ValT, typename CfgT> 
 class view_subdim_descriptor : 
     public descriptor_base<CfgT>,
-    private basic_descriptor<ValT,CfgT>
+    private basic_descriptor<CfgT>
 {
     using value_type = ValT;
     using index_type = typename CfgT::index_type;
