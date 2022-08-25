@@ -1,12 +1,13 @@
 #ifndef DESCRIPTOR_HPP_
 #define DESCRIPTOR_HPP_
 
+#include <numeric>
 #include "descriptor_base.hpp"
 
 namespace gtensor{
 
 template<typename CfgT>
-class descriptor :
+class basic_descriptor :
     public descriptor_base<CfgT>,
     private descriptor_common<CfgT>    
 {    
@@ -18,9 +19,9 @@ class descriptor :
     }    
 
 public:
-    descriptor() = default;       
+    basic_descriptor() = default;       
     template<typename ShT>
-    descriptor(ShT&& shape__):
+    basic_descriptor(ShT&& shape__):
         descriptor_common{std::forward<ShT>(shape__)}        
     {}    
     
