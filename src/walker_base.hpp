@@ -110,7 +110,6 @@ class walker{
     using value_type = ValT;
     using index_type = typename CfgT::index_type;
     using impl_base_type = walker_base<ValT, CfgT>;
-    
     std::unique_ptr<impl_base_type> impl;
 public:    
     walker(std::unique_ptr<impl_base_type>&& impl_):
@@ -141,7 +140,8 @@ public:
         impl->reset();
         return *this;
     }    
-    value_type operator*() const{return impl->operator*();}    
+    value_type operator*() const{return impl->operator*();}
+    const walker_trivial_base& as_trivial()const{return static_cast<const walker_trivial_base&>(*impl.get());}
 };
 
 template<typename ValT, typename CfgT>
