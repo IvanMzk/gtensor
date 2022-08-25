@@ -1,8 +1,7 @@
 #ifndef VIEW_FACTORY_HPP_
 #define VIEW_FACTORY_HPP_
 
-#include "view_slice_descriptor.hpp"
-#include "view_subdim_descriptor.hpp"
+#include "descriptor.hpp"
 #include "viewing_tensor.hpp"
 
 
@@ -116,10 +115,12 @@ class view_factory
     using index_type = typename CfgT::index_type;
     using shape_type = typename CfgT::shape_type;
     using slices_collection_type = typename CfgT::slices_collection_type;
-    using view_slice_descriptor_type = view_slice_descriptor<ValT,CfgT>;
-    using view_subdim_descriptor_type = view_subdim_descriptor<ValT,CfgT>;
-    using view_slice_type = gtensor::viewing_tensor<ValT,CfgT,view_slice_descriptor_type>;
+    using view_reshape_descriptor_type = basic_descriptor<CfgT>;
+    using view_subdim_descriptor_type = descriptor_with_offset<CfgT>;
+    using view_slice_descriptor_type = converting_descriptor<CfgT>;
+    using view_reshape_type = gtensor::viewing_tensor<ValT,CfgT,view_reshape_descriptor_type>;
     using view_subdim_type = gtensor::viewing_tensor<ValT,CfgT,view_subdim_descriptor_type>;
+    using view_slice_type = gtensor::viewing_tensor<ValT,CfgT,view_slice_descriptor_type>;
     
     static view_slice_descriptor_type create_view_slice_descriptor(const std::shared_ptr<tensor_base_type>& parent, const slices_collection_type& subs){        
         return view_slice_descriptor_type{
@@ -141,10 +142,9 @@ class view_factory
             detail::make_view_subdim_offset(parent->strides(),subs)
         };
     }
-    static view_subdim_descriptor_type create_view_reshape_descriptor(const std::shared_ptr<tensor_base_type>& parent, const shape_type& subs){
-        return view_subdim_descriptor_type{
-            detail::make_view_reshape_shape(parent->shape(),subs),
-            index_type(0)
+    static view_reshape_descriptor_type create_view_reshape_descriptor(const std::shared_ptr<tensor_base_type>& parent, const shape_type& subs){
+        return view_reshape_descriptor_type{
+            detail::make_view_reshape_shape(parent->shape(),subs)            
         };
     }
 public:
@@ -158,7 +158,7 @@ public:
         return std::static_pointer_cast<tensor_base_type>(std::make_shared<view_subdim_type>(create_view_subdim_descriptor(parent, subs),parent));
     }
     static std::shared_ptr<tensor_base_type> create_view_reshape(const std::shared_ptr<tensor_base_type>& parent, const shape_type& subs){
-        return std::static_pointer_cast<tensor_base_type>(std::make_shared<view_subdim_type>(create_view_reshape_descriptor(parent, subs),parent));
+        return std::static_pointer_cast<tensor_base_type>(std::make_shared<view_reshape_type>(create_view_reshape_descriptor(parent, subs),parent));
     }
 };
 
