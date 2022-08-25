@@ -37,6 +37,26 @@ public:
     index_type convert(const shape_type& idx)const override{return convert_helper(idx);}
 };
 
+template<typename CfgT>
+class descriptor_with_lidivide :
+    public basic_descriptor<CfgT>,    
+    private detail::collection_libdivide_extension<CfgT,typename CfgT::div_mode>
+{
+    using base_strides_libdivide = detail::collection_libdivide_extension<CfgT,typename CfgT::div_mode>;    
+    using shape_type = typename CfgT::shape_type;
+    using index_type = typename CfgT::index_type;    
+
+public:
+    descriptor_with_lidivide() = default;       
+    template<typename ShT>
+    descriptor_with_lidivide(ShT&& shape__):
+        basic_descriptor{std::forward<ShT>(shape__)},
+        base_strides_libdivide{basic_descriptor::strides()}
+    {}    
+    
+    const auto& strides_libdivide()const{return base_strides_libdivide::dividers_libdivide();}
+};
+
 template<typename CfgT> 
 class descriptor_with_offset : public basic_descriptor<CfgT>    
 {    
@@ -59,6 +79,8 @@ public:
     index_type convert(const shape_type& idx)const override{return convert_helper(idx);}
     index_type convert(const index_type& idx)const override{return idx+offset_;}    
 };
+
+
 
 }   //end of namespace gtensor
 
