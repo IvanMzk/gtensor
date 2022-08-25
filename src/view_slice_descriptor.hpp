@@ -11,7 +11,7 @@ namespace gtensor{
 template<typename ValT, typename CfgT> 
 class view_slice_descriptor : 
     public descriptor_base<CfgT>,
-    private basic_descriptor<CfgT>,
+    private descriptor_common<CfgT>,
     private detail::collection_libdivide_extension<CfgT,typename CfgT::div_mode>
 {
     using base_strides_libdivide = detail::collection_libdivide_extension<CfgT,typename CfgT::div_mode>;
@@ -38,16 +38,16 @@ class view_slice_descriptor :
 public:
     template<typename ShT, typename StT>
     view_slice_descriptor(ShT&& shape__, StT&& cstrides__,  const index_type& offset__):
-        basic_descriptor{std::forward<ShT>(shape__)},
-        base_strides_libdivide{basic_descriptor::strides()},
+        descriptor_common{std::forward<ShT>(shape__)},
+        base_strides_libdivide{descriptor_common::strides()},
         cstrides_{std::forward<StT>(cstrides__)},
         offset_{offset__}
     {}
-    index_type dim()const{return basic_descriptor::dim();}
-    index_type size()const{return basic_descriptor::size();}
-    const shape_type& shape()const{return basic_descriptor::shape();}
-    const shape_type& strides()const{return basic_descriptor::strides();}
-    std::string to_str()const{return basic_descriptor::to_str();}
+    index_type dim()const{return descriptor_common::dim();}
+    index_type size()const{return descriptor_common::size();}
+    const shape_type& shape()const{return descriptor_common::shape();}
+    const shape_type& strides()const{return descriptor_common::strides();}
+    std::string to_str()const{return descriptor_common::to_str();}
         
     index_type offset()const{return offset_;}
     const shape_type& cstrides()const{return cstrides_;}

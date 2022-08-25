@@ -10,7 +10,7 @@ namespace gtensor{
 template<typename ValT, typename CfgT> 
 class view_subdim_descriptor : 
     public descriptor_base<CfgT>,
-    private basic_descriptor<CfgT>
+    private descriptor_common<CfgT>
 {
     using value_type = ValT;
     using index_type = typename CfgT::index_type;
@@ -25,15 +25,15 @@ class view_subdim_descriptor :
 public:
     template<typename ShT>
     view_subdim_descriptor(ShT&& shape__, index_type offset__):
-        basic_descriptor{std::forward<ShT>(shape__)},
+        descriptor_common{std::forward<ShT>(shape__)},
         offset_{offset__}
     {}
 
-    index_type dim()const{return basic_descriptor::dim();}
-    index_type size()const{return basic_descriptor::size();}
-    const shape_type& shape()const{return basic_descriptor::shape();}
-    const shape_type& strides()const{return basic_descriptor::strides();}
-    std::string to_str()const{return basic_descriptor::to_str();}
+    index_type dim()const{return descriptor_common::dim();}
+    index_type size()const{return descriptor_common::size();}
+    const shape_type& shape()const{return descriptor_common::shape();}
+    const shape_type& strides()const{return descriptor_common::strides();}
+    std::string to_str()const{return descriptor_common::to_str();}
 
     index_type offset()const{return offset_;}
     const shape_type& cstrides()const{return strides();}

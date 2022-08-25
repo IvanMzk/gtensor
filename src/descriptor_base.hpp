@@ -89,7 +89,7 @@ protected:
 
 }   //end of namespace detail
 
-
+//descriptor abstract interface
 template<typename CfgT> 
 class descriptor_base{        
     using index_type = typename CfgT::index_type;
@@ -106,8 +106,9 @@ public:
     virtual std::string to_str()const = 0;
 };
 
+//common implementation of descriptor
 template<typename CfgT>
-class basic_descriptor : 
+class descriptor_common : 
     private detail::descriptor_strides<CfgT>    
 {
     using base_strides = detail::descriptor_strides<CfgT>;
@@ -124,13 +125,12 @@ protected:
         ss<<"("<<[&ss,this](){for(const auto& i : shape()){ss<<i<<",";} return ")";}();
         return ss.str();
     }        
-public:
-    basic_descriptor() = default;       
-    basic_descriptor(const shape_type& shape__):
+    descriptor_common() = default;       
+    descriptor_common(const shape_type& shape__):
         base_strides{shape__},
         shape_{shape__}
     {}
-    basic_descriptor(shape_type&& shape__):
+    descriptor_common(shape_type&& shape__):
         base_strides{shape__},
         shape_{std::move(shape__)}
     {}
