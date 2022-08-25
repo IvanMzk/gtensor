@@ -37,6 +37,8 @@ public:
     value_type operator*() const override{return parent->trivial_at(cursor());}
 };
 
+
+
 }   //end of namespace gtensor
 
 #endif
