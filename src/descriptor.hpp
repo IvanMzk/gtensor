@@ -37,6 +37,29 @@ public:
     index_type convert(const shape_type& idx)const override{return convert_helper(idx);}
 };
 
+template<typename CfgT> 
+class descriptor_with_offset : public basic_descriptor<CfgT>    
+{    
+    using index_type = typename CfgT::index_type;
+    using shape_type = typename CfgT::shape_type;
+    
+    index_type offset_;
+
+    index_type convert_helper(const shape_type& idx)const{
+        return std::inner_product(idx.begin(), idx.end(), cstrides().begin(), offset_);
+    }
+
+public:
+    template<typename ShT>
+    descriptor_with_offset(ShT&& shape__, index_type offset__):
+        basic_descriptor{std::forward<ShT>(shape__)},
+        offset_{offset__}
+    {}
+    index_type offset()const override{return offset_;}    
+    index_type convert(const shape_type& idx)const override{return convert_helper(idx);}
+    index_type convert(const index_type& idx)const override{return idx+offset_;}    
+};
+
 }   //end of namespace gtensor
 
 #endif
