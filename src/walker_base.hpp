@@ -93,6 +93,16 @@ public:
     virtual std::unique_ptr<walker_base<ValT,CfgT>> clone()const = 0;
 };
 
+template<typename ValT, typename CfgT>
+class walker_trivial_base : public walker_base<ValT, CfgT>{
+    using value_type = ValT;
+    using index_type = typename CfgT::index_type;
+public:
+    virtual ~walker_trivial_base(){}    
+    virtual value_type operator[](const index_type& idx) const = 0;
+};
+
+
 
 template<typename ValT, typename CfgT>
 class walker{    
