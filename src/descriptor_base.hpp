@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <string>
 #include <sstream>
+#include "libdivide_helper.hpp"
 
 namespace gtensor{
 
@@ -73,7 +74,6 @@ inline auto make_size(const ShT& shape){
     }
 }
 
-
 template<typename ValT,  typename CfgT> 
 class descriptor_strides
 {
@@ -96,7 +96,9 @@ template<typename ValT, typename CfgT>
 class descriptor_base{    
     using config_type = CfgT;            
     using index_type = typename config_type::index_type;
-    using shape_type = typename config_type::shape_type;    
+    using shape_type = typename config_type::shape_type;
+protected:
+    using strides_div_type = typename detail::libdiv_strides_traits<CfgT>::type;    
 public:   
     virtual index_type convert(const shape_type& idx)const = 0;
     virtual index_type convert(const index_type& idx)const = 0;
@@ -105,6 +107,7 @@ public:
     virtual index_type offset()const = 0;
     virtual const shape_type& shape()const = 0;
     virtual const shape_type& strides()const = 0;
+    virtual const strides_div_type& strides_div()const = 0;
     virtual const shape_type& cstrides()const = 0;
     virtual std::string to_str()const = 0;
 };
