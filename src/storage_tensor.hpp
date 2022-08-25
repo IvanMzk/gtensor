@@ -3,7 +3,7 @@
 
 #include "shareable_storage.hpp"
 #include "tensor_base.hpp"
-#include "stensor_descriptor.hpp"
+#include "descriptor.hpp"
 #include "tensor_init_list.hpp"
 #include "walker_factory.hpp"
 
@@ -26,7 +26,7 @@ class storage_tensor :
     using index_type = typename CfgT::index_type;
     using shape_type = typename CfgT::shape_type;
     using storage_type = typename CfgT::template storage<value_type>;
-    using descriptor_type = stensor_descriptor<CfgT>;
+    using descriptor_type = basic_descriptor<CfgT>;
     using slices_collection_type = typename CfgT::slices_collection_type;
 
     descriptor_type descriptor_;
