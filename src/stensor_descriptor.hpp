@@ -9,7 +9,7 @@ namespace gtensor{
 
 template<typename ValT, typename CfgT>
 class stensor_descriptor :
-    public descriptor_base<ValT,CfgT>,
+    public descriptor_base<CfgT>,
     private basic_descriptor<ValT,CfgT>,
     private detail::collection_libdivide_extension<ValT,CfgT,typename CfgT::div_mode>
 {

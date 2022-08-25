@@ -25,7 +25,7 @@ public:
     virtual const shape_type& shape()const = 0;
     virtual const shape_type& strides()const = 0;
     virtual std::string to_str()const = 0;
-    virtual const descriptor_base<ValT,CfgT>& descriptor()const = 0;
+    virtual const descriptor_base<CfgT>& descriptor()const = 0;
     
     virtual value_type trivial_at(const index_type& idx)const = 0;
     virtual detail::tensor_kinds tensor_kind()const = 0;

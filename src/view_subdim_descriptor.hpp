@@ -9,7 +9,7 @@ namespace gtensor{
 //view subdim and reshape descriptor
 template<typename ValT, typename CfgT> 
 class view_subdim_descriptor : 
-    public descriptor_base<ValT,CfgT>,
+    public descriptor_base<CfgT>,
     private basic_descriptor<ValT,CfgT>
 {
     using value_type = ValT;

@@ -76,7 +76,7 @@ public:
     const value_type* data()const{return elements.data();}
 
     detail::tensor_kinds tensor_kind()const override{return detail::tensor_kinds::storage_tensor;}
-    const descriptor_base<ValT,CfgT>& descriptor()const override{return descriptor_;}
+    const descriptor_base<CfgT>& descriptor()const override{return descriptor_;}
     index_type size()const override{return descriptor_.size();}
     index_type dim()const override{return descriptor_.dim();}
     const shape_type& shape()const override{return descriptor_.shape();}

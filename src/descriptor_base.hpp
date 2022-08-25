@@ -92,7 +92,7 @@ protected:
 }   //end of namespace detail
 
 
-template<typename ValT, typename CfgT> 
+template<typename CfgT> 
 class descriptor_base{    
     using config_type = CfgT;            
     using index_type = typename config_type::index_type;
@@ -107,13 +107,14 @@ public:
     virtual index_type offset()const = 0;
     virtual const shape_type& shape()const = 0;
     virtual const shape_type& strides()const = 0;
-    virtual const strides_div_type& strides_div()const = 0;
+    //virtual const strides_div_type& strides_div()const = 0;
     virtual const shape_type& cstrides()const = 0;
     virtual std::string to_str()const = 0;
 };
 
 template<typename ValT, typename CfgT>
-class basic_descriptor : detail::descriptor_strides<ValT,CfgT>    
+class basic_descriptor : 
+    private detail::descriptor_strides<ValT,CfgT>    
 {
     using base_strides = detail::descriptor_strides<ValT,CfgT>;
     using config_type = CfgT;

@@ -35,7 +35,7 @@ public:
     value_type trivial_at(const index_type& idx)const{return impl()->trivial_at(idx);}
 
     detail::tensor_kinds tensor_kind()const{return impl()->tensor_kind();}
-    const descriptor_base<ValT,CfgT>& descriptor()const{return impl()->descriptor();}
+    const descriptor_base<CfgT>& descriptor()const{return impl()->descriptor();}
     index_type size()const{return impl()->size();}
     index_type dim()const{return impl()->dim();}
     const shape_type& shape()const{return impl()->shape();}
