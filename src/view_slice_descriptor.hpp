@@ -12,9 +12,9 @@ template<typename ValT, typename CfgT>
 class view_slice_descriptor : 
     public descriptor_base<CfgT>,
     private basic_descriptor<CfgT>,
-    private detail::collection_libdivide_extension<ValT,CfgT,typename CfgT::div_mode>
+    private detail::collection_libdivide_extension<CfgT,typename CfgT::div_mode>
 {
-    using base_strides_libdivide = detail::collection_libdivide_extension<ValT,CfgT,typename CfgT::div_mode>;
+    using base_strides_libdivide = detail::collection_libdivide_extension<CfgT,typename CfgT::div_mode>;
     using value_type = ValT;
     using index_type = typename CfgT::index_type;
     using shape_type = typename CfgT::shape_type;    

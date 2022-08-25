@@ -101,14 +101,13 @@ auto flat_to_multi_helper(const U<T>& strides, const T1& idx){
     return res;
 }
 
-template<typename ValT,  typename CfgT, typename Mode> class collection_libdivide_extension;
+template<typename CfgT, typename Mode> class collection_libdivide_extension;
 
-template<typename ValT,  typename CfgT> 
-class collection_libdivide_extension<ValT,CfgT,config::mode_div_libdivide>
-{
-    using config_type = CfgT;
-    using shape_type = typename config_type::shape_type;
-    using index_type = typename config_type::index_type;
+template<typename CfgT> 
+class collection_libdivide_extension<CfgT,gtensor::config::mode_div_libdivide>
+{    
+    using shape_type = typename CfgT::shape_type;
+    using index_type = typename CfgT::index_type;
     detail::libdivide_vector<index_type> dividers_libdivide_;
 protected:
     collection_libdivide_extension() = default;            
@@ -118,12 +117,10 @@ protected:
     const auto&  dividers_libdivide()const{return dividers_libdivide_;}
 };
 
-template<typename ValT,  typename CfgT> 
-class collection_libdivide_extension<ValT,CfgT,config::mode_div_native>
+template<typename CfgT> 
+class collection_libdivide_extension<CfgT,gtensor::config::mode_div_native>
 {
-    using config_type = CfgT;
-    using shape_type = typename config_type::shape_type;
-    using index_type = typename config_type::index_type;
+    using shape_type = typename CfgT::shape_type;
 protected:
     collection_libdivide_extension() = default;      
     collection_libdivide_extension(const shape_type&)
