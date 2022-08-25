@@ -76,6 +76,7 @@ protected:
     void reset(){cursor_ = offset;}
     
     CursorT cursor()const{return cursor_;}
+    CursorT offset()const{return offset;}
 };
 
 template<typename ValT, typename CfgT>

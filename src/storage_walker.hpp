@@ -27,6 +27,7 @@ public:
     void reset(const index_type& direction){base_basic_walker::reset(direction);}
     void reset(){base_basic_walker::reset();}
     value_type operator*() const {return *cursor();}
+    value_type operator[](const index_type& idx)const{return *(offset()+idx);}
 };
 
 template<typename ValT, typename CfgT>
