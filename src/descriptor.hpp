@@ -80,6 +80,39 @@ public:
     index_type convert(const index_type& idx)const override{return idx+offset_;}    
 };
 
+template<typename CfgT> 
+class converting_descriptor : public descriptor_with_libdivide<CfgT>
+{    
+    using index_type = typename CfgT::index_type;
+    using shape_type = typename CfgT::shape_type;    
+    
+    shape_type cstrides_;
+    index_type offset_;
+    
+    index_type convert_helper(const shape_type& idx)const{
+        return std::inner_product(idx.begin(), idx.end(), cstrides_.begin(), offset_);
+    }
+    template<typename C = CfgT, std::enable_if_t<detail::is_mode_div_libdivide<C>, int> =0 >
+    index_type convert_helper(const index_type& idx)const{
+        return convert_helper(gtensor::detail::flat_to_multi<shape_type>(strides_libdivide(), idx));
+    }
+    template<typename C = CfgT, std::enable_if_t<detail::is_mode_div_native<C>, int> =0 >
+    index_type convert_helper(const index_type& idx)const{
+        return convert_helper(gtensor::detail::flat_to_multi(strides(), idx));
+    }
+
+public:
+    template<typename ShT, typename StT>
+    converting_descriptor(ShT&& shape__, StT&& cstrides__,  const index_type& offset__):
+        descriptor_with_libdivide{std::forward<ShT>(shape__)},        
+        cstrides_{std::forward<StT>(cstrides__)},
+        offset_{offset__}
+    {}        
+    index_type offset()const override{return offset_;}
+    const shape_type& cstrides()const override{return cstrides_;}
+    index_type convert(const shape_type& idx)const override{return convert_helper(idx);}
+    index_type convert(const index_type& idx)const override{return convert_helper(idx);}
+};
 
 
 }   //end of namespace gtensor
