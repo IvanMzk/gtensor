@@ -74,12 +74,10 @@ inline auto make_size(const ShT& shape){
     }
 }
 
-template<typename ValT,  typename CfgT> 
+template<typename CfgT> 
 class descriptor_strides
-{
-    using config_type = CfgT;
-    using shape_type = typename config_type::shape_type;
-    using index_type = typename config_type::index_type;
+{    
+    using shape_type = typename CfgT::shape_type;
     shape_type strides_;
 protected:
     descriptor_strides() = default;            
@@ -93,10 +91,9 @@ protected:
 
 
 template<typename CfgT> 
-class descriptor_base{    
-    using config_type = CfgT;            
-    using index_type = typename config_type::index_type;
-    using shape_type = typename config_type::shape_type;
+class descriptor_base{        
+    using index_type = typename CfgT::index_type;
+    using shape_type = typename CfgT::shape_type;
 protected:
     using strides_div_type = typename detail::libdiv_strides_traits<CfgT>::type;    
 public:   
@@ -114,9 +111,9 @@ public:
 
 template<typename ValT, typename CfgT>
 class basic_descriptor : 
-    private detail::descriptor_strides<ValT,CfgT>    
+    private detail::descriptor_strides<CfgT>    
 {
-    using base_strides = detail::descriptor_strides<ValT,CfgT>;
+    using base_strides = detail::descriptor_strides<CfgT>;
     using config_type = CfgT;
     using value_type = ValT;
     using shape_type = typename config_type::shape_type;
