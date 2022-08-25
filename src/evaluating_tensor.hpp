@@ -102,7 +102,7 @@ class evaluating_tensor :
     using value_type = ValT;
     using index_type = typename CfgT::index_type;
     using shape_type = typename CfgT::shape_type;
-    using descriptor_type = stensor_descriptor<value_type, CfgT>;
+    using descriptor_type = stensor_descriptor<CfgT>;
     using iterator_type = multiindex_iterator<ValT,CfgT,walker<ValT,CfgT>>; 
     //static_assert(detail::is_valid_operands<Ops...>);
 

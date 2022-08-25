@@ -21,12 +21,12 @@ namespace detail{
         t.tensor_kind() == detail::tensor_kinds::view && t.is_cached();
 }
 
-template<typename ValT, typename CfgT, std::enable_if_t<detail::is_mode_div_native<CfgT> ,int> =0 >
-inline const auto& strides_div(const stensor_descriptor<ValT, CfgT>& desc){
+template<typename CfgT, std::enable_if_t<detail::is_mode_div_native<CfgT> ,int> =0 >
+inline const auto& strides_div(const stensor_descriptor<CfgT>& desc){
     return desc.strides();
 }
-template<typename ValT, typename CfgT, std::enable_if_t<detail::is_mode_div_libdivide<CfgT> ,int> =0 >
-inline const auto& strides_div(const stensor_descriptor<ValT, CfgT>& desc){
+template<typename CfgT, std::enable_if_t<detail::is_mode_div_libdivide<CfgT> ,int> =0 >
+inline const auto& strides_div(const stensor_descriptor<CfgT>& desc){
     return desc.strides_libdivide();
 }
 

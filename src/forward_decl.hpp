@@ -25,7 +25,7 @@ template<typename ValT, typename CfgT, typename DescT> class view_tensor;
 template<typename ValT, typename CfgT> class vwalker_impl;
 template<typename DifT, typename N> struct slice;
 
-template<typename ValT, typename CfgT> class stensor_descriptor;
+template<typename CfgT> class stensor_descriptor;
 template<typename CfgT> class descriptor_base;
 
 namespace detail{

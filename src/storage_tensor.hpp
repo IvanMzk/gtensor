@@ -26,7 +26,7 @@ class storage_tensor :
     using index_type = typename CfgT::index_type;
     using shape_type = typename CfgT::shape_type;
     using storage_type = typename CfgT::template storage<value_type>;
-    using descriptor_type = stensor_descriptor<value_type, CfgT>;
+    using descriptor_type = stensor_descriptor<CfgT>;
     using slices_collection_type = typename CfgT::slices_collection_type;
 
     descriptor_type descriptor_;

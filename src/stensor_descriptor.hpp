@@ -7,15 +7,13 @@
 
 namespace gtensor{
 
-template<typename ValT, typename CfgT>
+template<typename CfgT>
 class stensor_descriptor :
     public descriptor_base<CfgT>,
     private basic_descriptor<CfgT>,
     private detail::collection_libdivide_extension<CfgT,typename CfgT::div_mode>
 {
-    using base_descriptor = basic_descriptor<CfgT>;
     using base_strides_libdivide = detail::collection_libdivide_extension<CfgT,typename CfgT::div_mode>;    
-    using value_type = ValT;
     using shape_type = typename CfgT::shape_type;
     using index_type = typename CfgT::index_type;
 
@@ -27,15 +25,15 @@ public:
     stensor_descriptor() = default;       
     template<typename ShT>
     stensor_descriptor(ShT&& shape__):
-        base_descriptor{std::forward<ShT>(shape__)},
-        base_strides_libdivide{base_descriptor::strides()}
+        basic_descriptor{std::forward<ShT>(shape__)},
+        base_strides_libdivide{basic_descriptor::strides()}
     {}    
     
-    index_type dim()const{return base_descriptor::dim();}
-    index_type size()const{return base_descriptor::size();}
-    const shape_type& shape()const{return base_descriptor::shape();}
-    const shape_type& strides()const{return base_descriptor::strides();}
-    std::string to_str()const{return base_descriptor::to_str();}
+    index_type dim()const{return basic_descriptor::dim();}
+    index_type size()const{return basic_descriptor::size();}
+    const shape_type& shape()const{return basic_descriptor::shape();}
+    const shape_type& strides()const{return basic_descriptor::strides();}
+    std::string to_str()const{return basic_descriptor::to_str();}
 
     index_type offset()const{return index_type{0};}
     const shape_type& cstrides()const{return strides();}
