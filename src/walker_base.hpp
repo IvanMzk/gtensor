@@ -42,15 +42,15 @@ class basic_walker
     index_type dim;
     detail::shape_inverter<index_type, shape_type> shape;
     detail::shape_inverter<index_type, shape_type> strides;
-    CursorT offset;
-    CursorT cursor_{offset};
+    CursorT offset_;
+    CursorT cursor_{offset_};
 
 protected:
-    basic_walker(const index_type& dim_, const shape_type& shape_, const shape_type& strides_, const CursorT& offset_):
+    basic_walker(const index_type& dim_, const shape_type& shape_, const shape_type& strides_, const CursorT& offset__):
         dim{dim_},
         shape{shape_},
         strides{strides_},
-        offset{offset_}
+        offset_{offset__}
     {}    
     
     void walk(const index_type& direction, const index_type& steps){
@@ -73,10 +73,10 @@ protected:
             cursor_-=(shape.element(direction)-1)*strides.element(direction);
         }
     }
-    void reset(){cursor_ = offset;}
+    void reset(){cursor_ = offset_;}
     
     CursorT cursor()const{return cursor_;}
-    CursorT offset()const{return offset;}
+    CursorT offset()const{return offset_;}
 };
 
 template<typename ValT, typename CfgT>
@@ -141,7 +141,7 @@ public:
         return *this;
     }    
     value_type operator*() const{return impl->operator*();}
-    const walker_trivial_base& as_trivial()const{return static_cast<const walker_trivial_base&>(*impl.get());}
+    auto& as_trivial()const{return static_cast<const walker_trivial_base<ValT,CfgT>&>(*impl.get());}
 };
 
 template<typename ValT, typename CfgT>
