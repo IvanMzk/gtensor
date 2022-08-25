@@ -70,6 +70,7 @@ class descriptor_with_offset : public basic_descriptor<CfgT>
     }
 
 public:
+    descriptor_with_offset() = default;
     template<typename ShT>
     descriptor_with_offset(ShT&& shape__, index_type offset__):
         basic_descriptor{std::forward<ShT>(shape__)},

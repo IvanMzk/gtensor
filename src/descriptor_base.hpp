@@ -13,24 +13,6 @@ class stensor_descriptor_exception : public std::runtime_error{
 };
 
 namespace detail{
-/*
-* in: shape elements in right order, max stride element first
-* out: shape container filled with shape elements in reverse order, min stride element first
-*/
-template<typename ShT, typename...Dims>
-ShT make_shape(const Dims&...dims){
-    ShT res{};
-    res.reserve(sizeof...(Dims));
-    make_shape_(res,dims...);
-    return res;
-}
-template<typename ShT, typename Dim, typename...Dims>
-inline void make_shape_(ShT& res, const Dim& d, const Dims&...dims){
-    make_shape_(res,dims...);
-    res.push_back(d);
-}
-template<typename ShT>
-inline void make_shape_(ShT& res){}
 
 /*
 * create strides
@@ -60,18 +42,6 @@ template<typename ShT>
 inline auto make_size(const ShT& shape, const ShT& strides){
     using index_type = typename ShT::value_type;
     return shape.empty() ? index_type(0) : shape.front()*strides.front();
-}
-/*get size not taking strides into account*/
-template<typename ShT>
-inline auto make_size(const ShT& shape){
-    if (shape.size() != 0){    
-        ShT::value_type res{1};
-        for(const auto& i:shape)
-            res*=i;
-        return res;
-    }else{
-        return ShT::value_type(0);
-    }
 }
 
 template<typename CfgT> 
