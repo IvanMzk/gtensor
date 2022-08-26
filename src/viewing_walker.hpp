@@ -20,11 +20,11 @@ class viewing_evaluating_walker :
     using shape_type = typename CfgT::shape_type;
 
     mutable indexer<ValT,CfgT> estorage;
-    const converting_base<ValT,CfgT>* converter;
+    const converting_base<CfgT>* converter;
     std::unique_ptr<walker_base<ValT,CfgT>> clone()const override{return std::make_unique<viewing_evaluating_walker>(*this);}
 
 public:        
-    viewing_evaluating_walker(const shape_type& shape_,  const shape_type& strides_, const index_type& offset_, const converting_base<ValT,CfgT>* converter_, indexer<ValT,CfgT> estorage_):
+    viewing_evaluating_walker(const shape_type& shape_,  const shape_type& strides_, const index_type& offset_, const converting_base<CfgT>* converter_, indexer<ValT,CfgT> estorage_):
         basic_walker{static_cast<index_type>(shape_.size()), shape_, strides_, offset_},
         converter{converter_},
         estorage{std::move(estorage_)}

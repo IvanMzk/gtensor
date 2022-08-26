@@ -17,7 +17,7 @@ class viewing_tensor :
     public tensor_base<ValT, CfgT>,
     public storing_base<ValT,CfgT>,
     public viewing_evaluating_base<ValT,CfgT>,
-    public converting_base<ValT,CfgT>
+    public converting_base<CfgT>
 {
     using tensor_base_type = tensor_base<ValT,CfgT>;    
     using value_type = ValT;
@@ -27,7 +27,7 @@ class viewing_tensor :
     DescT descriptor_;
     std::shared_ptr<tensor_base_type> parent;
     const tensor_base_type* view_root{parent->tensor_kind() == detail::tensor_kinds::view ? static_cast<const viewing_tensor*>(parent.get())->get_view_root() : parent.get()};
-    const converting_base<ValT,CfgT>* parent_converter{parent->as_converting()};
+    const converting_base* parent_converter{parent->as_converting()};
     
     //tensor_base interface
 
@@ -35,7 +35,7 @@ class viewing_tensor :
     const storing_base<ValT,CfgT>* as_storing()const override{return is_storage() ? static_cast<const storing_base<ValT,CfgT>*>(this) : nullptr;}
     //root of view must be evaluating_tensor
     const viewing_evaluating_base<ValT,CfgT>* as_viewing_evaluating()const{return static_cast<const viewing_evaluating_base<ValT,CfgT>*>(this);}
-    const converting_base<ValT,CfgT>* as_converting()const override{return static_cast<const converting_base<ValT,CfgT>*>(this);}
+    const converting_base* as_converting()const override{return static_cast<const converting_base*>(this);}
     
     bool is_cached()const override{return false;}    
     bool is_trivial()const override{return true;}

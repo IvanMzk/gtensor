@@ -8,7 +8,6 @@ template<typename ValT, typename CfgT> class storing_base;
 template<typename ValT, typename CfgT> class evaluating_base;
 template<typename ValT, typename CfgT> class evaluating_trivial_base;
 template<typename ValT, typename CfgT> class viewing_evaluating_base;
-template<typename ValT, typename CfgT> class converting_base;
 template<typename ValT, typename CfgT> class storage_tensor;
 template<typename ValT, typename CfgT> class storage_walker;
 template<typename ValT, typename CfgT> class storage_walker_polymorphic;
@@ -25,6 +24,7 @@ template<typename ValT, typename CfgT, typename DescT> class view_tensor;
 template<typename ValT, typename CfgT> class vwalker_impl;
 template<typename DifT, typename N> struct slice;
 
+template<typename CfgT> class converting_base;
 template<typename CfgT> class stensor_descriptor;
 template<typename CfgT> class descriptor_with_libdivide;
 template<typename CfgT> class descriptor_base;

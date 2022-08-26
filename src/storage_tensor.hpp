@@ -20,7 +20,7 @@ template<typename ValT, typename CfgT>
 class storage_tensor : 
     public tensor_base<ValT,CfgT>,
     public storing_base<ValT,CfgT>,
-    public converting_base<ValT,CfgT>    
+    public converting_base<CfgT>    
 {
     using value_type = ValT;
     using index_type = typename CfgT::index_type;
@@ -39,7 +39,7 @@ class storage_tensor :
     {detail::fill_from_list(init_data, elements.begin());}
     
     const storing_base<ValT,CfgT>* as_storing()const override{return static_cast<const storing_base<ValT,CfgT>*>(this);}
-    const converting_base<ValT,CfgT>* as_converting()const override{return static_cast<const converting_base<ValT,CfgT>*>(this);}
+    const converting_base* as_converting()const override{return static_cast<const converting_base*>(this);}
 
     storage_walker<ValT,CfgT> create_storage_walker()const override{
         return storage_walker_factory<ValT,CfgT>::create_walker(shape(),strides(),elements.data());

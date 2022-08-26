@@ -26,7 +26,7 @@ public:
     const storing_base<ValT,CfgT>* as_storing()const{return impl()->as_storing();}
     const evaluating_base<ValT,CfgT>* as_evaluating()const{return impl()->as_evaluating();}
     const evaluating_trivial_base<ValT,CfgT>* as_evaluating_trivial()const{return impl()->as_evaluating_trivial();}    
-    const converting_base<ValT,CfgT>* as_converting()const{return impl()->as_converting();}
+    const converting_base<CfgT>* as_converting()const{return impl()->as_converting();}
     const viewing_evaluating_base<ValT,CfgT>* as_viewing_evaluating()const{return impl()->as_viewing_evaluating();}
 
     bool is_storage()const{return impl()->is_storage();}    

@@ -28,6 +28,7 @@ public:
     virtual bool is_cached()const = 0;
     virtual bool is_storage()const = 0;
     virtual bool is_trivial()const = 0;
+    virtual const converting_base<CfgT>* as_converting()const{return nullptr;}
 };
 
 template<typename ValT, typename CfgT>
@@ -40,7 +41,6 @@ class tensor_base : public basic_tensor_base<CfgT>{
 public:
     virtual ~tensor_base(){}    
     virtual value_type trivial_at(const index_type& idx)const = 0;    
-    virtual const converting_base<ValT,CfgT>* as_converting()const{return nullptr;}
     virtual const storing_base<ValT,CfgT>* as_storing()const{return nullptr;}
     virtual const evaluating_base<ValT,CfgT>* as_evaluating()const{return nullptr;}
     virtual const evaluating_trivial_base<ValT,CfgT>* as_evaluating_trivial()const{return nullptr;}        
@@ -80,7 +80,7 @@ public:
     //auto create_walker()const{return create_trivial_walker();}    
 };
 
-template<typename ValT, typename CfgT>
+template<typename CfgT>
 class converting_base
 {
     using index_type = typename CfgT::index_type;

@@ -96,7 +96,7 @@ class evaluating_tensor :
     public tensor_base<ValT,CfgT>,
     public evaluating_base<ValT,CfgT>,
     //public evaluating_trivial_base<ValT,CfgT>,
-    public converting_base<ValT,CfgT>    
+    public converting_base<CfgT>    
 {    
     using walker_factory_type = WFactoryT;    
     using value_type = ValT;
@@ -129,7 +129,7 @@ class evaluating_tensor :
     
     const evaluating_base<ValT,CfgT>* as_evaluating()const override{return static_cast<const evaluating_base<ValT,CfgT>*>(this);}
     //const evaluating_trivial_base<ValT,CfgT>* as_evaluating_trivial()const override{return static_cast<const evaluating_trivial_base<ValT,CfgT>*>(this);}
-    const converting_base<ValT,CfgT>* as_converting()const override{return static_cast<const converting_base<ValT,CfgT>*>(this);}
+    const converting_base* as_converting()const override{return static_cast<const converting_base*>(this);}
 protected:
     
     bool is_trivial()const override{return detail::is_trivial(size(),operands);}
