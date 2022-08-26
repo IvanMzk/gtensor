@@ -11,8 +11,27 @@ namespace detail{
 }   //end of namespace detail
 
 
+template<typename CfgT>
+class basic_tensor_base{            
+    using index_type = typename CfgT::index_type;
+    using shape_type = typename CfgT::shape_type;    
+
+public:
+    virtual ~basic_tensor_base(){}
+    virtual index_type size()const = 0;
+    virtual index_type dim()const = 0;
+    virtual const shape_type& shape()const = 0;
+    virtual const shape_type& strides()const = 0;
+    virtual std::string to_str()const = 0;
+    virtual const descriptor_base<CfgT>& descriptor()const = 0;    
+    virtual detail::tensor_kinds tensor_kind()const = 0;    
+    virtual bool is_cached()const = 0;
+    virtual bool is_storage()const = 0;
+    virtual bool is_trivial()const = 0;
+};
+
 template<typename ValT, typename CfgT>
-class tensor_base{        
+class tensor_base : public basic_tensor_base<CfgT>{        
     using value_type = ValT;
     using index_type = typename CfgT::index_type;
     using shape_type = typename CfgT::shape_type;
@@ -20,28 +39,12 @@ class tensor_base{
 
 public:
     virtual ~tensor_base(){}    
-    virtual index_type size()const = 0;
-    virtual index_type dim()const = 0;
-    virtual const shape_type& shape()const = 0;
-    virtual const shape_type& strides()const = 0;
-    virtual std::string to_str()const = 0;
-    virtual const descriptor_base<CfgT>& descriptor()const = 0;
-    
-    virtual value_type trivial_at(const index_type& idx)const = 0;
-    virtual detail::tensor_kinds tensor_kind()const = 0;
-    
-    
-    virtual bool is_cached()const = 0;
-    virtual bool is_storage()const = 0;
-    virtual bool is_trivial()const = 0;
-
-    
+    virtual value_type trivial_at(const index_type& idx)const = 0;    
+    virtual const converting_base<ValT,CfgT>* as_converting()const{return nullptr;}
     virtual const storing_base<ValT,CfgT>* as_storing()const{return nullptr;}
     virtual const evaluating_base<ValT,CfgT>* as_evaluating()const{return nullptr;}
-    virtual const evaluating_trivial_base<ValT,CfgT>* as_evaluating_trivial()const{return nullptr;}    
-    virtual const converting_base<ValT,CfgT>* as_converting()const{return nullptr;}
+    virtual const evaluating_trivial_base<ValT,CfgT>* as_evaluating_trivial()const{return nullptr;}        
     virtual const viewing_evaluating_base<ValT,CfgT>* as_viewing_evaluating()const{return nullptr;}
-        
 };
 
 template<typename ValT, typename CfgT>
