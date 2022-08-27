@@ -6,15 +6,15 @@
 #include "evaluating_tensor.hpp"
 
 #define BINARY_OPERATOR_IMPL(NAME,OP,FACTORY)\
-template<typename ValT1, typename ValT2, template<typename> typename Cfg>\
-static inline auto NAME(const tensor<ValT1, Cfg>& op1, const tensor<ValT2, Cfg>& op2){\
+template<typename ValT1, typename ValT2, typename ImplT1, typename ImplT2, typename CfgT>\
+static inline auto NAME(const tensor<ValT1, CfgT, ImplT1>& op1, const tensor<ValT2, CfgT, ImplT2>& op2){\
     using operation_type = OP;\
     using result_type = decltype(std::declval<operation_type>()(std::declval<ValT1>(),std::declval<ValT2>()));\
-    using walker_factory_type = FACTORY<result_type, Cfg>;\
-    using exp_operand1_type = std::shared_ptr<tensor_base<ValT1,Cfg>>;\
-    using exp_operand2_type = std::shared_ptr<tensor_base<ValT2,Cfg>>;\
-    using exp_type = evaluating_tensor<result_type, Cfg, operation_type, walker_factory_type, exp_operand1_type, exp_operand2_type>;\
-    return tensor<result_type,Cfg>{std::make_shared<exp_type>(op1.impl(),op2.impl())};\
+    using walker_factory_type = FACTORY<result_type, CfgT>;\
+    using exp_operand1_type = std::shared_ptr<ImplT1>;\
+    using exp_operand2_type = std::shared_ptr<ImplT2>;\
+    using exp_type = evaluating_tensor<result_type, CfgT, operation_type, walker_factory_type, exp_operand1_type, exp_operand2_type>;\
+    return tensor<result_type,CfgT, exp_type>{std::make_shared<exp_type>(op1.impl(),op2.impl())};\
 }
 
 
