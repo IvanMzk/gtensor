@@ -142,7 +142,7 @@ public:
     //normally passed arguments are shared_ptr<tensor_wrapper>, but actual implementation of wrapper saves to operands
     template<typename...Args>
     explicit evaluating_tensor(const Args&...args):
-        operands{detail::de_wrap(args)...},
+        operands{args...},
         descriptor_{detail::broadcast(operands, std::make_index_sequence<sizeof...(Ops)>{})}
     {}
 
