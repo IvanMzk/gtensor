@@ -25,6 +25,7 @@ class tensor{
     using slice_type = typename CfgT::slice_type;
     using slices_init_type = typename CfgT::slices_init_type;
     using slices_collection_type = typename CfgT::slices_collection_type;
+    static_assert(std::is_convertible_v<impl_type*,tensor_base_type*>);
     
 
     friend std::ostream& operator<<(std::ostream& os, const tensor& lhs){return os<<lhs.impl_->to_str();}
@@ -36,34 +37,42 @@ class tensor{
     tensor(std::initializer_list<Nested> init_data, int):
         impl_{std::make_shared<impl_type>(init_data)}
     {}
+
+    auto impl()const{return impl_;}
     
 protected:
-    auto impl()const{return impl_;}
 
 public:        
     using value_type = ValT;
     using index_type = typename CfgT::index_type;
     using shape_type = typename CfgT::shape_type;
     
-    tensor(std::shared_ptr<impl_type>&& impl__):
-        impl_{std::move(impl__)}
-    {}
-
     template<typename...Dims>
     tensor(const value_type& v, const Dims&...dims):
         impl_{std::make_shared<impl_type>(v, dims...)}
     {}
-
     tensor(typename detail::nested_initializer_list_type<value_type,1>::type init_data):tensor(init_data,0){}
     tensor(typename detail::nested_initializer_list_type<value_type,2>::type init_data):tensor(init_data,0){}
     tensor(typename detail::nested_initializer_list_type<value_type,3>::type init_data):tensor(init_data,0){}
     tensor(typename detail::nested_initializer_list_type<value_type,4>::type init_data):tensor(init_data,0){}
     tensor(typename detail::nested_initializer_list_type<value_type,5>::type init_data):tensor(init_data,0){}
+
+    tensor(std::shared_ptr<impl_type>&& impl__):
+        impl_{std::move(impl__)}
+    {}
+    tensor(const std::shared_ptr<impl_type>& impl__):
+        impl_{impl__}
+    {}
+    explicit operator tensor<ValT,CfgT,tensor_base_type>() const {return tensor<ValT,CfgT,tensor_base_type>{impl_};}
     
     auto size()const{return impl()->size();}
     auto dim()const{return impl()->dim();}
     auto shape()const{return impl()->shape();}
     auto to_str()const{return impl()->to_str();}
+
+    //return new tensor that refers to the same implementation as this, but with base implementation type (htensor stands for homogeneous tensor)
+    tensor<ValT,CfgT,tensor_base_type> as_htensor()const{return static_cast<tensor<ValT,CfgT,tensor_base_type>>(*this);}
+    
     // auto as_expression()const{return expression<ValT,CfgT>{*this};}
     // auto as_storage_tensor()const{return storage_tensor<ValT,CfgT>{*this};}
 
