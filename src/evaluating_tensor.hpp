@@ -132,7 +132,6 @@ class evaluating_tensor :
     const converting_base* as_converting()const override{return static_cast<const converting_base*>(this);}
 protected:
     
-    bool is_trivial()const override{return detail::is_trivial(size(),operands);}
     template<std::size_t I>
     const auto& operand()const{return std::get<I>(operands);}
     const auto& concrete_descriptor()const{return descriptor_;}
@@ -146,6 +145,7 @@ public:
         descriptor_{detail::broadcast(operands, std::make_index_sequence<sizeof...(Ops)>{})}
     {}
 
+    bool is_trivial()const override{return detail::is_trivial(size(),operands);}
     detail::tensor_kinds tensor_kind()const override{return detail::tensor_kinds::expression;}
     const descriptor_base<CfgT>& descriptor()const override{return descriptor_;}
     index_type size()const override{return descriptor_.size();}
