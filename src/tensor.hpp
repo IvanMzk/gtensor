@@ -19,9 +19,9 @@ template<typename ValT, typename CfgT, typename ImplT = storage_tensor<ValT, Cfg
 class tensor{
     using tensor_type = tensor<ValT,CfgT>;    
     using tensor_base_type = tensor_base<ValT, CfgT>;
+    using htensor_type = tensor<ValT, CfgT, tensor_base_type>;
     using impl_type = ImplT;
     using storage_tensor_type = storage_tensor<ValT, CfgT>;
-    using tensor_wrapper_type = tensor_wrapper<ValT, CfgT>;
     using slice_type = typename CfgT::slice_type;
     using slices_init_type = typename CfgT::slices_init_type;
     using slices_collection_type = typename CfgT::slices_collection_type;
@@ -38,9 +38,9 @@ class tensor{
         impl_{std::make_shared<impl_type>(init_data)}
     {}
 
-    auto impl()const{return impl_;}
     
 protected:
+    auto impl()const{return impl_;}
 
 public:        
     using value_type = ValT;
@@ -63,15 +63,15 @@ public:
     tensor(const std::shared_ptr<impl_type>& impl__):
         impl_{impl__}
     {}
-    explicit operator tensor<ValT,CfgT,tensor_base_type>() const {return tensor<ValT,CfgT,tensor_base_type>{impl_};}
+    explicit operator htensor_type() const {return htensor_type{impl_};}
     
     auto size()const{return impl()->size();}
     auto dim()const{return impl()->dim();}
     auto shape()const{return impl()->shape();}
     auto to_str()const{return impl()->to_str();}
 
-    //return new tensor that refers to the same implementation as this, but with base implementation type (htensor stands for homogeneous tensor)
-    tensor<ValT,CfgT,tensor_base_type> as_htensor()const{return static_cast<tensor<ValT,CfgT,tensor_base_type>>(*this);}
+    //return new tensor that refers to the same implementation as this, but with reference to base type (htensor stands for homogeneous tensor)
+    htensor_type as_htensor()const{return static_cast<htensor_type>(*this);}
     
     // auto as_expression()const{return expression<ValT,CfgT>{*this};}
     // auto as_storage_tensor()const{return storage_tensor<ValT,CfgT>{*this};}

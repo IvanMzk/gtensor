@@ -71,17 +71,18 @@ TEST_CASE("test_tensor_construct_using_operator","[test_tensor]"){
     using value_type = float;
     using gtensor::tensor;
     using gtensor::tensor_base;
+    using gtensor::storage_tensor;
     using config_type = gtensor::config::default_config;
     using tensor_type = tensor<value_type, config_type>;
-    using htensor_type = tensor<value_type, config_type, tensor_base<value_type,config_type>>;
+    using htensor_type = tensor<value_type, config_type, tensor_base<value_type, config_type>>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     using test_type = std::tuple<htensor_type, shape_type, index_type, index_type>;
     //0htensor,1expected_shape,2expected size,3expected dim
     auto test_data = GENERATE(                                
-                                test_type(static_cast<htensor_type>(tensor_type{1}+tensor_type{1}), shape_type{1}, 1 , 1),
+                                test_type((tensor_type{1}+tensor_type{1}).as_htensor(), shape_type{1}, 1 , 1),
                                 test_type(static_cast<htensor_type>(tensor_type{1}+tensor_type{1,2,3}), shape_type{3}, 3 , 1),
-                                test_type(static_cast<htensor_type>(tensor_type{1,2,3}+tensor_type{1,2,3}.as_htensor()), shape_type{3}, 3 , 1),
+                                test_type(static_cast<htensor_type>(tensor_type{1,2,3}+tensor_type{1,2,3}), shape_type{3}, 3 , 1),
                                 test_type(static_cast<htensor_type>(tensor_type{{1,2,3}}+tensor_type{1,2,3}), shape_type{1,3}, 3 , 2),
                                 test_type(static_cast<htensor_type>(tensor_type{{1,2,3}}+tensor_type{{1},{2},{3}}), shape_type{3,3}, 9 , 2),
                                 test_type(static_cast<htensor_type>(tensor_type{{1,2,3},{4,5,6}}+tensor_type{{1},{2}}), shape_type{2,3}, 6 , 2),
@@ -89,7 +90,7 @@ TEST_CASE("test_tensor_construct_using_operator","[test_tensor]"){
                                 test_type(static_cast<htensor_type>(tensor_type{1}+tensor_type{1}+tensor_type{1}) ,shape_type{1}, 1 , 1),
                                 test_type(static_cast<htensor_type>(tensor_type{1,2,3}+tensor_type{1,2,3}+tensor_type{1}) ,shape_type{3}, 3 , 1),
                                 test_type(static_cast<htensor_type>(tensor_type{1,2,3}+tensor_type{{1},{2},{3}}+tensor_type{1,2,3}) ,shape_type{3,3}, 9 , 2),
-                                test_type(static_cast<htensor_type>((tensor_type{1,2,3}+(tensor_type{{1},{2},{3}})+(tensor_type{1,2,3}).as_htensor()+tensor_type{1})) ,shape_type{3,3}, 9 , 2)
+                                test_type(static_cast<htensor_type>((tensor_type{1,2,3}+(tensor_type{{1},{2},{3}})+(tensor_type{1,2,3})+tensor_type{1})) ,shape_type{3,3}, 9 , 2)
                             );
     
     auto t = std::get<0>(test_data);
@@ -147,8 +148,8 @@ TEST_CASE("test_tensor_construct_using_operator","[test_tensor]"){
     
 //     auto t = std::get<0>(test_data);
 //     auto expected_is_trivial = std::get<1>(test_data);
-//     auto e = t.as_expression();
-//     REQUIRE(e.is_trivial() == expected_is_trivial);    
+//     //auto e = t.as_expression();
+//     REQUIRE(t.is_trivial() == expected_is_trivial);    
 // }
 
 // TEST_CASE("test_expression_trivial_at","[test_tensor]"){
@@ -184,8 +185,10 @@ TEST_CASE("test_tensor_construct_using_operator","[test_tensor]"){
 // TEST_CASE("test_view_making_interface","[test_tensor]"){
 //     using value_type = float;
 //     using gtensor::tensor;
+//     using gtensor::tensor_base;
 //     using config_type = gtensor::config::default_config;
-//     using tensor_type = tensor<value_type, config_type>;
+//     using tensor_type = tensor<value_type, config_type>;    
+//     using htensor_type = tensor<value_type, config_type, tensor_base<value_type,config_type>>;    
 //     using slice_type = typename config_type::slice_type;
 //     using nop_type = typename config_type::nop_type;
 //     using shape_type = typename config_type::shape_type;
@@ -242,34 +245,34 @@ TEST_CASE("test_tensor_construct_using_operator","[test_tensor]"){
 //         }
 //     }    
 //     SECTION("test_slices_filling_and_result_view"){
-//         using test_type = std::tuple<tensor_type, shape_type, index_type, index_type>;
+//         using test_type = std::tuple<htensor_type, shape_type, index_type, index_type>;
 //         //0view,1expected_shape,2expected size,3expected dim
 //         auto test_data = GENERATE_COPY(
-//             test_type{tensor_type{1}({{}}),shape_type{1}, 1, 1},
-//             test_type{tensor_type{1}({{nop,nop,-1}}),shape_type{1}, 1, 1},
-//             test_type{tensor_type{1,2,3,4,5}({{}}),shape_type{5}, 5, 1},
-//             test_type{tensor_type{1,2,3,4,5}({{nop,nop,2}}),shape_type{3}, 3, 1},
-//             test_type{tensor_type{1,2,3,4,5}({{nop,nop,-2}}),shape_type{3}, 3, 1},
-//             test_type{tensor_type{{{1,2},{3,4},{5,6}}}({{},{},{0,-1}}),shape_type{1,3,1}, 3, 3},
-//             test_type{tensor_type{{{1,2},{3,4},{5,6}}}({{},{1,-1},{0,-1}}),shape_type{1,1,1}, 1, 3},
-//             test_type{tensor_type{1}.transpose(),shape_type{1}, 1, 1},
-//             test_type{tensor_type{1}.transpose(0),shape_type{1}, 1, 1},
-//             test_type{tensor_type{1,2,3,4,5}.transpose(),shape_type{5}, 5, 1},
-//             test_type{tensor_type{{1,2,3,4,5}}.transpose(),shape_type{5,1}, 5, 2},
-//             test_type{tensor_type{{1,2,3,4,5}}.transpose(1,0),shape_type{5,1}, 5, 2},
-//             test_type{tensor_type{{1,2,3,4,5}}.transpose(1,0),shape_type{5,1}, 5, 2},
-//             test_type{tensor_type{{1,2,3,4,5}}.transpose(0,1),shape_type{1,5}, 5, 2},
-//             test_type{tensor_type{{{1,2},{3,4},{5,6}}}.transpose(),shape_type{2,3,1}, 6, 3},
-//             test_type{tensor_type{{{1,2},{3,4},{5,6}}}.transpose(0,2,1),shape_type{1,2,3}, 6, 3},
-//             test_type{tensor_type{{{1,2},{3,4},{5,6}}}(),shape_type{1,3,2}, 6, 3},
-//             test_type{tensor_type{{{1,2},{3,4},{5,6}}}(0),shape_type{3,2}, 6, 2},
-//             test_type{tensor_type{{{1,2},{3,4},{5,6}}}(0,1),shape_type{2}, 2, 1},
-//             test_type{tensor_type{1}.reshape(),shape_type{1}, 1, 1},
-//             test_type{tensor_type{1}.reshape(1),shape_type{1}, 1, 1},
-//             test_type{tensor_type{{{1,2},{3,4},{5,6}}}.reshape(),shape_type{1,3,2}, 6, 3},
-//             test_type{tensor_type{{{1,2},{3,4},{5,6}}}.reshape(6),shape_type{6}, 6, 1},
-//             test_type{tensor_type{{{1,2},{3,4},{5,6}}}.reshape(2,1,3),shape_type{2,1,3}, 6, 3},
-//             test_type{tensor_type{{{1,2},{3,4},{5,6}}}.reshape(6,1),shape_type{6,1}, 6, 2}
+//             test_type{static_cast<htensor_type>(tensor_type{1}({{}}),shape_type{1}, 1, 1},
+//             test_type{static_cast<htensor_type>(tensor_type{1}({{nop,nop,-1}}),shape_type{1}, 1, 1},
+//             test_type{static_cast<htensor_type>(tensor_type{1,2,3,4,5}({{}}),shape_type{5}, 5, 1},
+//             test_type{static_cast<htensor_type>(tensor_type{1,2,3,4,5}({{nop,nop,2}}),shape_type{3}, 3, 1},
+//             test_type{static_cast<htensor_type>(tensor_type{1,2,3,4,5}({{nop,nop,-2}}),shape_type{3}, 3, 1},
+//             test_type{static_cast<htensor_type>(tensor_type{{{1,2},{3,4},{5,6}}}({{},{},{0,-1}}),shape_type{1,3,1}, 3, 3},
+//             test_type{static_cast<htensor_type>(tensor_type{{{1,2},{3,4},{5,6}}}({{},{1,-1},{0,-1}}),shape_type{1,1,1}, 1, 3},
+//             test_type{static_cast<htensor_type>(tensor_type{1}.transpose(),shape_type{1}, 1, 1},
+//             test_type{static_cast<htensor_type>(tensor_type{1}.transpose(0),shape_type{1}, 1, 1},
+//             test_type{static_cast<htensor_type>(tensor_type{1,2,3,4,5}.transpose(),shape_type{5}, 5, 1},
+//             test_type{static_cast<htensor_type>(tensor_type{{1,2,3,4,5}}.transpose(),shape_type{5,1}, 5, 2},
+//             test_type{static_cast<htensor_type>(tensor_type{{1,2,3,4,5}}.transpose(1,0),shape_type{5,1}, 5, 2},
+//             test_type{static_cast<htensor_type>(tensor_type{{1,2,3,4,5}}.transpose(1,0),shape_type{5,1}, 5, 2},
+//             test_type{static_cast<htensor_type>(tensor_type{{1,2,3,4,5}}.transpose(0,1),shape_type{1,5}, 5, 2},
+//             test_type{static_cast<htensor_type>(tensor_type{{{1,2},{3,4},{5,6}}}.transpose(),shape_type{2,3,1}, 6, 3},
+//             test_type{static_cast<htensor_type>(tensor_type{{{1,2},{3,4},{5,6}}}.transpose(0,2,1),shape_type{1,2,3}, 6, 3},
+//             test_type{static_cast<htensor_type>(tensor_type{{{1,2},{3,4},{5,6}}}(),shape_type{1,3,2}, 6, 3},
+//             test_type{static_cast<htensor_type>(tensor_type{{{1,2},{3,4},{5,6}}}(0),shape_type{3,2}, 6, 2},
+//             test_type{static_cast<htensor_type>(tensor_type{{{1,2},{3,4},{5,6}}}(0,1),shape_type{2}, 2, 1},
+//             test_type{static_cast<htensor_type>(tensor_type{1}.reshape(),shape_type{1}, 1, 1},
+//             test_type{static_cast<htensor_type>(tensor_type{1}.reshape(1),shape_type{1}, 1, 1},
+//             test_type{static_cast<htensor_type>(tensor_type{{{1,2},{3,4},{5,6}}}.reshape(),shape_type{1,3,2}, 6, 3},
+//             test_type{static_cast<htensor_type>(tensor_type{{{1,2},{3,4},{5,6}}}.reshape(6),shape_type{6}, 6, 1},
+//             test_type{static_cast<htensor_type>(tensor_type{{{1,2},{3,4},{5,6}}}.reshape(2,1,3),shape_type{2,1,3}, 6, 3},
+//             test_type{static_cast<htensor_type>(tensor_type{{{1,2},{3,4},{5,6}}}.reshape(6,1),shape_type{6,1}, 6, 2}
 //         );
 //         auto view = std::get<0>(test_data);
 //         auto expected_shape = std::get<1>(test_data);
