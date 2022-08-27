@@ -52,7 +52,6 @@ class storage_tensor :
     
 
 protected:
-    bool is_trivial()const override{return true;}
 
 
     // typename storage_type::const_iterator begin()const override{return elements.begin();}
@@ -74,6 +73,7 @@ public:
     {}
 
     const value_type* data()const{return elements.data();}
+    bool is_trivial()const override{return true;}
 
     detail::tensor_kinds tensor_kind()const override{return detail::tensor_kinds::storage_tensor;}
     const descriptor_base<CfgT>& descriptor()const override{return descriptor_;}
