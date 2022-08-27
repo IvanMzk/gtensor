@@ -34,7 +34,7 @@ class tensor{
 
     template<typename Nested>
     tensor(std::initializer_list<Nested> init_data, int):
-        impl_{(td::make_shared<impl_type>(init_data)}
+        impl_{std::make_shared<impl_type>(init_data)}
     {}
     
 protected:
@@ -45,7 +45,7 @@ public:
     using index_type = typename CfgT::index_type;
     using shape_type = typename CfgT::shape_type;
     
-    tensor(std::shared_ptr<tensor_base_type>&& impl__):
+    tensor(std::shared_ptr<impl_type>&& impl__):
         impl_{std::move(impl__)}
     {}
 
@@ -64,8 +64,8 @@ public:
     auto dim()const{return impl()->dim();}
     auto shape()const{return impl()->shape();}
     auto to_str()const{return impl()->to_str();}
-    auto as_expression()const{return expression<ValT,CfgT>{*this};}
-    auto as_storage_tensor()const{return storage_tensor<ValT,CfgT>{*this};}
+    // auto as_expression()const{return expression<ValT,CfgT>{*this};}
+    // auto as_storage_tensor()const{return storage_tensor<ValT,CfgT>{*this};}
 
     tensor_type operator()(slices_init_type subs)const{
         detail::check_slices_number(subs);        
@@ -102,30 +102,30 @@ public:
     
 private:
     
-    template<typename ValT, typename CfgT>
-    class expression : public tensor<ValT,CfgT>{
-        using base_type = tensor<ValT,CfgT>;
-    public:
-        expression(const base_type& base):
-            base_type{base}
-        {}
-        auto is_cached()const{return base_type::impl()->is_cached();}
-        auto is_trivial()const{return base_type::impl()->is_trivial();}
-        // auto begin()const{return impl()->begin();}
-        // auto end()const{return impl()->end();}
-        auto trivial_at(const index_type& idx)const{return base_type::impl()->trivial_at(idx);}
-    };
+    // template<typename ValT, typename CfgT>
+    // class expression : public tensor<ValT,CfgT>{
+    //     using base_type = tensor<ValT,CfgT>;
+    // public:
+    //     expression(const base_type& base):
+    //         base_type{base}
+    //     {}
+    //     auto is_cached()const{return base_type::impl()->is_cached();}
+    //     auto is_trivial()const{return base_type::impl()->is_trivial();}
+    //     // auto begin()const{return impl()->begin();}
+    //     // auto end()const{return impl()->end();}
+    //     auto trivial_at(const index_type& idx)const{return base_type::impl()->trivial_at(idx);}
+    // };
     
-    template<typename ValT, typename CfgT>
-    class storage_tensor : public tensor<ValT,CfgT>{
-        using base_type = tensor<ValT,CfgT>;
-    public:
-        storage_tensor(const base_type& base):
-            base_type{base}
-        {}
-        // auto begin()const{return impl()->begin();}
-        // auto end()const{return impl()->end();}
-    };    
+    // template<typename ValT, typename CfgT>
+    // class storage_tensor : public tensor<ValT,CfgT>{
+    //     using base_type = tensor<ValT,CfgT>;
+    // public:
+    //     storage_tensor(const base_type& base):
+    //         base_type{base}
+    //     {}
+    //     // auto begin()const{return impl()->begin();}
+    //     // auto end()const{return impl()->end();}
+    // };    
 };
 
 // /*
