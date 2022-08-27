@@ -148,17 +148,17 @@ class view_factory
         };
     }
 public:
-    static std::shared_ptr<tensor_base_type> create_view_slice(const std::shared_ptr<tensor_base_type>& parent, const slices_collection_type& subs){
-        return std::static_pointer_cast<tensor_base_type>(std::make_shared<view_slice_type>(create_view_slice_descriptor(parent, subs),parent));
+    static auto create_view_slice(const std::shared_ptr<tensor_base_type>& parent, const slices_collection_type& subs){
+        return std::make_shared<view_slice_type>(create_view_slice_descriptor(parent, subs),parent);
     }
-    static std::shared_ptr<tensor_base_type> create_view_transpose(const std::shared_ptr<tensor_base_type>& parent, const shape_type& subs){
-        return std::static_pointer_cast<tensor_base_type>(std::make_shared<view_slice_type>(create_view_transpose_descriptor(parent, subs),parent));
+    static auto create_view_transpose(const std::shared_ptr<tensor_base_type>& parent, const shape_type& subs){
+        return std::make_shared<view_slice_type>(create_view_transpose_descriptor(parent, subs),parent);
     }
-    static std::shared_ptr<tensor_base_type> create_view_subdim(const std::shared_ptr<tensor_base_type>& parent, const shape_type& subs){
-        return std::static_pointer_cast<tensor_base_type>(std::make_shared<view_subdim_type>(create_view_subdim_descriptor(parent, subs),parent));
+    static auto create_view_subdim(const std::shared_ptr<tensor_base_type>& parent, const shape_type& subs){
+        return std::make_shared<view_subdim_type>(create_view_subdim_descriptor(parent, subs),parent);
     }
-    static std::shared_ptr<tensor_base_type> create_view_reshape(const std::shared_ptr<tensor_base_type>& parent, const shape_type& subs){
-        return std::static_pointer_cast<tensor_base_type>(std::make_shared<view_reshape_type>(create_view_reshape_descriptor(parent, subs),parent));
+    static auto create_view_reshape(const std::shared_ptr<tensor_base_type>& parent, const shape_type& subs){
+        return std::make_shared<view_reshape_type>(create_view_reshape_descriptor(parent, subs),parent);
     }
 };
 
