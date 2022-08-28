@@ -91,7 +91,7 @@ auto de_wrap(const std::shared_ptr<ImplT>& impl){return impl;}
 }   //end of namespace detail
 
 
-template<typename ValT, typename CfgT, typename F, typename WFactoryT, typename...Ops>
+template<typename ValT, typename CfgT, typename F, typename EvalT, typename...Ops>
 class evaluating_tensor : 
     public tensor_base<ValT,CfgT>,
     public evaluating_base<ValT,CfgT>,
@@ -101,7 +101,7 @@ class evaluating_tensor :
 public:
     using value_type = ValT;
 private:
-    using walker_factory_type = WFactoryT;    
+    using eval_engine_type = EvalT;    
     using index_type = typename CfgT::index_type;
     using shape_type = typename CfgT::shape_type;
     using descriptor_type = descriptor_with_libdivide<CfgT>;
@@ -111,7 +111,7 @@ private:
     std::tuple<std::shared_ptr<tensor_base<typename Ops::value_type, CfgT> >...> operands;
     descriptor_type descriptor_;
     F f{};
-    expression_template_elementwise_evaluation<ValT, CfgT, F, Ops...> eval;
+    eval_engine_type eval;
 
     template<std::size_t...I>
     value_type trivial_at_helper(const index_type& idx, std::index_sequence<I...>)const{return f(std::get<I>(operands)->trivial_at(idx)...);} 
