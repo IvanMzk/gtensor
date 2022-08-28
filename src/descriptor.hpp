@@ -46,6 +46,8 @@ class descriptor_with_libdivide :
     using shape_type = typename CfgT::shape_type;
     using index_type = typename CfgT::index_type;    
 
+    const descriptor_with_libdivide* as_descriptor_with_libdivide()const {return this;}
+
 public:
     descriptor_with_libdivide() = default;       
     template<typename ShT>
