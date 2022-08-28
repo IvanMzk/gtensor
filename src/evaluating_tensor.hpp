@@ -110,19 +110,19 @@ private:
 
     std::tuple<std::shared_ptr<tensor_base<typename Ops::value_type, CfgT> >...> operands;
     descriptor_type descriptor_;
-    F f{};    
+    F f{};
+    expression_template_elementwise_evaluation<ValT, CfgT, F, Ops...> eval;
 
     template<std::size_t...I>
     value_type trivial_at_helper(const index_type& idx, std::index_sequence<I...>)const{return f(std::get<I>(operands)->trivial_at(idx)...);} 
         
     walker<ValT,CfgT> create_evaluating_walker()const override{
-        return walker_factory_type::create_walker(descriptor_,f,operands);        
-    }
-    // evaluating_trivial_walker<ValT,CfgT> create_trivial_walker()const override{
-    //     return trivial_walker_factory<ValT,CfgT>::create_walker(shape(), strides(), *this);
-    // }
+        return eval.create_walker();
+        //return walker_factory_type::create_walker(descriptor_,f,operands);        
+    }    
     indexer<ValT,CfgT> create_evaluating_indexer()const override{
-        return walker_factory_type::create_indexer(descriptor_, f,operands);
+        return eval.create_indexer();
+        //return walker_factory_type::create_indexer(descriptor_, f,operands);
     }
     index_type view_index_convert(const index_type& idx)const override{return idx;}
 
@@ -140,11 +140,11 @@ protected:
 
 public:            
     
-    //normally passed arguments are shared_ptr<tensor_wrapper>, but actual implementation of wrapper saves to operands
     template<typename...Args>
     explicit evaluating_tensor(const Args&...args):
         operands{args...},
-        descriptor_{detail::broadcast(operands, std::make_index_sequence<sizeof...(Ops)>{})}
+        descriptor_{detail::broadcast(operands, std::make_index_sequence<sizeof...(Ops)>{})},
+        eval{this, F{}, args...}
     {}
 
     bool is_trivial()const override{return detail::is_trivial(size(),operands);}

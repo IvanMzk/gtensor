@@ -115,62 +115,62 @@ public:
     }
 };
 
-template<typename ValT, typename CfgT>
-class evaluating_walker_factory
-{    
-    using value_type = ValT;
-    using shape_type = typename CfgT::shape_type;
+// template<typename ValT, typename CfgT>
+// class evaluating_walker_factory
+// {    
+//     using value_type = ValT;
+//     using shape_type = typename CfgT::shape_type;
     
-    template<typename F>
-    struct walker_maker{
-        const shape_type& shape;
-        walker_maker(const shape_type& shape_):
-            shape{shape_}
-        {}
-        template<typename...Args>
-        walker<ValT,CfgT> operator()(const Args&...args)const{
-            using evaluating_walker_type = evaluating_walker<ValT,CfgT,F,decltype(std::declval<Args>().create_walker())...>;
-            return std::make_unique<evaluating_walker_polymorphic<ValT,CfgT,evaluating_walker_type>>(evaluating_walker_type{shape,args.create_walker()...});            
-        }
-    };
+//     template<typename F>
+//     struct walker_maker{
+//         const shape_type& shape;
+//         walker_maker(const shape_type& shape_):
+//             shape{shape_}
+//         {}
+//         template<typename...Args>
+//         walker<ValT,CfgT> operator()(const Args&...args)const{
+//             using evaluating_walker_type = evaluating_walker<ValT,CfgT,F,decltype(std::declval<Args>().create_walker())...>;
+//             return std::make_unique<evaluating_walker_polymorphic<ValT,CfgT,evaluating_walker_type>>(evaluating_walker_type{shape,args.create_walker()...});            
+//         }
+//     };
     
-    template<typename StT, typename F>
-    struct indexer_maker{
-        using strides_type = StT;
-        const shape_type& shape;
-        const strides_type& strides;
-        indexer_maker(const shape_type& shape_, const strides_type& strides_):
-            shape{shape_},
-            strides{strides_}
-        {}
-        template<typename...Args>
-        indexer<ValT,CfgT> operator()(const Args&...args)const{
-            using evaluating_walker_type = evaluating_walker<ValT,CfgT,F,decltype(std::declval<Args>().create_walker())...>;
-            using evaluating_indexer_type = evaluating_indexer<ValT,CfgT,evaluating_walker_type>;
-            return std::make_unique<evaluating_indexer_type>(strides, evaluating_walker_type{shape,args.create_walker()...});            
-        }
-    };    
+//     template<typename StT, typename F>
+//     struct indexer_maker{
+//         using strides_type = StT;
+//         const shape_type& shape;
+//         const strides_type& strides;
+//         indexer_maker(const shape_type& shape_, const strides_type& strides_):
+//             shape{shape_},
+//             strides{strides_}
+//         {}
+//         template<typename...Args>
+//         indexer<ValT,CfgT> operator()(const Args&...args)const{
+//             using evaluating_walker_type = evaluating_walker<ValT,CfgT,F,decltype(std::declval<Args>().create_walker())...>;
+//             using evaluating_indexer_type = evaluating_indexer<ValT,CfgT,evaluating_walker_type>;
+//             return std::make_unique<evaluating_indexer_type>(strides, evaluating_walker_type{shape,args.create_walker()...});            
+//         }
+//     };    
 
-    template<typename StT, typename F>
-    static auto maker_maker(const shape_type& shape, const StT& strides, F){return indexer_maker<StT,F>{shape,strides};}
-    template<typename F>
-    static auto maker_maker(const shape_type& shape, F){return walker_maker<F>{shape};}
+//     template<typename StT, typename F>
+//     static auto maker_maker(const shape_type& shape, const StT& strides, F){return indexer_maker<StT,F>{shape,strides};}
+//     template<typename F>
+//     static auto maker_maker(const shape_type& shape, F){return walker_maker<F>{shape};}
 
-    template<typename MakerT, typename...Ops, std::size_t...I>
-    static auto create_helper(const MakerT& maker, const std::tuple<Ops...>& operands, std::index_sequence<I...>){        
-        return detail::dispatcher<ValT,CfgT>::call(maker, *std::get<I>(operands)...);
-    }
+//     template<typename MakerT, typename...Ops, std::size_t...I>
+//     static auto create_helper(const MakerT& maker, const std::tuple<Ops...>& operands, std::index_sequence<I...>){        
+//         return detail::dispatcher<ValT,CfgT>::call(maker, *std::get<I>(operands)...);
+//     }
 
-public: 
-    template<typename DescT, typename F, typename...Ops>
-    static auto create_walker(const DescT& descriptor, const F&, const std::tuple<Ops...>& operands){
-        return create_helper(maker_maker(descriptor.shape(), F{}), operands, std::make_index_sequence<sizeof...(Ops)>{});        
-    }
-    template<typename DescT, typename F, typename...Ops>
-    static indexer<ValT,CfgT> create_indexer(const DescT& descriptor, const F&, const std::tuple<Ops...>& operands){
-        return create_helper(maker_maker(descriptor.shape(), detail::strides_div(descriptor), F{}), operands, std::make_index_sequence<sizeof...(Ops)>{});
-    }
-};
+// public: 
+//     template<typename DescT, typename F, typename...Ops>
+//     static auto create_walker(const DescT& descriptor, const F&, const std::tuple<Ops...>& operands){
+//         return create_helper(maker_maker(descriptor.shape(), F{}), operands, std::make_index_sequence<sizeof...(Ops)>{});        
+//     }
+//     template<typename DescT, typename F, typename...Ops>
+//     static indexer<ValT,CfgT> create_indexer(const DescT& descriptor, const F&, const std::tuple<Ops...>& operands){
+//         return create_helper(maker_maker(descriptor.shape(), detail::strides_div(descriptor), F{}), operands, std::make_index_sequence<sizeof...(Ops)>{});
+//     }
+// };
 
 
 
