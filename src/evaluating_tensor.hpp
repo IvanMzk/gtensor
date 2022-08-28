@@ -106,7 +106,7 @@ private:
     using shape_type = typename CfgT::shape_type;
     using descriptor_type = descriptor_with_libdivide<CfgT>;
     using iterator_type = multiindex_iterator<ValT,CfgT,walker<ValT,CfgT>>; 
-    //static_assert(detail::is_valid_operands<Ops...>);
+    static_assert((std::is_convertible_v<Ops*, tensor_base<typename Ops::value_type, CfgT>*>&&...));
 
     std::tuple<std::shared_ptr<tensor_base<typename Ops::value_type, CfgT> >...> operands;
     descriptor_type descriptor_;
