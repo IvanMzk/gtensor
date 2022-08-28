@@ -106,7 +106,7 @@ class evaluating_tensor :
     using iterator_type = multiindex_iterator<ValT,CfgT,walker<ValT,CfgT>>; 
     //static_assert(detail::is_valid_operands<Ops...>);
 
-    std::tuple<Ops...> operands;
+    std::tuple<std::shared_ptr<Ops>...> operands;
     descriptor_type descriptor_;
     F f{};    
 

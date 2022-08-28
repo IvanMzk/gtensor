@@ -11,8 +11,8 @@ static inline auto NAME(const tensor<ValT1, CfgT, ImplT1>& op1, const tensor<Val
     using operation_type = OP;\
     using result_type = decltype(std::declval<operation_type>()(std::declval<ValT1>(),std::declval<ValT2>()));\
     using walker_factory_type = FACTORY<result_type, CfgT>;\
-    using exp_operand1_type = std::shared_ptr<ImplT1>;\
-    using exp_operand2_type = std::shared_ptr<ImplT2>;\
+    using exp_operand1_type = ImplT1;\
+    using exp_operand2_type = ImplT2;\
     using exp_type = evaluating_tensor<result_type, CfgT, operation_type, walker_factory_type, exp_operand1_type, exp_operand2_type>;\
     return tensor<result_type,CfgT, exp_type>{std::make_shared<exp_type>(op1.impl(),op2.impl())};\
 }
