@@ -32,13 +32,14 @@ public:
 };
 
 template<typename ValT, typename CfgT>
-class tensor_base : public basic_tensor_base<CfgT>{        
-    using value_type = ValT;
+class tensor_base : public basic_tensor_base<CfgT>{
     using index_type = typename CfgT::index_type;
     using shape_type = typename CfgT::shape_type;
     using slices_collection_type = typename CfgT::slices_collection_type;
 
 public:
+    using value_type = ValT;
+    
     virtual ~tensor_base(){}    
     virtual value_type trivial_at(const index_type& idx)const = 0;    
     virtual const storing_base<ValT,CfgT>* as_storing()const{return nullptr;}

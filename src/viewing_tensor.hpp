@@ -19,8 +19,10 @@ class viewing_tensor :
     public viewing_evaluating_base<ValT,CfgT>,
     public converting_base<CfgT>
 {
-    using tensor_base_type = tensor_base<ValT,CfgT>;    
+public:
     using value_type = ValT;
+private:
+    using tensor_base_type = tensor_base<ValT,CfgT>;    
     using index_type = typename CfgT::index_type;
     using shape_type = typename CfgT::shape_type;    
 

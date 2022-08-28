@@ -22,7 +22,10 @@ class storage_tensor :
     public storing_base<ValT,CfgT>,
     public converting_base<CfgT>    
 {
+public:
     using value_type = ValT;
+
+private:
     using index_type = typename CfgT::index_type;
     using shape_type = typename CfgT::shape_type;
     using storage_type = typename CfgT::template storage<value_type>;

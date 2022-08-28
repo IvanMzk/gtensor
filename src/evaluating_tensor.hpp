@@ -98,6 +98,9 @@ class evaluating_tensor :
     //public evaluating_trivial_base<ValT,CfgT>,
     public converting_base<CfgT>    
 {    
+public:
+    using value_type = ValT;
+private:
     using walker_factory_type = WFactoryT;    
     using value_type = ValT;
     using index_type = typename CfgT::index_type;
