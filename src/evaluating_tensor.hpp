@@ -102,14 +102,13 @@ public:
     using value_type = ValT;
 private:
     using walker_factory_type = WFactoryT;    
-    using value_type = ValT;
     using index_type = typename CfgT::index_type;
     using shape_type = typename CfgT::shape_type;
     using descriptor_type = descriptor_with_libdivide<CfgT>;
     using iterator_type = multiindex_iterator<ValT,CfgT,walker<ValT,CfgT>>; 
     //static_assert(detail::is_valid_operands<Ops...>);
 
-    std::tuple<std::shared_ptr<Ops>...> operands;
+    std::tuple<std::shared_ptr<tensor_base<typename Ops::value_type, CfgT> >...> operands;
     descriptor_type descriptor_;
     F f{};    
 
