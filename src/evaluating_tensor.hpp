@@ -88,10 +88,11 @@ auto de_wrap(const std::shared_ptr<tensor_wrapper<ValT,CfgT>>& wrapper){return w
 template<typename ImplT>
 auto de_wrap(const std::shared_ptr<ImplT>& impl){return impl;}
 
+
 }   //end of namespace detail
 
 
-template<typename ValT, typename CfgT, typename F, typename EvalT, typename...Ops>
+template<typename ValT, typename CfgT, typename F, typename...Ops>
 class evaluating_tensor : 
     public tensor_base<ValT,CfgT>,
     public evaluating_base<ValT,CfgT>,
@@ -100,8 +101,8 @@ class evaluating_tensor :
 {    
 public:
     using value_type = ValT;
+    using engine_type = typename detail::engine_traits<evaluating_tensor>::type;
 private:
-    using eval_engine_type = EvalT;    
     using index_type = typename CfgT::index_type;
     using shape_type = typename CfgT::shape_type;
     using descriptor_type = descriptor_with_libdivide<CfgT>;
@@ -111,17 +112,17 @@ private:
     std::tuple<std::shared_ptr<tensor_base<typename Ops::value_type, CfgT> >...> operands;
     descriptor_type descriptor_;
     F f{};
-    eval_engine_type eval;
+    engine_type engine;
 
     template<std::size_t...I>
     value_type trivial_at_helper(const index_type& idx, std::index_sequence<I...>)const{return f(std::get<I>(operands)->trivial_at(idx)...);} 
         
     walker<ValT,CfgT> create_evaluating_walker()const override{
-        return eval.create_walker();
+        return engine.create_walker();
         //return walker_factory_type::create_walker(descriptor_,f,operands);        
     }    
     indexer<ValT,CfgT> create_evaluating_indexer()const override{
-        return eval.create_indexer();
+        return engine.create_indexer();
         //return walker_factory_type::create_indexer(descriptor_, f,operands);
     }
     index_type view_index_convert(const index_type& idx)const override{return idx;}
@@ -144,7 +145,7 @@ public:
     explicit evaluating_tensor(const Args&...args):
         operands{args...},
         descriptor_{detail::broadcast(operands, std::make_index_sequence<sizeof...(Ops)>{})},
-        eval{this, F{}, args...}
+        engine{this, F{}, args...}
     {}
 
     bool is_trivial()const override{return detail::is_trivial(size(),operands);}

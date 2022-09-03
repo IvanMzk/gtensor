@@ -18,7 +18,7 @@ template<typename ValT, typename CfgT, typename F, typename...Wks> class evaluat
 template<typename ValT, typename CfgT> class viewing_evaluating_walker;
 template<typename ValT, typename CfgT> class tensor_wrapper;
 template<typename ValT, typename CfgT, typename Wkr> class multiindex_iterator;
-template<typename ValT, typename CfgT, typename F, typename FactoryT, typename...Ops> class evaluating_tensor;
+template<typename ValT, typename CfgT, typename F, typename...Ops> class evaluating_tensor;
 template<typename ValT, typename CfgT, typename ImplT> class tensor;
 template<typename ValT, typename CfgT, typename DescT> class view_tensor;
 template<typename ValT, typename CfgT> class vwalker_impl;
@@ -28,6 +28,9 @@ template<typename CfgT> class converting_base;
 template<typename CfgT> class stensor_descriptor;
 template<typename CfgT> class descriptor_with_libdivide;
 template<typename CfgT> class descriptor_base;
+
+template<typename ValT, typename CfgT> class expression_template_storage_engine;
+template<typename ValT, typename CfgT, typename F, typename...Ops> class expression_template_elementwise_engine;
 
 namespace detail{
 template<typename DifT, typename N> struct slice_item;
