@@ -3,7 +3,6 @@
 
 #include "tensor_base.hpp"
 #include "descriptor.hpp"
-#include "walker_factory.hpp"
 #include "iterator.hpp"
 
 namespace gtensor{
@@ -112,17 +111,17 @@ private:
     std::tuple<std::shared_ptr<tensor_base<typename Ops::value_type, CfgT> >...> operands;
     descriptor_type descriptor_;
     F f{};
-    engine_type engine;
+    engine_type engine_;
 
     template<std::size_t...I>
     value_type trivial_at_helper(const index_type& idx, std::index_sequence<I...>)const{return f(std::get<I>(operands)->trivial_at(idx)...);} 
         
     walker<ValT,CfgT> create_evaluating_walker()const override{
-        return engine.create_walker();
+        return engine_.create_walker();
         //return walker_factory_type::create_walker(descriptor_,f,operands);        
     }    
     indexer<ValT,CfgT> create_evaluating_indexer()const override{
-        return engine.create_indexer();
+        return engine_.create_indexer();
         //return walker_factory_type::create_indexer(descriptor_, f,operands);
     }
     index_type view_index_convert(const index_type& idx)const override{return idx;}
@@ -145,9 +144,10 @@ public:
     explicit evaluating_tensor(const Args&...args):
         operands{args...},
         descriptor_{detail::broadcast(operands, std::make_index_sequence<sizeof...(Ops)>{})},
-        engine{this, F{}, args...}
+        engine_{this, F{}, args...}
     {}
 
+    const auto& engine()const{return engine_;}
     bool is_trivial()const override{return detail::is_trivial(size(),operands);}
     detail::tensor_kinds tensor_kind()const override{return detail::tensor_kinds::expression;}
     const descriptor_base<CfgT>& descriptor()const override{return descriptor_;}
