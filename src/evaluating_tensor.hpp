@@ -89,18 +89,14 @@ private:
     using iterator_type = multiindex_iterator<ValT,CfgT,walker<ValT,CfgT>>; 
     static_assert((std::is_convertible_v<Ops*, tensor_base<typename Ops::value_type, CfgT>*>&&...));
 
-    std::tuple<std::shared_ptr<tensor_base<typename Ops::value_type, CfgT> >...> operands;
     descriptor_type descriptor_;
-    F f{};
     engine_type engine_;
     
     walker<ValT,CfgT> create_evaluating_walker()const override{
         return engine_.create_walker();
-        //return walker_factory_type::create_walker(descriptor_,f,operands);        
     }    
     indexer<ValT,CfgT> create_evaluating_indexer()const override{
         return engine_.create_indexer();
-        //return walker_factory_type::create_indexer(descriptor_, f,operands);
     }
     index_type view_index_convert(const index_type& idx)const override{return idx;}
 
@@ -111,17 +107,14 @@ private:
     //const evaluating_trivial_base<ValT,CfgT>* as_evaluating_trivial()const override{return static_cast<const evaluating_trivial_base<ValT,CfgT>*>(this);}
     const converting_base* as_converting()const override{return static_cast<const converting_base*>(this);}
 protected:
-    
-    template<std::size_t I>
-    const auto& operand()const{return std::get<I>(operands);}
+        
     const auto& concrete_descriptor()const{return descriptor_;}
 
 public:            
     
     template<typename...Args>
-    explicit evaluating_tensor(const Args&...args):
-        operands{args...},        
-        descriptor_{detail::broadcast(operands, std::make_index_sequence<sizeof...(Ops)>{})},
+    explicit evaluating_tensor(const Args&...args):        
+        descriptor_{detail::broadcast(args->shape()...)},
         engine_{this, F{}, args...}
     {}
 
