@@ -6,6 +6,7 @@
 #include "descriptor.hpp"
 #include "tensor_init_list.hpp"
 #include "walker_factory.hpp"
+#include "expression_template_engine.hpp"
 
 namespace gtensor{
 
@@ -24,6 +25,7 @@ class storage_tensor :
 {
 public:
     using value_type = ValT;
+    using engine_type = typename detail::engine_traits<storage_tensor>::type;
 
 private:
     using index_type = typename CfgT::index_type;
