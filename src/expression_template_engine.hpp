@@ -13,8 +13,8 @@ namespace gtensor{
 
 namespace detail{
 
- template<typename ValT, typename CfgT>
- bool is_storage(const tensor_base<ValT,CfgT>& t){
+template<typename ValT, typename CfgT>
+bool is_storage(const tensor_base<ValT,CfgT>& t){
     return t.tensor_kind() == detail::tensor_kinds::storage_tensor || 
         t.tensor_kind() == detail::tensor_kinds::expression && t.is_storage() ||
         t.tensor_kind() == detail::tensor_kinds::view && t.is_cached();
@@ -61,7 +61,11 @@ struct cross_product<PairT, type_list<>, type_list<Vs...>>{
 template<typename ValT, typename CfgT>
 class expression_template_storage_engine{
 public:
-    using walker_types = type_list<storage_walker<ValT,Cfg>>
+    using walker_types = detail::type_list<storage_walker<ValT,CfgT>>;
+    const tensor_base<ValT,CfgT>* root;
+    expression_template_storage_engine(const tensor_base<ValT,CfgT>* root_):
+        root{root_}
+    {}
 };
 
 
@@ -75,13 +79,13 @@ class expression_template_elementwise_engine
     using value_type = ValT;
     using shape_type = typename CfgT::shape_type;
     
-    static constexpr std::size_t max_walker_types_size = 100;
-    static constexpr std::size_t walker_types_size = (Ops::walker_types::size*...);
-    template<typename...Us> using evaluating_walker_alias = evaluating_walker<value_type, CfgT, F, Us...>;
+    // static constexpr std::size_t max_walker_types_size = 100;
+    // static constexpr std::size_t walker_types_size = (Ops::walker_types::size*...);
+    // template<typename...Us> using evaluating_walker_alias = evaluating_walker<value_type, CfgT, F, Us...>;
     
-    template<bool> struct walker_types_traits{using type = typename list_concat<type_list<sw>, typename cross_product<evaluating_walker_alias, typename Ops::walker_types...>::type>::type;};
-    template<> struct walker_types_traits<false>{using type = type_list<w>;};
-    using walker_types = typename walker_types_traits<(walker_types_size<max_walker_types_size)>::type;
+    // template<bool> struct walker_types_traits{using type = typename list_concat<type_list<sw>, typename cross_product<evaluating_walker_alias, typename Ops::walker_types...>::type>::type;};
+    // template<> struct walker_types_traits<false>{using type = type_list<w>;};
+    // using walker_types = typename walker_types_traits<(walker_types_size<max_walker_types_size)>::type;
     
 
     const tensor_base<ValT,CfgT>* root;
