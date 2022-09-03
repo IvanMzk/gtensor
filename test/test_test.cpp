@@ -2,6 +2,10 @@
 #include <tuple>
 #include <list>
 #include <iostream>
+#include <sstream>
+#include <variant>
+#include <regex>
+#include <functional>
 #include "catch.hpp"
 #include "test.hpp"
 
@@ -136,6 +140,133 @@ namespace static_list{
 
 }
 
+
+namespace binary_tree_dispatch{
+
+struct A{};
+struct B{};
+struct C{};
+struct D{};
+struct E{};
+struct F{};
+template<typename F, typename S> struct type_pair{};
+
+template<typename...Ts>
+struct type_list{
+    using type = type_list<Ts...>;
+    static constexpr std::size_t size = sizeof...(Ts); 
+    static auto to_str(){return std::to_string(sizeof...(Ts)) + std::regex_replace(typeid(type).name(), std::regex{"struct binary_tree_dispatch::"}, "");}
+};
+
+template<typename, typename> struct list_concat;
+template<typename...Us, typename...Vs> 
+struct list_concat<type_list<Us...>,type_list<Vs...>>{
+    using type = type_list<Us...,Vs...>;
+};
+
+template<template <typename...> typename, typename, typename> struct cross_product;
+template<template <typename...> typename PairT, typename U, typename...Us, typename...Vs> 
+struct cross_product<PairT, type_list<U, Us...>, type_list<Vs...>>{
+    using cross_u_vs = type_list<PairT<U,Vs>...>;
+    using cross_us_vs = typename cross_product<PairT, type_list<Us...>, type_list<Vs...>>::type;
+    using type = typename list_concat<cross_u_vs, cross_us_vs>::type;
+};
+template<template <typename...> typename PairT, typename...Vs>
+struct cross_product<PairT, type_list<>, type_list<Vs...>>{    
+    using type = type_list<>;
+};
+
+
+
+
+
+struct add{std::string to_str()const{return "add";}};
+struct sub{std::string to_str()const{return "sub";}};
+struct mul{std::string to_str()const{return "mul";}};
+
+template<typename F, typename...Wks>
+struct ew{
+    std::tuple<Wks...> wks;
+    template<typename...Args>
+    ew(Args&&...args):
+        wks{std::forward<Args>(args)...}
+    {}
+};
+
+
+struct sw{};
+
+struct w{};
+
+struct snode{
+    using w_types = type_list<sw>;
+    auto create_w()const{
+        std::variant<sw>{sw{}};
+    }
+    std::string to_str()const{return "snode";}
+};
+
+// template<std::size_t max_size,  typename...Ops>
+// class w_types_traits{
+//     static constexpr size = (Ops::w_types::size*...);
+//     //size<max_size
+//     template<bool> struct selector{using type = typename list_concat<type_list<sw>, typename cross_product<ew_alias, typename Ops::w_types...>::type>::type;};
+//     //size>max_size
+//     template<> struct selector<false>{};
+// public:    
+// };
+
+template<typename F, typename...Ops>
+struct enode{
+    static constexpr std::size_t max_w_types_size = 100;
+    template<typename...Us> using ew_alias = ew<F, Us...>;
+    static constexpr std::size_t w_types_size = (Ops::w_types::size*...);
+    template<bool> struct w_types_traits{using type = typename list_concat<type_list<sw>, typename cross_product<ew_alias, typename Ops::w_types...>::type>::type;};
+    template<> struct w_types_traits<false>{using type = type_list<w>;};
+    using w_types = typename w_types_traits<(w_types_size<max_w_types_size)>::type;
+    
+    //using w_types = typename list_concat<type_list<sw>, typename cross_product<ew_alias, typename Ops::w_types...>::type>::type;
+
+    std::tuple<Ops...> ops;
+    template<typename...Args>
+    explicit enode(const Args&...args):
+        ops{args...}
+    {}
+    auto op0()const{return std::get<0>(ops);}
+    auto op1()const{return std::get<1>(ops);}    
+    
+    template<typename, typename> struct make_variant_type;
+    template<typename...Vs, typename...Us> struct make_variant_type<std::variant<Vs...>, std::variant<Us...>>
+    {
+        
+    };
+    std::string to_str()const{
+        std::stringstream ss{};
+        ss<<"enode< "<<F{}.to_str()+" "<<std::apply([](const auto&...args){return ((args.to_str()+" ")+...);}, ops)<<" >";
+        return ss.str();
+    }     
+};
+
+
+auto operator+(const snode& op1, const snode& op2){return enode<add, snode,snode>{op1,op2};}
+template<typename...Ts> auto operator+(const snode& op1, const enode<Ts...>& op2){return enode<add, snode,enode<Ts...>>{op1,op2};}
+template<typename...Ts> auto operator+(const enode<Ts...>& op1, const snode& op2){return enode<add, enode<Ts...>,snode>{op1,op2};}
+template<typename...Ts, typename...Us> auto operator+(const enode<Ts...>& op1, const enode<Us...>& op2){return enode<add, enode<Ts...>,enode<Us...>>{op1,op2};}
+
+auto operator-(const snode& op1, const snode& op2){return enode<sub, snode,snode>{op1,op2};}
+template<typename...Ts> auto operator-(const snode& op1, const enode<Ts...>& op2){return enode<sub, snode,enode<Ts...>>{op1,op2};}
+template<typename...Ts> auto operator-(const enode<Ts...>& op1, const snode& op2){return enode<sub, enode<Ts...>,snode>{op1,op2};}
+template<typename...Ts, typename...Us> auto operator-(const enode<Ts...>& op1, const enode<Us...>& op2){return enode<sub, enode<Ts...>,enode<Us...>>{op1,op2};}
+
+auto operator*(const snode& op1, const snode& op2){return enode<mul, snode,snode>{op1,op2};}
+template<typename...Ts> auto operator*(const snode& op1, const enode<Ts...>& op2){return enode<mul, snode,enode<Ts...>>{op1,op2};}
+template<typename...Ts> auto operator*(const enode<Ts...>& op1, const snode& op2){return enode<mul, enode<Ts...>,snode>{op1,op2};}
+template<typename...Ts, typename...Us> auto operator*(const enode<Ts...>& op1, const enode<Us...>& op2){return enode<mul, enode<Ts...>,enode<Us...>>{op1,op2};}
+
+
+}   //end of namespace binary_tree_dispatch
+
+
 TEST_CASE("template_depth","[template_depth]"){
 
     using template_depth::sum_range;
@@ -203,7 +334,72 @@ TEST_CASE("member_access","[member_access]"){
 TEST_CASE("static_list","[static_list]"){
     using static_list::node;
     node<5,0> l{};
+}
 
 
+TEST_CASE("test_cross_product","[binary_tree_dispatch]"){
+    using binary_tree_dispatch::type_list;
+    using binary_tree_dispatch::type_pair;
+    using binary_tree_dispatch::cross_product;
+    using binary_tree_dispatch::A;
+    using binary_tree_dispatch::B;
+    using binary_tree_dispatch::C;
+    using binary_tree_dispatch::D;
+    using binary_tree_dispatch::E;
+    using binary_tree_dispatch::F;
+            
+    REQUIRE(std::is_same_v<
+        cross_product<type_list, type_list<A,B,C>, type_list<D,E,F>>::type , 
+        type_list<type_list<A,D>,type_list<A,E>,type_list<A,F>,type_list<B,D>,type_list<B,E>,type_list<B,F>,type_list<C,D>,type_list<C,E>,type_list<C,F>> >
+    );
+    REQUIRE(std::is_same_v<
+        cross_product<type_pair, type_list<A,B,C>, type_list<D,E,F>>::type , 
+        type_list<type_pair<A,D>,type_pair<A,E>,type_pair<A,F>,type_pair<B,D>,type_pair<B,E>,type_pair<B,F>,type_pair<C,D>,type_pair<C,E>,type_pair<C,F>> >
+    );
+    REQUIRE(std::is_same_v<
+        cross_product<type_list, type_list<A,A,C>, type_list<D,E,E>>::type , 
+        type_list<type_list<A,D>,type_list<A,E>,type_list<A,E>,type_list<A,D>,type_list<A,E>,type_list<A,E>,type_list<C,D>,type_list<C,E>,type_list<C,E>> >
+    );
+    REQUIRE(std::is_same_v<cross_product<type_list, type_list<A>, type_list<B>>::type , type_list<type_list<A,B>>>);
+    REQUIRE(std::is_same_v<cross_product<type_list, type_list<>, type_list<B>>::type , type_list<>>);
+    REQUIRE(std::is_same_v<cross_product<type_list, type_list<>, type_list<>>::type , type_list<>>);
+    REQUIRE(std::is_same_v<cross_product<type_list, type_list<A,B,C>, type_list<>>::type , type_list<>>);
+}
 
+
+TEST_CASE("test_w_types","[binary_tree_dispatch]"){
+    using binary_tree_dispatch::snode;
+    using binary_tree_dispatch::enode;
+    using binary_tree_dispatch::add;
+    using binary_tree_dispatch::sub;
+    using binary_tree_dispatch::mul;
+    using binary_tree_dispatch::sw;
+    using binary_tree_dispatch::ew;
+    using binary_tree_dispatch::type_list;
+
+    snode t{};
+    REQUIRE(std::is_same_v<typename snode::w_types, type_list<sw>>);
+    REQUIRE(std::is_same_v<typename decltype(t+t)::w_types, type_list<sw, ew<add,sw,sw>>>);
+    REQUIRE(std::is_same_v<typename decltype(t+t+t)::w_types, type_list< sw, ew<add,sw,sw>, ew<add,ew<add,sw,sw>,sw> >>);
+    REQUIRE(std::is_same_v<typename decltype(t+t*t)::w_types, type_list< sw, ew<add,sw,sw>, ew<add, sw, ew<mul,sw,sw>> >>);
+    REQUIRE(std::is_same_v<typename decltype((t-t)*(t+t))::w_types, 
+        type_list< 
+            sw, 
+            ew< mul,sw,sw >,
+            ew<mul, sw, ew<add, sw,sw>>,
+            ew<mul, ew<sub, sw,sw>, sw>, 
+            ew<mul, ew<sub, sw,sw>, ew<add, sw,sw>>
+        >>
+    );
+
+    auto e1 = t+t;
+    auto e2 = e1+e1;
+    auto e3 = e2+e2;
+    auto e4 = e3+e3;
+    auto e5 = e4+e4;
+    auto e6 = e5*e5;
+    std::cout<<std::endl<<decltype(e3)::w_types::to_str();
+    std::cout<<std::endl<<decltype(e4)::w_types::to_str();
+    std::cout<<std::endl<<decltype(e5)::w_types::to_str();
+    std::cout<<std::endl<<decltype(e6)::w_types::to_str();
 }

@@ -14,7 +14,6 @@ target_sources(Test PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/test_dispatcher.cpp
     
     ${CMAKE_CURRENT_SOURCE_DIR}/benchmark_walker.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_test.cpp
     
     ${CMAKE_CURRENT_SOURCE_DIR}/test_view_factory.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_shareable_storage.cpp
@@ -27,9 +26,10 @@ target_sources(Test PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/test_storage_tensor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_descriptor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_walker.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_tensor.cpp
 )
 
 target_sources(Test_selected PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_tensor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test.cpp
 )
