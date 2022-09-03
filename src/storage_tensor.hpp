@@ -5,7 +5,6 @@
 #include "tensor_base.hpp"
 #include "descriptor.hpp"
 #include "tensor_init_list.hpp"
-#include "walker_factory.hpp"
 #include "expression_template_engine.hpp"
 
 namespace gtensor{
@@ -35,7 +34,8 @@ private:
     using slices_collection_type = typename CfgT::slices_collection_type;
 
     descriptor_type descriptor_;
-    storage_type elements;    
+    storage_type elements;
+    engine_type engine_{this};    
 
     template<typename Nested>
     storage_tensor(std::initializer_list<Nested> init_data,int):
@@ -77,6 +77,7 @@ public:
         elements(descriptor_.size(), v)
     {}
 
+    const auto& engine()const{return engine_;}
     const value_type* data()const{return elements.data();}
     bool is_trivial()const override{return true;}
 
