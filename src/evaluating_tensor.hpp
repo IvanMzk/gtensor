@@ -59,25 +59,6 @@ inline auto broadcast(const std::tuple<Ops...>& operands, std::index_sequence<I.
     return broadcast(std::get<I>(operands)->shape()...);
 }
 
-/*
-* is expression is trivial broadcast i.e. shapes of all nodes in expression tree is same
-* flat index access without walkers is used to evaluate broadcast expression
-* stensor and view are trivial
-*/
-template<typename IdxT, typename...Ops>
-inline bool is_trivial(const IdxT& root_size, const std::tuple<Ops...>& root_operands){
-    return is_trivial_helper(root_size,root_operands,std::make_index_sequence<sizeof...(Ops)>{});
-}
-template<typename IdxT, typename...Ops, std::size_t...I>
-inline bool is_trivial_helper(const IdxT& root_size, const std::tuple<Ops...>& root_operands, std::index_sequence<I...>){
-    return ((root_size==std::get<I>(root_operands)->size())&&...) && (is_trivial_operand(std::get<I>(root_operands))&&...);
-}
-template<typename T>
-inline bool is_trivial_operand(const T& operand){    
-    return operand->is_trivial(); 
-}
-
-
 template<typename T> inline constexpr bool is_valid_operand = false;
 template<typename...T> inline constexpr bool is_valid_operand<std::shared_ptr<tensor_base<T...>>> = true;
 template<typename...Ops> inline constexpr bool is_valid_operands = (is_valid_operand<Ops>&&...);
@@ -143,12 +124,11 @@ public:
     template<typename...Args>
     explicit evaluating_tensor(const Args&...args):
         operands{args...},
-        descriptor_{detail::broadcast(operands, std::make_index_sequence<sizeof...(Ops)>{})},
+        descriptor_{detail::broadcast(operands, std::make_index_sequence<sizeof...(Ops)>{})},        
         engine_{this, F{}, args...}
     {}
 
-    const auto& engine()const{return engine_;}
-    bool is_trivial()const override{return detail::is_trivial(size(),operands);}
+    const engine_type& engine()const override{return engine_;}
     detail::tensor_kinds tensor_kind()const override{return detail::tensor_kinds::expression;}
     const descriptor_base<CfgT>& descriptor()const override{return descriptor_;}
     index_type size()const override{return descriptor_.size();}

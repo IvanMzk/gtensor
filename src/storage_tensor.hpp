@@ -77,9 +77,8 @@ public:
         elements(descriptor_.size(), v)
     {}
 
-    const auto& engine()const{return engine_;}
+    const engine_type& engine()const override{return engine_;}
     const value_type* data()const{return elements.data();}
-    bool is_trivial()const override{return true;}
 
     detail::tensor_kinds tensor_kind()const override{return detail::tensor_kinds::storage_tensor;}
     const descriptor_base<CfgT>& descriptor()const override{return descriptor_;}

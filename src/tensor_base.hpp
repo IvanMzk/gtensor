@@ -27,7 +27,6 @@ public:
     virtual detail::tensor_kinds tensor_kind()const = 0;    
     virtual bool is_cached()const = 0;
     virtual bool is_storage()const = 0;
-    virtual bool is_trivial()const = 0;
     virtual const converting_base<CfgT>* as_converting()const{return nullptr;}
 };
 
@@ -39,8 +38,10 @@ class tensor_base : public basic_tensor_base<CfgT>{
 
 public:
     using value_type = ValT;
+    using engine_type = typename detail::engine_traits<tensor_base>::type;
     
-    virtual ~tensor_base(){}    
+    virtual ~tensor_base(){}
+    virtual const engine_type& engine()const = 0;
     virtual value_type trivial_at(const index_type& idx)const = 0;    
     virtual const storing_base<ValT,CfgT>* as_storing()const{return nullptr;}
     virtual const evaluating_base<ValT,CfgT>* as_evaluating()const{return nullptr;}

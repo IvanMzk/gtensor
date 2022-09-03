@@ -15,7 +15,7 @@ struct test_tensor : public tensor<ValT, CfgT, tensor_base<ValT,CfgT>>{
     test_tensor(const tensor& base):
         tensor{base}
     {}
-    auto is_trivial()const{return impl()->is_trivial();}
+    auto is_trivial()const{return impl()->engine().is_trivial();}
 };
 
 

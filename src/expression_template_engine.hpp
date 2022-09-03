@@ -29,6 +29,24 @@ inline const auto& strides_div(const descriptor_with_libdivide<CfgT>& desc){
     return desc.strides_libdivide();
 }
 
+/*
+* is expression is trivial broadcast i.e. shapes of all nodes in expression tree is same
+* flat index access without walkers is used to evaluate broadcast expression
+* stensor and view are trivial
+*/
+template<typename IdxT, typename...Ops>
+inline bool is_trivial(const IdxT& root_size, const std::tuple<Ops...>& root_operands){
+    return is_trivial_helper(root_size,root_operands,std::make_index_sequence<sizeof...(Ops)>{});
+}
+template<typename IdxT, typename...Ops, std::size_t...I>
+inline bool is_trivial_helper(const IdxT& root_size, const std::tuple<Ops...>& root_operands, std::index_sequence<I...>){
+    return ((root_size==std::get<I>(root_operands)->size())&&...) && (is_trivial_operand(std::get<I>(root_operands))&&...);
+}
+template<typename T>
+inline bool is_trivial_operand(const T& operand){    
+    return operand->engine().is_trivial(); 
+}
+
 
 template<typename...Ts>
 struct type_list{
@@ -57,24 +75,43 @@ struct cross_product<PairT, type_list<>, type_list<Vs...>>{
 
 }   //end of namespace detail
 
+template<typename ValT, typename CfgT>
+class expression_template_engine_base{
+public:
+    virtual bool is_trivial()const = 0;
+};
+
 
 template<typename ValT, typename CfgT>
-class expression_template_storage_engine{
+class expression_template_storage_engine : public expression_template_engine_base<ValT, CfgT>
+{
 public:
     using walker_types = detail::type_list<storage_walker<ValT,CfgT>>;
     const tensor_base<ValT,CfgT>* root;
     expression_template_storage_engine(const tensor_base<ValT,CfgT>* root_):
         root{root_}
     {}
+    bool is_trivial()const override{return true;}
 };
 
+template<typename ValT, typename CfgT>
+class expression_template_view_engine : public expression_template_engine_base<ValT, CfgT>
+{
+public:
+    //using walker_types = detail::type_list<storage_walker<ValT,CfgT>>;
+    const tensor_base<ValT,CfgT>* root;
+    expression_template_view_engine(const tensor_base<ValT,CfgT>* root_):
+        root{root_}
+    {}
+    bool is_trivial()const override{return true;}
+};
 
 //expression_template_elementwise_engine class is responsible for handling arithmetic operations +,-,*,/,<,>, ...
 //i.e. such operations that can be done in elemenwise fashion, evaluation is broadcasted if possible
 //depending on config it also may cache operands to make broadcast evaluation more efficient
 //evaluation can be done by pure elementwise calculations (trivial broadcasting) if all nodes in evaluation tree support such an evaluation
 template<typename ValT, typename CfgT, typename F, typename...Ops>
-class expression_template_elementwise_engine
+class expression_template_elementwise_engine : public expression_template_engine_base<ValT, CfgT>
 {    
     using value_type = ValT;
     using shape_type = typename CfgT::shape_type;
@@ -116,6 +153,8 @@ public:
         f{f_},
         operands{args...}
     {}
+
+    bool is_trivial()const override{return detail::is_trivial(root->size(),operands);}
 
     walker<ValT,CfgT> create_walker()const{
         return std::apply([this](const auto&...args){return detail::dispatcher<ValT,CfgT>::call(walker_maker(), *args...);}, operands);

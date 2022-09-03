@@ -21,6 +21,7 @@ class viewing_tensor :
 {
 public:
     using value_type = ValT;
+    using engine_type = typename detail::engine_traits<viewing_tensor>::type;
 private:
     using tensor_base_type = tensor_base<ValT,CfgT>;    
     using index_type = typename CfgT::index_type;
@@ -30,6 +31,7 @@ private:
     std::shared_ptr<tensor_base_type> parent;
     const tensor_base_type* view_root{parent->tensor_kind() == detail::tensor_kinds::view ? static_cast<const viewing_tensor*>(parent.get())->get_view_root() : parent.get()};
     const converting_base* parent_converter{parent->as_converting()};
+    engine_type engine_{this};
     
     //tensor_base interface
 
@@ -39,8 +41,7 @@ private:
     const viewing_evaluating_base<ValT,CfgT>* as_viewing_evaluating()const{return static_cast<const viewing_evaluating_base<ValT,CfgT>*>(this);}
     const converting_base* as_converting()const override{return static_cast<const converting_base*>(this);}
     
-    bool is_cached()const override{return false;}    
-    bool is_trivial()const override{return true;}
+    bool is_cached()const override{return false;}        
     bool is_storage()const override{return detail::is_storage(*parent);}
 
     //storing_base interface implementation
@@ -65,7 +66,7 @@ public:
         descriptor_{std::forward<DtT>(descriptor__)},
         parent{parent_}
     {}    
-
+    const engine_type& engine()const override{return engine_;}
     detail::tensor_kinds tensor_kind()const override{return detail::tensor_kinds::view;}
     const descriptor_base<CfgT>& descriptor()const override{return descriptor_;}
     index_type size()const override{return descriptor_.size();}
