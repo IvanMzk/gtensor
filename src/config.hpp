@@ -85,8 +85,17 @@ struct is_caching_never{constexpr static bool value = std::is_same_v<C::caching_
 template<typename C>
 struct is_caching_broadcast{constexpr static bool value = std::is_same_v<C::caching_mode,gtensor::config::mode_caching_broadcast>;};
 
-}
+template<typename> struct engine_traits;
 
-}
+template<typename ValT, typename CfgT> 
+struct engine_traits<storage_tensor<ValT,CfgT>>{using type = expression_template_storage_engine<ValT,CfgT>;};
+
+template<typename ValT, typename CfgT, typename F, typename...Ops> 
+struct engine_traits<evaluating_tensor<ValT, CfgT, F, Ops...>>{using type = expression_template_elementwise_engine<ValT,CfgT,F,Ops...>;};
+
+
+}   //end of namespace detail
+
+}   //end of namespace gtensor
 
 #endif
