@@ -42,7 +42,6 @@ public:
     
     virtual ~tensor_base(){}
     virtual const engine_type& engine()const = 0;
-    virtual value_type trivial_at(const index_type& idx)const = 0;    
     virtual const storing_base<ValT,CfgT>* as_storing()const{return nullptr;}
     virtual const evaluating_base<ValT,CfgT>* as_evaluating()const{return nullptr;}
     virtual const evaluating_trivial_base<ValT,CfgT>* as_evaluating_trivial()const{return nullptr;}        

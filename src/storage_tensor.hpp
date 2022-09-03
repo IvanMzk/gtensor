@@ -85,9 +85,7 @@ public:
     index_type size()const override{return descriptor_.size();}
     index_type dim()const override{return descriptor_.dim();}
     const shape_type& shape()const override{return descriptor_.shape();}
-    const shape_type& strides()const override{return descriptor_.strides();}
-    value_type trivial_at(const index_type& idx)const override{return elements[idx];}
-    
+    const shape_type& strides()const override{return descriptor_.strides();}    
 
     std::string to_str()const override{
         std::stringstream ss{};

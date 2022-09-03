@@ -93,10 +93,7 @@ private:
     descriptor_type descriptor_;
     F f{};
     engine_type engine_;
-
-    template<std::size_t...I>
-    value_type trivial_at_helper(const index_type& idx, std::index_sequence<I...>)const{return f(std::get<I>(operands)->trivial_at(idx)...);} 
-        
+    
     walker<ValT,CfgT> create_evaluating_walker()const override{
         return engine_.create_walker();
         //return walker_factory_type::create_walker(descriptor_,f,operands);        
@@ -123,8 +120,8 @@ public:
     
     template<typename...Args>
     explicit evaluating_tensor(const Args&...args):
-        operands{args...},
-        descriptor_{detail::broadcast(operands, std::make_index_sequence<sizeof...(Ops)>{})},        
+        operands{args...},        
+        descriptor_{detail::broadcast(operands, std::make_index_sequence<sizeof...(Ops)>{})},
         engine_{this, F{}, args...}
     {}
 
@@ -135,7 +132,6 @@ public:
     index_type dim()const override{return descriptor_.dim();}
     const shape_type& shape()const override{return descriptor_.shape();}
     const shape_type& strides()const override{return descriptor_.strides();}
-    value_type trivial_at(const index_type& idx)const override{return trivial_at_helper(idx,std::make_index_sequence<sizeof...(Ops)>{});}
     std::string to_str()const override{
         std::stringstream ss{};
         ss<<"{"<<[&ss,this](){ss<<descriptor_.to_str(); return "}";}();
