@@ -58,6 +58,13 @@ struct cross_product<PairT, type_list<>, type_list<Vs...>>{
 }   //end of namespace detail
 
 
+template<typename ValT, typename CfgT>
+class expression_template_storage_engine{
+public:
+    using walker_types = type_list<storage_walker<ValT,Cfg>>
+};
+
+
 //expression_template_elementwise_engine class is responsible for handling arithmetic operations +,-,*,/,<,>, ...
 //i.e. such operations that can be done in elemenwise fashion, evaluation is broadcasted if possible
 //depending on config it also may cache operands to make broadcast evaluation more efficient
@@ -66,8 +73,17 @@ template<typename ValT, typename CfgT, typename F, typename...Ops>
 class expression_template_elementwise_engine
 {    
     using value_type = ValT;
-    using shape_type = typename CfgT::shape_type;    
+    using shape_type = typename CfgT::shape_type;
     
+    static constexpr std::size_t max_walker_types_size = 100;
+    static constexpr std::size_t walker_types_size = (Ops::walker_types::size*...);
+    template<typename...Us> using evaluating_walker_alias = evaluating_walker<value_type, CfgT, F, Us...>;
+    
+    template<bool> struct walker_types_traits{using type = typename list_concat<type_list<sw>, typename cross_product<evaluating_walker_alias, typename Ops::walker_types...>::type>::type;};
+    template<> struct walker_types_traits<false>{using type = type_list<w>;};
+    using walker_types = typename walker_types_traits<(walker_types_size<max_walker_types_size)>::type;
+    
+
     const tensor_base<ValT,CfgT>* root;
     F f;
     std::tuple<std::shared_ptr<tensor_base<typename Ops::value_type, CfgT> >...> operands;
@@ -91,7 +107,7 @@ class expression_template_elementwise_engine
 public:
 
     template<typename...Args>
-    expression_template_elementwise_evaluation(const tensor_base<ValT,CfgT>* root_, const F& f_, const Args&...args):
+    expression_template_elementwise_engine(const tensor_base<ValT,CfgT>* root_, const F& f_, const Args&...args):
         root{root_},
         f{f_},
         operands{args...}
