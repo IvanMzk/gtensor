@@ -81,25 +81,27 @@ struct cross_product<PairT, type_list<>, type_list<Vs...>>{
 template<typename ValT, typename CfgT>
 class expression_template_storage_engine : public expression_template_engine_base<ValT, CfgT>
 {
+    const tensor_base<ValT,CfgT>* root;
 public:
     using walker_types = detail::type_list<storage_walker<ValT,CfgT>>;
-    const tensor_base<ValT,CfgT>* root;
     expression_template_storage_engine(const tensor_base<ValT,CfgT>* root_):
         root{root_}
     {}
     bool is_trivial()const override{return true;}
+    void set_root(const tensor_base<ValT,CfgT>* root_)const override{root = root_;}
 };
 
 template<typename ValT, typename CfgT>
 class expression_template_view_engine : public expression_template_engine_base<ValT, CfgT>
 {
+    const tensor_base<ValT,CfgT>* root;
 public:
     //using walker_types = detail::type_list<storage_walker<ValT,CfgT>>;
-    const tensor_base<ValT,CfgT>* root;
     expression_template_view_engine(const tensor_base<ValT,CfgT>* root_):
         root{root_}
     {}
     bool is_trivial()const override{return true;}
+    void set_root(const tensor_base<ValT,CfgT>* root_)const override{root = root_;}
 };
 
 //expression_template_elementwise_engine class is responsible for handling arithmetic operations +,-,*,/,<,>, ...
@@ -145,6 +147,8 @@ class expression_template_elementwise_engine : public expression_template_engine
             };
     }
     
+    void set_root(const tensor_base<ValT,CfgT>* root_)const override{root = root_;}
+
 public:
     using value_type = ValT;
     using walker_types = typename walker_types_traits<(walker_types_size<max_walker_types_size)>::type;
