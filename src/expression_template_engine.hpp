@@ -127,9 +127,9 @@ class expression_template_elementwise_engine : public expression_template_engine
         using type = detail::type_list<walker<ValT,CfgT>>;
     };
     
-    const tensor_base<ValT,CfgT>* root;
     F f;
     std::tuple<std::shared_ptr<tensor_base<typename Ops::value_type, CfgT> >...> operands;
+    const tensor_base<ValT,CfgT>* root{nullptr};
 
     
     auto walker_maker()const{
@@ -154,8 +154,7 @@ public:
     using walker_types = typename walker_types_traits<(walker_types_size<max_walker_types_size)>::type;
 
     template<typename...Args>
-    expression_template_elementwise_engine(const tensor_base<ValT,CfgT>* root_, const F& f_, const Args&...args):
-        root{root_},
+    expression_template_elementwise_engine(const F& f_, const Args&...args):
         f{f_},
         operands{args...}
     {}
