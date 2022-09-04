@@ -75,11 +75,7 @@ struct cross_product<PairT, type_list<>, type_list<Vs...>>{
 
 }   //end of namespace detail
 
-template<typename ValT, typename CfgT>
-class expression_template_engine_base{
-public:
-    virtual bool is_trivial()const = 0;
-};
+
 
 
 template<typename ValT, typename CfgT>
@@ -113,18 +109,22 @@ public:
 template<typename ValT, typename CfgT, typename F, typename...Ops>
 class expression_template_elementwise_engine : public expression_template_engine_base<ValT, CfgT>
 {    
-    using value_type = ValT;
     using shape_type = typename CfgT::shape_type;
     
-    // static constexpr std::size_t max_walker_types_size = 100;
-    // static constexpr std::size_t walker_types_size = (Ops::walker_types::size*...);
-    // template<typename...Us> using evaluating_walker_alias = evaluating_walker<value_type, CfgT, F, Us...>;
+    static constexpr std::size_t max_walker_types_size = 100;
+    static constexpr std::size_t walker_types_size = (Ops::engine_type::walker_types::size*...);
+    template<typename...Us> using evaluating_walker_alias = evaluating_walker<ValT, CfgT, F, Us...>;
     
-    // template<bool> struct walker_types_traits{using type = typename list_concat<type_list<sw>, typename cross_product<evaluating_walker_alias, typename Ops::walker_types...>::type>::type;};
-    // template<> struct walker_types_traits<false>{using type = type_list<w>;};
-    // using walker_types = typename walker_types_traits<(walker_types_size<max_walker_types_size)>::type;
+    template<bool> struct walker_types_traits{                
+        using type = typename detail::list_concat< 
+            detail::type_list<storage_walker<ValT,CfgT>>, 
+            typename detail::cross_product<evaluating_walker_alias, typename Ops::engine_type::walker_types...>::type
+            >::type;
+    };
+    template<> struct walker_types_traits<false>{        
+        using type = detail::type_list<walker<ValT,CfgT>>;
+    };
     
-
     const tensor_base<ValT,CfgT>* root;
     F f;
     std::tuple<std::shared_ptr<tensor_base<typename Ops::value_type, CfgT> >...> operands;
@@ -146,6 +146,8 @@ class expression_template_elementwise_engine : public expression_template_engine
     }
     
 public:
+    using value_type = ValT;
+    using walker_types = typename walker_types_traits<(walker_types_size<max_walker_types_size)>::type;
 
     template<typename...Args>
     expression_template_elementwise_engine(const tensor_base<ValT,CfgT>* root_, const F& f_, const Args&...args):
