@@ -115,7 +115,6 @@ protected:
     const auto& concrete_descriptor()const{return descriptor_;}
     template<std::size_t I>
     auto& operand(){return std::get<I>(operands);}
-    const engine_type& engine()const override{return engine_;}
 
 public:            
     
@@ -128,6 +127,7 @@ public:
         engine_.set_root(this);
     }
 
+    const engine_type& engine()const override{return engine_;}
     detail::tensor_kinds tensor_kind()const override{return detail::tensor_kinds::expression;}
     const descriptor_base<CfgT>& descriptor()const override{return descriptor_;}
     index_type size()const override{return descriptor_.size();}
