@@ -4,6 +4,7 @@
 #include "forward_decl.hpp"
 #include "operations.hpp"
 #include "evaluating_tensor.hpp"
+#include "expression_template_engine.hpp"
 
 #define BINARY_OPERATOR_IMPL(NAME,OP)\
 template<typename ValT1, typename ValT2, typename ImplT1, typename ImplT2, typename CfgT>\
@@ -12,8 +13,9 @@ static inline auto NAME(const tensor<ValT1, CfgT, ImplT1>& op1, const tensor<Val
     using result_type = decltype(std::declval<operation_type>()(std::declval<ValT1>(),std::declval<ValT2>()));\
     using exp_operand1_type = ImplT1;\
     using exp_operand2_type = ImplT2;\
-    using exp_type = evaluating_tensor<result_type, CfgT, operation_type, exp_operand1_type, exp_operand2_type>;\
-    return tensor<result_type,CfgT, exp_type>{std::make_shared<exp_type>(op1.impl(),op2.impl())};\
+    using engine_type = expression_template_elementwise_engine<result_type, CfgT, operation_type, exp_operand1_type, exp_operand2_type>;\
+    using exp_type = evaluating_tensor<result_type, CfgT, operation_type, engine_type, exp_operand1_type, exp_operand2_type>;\
+    return tensor<result_type,CfgT, exp_type>{std::make_shared<exp_type>(engine_type{}, op1.impl(),op2.impl())};\
 }
 
 

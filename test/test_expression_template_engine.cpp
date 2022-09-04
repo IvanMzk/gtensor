@@ -14,7 +14,7 @@ template<typename F, typename S> struct type_pair{};
 
 
 
-TEST_CASE("test_cross_product","[binary_tree_dispatch]"){
+TEST_CASE("test_cross_product","[test_expression_template_engine]"){
     using gtensor::detail::cross_product;
     using gtensor::detail::type_list;
     using test_cross_product::type_pair;
@@ -42,4 +42,8 @@ TEST_CASE("test_cross_product","[binary_tree_dispatch]"){
     REQUIRE(std::is_same_v<cross_product<type_list, type_list<>, type_list<B>>::type , type_list<>>);
     REQUIRE(std::is_same_v<cross_product<type_list, type_list<>, type_list<>>::type , type_list<>>);
     REQUIRE(std::is_same_v<cross_product<type_list, type_list<A,B,C>, type_list<>>::type , type_list<>>);
+}
+
+TEST_CASE("test","[test_expression_template_engine]"){
+    
 }

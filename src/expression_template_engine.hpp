@@ -3,6 +3,7 @@
 
 #include <memory>
 #include "forward_decl.hpp"
+#include "engine_base.hpp"
 #include "storage_walker.hpp"
 #include "evaluating_walker.hpp"
 #include "viewing_walker.hpp"
@@ -88,7 +89,7 @@ public:
         root{root_}
     {}
     bool is_trivial()const override{return true;}
-    void set_root(const tensor_base<ValT,CfgT>* root_)const override{root = root_;}
+    //void set_root(tensor_base<ValT,CfgT>* root_)override{root = root_;}
 };
 
 template<typename ValT, typename CfgT>
@@ -101,7 +102,7 @@ public:
         root{root_}
     {}
     bool is_trivial()const override{return true;}
-    void set_root(const tensor_base<ValT,CfgT>* root_)const override{root = root_;}
+    //void set_root(tensor_base<ValT,CfgT>* root_)override{root = root_;}
 };
 
 //expression_template_elementwise_engine class is responsible for handling arithmetic operations +,-,*,/,<,>, ...
@@ -109,9 +110,11 @@ public:
 //depending on config it also may cache operands to make broadcast evaluation more efficient
 //evaluation can be done by pure elementwise calculations (trivial broadcasting) if all nodes in evaluation tree support such an evaluation
 template<typename ValT, typename CfgT, typename F, typename...Ops>
-class expression_template_elementwise_engine : public expression_template_engine_base<ValT, CfgT>
+class expression_template_elementwise_engine : 
+    public expression_template_engine_base<ValT, CfgT>,
+    public evaluating_engine_root_accessor<expression_template_elementwise_engine<ValT, CfgT, F, Ops...>, ValT, CfgT, F, Ops...>
 {    
-    using shape_type = typename CfgT::shape_type;
+    using shape_type = typename CfgT::shape_type;    
     
     static constexpr std::size_t max_walker_types_size = 100;
     static constexpr std::size_t walker_types_size = (Ops::engine_type::walker_types::size*...);
@@ -126,16 +129,11 @@ class expression_template_elementwise_engine : public expression_template_engine
     template<> struct walker_types_traits<false>{        
         using type = detail::type_list<walker<ValT,CfgT>>;
     };
-    
-    F f;
-    std::tuple<std::shared_ptr<tensor_base<typename Ops::value_type, CfgT> >...> operands;
-    const tensor_base<ValT,CfgT>* root{nullptr};
 
-    
     auto walker_maker()const{
         return [this](const auto&...args){
             using evaluating_walker_type = evaluating_walker<ValT,CfgT,F,decltype(std::declval<decltype(args)>().create_walker())...>;
-            return walker<ValT,CfgT>{std::make_unique<evaluating_walker_polymorphic<ValT,CfgT,evaluating_walker_type>>(evaluating_walker_type{root->shape(),args.create_walker()...})};
+            return walker<ValT,CfgT>{std::make_unique<evaluating_walker_polymorphic<ValT,CfgT,evaluating_walker_type>>(evaluating_walker_type{root()->shape(),args.create_walker()...})};
             };
     }
     
@@ -143,29 +141,21 @@ class expression_template_elementwise_engine : public expression_template_engine
         return [this](const auto&...args){
                 using evaluating_walker_type = evaluating_walker<ValT,CfgT,F,decltype(std::declval<decltype(args)>().create_walker())...>;
                 using evaluating_indexer_type = evaluating_indexer<ValT,CfgT,evaluating_walker_type>;
-                return indexer<ValT,CfgT>{std::make_unique<evaluating_indexer_type>(detail::strides_div(*root->descriptor().as_descriptor_with_libdivide()) , evaluating_walker_type{root->shape(),args.create_walker()...})};
+                return indexer<ValT,CfgT>{std::make_unique<evaluating_indexer_type>(detail::strides_div(*root()->descriptor().as_descriptor_with_libdivide()) , evaluating_walker_type{root()->shape(),args.create_walker()...})};
             };
     }
     
-    void set_root(const tensor_base<ValT,CfgT>* root_)const override{root = root_;}
-
 public:
     using value_type = ValT;
     using walker_types = typename walker_types_traits<(walker_types_size<max_walker_types_size)>::type;
 
-    template<typename...Args>
-    expression_template_elementwise_engine(const F& f_, const Args&...args):
-        f{f_},
-        operands{args...}
-    {}
-
-    bool is_trivial()const override{return detail::is_trivial(root->size(),operands);}
+    bool is_trivial()const override{return detail::is_trivial(root()->size(),root()->operands);}
 
     walker<ValT,CfgT> create_walker()const{
-        return std::apply([this](const auto&...args){return detail::dispatcher<ValT,CfgT>::call(walker_maker(), *args...);}, operands);
+        return std::apply([this](const auto&...args){return detail::dispatcher<ValT,CfgT>::call(walker_maker(), *args...);}, root()->operands);
     }        
     indexer<ValT,CfgT> create_indexer()const{
-        return std::apply([this](const auto&...args){return detail::dispatcher<ValT,CfgT>::call(indexer_maker(), *args...);}, operands);
+        return std::apply([this](const auto&...args){return detail::dispatcher<ValT,CfgT>::call(indexer_maker(), *args...);}, root()->operands);
     }
 };
 

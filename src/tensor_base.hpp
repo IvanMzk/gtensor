@@ -4,6 +4,7 @@
 #include <string>
 #include "forward_decl.hpp"
 #include "slice.hpp"
+#include "engine_base.hpp"
 
 namespace gtensor{
 

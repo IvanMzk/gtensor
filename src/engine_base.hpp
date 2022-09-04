@@ -5,6 +5,7 @@
 
 namespace gtensor{
 
+namespace detail{
 
 template<typename> struct engine_traits;
 
@@ -17,17 +18,31 @@ struct engine_traits<storage_tensor<ValT,CfgT>>{using type = expression_template
 template<typename ValT, typename CfgT, typename DescT> 
 struct engine_traits<viewing_tensor<ValT,CfgT, DescT>>{using type = expression_template_view_engine<ValT,CfgT>;};
 
-template<typename ValT, typename CfgT, typename F, typename...Ops> 
-struct engine_traits<evaluating_tensor<ValT, CfgT, F, Ops...>>{using type = expression_template_elementwise_engine<ValT,CfgT,F,Ops...>;};
 // template<typename ValT, typename CfgT, typename F, typename...Ops> 
 // struct engine_traits<evaluating_tensor<ValT, CfgT, F, Ops...>>{using type = expression_template_elementwise_engine<ValT,CfgT,F,Ops...>;};
+
+// template<typename ValT, typename CfgT, typename F, typename...Ops> 
+// struct engine_traits<evaluating_tensor<ValT, CfgT, F, Ops...>>{using type = expression_template_elementwise_engine<ValT,CfgT,F,Ops...>;};
+
+}   //end of namespace detail
+
+
+template<typename EngineT, typename ValT, typename CfgT, typename F, typename...Ops>
+class evaluating_engine_root_accessor
+{        
+    using root_type = evaluating_tensor<ValT, CfgT, F, EngineT, Ops...>;    
+    root_type* root_{nullptr};
+    friend root_type;
+    void set_root(tensor_base<ValT,CfgT>* root__){root_ = static_cast<root_type*>(root__);}
+protected:
+    auto root()const{return root_;}
+};
 
 
 template<typename ValT, typename CfgT>
 class expression_template_engine_base{
 public:
     virtual bool is_trivial()const = 0;
-    virtual void set_root(const tensor_base<ValT,CfgT>*)const = 0;
 };
 
 }   //end of namespace gtensor

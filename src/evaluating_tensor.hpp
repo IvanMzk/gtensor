@@ -72,7 +72,7 @@ auto de_wrap(const std::shared_ptr<ImplT>& impl){return impl;}
 }   //end of namespace detail
 
 
-template<typename ValT, typename CfgT, typename F, typename...Ops>
+template<typename ValT, typename CfgT, typename F, typename EngineT, typename...Ops>
 class evaluating_tensor : 
     public tensor_base<ValT,CfgT>,
     public evaluating_base<ValT,CfgT>,
@@ -81,16 +81,20 @@ class evaluating_tensor :
 {    
 public:
     using value_type = ValT;
-    using engine_type = typename detail::engine_traits<evaluating_tensor>::type;
-private:
+    using engine_type = EngineT;    
+private:    
     using index_type = typename CfgT::index_type;
     using shape_type = typename CfgT::shape_type;
     using descriptor_type = descriptor_with_libdivide<CfgT>;
     using iterator_type = multiindex_iterator<ValT,CfgT,walker<ValT,CfgT>>; 
     static_assert((std::is_convertible_v<Ops*, tensor_base<typename Ops::value_type, CfgT>*>&&...));
+    static_assert(std::is_convertible_v<engine_type*, evaluating_engine_root_accessor<engine_type,ValT,CfgT,F,Ops...>*>);
 
     descriptor_type descriptor_;
+    F f;
+    std::tuple<std::shared_ptr<tensor_base<typename Ops::value_type, CfgT> >...> operands;
     engine_type engine_;
+    friend engine_type;
     
     walker<ValT,CfgT> create_evaluating_walker()const override{
         return engine_.create_walker();
@@ -109,16 +113,21 @@ private:
 protected:
         
     const auto& concrete_descriptor()const{return descriptor_;}
+    template<std::size_t I>
+    auto& operand(){return std::get<I>(operands);}
+    const engine_type& engine()const override{return engine_;}
 
 public:            
     
-    template<typename...Args>
-    explicit evaluating_tensor(const Args&...args):        
-        descriptor_{detail::broadcast(args->shape()...)},
-        engine_{this, F{}, args...}
-    {}
+    template<typename E, typename...O>
+    explicit evaluating_tensor(E&& engine__, O&&...operands__):
+        descriptor_{detail::broadcast(operands__->shape()...)},
+        operands{std::forward<O>(operands__)...},
+        engine_{std::forward<E>(engine__)}
+    {
+        engine_.set_root(this);
+    }
 
-    const engine_type& engine()const override{return engine_;}
     detail::tensor_kinds tensor_kind()const override{return detail::tensor_kinds::expression;}
     const descriptor_base<CfgT>& descriptor()const override{return descriptor_;}
     index_type size()const override{return descriptor_.size();}
@@ -129,10 +138,7 @@ public:
         std::stringstream ss{};
         ss<<"{"<<[&ss,this](){ss<<descriptor_.to_str(); return "}";}();
         return ss.str();
-    }
-
-    // iterator_type begin()const{return create_iterator(0);}    
-    // iterator_type end()const{return create_iterator(size());}
+    }    
 };
 
 
