@@ -6,7 +6,7 @@
 #include "storage_walker.hpp"
 #include "evaluating_walker.hpp"
 #include "viewing_walker.hpp"
-#include "evaluating_trivial_walker.hpp"
+#include "trivial_walker.hpp"
 #include "dispatcher.hpp"
 
 

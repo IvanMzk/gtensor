@@ -266,6 +266,30 @@ template<typename...Ts, typename...Us> auto operator*(const enode<Ts...>& op1, c
 
 }   //end of namespace binary_tree_dispatch
 
+namespace lambda_universal_reference{
+
+    template<typename T>
+    bool is_same_as_decayed(T&& arg){
+        return std::is_same_v<std::decay_t<T> , T>;
+    }
+    template<typename T>
+    bool is_same_as_decayed_ref(T&& arg){
+        return std::is_same_v<std::decay_t<T>& , T>;
+    }
+    template<typename T>
+    bool is_decltype_arg_same_as_decayed(T&& arg){
+        return std::is_same_v<std::decay_t<T> , decltype(arg)>;
+    }
+    template<typename T>
+    bool is_decltype_arg_same_as_decayed_ref(T&& arg){
+        return std::is_same_v<std::decay_t<T>& , decltype(arg)>;
+    }
+    template<typename T>
+    bool is_decltype_arg_same_as_decayed_rref(T&& arg){
+        return std::is_same_v<std::decay_t<T>&& , decltype(arg)>;
+    }
+
+}
 
 TEST_CASE("template_depth","[template_depth]"){
 
@@ -402,4 +426,26 @@ TEST_CASE("test_w_types","[binary_tree_dispatch]"){
     std::cout<<std::endl<<decltype(e4)::w_types::to_str();
     std::cout<<std::endl<<decltype(e5)::w_types::to_str();
     std::cout<<std::endl<<decltype(e6)::w_types::to_str();
+}
+
+TEST_CASE("lambda_universal_reference", "[lambda_universal_reference]"){
+    using lambda_universal_reference::is_same_as_decayed;
+    using lambda_universal_reference::is_same_as_decayed_ref;
+    using lambda_universal_reference::is_decltype_arg_same_as_decayed_ref;
+    using lambda_universal_reference::is_decltype_arg_same_as_decayed_rref;
+    using lambda_universal_reference::is_decltype_arg_same_as_decayed;
+
+    int x{};
+    REQUIRE(is_same_as_decayed(4));
+    REQUIRE(is_same_as_decayed_ref(x));
+    
+    REQUIRE(is_decltype_arg_same_as_decayed_ref(x));    
+    REQUIRE(is_decltype_arg_same_as_decayed_rref(4));
+
+    auto f = [](auto&& arg){return is_same_as_decayed(std::forward<decltype(arg)>(arg));};
+    auto g = [](auto&& arg){return is_same_as_decayed_ref(std::forward<decltype(arg)>(arg));};
+
+    REQUIRE(f(4));
+    REQUIRE(g(x));
+    
 }

@@ -56,7 +56,10 @@ public:
         base_strides_libdivide{basic_descriptor::strides()}
     {}    
     
+    template<typename C=CfgT, std::enable_if_t<detail::is_mode_div_libdivide<C> ,int> =0 >
     const auto& strides_libdivide()const{return base_strides_libdivide::dividers_libdivide();}
+    template<typename C=CfgT, std::enable_if_t<detail::is_mode_div_native<C> ,int> =0 >
+    const auto& strides_libdivide()const{return basic_descriptor::strides();}
 };
 
 template<typename CfgT> 

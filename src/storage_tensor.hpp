@@ -16,7 +16,7 @@ namespace detail{
 /*
 * implementation of tensor with storage
 */
-template<typename ValT, typename CfgT>
+template<typename ValT, typename CfgT, typename EngineT = typename detail::engine_traits<storage_tensor<ValT,CfgT,void>>::type>
 class storage_tensor : 
     public tensor_base<ValT,CfgT>,
     public storing_base<ValT,CfgT>,
@@ -24,7 +24,8 @@ class storage_tensor :
 {
 public:
     using value_type = ValT;
-    using engine_type = typename detail::engine_traits<storage_tensor>::type;
+    using engine_type = EngineT;
+    //using engine_type = typename detail::engine_traits<storage_tensor>::type;
 
 private:
     using index_type = typename CfgT::index_type;

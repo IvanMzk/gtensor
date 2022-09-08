@@ -75,6 +75,7 @@ protected:
     }
     void reset(){cursor_ = offset_;}
     
+    bool can_walk(const index_type& direction)const{return detail::can_walk(direction, dim, shape.element(direction));}
     CursorT cursor()const{return cursor_;}
     CursorT offset()const{return offset_;}
 };
