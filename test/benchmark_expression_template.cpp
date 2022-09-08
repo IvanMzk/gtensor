@@ -465,16 +465,6 @@ auto make_symmetric_tree(const T1& t1, const T2& t2){
 
 }   //end of namespace benchmark_helpers
 
-TEST_CASE("test_big_tree","[benchmark_expression_template]"){
-    using value_type = float;
-    using config_type = gtensor::config::default_config;
-    using tensor_type = gtensor::tensor<value_type,config_type>;
-    using benchmark_helpers::make_asymmetric_tree;
-
-    auto e = make_asymmetric_tree<20>(tensor_type{1,2,3}, tensor_type{{1,1,1},{2,2,2}});
-    
-}
-
 TEST_CASE("test_expression_template_without_dispatching","[benchmark_expression_template]"){
     using value_type = float;
     using config_type = gtensor::config::default_config;

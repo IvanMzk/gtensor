@@ -27,12 +27,12 @@ target_sources(Test PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/test_storage_tensor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_descriptor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_walker.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_tensor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_expression_template_engine.cpp
     
+    ${CMAKE_CURRENT_SOURCE_DIR}/benchmark_expression_template.cpp
 )
 
 target_sources(Test_selected PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/benchmark_expression_template.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_tensor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test.cpp
 )
