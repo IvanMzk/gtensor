@@ -260,14 +260,6 @@ TEST_CASE("test_view_making_interface","[test_tensor]"){
     }
 }
 
-TEST_CASE("test_big_tree","[benchmark_expression_template]"){
-    using value_type = float;
-    using config_type = gtensor::config::default_config;
-    using tensor_type = gtensor::tensor<value_type,config_type>;
-    using test_tensor_helpers::make_asymmetric_tree;
-
-    auto e = make_asymmetric_tree<20>(tensor_type{1,2,3}, tensor_type{{1,1,1},{2,2,2}});    
-}
 
 // TEST_CASE("test_tensor_construct_using_derived_operands","[test_tensor]"){
 //     using value_type = float;

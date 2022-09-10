@@ -3,6 +3,7 @@
 #define CATCH_CONFIG_ENABLE_BENCHMARKING
 #include "catch.hpp"
 #include "tensor.hpp"
+#include "benchmark_helpers.hpp"
 
 #define BENCHMARK_EXPRESSION_TEMPLATE_BINARY_OPERATOR(NAME,IMPL)\
 template<typename ValT1, typename ValT2, typename ImplT1, typename ImplT2, typename CfgT>\
@@ -443,27 +444,6 @@ BENCHMARK_EXPRESSION_TEMPLATE_BINARY_OPERATOR(operator*, operator_mul_impl);
 
 }   //end of namespace expression_template_variant_dispatch
 
-namespace benchmark_helpers{
-
-template<std::size_t Depth, typename T1, typename T2, std::enable_if_t< (Depth>1) ,int> = 0 >
-auto make_asymmetric_tree(const T1& t1, const T2& t2){
-    return make_asymmetric_tree<Depth-1>(t1,t2+t1);
-}
-template<std::size_t Depth, typename T1, typename T2, std::enable_if_t< Depth==1,int> = 0 >
-auto make_asymmetric_tree(const T1& t1, const T2& t2){
-    return t2+t1;
-}
-
-template<std::size_t Depth, typename T1, typename T2, std::enable_if_t< (Depth>1) ,int> = 0 >
-auto make_symmetric_tree(const T1& t1, const T2& t2){
-    return make_symmetric_tree<Depth-1>(t2+t1,t2+t1);
-}
-template<std::size_t Depth, typename T1, typename T2, std::enable_if_t< Depth==1,int> = 0 >
-auto make_symmetric_tree(const T1& t1, const T2& t2){
-    return t2+t1;
-}
-
-}   //end of namespace benchmark_helpers
 
 TEST_CASE("test_expression_template_without_dispatching","[benchmark_expression_template]"){
     using value_type = float;

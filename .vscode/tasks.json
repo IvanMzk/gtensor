@@ -23,7 +23,7 @@
         {
             "type": "shell",
             "label": "cmake build Test_selected",
-            "command": "cmake.exe --build ${workspaceFolder}\\build -j 10 --target Test_selected",
+            "command": "cmake -E time cmake -E env NINJA_STATUS=[%e/%f/%t] cmake.exe --build ${workspaceFolder}\\build -j 10 --target Test_selected",
             "args": [],            
             "group": "test"
         },

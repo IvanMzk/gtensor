@@ -4,6 +4,7 @@
 #include "tensor_base.hpp"
 #include "descriptor.hpp"
 #include "iterator.hpp"
+#include "engine_base.hpp"
 
 namespace gtensor{
 
@@ -67,7 +68,7 @@ auto de_wrap(const std::shared_ptr<ImplT>& impl){return impl;}
 }   //end of namespace detail
 
 
-template<typename ValT, typename CfgT, typename F, typename EngineT, typename...Ops>
+template<typename ValT, typename CfgT, typename F, typename...Ops>
 class evaluating_tensor : 
     public tensor_base<ValT,CfgT>,
     //public evaluating_base<ValT,CfgT>,
@@ -76,20 +77,20 @@ class evaluating_tensor :
 {    
 public:
     using value_type = ValT;
-    using engine_type = EngineT;    
+    using engine_type = typename detail::engine_traits<evaluating_tensor>::type;
 private:    
     using index_type = typename CfgT::index_type;
     using shape_type = typename CfgT::shape_type;
     using descriptor_type = descriptor_with_libdivide<CfgT>;
     using iterator_type = multiindex_iterator<ValT,CfgT,walker<ValT,CfgT>>; 
     static_assert((std::is_convertible_v<Ops*, tensor_base<typename Ops::value_type, CfgT>*>&&...));
-    static_assert(std::is_convertible_v<engine_type*, engine_root_accessor<evaluating_tensor,ValT,CfgT,F,EngineT,Ops...>*>);
+    //static_assert(std::is_convertible_v<engine_type*, engine_root_accessor<evaluating_tensor,ValT,CfgT,F,EngineT,Ops...>*>);
     //static_assert(std::is_convertible_v<engine_type*, evaluating_engine_root_accessor<engine_type,ValT,CfgT,F,Ops...>*>);
 
     descriptor_type descriptor_;
     F f;
     std::tuple<std::shared_ptr<tensor_base<typename Ops::value_type, CfgT> >...> operands_;
-    engine_type engine_;
+    engine_type engine_{this};
     //friend engine_type;
     
     // walker<ValT,CfgT> create_evaluating_walker()const override{
@@ -114,14 +115,11 @@ protected:
 
 public:            
     
-    template<typename E, typename...O>
-    explicit evaluating_tensor(E&& engine__, O&&...operands__):
+    template<typename...O>
+    explicit evaluating_tensor(O&&...operands__):
         descriptor_{detail::broadcast(operands__->shape()...)},
-        operands_{std::forward<O>(operands__)...},
-        engine_{std::forward<E>(engine__)}
-    {
-        engine_.set_root(this);
-    }
+        operands_{std::forward<O>(operands__)...}        
+    {}
 
     const engine_type& engine()const override{return engine_;}
     const auto& operands()const{return operands_;}

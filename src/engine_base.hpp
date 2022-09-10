@@ -12,14 +12,14 @@ template<typename> struct engine_traits;
 template<typename ValT, typename CfgT> 
 struct engine_traits<tensor_base<ValT,CfgT>>{using type = expression_template_engine_base<ValT,CfgT>;};
 
-template<typename ValT, typename CfgT, typename EngineT> 
-struct engine_traits<storage_tensor<ValT,CfgT, EngineT>>{using type = expression_template_storage_engine<void,ValT,CfgT>;};
+template<typename ValT, typename CfgT> 
+struct engine_traits<storage_tensor<ValT,CfgT>>{using type = expression_template_storage_engine<ValT,CfgT>;};
 
 template<typename ValT, typename CfgT, typename DescT> 
 struct engine_traits<viewing_tensor<ValT,CfgT, DescT>>{using type = expression_template_view_engine<ValT,CfgT, DescT>;};
 
-template<typename ValT, typename CfgT, typename F, typename Dummy, typename...Ops> 
-struct engine_traits<evaluating_tensor<ValT, CfgT, F, Dummy, Ops...>>{using type = expression_template_elementwise_engine<void, ValT,CfgT,F,Ops...>;};
+template<typename ValT, typename CfgT, typename F, typename...Ops> 
+struct engine_traits<evaluating_tensor<ValT, CfgT, F, Ops...>>{using type = expression_template_elementwise_engine<ValT,CfgT,F,Ops...>;};
 
 }   //end of namespace detail
 

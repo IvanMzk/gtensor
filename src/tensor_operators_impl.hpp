@@ -13,9 +13,8 @@ static inline auto NAME(const tensor<ValT1, CfgT, ImplT1>& op1, const tensor<Val
     using result_type = decltype(std::declval<operation_type>()(std::declval<ValT1>(),std::declval<ValT2>()));\
     using operand1_type = ImplT1;\
     using operand2_type = ImplT2;\
-    using engine_type = typename engine_traits<evaluating_tensor<result_type, CfgT, operation_type, void, operand1_type, operand2_type>>::type;\
-    using impl_type = evaluating_tensor<result_type, CfgT, operation_type, engine_type, operand1_type, operand2_type>;\
-    return tensor<result_type,CfgT, impl_type>{std::make_shared<impl_type>(engine_type{}, op1.impl(),op2.impl())};\
+    using impl_type = evaluating_tensor<result_type, CfgT, operation_type, operand1_type, operand2_type>;\
+    return tensor<result_type,CfgT, impl_type>{std::make_shared<impl_type>(op1.impl(),op2.impl())};\
 }
 
 
