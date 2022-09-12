@@ -4,7 +4,6 @@
 #include "tensor_base.hpp"
 #include "descriptor.hpp"
 #include "iterator.hpp"
-#include "engine_base.hpp"
 
 namespace gtensor{
 

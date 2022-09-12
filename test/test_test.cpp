@@ -9,6 +9,7 @@
 #include "catch.hpp"
 #include "test.hpp"
 #include "benchmark_helpers.hpp"
+#include "tensor_init_list.hpp"
 
 
 namespace template_depth{
@@ -376,6 +377,7 @@ namespace binary_tree_with_engine_and_node_frame{
 using test_cross_product::type_list;
 using test_cross_product::list_concat;
 using test_cross_product::cross_product;
+using gtensor::detail::nested_initializer_list_type;
 
 struct add{std::string to_str()const{return "add";}};
 struct sub{std::string to_str()const{return "sub";}};
@@ -416,6 +418,12 @@ public:
     explicit stor_engine(const e_engine::root_type* root):
         e_engine{root}
     {}
+    template<typename Nested>
+    stor_engine(const e_engine::root_type* root, std::initializer_list<Nested> init_data):
+        e_engine{root}
+    {
+        std::cout<<std::endl<<"stor_engine(const e_engine::root_type* root, std::initializer_list<Nested> init_data):";
+    }
 };
 
 template<typename F, typename...Ops>
@@ -442,11 +450,15 @@ public:
     {}
 };
 
+
+
 template<typename EngineT>
 class node_frame : public node_base
 {
 public:
     using engine_type = EngineT;
+    
+    //the problem with forwarding when we have more then one member to initialize
     template<typename...Args>
     explicit node_frame(Args&&...args):
         engine_{this, std::forward<Args>(args)...}
@@ -463,14 +475,25 @@ template<typename ImplT = node_frame<stor_engine>>
 class node
 {
     using impl_type = ImplT;
-    using default_type = node_frame<stor_engine>;
+    //using default_type = node_frame<stor_engine>;
+    using default_type = impl_type;
     std::shared_ptr<impl_type> impl_;
+
+    template<typename Nested>
+    node(std::initializer_list<Nested> init_data, int):
+        impl_{std::make_shared<impl_type>(init_data)}
+    {}
+
 public:
     //create default impl
     template<typename D = default_type, std::enable_if_t<std::is_convertible_v<D,impl_type> ,int> = 0 >
     node():
         impl_{std::make_shared<default_type>()}
     {}
+
+    node(typename nested_initializer_list_type<int,1>::type init_data):node(init_data,0){}
+    node(typename nested_initializer_list_type<int,2>::type init_data):node(init_data,0){}
+    
     //get impl from outside
     node(std::shared_ptr<impl_type>&& impl__):
         impl_{std::move(impl__)}
@@ -486,7 +509,7 @@ public:
 template<typename Impl1, typename Impl2> auto operator+(const node<Impl1>& op1, const node<Impl2>& op2){
     using engine_type = e_eval_engine<add, Impl1, Impl2>;
     using impl_type = node_frame<engine_type>;
-    return node<impl_type>{std::make_shared<impl_type>(op1.impl(),op2.impl())};
+    return node<impl_type>(std::make_shared<impl_type>(op1.impl(),op2.impl()));
 }
 template<typename E1, typename E2> auto operator*(const node_frame<E1>& op1, const node_frame<E2>& op2){
     using engine_type = e_eval_engine<mul, node_frame<E1>, node_frame<E2>>;
@@ -775,8 +798,12 @@ TEST_CASE("binary_tree_with_engine_and_node_frame","[binary_tree_with_engine_and
     using binary_tree_with_engine_and_node_frame::node;
     using binary_tree_with_engine_and_node_frame::stor_engine;
     using snode = node_frame<stor_engine>;
-    using benchmark_helpers::make_asymmetric_tree;
-    
+    using benchmark_helpers::make_asymmetric_tree;    
+
+    auto s = node<>{1,2,3};
+    auto s1 = node<>{{1,2,3}};
+    auto s2 = node<>{{1,2,3},{4,5,6}};
+
     constexpr std::size_t asymmetric_tree_depth = 5;
     auto e = make_asymmetric_tree<asymmetric_tree_depth>(node<>{}, node<>{});
     REQUIRE(decltype(e.impl())::element_type::engine_type::w_types::size == asymmetric_tree_depth+1);

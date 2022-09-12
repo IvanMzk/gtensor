@@ -2,7 +2,10 @@
 #define TENSOR_INIT_LIST_HPP_
 
 #include <initializer_list>
+#include <utility>
 #include <vector>
+#include <numeric>
+#include <functional>
 
 namespace gtensor{
 
@@ -42,23 +45,14 @@ struct nested_initialiser_list_depth<std::initializer_list<T>, Depth>{
 /*
 * nested list elements number
 */
-// template<typename T, std::size_t Depth=0>
-// struct nested_initialiser_list_size{
-//     static constexpr std::size_t value = Depth;
-// };
-// template<typename T, std::size_t Depth>
-// struct nested_initialiser_list_size<std::initializer_list<T>, Depth>{
-//     static constexpr std::size_t value = nested_initialiser_list_depth<T, Depth+1>::value;
-// };
-
 template<typename T>
-auto list_size(std::initializer_list<T> list){
+inline auto list_size(std::initializer_list<T> list){
     std::size_t size = 0;
     list_size_(list, &size);
     return size;
 }
 template<typename T, typename U>
-auto list_size_(std::initializer_list<T> list, U* size){    
+inline auto list_size_(std::initializer_list<T> list, U* size){    
     for (auto p=list.begin();p!=list.end(); ++p){
         if (list_size_(*p, size)){
             *size += list.size();
@@ -68,7 +62,7 @@ auto list_size_(std::initializer_list<T> list, U* size){
     return false;    
 }
 template<typename T, typename U>
-auto list_size_(T , U*){    
+inline auto list_size_(T , U*){    
     return true;
 }
 
@@ -78,7 +72,7 @@ auto list_size_(T , U*){
 * exception if list has invalid structure
 */
 template<typename IdxT = std::size_t, typename S = std::vector<IdxT>, typename T>
-auto list_parse(std::initializer_list<T> list) -> S{
+inline auto list_parse(std::initializer_list<T> list){
     constexpr std::size_t dims_number{nested_initialiser_list_depth<decltype(list)>::value};
     S shape;
     shape.reserve(dims_number);
@@ -86,7 +80,7 @@ auto list_parse(std::initializer_list<T> list) -> S{
     return shape;
 }
 template<std::size_t Dims_number, std::size_t Dim = 0, typename T, typename S>
-void list_parse_(std::initializer_list<T> list, S* shape_){    
+inline void list_parse_(std::initializer_list<T> list, S* shape_){    
     if (shape_->size() == Dims_number){
         if ((*shape_)[Dim] != list.size()){
             throw tensor_init_list_exception("list bad shape - different list size for dim");
@@ -103,7 +97,11 @@ void list_parse_(std::initializer_list<T> list, S* shape_){
     }    
 }
 template<std::size_t, std::size_t, typename T, typename S>
-void list_parse_(const T&, S*){    
+inline void list_parse_(const T&, S*){}
+
+template<typename IdxT = std::size_t, typename S = std::vector<IdxT>, typename T>
+inline auto list_parse_with_size(std::initializer_list<T> list){
+    auto std::make_pair()
 }
 
 /*

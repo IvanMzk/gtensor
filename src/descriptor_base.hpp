@@ -44,6 +44,16 @@ inline auto make_size(const ShT& shape, const ShT& strides){
     return shape.empty() ? index_type(0) : shape.front()*strides.front();
 }
 
+template<typename ShT>
+inline auto make_size(const ShT& shape){
+    using index_type = typename ShT::value_type;
+    if (shape.size() == 0){
+        return index_type(0);
+    }else{
+        return std::accumulate(shape.begin(),shape.end(),index_type(1),std::multiplies<index_type>{});
+    }
+}
+
 template<typename CfgT> 
 class descriptor_strides
 {    

@@ -20,8 +20,7 @@ class viewing_tensor :
     public converting_base<CfgT>
 {
 public:
-    using value_type = ValT;
-    using engine_type = typename detail::engine_traits<viewing_tensor>::type;
+    using value_type = ValT;    
 private:
     using tensor_base_type = tensor_base<ValT,CfgT>;    
     using index_type = typename CfgT::index_type;
@@ -31,7 +30,6 @@ private:
     std::shared_ptr<tensor_base_type> parent;
     const tensor_base_type* view_root{parent->tensor_kind() == detail::tensor_kinds::view ? static_cast<const viewing_tensor*>(parent.get())->get_view_root() : parent.get()};
     const converting_base* parent_converter{parent->as_converting()};
-    engine_type engine_{this};
     
     //tensor_base interface
 
@@ -65,8 +63,7 @@ public:
     viewing_tensor(DtT&& descriptor__, const std::shared_ptr<tensor_base_type>& parent_):
         descriptor_{std::forward<DtT>(descriptor__)},
         parent{parent_}
-    {}    
-    const engine_type& engine()const override{return engine_;}
+    {}        
     detail::tensor_kinds tensor_kind()const override{return detail::tensor_kinds::view;}
     const descriptor_base<CfgT>& descriptor()const override{return descriptor_;}
     index_type size()const override{return descriptor_.size();}

@@ -4,7 +4,6 @@
 #include "forward_decl.hpp"
 #include "operations.hpp"
 #include "evaluating_tensor.hpp"
-#include "expression_template_engine.hpp"
 
 #define BINARY_OPERATOR_IMPL(NAME,OP)\
 template<typename ValT1, typename ValT2, typename ImplT1, typename ImplT2, typename CfgT>\
@@ -20,8 +19,7 @@ static inline auto NAME(const tensor<ValT1, CfgT, ImplT1>& op1, const tensor<Val
 
 namespace gtensor{
 
-struct tensor_operators_impl{
-    template<typename T> using engine_traits = gtensor::detail::engine_traits<T>;
+struct tensor_operators_impl{    
 
     BINARY_OPERATOR_IMPL(operator_add_impl, gtensor::binary_operations::add);
     BINARY_OPERATOR_IMPL(operator_sub_impl, gtensor::binary_operations::sub);
