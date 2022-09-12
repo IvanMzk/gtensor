@@ -40,6 +40,40 @@ struct nested_initialiser_list_depth<std::initializer_list<T>, Depth>{
 };
 
 /*
+* nested list elements number
+*/
+// template<typename T, std::size_t Depth=0>
+// struct nested_initialiser_list_size{
+//     static constexpr std::size_t value = Depth;
+// };
+// template<typename T, std::size_t Depth>
+// struct nested_initialiser_list_size<std::initializer_list<T>, Depth>{
+//     static constexpr std::size_t value = nested_initialiser_list_depth<T, Depth+1>::value;
+// };
+
+template<typename T>
+auto list_size(std::initializer_list<T> list){
+    std::size_t size = 0;
+    list_size_(list, &size);
+    return size;
+}
+template<typename T, typename U>
+auto list_size_(std::initializer_list<T> list, U* size){    
+    for (auto p=list.begin();p!=list.end(); ++p){
+        if (list_size_(*p, size)){
+            *size += list.size();
+            break;
+        }
+    }
+    return false;    
+}
+template<typename T, typename U>
+auto list_size_(T , U*){    
+    return true;
+}
+
+
+/*
 * parse nested list and return its shape
 * exception if list has invalid structure
 */

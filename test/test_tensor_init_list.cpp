@@ -4,7 +4,7 @@
 #include "uvector.h"
 
 
-TEST_CASE("test_list_depth","[test_list_depth]"){
+TEST_CASE("test_list_depth","[test_tensor_init_list]"){
     gtensor::detail::nested_initializer_list_type<int,1>::type l1 = {1,2,3};
     gtensor::detail::nested_initializer_list_type<int,2>::type l2 = {{1,2},{3,4},{5,6}};
     gtensor::detail::nested_initializer_list_type<int,3>::type l3 = {{{1},{2}},{{3},{4}},{{5},{6}}};
@@ -13,7 +13,7 @@ TEST_CASE("test_list_depth","[test_list_depth]"){
     REQUIRE(gtensor::detail::nested_initialiser_list_depth<decltype(l3)>::value == 3);
 }
 
-TEST_CASE("test_list_parser_empty","[test_list_parser]"){
+TEST_CASE("test_list_parser_empty","[test_tensor_init_list]"){
     gtensor::detail::nested_initializer_list_type<int,1>::type l1 = {};
     gtensor::detail::nested_initializer_list_type<int,2>::type l2 = {{2},{2},{}};
     gtensor::detail::nested_initializer_list_type<int,3>::type l3 = {{{},{2}},{{},{}},{{},{}}};
@@ -23,7 +23,7 @@ TEST_CASE("test_list_parser_empty","[test_list_parser]"){
     
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("test_list_parser","[test_list_parser]", (trivial_type_vector::uvector, std::vector),(std::size_t, std::uint32_t, int)){
+TEMPLATE_PRODUCT_TEST_CASE("test_list_parser","[test_tensor_init_list]", (trivial_type_vector::uvector, std::vector),(std::size_t, std::uint32_t, int)){
     using value_type = typename TestType::value_type;
     using container_type = typename TestType;
     gtensor::detail::nested_initializer_list_type<int,1>::type l1 = {1,2,3};
@@ -36,7 +36,7 @@ TEMPLATE_PRODUCT_TEST_CASE("test_list_parser","[test_list_parser]", (trivial_typ
 
 }
 
-TEMPLATE_TEST_CASE("test_list_parser_exception","[test_list_parser]",std::size_t, std::uint32_t, int){
+TEMPLATE_TEST_CASE("test_list_parser_exception","[test_tensor_init_list]",std::size_t, std::uint32_t, int){
     gtensor::detail::nested_initializer_list_type<int,2>::type l2 = {{1,2,3},{3,4},{5,6}};
     gtensor::detail::nested_initializer_list_type<int,3>::type l3 = {{{1},{2}},{{3},{4},{0}},{{5},{6}}};
     gtensor::detail::nested_initializer_list_type<int,3>::type l3_ = {{{1,2},{2}},{{3},{4}},{{5},{6}}};
@@ -45,7 +45,7 @@ TEMPLATE_TEST_CASE("test_list_parser_exception","[test_list_parser]",std::size_t
     REQUIRE_THROWS_AS(gtensor::detail::list_parse<TestType>(l3_), gtensor::tensor_init_list_exception);
 }
 
-TEST_CASE("test_fill_from_list","[test_list_parser]"){    
+TEST_CASE("test_fill_from_list","[test_tensor_init_list]"){    
     gtensor::detail::nested_initializer_list_type<int,2>::type l2 = {{1,2,3},{3,4},{5,6}};
     gtensor::detail::nested_initializer_list_type<int,3>::type l3 = {{{1},{2}},{{3},{4},{0}},{{5},{6}}};
     gtensor::detail::nested_initializer_list_type<int,3>::type l3_ = {{{1,2},{}},{{3},{4}},{{5},{6}}};
@@ -60,10 +60,28 @@ TEST_CASE("test_fill_from_list","[test_list_parser]"){
     REQUIRE(v2 == std::vector<int>{1,2,3,4,5,6});
 }
 
-TEST_CASE("test_fill_from_list_empty","[test_list_parser]"){    
+TEST_CASE("test_fill_from_list_empty","[test_tensor_init_list]"){    
     std::initializer_list<int> l = {};
     std::vector<int> v;
     REQUIRE(gtensor::detail::fill_from_list(l,v.begin()) == 0);
     REQUIRE(v.size() == 0);    
 }
 
+TEST_CASE("test_list_size","[test_tensor_init_list]"){
+    using gtensor::detail::list_size;    
+    
+    gtensor::detail::nested_initializer_list_type<int,1>::type l1 = {1,2,3};
+    gtensor::detail::nested_initializer_list_type<int,1>::type l1_empty = {};
+    gtensor::detail::nested_initializer_list_type<int,2>::type l2 = {{1,2},{3,4},{5,6}};
+    gtensor::detail::nested_initializer_list_type<int,2>::type l2_empty = {{},{},{}};
+    gtensor::detail::nested_initializer_list_type<int,3>::type l3 = {{{1},{2}},{{3},{4}},{{5},{6}}};
+    gtensor::detail::nested_initializer_list_type<int,3>::type l3_empty = {{{},{}},{{},{}},{{},{}}};
+    gtensor::detail::nested_initializer_list_type<int,3>::type l3_bad_shape = {{{1},{2,2,2}},{{},{4,4}},{{5,5,5},{6}}};
+
+    REQUIRE(list_size(l1) == 3);
+    REQUIRE(list_size(l1_empty) == 0);
+    REQUIRE(list_size(l2) == 6);
+    REQUIRE(list_size(l2_empty) == 0);
+    REQUIRE(list_size(l3) == 6);
+    REQUIRE(list_size(l3_bad_shape) == 10);
+}
