@@ -30,7 +30,7 @@ template<typename ValT, typename CfgT>
 class storage_engine : 
     protected engine_host_accessor<ValT, CfgT>
 {
-    using engine_host_accessor::host_type;
+    using typename engine_host_accessor::host_type;
     using index_type = typename CfgT::index_type;
     using value_type = ValT;
     using storage_type = typename CfgT::template storage<value_type>;
@@ -53,14 +53,10 @@ template<typename ValT, typename CfgT, typename F, typename...Ops>
 class evaluating_engine : 
     protected engine_host_accessor<ValT, CfgT>
 {
-    using engine_host_accessor::host_type;
+    using typename engine_host_accessor::host_type;
     F f_;
-    std::tuple<std::shared_ptr<Ops>...> operands_;
-public:
-    // template<typename...Args, std::enable_if_t<sizeof...(Args)==sizeof...(Ops),int> = 0 >
-    // explicit evaluating_engine(Args&&...args):
-    //     operands_{std::forward<Args>(args)...}
-    // {}
+    std::tuple<std::shared_ptr<Ops>...> operands_;    
+public:    
     template<typename...Ts>
     evaluating_engine(host_type* host, F&& f, Ts&&...operands):
         engine_host_accessor{host},
@@ -69,7 +65,12 @@ public:
     {}
 };
 
+template<typename ValT, typename CfgT, typename DescT, typename ParentT>
+class viewing_engine : 
+    protected engine_host_accessor<ValT, CfgT>
+{
 
+};
 
 }   //end of namespace gtensor
 

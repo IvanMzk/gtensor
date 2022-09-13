@@ -1,6 +1,6 @@
 #include "catch.hpp"
 #include "benchmark_helpers.hpp"
-#include "tensor.hpp"
+#include "gtensor.hpp"
 
 TEST_CASE("test_deep_tree_compilation","[test_deep_tree_compilation]"){
     using value_type = float;

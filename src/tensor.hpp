@@ -14,8 +14,8 @@ class basic_tensor : public tensor_base<ValT, CfgT>
 protected:
     using descriptor_type = DescT;
     using engine_type = EngineT;
-    using index_type = typename tensor_base::index_type;
-    using shape_type = typename tensor_base::shape_type;
+    using typename tensor_base::index_type;
+    using typename tensor_base::shape_type;
     basic_tensor(engine_type&& engine__,descriptor_type&& descriptor__):
         engine_{std::move(engine__)},
         descriptor_{std::move(descriptor__)}
@@ -35,11 +35,11 @@ private:
 
 template<typename ValT, typename CfgT, typename EngineT>
 class storage_tensor : public basic_tensor<ValT, CfgT, basic_descriptor<CfgT>, EngineT>
-{
-    using engine_type = typename basic_tensor::engine_type;
-    using descriptor_type = typename basic_tensor::descriptor_type;
-    using index_type = typename basic_tensor::index_type;
-    using shape_type = typename basic_tensor::shape_type;
+{    
+    using typename basic_tensor::engine_type;
+    using typename basic_tensor::descriptor_type;
+    using typename basic_tensor::index_type;
+    using typename basic_tensor::shape_type;
     static_assert(std::is_convertible_v<engine_type*, storage_engine<ValT,CfgT>*>);
 
     template<typename ShT, typename Nested>
@@ -69,11 +69,11 @@ public:
 
 template<typename ValT, typename CfgT, typename EngineT>
 class evaluating_tensor : public basic_tensor<ValT, CfgT, descriptor_with_libdivide<CfgT>, EngineT>
-{
-    using engine_type = typename basic_tensor::engine_type;
-    using descriptor_type = typename basic_tensor::descriptor_type;
-    using index_type = typename basic_tensor::index_type;
-    using shape_type = typename basic_tensor::shape_type;    
+{    
+    using typename basic_tensor::engine_type;
+    using typename basic_tensor::descriptor_type;
+    using typename basic_tensor::index_type;
+    using typename basic_tensor::shape_type;
 
     template<typename F, typename...Ops>
     evaluating_tensor(shape_type&& shape, F&& f, Ops&&...operands):
@@ -89,8 +89,9 @@ public:
     {
         static_assert(std::is_convertible_v<engine_type*, evaluating_engine<ValT,CfgT,std::decay_t<F>,std::decay_t<Ops>::element_type...>*>);
     }
-
 };
+
+
 
 }   //end of namespace gtensor
 

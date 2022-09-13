@@ -26,9 +26,9 @@ target_sources(Test PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/test_descriptor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_walker.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_expression_template_engine.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_deep_tree_compilation.cpp
     
     ${CMAKE_CURRENT_SOURCE_DIR}/benchmark_expression_template.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_deep_tree_compilation.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_init_list.cpp
 )
