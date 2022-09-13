@@ -75,21 +75,42 @@ class evaluating_tensor : public basic_tensor<ValT, CfgT, descriptor_with_libdiv
     using typename basic_tensor::index_type;
     using typename basic_tensor::shape_type;
 
-    template<typename F, typename...Ops>
-    evaluating_tensor(shape_type&& shape, F&& f, Ops&&...operands):
-        basic_tensor{engine_type{this, std::forward<F>(f),std::forward<Ops>(operands)...}, descriptor_type{std::move(shape)}}
+    template<typename F, typename...Args>
+    evaluating_tensor(shape_type&& shape, F&& f, Args&&...operands):
+        basic_tensor{engine_type{this, std::forward<F>(f),std::forward<Args>(operands)...}, descriptor_type{std::move(shape)}}
     {}
 
 public:
     using value_type = ValT;
 
-    template<typename F, typename...Ops>
-    evaluating_tensor(F&& f, Ops&&...operands):
-        evaluating_tensor{detail::broadcast(operands->shape()...),std::forward<F>(f),std::forward<Ops>(operands)...}
+    template<typename F, typename...Args>
+    evaluating_tensor(F&& f, Args&&...operands):
+        evaluating_tensor{detail::broadcast(operands->shape()...),std::forward<F>(f),std::forward<Args>(operands)...}
     {
-        static_assert(std::is_convertible_v<engine_type*, evaluating_engine<ValT,CfgT,std::decay_t<F>,std::decay_t<Ops>::element_type...>*>);
+        static_assert(std::is_convertible_v<engine_type*, evaluating_engine<ValT,CfgT,std::decay_t<F>,std::decay_t<Args>::element_type...>*>);
     }
 };
+
+template<typename ValT, typename CfgT, typename DescT, typename EngineT>
+class viewing_tensor : public basic_tensor<ValT, CfgT, DescT, EngineT>
+{    
+    using typename basic_tensor::engine_type;
+    using typename basic_tensor::descriptor_type;
+    using typename basic_tensor::index_type;
+    using typename basic_tensor::shape_type;
+
+public:
+    using value_type = ValT;
+    
+    template<typename U>
+    viewing_tensor(descriptor_type&& descriptor, U&& parent):
+        basic_tensor{engine_type{this,std::forward<U>(parent)},std::move(descriptor)}
+    {
+        static_assert(std::is_convertible_v<engine_type*, viewing_engine<ValT,CfgT,std::decay_t<U>::element_type>*>);
+    }
+};
+
+
 
 
 

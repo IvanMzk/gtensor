@@ -7,6 +7,7 @@ namespace gtensor{
 
 template<typename ValT, typename CfgT> class storage_engine;
 template<typename ValT, typename CfgT, typename F, typename...Ops> class evaluating_engine;
+template<typename ValT, typename CfgT, typename ParentT> class viewing_engine;
 
 // template<typename ValT, typename CfgT> class expression_template_storage_engine;
 // template<typename ValT, typename CfgT, typename DescT> class expression_template_view_engine;
@@ -23,6 +24,11 @@ template<typename ValT, typename CfgT> struct storage_engine_traits<config::engi
 template<typename...> struct evaluating_engine_traits;
 template<typename ValT, typename CfgT,  typename F, typename...Ops> struct evaluating_engine_traits<config::engine_expression_template, ValT,CfgT,F,Ops...>{
     using type = evaluating_engine<ValT,CfgT,F,Ops...>;
+};
+
+template<typename...> struct viewing_engine_traits;
+template<typename ValT, typename CfgT,  typename ParentT> struct viewing_engine_traits<config::engine_expression_template, ValT,CfgT,ParentT>{
+    using type = viewing_engine<ValT,CfgT,ParentT>;
 };
 
 }   //end of namespace detail

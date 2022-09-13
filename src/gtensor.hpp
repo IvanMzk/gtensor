@@ -46,9 +46,6 @@ class tensor{
         impl_{std::make_shared<impl_type>(init_data)}
     {}
 
-    template<typename T>
-    auto create_view_helper(std::shared_ptr<T>&& v)const{return tensor<ValT, CfgT, T>{std::move(v)};}
-
 protected:
     auto impl()const{return impl_;}
 
@@ -98,33 +95,33 @@ public:
         detail::check_slices_number(subs);        
         slices_collection_type filled_subs = detail::fill_slices<slice_type>(shape(),subs);
         detail::check_slices(shape(), filled_subs);        
-        return create_view_helper(view_factory<ValT,CfgT>::create_view_slice(impl(), filled_subs));
+        return view_factory<ValT,CfgT>::create_view_slice(impl(), filled_subs);
     }
     template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,slice_type>...>,int> = 0 >
     auto operator()(const Subs&...subs)const{
         detail::check_slices_number(subs...);
         slices_collection_type filled_subs = detail::fill_slices<slice_type>(shape(),subs...);
         detail::check_slices(shape(), filled_subs);        
-        return create_view_helper(view_factory<ValT,CfgT>::create_view_slice(impl(), filled_subs));
+        return view_factory<ValT,CfgT>::create_view_slice(impl(), filled_subs);
     }
     template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,index_type>...>,int> = 0 >
     auto transpose(const Subs&...subs)const{
         detail::check_transpose_subs(dim(),subs...);        
-        return create_view_helper(view_factory<ValT,CfgT>::create_view_transpose(impl(), shape_type{subs...}));
+        return view_factory<ValT,CfgT>::create_view_transpose(impl(), shape_type{subs...});
     }
     template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,index_type>...>,int> = 0 >
     auto operator()(const Subs&...subs)const{
         detail::check_subdim_subs(shape(), subs...);        
-        return create_view_helper(view_factory<ValT,CfgT>::create_view_subdim(impl(), shape_type{subs...}));
+        return view_factory<ValT,CfgT>::create_view_subdim(impl(), shape_type{subs...});
     }            
     auto operator()()const{
         detail::check_subdim_subs(shape());        
-        return create_view_helper(view_factory<ValT,CfgT>::create_view_subdim(impl(), shape_type{}));
+        return view_factory<ValT,CfgT>::create_view_subdim(impl(), shape_type{});
     }        
     template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,index_type>...>,int> = 0 >
     auto reshape(const Subs&...subs)const{
         detail::check_reshape_subs(size(), subs...);        
-        return create_view_helper(view_factory<ValT,CfgT>::create_view_reshape(impl(), shape_type{subs...}));
+        return view_factory<ValT,CfgT>::create_view_reshape(impl(), shape_type{subs...});
     }
     
 private:

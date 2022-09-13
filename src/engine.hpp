@@ -3,6 +3,7 @@
 
 #include "config.hpp"
 #include "tensor_init_list.hpp"
+#include "shareable_storage.hpp"
 
 namespace gtensor{
 
@@ -65,11 +66,20 @@ public:
     {}
 };
 
-template<typename ValT, typename CfgT, typename DescT, typename ParentT>
+template<typename ValT, typename CfgT, typename ParentT>
 class viewing_engine : 
     protected engine_host_accessor<ValT, CfgT>
 {
+    using typename engine_host_accessor::host_type;
+    using parent_type = ParentT;
 
+    std::shared_ptr<parent_type> parent_;
+public:
+    template<typename U>
+    viewing_engine(host_type* host, U&& parent):
+        engine_host_accessor{host},
+        parent_{std::forward<U>(parent)}
+    {}
 };
 
 }   //end of namespace gtensor
