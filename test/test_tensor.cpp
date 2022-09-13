@@ -88,40 +88,38 @@ TEST_CASE("test_tensor_construct_given_shape","[test_tensor]"){
     REQUIRE(t.as_htensor().dim() == expected_dim);
 }
 
-// TEST_CASE("test_tensor_construct_using_operator","[test_tensor]"){
-//     using value_type = float;
-//     using gtensor::tensor;
-//     using gtensor::tensor_base;
-//     using gtensor::storage_tensor;
-//     using config_type = gtensor::config::default_config;
-//     using tensor_type = tensor<value_type, config_type>;
-//     using htensor_type = tensor<value_type, config_type, tensor_base<value_type, config_type>>;
-//     using shape_type = typename config_type::shape_type;
-//     using index_type = typename config_type::index_type;
-//     using test_type = std::tuple<htensor_type, shape_type, index_type, index_type>;
-//     //0htensor,1expected_shape,2expected size,3expected dim
-//     auto test_data = GENERATE(                                
-//                                 test_type((tensor_type{1}+tensor_type{1}).as_htensor(), shape_type{1}, 1 , 1),
-//                                 test_type(static_cast<htensor_type>(tensor_type{1}+tensor_type{1,2,3}), shape_type{3}, 3 , 1),
-//                                 test_type(static_cast<htensor_type>(tensor_type{1,2,3}+tensor_type{1,2,3}), shape_type{3}, 3 , 1),
-//                                 test_type(static_cast<htensor_type>(tensor_type{{1,2,3}}+tensor_type{1,2,3}), shape_type{1,3}, 3 , 2),
-//                                 test_type(static_cast<htensor_type>(tensor_type{{1,2,3}}+tensor_type{{1},{2},{3}}), shape_type{3,3}, 9 , 2),
-//                                 test_type(static_cast<htensor_type>(tensor_type{{1,2,3},{4,5,6}}+tensor_type{{1},{2}}), shape_type{2,3}, 6 , 2),
-//                                 test_type(static_cast<htensor_type>(tensor_type{{{1,2,3},{4,5,6}}}+tensor_type{1,2,3}), shape_type{1,2,3}, 6 , 3),
-//                                 test_type(static_cast<htensor_type>(tensor_type{1}+tensor_type{1}+tensor_type{1}) ,shape_type{1}, 1 , 1),
-//                                 test_type(static_cast<htensor_type>(tensor_type{1,2,3}+tensor_type{1,2,3}+tensor_type{1}) ,shape_type{3}, 3 , 1),
-//                                 test_type(static_cast<htensor_type>(tensor_type{1,2,3}+tensor_type{{1},{2},{3}}+tensor_type{1,2,3}) ,shape_type{3,3}, 9 , 2),
-//                                 test_type(static_cast<htensor_type>((tensor_type{1,2,3}+(tensor_type{{1},{2},{3}})+(tensor_type{1,2,3})+tensor_type{1})) ,shape_type{3,3}, 9 , 2)
-//                             );
+TEST_CASE("test_tensor_construct_using_operator","[test_tensor]"){
+    using value_type = float;
+    using gtensor::tensor_base;    
+    using config_type = gtensor::config::default_config;
+    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using htensor_type = typename tensor_type::htensor_type;
+    using shape_type = typename config_type::shape_type;
+    using index_type = typename config_type::index_type;
+    using test_type = std::tuple<htensor_type, shape_type, index_type, index_type>;
+    //0htensor,1expected_shape,2expected size,3expected dim    
+    auto test_data = GENERATE(                                
+                                test_type((tensor_type{1}+tensor_type{1}).as_htensor(), shape_type{1}, 1 , 1),
+                                test_type(static_cast<htensor_type>(tensor_type{1}+tensor_type{1,2,3}), shape_type{3}, 3 , 1),
+                                test_type(static_cast<htensor_type>(tensor_type{1,2,3}+tensor_type{1,2,3}), shape_type{3}, 3 , 1),
+                                test_type(static_cast<htensor_type>(tensor_type{{1,2,3}}+tensor_type{1,2,3}), shape_type{1,3}, 3 , 2),
+                                test_type(static_cast<htensor_type>(tensor_type{{1,2,3}}+tensor_type{{1},{2},{3}}), shape_type{3,3}, 9 , 2),
+                                test_type(static_cast<htensor_type>(tensor_type{{1,2,3},{4,5,6}}+tensor_type{{1},{2}}), shape_type{2,3}, 6 , 2),
+                                test_type(static_cast<htensor_type>(tensor_type{{{1,2,3},{4,5,6}}}+tensor_type{1,2,3}), shape_type{1,2,3}, 6 , 3),
+                                test_type(static_cast<htensor_type>(tensor_type{1}+tensor_type{1}+tensor_type{1}) ,shape_type{1}, 1 , 1),
+                                test_type(static_cast<htensor_type>(tensor_type{1,2,3}+tensor_type{1,2,3}+tensor_type{1}) ,shape_type{3}, 3 , 1),
+                                test_type(static_cast<htensor_type>(tensor_type{1,2,3}+tensor_type{{1},{2},{3}}+tensor_type{1,2,3}) ,shape_type{3,3}, 9 , 2),
+                                test_type(static_cast<htensor_type>((tensor_type{1,2,3}+(tensor_type{{1},{2},{3}})+(tensor_type{1,2,3})+tensor_type{1})) ,shape_type{3,3}, 9 , 2)
+                            );
     
-//     auto t = std::get<0>(test_data);
-//     auto expected_shape = std::get<1>(test_data);
-//     auto expected_size = std::get<2>(test_data);
-//     auto expected_dim = std::get<3>(test_data);
-//     REQUIRE(t.shape() == expected_shape);
-//     REQUIRE(t.size() == expected_size);
-//     REQUIRE(t.dim() == expected_dim);    
-// }
+    auto t = std::get<0>(test_data);
+    auto expected_shape = std::get<1>(test_data);
+    auto expected_size = std::get<2>(test_data);
+    auto expected_dim = std::get<3>(test_data);
+    REQUIRE(t.shape() == expected_shape);
+    REQUIRE(t.size() == expected_size);
+    REQUIRE(t.dim() == expected_dim);
+}
 
 // TEST_CASE("test_expression_is_trivial","[test_tensor]"){
 //     using value_type = float;

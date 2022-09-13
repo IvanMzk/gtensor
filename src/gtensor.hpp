@@ -3,7 +3,7 @@
 
 #include <memory>
 #include "tensor.hpp"
-//#include "tensor_operators.hpp"
+#include "tensor_operators.hpp"
 #include "slice.hpp"
 #include "view_factory.hpp"
 #include "engine.hpp"

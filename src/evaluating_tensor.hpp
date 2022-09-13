@@ -7,52 +7,11 @@
 
 namespace gtensor{
 
-class broadcast_exception : public std::runtime_error{
-    public: broadcast_exception(const char* what):runtime_error(what){}
-};
+
 
 namespace detail{
 
-/*
-* create broadcast shape
-* parameters: shapes to broadcast
-* exception if shapes are not broadcastable
-*/
-template<typename ShT>
-inline ShT broadcast(const ShT& shape1, const ShT& shape2){
-    using shape_type = ShT;
-    using index_type = typename ShT::value_type;
-    if (shape1.size() == 0 || shape2.size() == 0){
-        throw broadcast_exception("shapes are not broadcastable");
-    }else{
-        bool b{shape1.size() < shape2.size()};
-        const shape_type& shorter{ b ? shape1 : shape2};
-        const shape_type& longer{b ? shape2 : shape1};
-        shape_type res(longer.size());    
-        auto shorter_begin{shorter.begin()};
-        auto shorter_end{shorter.end()};
-        auto longer_begin{longer.begin()};
-        auto longer_end{longer.end()};
-        auto res_end{res.end()};
-        while(shorter_begin!=shorter_end){
-            const index_type& i{*--shorter_end};
-            const index_type& j{*--longer_end};
-            if (i==index_type(1)){
-                *--res_end = j;
-            }
-            else if (j==index_type(1) || i==j){
-                *--res_end = i;
-            }                    
-            else{                        
-                throw broadcast_exception("shapes are not broadcastable");
-            }
-        }
-        while(longer_begin!=longer_end){
-            *--res_end = *--longer_end;
-        }
-        return res;        
-    }
-}
+
 
 template<typename T> inline constexpr bool is_valid_operand = false;
 template<typename...T> inline constexpr bool is_valid_operand<std::shared_ptr<tensor_base<T...>>> = true;

@@ -54,16 +54,18 @@ class evaluating_engine :
     protected engine_host_accessor<ValT, CfgT>
 {
     using engine_host_accessor::host_type;
+    F f_;
     std::tuple<std::shared_ptr<Ops>...> operands_;
 public:
-    template<typename...Args, std::enable_if_t<sizeof...(Args)==sizeof...(Ops),int> = 0 >
-    explicit evaluating_engine(Args&&...args):
-        operands_{std::forward<Args>(args)...}
-    {}
-    template<typename...Args>
-    explicit evaluating_engine(host_type* host, Args&&...args):
-        operands_{std::forward<Args>(args)...},
-        engine_host_accessor{host}
+    // template<typename...Args, std::enable_if_t<sizeof...(Args)==sizeof...(Ops),int> = 0 >
+    // explicit evaluating_engine(Args&&...args):
+    //     operands_{std::forward<Args>(args)...}
+    // {}
+    template<typename...Ts>
+    evaluating_engine(host_type* host, F&& f, Ts&&...operands):
+        engine_host_accessor{host},
+        f_{std::move(f)},
+        operands_{std::forward<Ts>(operands)...}
     {}
 };
 
