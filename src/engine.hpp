@@ -8,27 +8,27 @@
 namespace gtensor{
 
 /**
- * 
+ *
  * engines are about meaning not form, as opposed to descriptors that are about form
- * 
+ *
  * **/
 
 template<typename ValT, typename CfgT>
 class engine_host_accessor
-{        
+{
 protected:
     using host_type = tensor_base<ValT,CfgT>;
-    host_type* host_{nullptr};    
+    host_type* host_{nullptr};
     engine_host_accessor() = default;
     engine_host_accessor(host_type* host__):
         host_{host__}
     {}
     void set_host(host_type* host__){host_ = host__;}
-    auto host()const{return host_;}    
+    auto host()const{return host_;}
 };
 
 template<typename ValT, typename CfgT>
-class storage_engine : 
+class storage_engine :
     protected engine_host_accessor<ValT, CfgT>
 {
     using typename engine_host_accessor::host_type;
@@ -37,6 +37,8 @@ class storage_engine :
     using storage_type = typename CfgT::template storage<value_type>;
 
     storage_type elements_;
+protected:
+    const value_type* data()const{return elements_.data();}
 public:
     template<typename Nested>
     storage_engine(host_type* host, const index_type& size, std::initializer_list<Nested> init_data):
@@ -51,13 +53,16 @@ public:
 };
 
 template<typename ValT, typename CfgT, typename F, typename...Ops>
-class evaluating_engine : 
+class evaluating_engine :
     protected engine_host_accessor<ValT, CfgT>
 {
     using typename engine_host_accessor::host_type;
     F f_;
-    std::tuple<std::shared_ptr<Ops>...> operands_;    
-public:    
+    std::tuple<std::shared_ptr<Ops>...> operands_;
+    //std::pair<std::shared_ptr<Ops>...> operands_;
+protected:
+    const auto& operands()const{return operands_;}
+public:
     template<typename...Ts>
     evaluating_engine(host_type* host, F&& f, Ts&&...operands):
         engine_host_accessor{host},
@@ -67,7 +72,7 @@ public:
 };
 
 template<typename ValT, typename CfgT, typename ParentT>
-class viewing_engine : 
+class viewing_engine :
     protected engine_host_accessor<ValT, CfgT>
 {
     using typename engine_host_accessor::host_type;

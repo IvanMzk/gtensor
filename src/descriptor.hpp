@@ -46,7 +46,6 @@ class descriptor_with_libdivide :
     using shape_type = typename CfgT::shape_type;
     using index_type = typename CfgT::index_type;    
 
-    const descriptor_with_libdivide* as_descriptor_with_libdivide()const {return this;}
 
 public:
     descriptor_with_libdivide() = default;       
@@ -56,6 +55,7 @@ public:
         base_strides_libdivide{basic_descriptor::strides()}
     {}    
     
+    const descriptor_with_libdivide* as_descriptor_with_libdivide()const {return this;}
     template<typename C=CfgT, std::enable_if_t<detail::is_mode_div_libdivide<C> ,int> =0 >
     const auto& strides_libdivide()const{return base_strides_libdivide::dividers_libdivide();}
     template<typename C=CfgT, std::enable_if_t<detail::is_mode_div_native<C> ,int> =0 >
