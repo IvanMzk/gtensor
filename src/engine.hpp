@@ -58,8 +58,8 @@ class evaluating_engine :
 {
     using typename engine_host_accessor::host_type;
     F f_;
-    std::tuple<std::shared_ptr<Ops>...> operands_;
-    //std::pair<std::shared_ptr<Ops>...> operands_;
+    //std::tuple<std::shared_ptr<Ops>...> operands_;
+    std::pair<std::shared_ptr<Ops>...> operands_;
 protected:
     const auto& operands()const{return operands_;}
 public:

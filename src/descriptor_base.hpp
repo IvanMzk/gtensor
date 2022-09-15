@@ -29,7 +29,7 @@ inline ShT broadcast(const ShT& shape1, const ShT& shape2){
         bool b{shape1.size() < shape2.size()};
         const shape_type& shorter{ b ? shape1 : shape2};
         const shape_type& longer{b ? shape2 : shape1};
-        shape_type res(longer.size());    
+        shape_type res(longer.size());
         auto shorter_begin{shorter.begin()};
         auto shorter_end{shorter.end()};
         auto longer_begin{longer.begin()};
@@ -43,15 +43,15 @@ inline ShT broadcast(const ShT& shape1, const ShT& shape2){
             }
             else if (j==index_type(1) || i==j){
                 *--res_end = i;
-            }                    
-            else{                        
+            }
+            else{
                 throw broadcast_exception("shapes are not broadcastable");
             }
         }
         while(longer_begin!=longer_end){
             *--res_end = *--longer_end;
         }
-        return res;        
+        return res;
     }
 }
 
@@ -76,7 +76,7 @@ inline ShT make_strides(const ShT& shape, typename ShT::value_type min_stride = 
     }
     else{
         return ShT{};
-    }    
+    }
 }
 
 template<typename ShT>
@@ -95,13 +95,20 @@ inline auto make_size(const ShT& shape){
     }
 }
 
-template<typename CfgT> 
+template<typename ShT>
+auto shape_to_str(const ShT& shape){
+    std::stringstream ss{};
+    ss<<"("<<[&](){for(const auto& i : shape){ss<<i<<",";} return ")";}();
+    return ss.str();
+}
+
+template<typename CfgT>
 class descriptor_strides
-{    
+{
     using shape_type = typename CfgT::shape_type;
     shape_type strides_;
 protected:
-    descriptor_strides() = default;            
+    descriptor_strides() = default;
     descriptor_strides(const shape_type& shape__):
         strides_{detail::make_strides(shape__)}
     {}
@@ -111,11 +118,11 @@ protected:
 }   //end of namespace detail
 
 //descriptor abstract interface
-template<typename CfgT> 
-class descriptor_base{        
+template<typename CfgT>
+class descriptor_base{
     using index_type = typename CfgT::index_type;
     using shape_type = typename CfgT::shape_type;
-public:   
+public:
     virtual index_type convert(const shape_type& idx)const = 0;
     virtual index_type convert(const index_type& idx)const = 0;
     virtual index_type dim()const = 0;
@@ -131,24 +138,20 @@ public:
 
 //common implementation of descriptor
 template<typename CfgT>
-class descriptor_common : 
-    private detail::descriptor_strides<CfgT>    
+class descriptor_common :
+    private detail::descriptor_strides<CfgT>
 {
     using base_strides = detail::descriptor_strides<CfgT>;
     using shape_type = typename CfgT::shape_type;
     using index_type = typename CfgT::index_type;
 protected:
-    shape_type shape_;    
+    shape_type shape_;
     auto size()const{return detail::make_size(shape_,base_strides::strides());}
     auto dim()const{return shape_.size();}
     const auto& shape()const{return shape_;}
-    const auto& strides()const{return base_strides::strides();}    
-    std::string to_str()const{
-        std::stringstream ss{};
-        ss<<"("<<[&ss,this](){for(const auto& i : shape()){ss<<i<<",";} return ")";}();
-        return ss.str();
-    }        
-    descriptor_common() = default;       
+    const auto& strides()const{return base_strides::strides();}
+    auto to_str()const{return detail::shape_to_str(shape());}
+    descriptor_common() = default;
     descriptor_common(const shape_type& shape__):
         base_strides{shape__},
         shape_{shape__}
