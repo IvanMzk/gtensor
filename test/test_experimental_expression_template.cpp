@@ -4,6 +4,31 @@
 
 
 
+TEST_CASE("test_expression_template_polytensor","[test_experimental_expression_template]"){
+    using value_type = float;
+    using config_type = gtensor::config::default_config;
+    using test_tensor_type = expression_template_polytensor::test_tensor<value_type,config_type>;
+
+    test_tensor_type t1{{1,2,3}};
+    test_tensor_type t2{{1},{2},{3}};
+    test_tensor_type t3{-2};
+    auto e = t2+t1+t2+t3;
+    REQUIRE(!e.engine().is_trivial());
+    REQUIRE(std::equal(e.begin(), e.end(), std::vector<float>{1,2,3,3,4,5,5,6,7}.begin()));
+
+    auto e_trivial_tree = t1+t1+t1+t1;
+    REQUIRE(e_trivial_tree.engine().is_trivial());
+    REQUIRE(std::equal(e_trivial_tree.begin(), e_trivial_tree.end(), std::vector<float>{4,8,12}.begin()));
+
+    auto e_trivial_tree1 = e_trivial_tree + e_trivial_tree;
+    REQUIRE(e_trivial_tree1.engine().is_trivial());
+    REQUIRE(std::equal(e_trivial_tree1.begin(), e_trivial_tree1.end(), std::vector<float>{8,16,24}.begin()));
+
+    auto e_trivial_subtree = e_trivial_tree + t2 + t3;
+    REQUIRE(!e_trivial_subtree.engine().is_trivial());
+    REQUIRE(std::equal(e_trivial_subtree.begin(), e_trivial_subtree.end(), std::vector<float>{3,7,11,4,8,12,5,9,13}.begin()));
+}
+
 TEST_CASE("test_expression_template_polywalker","[test_experimental_expression_template]"){
     using value_type = float;
     using config_type = gtensor::config::default_config;

@@ -457,7 +457,7 @@ class node_frame : public node_base
 {
 public:
     using engine_type = EngineT;
-    
+
     //the problem with forwarding when we have more then one member to initialize
     template<typename...Args>
     explicit node_frame(Args&&...args):
@@ -493,7 +493,7 @@ public:
 
     node(typename nested_initializer_list_type<int,1>::type init_data):node(init_data,0){}
     node(typename nested_initializer_list_type<int,2>::type init_data):node(init_data,0){}
-    
+
     //get impl from outside
     node(std::shared_ptr<impl_type>&& impl__):
         impl_{std::move(impl__)}
@@ -798,13 +798,13 @@ TEST_CASE("binary_tree_with_engine_and_node_frame","[binary_tree_with_engine_and
     using binary_tree_with_engine_and_node_frame::node;
     using binary_tree_with_engine_and_node_frame::stor_engine;
     using snode = node_frame<stor_engine>;
-    using benchmark_helpers::make_asymmetric_tree;    
+    using benchmark_helpers::make_asymmetric_tree;
 
     auto s = node<>{1,2,3};
     auto s1 = node<>{{1,2,3}};
     auto s2 = node<>{{1,2,3},{4,5,6}};
 
-    constexpr std::size_t asymmetric_tree_depth = 5;
+    constexpr std::size_t asymmetric_tree_depth = 100;
     auto e = make_asymmetric_tree<asymmetric_tree_depth>(node<>{}, node<>{});
     REQUIRE(decltype(e.impl())::element_type::engine_type::w_types::size == asymmetric_tree_depth+1);
 }
@@ -815,7 +815,7 @@ TEST_CASE("binary_tree_with_engine_and_node_frame_without_shared_ptr","[binary_t
     using binary_tree_with_engine_and_node_frame_without_shared_ptr::stor_engine;
     using snode = node_frame<stor_engine>;
     using benchmark_helpers::make_asymmetric_tree;
-    
+
     constexpr std::size_t asymmetric_tree_depth = 5;
     auto e = make_asymmetric_tree<asymmetric_tree_depth>(node<>{}, node<>{});
     REQUIRE(decltype(e.impl())::engine_type::w_types::size == asymmetric_tree_depth+1);

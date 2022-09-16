@@ -84,7 +84,7 @@ class evaluating_indexer : public indexer_base<ValT, CfgT>
     value_type data_cache{evaluate_at(0)};
     index_type index_cache{0};
 
-    std::unique_ptr<indexer_base<ValT,CfgT>> clone(int)const override{return std::make_unique<evaluating_indexer>(*this);}
+    std::unique_ptr<indexer_base<ValT,CfgT>> clone()const override{return std::make_unique<evaluating_indexer>(*this);}
 
     void walk(const index_type& direction, const index_type& steps){walker_.walk_without_check(direction,steps);}
 

@@ -18,6 +18,10 @@ namespace detail{
 * flat index access without walkers is used to evaluate broadcast expression
 * stensor and view are trivial
 */
+template<typename IdxT,typename...Ops>
+inline bool is_trivial(const IdxT& root_size, const Ops&...root_operands){
+    return ((root_size==root_operands->size())&&...) && (is_trivial_operand(root_operands)&&...);
+}
 template<typename IdxT,template<typename...> typename TupleT, typename...Ops>
 inline bool is_trivial(const IdxT& root_size, const TupleT<Ops...>& root_operands){
     return is_trivial_helper(root_size,root_operands,std::make_index_sequence<sizeof...(Ops)>{});

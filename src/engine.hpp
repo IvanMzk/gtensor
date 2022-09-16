@@ -1,7 +1,8 @@
 #ifndef ENGINE_HPP_
 #define ENGINE_HPP_
 
-#include "config.hpp"
+#include <vector>
+#include "tensor_base.hpp"
 #include "tensor_init_list.hpp"
 #include "shareable_storage.hpp"
 
@@ -70,6 +71,7 @@ public:
         operands_{std::forward<Ts>(operands)...}
     {}
 };
+
 
 template<typename ValT, typename CfgT, typename ParentT>
 class viewing_engine :

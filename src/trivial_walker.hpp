@@ -8,6 +8,8 @@ namespace gtensor{
 namespace detail{
 }   //end of namespace detail
 
+
+
 template<typename ValT, typename CfgT>
 class storage_trivial_walker
 {
@@ -50,7 +52,7 @@ public:
         walkers{std::move(walkers_)...}
     {}
     value_type operator[](const index_type& idx)const {
-        return std::apply([&](const auto&...args){return f(as_trivial(args[idx])...);}, walkers);
+        return std::apply([&](const auto&...args){return f(as_trivial(args)[idx]...);}, walkers);
     }
 };
 
