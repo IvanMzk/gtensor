@@ -21,7 +21,7 @@ template<typename ValT, typename CfgT> class vwalker_impl;
 template<typename DifT, typename N> struct slice;
 
 template<typename ValT, typename CfgT, typename ImplT> class tensor;
-template<typename ValT, typename CfgT, typename DescT, typename ParentT> class viewing_tensor;
+template<typename ValT, typename CfgT, typename DescT, typename EngineT> class viewing_tensor;
 template<typename ValT, typename CfgT, typename EngineT> class storage_tensor;
 template<typename ValT, typename CfgT, typename EngineT> class evaluating_tensor;
 

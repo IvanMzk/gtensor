@@ -2,6 +2,7 @@
 #define ENGINE_HPP_
 
 #include <vector>
+#include <array>
 #include "tensor_base.hpp"
 #include "tensor_init_list.hpp"
 #include "shareable_storage.hpp"
@@ -57,10 +58,10 @@ template<typename ValT, typename CfgT, typename F, typename...Ops>
 class evaluating_engine :
     protected engine_host_accessor<ValT, CfgT>
 {
+    using operand_base_type = std::shared_ptr<tensor_base_base<CfgT>>;
     using typename engine_host_accessor::host_type;
     F f_;
-    //std::tuple<std::shared_ptr<Ops>...> operands_;
-    std::pair<std::shared_ptr<Ops>...> operands_;
+    std::array<operand_base_type,sizeof...(Ops)> operands_;
 protected:
     const auto& operands()const{return operands_;}
 public:
@@ -71,7 +72,6 @@ public:
         operands_{std::forward<Ts>(operands)...}
     {}
 };
-
 
 template<typename ValT, typename CfgT, typename ParentT>
 class viewing_engine :

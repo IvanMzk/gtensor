@@ -32,21 +32,21 @@ using engine_expression_template = mode<engines, engines::expression_template>;
 struct NOP{};
 
 
-struct default_config{        
-    
+struct default_config{
+
     using engine = engine_expression_template;
-    
+
     using caching_mode = mode_caching_broadcast;
     //using caching_mode = typename mode_caching_always;
     //using caching_mode = typename mode_caching_never;
-    
+
     using trivial_broadcast_eval_mode = mode_trivial_broadcast_eval_combi;
     //using trivial_broadcast_eval_mode = mode_trivial_broadcast_eval_multi;
     //using trivial_broadcast_eval_mode = mode_trivial_broadcast_eval_flat;
-    
+
     //using div_mode = mode_div_libdivide;
     using div_mode = mode_div_native;
-    
+
     using difference_type = std::int64_t;
     using index_type = difference_type;
     template<typename ValT> using storage = gtensor::detail::shareable_storage<std::vector<ValT>>;
@@ -59,7 +59,7 @@ struct default_config{
     using slice_item_type = detail::slice_item<index_type, nop_type>;
     using slice_init_type = std::initializer_list<slice_item_type>;
     using slices_init_type = std::initializer_list<slice_init_type>;
-    using slices_collection_type = std::vector<slice_type>;    
+    using slices_collection_type = std::vector<slice_type>;
 
 };
 
@@ -67,8 +67,18 @@ struct default_config{
 
 namespace detail{
 
-enum class view_kinds {slice, transpose, subdim, reshape};
-enum class tensor_kinds {storage_tensor, expression, view};
+enum class view_kinds : std::size_t {slice, transpose, subdim, reshape};
+enum class tensor_kinds : std::size_t {storage, evaluating, viewing};
+struct storage_type_tag : std::integral_constant<tensor_kinds,tensor_kinds::storage>{};
+struct evaluating_type_tag : std::integral_constant<tensor_kinds,tensor_kinds::evaluating>{};
+struct viewing_type_tag : std::integral_constant<tensor_kinds,tensor_kinds::viewing>{};
+
+// template<typename> struct tensor_type_tag_selector;
+// template<typename...Ts> struct tensor_type_tag_selector<storage_tensor<Ts...>>{using type = storage_type_tag;};
+// template<typename...Ts> struct tensor_type_tag_selector<evaluating_tensor<Ts...>>{using type = evaluating_type_tag;};
+// template<typename...Ts> struct tensor_type_tag_selector<viewing_tensor<Ts...>>{using type = viewing_type_tag;};
+
+
 
 template<typename C> inline constexpr bool is_caching_always = std::is_same_v<C::caching_mode,gtensor::config::mode_caching_always>;
 template<typename C> inline constexpr bool is_mode_div_libdivide = std::is_same_v<C::div_mode,gtensor::config::mode_div_libdivide>;

@@ -6,7 +6,11 @@ namespace gtensor{
 namespace detail{
 
 template<typename IdxT>
-inline bool can_walk(const IdxT& direction, const IdxT& dim, const IdxT& direction_dim){
+constexpr inline bool can_walk_eval(const IdxT&, const IdxT&, const IdxT&){
+    return true;
+}
+template<typename IdxT>
+constexpr inline bool can_walk(const IdxT& direction, const IdxT& dim, const IdxT& direction_dim){
     return direction < dim && direction_dim != IdxT(1);
 }
 

@@ -47,22 +47,22 @@ public:
         walk_helper(direction,steps,std::make_index_sequence<sizeof...(Wks)>{});
     }
     void walk(const index_type& direction, const index_type& steps){
-        if (detail::can_walk(direction,dim_,shape.element(direction))){
+        if (detail::can_walk_eval(direction,dim_,shape.element(direction))){
             walk_helper(direction,steps,std::make_index_sequence<sizeof...(Wks)>{});
         }
     }
     void step(const index_type& direction){
-        if (detail::can_walk(direction,dim_,shape.element(direction))){
+        if (detail::can_walk_eval(direction,dim_,shape.element(direction))){
             step_helper(direction,std::make_index_sequence<sizeof...(Wks)>{});
         }
     }
     void step_back(const index_type& direction){
-        if (detail::can_walk(direction,dim_,shape.element(direction))){
+        if (detail::can_walk_eval(direction,dim_,shape.element(direction))){
             step_back_helper(direction,std::make_index_sequence<sizeof...(Wks)>{});
         }
     }
     void reset(const index_type& direction){
-        if (detail::can_walk(direction,dim_,shape.element(direction))){
+        if (detail::can_walk_eval(direction,dim_,shape.element(direction))){
             reset_helper(direction,std::make_index_sequence<sizeof...(Wks)>{});
         }
     }
