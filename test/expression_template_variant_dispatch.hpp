@@ -116,7 +116,7 @@ public:
 
     using storage_engine::storage_engine;
     bool is_trivial()const{return true;}
-    auto create_walker()const{return variant_type{storage_walker<ValT,CfgT>{host()->shape(),host()->strides(),data()}};}
+    auto create_walker()const{return variant_type{storage_walker<ValT,CfgT>{host()->shape(),host()->strides(),host()->reset_strides(),data()}};}
     auto create_trivial_walker()const{return storage_trivial_walker<ValT,CfgT>{data()};}
 };
 
@@ -185,7 +185,7 @@ public:
         return std::apply(
             [this](const auto&...operands){
                 return [this](auto&&...walkers){
-                    return evaluating_trivial_root_walker<ValT,CfgT,F,std::decay_t<decltype(walkers)>...>{host()->shape(),host()->strides(),std::forward<decltype(walkers)>(walkers)...};
+                    return evaluating_trivial_root_walker<ValT,CfgT,F,std::decay_t<decltype(walkers)>...>{host()->shape(),host()->strides(),host()->reset_strides(),std::forward<decltype(walkers)>(walkers)...};
                 }(static_cast<Ops*>(operands.get())->engine().create_trivial_walker()...);
             },
             operands()

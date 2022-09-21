@@ -66,8 +66,8 @@ class evaluating_trivial_root_walker :
     using shape_type = typename CfgT::shape_type;
 
 public:
-    evaluating_trivial_root_walker(const shape_type& shape_, const shape_type& strides_,  Wks&&...walkers_):
-        basic_walker{static_cast<index_type>(shape_.size()), shape_, strides_, index_type{0}},
+    evaluating_trivial_root_walker(const shape_type& shape_, const shape_type& strides_, const shape_type& reset_strides_,  Wks&&...walkers_):
+        basic_walker{static_cast<index_type>(shape_.size()), shape_, strides_, reset_strides_, index_type{0}},
         evaluating_trivial_walker{std::move(walkers_)...}
     {}
 

@@ -46,14 +46,16 @@ class basic_walker
     index_type dim;
     detail::shape_inverter<index_type, shape_type> shape;
     detail::shape_inverter<index_type, shape_type> strides;
+    detail::shape_inverter<index_type, shape_type> reset_strides;
     CursorT offset_;
     CursorT cursor_{offset_};
 
 protected:
-    basic_walker(const index_type& dim_, const shape_type& shape_, const shape_type& strides_, const CursorT& offset__):
+    basic_walker(const index_type& dim_, const shape_type& shape_, const shape_type& strides_, const shape_type& reset_strides_, const CursorT& offset__):
         dim{dim_},
         shape{shape_},
         strides{strides_},
+        reset_strides{reset_strides_},
         offset_{offset__}
     {}
 
@@ -74,7 +76,7 @@ protected:
     }
     void reset(const index_type& direction){
         if (detail::can_walk(direction, dim, shape.element(direction))){
-            cursor_-=(shape.element(direction)-1)*strides.element(direction);
+            cursor_-=reset_strides.element(direction);
         }
     }
     void reset(){cursor_ = offset_;}

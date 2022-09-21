@@ -6,8 +6,6 @@
 #include "experimental_expression_template.hpp"
 #include "expression_template_variant_dispatch.hpp"
 #include "expression_template_polytensor.hpp"
-#include "expression_template_dispatching_polytensor.hpp"
-
 
 namespace benchmark_experimental_expression_template{
 
@@ -25,9 +23,6 @@ template<typename...Ts> struct tensor_name_traits<expression_template_dispatch_i
 template<typename...Ts> struct tensor_name_traits<expression_template_variant_dispatch::test_tensor<Ts...>>{constexpr static char* name = "variant_dispatch";};
 template<typename...Ts> struct tensor_name_traits<expression_template_polywalker::test_tensor<Ts...>>{constexpr static char* name = "polywalker";};
 template<typename...Ts> struct tensor_name_traits<expression_template_polytensor::test_tensor<Ts...>>{constexpr static char* name = "polytensor";};
-template<typename...Ts> struct tensor_name_traits<expression_template_dispatching_polytensor::test_tensor<Ts...>>{constexpr static char* name = "polytensor_dispatch";};
-
-
 
 auto iterate_without_deref = [](const auto& t){
     auto t_it = t.begin();
@@ -130,7 +125,6 @@ TEMPLATE_TEST_CASE("benchmark_experimental_expression_template","[benchmark_expe
     using tensor_walker_dispatch_type = expression_template_dispatch_in_walker::test_tensor<value_type,config_type>;
     using tensor_polywalker_type = expression_template_polywalker::test_tensor<value_type,config_type>;
     using tensor_polytensor_type = expression_template_polytensor::test_tensor<value_type,config_type>;
-    using tensor_polytensor_dispatch_type = expression_template_dispatching_polytensor::test_tensor<value_type,config_type>;
 
     using benchmark_experimental_expression_template::run_benchmarks;
     using benchmark_experimental_expression_template::add_label;
@@ -161,18 +155,9 @@ TEMPLATE_TEST_CASE("benchmark_experimental_expression_template","[benchmark_expe
 /*
 *   no dispatch engine benchmarks
 */
-    // benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_maker<50>>{}(shape2, shape2);
-    // benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_trivial_subtree_maker<50>>{}(shape2, shape1);
-    // benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_maker<50>>{}(shape1, shape2);
-
-    // auto e1 = asymmetric_tree_maker<50>{}(tensor_no_dispatch_type(shape_type{1, 10000}, 0.0f), tensor_no_dispatch_type(shape_type{1, 10000}, 0.0f));
-    // auto e2 = asymmetric_tree_maker<50>{}(tensor_no_dispatch_type(shape_type{10, 10000}, 0.0f), tensor_no_dispatch_type(shape_type{10, 10000}, 0.0f));
-    // auto e = e1 + e2;
-    // benchmark_with_making_iter(making_iter_iterate_deref,e,"can_walk_eval_benchmark");
-
-    // benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_maker<50>>{}(shape_type{10, 10000}, shape_type{10,10000});
-    // benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_trivial_subtree_maker<50>>{}(shape_type{10, 10000}, shape_type{1,10000});
-    // benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_maker<50>>{}(shape_type{1, 10000}, shape_type{10,10000});
+    benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_maker<100>>{}(shape_type{10, 10000}, shape_type{10,10000});
+    benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_trivial_subtree_maker<100>>{}(shape_type{10, 10000}, shape_type{1,10000});
+    benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_maker<100>>{}(shape_type{1, 10000}, shape_type{10,10000});
 
 /*
 *   walker dispatch engine benchmarks
@@ -210,17 +195,6 @@ TEMPLATE_TEST_CASE("benchmark_experimental_expression_template","[benchmark_expe
 
     // benchmark_binary_tree<tensor_polytensor_type,TestType,symmetric_tree_maker<10>>{}(shape_type{1, 10000}, shape_type{10,10000});
     // benchmark_binary_tree<tensor_polytensor_type,TestType,symmetric_tree_maker<10>>{}(shape_type{10, 10000}, shape_type{10,10000});
-
-/*
-*   polytensor dispatch engine benchmarks
-*/
-    // benchmark_binary_tree<tensor_polytensor_dispatch_type,TestType,asymmetric_tree_maker<100>>{}(shape_type{10, 10000}, shape_type{10,10000});
-    // benchmark_binary_tree<tensor_polytensor_dispatch_type,TestType,asymmetric_tree_trivial_subtree_maker<100>>{}(shape_type{10, 10000}, shape_type{1,10000});
-    // benchmark_binary_tree<tensor_polytensor_dispatch_type,TestType,asymmetric_tree_maker<100>>{}(shape_type{1, 10000}, shape_type{10,10000});
-
-    // benchmark_binary_tree<tensor_polytensor_type,TestType,symmetric_tree_maker<10>>{}(shape_type{1, 10000}, shape_type{10,10000});
-    // benchmark_binary_tree<tensor_polytensor_type,TestType,symmetric_tree_maker<10>>{}(shape_type{10, 10000}, shape_type{10,10000});
-
 
     // static constexpr std::size_t tree_depth = 10;
     // auto make_tree = [](const auto& t1, const auto& t2){return asymmetric_tree_trivial_subtree_maker<tree_depth>{}(t1,t2);};

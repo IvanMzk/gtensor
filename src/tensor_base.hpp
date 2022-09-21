@@ -19,6 +19,7 @@ public:
     virtual index_type dim()const = 0;
     virtual const shape_type& shape()const = 0;
     virtual const shape_type& strides()const = 0;
+    virtual const shape_type& reset_strides()const = 0;
     virtual std::string to_str()const = 0;
     virtual const descriptor_base<CfgT>& descriptor()const = 0;
 

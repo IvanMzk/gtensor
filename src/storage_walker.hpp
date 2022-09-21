@@ -18,8 +18,8 @@ class storage_walker :
     using shape_type = typename CfgT::shape_type;
 
 public:
-    storage_walker(const shape_type& shape_, const shape_type& strides_,  const value_type* data_):
-        base_basic_walker{static_cast<index_type>(shape_.size()), shape_, strides_, data_}
+    storage_walker(const shape_type& shape_, const shape_type& strides_, const shape_type& reset_strides_,  const value_type* data_):
+        base_basic_walker{static_cast<index_type>(shape_.size()), shape_, strides_, reset_strides_, data_}
     {}
     void walk(const index_type& direction, const index_type& steps){base_basic_walker::walk(direction,steps);}
     void step(const index_type& direction){base_basic_walker::step(direction);}

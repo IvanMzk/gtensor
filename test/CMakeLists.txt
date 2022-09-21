@@ -32,11 +32,11 @@ target_sources(Test PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/test_deep_tree_compilation.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_variadic_container.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_tensor.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/benchmark_experimental_expression_template.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_experimental_expression_template.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_descriptor.cpp
 )
 
 target_sources(Test_selected PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_descriptor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/benchmark_experimental_expression_template.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_experimental_expression_template.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test.cpp
 )

@@ -73,7 +73,7 @@ public:
     using trivial_walker_type = storage_trivial_walker<ValT,CfgT>;
     bool is_trivial()const{return true;}
     auto create_walker()const{
-        return storage_walker<ValT,CfgT>{host()->shape(),host()->strides(),data()};
+        return storage_walker<ValT,CfgT>{host()->shape(),host()->strides(),host()->reset_strides(),data()};
     }
     auto create_trivial_walker()const{
         return storage_trivial_walker<ValT,CfgT>{data()};
@@ -114,7 +114,7 @@ class polytensor_engine : public evaluating_engine<ValT,CfgT,F,ValTs...>
         walker<ValT,CfgT> helper(std::integral_constant<std::size_t, 2>, const polytensor_engine& outer, const Ts&...operands)const{
             return [&](auto&&...walkers){
                 using impl_type = evaluating_trivial_root_walker<ValT,CfgT,F,std::decay_t<decltype(walkers)>...>;
-                return std::make_unique<walker_polymorphic<ValT,CfgT,impl_type>>(impl_type{outer.host()->shape(), outer.host()->strides(), std::forward<decltype(walkers)>(walkers)...});
+                return std::make_unique<walker_polymorphic<ValT,CfgT,impl_type>>(impl_type{outer.host()->shape(), outer.host()->strides(),outer.host()->reset_strides(), std::forward<decltype(walkers)>(walkers)...});
             }(operands->engine().create_trivial_walker()...);
         }
         //3 is trivial helper

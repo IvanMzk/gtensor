@@ -67,7 +67,7 @@ public:
     using storage_engine::storage_engine;
     bool is_trivial()const{return true;}
     auto create_walker()const{
-        return storage_walker<ValT,CfgT>{host()->shape(),host()->strides(),data()};
+        return storage_walker<ValT,CfgT>{host()->shape(),host()->strides(),host()->reset_strides(),data()};
     }
     auto create_trivial_walker()const{
         return storage_trivial_walker<ValT,CfgT>{data()};
@@ -114,7 +114,7 @@ public:
         return std::apply(
             [this](const auto&...operands){
                 return [this](auto&&...walkers){
-                    return evaluating_trivial_root_walker<ValT,CfgT,F,std::decay_t<decltype(walkers)>...>{host()->shape(),host()->strides(),std::forward<decltype(walkers)>(walkers)...};
+                    return evaluating_trivial_root_walker<ValT,CfgT,F,std::decay_t<decltype(walkers)>...>{host()->shape(),host()->strides(),host()->reset_strides(),std::forward<decltype(walkers)>(walkers)...};
                 }(static_cast<Ops*>(operands.get())->engine().create_trivial_walker()...);
             },
             operands()
@@ -185,7 +185,7 @@ public:
     using storage_engine::storage_engine;
     bool is_trivial()const{return true;}
     auto create_walker()const{return create_broadcast_walker();}
-    auto create_broadcast_walker()const{return storage_walker<ValT,CfgT>{host()->shape(),host()->strides(),data()};}
+    auto create_broadcast_walker()const{return storage_walker<ValT,CfgT>{host()->shape(),host()->strides(),host()->reset_strides(),data()};}
     auto create_trivial_walker()const{return storage_trivial_walker<ValT,CfgT>{data()};}
 };
 
@@ -375,8 +375,8 @@ class evaluating_dispatching_walker : private basic_walker<ValT, CfgT, typename 
 
 public:
 
-    evaluating_dispatching_walker(const shape_type& shape_, const shape_type& strides_, bool is_trivial_, Wks&&...walkers_):
-        basic_walker{static_cast<index_type>(shape_.size()), shape_, strides_, index_type{0}},
+    evaluating_dispatching_walker(const shape_type& shape_, const shape_type& strides_, const shape_type& reset_strides_, bool is_trivial_, Wks&&...walkers_):
+        basic_walker{static_cast<index_type>(shape_.size()), shape_, strides_, reset_strides_, index_type{0}},
         is_trivial{is_trivial_},
         walkers{std::move(walkers_)...}
     {}
@@ -466,7 +466,7 @@ class dispatching_in_walker_storage_engine : public storage_engine<ValT,CfgT>
 public:
     using storage_engine::storage_engine;
     bool is_trivial()const{return true;}
-    auto create_walker()const{return storage_walker<ValT,CfgT>{host()->shape(),host()->strides(),data()};}
+    auto create_walker()const{return storage_walker<ValT,CfgT>{host()->shape(),host()->strides(),host()->reset_strides(),data()};}
     auto create_trivial_walker()const{return create_walker();}
 };
 
@@ -494,7 +494,7 @@ public:
         return std::apply(
             [this](const auto&...args){
                 return [this](auto&&...walkers){
-                    return evaluating_dispatching_walker<ValT,CfgT,F,std::decay_t<decltype(walkers)>...>{host()->shape(),host()->strides(), false ,std::forward<decltype(walkers)>(walkers)...};
+                    return evaluating_dispatching_walker<ValT,CfgT,F,std::decay_t<decltype(walkers)>...>{host()->shape(),host()->strides(), host()->reset_strides(), false ,std::forward<decltype(walkers)>(walkers)...};
                 }(static_cast<Ops*>(args.get())->engine().create_walker()...);
             },
             operands()
@@ -504,7 +504,7 @@ public:
         return std::apply(
             [this](const auto&...args){
                 return [this](auto&&...walkers){
-                    return evaluating_dispatching_walker<ValT,CfgT,F,std::decay_t<decltype(walkers)>...>{host()->shape(),host()->strides(), true ,std::forward<decltype(walkers)>(walkers)...};
+                    return evaluating_dispatching_walker<ValT,CfgT,F,std::decay_t<decltype(walkers)>...>{host()->shape(),host()->strides(), host()->reset_strides(), true ,std::forward<decltype(walkers)>(walkers)...};
                 }(static_cast<Ops*>(args.get())->engine().create_trivial_walker()...);
             },
             operands()
