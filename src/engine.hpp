@@ -48,9 +48,9 @@ public:
         elements_(size)
     {detail::fill_from_list(init_data, elements_.begin());}
 
-    storage_engine(host_type* host, const index_type& size, const value_type& v):
+    storage_engine(host_type* host, const index_type& size, const value_type& init_data):
         engine_host_accessor{host},
-        elements_(size, v)
+        elements_(size, init_data)
     {}
 private:
     storage_type elements_;

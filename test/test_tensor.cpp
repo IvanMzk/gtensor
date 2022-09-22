@@ -3,26 +3,9 @@
 #include <tuple>
 #include <vector>
 
-
-namespace test_tensor_helpers{
-
-using gtensor::tensor;
-using gtensor::tensor_base;
-
-template<typename ValT, typename CfgT>
-struct test_tensor : public tensor<ValT, CfgT>{
-
-    test_tensor(const tensor& base):
-        tensor{base}
-    {}
-    //auto is_trivial()const{return impl()->engine().is_trivial();}
-};
-}   //end of namespace test_tensor
-
 TEST_CASE("test_is_tensor","[test_tensor]"){
 
 }
-
 
 TEST_CASE("test_tensor_construct_from_list","[test_tensor]"){
     using value_type = float;
@@ -32,7 +15,7 @@ TEST_CASE("test_tensor_construct_from_list","[test_tensor]"){
     using index_type = typename config_type::index_type;
     using test_type = std::tuple<tensor_type, shape_type, index_type, index_type>;
     //tensor,expected_shape,expected size,expected dim
-    auto test_data = GENERATE(                                
+    auto test_data = GENERATE(
                                 test_type(tensor_type{1}, shape_type{1}, 1 , 1),
                                 test_type(tensor_type{1,2,3}, shape_type{3}, 3 , 1),
                                 test_type(tensor_type{{1}}, shape_type{1,1}, 1 , 2),
@@ -42,7 +25,7 @@ TEST_CASE("test_tensor_construct_from_list","[test_tensor]"){
                                 test_type(tensor_type{{{1},{2},{3},{4}}}, shape_type{1,4,1}, 4 , 3),
                                 test_type(tensor_type{{{1,2,3},{2,3,4},{3,4,5},{4,5,6}}}, shape_type{1,4,3}, 12 , 3)
                             );
-    
+
     auto t = std::get<0>(test_data);
     auto expected_shape = std::get<1>(test_data);
     auto expected_size = std::get<2>(test_data);
@@ -64,7 +47,7 @@ TEST_CASE("test_tensor_construct_given_shape","[test_tensor]"){
     using index_type = typename config_type::index_type;
     using test_type = std::tuple<tensor_type, shape_type, index_type, index_type>;
     //tensor,expected_shape,expected size,expected dim
-    auto test_data = GENERATE(                                
+    auto test_data = GENERATE(
                                 test_type(tensor_type(shape_type{},1.0f), shape_type{}, 0 , 0),
                                 test_type(tensor_type(shape_type{1},1.0f), shape_type{1}, 1 , 1),
                                 test_type(tensor_type(shape_type{10},1.0f), shape_type{10}, 10 , 1),
@@ -75,7 +58,7 @@ TEST_CASE("test_tensor_construct_given_shape","[test_tensor]"){
                                 test_type(tensor_type(shape_type{1,4,1},1.0f), shape_type{1,4,1}, 4 , 3),
                                 test_type(tensor_type(shape_type{1,4,3},1.0f), shape_type{1,4,3}, 12 , 3)
                             );
-    
+
     auto t = std::get<0>(test_data);
     auto expected_shape = std::get<1>(test_data);
     auto expected_size = std::get<2>(test_data);
@@ -90,15 +73,15 @@ TEST_CASE("test_tensor_construct_given_shape","[test_tensor]"){
 
 TEST_CASE("test_tensor_construct_using_operator","[test_tensor]"){
     using value_type = float;
-    using gtensor::tensor_base;    
+    using gtensor::tensor_base;
     using config_type = gtensor::config::default_config;
     using tensor_type = gtensor::tensor<value_type, config_type>;
     using htensor_type = typename tensor_type::htensor_type;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     using test_type = std::tuple<htensor_type, shape_type, index_type, index_type>;
-    //0htensor,1expected_shape,2expected size,3expected dim    
-    auto test_data = GENERATE(                                
+    //0htensor,1expected_shape,2expected size,3expected dim
+    auto test_data = GENERATE(
                                 test_type((tensor_type{1}+tensor_type{1}).as_htensor(), shape_type{1}, 1 , 1),
                                 test_type(static_cast<htensor_type>(tensor_type{1}+tensor_type{1,2,3}), shape_type{3}, 3 , 1),
                                 test_type(static_cast<htensor_type>(tensor_type{1,2,3}+tensor_type{1,2,3}), shape_type{3}, 3 , 1),
@@ -111,7 +94,7 @@ TEST_CASE("test_tensor_construct_using_operator","[test_tensor]"){
                                 test_type(static_cast<htensor_type>(tensor_type{1,2,3}+tensor_type{{1},{2},{3}}+tensor_type{1,2,3}) ,shape_type{3,3}, 9 , 2),
                                 test_type(static_cast<htensor_type>((tensor_type{1,2,3}+(tensor_type{{1},{2},{3}})+(tensor_type{1,2,3})+tensor_type{1})) ,shape_type{3,3}, 9 , 2)
                             );
-    
+
     auto t = std::get<0>(test_data);
     auto expected_shape = std::get<1>(test_data);
     auto expected_size = std::get<2>(test_data);
@@ -121,41 +104,13 @@ TEST_CASE("test_tensor_construct_using_operator","[test_tensor]"){
     REQUIRE(t.dim() == expected_dim);
 }
 
-// TEST_CASE("test_expression_is_trivial","[test_tensor]"){
-//     using value_type = float;
-//     using gtensor::tensor;
-//     using gtensor::tensor_base;
-//     using test_tensor_helpers::test_tensor;
-//     using config_type = gtensor::config::default_config;
-//     using tensor_type = tensor<value_type, config_type>;
-//     using htensor_type = tensor<value_type, config_type, tensor_base<value_type, config_type>>;
-//     using test_tensor_type = test_tensor<value_type, config_type>;
-//     using shape_type = typename config_type::shape_type;
-//     using index_type = typename config_type::index_type;
-//     using test_type = std::tuple<htensor_type, bool>;
-//     //tensor,expected_is_trivial
-//     auto test_data = GENERATE(                                
-//                                 test_type(static_cast<htensor_type>(tensor_type{1}+tensor_type{1}), true),
-//                                 test_type(static_cast<htensor_type>(tensor_type{1,2,3,4,5}+tensor_type{1}), false),
-//                                 test_type(static_cast<htensor_type>(tensor_type{1,2,3,4,5}+tensor_type{1,2,3,4,5}), true),
-//                                 test_type(static_cast<htensor_type>(tensor_type{{1},{2},{3},{4},{5}}+tensor_type{{1,2,3,4,5}}), false),
-//                                 test_type(static_cast<htensor_type>(tensor_type{1,2,3}+tensor_type{1,2,3}+tensor_type{3,4,5}+tensor_type{3,4,5}), true),
-//                                 test_type(static_cast<htensor_type>((tensor_type{1,2,3}+tensor_type{1,2,3})+(tensor_type{3,4,5}+tensor_type{3,4,5})), true),
-//                                 test_type(static_cast<htensor_type>((tensor_type{1}+tensor_type{1,2,3})+(tensor_type{3,4,5}+tensor_type{3,4,5})), false)
-//                             );
-    
-//     auto t = test_tensor_type{std::get<0>(test_data)};
-//     auto expected_is_trivial = std::get<1>(test_data);
-//     REQUIRE(t.is_trivial() == expected_is_trivial);    
-// }
-
 TEST_CASE("test_view_making_interface","[test_tensor]"){
     using value_type = float;
     using gtensor::tensor;
     using gtensor::tensor_base;
     using config_type = gtensor::config::default_config;
-    using tensor_type = tensor<value_type, config_type>;    
-    using htensor_type = tensor<value_type, config_type, tensor_base<value_type,config_type>>;    
+    using tensor_type = tensor<value_type, config_type>;
+    using htensor_type = tensor<value_type, config_type, tensor_base<value_type,config_type>>;
     using slice_type = typename config_type::slice_type;
     using nop_type = typename config_type::nop_type;
     using shape_type = typename config_type::shape_type;
@@ -167,7 +122,7 @@ TEST_CASE("test_view_making_interface","[test_tensor]"){
             REQUIRE_NOTHROW(tensor_type{1}({}));
             REQUIRE_THROWS_AS((tensor_type{1}({{},{}})),subscript_exception);
             REQUIRE_NOTHROW(tensor_type{1}({{0,1}}));
-            REQUIRE_THROWS_AS((tensor_type{1}({{nop,2}})),subscript_exception);            
+            REQUIRE_THROWS_AS((tensor_type{1}({{nop,2}})),subscript_exception);
             REQUIRE_NOTHROW(tensor_type{1,2,3,4,5}({}));
             REQUIRE_THROWS_AS((tensor_type{1,2,3,4,5}({{0,4,-1}})),subscript_exception);
             REQUIRE_THROWS_AS((tensor_type{1,2,3,4,5}({{0,0}})),subscript_exception);
@@ -175,8 +130,8 @@ TEST_CASE("test_view_making_interface","[test_tensor]"){
             REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4},{5,6}}({{1,-1},{1,-1}})),subscript_exception);
         }
         SECTION("view_transpose"){
-            REQUIRE_NOTHROW(tensor_type{1}.transpose());            
-            REQUIRE_NOTHROW(tensor_type{1}.transpose(0));                        
+            REQUIRE_NOTHROW(tensor_type{1}.transpose());
+            REQUIRE_NOTHROW(tensor_type{1}.transpose(0));
             REQUIRE_THROWS_AS((tensor_type{1}.transpose(1)),subscript_exception);
             REQUIRE_THROWS_AS((tensor_type{1}.transpose(0,1)),subscript_exception);
             REQUIRE_NOTHROW(tensor_type{{1,2},{3,4}}.transpose());
@@ -210,7 +165,7 @@ TEST_CASE("test_view_making_interface","[test_tensor]"){
             REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4},{5,6}}.reshape(10)),subscript_exception);
             REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4},{5,6}}.reshape(3,3)),subscript_exception);
         }
-    }    
+    }
     SECTION("test_slices_filling_and_result_view"){
         using test_type = std::tuple<htensor_type, shape_type, index_type, index_type>;
         //0view,1expected_shape,2expected size,3expected dim
@@ -258,51 +213,21 @@ TEST_CASE("test_view_making_interface","[test_tensor]"){
 //     using config_type = gtensor::config::default_config;
 //     using tensor_type = tensor<value_type, config_type>;
 //     using shape_type = typename config_type::shape_type;
-//     using index_type = typename config_type::index_type;    
+//     using index_type = typename config_type::index_type;
 //     using test_type = std::tuple<tensor_type, shape_type, index_type, index_type>;
 //     //tensor,2expected_shape,3expected size,4expected dim
-//     auto test_data = GENERATE(                                
+//     auto test_data = GENERATE(
 //                                 test_type(tensor_type{{1,2,3}}.as_storage_tensor()+tensor_type{{1},{2},{3}}.as_storage_tensor(), shape_type{3,3}, 9 , 2),
 //                                 test_type((tensor_type{1}+tensor_type{1}).as_expression()+tensor_type{1}.as_storage_tensor() ,shape_type{1}, 1 , 1),
 //                                 test_type((tensor_type{1,2,3}+tensor_type{{1},{2},{3}}).as_expression()+(tensor_type{1,2,3}+tensor_type{1}).as_expression() ,shape_type{3,3}, 9 , 2)
 //                             );
-    
-//     auto t = std::get<0>(test_data);        
+
+//     auto t = std::get<0>(test_data);
 //     auto expected_shape = std::get<1>(test_data);
 //     auto expected_size = std::get<2>(test_data);
-//     auto expected_dim = std::get<3>(test_data);        
+//     auto expected_dim = std::get<3>(test_data);
 //     REQUIRE(t.shape() == expected_shape);
 //     REQUIRE(t.size() == expected_size);
 //     REQUIRE(t.dim() == expected_dim);
-    
-// }
 
-// TEST_CASE("test_expression_trivial_at","[test_tensor]"){
-//     using value_type = float;
-//     using gtensor::tensor;
-//     using config_type = gtensor::config::default_config;
-//     using tensor_type = tensor<value_type, config_type>;
-//     using shape_type = typename config_type::shape_type;
-//     using index_type = typename config_type::index_type;
-//     using test_type = std::tuple<tensor_type, index_type, value_type>;
-//     //0tensor,1index,2expected_value
-//     auto test_data = GENERATE(                                
-//                                 test_type(tensor_type{1}+tensor_type{1}, 0, value_type{2}),
-//                                 test_type(tensor_type{1}+tensor_type{1}+tensor_type{1}, 0, value_type{3}),
-//                                 test_type(tensor_type{1,2,3}+tensor_type{1,2,3}, 0, value_type{2}),
-//                                 test_type(tensor_type{1,2,3}+tensor_type{1,2,3}, 1, value_type{4}),
-//                                 test_type(tensor_type{1,2,3}+tensor_type{1,2,3}, 2, value_type{6}),                                                                
-//                                 test_type(tensor_type{1,2,3}+tensor_type{1,2,3}+tensor_type{3,4,5}+tensor_type{3,4,5}, 0, value_type{8}),
-//                                 test_type(tensor_type{1,2,3}+tensor_type{1,2,3}+tensor_type{3,4,5}+tensor_type{3,4,5}, 1, value_type{12}),
-//                                 test_type(tensor_type{1,2,3}+tensor_type{1,2,3}+tensor_type{3,4,5}+tensor_type{3,4,5}, 2, value_type{16}),
-//                                 test_type((tensor_type{1,2,3}+tensor_type{1,2,3})+(tensor_type{3,4,5}+tensor_type{3,4,5}),0, value_type{8}),
-//                                 test_type((tensor_type{1,2,3}+tensor_type{1,2,3})+(tensor_type{3,4,5}+tensor_type{3,4,5}),1, value_type{12}),
-//                                 test_type((tensor_type{1,2,3}+tensor_type{1,2,3})+(tensor_type{3,4,5}+tensor_type{3,4,5}),2, value_type{16})
-//                             );
-    
-//     auto t = std::get<0>(test_data);
-//     auto index = std::get<1>(test_data);
-//     auto expected_value = std::get<2>(test_data);
-//     auto e = t.as_expression();
-//     REQUIRE(e.trivial_at(index) == expected_value);
 // }

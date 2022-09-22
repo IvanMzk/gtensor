@@ -3,6 +3,7 @@
 
 #include "config.hpp"
 #include "forward_decl.hpp"
+#include "engine_traits.hpp"
 
 namespace gtensor{
 
@@ -36,7 +37,10 @@ protected:
     using typename tensor_base_base::shape_type;
 public:
     using value_type = ValT;
+    using engine_type = typename detail::engine_base_traits<typename config_type::engine,value_type,config_type>::type;
     virtual ~tensor_base(){}
+    virtual const engine_type& engine()const = 0;
+
 };
 
 

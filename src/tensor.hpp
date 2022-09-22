@@ -24,7 +24,7 @@ protected:
     {}
 public:
     const descriptor_type& descriptor()const{return descriptor_;}
-    const engine_type& engine()const{return engine_;}
+    const engine_type& engine()const override{return engine_;}
     index_type size()const override{return descriptor_.size();}
     index_type dim()const override{return descriptor_.dim();}
     const shape_type& shape()const override{return descriptor_.shape();}
@@ -47,7 +47,7 @@ private:
     using typename basic_tensor::descriptor_type;
     using typename basic_tensor::index_type;
     using typename basic_tensor::shape_type;
-    static_assert(std::is_convertible_v<engine_type*, storage_engine<value_type,config_type>*>);
+    //static_assert(std::is_convertible_v<engine_type*, storage_engine<value_type,config_type>*>);
 
     template<typename ShT, typename Nested>
     storage_tensor(ShT&& shape, const std::initializer_list<Nested>& init_data):
@@ -114,7 +114,7 @@ public:
     viewing_tensor(descriptor_type&& descriptor, U&& parent):
         basic_tensor{engine_type{this,std::forward<U>(parent)},std::move(descriptor)}
     {
-        static_assert(std::is_convertible_v<engine_type*, viewing_engine<value_type,config_type,std::decay_t<U>::element_type>*>);
+        //static_assert(std::is_convertible_v<engine_type*, viewing_engine<value_type,config_type,std::decay_t<U>::element_type>*>);
     }
 };
 

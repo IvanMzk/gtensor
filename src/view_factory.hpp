@@ -1,7 +1,7 @@
 #ifndef VIEW_FACTORY_HPP_
 #define VIEW_FACTORY_HPP_
 
-#include "engine_base.hpp"
+#include "engine_traits.hpp"
 #include "descriptor.hpp"
 #include "tensor.hpp"
 

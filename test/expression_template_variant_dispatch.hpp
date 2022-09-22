@@ -10,8 +10,6 @@
 #include "iterator.hpp"
 #include "engine.hpp"
 
-
-
 #define EXPRESSION_TEMPLATE_VARIANT_DISPATCH_BINARY_OPERATOR(NAME,IMPL)\
 template<typename DispatchDepth, typename ValT1, typename ValT2, typename ImplT1, typename ImplT2, typename CfgT>\
 auto NAME(const test_tensor<DispatchDepth, ValT1, CfgT, ImplT1>& op1, const test_tensor<DispatchDepth, ValT2, CfgT, ImplT2>& op2){return IMPL(op1,op2);}
@@ -42,10 +40,45 @@ using gtensor::evaluating_trivial_walker;
 using gtensor::evaluating_trivial_root_walker;
 using gtensor::walker;
 using gtensor::multiindex_iterator;
-using gtensor::detail::type_list;
-using gtensor::detail::list_concat;
-using gtensor::detail::cross_product;
 using gtensor::detail::is_trivial;
+
+namespace detail{
+
+template<typename...Ts>
+struct type_list{
+    using type = type_list<Ts...>;
+    static constexpr std::size_t size = sizeof...(Ts);
+};
+
+template<typename, typename> struct list_concat;
+template<typename...Us, typename...Vs>
+struct list_concat<type_list<Us...>,type_list<Vs...>>{
+    using type = type_list<Us...,Vs...>;
+};
+
+template<template <typename...> typename, typename, typename> struct cross_product;
+template<template <typename...> typename PairT, typename U, typename...Us, typename...Vs>
+struct cross_product<PairT, type_list<U, Us...>, type_list<Vs...>>{
+    using cross_u_vs = type_list<PairT<U,Vs>...>;
+    using cross_us_vs = typename cross_product<PairT, type_list<Us...>, type_list<Vs...>>::type;
+    using type = typename list_concat<cross_u_vs, cross_us_vs>::type;
+};
+template<template <typename...> typename PairT, typename...Vs>
+struct cross_product<PairT, type_list<>, type_list<Vs...>>{
+    using type = type_list<>;
+};
+
+template<typename DerivingT, typename CurrentT>
+struct engine_type_selector{
+    using type = std::conditional_t<std::is_void_v<DerivingT>,CurrentT,DerivingT>;
+};
+
+template<typename> struct make_variant_type;
+template<typename...Ts> struct make_variant_type<detail::type_list<Ts...>>{
+    using type = std::variant<Ts...>;
+};
+
+}   //end of namespace detail
 
 template<typename DispatchDepth, typename ValT, typename CfgT, typename ImplT = storage_tensor<typename storage_engine_traits<ValT,CfgT>::type >>
 class test_tensor : public tensor<ValT,CfgT, ImplT>{
@@ -101,20 +134,15 @@ public:
     }
 };
 
-template<typename> struct make_variant_type;
-template<typename...Ts> struct make_variant_type<type_list<Ts...>>{
-    using type = std::variant<Ts...>;
-};
-
 template<typename ValT, typename CfgT>
 class variant_dispatch_storage_engine : public storage_engine<ValT,CfgT>
 {
 public:
     using typename storage_engine::value_type;
     using typename storage_engine::config_type;
-    using walker_types = type_list<storage_walker<ValT,CfgT>>;
+    using walker_types = detail::type_list<storage_walker<ValT,CfgT>>;
     using trivial_walker_type = storage_trivial_walker<ValT,CfgT>;
-    using variant_type = typename make_variant_type<walker_types>::type;
+    using variant_type = typename detail::make_variant_type<walker_types>::type;
 
     using storage_engine::storage_engine;
     bool is_trivial()const{return true;}
@@ -134,18 +162,18 @@ private:
     template<typename...Us> using evaluating_walker_alias = evaluating_walker<value_type, config_type, F, Us...>;
 
     template<bool> struct walker_types_traits{
-        using type = typename cross_product<evaluating_walker_alias, typename Ops::engine_type::walker_types...>::type;
+        using type = typename detail::cross_product<evaluating_walker_alias, typename Ops::engine_type::walker_types...>::type;
     };
     template<> struct walker_types_traits<false>{
-        using type = type_list<walker<value_type,config_type>>;
+        using type = detail::type_list<walker<value_type,config_type>>;
     };
 public:
     using trivial_walker_type = evaluating_trivial_root_walker<value_type,config_type,F,typename Ops::engine_type::trivial_walker_type...>;
-    using walker_types = typename list_concat<
+    using walker_types = typename detail::list_concat<
             //type_list<storage_walker<value_type,config_type>>,
-            type_list<trivial_walker_type>,
+            detail::type_list<trivial_walker_type>,
             typename walker_types_traits<(walker_types_size<max_walker_types_size)>::type >::type;
-    using variant_type = typename make_variant_type<walker_types>::type;
+    using variant_type = typename detail::make_variant_type<walker_types>::type;
 
     using evaluating_engine::evaluating_engine;
     bool is_trivial()const{

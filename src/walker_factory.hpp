@@ -16,7 +16,7 @@ namespace detail{
 
 //  template<typename ValT, typename CfgT>
 //  bool is_storage(const tensor_base<ValT,CfgT>& t){
-//     return t.tensor_kind() == detail::tensor_kinds::storage_tensor || 
+//     return t.tensor_kind() == detail::tensor_kinds::storage_tensor ||
 //         t.tensor_kind() == detail::tensor_kinds::expression && t.is_storage() ||
 //         t.tensor_kind() == detail::tensor_kinds::view && t.is_cached();
 // }
@@ -34,22 +34,22 @@ namespace detail{
 
 
 
-template<typename ValT, typename CfgT>
-class storage_walker_factory
-{    
-    using shape_type = typename CfgT::shape_type;
-public: 
-    static auto create_walker(const shape_type& shape, const shape_type& strides, const ValT* data){
-        return storage_walker<ValT,CfgT>{shape, strides, data};
-    }
-};
+// template<typename ValT, typename CfgT>
+// class storage_walker_factory
+// {
+//     using shape_type = typename CfgT::shape_type;
+// public:
+//     static auto create_walker(const shape_type& shape, const shape_type& strides, const ValT* data){
+//         return storage_walker<ValT,CfgT>{shape, strides, data};
+//     }
+// };
 
 // template<typename ValT, typename CfgT>
 // class trivial_walker_factory
-// {    
+// {
 //     using value_type = ValT;
 //     using shape_type = typename CfgT::shape_type;
-// public: 
+// public:
 //     static evaluating_trivial_walker<ValT, CfgT> create_walker(const shape_type& shape, const shape_type& strides, const tensor_base<ValT,CfgT>& parent){
 //         return evaluating_trivial_walker<ValT,CfgT>{shape, strides, parent};
 //     }
@@ -74,22 +74,22 @@ public:
 //for elementwise_evaluation it depends only on shapes of nodes in tree, but for other routines in may differ
 // template<typename ValT, typename CfgT, typename F, typename...Ops>
 // class expression_template_elementwise_evaluation
-// {    
+// {
 //     using value_type = ValT;
-//     using shape_type = typename CfgT::shape_type;    
-    
+//     using shape_type = typename CfgT::shape_type;
+
 //     const tensor_base<ValT,CfgT>* root;
 //     F f;
 //     std::tuple<std::shared_ptr<tensor_base<typename Ops::value_type, CfgT> >...> operands;
 
-    
+
 //     auto walker_maker()const{
 //         return [this](const auto&...args){
 //             using evaluating_walker_type = evaluating_walker<ValT,CfgT,F,decltype(std::declval<decltype(args)>().create_walker())...>;
 //             return walker<ValT,CfgT>{std::make_unique<evaluating_walker_polymorphic<ValT,CfgT,evaluating_walker_type>>(evaluating_walker_type{root->shape(),args.create_walker()...})};
 //             };
 //     }
-    
+
 //     auto indexer_maker()const{
 //         return [this](const auto&...args){
 //                 using evaluating_walker_type = evaluating_walker<ValT,CfgT,F,decltype(std::declval<decltype(args)>().create_walker())...>;
@@ -97,7 +97,7 @@ public:
 //                 return indexer<ValT,CfgT>{std::make_unique<evaluating_indexer_type>(detail::strides_div(*root->descriptor().as_descriptor_with_libdivide()) , evaluating_walker_type{root->shape(),args.create_walker()...})};
 //             };
 //     }
-    
+
 // public:
 
 //     template<typename...Args>
@@ -109,7 +109,7 @@ public:
 
 //     walker<ValT,CfgT> create_walker()const{
 //         return std::apply([this](const auto&...args){return detail::dispatcher<ValT,CfgT>::call(walker_maker(), *args...);}, operands);
-//     }        
+//     }
 //     indexer<ValT,CfgT> create_indexer()const{
 //         return std::apply([this](const auto&...args){return detail::dispatcher<ValT,CfgT>::call(indexer_maker(), *args...);}, operands);
 //     }
@@ -117,10 +117,10 @@ public:
 
 // template<typename ValT, typename CfgT>
 // class evaluating_walker_factory
-// {    
+// {
 //     using value_type = ValT;
 //     using shape_type = typename CfgT::shape_type;
-    
+
 //     template<typename F>
 //     struct walker_maker{
 //         const shape_type& shape;
@@ -130,10 +130,10 @@ public:
 //         template<typename...Args>
 //         walker<ValT,CfgT> operator()(const Args&...args)const{
 //             using evaluating_walker_type = evaluating_walker<ValT,CfgT,F,decltype(std::declval<Args>().create_walker())...>;
-//             return std::make_unique<evaluating_walker_polymorphic<ValT,CfgT,evaluating_walker_type>>(evaluating_walker_type{shape,args.create_walker()...});            
+//             return std::make_unique<evaluating_walker_polymorphic<ValT,CfgT,evaluating_walker_type>>(evaluating_walker_type{shape,args.create_walker()...});
 //         }
 //     };
-    
+
 //     template<typename StT, typename F>
 //     struct indexer_maker{
 //         using strides_type = StT;
@@ -147,9 +147,9 @@ public:
 //         indexer<ValT,CfgT> operator()(const Args&...args)const{
 //             using evaluating_walker_type = evaluating_walker<ValT,CfgT,F,decltype(std::declval<Args>().create_walker())...>;
 //             using evaluating_indexer_type = evaluating_indexer<ValT,CfgT,evaluating_walker_type>;
-//             return std::make_unique<evaluating_indexer_type>(strides, evaluating_walker_type{shape,args.create_walker()...});            
+//             return std::make_unique<evaluating_indexer_type>(strides, evaluating_walker_type{shape,args.create_walker()...});
 //         }
-//     };    
+//     };
 
 //     template<typename StT, typename F>
 //     static auto maker_maker(const shape_type& shape, const StT& strides, F){return indexer_maker<StT,F>{shape,strides};}
@@ -157,14 +157,14 @@ public:
 //     static auto maker_maker(const shape_type& shape, F){return walker_maker<F>{shape};}
 
 //     template<typename MakerT, typename...Ops, std::size_t...I>
-//     static auto create_helper(const MakerT& maker, const std::tuple<Ops...>& operands, std::index_sequence<I...>){        
+//     static auto create_helper(const MakerT& maker, const std::tuple<Ops...>& operands, std::index_sequence<I...>){
 //         return detail::dispatcher<ValT,CfgT>::call(maker, *std::get<I>(operands)...);
 //     }
 
-// public: 
+// public:
 //     template<typename DescT, typename F, typename...Ops>
 //     static auto create_walker(const DescT& descriptor, const F&, const std::tuple<Ops...>& operands){
-//         return create_helper(maker_maker(descriptor.shape(), F{}), operands, std::make_index_sequence<sizeof...(Ops)>{});        
+//         return create_helper(maker_maker(descriptor.shape(), F{}), operands, std::make_index_sequence<sizeof...(Ops)>{});
 //     }
 //     template<typename DescT, typename F, typename...Ops>
 //     static indexer<ValT,CfgT> create_indexer(const DescT& descriptor, const F&, const std::tuple<Ops...>& operands){
@@ -178,16 +178,16 @@ public:
 // template<typename ValT, template<typename> typename Cfg>
 // class polymorphic_walker_factory
 // {
-//     using config_type = Cfg<ValT>;        
+//     using config_type = Cfg<ValT>;
 //     using value_type = ValT;
-//     using shape_type = typename config_type::shape_type;    
-//     using index_type = typename config_type::index_type;    
+//     using shape_type = typename config_type::shape_type;
+//     using index_type = typename config_type::index_type;
 
 //     static walker<ValT,Cfg> create_walker_helper(const tensor_base<ValT,Cfg>&, const shape_type& shape, const shape_type& strides, const value_type* data){
 //         return std::unique_ptr<walker_base<ValT,Cfg>>{new storage_walker_polymorphic<ValT,Cfg>{shape,strides,data}};
-//     }    
+//     }
 //     template<typename F, typename...Ops>
-//     static walker<ValT,Cfg> create_walker_helper(const tensor_base<ValT,Cfg>& expression,const F& f, const std::tuple<Ops...>& operands, const value_type* cache){        
+//     static walker<ValT,Cfg> create_walker_helper(const tensor_base<ValT,Cfg>& expression,const F& f, const std::tuple<Ops...>& operands, const value_type* cache){
 //         if (expression.is_storage()){
 //             return create_walker_helper(expression, expression.descriptor().shape(), expression.descriptor().strides(), cache);
 //         }else if(expression.is_trivial()){
@@ -197,9 +197,9 @@ public:
 //         }
 //     }
 //     static walker<ValT,Cfg> create_walker_helper(
-//                                                 const tensor_base<ValT,Cfg>& view, 
-//                                                 const tensor_base<ValT,Cfg>& view_parent, 
-//                                                 const tensor_base<ValT,Cfg>& view_root, 
+//                                                 const tensor_base<ValT,Cfg>& view,
+//                                                 const tensor_base<ValT,Cfg>& view_parent,
+//                                                 const tensor_base<ValT,Cfg>& view_root,
 //                                                 const value_type* cache)
 //     {
 //         if (detail::is_storage(view)){
@@ -210,8 +210,8 @@ public:
 //             return std::unique_ptr<walker_base<ValT,Cfg>>{new viewing_evaluating_walker<ValT,Cfg>{
 //                 view.descriptor().shape(),
 //                 view.descriptor().cstrides(),
-//                 view.descriptor().offset(), 
-//                 view_parent.as_converting(), 
+//                 view.descriptor().offset(),
+//                 view_parent.as_converting(),
 //                 view_root.as_evaluating()->create_storage()
 //                 }
 //             };
@@ -220,7 +220,7 @@ public:
 //         }
 //     }
 
-    
+
 
 
 //     template<typename F, typename...Ops, std::size_t...I>
@@ -245,7 +245,7 @@ public:
 
 // template<typename ValT, template<typename> typename Cfg, typename F, typename...Ops>
 // class evaluating_walker_factory : public walker_factory_base<ValT,Cfg>{
-//     using config_type = Cfg<ValT>;        
+//     using config_type = Cfg<ValT>;
 //     using value_type = ValT;
 //     using shape_type = typename config_type::shape_type;
 //     using evaluating_walker_type = evaluating_walker_polymorphic<ValT,Cfg,F,decltype(std::declval<Ops>()->create_walker())...>;
@@ -253,7 +253,7 @@ public:
 //     const shape_type* shape;
 //     const F* f;
 //     const std::tuple<Ops...>* operands;
-    
+
 //     template<std::size_t...I>
 //     walker<ValT,Cfg> create_walker_helper(std::index_sequence<I...>)const{
 //         return std::unique_ptr<walker_base<ValT,Cfg>>{new evaluating_walker_type{*shape,*f,std::get<I>(*operands)->create_walker()...}};
@@ -271,7 +271,7 @@ public:
 
 // template<typename ValT, template<typename> typename Cfg>
 // class trivial_ewalker_factory : public walker_factory_base<ValT,Cfg>{
-//     using config_type = Cfg<ValT>;        
+//     using config_type = Cfg<ValT>;
 //     using value_type = ValT;
 //     using shape_type = typename config_type::shape_type;
 //     using trivial_ewalker_type = evaluating_trivial_walker<ValT,Cfg>;
@@ -279,7 +279,7 @@ public:
 //     const shape_type* shape;
 //     const shape_type* strides;
 //     const tensor_impl_base<ValT,Cfg>* parent;
-    
+
 // public:
 //     trivial_ewalker_factory(const shape_type& shape_, const shape_type& strides_, const tensor_impl_base<ValT,Cfg>& parent_):
 //         shape{&shape_},
@@ -293,11 +293,11 @@ public:
 
 // template<typename ValT, template<typename> typename Cfg, typename ParentT, typename DescT, typename F, typename...Ops>
 // class walker_of_expression_factory : public walker_factory_base<ValT,Cfg>{
-//     using config_type = Cfg<ValT>;        
+//     using config_type = Cfg<ValT>;
 //     using value_type = ValT;
 //     using index_type = typename config_type::index_type;
 //     using shape_type = typename config_type::shape_type;
-    
+
 //     const ParentT* parent;
 //     storage_walker_factory<ValT,Cfg> storage_walker_maker;
 //     evaluating_walker_factory<ValT,Cfg,F,Ops...> evaluating_walker_maker;
@@ -312,7 +312,7 @@ public:
 //             return evaluating_walker_maker.create_walker();
 //         }
 //         //return parent->is_cached() ? storage_walker_maker.create_walker() : evaluating_walker_maker.create_walker();
-//     }    
+//     }
 // public:
 //     template<typename CacheT>
 //     walker_of_expression_factory(const ParentT& parent_, const DescT& descriptor_, const F& f_, const CacheT& cache_, const std::tuple<Ops...>& operands_):
@@ -324,20 +324,20 @@ public:
 // };
 
 // template<typename ValT, template<typename> typename Cfg, typename ParentT, typename DescT, typename StorT>
-// class walker_of_view_factory : public walker_factory_base<ValT,Cfg>{    
+// class walker_of_view_factory : public walker_factory_base<ValT,Cfg>{
 //     using vwalker_type = vwalker_impl<ValT,Cfg,DescT,StorT>;
-    
+
 //     const ParentT* parent;
 //     const DescT* descriptor;
 //     const StorT* elements;
 //     storage_walker_factory<ValT,Cfg> storage_walker_maker;
 
-//     walker<ValT, Cfg> create_vwalker_helper()const{        
+//     walker<ValT, Cfg> create_vwalker_helper()const{
 //         return std::unique_ptr<walker_base<ValT,Cfg>>{new vwalker_type{*descriptor,*elements}};
 //     }
-//     walker<ValT, Cfg> create_walker()const override{        
+//     walker<ValT, Cfg> create_walker()const override{
 //         return parent->is_cached() ? storage_walker_maker.create_walker() : create_vwalker_helper();
-//     }    
+//     }
 // public:
 //     template<typename CacheT>
 //     walker_of_view_factory(const ParentT& parent_, const DescT& descriptor_, const StorT& elements_, const CacheT& cache_):
@@ -350,13 +350,13 @@ public:
 
 // template<typename ValT, template<typename> typename Cfg>
 // class walker_factory : public walker_factory_base<ValT,Cfg>{
-//     using config_type = Cfg<ValT>;        
+//     using config_type = Cfg<ValT>;
 //     using value_type = ValT;
 //     using index_type = typename config_type::index_type;
 //     using shape_type = typename config_type::shape_type;
 
 //     std::unique_ptr<walker_factory_base<ValT,Cfg>> factory;
-    
+
 //     template<typename...T, typename DescT, typename StorT>
 //     void reset_factory(const stensor_impl<T...>& parent, DescT& descriptor, StorT& elements){
 //         factory.reset(new storage_walker_factory<ValT, Cfg>{descriptor.shape(),descriptor.strides(),elements.data()});
@@ -371,7 +371,7 @@ public:
 //         using parent_type = view_impl<T...>;
 //         factory.reset(new walker_of_view_factory<ValT,Cfg,parent_type,DescT,StorT>{parent_,descriptor_,elements_,cache_});
 //     }
-// public:    
+// public:
 //     walker<ValT, Cfg> create_walker()const override{return factory->create_walker();}
 
 //     walker_factory() = default;
