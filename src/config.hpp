@@ -53,6 +53,7 @@ struct default_config{
     //using storage_type = gtensor::detail::shareable_storage<std::vector<value_type>>;
     //using storage_type = std::vector<value_type>;
     using shape_type = trivial_type_vector::uvector<index_type>;
+    //using shape_type = std::vector<index_type>;
 
     using nop_type = NOP;
     using slice_type = slice<index_type, nop_type>;

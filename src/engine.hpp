@@ -33,13 +33,13 @@ template<typename ValT, typename CfgT>
 class storage_engine :
     protected engine_host_accessor<ValT, CfgT>
 {
-    using typename engine_host_accessor::host_type;
-    using index_type = typename CfgT::index_type;
+public:
     using value_type = ValT;
-    using storage_type = typename CfgT::template storage<value_type>;
-
-    storage_type elements_;
+    using config_type = CfgT;
 protected:
+    using index_type = typename config_type::index_type;
+    using typename engine_host_accessor::host_type;
+    using storage_type = typename config_type::template storage<value_type>;
     const value_type* data()const{return elements_.data();}
 public:
     template<typename Nested>
@@ -52,17 +52,20 @@ public:
         engine_host_accessor{host},
         elements_(size, v)
     {}
+private:
+    storage_type elements_;
 };
 
 template<typename ValT, typename CfgT, typename F, typename...Ops>
 class evaluating_engine :
     protected engine_host_accessor<ValT, CfgT>
 {
-    using operand_base_type = std::shared_ptr<tensor_base_base<CfgT>>;
-    using typename engine_host_accessor::host_type;
-    F f_;
-    std::array<operand_base_type,sizeof...(Ops)> operands_;
+public:
+    using value_type = ValT;
+    using config_type = CfgT;
 protected:
+    using operand_base_type = std::shared_ptr<tensor_base_base<config_type>>;
+    using typename engine_host_accessor::host_type;
     const auto& operands()const{return operands_;}
 public:
     template<typename...Ts>
@@ -71,22 +74,29 @@ public:
         f_{std::move(f)},
         operands_{std::forward<Ts>(operands)...}
     {}
+private:
+    F f_;
+    std::array<operand_base_type,sizeof...(Ops)> operands_;
 };
 
 template<typename ValT, typename CfgT, typename ParentT>
 class viewing_engine :
     protected engine_host_accessor<ValT, CfgT>
 {
+public:
+    using value_type = ValT;
+    using config_type = CfgT;
+protected:
     using typename engine_host_accessor::host_type;
     using parent_type = ParentT;
-
-    std::shared_ptr<parent_type> parent_;
 public:
     template<typename U>
     viewing_engine(host_type* host, U&& parent):
         engine_host_accessor{host},
         parent_{std::forward<U>(parent)}
     {}
+private:
+    std::shared_ptr<parent_type> parent_;
 };
 
 }   //end of namespace gtensor

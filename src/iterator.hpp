@@ -16,7 +16,7 @@ namespace detail{
 */
 template<typename ValT, typename CfgT, typename Wkr>
 class multiindex_iterator{
-    using walker_type = Wkr;    
+    using walker_type = Wkr;
     using shape_type = typename CfgT::shape_type;
     using index_type = typename CfgT::index_type;
     using strides_type = typename detail::libdiv_strides_traits<CfgT>::type;
@@ -34,12 +34,12 @@ public:
     detail::shape_inverter<index_type,shape_type> shape;
     const strides_type* strides;
     difference_type flat_index;
-    
+
     shape_type multi_index = shape_type(dim_dec+2,index_type(1));
 
     auto& advance(difference_type);
 
-public:    
+public:
 
     //begin constructor
     template<typename W>
@@ -61,8 +61,8 @@ public:
     {
         ++multi_index.front();
     }
-    
-    bool operator==(const multiindex_iterator& it)const{return flat_index == it.flat_index;}    
+
+    bool operator==(const multiindex_iterator& it)const{return flat_index == it.flat_index;}
     bool operator!=(const multiindex_iterator& it)const{return flat_index != it.flat_index;}
 
     auto& operator++();
@@ -101,7 +101,7 @@ auto& multiindex_iterator<ValT,CfgT,Wkr>::operator++(){
             if (idx_it == idx_first){
                 ++flat_index;
                 ++(*idx_it);
-            }            
+            }
         }
         else{
             walker.step(d);
@@ -109,10 +109,9 @@ auto& multiindex_iterator<ValT,CfgT,Wkr>::operator++(){
             ++flat_index;
             break;
         }
-    }           
+    }
     return *this;
 }
-
 template<typename ValT, typename CfgT, typename Wkr>
 auto& multiindex_iterator<ValT,CfgT,Wkr>::operator--(){
     index_type d{0};
@@ -127,15 +126,15 @@ auto& multiindex_iterator<ValT,CfgT,Wkr>::operator--(){
             if (idx_it == idx_first){
                 --flat_index;
                 --(*idx_it);
-            }                           
+            }
         }
-        else{            
+        else{
             walker.step_back(d);
             --(*idx_it);
-            --flat_index;            
+            --flat_index;
             break;
         }
-    }        
+    }
     return *this;
 }
 
@@ -154,7 +153,7 @@ auto& multiindex_iterator<ValT,CfgT,Wkr>::advance(difference_type n){
             walker.walk(d,q);
             *multi_it = q+1;
         }
-    }    
+    }
     return *this;
 }
 

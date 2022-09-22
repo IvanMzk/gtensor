@@ -10,8 +10,9 @@ template<typename CfgT>
 class tensor_base_base
 {
 protected:
-    using index_type = typename CfgT::index_type;
-    using shape_type = typename CfgT::shape_type;
+    using config_type = CfgT;
+    using index_type = typename config_type::index_type;
+    using shape_type = typename config_type::shape_type;
 public:
     virtual ~tensor_base_base(){}
 
@@ -21,15 +22,20 @@ public:
     virtual const shape_type& strides()const = 0;
     virtual const shape_type& reset_strides()const = 0;
     virtual std::string to_str()const = 0;
-    virtual const descriptor_base<CfgT>& descriptor()const = 0;
+    virtual const descriptor_base<config_type>& descriptor()const = 0;
 
-    virtual const converting_base<CfgT>* as_converting()const{return nullptr;}
+    virtual const converting_base<config_type>* as_converting()const{return nullptr;}
 };
 
 template<typename ValT, typename CfgT>
 class tensor_base : public tensor_base_base<CfgT>
 {
+protected:
+    using typename tensor_base_base::config_type;
+    using typename tensor_base_base::index_type;
+    using typename tensor_base_base::shape_type;
 public:
+    using value_type = ValT;
     virtual ~tensor_base(){}
 };
 

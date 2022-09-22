@@ -14,14 +14,14 @@ static inline auto NAME(const tensor<ValT1, CfgT, ImplT1>& op1, const tensor<Val
     using operand1_type = ImplT1;\
     using operand2_type = ImplT2;\
     using engine_type = typename detail::evaluating_engine_traits<typename CfgT::engine, result_type, CfgT, operation_type, operand1_type, operand2_type>::type;\
-    using impl_type = evaluating_tensor<result_type, CfgT, engine_type>;\
+    using impl_type = evaluating_tensor<engine_type>;\
     return tensor<result_type,CfgT, impl_type>{std::make_shared<impl_type>(operation_type{}, op1.impl(),op2.impl())};\
 }
 
 
 namespace gtensor{
 
-struct tensor_operators_impl{    
+struct tensor_operators_impl{
 
     BINARY_OPERATOR_IMPL(operator_add_impl, gtensor::binary_operations::add);
     BINARY_OPERATOR_IMPL(operator_sub_impl, gtensor::binary_operations::sub);

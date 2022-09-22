@@ -137,14 +137,11 @@ TEMPLATE_TEST_CASE("benchmark_experimental_expression_template","[benchmark_expe
     using gtensor::multiindex_iterator;
 
 
-    shape_type shape1{1,1,3,1,5,1,7,1,9,1};
-    shape_type shape2{1,2,1,4,1,6,1,8,1,10};
+    // shape_type shape1{1,1,3,1,5,1,7,1,9,1};
+    // shape_type shape2{1,2,1,4,1,6,1,8,1,10};
 
-    // shape_type shape1{1,2,1,4,1,6,1,8,1,10};
-    // shape_type shape2{1,2,3,4,5,6,7,8,9,10};
-
-    // shape_type shape1{1, 10000};
-    // shape_type shape2{10,10000};
+    shape_type shape1{1, 10000};
+    shape_type shape2{10,10000};
 
     // shape_type shape1{1,3000};
     // shape_type shape2{3000,1};
@@ -155,9 +152,22 @@ TEMPLATE_TEST_CASE("benchmark_experimental_expression_template","[benchmark_expe
 /*
 *   no dispatch engine benchmarks
 */
+    // auto t1 = tensor_no_dispatch_type(shape1, 0.0f);
+    // auto t2 = tensor_no_dispatch_type(shape2, 0.0f);
+    // auto e = t1+t2;
+    // benchmark_with_making_iter(making_iter_iterate_deref,e,"tensor_no_dispatch");
+
+    benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_maker<50>>{}(shape_type{10, 10000}, shape_type{10,10000});
+    benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_trivial_subtree_maker<50>>{}(shape_type{10, 10000}, shape_type{1,10000});
+    benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_maker<50>>{}(shape_type{1, 10000}, shape_type{10,10000});
+
     benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_maker<100>>{}(shape_type{10, 10000}, shape_type{10,10000});
     benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_trivial_subtree_maker<100>>{}(shape_type{10, 10000}, shape_type{1,10000});
     benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_maker<100>>{}(shape_type{1, 10000}, shape_type{10,10000});
+
+    // benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_maker<200>>{}(shape_type{10, 10000}, shape_type{10,10000});
+    // benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_trivial_subtree_maker<200>>{}(shape_type{10, 10000}, shape_type{1,10000});
+    // benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_maker<200>>{}(shape_type{1, 10000}, shape_type{10,10000});
 
 /*
 *   walker dispatch engine benchmarks

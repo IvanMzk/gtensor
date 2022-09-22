@@ -24,7 +24,7 @@ static inline auto NAME(const test_tensor<DispatchDepth, ValT1, CfgT, ImplT1>& o
     using operand1_type = ImplT1;\
     using operand2_type = ImplT2;\
     using engine_type = evaluating_engine_traits<DispatchDepth, result_type, CfgT, operation_type, operand1_type, operand2_type>::type;\
-    using impl_type = evaluating_tensor<result_type, CfgT, engine_type>;\
+    using impl_type = evaluating_tensor<engine_type>;\
     return test_tensor<DispatchDepth, result_type,CfgT, impl_type>{std::make_shared<impl_type>(operation_type{}, op1.impl(),op2.impl())};\
 }
 
@@ -47,7 +47,7 @@ using gtensor::detail::list_concat;
 using gtensor::detail::cross_product;
 using gtensor::detail::is_trivial;
 
-template<typename DispatchDepth, typename ValT, typename CfgT, typename ImplT = storage_tensor<ValT,CfgT, typename storage_engine_traits<ValT,CfgT>::type >>
+template<typename DispatchDepth, typename ValT, typename CfgT, typename ImplT = storage_tensor<typename storage_engine_traits<ValT,CfgT>::type >>
 class test_tensor : public tensor<ValT,CfgT, ImplT>{
 
     struct polymorphic_walker_maker{
@@ -110,6 +110,8 @@ template<typename ValT, typename CfgT>
 class variant_dispatch_storage_engine : public storage_engine<ValT,CfgT>
 {
 public:
+    using typename storage_engine::value_type;
+    using typename storage_engine::config_type;
     using walker_types = type_list<storage_walker<ValT,CfgT>>;
     using trivial_walker_type = storage_trivial_walker<ValT,CfgT>;
     using variant_type = typename make_variant_type<walker_types>::type;
@@ -123,23 +125,24 @@ public:
 template<typename DispatchDepth, typename ValT, typename CfgT, typename F, typename...Ops>
 class variant_dispatch_engine : public evaluating_engine<ValT,CfgT,F,Ops...>
 {
+public:
+    using typename evaluating_engine::value_type;
+    using typename evaluating_engine::config_type;
 private:
     static constexpr std::size_t max_walker_types_size = DispatchDepth::value;
     static constexpr std::size_t walker_types_size = (Ops::engine_type::walker_types::size*...);
-    template<typename...Us> using evaluating_walker_alias = evaluating_walker<ValT, CfgT, F, Us...>;
+    template<typename...Us> using evaluating_walker_alias = evaluating_walker<value_type, config_type, F, Us...>;
 
     template<bool> struct walker_types_traits{
         using type = typename cross_product<evaluating_walker_alias, typename Ops::engine_type::walker_types...>::type;
     };
     template<> struct walker_types_traits<false>{
-        using type = type_list<walker<ValT,CfgT>>;
+        using type = type_list<walker<value_type,config_type>>;
     };
 public:
-
-    using value_type = ValT;
-    using trivial_walker_type = evaluating_trivial_root_walker<ValT,CfgT,F,typename Ops::engine_type::trivial_walker_type...>;
+    using trivial_walker_type = evaluating_trivial_root_walker<value_type,config_type,F,typename Ops::engine_type::trivial_walker_type...>;
     using walker_types = typename list_concat<
-            //type_list<storage_walker<ValT,CfgT>>,
+            //type_list<storage_walker<value_type,config_type>>,
             type_list<trivial_walker_type>,
             typename walker_types_traits<(walker_types_size<max_walker_types_size)>::type >::type;
     using variant_type = typename make_variant_type<walker_types>::type;
@@ -155,14 +158,14 @@ public:
     }
     template<typename...Wks>
     auto create_broadcast_walker_helper(std::true_type, Wks&&...walkers)const{
-        return variant_type{evaluating_walker<ValT,CfgT,F,std::decay_t<Wks>...>{host()->shape(),std::forward<Wks>(walkers)...}};
+        return variant_type{evaluating_walker<value_type,config_type,F,std::decay_t<Wks>...>{host()->shape(),std::forward<Wks>(walkers)...}};
     }
     template<typename...Wks>
     auto create_broadcast_walker_helper(std::false_type, Wks&&...walkers)const{
-        using impl_type = evaluating_walker<ValT,CfgT,F,std::decay_t<Wks>...>;
-        using walker_polymorphic_type = walker_polymorphic<ValT,CfgT,impl_type>;
+        using impl_type = evaluating_walker<value_type,config_type,F,std::decay_t<Wks>...>;
+        using walker_polymorphic_type = walker_polymorphic<value_type,config_type,impl_type>;
         return variant_type{
-            walker<ValT,CfgT>{
+            walker<value_type,config_type>{
                 std::make_unique<walker_polymorphic_type>(impl_type{host()->shape(),std::forward<Wks>(walkers)...})
             }
         };
@@ -185,7 +188,9 @@ public:
         return std::apply(
             [this](const auto&...operands){
                 return [this](auto&&...walkers){
-                    return evaluating_trivial_root_walker<ValT,CfgT,F,std::decay_t<decltype(walkers)>...>{host()->shape(),host()->strides(),host()->reset_strides(),std::forward<decltype(walkers)>(walkers)...};
+                    return evaluating_trivial_root_walker<value_type,config_type,F,std::decay_t<decltype(walkers)>...>{
+                        host()->shape(),host()->strides(),host()->reset_strides(),std::forward<decltype(walkers)>(walkers)...
+                    };
                 }(static_cast<Ops*>(operands.get())->engine().create_trivial_walker()...);
             },
             operands()

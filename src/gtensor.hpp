@@ -23,7 +23,7 @@ template<typename...Ts> struct is_tensor<tensor<Ts...>> : std::true_type{};
 * in aplication client use tensor abstraction objects with different implementations, can combine it using operators
 * client can evaluate tensor object with expression or view implementation to have tensor with stensor_impl implementation
 */
-template<typename ValT, typename CfgT, typename ImplT = storage_tensor<ValT, CfgT, typename detail::storage_engine_traits<typename CfgT::engine,ValT,CfgT>::type>>
+template<typename ValT, typename CfgT = config::default_config, typename ImplT = storage_tensor<typename detail::storage_engine_traits<typename CfgT::engine,ValT,CfgT>::type>>
 class tensor{
     using tensor_base_type = tensor_base<ValT, CfgT>;
     using impl_type = ImplT;

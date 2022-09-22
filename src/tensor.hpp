@@ -8,12 +8,14 @@
 
 namespace gtensor{
 
-template<typename ValT, typename CfgT, typename DescT, typename EngineT>
-class basic_tensor : public tensor_base<ValT, CfgT>
+template<typename DescT, typename EngineT>
+class basic_tensor : public tensor_base<typename EngineT::value_type, typename EngineT::config_type>
 {
 protected:
     using descriptor_type = DescT;
     using engine_type = EngineT;
+    using typename tensor_base::value_type;
+    using typename tensor_base::config_type;
     using typename tensor_base::index_type;
     using typename tensor_base::shape_type;
     basic_tensor(engine_type&& engine__,descriptor_type&& descriptor__):
@@ -34,17 +36,18 @@ private:
     descriptor_type descriptor_;
 };
 
-template<typename ValT, typename CfgT, typename EngineT>
-class storage_tensor : public basic_tensor<ValT, CfgT, basic_descriptor<CfgT>, EngineT>
+template<typename EngineT>
+class storage_tensor : public basic_tensor<basic_descriptor<typename EngineT::config_type>, EngineT>
 {
 public:
-    using value_type = ValT;
     using engine_type = typename basic_tensor::engine_type;
+    using typename basic_tensor::value_type;
+    using typename basic_tensor::config_type;
 private:
     using typename basic_tensor::descriptor_type;
     using typename basic_tensor::index_type;
     using typename basic_tensor::shape_type;
-    static_assert(std::is_convertible_v<engine_type*, storage_engine<ValT,CfgT>*>);
+    static_assert(std::is_convertible_v<engine_type*, storage_engine<value_type,config_type>*>);
 
     template<typename ShT, typename Nested>
     storage_tensor(ShT&& shape, const std::initializer_list<Nested>& init_data):
@@ -70,12 +73,13 @@ public:
     {}
 };
 
-template<typename ValT, typename CfgT, typename EngineT>
-class evaluating_tensor : public basic_tensor<ValT, CfgT, descriptor_with_libdivide<CfgT>, EngineT>
+template<typename EngineT>
+class evaluating_tensor : public basic_tensor<descriptor_with_libdivide<typename EngineT::config_type>, EngineT>
 {
 public:
-    using value_type = ValT;
     using engine_type = typename basic_tensor::engine_type;
+    using typename basic_tensor::value_type;
+    using typename basic_tensor::config_type;
 private:
     using typename basic_tensor::descriptor_type;
     using typename basic_tensor::index_type;
@@ -94,12 +98,13 @@ public:
     }
 };
 
-template<typename ValT, typename CfgT, typename DescT, typename EngineT>
-class viewing_tensor : public basic_tensor<ValT, CfgT, DescT, EngineT>
+template<typename DescT, typename EngineT>
+class viewing_tensor : public basic_tensor<DescT, EngineT>
 {
 public:
-    using value_type = ValT;
     using engine_type = typename basic_tensor::engine_type;
+    using typename basic_tensor::value_type;
+    using typename basic_tensor::config_type;
 private:
     using typename basic_tensor::descriptor_type;
     using typename basic_tensor::index_type;
@@ -109,13 +114,9 @@ public:
     viewing_tensor(descriptor_type&& descriptor, U&& parent):
         basic_tensor{engine_type{this,std::forward<U>(parent)},std::move(descriptor)}
     {
-        static_assert(std::is_convertible_v<engine_type*, viewing_engine<ValT,CfgT,std::decay_t<U>::element_type>*>);
+        static_assert(std::is_convertible_v<engine_type*, viewing_engine<value_type,config_type,std::decay_t<U>::element_type>*>);
     }
 };
-
-
-
-
 
 }   //end of namespace gtensor
 

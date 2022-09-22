@@ -11,6 +11,7 @@ constexpr inline bool can_walk_eval(const IdxT&, const IdxT&, const IdxT&){
 }
 template<typename IdxT>
 constexpr inline bool can_walk(const IdxT& direction, const IdxT& dim, const IdxT& direction_dim){
+    //return direction < dim;
     return direction < dim && direction_dim != IdxT(1);
 }
 

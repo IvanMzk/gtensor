@@ -24,7 +24,7 @@ static inline auto NAME(const test_tensor<ValT1, CfgT, ImplT1>& op1, const test_
     using operand1_type = ImplT1;\
     using operand2_type = ImplT2;\
     using engine_type = evaluating_engine_traits<result_type, CfgT, operation_type, operand1_type, operand2_type>::type;\
-    using impl_type = evaluating_tensor<result_type, CfgT, engine_type>;\
+    using impl_type = evaluating_tensor<engine_type>;\
     return test_tensor<result_type,CfgT, impl_type>{std::make_shared<impl_type>(operation_type{}, op1.impl(),op2.impl())};\
 }
 
@@ -43,7 +43,7 @@ using gtensor::evaluating_trivial_root_walker;
 using gtensor::evaluating_trivial_walker;
 using gtensor::multiindex_iterator;
 
-template<typename ValT, typename CfgT, typename ImplT = storage_tensor<ValT,CfgT, typename storage_engine_traits<ValT,CfgT>::type >>
+template<typename ValT, typename CfgT, typename ImplT = storage_tensor<typename storage_engine_traits<ValT,CfgT>::type >>
 class test_tensor : public tensor<ValT,CfgT, ImplT>{
 
 public:
@@ -64,6 +64,8 @@ template<typename ValT, typename CfgT>
 class polywalker_storage_engine : public storage_engine<ValT,CfgT>
 {
 public:
+    using typename storage_engine::value_type;
+    using typename storage_engine::config_type;
     using storage_engine::storage_engine;
     bool is_trivial()const{return true;}
     auto create_walker()const{
@@ -78,6 +80,8 @@ template<typename ValT, typename CfgT, typename F, typename...Ops>
 class polywalker_engine : public evaluating_engine<ValT,CfgT,F,Ops...>
 {
 public:
+    using typename evaluating_engine::value_type;
+    using typename evaluating_engine::config_type;
     using evaluating_engine::evaluating_engine;
     bool is_trivial()const{
         return std::apply(
@@ -161,7 +165,7 @@ using gtensor::evaluating_trivial_root_walker;
 using gtensor::storage_trivial_walker;
 using gtensor::multiindex_iterator;
 
-template<typename ValT, typename CfgT, typename ImplT = storage_tensor<ValT,CfgT, typename storage_engine_traits<ValT,CfgT>::type >>
+template<typename ValT, typename CfgT, typename ImplT = storage_tensor<typename storage_engine_traits<ValT,CfgT>::type >>
 class test_tensor : public tensor<ValT,CfgT, ImplT>{
 
 public:
@@ -182,6 +186,8 @@ template<typename ValT, typename CfgT>
 class no_dispatching_storage_engine : public storage_engine<ValT,CfgT>
 {
 public:
+    using typename storage_engine::value_type;
+    using typename storage_engine::config_type;
     using storage_engine::storage_engine;
     bool is_trivial()const{return true;}
     auto create_walker()const{return create_broadcast_walker();}
@@ -193,6 +199,8 @@ template<typename ValT, typename CfgT, typename F, typename...Ops>
 class no_dispatching_engine_root_dispatch : public evaluating_engine<ValT,CfgT,F,Ops...>
 {
 public:
+    using typename evaluating_engine::value_type;
+    using typename evaluating_engine::config_type;
     using evaluating_engine::evaluating_engine;
     bool is_trivial()const{
         return std::apply(
@@ -258,8 +266,9 @@ template<typename ValT, typename CfgT, typename F, typename...Ops>
 class no_dispatching_engine : public evaluating_engine<ValT,CfgT,F,Ops...>
 {
 public:
+    using typename evaluating_engine::value_type;
+    using typename evaluating_engine::config_type;
     using evaluating_engine::evaluating_engine;
-    //bool is_trivial()const{return gtensor::detail::is_trivial(host()->size(),operands());}
     bool is_trivial()const{
         return std::apply(
             [this](const auto&...operands){
@@ -282,51 +291,12 @@ public:
     }
 };
 
-template<typename ValT, typename CfgT, typename F, typename...Ops>
-class no_dispatching_engine_with_apply : public evaluating_engine<ValT,CfgT,F,Ops...>
-{
-public:
-    using evaluating_engine::evaluating_engine;
-    bool is_trivial()const{return gtensor::detail::is_trivial(host()->size(),operands());}
-    template<std::size_t...I>
-    auto create_walker()const{
-        return std::apply(
-            [this](const auto&...operands){
-                return [this](auto&&...walkers){
-                    return evaluating_walker<ValT,CfgT,F,std::decay_t<decltype(walkers)>...>{host()->shape(),std::forward<decltype(walkers)>(walkers)...};
-                }(static_cast<Ops*>(operands.get())->engine().create_walker()...);
-            },
-            operands()
-        );
-    }
-};
-
-template<typename ValT, typename CfgT, typename F, typename...Ops>
-class no_dispatching_engine_without_apply : public evaluating_engine<ValT,CfgT,F,Ops...>
-{
-public:
-    using evaluating_engine::evaluating_engine;
-    bool is_trivial()const{return gtensor::detail::is_trivial(host()->size(),operands());}
-    template<std::size_t...I>
-    auto create_walker_helper(std::index_sequence<I...>)const{
-        return [this](auto&&...walkers){
-            return evaluating_walker<ValT,CfgT,F,std::decay_t<decltype(walkers)>...>{host()->shape(),std::forward<decltype(walkers)>(walkers)...};
-        }(static_cast<Ops*>(std::get<I>(operands()).get())->engine().create_walker()...);
-    }
-    template<std::size_t...I>
-    auto create_walker()const{
-        return create_walker_helper(std::make_index_sequence<sizeof...(Ops)>{});
-    }
-};
-
 template<typename...> struct storage_engine_traits;
 template<typename ValT, typename CfgT> struct storage_engine_traits<ValT,CfgT>{
     using type = no_dispatching_storage_engine<ValT,CfgT>;
 };
 template<typename...> struct evaluating_engine_traits;
 template<typename ValT, typename CfgT,  typename F, typename...Ops> struct evaluating_engine_traits<ValT,CfgT,F,Ops...>{
-    //using type = no_dispatching_engine_without_apply<ValT,CfgT,F,Ops...>;
-    //using type = no_dispatching_engine_with_apply<ValT,CfgT,F,Ops...>;
     //using type = no_dispatching_engine_root_dispatch<ValT,CfgT,F,Ops...>;
     using type = no_dispatching_engine<ValT,CfgT,F,Ops...>;
 };
@@ -444,7 +414,7 @@ public:
     }
 };
 
-template<typename ValT, typename CfgT, typename ImplT = storage_tensor<ValT,CfgT, typename storage_engine_traits<ValT,CfgT>::type >>
+template<typename ValT, typename CfgT, typename ImplT = storage_tensor<typename storage_engine_traits<ValT,CfgT>::type >>
 class test_tensor : public tensor<ValT,CfgT, ImplT>{
 public:
     using tensor<ValT,CfgT, ImplT>::tensor;
@@ -464,6 +434,8 @@ template<typename ValT, typename CfgT>
 class dispatching_in_walker_storage_engine : public storage_engine<ValT,CfgT>
 {
 public:
+    using typename storage_engine::value_type;
+    using typename storage_engine::config_type;
     using storage_engine::storage_engine;
     bool is_trivial()const{return true;}
     auto create_walker()const{return storage_walker<ValT,CfgT>{host()->shape(),host()->strides(),host()->reset_strides(),data()};}
@@ -474,6 +446,8 @@ template<typename ValT, typename CfgT, typename F, typename...Ops>
 class dispatching_in_walker_engine : public evaluating_engine<ValT,CfgT,F,Ops...>
 {
 public:
+    using typename evaluating_engine::value_type;
+    using typename evaluating_engine::config_type;
     using evaluating_engine::evaluating_engine;
     bool is_trivial()const{
         return std::apply(
