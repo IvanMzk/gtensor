@@ -6,7 +6,7 @@
 namespace gtensor{
 
 template<typename ValT, typename CfgT> class storage_engine;
-template<typename ValT, typename CfgT, typename F, typename...Ops> class evaluating_engine;
+template<typename ValT, typename CfgT, typename F, typename OperandsNumber> class evaluating_engine;
 template<typename ValT, typename CfgT, typename ParentT> class viewing_engine;
 
 template<typename ValT, typename CfgT, typename F, typename...Ops> class expression_template_engine;

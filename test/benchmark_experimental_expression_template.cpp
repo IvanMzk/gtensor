@@ -157,13 +157,13 @@ TEMPLATE_TEST_CASE("benchmark_experimental_expression_template","[benchmark_expe
     // auto e = t1+t2;
     // benchmark_with_making_iter(making_iter_iterate_deref,e,"tensor_no_dispatch");
 
-    benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_maker<50>>{}(shape_type{10, 10000}, shape_type{10,10000});
-    benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_trivial_subtree_maker<50>>{}(shape_type{10, 10000}, shape_type{1,10000});
-    benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_maker<50>>{}(shape_type{1, 10000}, shape_type{10,10000});
+    // benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_maker<50>>{}(shape_type{10, 10000}, shape_type{10,10000});
+    // benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_trivial_subtree_maker<50>>{}(shape_type{10, 10000}, shape_type{1,10000});
+    // benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_maker<50>>{}(shape_type{1, 10000}, shape_type{10,10000});
 
-    benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_maker<100>>{}(shape_type{10, 10000}, shape_type{10,10000});
-    benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_trivial_subtree_maker<100>>{}(shape_type{10, 10000}, shape_type{1,10000});
-    benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_maker<100>>{}(shape_type{1, 10000}, shape_type{10,10000});
+    // benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_maker<100>>{}(shape_type{10, 10000}, shape_type{10,10000});
+    // benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_trivial_subtree_maker<100>>{}(shape_type{10, 10000}, shape_type{1,10000});
+    // benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_maker<100>>{}(shape_type{1, 10000}, shape_type{10,10000});
 
     // benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_maker<200>>{}(shape_type{10, 10000}, shape_type{10,10000});
     // benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_trivial_subtree_maker<200>>{}(shape_type{10, 10000}, shape_type{1,10000});
@@ -179,7 +179,7 @@ TEMPLATE_TEST_CASE("benchmark_experimental_expression_template","[benchmark_expe
 /*
 *   variant dispatch engine benchmarks
 */
-    using tensor_variant_dispatch_type = expression_template_variant_dispatch::test_tensor<std::integral_constant<std::size_t,3>,value_type,config_type>;
+    // using tensor_variant_dispatch_type = expression_template_variant_dispatch::test_tensor<std::integral_constant<std::size_t,30>,value_type,config_type>;
     // benchmark_binary_tree<tensor_variant_dispatch_type,TestType,asymmetric_tree_maker<50>>{}(shape_type{10, 10000}, shape_type{10,10000});
     // benchmark_binary_tree<tensor_variant_dispatch_type,TestType,asymmetric_tree_trivial_subtree_maker<50>>{}(shape_type{10, 10000}, shape_type{1,10000});
     // benchmark_binary_tree<tensor_variant_dispatch_type,TestType,asymmetric_tree_maker<50>>{}(shape_type{1, 10000}, shape_type{10,10000});

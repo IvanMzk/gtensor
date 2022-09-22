@@ -79,7 +79,7 @@ public:
 };
 
 template<typename ValT, typename CfgT, typename F, typename...Ops>
-class expression_template_engine : public evaluating_engine<ValT,CfgT,F,Ops...>
+class expression_template_engine : public evaluating_engine<ValT,CfgT,F,std::integral_constant<std::size_t,sizeof...(Ops)>>
 {
     static constexpr std::size_t max_walker_types_size = 100;
     static constexpr std::size_t walker_types_size = (Ops::engine_type::walker_types::size*...);

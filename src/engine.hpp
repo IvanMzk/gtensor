@@ -56,7 +56,7 @@ private:
     storage_type elements_;
 };
 
-template<typename ValT, typename CfgT, typename F, typename...Ops>
+template<typename ValT, typename CfgT, typename F, typename OperandsNumber>
 class evaluating_engine :
     protected engine_host_accessor<ValT, CfgT>
 {
@@ -64,6 +64,7 @@ public:
     using value_type = ValT;
     using config_type = CfgT;
 protected:
+    constexpr static std::size_t operands_number  = OperandsNumber::value;
     using operand_base_type = std::shared_ptr<tensor_base_base<config_type>>;
     using typename engine_host_accessor::host_type;
     const auto& operands()const{return operands_;}
@@ -76,7 +77,7 @@ public:
     {}
 private:
     F f_;
-    std::array<operand_base_type,sizeof...(Ops)> operands_;
+    std::array<operand_base_type,operands_number> operands_;
 };
 
 template<typename ValT, typename CfgT, typename ParentT>

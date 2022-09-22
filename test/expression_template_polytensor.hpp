@@ -83,7 +83,7 @@ public:
 };
 
 template<typename ValT, typename CfgT, typename F, typename...ValTs>
-class polytensor_engine : public evaluating_engine<ValT,CfgT,F,ValTs...>
+class polytensor_engine : public evaluating_engine<ValT,CfgT,F,std::integral_constant<std::size_t,sizeof...(ValTs)>>
 {
 public:
     using typename evaluating_engine::value_type;

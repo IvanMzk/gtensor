@@ -77,7 +77,7 @@ public:
 };
 
 template<typename ValT, typename CfgT, typename F, typename...Ops>
-class polywalker_engine : public evaluating_engine<ValT,CfgT,F,Ops...>
+class polywalker_engine : public evaluating_engine<ValT,CfgT,F,std::integral_constant<std::size_t,sizeof...(Ops)>>
 {
 public:
     using typename evaluating_engine::value_type;
@@ -196,7 +196,7 @@ public:
 };
 
 template<typename ValT, typename CfgT, typename F, typename...Ops>
-class no_dispatching_engine_root_dispatch : public evaluating_engine<ValT,CfgT,F,Ops...>
+class no_dispatching_engine_root_dispatch : public evaluating_engine<ValT,CfgT,F,std::integral_constant<std::size_t,sizeof...(Ops)>>
 {
 public:
     using typename evaluating_engine::value_type;
@@ -263,7 +263,7 @@ public:
 };
 
 template<typename ValT, typename CfgT, typename F, typename...Ops>
-class no_dispatching_engine : public evaluating_engine<ValT,CfgT,F,Ops...>
+class no_dispatching_engine : public evaluating_engine<ValT,CfgT,F,std::integral_constant<std::size_t,sizeof...(Ops)>>
 {
 public:
     using typename evaluating_engine::value_type;
@@ -443,7 +443,7 @@ public:
 };
 
 template<typename ValT, typename CfgT, typename F, typename...Ops>
-class dispatching_in_walker_engine : public evaluating_engine<ValT,CfgT,F,Ops...>
+class dispatching_in_walker_engine : public evaluating_engine<ValT,CfgT,F,std::integral_constant<std::size_t,sizeof...(Ops)>>
 {
 public:
     using typename evaluating_engine::value_type;

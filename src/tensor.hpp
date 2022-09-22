@@ -94,7 +94,7 @@ public:
     evaluating_tensor(F&& f, Args&&...operands):
         evaluating_tensor{detail::broadcast(operands->shape()...),std::forward<F>(f),std::forward<Args>(operands)...}
     {
-        //static_assert(std::is_convertible_v<engine_type*, evaluating_engine<ValT,CfgT,std::decay_t<F>,std::decay_t<Args>::element_type...>*>);
+        //static_assert(std::is_convertible_v<engine_type*, evaluating_engine<value_type,config_type,std::decay_t<F>,std::decay_t<Args>::element_type...>*>);
     }
 };
 

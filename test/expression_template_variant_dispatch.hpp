@@ -123,7 +123,7 @@ public:
 };
 
 template<typename DispatchDepth, typename ValT, typename CfgT, typename F, typename...Ops>
-class variant_dispatch_engine : public evaluating_engine<ValT,CfgT,F,Ops...>
+class variant_dispatch_engine : public evaluating_engine<ValT,CfgT,F,std::integral_constant<std::size_t,sizeof...(Ops)>>
 {
 public:
     using typename evaluating_engine::value_type;
