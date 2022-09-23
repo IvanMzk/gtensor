@@ -74,26 +74,23 @@ struct trivial_tensor_maker{
 
 TEST_CASE("test_is_trivial","[test_expression_template_engine]"){
     using value_type = float;
-    using gtensor::tensor_base;
-    using config_type = gtensor::config::default_config;
-    using tensor_type = gtensor::tensor<value_type, config_type>;
-    using htensor_type = typename tensor_type::htensor_type;
-    using test_tensor_type = test_expression_template_helpers::test_tensor<htensor_type>;
-    using test_type = std::tuple<htensor_type, bool>;
-    //tensor,expected_is_trivial
+    using tensor_type = gtensor::tensor<value_type, test_expression_template_helpers::test_config_type>;
+    using test_expression_template_helpers::make_test_tensor;
+    using test_type = std::tuple<bool, bool>;
+    //0result is_trivial,1expected_is_trivial
     auto test_data = GENERATE(
-                                test_type(static_cast<htensor_type>(tensor_type{1}+tensor_type{1}), true),
-                                test_type(static_cast<htensor_type>(tensor_type{1,2,3,4,5}+tensor_type{1}), false),
-                                test_type(static_cast<htensor_type>(tensor_type{1,2,3,4,5}+tensor_type{1,2,3,4,5}), true),
-                                test_type(static_cast<htensor_type>(tensor_type{{1},{2},{3},{4},{5}}+tensor_type{{1,2,3,4,5}}), false),
-                                test_type(static_cast<htensor_type>(tensor_type{1,2,3}+tensor_type{1,2,3}+tensor_type{3,4,5}+tensor_type{3,4,5}), true),
-                                test_type(static_cast<htensor_type>((tensor_type{1,2,3}+tensor_type{1,2,3})+(tensor_type{3,4,5}+tensor_type{3,4,5})), true),
-                                test_type(static_cast<htensor_type>((tensor_type{1}+tensor_type{1,2,3})+(tensor_type{3,4,5}+tensor_type{3,4,5})), false)
+                                test_type(make_test_tensor(tensor_type{1}+tensor_type{1}).is_trivial(), true),
+                                test_type(make_test_tensor(tensor_type{1,2,3,4,5}+tensor_type{1}).is_trivial(), false),
+                                test_type(make_test_tensor(tensor_type{1,2,3,4,5}+tensor_type{1,2,3,4,5}).is_trivial(), true),
+                                test_type(make_test_tensor(tensor_type{{1},{2},{3},{4},{5}}+tensor_type{{1,2,3,4,5}}).is_trivial(), false),
+                                test_type(make_test_tensor(tensor_type{1,2,3}+tensor_type{1,2,3}+tensor_type{3,4,5}+tensor_type{3,4,5}).is_trivial(), true),
+                                test_type(make_test_tensor((tensor_type{1,2,3}+tensor_type{1,2,3})+(tensor_type{3,4,5}+tensor_type{3,4,5})).is_trivial(), true),
+                                test_type(make_test_tensor((tensor_type{1}+tensor_type{1,2,3})+(tensor_type{3,4,5}+tensor_type{3,4,5})).is_trivial(), false)
                             );
 
-    auto t = test_tensor_type{std::get<0>(test_data)};
+    auto result_is_trivial = std::get<0>(test_data);
     auto expected_is_trivial = std::get<1>(test_data);
-    REQUIRE(t.is_trivial() == expected_is_trivial);
+    REQUIRE(result_is_trivial == expected_is_trivial);
 }
 
 TEMPLATE_TEST_CASE("test_walker","[test_expression_template_engine]",
