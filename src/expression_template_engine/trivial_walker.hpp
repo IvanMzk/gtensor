@@ -58,7 +58,7 @@ public:
 
 template<typename ValT, typename CfgT, typename F, typename...Wks>
 class evaluating_trivial_root_walker :
-    private basic_walker<ValT, CfgT, typename CfgT::index_type>,
+    private basic_walker<CfgT, typename CfgT::index_type>,
     private evaluating_trivial_walker<ValT,CfgT,F,Wks...>
 {
     using value_type = ValT;

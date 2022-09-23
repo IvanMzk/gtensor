@@ -38,21 +38,15 @@ public:
 
 }   //end of namespace detail
 
-template<typename ValT, typename CfgT, typename CursorT>
+template<typename CfgT, typename CursorT>
 class basic_walker
 {
+protected:
+    using cursor_type = CursorT;
     using index_type = typename CfgT::index_type;
     using shape_type = typename CfgT::shape_type;
 
-    index_type dim;
-    detail::shape_inverter<index_type, shape_type> shape;
-    detail::shape_inverter<index_type, shape_type> strides;
-    detail::shape_inverter<index_type, shape_type> reset_strides;
-    CursorT offset_;
-    CursorT cursor_{offset_};
-
-protected:
-    basic_walker(const index_type& dim_, const shape_type& shape_, const shape_type& strides_, const shape_type& reset_strides_, const CursorT& offset__):
+    basic_walker(const index_type& dim_, const shape_type& shape_, const shape_type& strides_, const shape_type& reset_strides_, const cursor_type& offset__):
         dim{dim_},
         shape{shape_},
         strides{strides_},
@@ -83,8 +77,16 @@ protected:
     void reset(){cursor_ = offset_;}
 
     bool can_walk(const index_type& direction)const{return detail::can_walk(direction, dim, shape.element(direction));}
-    CursorT cursor()const{return cursor_;}
-    CursorT offset()const{return offset_;}
+    cursor_type cursor()const{return cursor_;}
+    cursor_type offset()const{return offset_;}
+
+private:
+    index_type dim;
+    detail::shape_inverter<index_type, shape_type> shape;
+    detail::shape_inverter<index_type, shape_type> strides;
+    detail::shape_inverter<index_type, shape_type> reset_strides;
+    cursor_type offset_;
+    cursor_type cursor_{offset_};
 };
 
 template<typename ValT, typename CfgT>

@@ -56,7 +56,11 @@ public:
     using storage_engine::storage_engine;
     bool is_trivial()const override{return true;}
     auto create_walker()const{return create_broadcast_walker();}
-    auto create_broadcast_walker()const{return storage_walker<ValT,CfgT>{host()->shape(),host()->strides(),host()->reset_strides(),data()};}
+    auto create_broadcast_walker()const{
+        return [this](const auto& it){
+            return storage_walker<CfgT, std::decay_t<decltype(it)>>{host()->shape(),host()->strides(),host()->reset_strides(),it};
+        }(begin());
+    }
     auto create_trivial_walker()const{return storage_trivial_walker<ValT,CfgT>{data()};}
 };
 

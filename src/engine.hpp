@@ -41,6 +41,8 @@ protected:
     using typename engine_host_accessor::host_type;
     using storage_type = typename config_type::template storage<value_type>;
     const value_type* data()const{return elements_.data();}
+    auto begin()const{return elements_.begin();}
+    auto end()const{return elements_.end();}
 public:
     template<typename Nested>
     storage_engine(host_type* host, const index_type& size, std::initializer_list<Nested> init_data):
