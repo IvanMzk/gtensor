@@ -16,15 +16,16 @@ using mode_caching_list_always = std::tuple<gtensor::config::mode_caching_always
 using mode_caching_list_broadcast = std::tuple<gtensor::config::mode_caching_broadcast>;
 using mode_caching_list_never = std::tuple<gtensor::config::mode_caching_never>;
 
-template<typename M, typename Div, typename Ev>
-struct config_tmpl_{    
+template<typename M, typename Div, typename Ev, typename Eng>
+struct config_tmpl_{
+    using engine = Eng;
     using caching_mode = M;
     using trivial_broadcast_eval_mode = Ev;
     using div_mode = Div;
     using difference_type = typename gtensor::config::default_config::difference_type;
     using index_type = typename gtensor::config::default_config::index_type;
     template<typename ValT> using storage = typename gtensor::config::default_config::storage<ValT>;
-    
+
     using shape_type = typename gtensor::config::default_config::shape_type;
 
     using nop_type = typename gtensor::config::default_config::nop_type;;
@@ -33,33 +34,46 @@ struct config_tmpl_{
     using slice_init_type = typename gtensor::config::default_config::slice_init_type;
     using slices_init_type = typename gtensor::config::default_config::slices_init_type;
     using slices_collection_type = typename gtensor::config::default_config::slices_collection_type;
-};    
+};
+
+template<typename Eng>
+struct config_engine_selector{
+    using config_type = config_tmpl_<
+        typename gtensor::config::default_config::caching_mode,
+        typename gtensor::config::default_config::div_mode,
+        typename gtensor::config::default_config::trivial_broadcast_eval_mode,
+        Eng
+        >;
+};
 
 template<typename M>
 struct config_caching_mode_selector{
     using config_type = config_tmpl_<
-        M, 
-        typename gtensor::config::default_config::div_mode, 
-        typename gtensor::config::default_config::trivial_broadcast_eval_mode
+        M,
+        typename gtensor::config::default_config::div_mode,
+        typename gtensor::config::default_config::trivial_broadcast_eval_mode,
+        typename gtensor::config::default_config::engine
         >;
 };
 
 template<typename Div>
-struct config_div_mode_selector{    
+struct config_div_mode_selector{
     using config_type = config_tmpl_<
         typename gtensor::config::default_config::caching_mode,
-        Div, 
-        typename gtensor::config::default_config::trivial_broadcast_eval_mode
-        >; 
+        Div,
+        typename gtensor::config::default_config::trivial_broadcast_eval_mode,
+        typename gtensor::config::default_config::engine
+        >;
 };
 
 template<typename M, typename Ev>
-struct config_tmpl_caching_eval_mode_selector{    
+struct config_tmpl_caching_eval_mode_selector{
     using config_type = config_tmpl_<
         M,
         typename gtensor::config::default_config::div_mode,
-        Ev
-        >; 
+        Ev,
+        typename gtensor::config::default_config::engine
+        >;
 };
 
 
@@ -79,7 +93,7 @@ using uvector_id_type = typename container_id_type<container_id, container_id::u
 template<typename, typename Idx = std::int64_t> struct container_selector;
 template<typename Idx> struct container_selector<vector_id_type, Idx>{
     using index_type = Idx;
-    template<typename T> using container_tmpl = std::vector<T>;    
+    template<typename T> using container_tmpl = std::vector<T>;
 };
 template<typename Idx> struct container_selector<uvector_id_type, Idx>{
     using index_type = Idx;

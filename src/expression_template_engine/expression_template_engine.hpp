@@ -8,7 +8,7 @@
 #include "evaluating_walker.hpp"
 #include "viewing_walker.hpp"
 #include "trivial_walker.hpp"
-#include "dispatcher.hpp"
+#include "walker.hpp"
 
 namespace gtensor{
 
@@ -86,7 +86,7 @@ private:
             [this](const auto&...operands){
                 return create_walker_helper(static_cast<Ops*>(operands.get())->engine().create_walker()...);
             },
-            host()->operands()
+            operands()
         );
     }
     template<typename...Wks>
@@ -141,7 +141,7 @@ public:
     //make trivial root walker
     template<typename...Wks>
     auto create_trivial_root_walker_helper(Wks&&...walkers)const{
-        return evaluating_trivial_root_walker<ValT,CfgT,F,Wks...>{host()->shape(),host()->strides(),std::forward<Wks>(walkers)...};
+        return evaluating_trivial_root_walker<ValT,CfgT,F,Wks...>{host()->shape(),host()->strides(),host()->reset_strides(),std::forward<Wks>(walkers)...};
     }
     template<std::size_t...I>
     auto create_trivial_root_walker_helper(std::index_sequence<I...>)const{
