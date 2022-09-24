@@ -189,6 +189,11 @@ public:
             return viewing_indexer<std::decay_t<decltype(descriptor)>, std::decay_t<decltype(indexer)>>{descriptor, indexer};
         }(parent()->descriptor(), parent()->engine().create_indexer());
     }
+    auto create_walker()const{
+        return [this](const auto& it){
+            return viewing_walker<CfgT, std::decay_t<decltype(it)>>{host()->shape(),host()->descriptor().cstrides(),host()->descriptor().reset_cstrides(),host()->descriptor().offset(),it};
+        }(create_indexer());
+    }
 };
 
 }   //end of namespace gtensor
