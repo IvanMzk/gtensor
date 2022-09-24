@@ -62,6 +62,7 @@ public:
         }(begin());
     }
     auto create_trivial_walker()const{return storage_trivial_walker<ValT,CfgT>{data()};}
+    auto create_indexer()const{return begin();}
 };
 
 template<typename ValT, typename CfgT, typename F, typename...Ops>
@@ -83,6 +84,11 @@ public:
     }
     auto create_walker()const{
         return create_broadcast_walker();
+    }
+    auto create_indexer()const{
+        return [this](auto&& walker){
+            return evaluating_indexer<ValT,CfgT,std::decay_t<decltype(walker)>>{host()->descriptor().as_descriptor_with_libdivide()->strides_libdivide(),std::forward<decltype(walker)>(walker)};
+        }(create_walker());
     }
 private:
     auto create_broadcast_walker()const{
@@ -178,6 +184,11 @@ public:
     using typename viewing_engine::config_type;
     using viewing_engine::viewing_engine;
     bool is_trivial()const override{return true;}
+    auto create_indexer()const{
+        return [](const auto& descriptor, auto indexer){
+            return viewing_indexer<std::decay_t<decltype(descriptor)>, std::decay_t<decltype(indexer)>>{descriptor, indexer};
+        }(parent()->descriptor(), parent()->engine().create_indexer());
+    }
 };
 
 }   //end of namespace gtensor

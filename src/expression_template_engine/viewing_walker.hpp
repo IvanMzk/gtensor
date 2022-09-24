@@ -10,6 +10,22 @@ namespace detail{
 }   //end of namespace detail
 
 
+template<typename DescT, typename PrevT>
+class viewing_indexer
+{
+    using index_type = typename DescT::index_type;
+    const DescT* descriptor;
+    PrevT parent_indexer;
+public:
+    viewing_indexer(const DescT& descriptor_, PrevT parent_indexer_):
+        descriptor{&descriptor_},
+        parent_indexer{parent_indexer_}
+    {}
+    auto operator[](const index_type& idx){return parent_indexer[descriptor->convert(idx)];}
+};
+
+
+
 template<typename ValT, typename CfgT>
 class viewing_evaluating_walker :
     public walker_base<ValT, CfgT>,

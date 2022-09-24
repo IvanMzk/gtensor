@@ -92,6 +92,7 @@ public:
 protected:
     using typename engine_host_accessor::host_type;
     using parent_type = ParentT;
+    auto parent()const{return parent_;}
 public:
     template<typename U>
     viewing_engine(host_type* host, U&& parent):

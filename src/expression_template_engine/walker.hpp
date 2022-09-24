@@ -106,6 +106,7 @@ public:
 };
 
 
+
 }   //end of namespace gtensor
 
 #endif

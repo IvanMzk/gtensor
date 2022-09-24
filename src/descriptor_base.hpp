@@ -140,9 +140,10 @@ protected:
 //descriptor abstract interface
 template<typename CfgT>
 class descriptor_base{
+public:
     using index_type = typename CfgT::index_type;
     using shape_type = typename CfgT::shape_type;
-public:
+
     virtual index_type convert(const shape_type& idx)const = 0;
     virtual index_type convert(const index_type& idx)const = 0;
     virtual index_type dim()const = 0;

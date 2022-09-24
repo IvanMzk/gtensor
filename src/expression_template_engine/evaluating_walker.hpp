@@ -71,7 +71,7 @@ public:
 };
 
 template<typename ValT, typename CfgT, typename WlkT>
-class evaluating_indexer : public indexer_base<ValT, CfgT>
+class evaluating_indexer
 {
     using walker_type = WlkT;
     using value_type = ValT;
@@ -84,18 +84,9 @@ class evaluating_indexer : public indexer_base<ValT, CfgT>
     value_type data_cache{evaluate_at(0)};
     index_type index_cache{0};
 
-    std::unique_ptr<indexer_base<ValT,CfgT>> clone()const override{return std::make_unique<evaluating_indexer>(*this);}
-
-    void walk(const index_type& direction, const index_type& steps){walker_.walk_without_check(direction,steps);}
-
-    value_type operator[](index_type idx)override{
-        if (index_cache == idx){
-            return data_cache;
-        }else{
-            return evaluate_at(idx);
-        }
+    void walk(const index_type& direction, const index_type& steps){
+        walker_.walk_without_check(direction,steps);
     }
-
     value_type evaluate_at(index_type idx){
         index_cache = idx;
         walker_.reset();
@@ -110,13 +101,18 @@ class evaluating_indexer : public indexer_base<ValT, CfgT>
         data_cache = walker_.operator*();
         return data_cache;
     }
-
 public:
     evaluating_indexer(const strides_type& strides_, walker_type&& walker__):
         walker_{std::move(walker__)},
         strides{&strides_}
     {}
-
+    value_type operator[](index_type idx){
+        if (index_cache == idx){
+            return data_cache;
+        }else{
+            return evaluate_at(idx);
+        }
+    }
 };
 
 

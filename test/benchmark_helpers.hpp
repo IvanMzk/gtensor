@@ -2,6 +2,8 @@
 #define BENCHMARK_HELPERS_HPP_
 
 #include <type_traits>
+#define CATCH_CONFIG_ENABLE_BENCHMARKING
+#include "catch.hpp"
 
 namespace benchmark_helpers{
 
@@ -70,6 +72,45 @@ auto make_symmetric_tree(const T1& t1, const T2& t2){
 template<std::size_t Depth, typename T1, typename T2, std::enable_if_t< Depth==1,int> = 0 >
 auto make_symmetric_tree(const T1& t1, const T2& t2){
     return t2+t1;
+}
+
+auto iterate_deref = [](auto& it_begin, auto& it_end){
+    std::size_t c{};
+    while (it_begin!=it_end){
+        if (*it_begin > 2){
+            ++c;
+        }
+        ++it_begin;
+    }
+    return c;
+};
+auto making_iter_iterate_deref = [](const auto& t){
+    auto t_it = t.begin();
+    auto t_end = t.end();
+    std::size_t c{};
+    while (t_it!=t_end){
+        if (*t_it > 2){
+            ++c;
+        }
+        ++t_it;
+    }
+    return c;
+};
+
+template<typename F, typename Arg>
+auto benchmark_with_making_iter(const Arg& arg, std::string label, const F& f = making_iter_iterate_deref){
+    BENCHMARK_ADVANCED(label.c_str())(Catch::Benchmark::Chronometer meter) {
+        meter.measure([&] { return f(arg); });
+    };
+    return 0;
+}
+template<typename F, typename Arg>
+auto benchmark_without_making_iter(const Arg& arg, std::string label, const F& f = iterate_deref){
+    BENCHMARK_ADVANCED(label.c_str())(Catch::Benchmark::Chronometer meter) {
+        auto v = make_iterators(meter.runs(),arg);
+        meter.measure([&f,&v,&arg](int i) { return f(v[i].first, v[i].second); });
+    };
+    return 0;
 }
 
 }   //end of namespace benchmark_helpers

@@ -21,6 +21,7 @@ struct test_tensor : public T{
     auto& engine()const{return impl()->engine();}
     bool is_trivial()const{return engine().is_trivial();}
     auto create_walker()const{return engine().create_walker();}
+    auto create_indexer()const{return engine().create_indexer();}
 };
 
 template<typename T>
@@ -120,4 +121,29 @@ TEMPLATE_TEST_CASE("test_walker","[test_expression_template_engine]",
     auto deref = std::get<0>(test_data);
     auto expected_deref = std::get<1>(test_data);
     REQUIRE(deref == expected_deref);
+}
+
+TEMPLATE_TEST_CASE("test_indexer","[test_expression_template_engine]",
+    test_expression_template_helpers::storage_tensor_maker<>,
+    test_expression_template_helpers::notrivial_tensor_maker<>,
+    test_expression_template_helpers::trivial_subtree_tensor_maker<>,
+    test_expression_template_helpers::trivial_tensor_maker<>
+)
+{
+    using value_type = float;
+    using tensor_type = gtensor::tensor<value_type, test_expression_template_helpers::test_config_type>;
+    using test_type = std::tuple<value_type,value_type>;
+
+    //0result,1expected
+    auto test_data = GENERATE(
+        test_type{TestType{}().create_indexer()[0],value_type{1}},
+        test_type{TestType{}().create_indexer()[5],value_type{6}},
+        test_type{TestType{}().create_indexer()[1],value_type{2}},
+        test_type{TestType{}().create_indexer()[2],value_type{3}},
+        test_type{TestType{}().create_indexer()[4],value_type{5}},
+        test_type{TestType{}().create_indexer()[3],value_type{4}}
+    );
+    auto result = std::get<0>(test_data);
+    auto expected = std::get<1>(test_data);
+    REQUIRE(result == expected);
 }
