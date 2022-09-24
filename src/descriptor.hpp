@@ -29,6 +29,7 @@ public:
 
     index_type offset()const override{return index_type{0};}
     const shape_type& cstrides()const override{return strides();}
+    const shape_type& reset_cstrides()const override{return reset_strides();}
     index_type convert(const index_type& idx)const override{return idx;}
     index_type convert(const shape_type& idx)const override{return convert_helper(idx);}
 private:
@@ -95,10 +96,12 @@ public:
     converting_descriptor(ShT&& shape__, StT&& cstrides__,  const index_type& offset__):
         descriptor_with_libdivide{std::forward<ShT>(shape__)},
         cstrides_{std::forward<StT>(cstrides__)},
+        reset_cstrides_{detail::make_reset_strides(descriptor_with_libdivide::shape(),cstrides_)},
         offset_{offset__}
     {}
     index_type offset()const override{return offset_;}
     const shape_type& cstrides()const override{return cstrides_;}
+    const shape_type& reset_cstrides()const override{return reset_cstrides_;}
     index_type convert(const shape_type& idx)const override{return convert_helper(idx);}
     index_type convert(const index_type& idx)const override{return convert_helper(idx);}
 private:
@@ -115,6 +118,7 @@ private:
     }
 
     shape_type cstrides_;
+    shape_type reset_cstrides_;
     index_type offset_;
 };
 

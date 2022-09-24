@@ -101,6 +101,7 @@ TEST_CASE("test_basic_descriptor","[test_descriptor]"){
     REQUIRE(descriptor.strides() == expected_strides);
     REQUIRE(descriptor.cstrides() == expected_strides);
     REQUIRE(descriptor.reset_strides() == expected_reset_strides);
+    REQUIRE(descriptor.reset_cstrides() == expected_reset_strides);
     REQUIRE(descriptor.offset() == expected_offset);
 }
 
@@ -252,12 +253,12 @@ TEST_CASE("test_converting_descriptor_getters", "[test_descriptor]"){
     using descriptor_type = gtensor::converting_descriptor<config_type>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
-    using test_type = std::tuple<descriptor_type, shape_type, shape_type, shape_type, index_type, index_type,index_type>;
-    //0descriptor, 1expected_shape, 2expected_strides, 3expected_cstrides, 4expected_dim, 5expected_size, 6expected_offset
+    using test_type = std::tuple<descriptor_type, shape_type, shape_type, shape_type, index_type, index_type,index_type,shape_type>;
+    //0descriptor, 1expected_shape, 2expected_strides, 3expected_cstrides, 4expected_dim, 5expected_size, 6expected_offset 7expected_reset_cstrides
     auto test_data = GENERATE(
-                                test_type{descriptor_type{shape_type{15},shape_type{-1},14},shape_type{15},shape_type{1},shape_type{-1},1,15,14},
-                                test_type{descriptor_type{shape_type{3,1,7},shape_type{7,7,1},0},shape_type{3,1,7},shape_type{7,7,1},shape_type{7,7,1},3,21,0},
-                                test_type{descriptor_type{shape_type{3,1,7},shape_type{7,7,-1},6},shape_type{3,1,7},shape_type{7,7,1},shape_type{7,7,-1},3,21,6}
+                                test_type{descriptor_type{shape_type{15},shape_type{-1},14},shape_type{15},shape_type{1},shape_type{-1},1,15,14, shape_type{-14}},
+                                test_type{descriptor_type{shape_type{3,1,7},shape_type{7,7,1},0},shape_type{3,1,7},shape_type{7,7,1},shape_type{7,7,1},3,21,0, shape_type{14,0,6}},
+                                test_type{descriptor_type{shape_type{3,1,7},shape_type{7,7,-1},6},shape_type{3,1,7},shape_type{7,7,1},shape_type{7,7,-1},3,21,6, shape_type{14,0,-6}}
     );
     auto descriptor = std::get<0>(test_data);
     auto expected_shape = std::get<1>(test_data);
@@ -266,12 +267,14 @@ TEST_CASE("test_converting_descriptor_getters", "[test_descriptor]"){
     auto expected_dim = std::get<4>(test_data);
     auto expected_size = std::get<5>(test_data);
     auto expected_offset = std::get<6>(test_data);
+    auto expected_reset_cstrides = std::get<7>(test_data);
     REQUIRE(descriptor.shape() == expected_shape);
     REQUIRE(descriptor.strides() == expected_strides);
     REQUIRE(descriptor.cstrides() == expected_cstrides);
     REQUIRE(descriptor.dim() == expected_dim);
     REQUIRE(descriptor.size() == expected_size);
     REQUIRE(descriptor.offset() == expected_offset);
+    REQUIRE(descriptor.reset_cstrides() == expected_reset_cstrides);
     //gtensor::descriptor_base<value_type,gtensor::config::default_config>* pd = &descriptor;
 }
 

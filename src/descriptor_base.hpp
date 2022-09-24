@@ -153,6 +153,7 @@ public:
     virtual const shape_type& strides()const = 0;
     virtual const shape_type& reset_strides()const = 0;
     virtual const shape_type& cstrides()const = 0;
+    virtual const shape_type& reset_cstrides()const = 0;
     virtual std::string to_str()const = 0;
 
     virtual const descriptor_with_libdivide<CfgT>* as_descriptor_with_libdivide()const {return nullptr;}
