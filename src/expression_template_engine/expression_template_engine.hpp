@@ -174,7 +174,7 @@ public:
     }
 };
 
-template<typename ValT, typename CfgT, typename ParentT>
+template<typename ValT, typename CfgT, typename DescT, typename ParentT>
 class expression_template_viewing_engine :
     public expression_template_engine_base<ValT,CfgT>,
     private viewing_engine<ValT,CfgT,ParentT>

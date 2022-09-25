@@ -10,7 +10,7 @@ template<typename ValT, typename CfgT, typename F, typename OperandsNumber> clas
 template<typename ValT, typename CfgT, typename ParentT> class viewing_engine;
 
 template<typename ValT, typename CfgT> class expression_template_engine_base;
-template<typename ValT, typename CfgT, typename ParentT> class expression_template_viewing_engine;
+template<typename ValT, typename CfgT, typename DescT, typename ParentT> class expression_template_viewing_engine;
 template<typename ValT, typename CfgT> class expression_template_storage_engine;
 template<typename ValT, typename CfgT, typename F, typename...Ops> class expression_template_nodispatching_engine;
 template<typename ValT, typename CfgT, typename F, typename...Ops> class expression_template_root_dispatching_engine;
@@ -39,8 +39,8 @@ template<typename ValT, typename CfgT,  typename F, typename...Ops> struct evalu
 };
 
 template<typename...> struct viewing_engine_traits;
-template<typename ValT, typename CfgT,  typename ParentT> struct viewing_engine_traits<config::engine_expression_template, ValT,CfgT,ParentT>{
-    using type = expression_template_viewing_engine<ValT,CfgT,ParentT>;
+template<typename ValT, typename CfgT, typename DescT, typename ParentT> struct viewing_engine_traits<config::engine_expression_template, ValT,CfgT,DescT,ParentT>{
+    using type = expression_template_viewing_engine<ValT,CfgT,DescT,ParentT>;
 };
 
 }   //end of namespace detail

@@ -275,7 +275,7 @@ TEST_CASE("test_converting_descriptor_getters", "[test_descriptor]"){
     REQUIRE(descriptor.size() == expected_size);
     REQUIRE(descriptor.offset() == expected_offset);
     REQUIRE(descriptor.reset_cstrides() == expected_reset_cstrides);
-    //gtensor::descriptor_base<value_type,gtensor::config::default_config>* pd = &descriptor;
+
 }
 
 TEMPLATE_TEST_CASE("test_converting_descriptor_convert", "[test_descriptor]", gtensor::config::mode_div_native, gtensor::config::mode_div_libdivide){

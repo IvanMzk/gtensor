@@ -150,22 +150,22 @@ class view_factory
 public:
     template<typename ImplT>
     static auto create_view_slice(const std::shared_ptr<ImplT>& parent, const slices_collection_type& subs){
-        using impl_type = view_slice<typename detail::viewing_engine_traits<typename CfgT::engine, ValT, CfgT, ImplT>::type>;
+        using impl_type = view_slice<typename detail::viewing_engine_traits<typename CfgT::engine, ValT, CfgT, view_slice_descriptor_type, ImplT>::type>;
         return tensor<ValT,CfgT,impl_type>{std::make_shared<impl_type>(create_view_slice_descriptor(parent->shape(), parent->strides(), subs),parent)};
     }
     template<typename ImplT>
     static auto create_view_transpose(const std::shared_ptr<ImplT>& parent, const shape_type& subs){
-        using impl_type = view_slice<typename detail::viewing_engine_traits<typename CfgT::engine, ValT, CfgT, ImplT>::type>;
+        using impl_type = view_slice<typename detail::viewing_engine_traits<typename CfgT::engine, ValT, CfgT, view_slice_descriptor_type, ImplT>::type>;
         return tensor<ValT,CfgT,impl_type>{std::make_shared<impl_type>(create_view_transpose_descriptor(parent->shape(), parent->strides(), subs),parent)};
     }
     template<typename ImplT>
     static auto create_view_subdim(const std::shared_ptr<ImplT>& parent, const shape_type& subs){
-        using impl_type = view_subdim<typename detail::viewing_engine_traits<typename CfgT::engine, ValT, CfgT, ImplT>::type>;
+        using impl_type = view_subdim<typename detail::viewing_engine_traits<typename CfgT::engine, ValT, CfgT, view_subdim_descriptor_type, ImplT>::type>;
         return tensor<ValT,CfgT,impl_type>{std::make_shared<impl_type>(create_view_subdim_descriptor(parent->shape(), parent->strides(), subs),parent)};
     }
     template<typename ImplT>
     static auto create_view_reshape(const std::shared_ptr<ImplT>& parent, const shape_type& subs){
-        using impl_type = view_reshape<typename detail::viewing_engine_traits<typename CfgT::engine, ValT, CfgT, ImplT>::type>;
+        using impl_type = view_reshape<typename detail::viewing_engine_traits<typename CfgT::engine, ValT, CfgT, view_reshape_descriptor_type, ImplT>::type>;
         return tensor<ValT,CfgT,impl_type>{std::make_shared<impl_type>(create_view_reshape_descriptor(parent->shape(), subs),parent)};
     }
 };

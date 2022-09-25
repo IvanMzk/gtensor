@@ -80,6 +80,28 @@ public:
     value_type operator*() const {return operator[](cursor());}
 };
 
+template<typename CfgT, typename IndexerT, typename DescT>
+class viewing_trivial_walker
+{
+    using typename basic_walker::index_type;
+    using typename basic_walker::shape_type;
+    using indexer_type = IndexerT;
+
+    mutable indexer_type indexer;
+public:
+    viewing_trivial_walker(const shape_type& shape_,  const shape_type& strides_, const shape_type& reset_strides_, const index_type& offset_, const indexer_type& indexer_):
+        basic_walker{static_cast<index_type>(shape_.size()), shape_, strides_, reset_strides_, offset_},
+        indexer{indexer_}
+    {}
+
+    void walk(const index_type& direction, const index_type& steps){basic_walker::walk(direction,steps);}
+    void step(const index_type& direction){basic_walker::step(direction);}
+    void step_back(const index_type& direction){basic_walker::step_back(direction);}
+    void reset(const index_type& direction){basic_walker::reset(direction);}
+    void reset(){basic_walker::reset();}
+    auto operator*()const{return indexer[cursor()];}
+};
+
 }   //end of namespace gtensor
 
 #endif

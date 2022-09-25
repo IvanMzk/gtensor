@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <string>
 #include <sstream>
+#include <numeric>
 #include "libdivide_helper.hpp"
 
 namespace gtensor{
@@ -119,6 +120,11 @@ auto shape_to_str(const ShT& shape){
     return ss.str();
 }
 
+template<typename ShT>
+auto convert_index(const ShT& cstrides, const typename ShT::value_type& offset, const ShT& idx){
+    return std::inner_product(idx.begin(), idx.end(), cstrides.begin(), offset);
+}
+
 template<typename CfgT>
 class descriptor_strides
 {
@@ -141,8 +147,9 @@ protected:
 template<typename CfgT>
 class descriptor_base{
 public:
-    using index_type = typename CfgT::index_type;
-    using shape_type = typename CfgT::shape_type;
+    using config_type = CfgT;
+    using index_type = typename config_type::index_type;
+    using shape_type = typename config_type::shape_type;
 
     virtual index_type convert(const shape_type& idx)const = 0;
     virtual index_type convert(const index_type& idx)const = 0;
@@ -156,7 +163,7 @@ public:
     virtual const shape_type& reset_cstrides()const = 0;
     virtual std::string to_str()const = 0;
 
-    virtual const descriptor_with_libdivide<CfgT>* as_descriptor_with_libdivide()const {return nullptr;}
+    virtual const descriptor_with_libdivide<config_type>* as_descriptor_with_libdivide()const {return nullptr;}
 };
 
 //common implementation of descriptor
@@ -164,9 +171,10 @@ template<typename CfgT>
 class descriptor_common :
     private detail::descriptor_strides<CfgT>
 {
-    using shape_type = typename CfgT::shape_type;
-    using index_type = typename CfgT::index_type;
 protected:
+    using config_type = CfgT;
+    using shape_type = typename config_type::shape_type;
+    using index_type = typename config_type::index_type;
     shape_type shape_;
     auto size()const{return detail::make_size(shape(),strides());}
     auto dim()const{return shape_.size();}

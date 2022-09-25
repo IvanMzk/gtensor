@@ -1,7 +1,6 @@
 #ifndef DESCRIPTOR_HPP_
 #define DESCRIPTOR_HPP_
 
-#include <numeric>
 #include "descriptor_base.hpp"
 
 namespace gtensor{
@@ -12,8 +11,9 @@ class basic_descriptor :
     private descriptor_common<CfgT>
 {
 public:
-    using typename descriptor_base::shape_type;
-    using typename descriptor_base::index_type;
+    using typename descriptor_common::config_type;
+    using typename descriptor_common::shape_type;
+    using typename descriptor_common::index_type;
     basic_descriptor() = default;
     template<typename ShT>
     basic_descriptor(ShT&& shape__):
@@ -31,11 +31,7 @@ public:
     const shape_type& cstrides()const override{return strides();}
     const shape_type& reset_cstrides()const override{return reset_strides();}
     index_type convert(const index_type& idx)const override{return idx;}
-    index_type convert(const shape_type& idx)const override{return convert_helper(idx);}
-private:
-    index_type convert_helper(const shape_type& idx)const{
-        return std::inner_product(idx.begin(), idx.end(), cstrides().begin(), index_type{0});
-    }
+    index_type convert(const shape_type& idx)const override{return detail::convert_index(cstrides(),offset(),idx);}
 };
 
 template<typename CfgT>
@@ -44,7 +40,6 @@ class descriptor_with_libdivide :
     private detail::collection_libdivide_extension<CfgT,typename CfgT::div_mode>
 {
     using base_strides_libdivide = detail::collection_libdivide_extension<CfgT,typename CfgT::div_mode>;
-
 
 public:
     using typename basic_descriptor::shape_type;
@@ -76,13 +71,9 @@ public:
         offset_{offset__}
     {}
     index_type offset()const override{return offset_;}
-    index_type convert(const shape_type& idx)const override{return convert_helper(idx);}
     index_type convert(const index_type& idx)const override{return idx+offset_;}
+    index_type convert(const shape_type& idx)const override{return detail::convert_index(cstrides(),offset(),idx);}
 private:
-    index_type convert_helper(const shape_type& idx)const{
-        return std::inner_product(idx.begin(), idx.end(), cstrides().begin(), offset_);
-    }
-
     index_type offset_;
 };
 
@@ -102,21 +93,19 @@ public:
     index_type offset()const override{return offset_;}
     const shape_type& cstrides()const override{return cstrides_;}
     const shape_type& reset_cstrides()const override{return reset_cstrides_;}
-    index_type convert(const shape_type& idx)const override{return convert_helper(idx);}
-    index_type convert(const index_type& idx)const override{return convert_helper(idx);}
+    index_type convert(const shape_type& idx)const override{return detail::convert_index(cstrides(),offset(),idx);}
+    index_type convert(const index_type& idx)const override{
+        return detail::convert_index(
+            cstrides(),
+            offset(),
+            detail::flat_to_multi<shape_type>(strides_libdivide(), idx)
+        );
+    }
 private:
-    index_type convert_helper(const shape_type& idx)const{
-        return std::inner_product(idx.begin(), idx.end(), cstrides_.begin(), offset_);
-    }
-    index_type convert_helper(const index_type& idx)const{
-        return convert_helper(gtensor::detail::flat_to_multi<shape_type>(strides_libdivide(), idx));
-    }
-
     shape_type cstrides_;
     shape_type reset_cstrides_;
     index_type offset_;
 };
-
 
 }   //end of namespace gtensor
 
