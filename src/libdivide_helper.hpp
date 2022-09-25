@@ -42,7 +42,7 @@ auto make_dividers(const U<T>& src){
     return make_libdivide_vector(src);
 }
 template<typename CfgT, template<typename...> typename U, typename T, std::enable_if_t<is_mode_div_native<CfgT>, int> =0 >
-auto make_dividers(const U<T>& src){    
+auto make_dividers(const U<T>& src){
     return src;
 }
 
@@ -68,61 +68,47 @@ inline auto divide(T& dividend, const libdivide_divider<T>& divider){
     return q;
 }
 
-
 /*
 * convert flat index to multi index given strides
-* result multiindex is of same type as strides container
+* ShT result multiindex type, must specialize explicit
 */
-template<template<typename...> typename U, typename T, std::enable_if_t<!is_libdivide_div<T> ,int> =0 >
-auto flat_to_multi(const U<T>& strides, typename const U<T>::value_type& idx){
-    return flat_to_multi_helper<U<T>>(strides,idx);
-}
-/*
-* convert flat index to multi index given strides as container of libdivide objects
-* need explicity specialize return type container for multiindex
-*/
-template<typename ShT, template<typename...> typename U, typename T, std::enable_if_t<is_libdivide_div<T> ,int> =0 >
-auto flat_to_multi(const U<T>& strides, typename const T::value_type& idx){    
-    return flat_to_multi_helper<ShT>(strides,idx);
-}
-
-template<typename ShT, template<typename...> typename U, typename T, typename T1>
-auto flat_to_multi_helper(const U<T>& strides, const T1& idx){
+template<typename ShT, template<typename...> typename U, typename T, typename IdxT>
+auto flat_to_multi(const U<T>& strides, const IdxT& idx){
     using shape_type = ShT;
-    using index_type = T1;
-    shape_type res(strides.size(), index_type(0));    
+    using index_type = IdxT;
+    shape_type res(strides.size(), index_type(0));
     index_type idx_{idx};
     auto st_it = strides.begin();
     auto res_it = res.begin();
-    while(idx_ != 0){        
+    while(idx_ != 0){
         *res_it = divide(idx_,*st_it);
         ++st_it,++res_it;
-    }        
+    }
     return res;
 }
 
 template<typename CfgT, typename Mode> class collection_libdivide_extension;
 
-template<typename CfgT> 
+template<typename CfgT>
 class collection_libdivide_extension<CfgT,gtensor::config::mode_div_libdivide>
-{    
+{
     using shape_type = typename CfgT::shape_type;
     using index_type = typename CfgT::index_type;
     detail::libdivide_vector<index_type> dividers_libdivide_;
 protected:
-    collection_libdivide_extension() = default;            
-    collection_libdivide_extension(const shape_type& dividers):        
+    collection_libdivide_extension() = default;
+    collection_libdivide_extension(const shape_type& dividers):
         dividers_libdivide_{detail::make_libdivide_vector(dividers)}
     {}
     const auto&  dividers_libdivide()const{return dividers_libdivide_;}
 };
 
-template<typename CfgT> 
+template<typename CfgT>
 class collection_libdivide_extension<CfgT,gtensor::config::mode_div_native>
 {
     using shape_type = typename CfgT::shape_type;
 protected:
-    collection_libdivide_extension() = default;      
+    collection_libdivide_extension() = default;
     collection_libdivide_extension(const shape_type&)
     {}
 };
@@ -132,7 +118,7 @@ protected:
 
 template<typename ValT,  template<typename> typename Cfg, typename Mode> class reference_libdivide_extension;
 
-template<typename ValT,  template<typename> typename Cfg> 
+template<typename ValT,  template<typename> typename Cfg>
 class reference_libdivide_extension<ValT,Cfg,config::mode_div_libdivide>
 {
     using config_type = Cfg<ValT>;
@@ -141,21 +127,21 @@ class reference_libdivide_extension<ValT,Cfg,config::mode_div_libdivide>
     using libdivide_collection_type = detail::libdivide_vector<index_type>;
     const libdivide_collection_type* dividers_libdivide_;
 protected:
-    reference_libdivide_extension() = default;            
+    reference_libdivide_extension() = default;
     reference_libdivide_extension(const libdivide_collection_type& dividers_libdivide__):
         dividers_libdivide_{&dividers_libdivide__}
     {}
     const auto&  dividers_libdivide()const{return *dividers_libdivide_;}
 };
 
-template<typename ValT,  template<typename> typename Cfg> 
+template<typename ValT,  template<typename> typename Cfg>
 class reference_libdivide_extension<ValT,Cfg,config::mode_div_native>
 {
     using config_type = Cfg<ValT>;
     using index_type = typename config_type::index_type;
     using libdivide_collection_type = detail::libdivide_vector<index_type>;
 protected:
-    reference_libdivide_extension() = default;      
+    reference_libdivide_extension() = default;
     reference_libdivide_extension(const libdivide_collection_type&)
     {}
 };

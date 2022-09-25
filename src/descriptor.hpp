@@ -108,13 +108,8 @@ private:
     index_type convert_helper(const shape_type& idx)const{
         return std::inner_product(idx.begin(), idx.end(), cstrides_.begin(), offset_);
     }
-    template<typename C = CfgT, std::enable_if_t<detail::is_mode_div_libdivide<C>, int> =0 >
     index_type convert_helper(const index_type& idx)const{
         return convert_helper(gtensor::detail::flat_to_multi<shape_type>(strides_libdivide(), idx));
-    }
-    template<typename C = CfgT, std::enable_if_t<detail::is_mode_div_native<C>, int> =0 >
-    index_type convert_helper(const index_type& idx)const{
-        return convert_helper(gtensor::detail::flat_to_multi(strides(), idx));
     }
 
     shape_type cstrides_;

@@ -8,7 +8,7 @@ TEMPLATE_TEST_CASE("test_is_libdivide_div","[test_libdivide]", std::int64_t, std
     using index_type = TestType;
     using branchfull_divider = libdivide::divider<index_type>;
     using branchfree_divider = libdivide::branchfree_divider<index_type>;
-    
+
 
     REQUIRE(gtensor::detail::is_libdivide_div<index_type> == false);
     REQUIRE(gtensor::detail::is_libdivide_div<branchfull_divider> == true);
@@ -34,12 +34,12 @@ TEMPLATE_TEST_CASE("test_flat_to_multi_mode_native", "[test_flat_to_multi]", gte
     auto flat_idx = std::get<0>(test_data);
     auto strides = std::get<1>(test_data);
     auto expected_multi_idx = std::get<2>(test_data);
-    REQUIRE(flat_to_multi(strides, flat_idx) == expected_multi_idx);
-    
+    REQUIRE(flat_to_multi<shape_type>(strides, flat_idx) == expected_multi_idx);
+
 }
 TEMPLATE_TEST_CASE("test_flat_to_multi_mode_libdivide", "[test_flat_to_multi]", gtensor::config::mode_div_libdivide){
     using value_type = float;
-    using config_type = test_config::config_div_mode_selector<TestType>::config_type;    
+    using config_type = test_config::config_div_mode_selector<TestType>::config_type;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     using gtensor::detail::make_libdivide_vector;
