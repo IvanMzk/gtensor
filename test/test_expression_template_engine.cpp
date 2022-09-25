@@ -18,7 +18,8 @@ struct test_tensor : public T{
     {}
     auto& engine()const{return impl()->engine();}
     bool is_trivial()const{return engine().is_trivial();}
-    auto create_walker()const{return engine().create_walker();}
+    auto create_broadcast_walker()const{return engine().create_broadcast_walker();}
+    auto create_trivial_walker()const{return engine().create_trivial_walker();}
     auto create_indexer()const{return engine().create_indexer();}
 };
 
@@ -183,7 +184,7 @@ TEST_CASE("test_is_trivial","[test_expression_template_engine]"){
     REQUIRE(result_is_trivial == expected_is_trivial);
 }
 
-TEMPLATE_TEST_CASE("test_walker","[test_expression_template_engine]",
+TEMPLATE_TEST_CASE("test_broadcast_walker","[test_expression_template_engine]",
     test_expression_template_helpers::storage_tensor_maker<>,
     test_expression_template_helpers::notrivial_tensor_maker<>,
     test_expression_template_helpers::trivial_subtree_tensor_maker<>,
@@ -203,18 +204,48 @@ TEMPLATE_TEST_CASE("test_walker","[test_expression_template_engine]",
     using test_type = std::tuple<value_type,value_type>;
 
     auto test_data = GENERATE(
-        test_type{[](){auto t = TestType{}(); auto w = t.create_walker(); return *w; }(), value_type{1}},
-        test_type{[](){auto t = TestType{}(); auto w = t.create_walker(); w.walk(2,1); return *w;}(), value_type{1}},
-        test_type{[](){auto t = TestType{}(); auto w = t.create_walker(); w.walk(1,1); return *w;}(), value_type{4}},
-        test_type{[](){auto t = TestType{}(); auto w = t.create_walker(); w.walk(0,1); return *w;}(), value_type{2}},
-        test_type{[](){auto t = TestType{}(); auto w = t.create_walker(); w.walk(1,1); w.walk(0,2); return *w;}(), value_type{6}},
-        test_type{[](){auto t = TestType{}(); auto w = t.create_walker(); w.walk(3,1); w.walk(0,2); return *w;}(), value_type{3}},
-        test_type{[](){auto t = TestType{}(); auto w = t.create_walker(); w.walk(1,1); w.reset(1); return *w;}(), value_type{1}},
-        test_type{[](){auto t = TestType{}(); auto w = t.create_walker(); w.walk(1,1); w.walk(0,2); w.reset(2); return *w;}(), value_type{6}},
-        test_type{[](){auto t = TestType{}(); auto w = t.create_walker(); w.walk(1,1); w.walk(0,2); w.reset(3); return *w;}(), value_type{6}},
-        test_type{[](){auto t = TestType{}(); auto w = t.create_walker(); w.walk(1,1); w.walk(0,2); w.reset(1); return *w;}(), value_type{3}},
-        test_type{[](){auto t = TestType{}(); auto w = t.create_walker(); w.walk(1,1); w.walk(0,2); w.reset(0); return *w;}(), value_type{4}},
-        test_type{[](){auto t = TestType{}(); auto w = t.create_walker(); w.walk(1,1); w.walk(0,2); w.reset(); return *w;}(), value_type{1}}
+        test_type{[](){auto t = TestType{}(); auto w = t.create_broadcast_walker(); return *w; }(), value_type{1}},
+        test_type{[](){auto t = TestType{}(); auto w = t.create_broadcast_walker(); w.walk(2,1); return *w;}(), value_type{1}},
+        test_type{[](){auto t = TestType{}(); auto w = t.create_broadcast_walker(); w.walk(1,1); return *w;}(), value_type{4}},
+        test_type{[](){auto t = TestType{}(); auto w = t.create_broadcast_walker(); w.walk(0,1); return *w;}(), value_type{2}},
+        test_type{[](){auto t = TestType{}(); auto w = t.create_broadcast_walker(); w.walk(1,1); w.walk(0,2); return *w;}(), value_type{6}},
+        test_type{[](){auto t = TestType{}(); auto w = t.create_broadcast_walker(); w.walk(3,1); w.walk(0,2); return *w;}(), value_type{3}},
+        test_type{[](){auto t = TestType{}(); auto w = t.create_broadcast_walker(); w.walk(1,1); w.reset(1); return *w;}(), value_type{1}},
+        test_type{[](){auto t = TestType{}(); auto w = t.create_broadcast_walker(); w.walk(1,1); w.walk(0,2); w.reset(2); return *w;}(), value_type{6}},
+        test_type{[](){auto t = TestType{}(); auto w = t.create_broadcast_walker(); w.walk(1,1); w.walk(0,2); w.reset(3); return *w;}(), value_type{6}},
+        test_type{[](){auto t = TestType{}(); auto w = t.create_broadcast_walker(); w.walk(1,1); w.walk(0,2); w.reset(1); return *w;}(), value_type{3}},
+        test_type{[](){auto t = TestType{}(); auto w = t.create_broadcast_walker(); w.walk(1,1); w.walk(0,2); w.reset(0); return *w;}(), value_type{4}},
+        test_type{[](){auto t = TestType{}(); auto w = t.create_broadcast_walker(); w.walk(1,1); w.walk(0,2); w.reset(); return *w;}(), value_type{1}}
+    );
+    auto deref = std::get<0>(test_data);
+    auto expected_deref = std::get<1>(test_data);
+    REQUIRE(deref == expected_deref);
+}
+
+TEMPLATE_TEST_CASE("test_trivial_walker","[test_expression_template_engine]",
+    test_expression_template_helpers::storage_tensor_maker<>,
+    test_expression_template_helpers::trivial_tensor_maker<>,
+    test_expression_template_helpers::view_slice_of_storage_maker<>,
+    test_expression_template_helpers::view_slice_of_eval_maker<>,
+    test_expression_template_helpers::view_view_slice_of_eval_maker<>,
+    test_expression_template_helpers::view_transpose_of_storage_maker<>,
+    test_expression_template_helpers::view_subdim_of_storage_maker<>,
+    test_expression_template_helpers::view_reshape_of_storage_maker<>,
+    test_expression_template_helpers::view_eval_view_operand_maker<>
+)
+{
+    using value_type = typename TestType::value_type;
+    using test_type = std::tuple<value_type,value_type>;
+
+    auto test_data = GENERATE(
+        test_type{[](){auto t = TestType{}(); auto w = t.create_trivial_walker(); return w[0]; }(), value_type{1}},
+        test_type{[](){auto t = TestType{}(); auto w = t.create_trivial_walker(); return w[4];}(), value_type{5}},
+        test_type{[](){auto t = TestType{}(); auto w = t.create_trivial_walker(); return w[0];}(), value_type{1}},
+        test_type{[](){auto t = TestType{}(); auto w = t.create_trivial_walker(); return w[3];}(), value_type{4}},
+        test_type{[](){auto t = TestType{}(); auto w = t.create_trivial_walker(); return w[1];}(), value_type{2}},
+        test_type{[](){auto t = TestType{}(); auto w = t.create_trivial_walker(); return w[2];}(), value_type{3}},
+        test_type{[](){auto t = TestType{}(); auto w = t.create_trivial_walker(); return w[5];}(), value_type{6}},
+        test_type{[](){auto t = TestType{}(); auto w = t.create_trivial_walker(); return w[5];}(), value_type{6}}
     );
     auto deref = std::get<0>(test_data);
     auto expected_deref = std::get<1>(test_data);

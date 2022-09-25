@@ -90,18 +90,30 @@ public:
             return evaluating_indexer<ValT,CfgT,std::decay_t<decltype(walker)>>{host()->descriptor().as_descriptor_with_libdivide()->strides_libdivide(),std::forward<decltype(walker)>(walker)};
         }(create_walker());
     }
-private:
-    auto create_broadcast_walker()const{
+    auto create_trivial_walker()const{
         return std::apply(
             [this](const auto&...operands){
-                return create_walker_helper(static_cast<Ops*>(operands.get())->engine().create_walker()...);
+                return create_trivial_walker_helper(static_cast<Ops*>(operands.get())->engine().create_trivial_walker()...);
             },
             operands()
         );
     }
+    auto create_broadcast_walker()const{
+        return std::apply(
+            [this](const auto&...operands){
+                return create_broadcast_walker_helper(static_cast<Ops*>(operands.get())->engine().create_broadcast_walker()...);
+            },
+            operands()
+        );
+    }
+private:
     template<typename...Wks>
-    auto create_walker_helper(Wks&&...walkers)const{
+    auto create_broadcast_walker_helper(Wks&&...walkers)const{
         return evaluating_walker<ValT,CfgT,F,Wks...>{host()->shape(),std::forward<Wks>(walkers)...};
+    }
+    template<typename...Wks>
+    auto create_trivial_walker_helper(Wks&&...walkers)const{
+        return evaluating_trivial_walker<ValT,CfgT,F,Wks...>{std::forward<Wks>(walkers)...};
     }
 };
 
@@ -189,9 +201,14 @@ public:
             return viewing_indexer<std::decay_t<decltype(descriptor)>, std::decay_t<decltype(indexer)>>{descriptor, indexer};
         }(parent()->descriptor(), parent()->engine().create_indexer());
     }
-    auto create_walker()const{
+    auto create_broadcast_walker()const{
         return [this](const auto& it){
             return viewing_walker<CfgT, std::decay_t<decltype(it)>>{host()->shape(),host()->descriptor().cstrides(),host()->descriptor().reset_cstrides(),host()->descriptor().offset(),it};
+        }(create_indexer());
+    }
+    auto create_trivial_walker()const{
+        return [this](const auto& it){
+            return viewing_trivial_walker<DescT, std::decay_t<decltype(it)>>{static_cast<const DescT&>(host()->descriptor()),it};
         }(create_indexer());
     }
 };
