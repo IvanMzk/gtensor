@@ -38,19 +38,6 @@ inline bool is_trivial_operand(const T& operand){
     return operand->engine().is_trivial();
 }
 
-
-template<typename EngineT>
-auto begin_helper(const EngineT& engine){
-    using iterator_type = multiindex_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_broadcast_walker())>;
-    return iterator_type{engine.create_broadcast_walker(), engine.host()->shape(), engine.host()->descriptor().as_descriptor_with_libdivide()->strides_libdivide()};
-}
-template<typename EngineT>
-auto end_helper(const EngineT& engine){
-    using iterator_type = multiindex_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_broadcast_walker())>;
-    return iterator_type{engine.create_broadcast_walker(), engine.host()->shape(), engine.host()->descriptor().as_descriptor_with_libdivide()->strides_libdivide(), engine.host()->size()};
-}
-
-
 }   //end of namespace detail
 
 template<typename ValT, typename CfgT>
@@ -91,8 +78,10 @@ public:
     using typename evaluating_engine::config_type;
     using evaluating_engine::evaluating_engine;
     using evaluating_engine::host;
-    auto begin()const{return detail::begin_helper(*this);}
-    auto end()const{return detail::end_helper(*this);}
+    // auto begin_broadcast()const{return detail::begin_broadcast_helper(*this);}
+    // auto end_broadcast()const{return detail::end_broadcast_helper(*this);}
+    // auto begin_trivial()const{return detail::begin_trivial_helper(*this);}
+    // auto end_trivial()const{return detail::end_trivial_helper(*this);}
     bool is_trivial()const override{
         return std::apply(
             [this](const auto&...operands){
@@ -207,8 +196,10 @@ public:
     using typename viewing_engine::config_type;
     using viewing_engine::viewing_engine;
     using viewing_engine::host;
-    auto begin()const{return detail::begin_helper(*this);}
-    auto end()const{return detail::end_helper(*this);}
+    // auto begin_broadcast()const{return detail::begin_broadcast_helper(*this);}
+    // auto end_broadcast()const{return detail::end_broadcast_helper(*this);}
+    // auto begin_trivial()const{return detail::begin_trivial_helper(*this);}
+    // auto end_trivial()const{return detail::end_trivial_helper(*this);}
     bool is_trivial()const override{return true;}
     auto create_indexer()const{
         return [](const auto& descriptor, auto indexer){
