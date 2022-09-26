@@ -40,6 +40,7 @@ class descriptor_with_libdivide :
     private detail::collection_libdivide_extension<CfgT,typename CfgT::div_mode>
 {
     using base_strides_libdivide = detail::collection_libdivide_extension<CfgT,typename CfgT::div_mode>;
+    const descriptor_with_libdivide* as_descriptor_with_libdivide()const override{return this;}
 
 public:
     using typename basic_descriptor::shape_type;
@@ -51,7 +52,6 @@ public:
         base_strides_libdivide{basic_descriptor::strides()}
     {}
 
-    const descriptor_with_libdivide* as_descriptor_with_libdivide()const {return this;}
     template<typename C=CfgT, std::enable_if_t<detail::is_mode_div_libdivide<C> ,int> =0 >
     const auto& strides_libdivide()const{return base_strides_libdivide::dividers_libdivide();}
     template<typename C=CfgT, std::enable_if_t<detail::is_mode_div_native<C> ,int> =0 >
@@ -59,15 +59,15 @@ public:
 };
 
 template<typename CfgT>
-class descriptor_with_offset : public basic_descriptor<CfgT>
+class descriptor_with_offset : public descriptor_with_libdivide<CfgT>
 {
 public:
-    using typename basic_descriptor::index_type;
-    using typename basic_descriptor::shape_type;
+    using typename descriptor_with_libdivide::index_type;
+    using typename descriptor_with_libdivide::shape_type;
     descriptor_with_offset() = default;
     template<typename ShT>
     descriptor_with_offset(ShT&& shape__, index_type offset__):
-        basic_descriptor{std::forward<ShT>(shape__)},
+        descriptor_with_libdivide{std::forward<ShT>(shape__)},
         offset_{offset__}
     {}
     index_type offset()const override{return offset_;}
