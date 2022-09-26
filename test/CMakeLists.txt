@@ -25,6 +25,7 @@ target_sources(Test PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/test_storage_tensor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_walker.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_helpers_for_testing.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_init_list.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_deep_tree_compilation.cpp

@@ -9,6 +9,7 @@
 #include "viewing_walker.hpp"
 #include "trivial_walker.hpp"
 #include "walker.hpp"
+#include "iterator.hpp"
 
 namespace gtensor{
 
@@ -37,6 +38,19 @@ inline bool is_trivial_operand(const T& operand){
     return operand->engine().is_trivial();
 }
 
+
+template<typename EngineT>
+auto begin_helper(const EngineT& engine){
+    using iterator_type = multiindex_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_broadcast_walker())>;
+    return iterator_type{engine.create_broadcast_walker(), engine.host()->shape(), engine.host()->descriptor().as_descriptor_with_libdivide()->strides_libdivide()};
+}
+template<typename EngineT>
+auto end_helper(const EngineT& engine){
+    using iterator_type = multiindex_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_broadcast_walker())>;
+    return iterator_type{engine.create_broadcast_walker(), engine.host()->shape(), engine.host()->descriptor().as_descriptor_with_libdivide()->strides_libdivide(), engine.host()->size()};
+}
+
+
 }   //end of namespace detail
 
 template<typename ValT, typename CfgT>
@@ -54,8 +68,10 @@ public:
     using typename storage_engine::value_type;
     using typename storage_engine::config_type;
     using storage_engine::storage_engine;
+    using storage_engine::host;
+    using storage_engine::begin;
+    using storage_engine::end;
     bool is_trivial()const override{return true;}
-    auto create_walker()const{return create_broadcast_walker();}
     auto create_broadcast_walker()const{
         return [this](const auto& it){
             return storage_walker<CfgT, std::decay_t<decltype(it)>>{host()->shape(),host()->strides(),host()->reset_strides(),it};
@@ -74,6 +90,9 @@ public:
     using typename evaluating_engine::value_type;
     using typename evaluating_engine::config_type;
     using evaluating_engine::evaluating_engine;
+    using evaluating_engine::host;
+    auto begin()const{return detail::begin_helper(*this);}
+    auto end()const{return detail::end_helper(*this);}
     bool is_trivial()const override{
         return std::apply(
             [this](const auto&...operands){
@@ -82,18 +101,17 @@ public:
             operands()
         );
     }
-    auto create_walker()const{
-        return create_broadcast_walker();
-    }
     auto create_indexer()const{
         return [this](auto&& walker){
             return evaluating_indexer<ValT,CfgT,std::decay_t<decltype(walker)>>{host()->descriptor().as_descriptor_with_libdivide()->strides_libdivide(),std::forward<decltype(walker)>(walker)};
-        }(create_walker());
+        }(create_broadcast_walker());
     }
     auto create_trivial_walker()const{
         return std::apply(
             [this](const auto&...operands){
-                return create_trivial_walker_helper(static_cast<Ops*>(operands.get())->engine().create_trivial_walker()...);
+                return [this](auto&&...walkers){
+                    return evaluating_trivial_walker<ValT,CfgT,F,std::decay_t<decltype(walkers)>...>{std::forward<decltype(walkers)>(walkers)...};
+                }(static_cast<Ops*>(operands.get())->engine().create_trivial_walker()...);
             },
             operands()
         );
@@ -101,19 +119,12 @@ public:
     auto create_broadcast_walker()const{
         return std::apply(
             [this](const auto&...operands){
-                return create_broadcast_walker_helper(static_cast<Ops*>(operands.get())->engine().create_broadcast_walker()...);
+                return [this](auto&&...walkers){
+                    return evaluating_walker<ValT,CfgT,F,std::decay_t<decltype(walkers)>...>{host()->shape(), std::forward<decltype(walkers)>(walkers)...};
+                }(static_cast<Ops*>(operands.get())->engine().create_broadcast_walker()...);
             },
             operands()
         );
-    }
-private:
-    template<typename...Wks>
-    auto create_broadcast_walker_helper(Wks&&...walkers)const{
-        return evaluating_walker<ValT,CfgT,F,Wks...>{host()->shape(),std::forward<Wks>(walkers)...};
-    }
-    template<typename...Wks>
-    auto create_trivial_walker_helper(Wks&&...walkers)const{
-        return evaluating_trivial_walker<ValT,CfgT,F,Wks...>{std::forward<Wks>(walkers)...};
     }
 };
 
@@ -195,6 +206,9 @@ public:
     using typename viewing_engine::value_type;
     using typename viewing_engine::config_type;
     using viewing_engine::viewing_engine;
+    using viewing_engine::host;
+    auto begin()const{return detail::begin_helper(*this);}
+    auto end()const{return detail::end_helper(*this);}
     bool is_trivial()const override{return true;}
     auto create_indexer()const{
         return [](const auto& descriptor, auto indexer){

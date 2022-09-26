@@ -9,7 +9,6 @@ namespace detail{
 }   //end of namespace detail
 
 
-
 template<typename ValT, typename CfgT>
 class storage_trivial_walker
 {

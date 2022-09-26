@@ -36,6 +36,16 @@ struct config_tmpl_{
     using slices_collection_type = typename gtensor::config::default_config::slices_collection_type;
 };
 
+template<typename Eng, typename Div>
+struct config_engine_div_selector{
+    using config_type = config_tmpl_<
+        typename gtensor::config::default_config::caching_mode,
+        Div,
+        typename gtensor::config::default_config::trivial_broadcast_eval_mode,
+        Eng
+        >;
+};
+
 template<typename Eng>
 struct config_engine_selector{
     using config_type = config_tmpl_<

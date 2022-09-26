@@ -2,13 +2,17 @@
 #include "catch.hpp"
 #include "gtensor.hpp"
 #include "test_config.hpp"
+#include "helpers_for_testing.hpp"
 
 namespace test_expression_template_helpers{
 
 using value_type = float;
 using gtensor::tensor;
-using test_config_type = typename test_config::config_engine_selector<gtensor::config::engine_expression_template>::config_type;
-test_config_type::nop_type nop{};
+using test_config_div_native_type = typename test_config::config_engine_div_selector<gtensor::config::engine_expression_template,gtensor::config::mode_div_native>::config_type;
+using test_config_div_libdivide_type = typename test_config::config_engine_div_selector<gtensor::config::engine_expression_template,gtensor::config::mode_div_libdivide>::config_type;
+using test_default_config_type = test_config_div_native_type;
+//using test_default_config_type = test_config_div_libdivide_type;
+test_default_config_type::nop_type nop{};
 
 
 template<typename T>
@@ -21,12 +25,14 @@ struct test_tensor : public T{
     auto create_broadcast_walker()const{return engine().create_broadcast_walker();}
     auto create_trivial_walker()const{return engine().create_trivial_walker();}
     auto create_indexer()const{return engine().create_indexer();}
+    auto begin()const{return engine().begin();}
+    auto end()const{return engine().end();}
 };
 
 template<typename T>
 auto make_test_tensor(T&& t){return test_tensor<std::decay_t<T>>{t};}
 
-template<typename ValT = value_type, typename CfgT = test_config_type>
+template<typename CfgT = test_default_config_type, typename ValT = value_type>
 struct storage_tensor_maker{
     using value_type = ValT;
     using tensor_type = tensor<ValT,CfgT>;
@@ -37,7 +43,7 @@ struct storage_tensor_maker{
     }
 };
 
-template<typename ValT = value_type, typename CfgT = test_config_type>
+template<typename CfgT = test_default_config_type, typename ValT = value_type>
 struct notrivial_tensor_maker{
     using value_type = ValT;
     using tensor_type = tensor<ValT,CfgT>;
@@ -48,7 +54,7 @@ struct notrivial_tensor_maker{
     }
 };
 
-template<typename ValT = value_type, typename CfgT = test_config_type>
+template<typename CfgT = test_default_config_type, typename ValT = value_type>
 struct trivial_subtree_tensor_maker{
     using value_type = ValT;
     using tensor_type = tensor<ValT,CfgT>;
@@ -59,7 +65,7 @@ struct trivial_subtree_tensor_maker{
     }
 };
 
-template<typename ValT = value_type, typename CfgT = test_config_type>
+template<typename CfgT = test_default_config_type, typename ValT = value_type>
 struct trivial_tensor_maker{
     using value_type = ValT;
     using tensor_type = tensor<ValT,CfgT>;
@@ -70,7 +76,7 @@ struct trivial_tensor_maker{
     }
 };
 
-template<typename ValT = value_type, typename CfgT = test_config_type>
+template<typename CfgT = test_default_config_type, typename ValT = value_type>
 struct view_slice_of_storage_maker{
     using value_type = ValT;
     using tensor_type = tensor<ValT,CfgT>;
@@ -81,7 +87,7 @@ struct view_slice_of_storage_maker{
     }
 };
 
-template<typename ValT = value_type, typename CfgT = test_config_type>
+template<typename CfgT = test_default_config_type, typename ValT = value_type>
 struct view_slice_of_eval_maker{
     using value_type = ValT;
     using tensor_type = tensor<ValT,CfgT>;
@@ -92,7 +98,7 @@ struct view_slice_of_eval_maker{
     }
 };
 
-template<typename ValT = value_type, typename CfgT = test_config_type>
+template<typename CfgT = test_default_config_type, typename ValT = value_type>
 struct view_view_slice_of_eval_maker{
     using value_type = ValT;
     using tensor_type = tensor<ValT,CfgT>;
@@ -103,7 +109,7 @@ struct view_view_slice_of_eval_maker{
     }
 };
 
-template<typename ValT = value_type, typename CfgT = test_config_type>
+template<typename CfgT = test_default_config_type, typename ValT = value_type>
 struct view_transpose_of_storage_maker{
     using value_type = ValT;
     using tensor_type = tensor<ValT,CfgT>;
@@ -114,7 +120,7 @@ struct view_transpose_of_storage_maker{
     }
 };
 
-template<typename ValT = value_type, typename CfgT = test_config_type>
+template<typename CfgT = test_default_config_type, typename ValT = value_type>
 struct view_subdim_of_storage_maker{
     using value_type = ValT;
     using tensor_type = tensor<ValT,CfgT>;
@@ -125,7 +131,7 @@ struct view_subdim_of_storage_maker{
     }
 };
 
-template<typename ValT = value_type, typename CfgT = test_config_type>
+template<typename CfgT = test_default_config_type, typename ValT = value_type>
 struct view_reshape_of_storage_maker{
     using value_type = ValT;
     using tensor_type = tensor<ValT,CfgT>;
@@ -136,36 +142,113 @@ struct view_reshape_of_storage_maker{
     }
 };
 
-template<typename ValT = value_type, typename CfgT = test_config_type>
+template<typename CfgT = test_default_config_type, typename ValT = value_type>
 struct eval_view_operand_maker{
     using value_type = ValT;
     using tensor_type = tensor<ValT,CfgT>;
     auto operator()(){
         return make_test_tensor(
-            view_transpose_of_storage_maker{}() + storage_tensor_maker{}() - trivial_subtree_tensor_maker{}() + view_view_slice_of_eval_maker{}() - trivial_tensor_maker{}()
+            view_transpose_of_storage_maker<CfgT>{}() +
+            storage_tensor_maker<CfgT>{}() -
+            trivial_subtree_tensor_maker<CfgT>{}() +
+            view_view_slice_of_eval_maker<CfgT>{}() -
+            trivial_tensor_maker<CfgT>{}()
         );
     }
 };
 
-template<typename ValT = value_type, typename CfgT = test_config_type>
+template<typename CfgT = test_default_config_type, typename ValT = value_type>
+struct trivial_view_operand_maker{
+    using value_type = ValT;
+    using tensor_type = tensor<ValT,CfgT>;
+    auto operator()(){
+        return make_test_tensor(
+            (storage_tensor_maker<CfgT>{}() +
+            view_transpose_of_storage_maker<CfgT>{}()) +
+            (storage_tensor_maker<CfgT>{}() -
+            view_view_slice_of_eval_maker<CfgT>{}() -
+            trivial_tensor_maker<CfgT>{}())
+        );
+    }
+};
+
+template<typename CfgT = test_default_config_type, typename ValT = value_type>
 struct view_eval_view_operand_maker{
     using value_type = ValT;
     using tensor_type = tensor<ValT,CfgT>;
     auto operator()(){
         return make_test_tensor(
-            (view_transpose_of_storage_maker{}() + storage_tensor_maker{}() - trivial_subtree_tensor_maker{}() + view_view_slice_of_eval_maker{}() - trivial_tensor_maker{}() +
-            tensor_type{{{0,0,0},{0,0,0}},{{2,0,-2},{2,0,-2}}})({{1},{},{nop,nop,-1}})
+            (view_transpose_of_storage_maker<CfgT>{}() +
+                storage_tensor_maker<CfgT>{}() -
+                trivial_subtree_tensor_maker<CfgT>{}() +
+                view_view_slice_of_eval_maker<CfgT>{}() -
+                trivial_tensor_maker<CfgT>{}() +
+                tensor_type{{{0,0,0},{0,0,0}},{{2,0,-2},{2,0,-2}}}
+            )({{1},{},{nop,nop,-1}})
         );
     }
 };
 
 
+using makers_type_list = std::tuple<
+    test_expression_template_helpers::storage_tensor_maker<test_config_div_native_type>,
+    test_expression_template_helpers::notrivial_tensor_maker<test_config_div_native_type>,
+    test_expression_template_helpers::trivial_subtree_tensor_maker<test_config_div_native_type>,
+    test_expression_template_helpers::trivial_tensor_maker<test_config_div_native_type>,
+    test_expression_template_helpers::view_slice_of_storage_maker<test_config_div_native_type>,
+    test_expression_template_helpers::view_slice_of_eval_maker<test_config_div_native_type>,
+    test_expression_template_helpers::view_view_slice_of_eval_maker<test_config_div_native_type>,
+    test_expression_template_helpers::view_transpose_of_storage_maker<test_config_div_native_type>,
+    test_expression_template_helpers::view_subdim_of_storage_maker<test_config_div_native_type>,
+    test_expression_template_helpers::view_reshape_of_storage_maker<test_config_div_native_type>,
+    test_expression_template_helpers::eval_view_operand_maker<test_config_div_native_type>,
+    test_expression_template_helpers::trivial_view_operand_maker<test_config_div_native_type>,
+    test_expression_template_helpers::view_eval_view_operand_maker<test_config_div_native_type>,
+
+    test_expression_template_helpers::storage_tensor_maker<test_config_div_libdivide_type>,
+    test_expression_template_helpers::notrivial_tensor_maker<test_config_div_libdivide_type>,
+    test_expression_template_helpers::trivial_subtree_tensor_maker<test_config_div_libdivide_type>,
+    test_expression_template_helpers::trivial_tensor_maker<test_config_div_libdivide_type>,
+    test_expression_template_helpers::view_slice_of_storage_maker<test_config_div_libdivide_type>,
+    test_expression_template_helpers::view_slice_of_eval_maker<test_config_div_libdivide_type>,
+    test_expression_template_helpers::view_view_slice_of_eval_maker<test_config_div_libdivide_type>,
+    test_expression_template_helpers::view_transpose_of_storage_maker<test_config_div_libdivide_type>,
+    test_expression_template_helpers::view_subdim_of_storage_maker<test_config_div_libdivide_type>,
+    test_expression_template_helpers::view_reshape_of_storage_maker<test_config_div_libdivide_type>,
+    test_expression_template_helpers::eval_view_operand_maker<test_config_div_libdivide_type>,
+    test_expression_template_helpers::trivial_view_operand_maker<test_config_div_libdivide_type>,
+    test_expression_template_helpers::view_eval_view_operand_maker<test_config_div_libdivide_type>
+>;
+
+using makers_trivial_type_list = std::tuple<
+    test_expression_template_helpers::storage_tensor_maker<test_config_div_native_type>,
+    test_expression_template_helpers::trivial_tensor_maker<test_config_div_native_type>,
+    test_expression_template_helpers::view_slice_of_storage_maker<test_config_div_native_type>,
+    test_expression_template_helpers::view_slice_of_eval_maker<test_config_div_native_type>,
+    test_expression_template_helpers::view_view_slice_of_eval_maker<test_config_div_native_type>,
+    test_expression_template_helpers::view_transpose_of_storage_maker<test_config_div_native_type>,
+    test_expression_template_helpers::view_subdim_of_storage_maker<test_config_div_native_type>,
+    test_expression_template_helpers::view_reshape_of_storage_maker<test_config_div_native_type>,
+    test_expression_template_helpers::trivial_view_operand_maker<test_config_div_native_type>,
+    test_expression_template_helpers::view_eval_view_operand_maker<test_config_div_native_type>,
+
+    test_expression_template_helpers::storage_tensor_maker<test_config_div_libdivide_type>,
+    test_expression_template_helpers::trivial_tensor_maker<test_config_div_libdivide_type>,
+    test_expression_template_helpers::view_slice_of_storage_maker<test_config_div_libdivide_type>,
+    test_expression_template_helpers::view_slice_of_eval_maker<test_config_div_libdivide_type>,
+    test_expression_template_helpers::view_view_slice_of_eval_maker<test_config_div_libdivide_type>,
+    test_expression_template_helpers::view_transpose_of_storage_maker<test_config_div_libdivide_type>,
+    test_expression_template_helpers::view_subdim_of_storage_maker<test_config_div_libdivide_type>,
+    test_expression_template_helpers::view_reshape_of_storage_maker<test_config_div_libdivide_type>,
+    test_expression_template_helpers::trivial_view_operand_maker<test_config_div_libdivide_type>,
+    test_expression_template_helpers::view_eval_view_operand_maker<test_config_div_libdivide_type>
+>;
 
 }   //end of namespace test_tensor
 
 TEST_CASE("test_is_trivial","[test_expression_template_engine]"){
     using value_type = float;
-    using tensor_type = gtensor::tensor<value_type, test_expression_template_helpers::test_config_type>;
+    using tensor_type = gtensor::tensor<value_type, test_expression_template_helpers::test_default_config_type>;
     using test_expression_template_helpers::make_test_tensor;
     using test_type = std::tuple<bool, bool>;
     //0result is_trivial,1expected_is_trivial
@@ -184,21 +267,7 @@ TEST_CASE("test_is_trivial","[test_expression_template_engine]"){
     REQUIRE(result_is_trivial == expected_is_trivial);
 }
 
-TEMPLATE_TEST_CASE("test_broadcast_walker","[test_expression_template_engine]",
-    test_expression_template_helpers::storage_tensor_maker<>,
-    test_expression_template_helpers::notrivial_tensor_maker<>,
-    test_expression_template_helpers::trivial_subtree_tensor_maker<>,
-    test_expression_template_helpers::trivial_tensor_maker<>,
-    test_expression_template_helpers::view_slice_of_storage_maker<>,
-    test_expression_template_helpers::view_slice_of_eval_maker<>,
-    test_expression_template_helpers::view_view_slice_of_eval_maker<>,
-    test_expression_template_helpers::view_transpose_of_storage_maker<>,
-    test_expression_template_helpers::view_subdim_of_storage_maker<>,
-    test_expression_template_helpers::view_reshape_of_storage_maker<>,
-    test_expression_template_helpers::eval_view_operand_maker<>,
-    test_expression_template_helpers::view_eval_view_operand_maker<>
-
-)
+TEMPLATE_LIST_TEST_CASE("test_broadcast_walker","[test_expression_template_engine]", test_expression_template_helpers::makers_type_list)
 {
     using value_type = typename TestType::value_type;
     using test_type = std::tuple<value_type,value_type>;
@@ -222,21 +291,11 @@ TEMPLATE_TEST_CASE("test_broadcast_walker","[test_expression_template_engine]",
     REQUIRE(deref == expected_deref);
 }
 
-TEMPLATE_TEST_CASE("test_trivial_walker","[test_expression_template_engine]",
-    test_expression_template_helpers::storage_tensor_maker<>,
-    test_expression_template_helpers::trivial_tensor_maker<>,
-    test_expression_template_helpers::view_slice_of_storage_maker<>,
-    test_expression_template_helpers::view_slice_of_eval_maker<>,
-    test_expression_template_helpers::view_view_slice_of_eval_maker<>,
-    test_expression_template_helpers::view_transpose_of_storage_maker<>,
-    test_expression_template_helpers::view_subdim_of_storage_maker<>,
-    test_expression_template_helpers::view_reshape_of_storage_maker<>,
-    test_expression_template_helpers::view_eval_view_operand_maker<>
-)
+TEMPLATE_LIST_TEST_CASE("test_trivial_walker","[test_expression_template_engine]", test_expression_template_helpers::makers_trivial_type_list)
 {
     using value_type = typename TestType::value_type;
     using test_type = std::tuple<value_type,value_type>;
-
+    REQUIRE(TestType{}().is_trivial());
     auto test_data = GENERATE(
         test_type{[](){auto t = TestType{}(); auto w = t.create_trivial_walker(); return w[0]; }(), value_type{1}},
         test_type{[](){auto t = TestType{}(); auto w = t.create_trivial_walker(); return w[4];}(), value_type{5}},
@@ -259,8 +318,7 @@ TEMPLATE_TEST_CASE("test_indexer","[test_expression_template_engine]",
     test_expression_template_helpers::trivial_tensor_maker<>
 )
 {
-    using value_type = float;
-    using tensor_type = gtensor::tensor<value_type, test_expression_template_helpers::test_config_type>;
+    using value_type = typename TestType::value_type;
     using test_type = std::tuple<value_type,value_type>;
 
     //0result,1expected
@@ -283,8 +341,7 @@ TEMPLATE_TEST_CASE("test_viewing_indexer","[test_expression_template_engine]",
     test_expression_template_helpers::view_view_slice_of_eval_maker<>
 )
 {
-    using value_type = float;
-    using tensor_type = gtensor::tensor<value_type, test_expression_template_helpers::test_config_type>;
+    using value_type = typename TestType::value_type;
     using test_type = std::tuple<value_type,value_type>;
 
     //0result,1expected
@@ -317,4 +374,85 @@ TEMPLATE_TEST_CASE("test_viewing_indexer","[test_expression_template_engine]",
     auto result = std::get<0>(test_data);
     auto expected = std::get<1>(test_data);
     REQUIRE(result == expected);
+}
+
+TEMPLATE_LIST_TEST_CASE("test_multiindex_iterator","[test_expression_template_engine]",test_expression_template_helpers::makers_type_list)
+{
+    SECTION("test_iter_deref"){
+        using value_type = typename TestType::value_type;
+        using test_type = std::tuple<value_type, value_type>;
+        //0deref,1expected_deref
+        auto test_data = GENERATE(
+            test_type{[](){auto t = TestType{}(); auto it = t.begin(); return *it;}(), value_type{1}},
+            test_type{[](){auto t = TestType{}(); auto it = t.begin(); ++it; return *it;}(), value_type{2}},
+            test_type{[](){auto t = TestType{}(); auto it = t.begin(); ++it; ++it; return *it;}(), value_type{3}},
+            test_type{[](){auto t = TestType{}(); auto it = t.begin(); ++it; ++it; ++it; return *it;}(), value_type{4}},
+            test_type{[](){auto t = TestType{}(); auto it = t.begin(); ++it; ++it; ++it; ++it; return *it;}(), value_type{5}},
+            test_type{[](){auto t = TestType{}(); auto it = t.begin(); ++it; ++it; ++it; ++it; ++it; return *it;}(), value_type{6}},
+            test_type{[](){auto t = TestType{}(); auto it = t.begin(); ++it; ++it; ++it; ++it; ++it; --it; return *it;}(), value_type{5}},
+            test_type{[](){auto t = TestType{}(); auto it = t.begin(); ++it; ++it; ++it; ++it; ++it; --it; --it; return *it;}(), value_type{4}},
+            test_type{[](){auto t = TestType{}(); auto it = t.begin(); ++it; ++it; ++it; ++it; ++it; --it; --it; --it; return *it;}(), value_type{3}},
+            test_type{[](){auto t = TestType{}(); auto it = t.begin(); ++it; ++it; ++it; ++it; ++it; --it; --it; --it; --it; return *it;}(), value_type{2}},
+            test_type{[](){auto t = TestType{}(); auto it = t.begin(); ++it; ++it; ++it; ++it; ++it; --it; --it; --it; --it; --it; return *it;}(), value_type{1}},
+            test_type{[](){auto t = TestType{}(); auto it = t.end(); --it; return *it;}(), value_type{6}},
+            test_type{[](){auto t = TestType{}(); auto it = t.end(); --it; --it; return *it;}(), value_type{5}},
+            test_type{[](){auto t = TestType{}(); auto it = t.end(); --it; --it; --it; return *it;}(), value_type{4}},
+            test_type{[](){auto t = TestType{}(); auto it = t.end(); --it; --it; --it; --it; return *it;}(), value_type{3}},
+            test_type{[](){auto t = TestType{}(); auto it = t.end(); --it; --it; --it; --it; --it; return *it;}(), value_type{2}},
+            test_type{[](){auto t = TestType{}(); auto it = t.end(); --it; --it; --it; --it; --it; --it; return *it;}(), value_type{1}},
+            test_type{[](){auto t = TestType{}(); auto it = t.end(); --it; --it; --it; --it; --it; --it; ++it; return *it;}(), value_type{2}},
+            test_type{[](){auto t = TestType{}(); auto it = t.end(); --it; --it; --it; --it; --it; --it; ++it; ++it; return *it;}(), value_type{3}},
+            test_type{[](){auto t = TestType{}(); auto it = t.end(); --it; --it; --it; --it; --it; --it; ++it; ++it; ++it; return *it;}(), value_type{4}},
+            test_type{[](){auto t = TestType{}(); auto it = t.end(); --it; --it; --it; --it; --it; --it; ++it; ++it; ++it; ++it; return *it;}(), value_type{5}},
+            test_type{[](){auto t = TestType{}(); auto it = t.end(); --it; --it; --it; --it; --it; --it; ++it; ++it; ++it; ++it; ++it; return *it;}(), value_type{6}},
+            test_type{TestType{}().begin()[0], value_type{1}},
+            test_type{TestType{}().begin()[1], value_type{2}},
+            test_type{TestType{}().begin()[2], value_type{3}},
+            test_type{TestType{}().begin()[3], value_type{4}},
+            test_type{TestType{}().begin()[4], value_type{5}},
+            test_type{TestType{}().begin()[5], value_type{6}},
+            test_type{TestType{}().end()[-1], value_type{6}},
+            test_type{TestType{}().end()[-2], value_type{5}},
+            test_type{TestType{}().end()[-3], value_type{4}},
+            test_type{TestType{}().end()[-4], value_type{3}},
+            test_type{TestType{}().end()[-5], value_type{2}},
+            test_type{TestType{}().end()[-6], value_type{1}},
+            test_type{*(TestType{}().begin()+0), value_type{1}},
+            test_type{*(TestType{}().begin()+1), value_type{2}},
+            test_type{*(TestType{}().begin()+2), value_type{3}},
+            test_type{*(TestType{}().begin()+3), value_type{4}},
+            test_type{*(TestType{}().begin()+4), value_type{5}},
+            test_type{*(TestType{}().begin()+5), value_type{6}},
+            test_type{*(TestType{}().end()-1), value_type{6}},
+            test_type{*(TestType{}().end()-2), value_type{5}},
+            test_type{*(TestType{}().end()-3), value_type{4}},
+            test_type{*(TestType{}().end()-4), value_type{3}},
+            test_type{*(TestType{}().end()-5), value_type{2}},
+            test_type{*(TestType{}().end()-6), value_type{1}}
+        );
+        auto deref = std::get<0>(test_data);
+        auto expected_deref = std::get<1>(test_data);
+        REQUIRE(deref == expected_deref);
+    }
+    SECTION("test_iter_cmp"){
+        using test_type = std::tuple<bool,bool>;
+        //0cmp_result,1expected_cmp_result
+        auto test_data = GENERATE(
+            test_type{[](){auto t = TestType{}(); return t.begin() > t.end();}(), false},
+            test_type{[](){auto t = TestType{}(); return t.end() > t.begin();}(), true},
+            test_type{[](){auto t = TestType{}(); return t.begin() < t.end();}(), true},
+            test_type{[](){auto t = TestType{}(); return t.end() < t.begin();}(), false},
+            test_type{[](){auto t = TestType{}(); return t.end() > t.end();}(), false},
+            test_type{[](){auto t = TestType{}(); return t.begin() > t.begin();}(), false},
+            test_type{[](){auto t = TestType{}(); return t.end() < t.end();}(), false},
+            test_type{[](){auto t = TestType{}(); return t.begin() < t.begin();}(), false},
+            test_type{[](){auto t = TestType{}(); return t.end() >= t.end();}(), true},
+            test_type{[](){auto t = TestType{}(); return t.begin() >= t.begin();}(), true},
+            test_type{[](){auto t = TestType{}(); return t.end() <= t.end();}(), true},
+            test_type{[](){auto t = TestType{}(); return t.begin() <= t.begin();}(), true}
+        );
+        auto cmp_result = std::get<0>(test_data);
+        auto expected_cmp_result = std::get<1>(test_data);
+        REQUIRE(cmp_result == expected_cmp_result);
+    }
 }
