@@ -115,7 +115,7 @@ class view_factory
     using index_type = typename CfgT::index_type;
     using shape_type = typename CfgT::shape_type;
     using slices_collection_type = typename CfgT::slices_collection_type;
-    using view_reshape_descriptor_type = basic_descriptor<CfgT>;
+    using view_reshape_descriptor_type = descriptor_with_libdivide<CfgT>;
     using view_subdim_descriptor_type = descriptor_with_offset<CfgT>;
     using view_slice_descriptor_type = converting_descriptor<CfgT>;
     template<typename EngineT> using view_reshape = gtensor::viewing_tensor<view_reshape_descriptor_type, EngineT>;
