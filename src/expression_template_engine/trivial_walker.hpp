@@ -34,24 +34,12 @@ class evaluating_trivial_walker
     //std::tuple<Wks...> walkers;
     std::pair<Wks...> walkers;
     F f{};
-
-    // template<typename...U>
-    // auto& as_trivial(const walker<U...>& w)const{return w.as_trivial();}
-    // template<typename...U>
-    // auto& as_trivial(const storage_walker<U...>& w)const{return w;}
-    // template<typename...U>
-    // auto& as_trivial(const evaluating_trivial_walker<U...>& w)const{return w;}
-    // template<typename...U>
-    // auto& as_trivial(const evaluating_trivial_root_walker<U...>& w)const{return w;}
-    template<typename U>
-    auto& as_trivial(const U& w)const{return w;}
-
 public:
     evaluating_trivial_walker(Wks&&...walkers_):
         walkers{std::move(walkers_)...}
     {}
     value_type operator[](const index_type& idx)const {
-        return std::apply([&](const auto&...args){return f(as_trivial(args)[idx]...);}, walkers);
+        return std::apply([&](const auto&...args){return f(args[idx]...);}, walkers);
     }
 };
 

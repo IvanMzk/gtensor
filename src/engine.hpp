@@ -67,7 +67,7 @@ public:
     using config_type = CfgT;
 protected:
     constexpr static std::size_t operands_number  = OperandsNumber::value;
-    using operand_base_type = std::shared_ptr<tensor_base_base<config_type>>;
+    using operand_base_type = tensor_base_base<config_type>;
     using typename engine_host_accessor::host_type;
     const auto& operands()const{return operands_;}
 public:
@@ -79,7 +79,7 @@ public:
     {}
 private:
     F f_;
-    std::array<operand_base_type,operands_number> operands_;
+    std::array<std::shared_ptr<operand_base_type>,operands_number> operands_;
 };
 
 template<typename ValT, typename CfgT, typename ParentT>

@@ -17,9 +17,10 @@ class viewing_indexer
     const DescT* descriptor;
     PrevT parent_indexer;
 public:
-    viewing_indexer(const DescT& descriptor_, PrevT parent_indexer_):
+    template<typename P>
+    viewing_indexer(const DescT& descriptor_, P&& parent_indexer_):
         descriptor{&descriptor_},
-        parent_indexer{parent_indexer_}
+        parent_indexer{std::forward<P>(parent_indexer_)}
     {}
     auto operator[](const index_type& idx){return parent_indexer[descriptor->convert(idx)];}
 };

@@ -24,11 +24,13 @@ template<typename ValT, typename CfgT, typename ImplT> class tensor;
 template<typename DescT, typename EngineT> class viewing_tensor;
 template<typename EngineT> class storage_tensor;
 template<typename EngineT> class evaluating_tensor;
-
 template<typename CfgT> class converting_base;
-template<typename CfgT> class stensor_descriptor;
-template<typename CfgT> class descriptor_with_libdivide;
+
 template<typename CfgT> class descriptor_base;
+template<typename CfgT> class basic_descriptor;
+template<typename CfgT> class descriptor_with_libdivide;
+template<typename CfgT> class descriptor_with_offset;
+template<typename CfgT> class converting_descriptor;
 
 namespace detail{
 template<typename DifT, typename N> struct slice_item;

@@ -4,8 +4,8 @@
 #include "catch.hpp"
 #include "benchmark_helpers.hpp"
 #include "experimental_expression_template.hpp"
-#include "expression_template_variant_dispatch.hpp"
-#include "expression_template_polytensor.hpp"
+#include "experimental_expression_template_variant_dispatch.hpp"
+#include "experimental_expression_template_polytensor.hpp"
 
 namespace benchmark_experimental_expression_template{
 
@@ -157,9 +157,9 @@ TEMPLATE_TEST_CASE("benchmark_experimental_expression_template","[benchmark_expe
     // auto e = t1+t2;
     // benchmark_with_making_iter(making_iter_iterate_deref,e,"tensor_no_dispatch");
 
-    // benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_maker<50>>{}(shape_type{10, 10000}, shape_type{10,10000});
-    // benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_trivial_subtree_maker<50>>{}(shape_type{10, 10000}, shape_type{1,10000});
-    // benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_maker<50>>{}(shape_type{1, 10000}, shape_type{10,10000});
+    benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_maker<50>>{}(shape_type{10, 10000}, shape_type{10,10000});
+    benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_trivial_subtree_maker<50>>{}(shape_type{10, 10000}, shape_type{1,10000});
+    benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_maker<50>>{}(shape_type{1, 10000}, shape_type{10,10000});
 
     // benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_maker<100>>{}(shape_type{10, 10000}, shape_type{10,10000});
     // benchmark_binary_tree<tensor_no_dispatch_type,TestType,asymmetric_tree_trivial_subtree_maker<100>>{}(shape_type{10, 10000}, shape_type{1,10000});
