@@ -79,15 +79,15 @@ class evaluating_indexer
     using shape_type = typename CfgT::shape_type;
     using strides_type = typename detail::libdiv_strides_traits<CfgT>::type;
 
-    walker_type walker_;
     const strides_type* strides;
-    value_type data_cache{evaluate_at(0)};
-    index_type index_cache{0};
+    mutable walker_type walker_;
+    mutable value_type data_cache{evaluate_at(0)};
+    mutable index_type index_cache{0};
 
-    void walk(const index_type& direction, const index_type& steps){
+    void walk(const index_type& direction, const index_type& steps)const{
         walker_.walk_without_check(direction,steps);
     }
-    value_type evaluate_at(index_type idx){
+    value_type evaluate_at(index_type idx)const{
         index_cache = idx;
         walker_.reset();
         auto sit_begin{(*strides).begin()};
@@ -103,10 +103,10 @@ class evaluating_indexer
     }
 public:
     evaluating_indexer(const strides_type& strides_, walker_type&& walker__):
-        walker_{std::move(walker__)},
-        strides{&strides_}
+        strides{&strides_},
+        walker_{std::move(walker__)}
     {}
-    value_type operator[](index_type idx){
+    value_type operator[](index_type idx)const{
         if (index_cache == idx){
             return data_cache;
         }else{

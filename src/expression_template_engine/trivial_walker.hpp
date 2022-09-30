@@ -75,7 +75,7 @@ class viewing_trivial_walker
     using index_type = typename descriptor_type::index_type;
 
     const descriptor_type* converter;
-    mutable indexer_type indexer;
+    indexer_type indexer;
 public:
     viewing_trivial_walker(const descriptor_type& converter_, const indexer_type& indexer_):
         converter{&converter_},

@@ -22,7 +22,7 @@ public:
         descriptor{&descriptor_},
         parent_indexer{std::forward<P>(parent_indexer_)}
     {}
-    auto operator[](const index_type& idx){return parent_indexer[descriptor->convert(idx)];}
+    auto operator[](const index_type& idx)const{return parent_indexer[descriptor->convert(idx)];}
 };
 
 template<typename CfgT, typename IndexerT>

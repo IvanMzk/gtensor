@@ -31,7 +31,7 @@ public:
 };
 
 template<typename ValT, typename CfgT, typename ImplT>
-class trivial_walker_polymorphic : public indexer_base<ValT, CfgT>
+class indexer_polymorphic : public indexer_base<ValT, CfgT>
 {
     using typename indexer_base::index_type;
     using typename indexer_base::value_type;
@@ -39,9 +39,9 @@ class trivial_walker_polymorphic : public indexer_base<ValT, CfgT>
 
     impl_type impl_;
 
-    std::unique_ptr<indexer_base> clone()const override{return std::make_unique<trivial_walker_polymorphic>(*this);}
+    std::unique_ptr<indexer_base> clone()const override{return std::make_unique<indexer_polymorphic>(*this);}
 public:
-    trivial_walker_polymorphic(impl_type&& impl__):
+    indexer_polymorphic(impl_type&& impl__):
         impl_{std::move(impl__)}
     {}
     value_type operator[](const index_type& idx)const override{return impl_.operator[](idx);}

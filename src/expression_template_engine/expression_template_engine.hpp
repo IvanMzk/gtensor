@@ -161,10 +161,20 @@ public:
     using expression_template_nodispatching_engine::expression_template_nodispatching_engine;
     auto begin()const{return detail::begin_multiindex(*this);}
     auto end()const{return detail::end_multiindex(*this);}
-    auto create_indexer()const{return create_broadcast_indexer();}
+    auto create_indexer()const{
+        if (should_use_trivial()){
+            return create_indexer_helper(create_trivial_indexer());
+        }else{
+            return create_indexer_helper(create_broadcast_indexer());
+        }
+    }
 private:
     bool should_use_trivial()const{
         return typename detail::has_view_with_converting_descriptor<expression_template_nodispatching_engine>::value && is_trivial();
+    }
+    template<typename ImplT>
+    auto create_indexer_helper(ImplT&& impl)const{
+        return indexer<value_type,config_type>{std::make_unique<indexer_polymorphic<value_type,config_type,std::decay_t<ImplT>>>(std::forward<ImplT>(impl))};
     }
 };
 
