@@ -15,6 +15,7 @@ class storage_walker : private basic_walker<CfgT, ItT>
     using shape_type = typename basic_walker::shape_type;
     using iterator_type = ItT;
     using value_type = typename std::iterator_traits<iterator_type>::value_type;
+    using result_type = decltype(*std::declval<iterator_type>());
 
 public:
     storage_walker(const shape_type& shape_, const shape_type& strides_, const shape_type& reset_strides_,  const iterator_type& data_):
@@ -25,7 +26,7 @@ public:
     void step_back(const index_type& direction){basic_walker::step_back(direction);}
     void reset(const index_type& direction){basic_walker::reset(direction);}
     void reset(){basic_walker::reset();}
-    value_type operator*() const {return *cursor();}
+    result_type operator*() const {return *cursor();}
 };
 
 // template<typename ValT, typename CfgT>

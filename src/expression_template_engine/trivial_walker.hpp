@@ -9,20 +9,21 @@ namespace detail{
 }   //end of namespace detail
 
 
-template<typename ValT, typename CfgT>
+template<typename CfgT, typename ItT>
 class storage_trivial_walker
 {
-    using value_type = ValT;
+    using iterator_type = ItT;
     using index_type = typename CfgT::index_type;
     using shape_type = typename CfgT::shape_type;
+    using result_type = decltype(std::declval<iterator_type>()[std::declval<index_type>()]);
 
-    const value_type* offset_;
+    iterator_type offset_;
 
 public:
-    storage_trivial_walker(const value_type* offset__):
+    storage_trivial_walker(const iterator_type& offset__):
         offset_{offset__}
     {}
-    value_type operator[](const index_type& idx)const{return *(offset_+idx);}
+    result_type operator[](const index_type& idx)const{return offset_[idx];}
 };
 
 template<typename ValT, typename CfgT, typename F, typename...Wks>
@@ -73,6 +74,7 @@ class viewing_trivial_walker
     using descriptor_type = DescT;
     using indexer_type = IndexerT;
     using index_type = typename descriptor_type::index_type;
+    using result_type = typename indexer_type::result_type;
 
     const descriptor_type* converter;
     indexer_type indexer;
@@ -81,7 +83,7 @@ public:
         converter{&converter_},
         indexer{indexer_}
     {}
-    auto operator[](const index_type& idx)const{return indexer[converter->convert(idx)];}
+    result_type operator[](const index_type& idx)const{return indexer[converter->convert(idx)];}
 };
 
 }   //end of namespace gtensor

@@ -27,11 +27,12 @@ struct test_tensor : public T{
     test_tensor(const T& base):
         T{base}
     {}
-    auto& engine()const{return impl()->engine();}
+    using T::engine;
     bool is_trivial()const{return engine().is_trivial();}
     auto create_broadcast_walker()const{return engine().create_broadcast_walker();}
     auto create_trivial_walker()const{return engine().create_trivial_walker();}
     auto create_indexer()const{return engine().create_indexer();}
+    auto create_indexer(){return engine().create_indexer();}
 };
 
 template<typename T>

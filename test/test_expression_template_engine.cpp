@@ -140,6 +140,107 @@ TEMPLATE_TEST_CASE("test_viewing_indexer","[test_expression_template_engine]",
     REQUIRE(result == expected);
 }
 
+TEST_CASE("test_indexer_result_type","[test_expression_template_engine]"){
+    using value_type = float;
+    using reference_type = value_type&;
+    using const_reference_type = const value_type&;
+    using test_expression_template_helpers::test_tensor;
+    using test_expression_template_helpers::make_test_tensor;
+    using test_config_type = typename test_config::config_engine_selector<gtensor::config::engine_expression_template>::config_type;
+    using index_type = typename test_config_type::index_type;
+    using tensor_type = gtensor::tensor<value_type, test_config_type>;
+
+    auto t = make_test_tensor<test_tensor>(tensor_type{1,2,3});
+    SECTION("storage"){
+        auto& re = t.engine();
+        const auto& cre = re;
+        REQUIRE(std::is_same_v<decltype(re.create_indexer()[std::declval<index_type>()]),reference_type>);
+        REQUIRE(std::is_same_v<decltype(cre.create_indexer()[std::declval<index_type>()]),const_reference_type>);
+        REQUIRE(std::is_same_v<decltype(re.create_trivial_walker()[std::declval<index_type>()]),reference_type>);
+        REQUIRE(std::is_same_v<decltype(cre.create_trivial_walker()[std::declval<index_type>()]),const_reference_type>);
+        REQUIRE(std::is_same_v<decltype(*re.create_broadcast_walker()),reference_type>);
+        REQUIRE(std::is_same_v<decltype(*cre.create_broadcast_walker()),const_reference_type>);
+        REQUIRE(std::is_same_v<decltype(*re.begin()),reference_type>);
+        REQUIRE(std::is_same_v<decltype(*re.end()),reference_type>);
+        REQUIRE(std::is_same_v<decltype(*cre.begin()),const_reference_type>);
+        REQUIRE(std::is_same_v<decltype(*cre.end()),const_reference_type>);
+    }
+    SECTION("view_of_storage"){
+        auto vt = make_test_tensor<test_tensor>(t({{}}));
+        auto& re = vt.engine();
+        const auto& cre = re;
+        REQUIRE(std::is_same_v<decltype(re.create_indexer()[std::declval<index_type>()]),reference_type>);
+        REQUIRE(std::is_same_v<decltype(cre.create_indexer()[std::declval<index_type>()]),const_reference_type>);
+        REQUIRE(std::is_same_v<decltype(re.create_trivial_walker()[std::declval<index_type>()]),reference_type>);
+        REQUIRE(std::is_same_v<decltype(cre.create_trivial_walker()[std::declval<index_type>()]),const_reference_type>);
+        REQUIRE(std::is_same_v<decltype(*re.create_broadcast_walker()),reference_type>);
+        REQUIRE(std::is_same_v<decltype(*cre.create_broadcast_walker()),const_reference_type>);
+        REQUIRE(std::is_same_v<decltype(*re.begin()),reference_type>);
+        REQUIRE(std::is_same_v<decltype(*re.end()),reference_type>);
+        REQUIRE(std::is_same_v<decltype(*cre.begin()),const_reference_type>);
+        REQUIRE(std::is_same_v<decltype(*cre.end()),const_reference_type>);
+    }
+    SECTION("view_view_of_storage"){
+        auto vvt = make_test_tensor<test_tensor>(t({{}}).transpose().reshape());
+        auto& re = vvt.engine();
+        const auto& cre = re;
+        REQUIRE(std::is_same_v<decltype(re.create_indexer()[std::declval<index_type>()]),reference_type>);
+        REQUIRE(std::is_same_v<decltype(cre.create_indexer()[std::declval<index_type>()]),const_reference_type>);
+        REQUIRE(std::is_same_v<decltype(re.create_trivial_walker()[std::declval<index_type>()]),reference_type>);
+        REQUIRE(std::is_same_v<decltype(cre.create_trivial_walker()[std::declval<index_type>()]),const_reference_type>);
+        REQUIRE(std::is_same_v<decltype(*re.create_broadcast_walker()),reference_type>);
+        REQUIRE(std::is_same_v<decltype(*cre.create_broadcast_walker()),const_reference_type>);
+        REQUIRE(std::is_same_v<decltype(*re.begin()),reference_type>);
+        REQUIRE(std::is_same_v<decltype(*re.end()),reference_type>);
+        REQUIRE(std::is_same_v<decltype(*cre.begin()),const_reference_type>);
+        REQUIRE(std::is_same_v<decltype(*cre.end()),const_reference_type>);
+    }
+    SECTION("evaluating"){
+        auto e = make_test_tensor<test_tensor>(t+t+t);
+        auto& re = e.engine();
+        const auto& cre = re;
+        REQUIRE(std::is_same_v<decltype(re.create_indexer()[std::declval<index_type>()]),value_type>);
+        REQUIRE(std::is_same_v<decltype(cre.create_indexer()[std::declval<index_type>()]),value_type>);
+        REQUIRE(std::is_same_v<decltype(re.create_trivial_walker()[std::declval<index_type>()]),value_type>);
+        REQUIRE(std::is_same_v<decltype(cre.create_trivial_walker()[std::declval<index_type>()]),value_type>);
+        REQUIRE(std::is_same_v<decltype(*re.create_broadcast_walker()),value_type>);
+        REQUIRE(std::is_same_v<decltype(*cre.create_broadcast_walker()),value_type>);
+        REQUIRE(std::is_same_v<decltype(*re.begin()),value_type>);
+        REQUIRE(std::is_same_v<decltype(*re.end()),value_type>);
+        REQUIRE(std::is_same_v<decltype(*cre.begin()),value_type>);
+        REQUIRE(std::is_same_v<decltype(*cre.end()),value_type>);
+    }
+    SECTION("view_of_evaluating"){
+        auto ve = make_test_tensor<test_tensor>((t+t+t).transpose());
+        auto& re = ve.engine();
+        const auto& cre = re;
+        REQUIRE(std::is_same_v<decltype(re.create_indexer()[std::declval<index_type>()]),value_type>);
+        REQUIRE(std::is_same_v<decltype(cre.create_indexer()[std::declval<index_type>()]),value_type>);
+        REQUIRE(std::is_same_v<decltype(re.create_trivial_walker()[std::declval<index_type>()]),value_type>);
+        REQUIRE(std::is_same_v<decltype(cre.create_trivial_walker()[std::declval<index_type>()]),value_type>);
+        REQUIRE(std::is_same_v<decltype(*re.create_broadcast_walker()),value_type>);
+        REQUIRE(std::is_same_v<decltype(*cre.create_broadcast_walker()),value_type>);
+        REQUIRE(std::is_same_v<decltype(*re.begin()),value_type>);
+        REQUIRE(std::is_same_v<decltype(*re.end()),value_type>);
+        REQUIRE(std::is_same_v<decltype(*cre.begin()),value_type>);
+        REQUIRE(std::is_same_v<decltype(*cre.end()),value_type>);
+    }
+    SECTION("view_view_of_evaluating"){
+        auto vve = make_test_tensor<test_tensor>((t+t+t).transpose().reshape()({{}})());
+        auto& re = vve.engine();
+        const auto& cre = re;
+        REQUIRE(std::is_same_v<decltype(re.create_indexer()[std::declval<index_type>()]),value_type>);
+        REQUIRE(std::is_same_v<decltype(cre.create_indexer()[std::declval<index_type>()]),value_type>);
+        REQUIRE(std::is_same_v<decltype(re.create_trivial_walker()[std::declval<index_type>()]),value_type>);
+        REQUIRE(std::is_same_v<decltype(cre.create_trivial_walker()[std::declval<index_type>()]),value_type>);
+        REQUIRE(std::is_same_v<decltype(*re.create_broadcast_walker()),value_type>);
+        REQUIRE(std::is_same_v<decltype(*cre.create_broadcast_walker()),value_type>);
+        REQUIRE(std::is_same_v<decltype(*re.begin()),value_type>);
+        REQUIRE(std::is_same_v<decltype(*re.end()),value_type>);
+        REQUIRE(std::is_same_v<decltype(*cre.begin()),value_type>);
+        REQUIRE(std::is_same_v<decltype(*cre.end()),value_type>);
+    }
+}
 
 namespace test_iterator_helpers{
 using test_iterator_makers = typename helpers_for_testing::list_concat<

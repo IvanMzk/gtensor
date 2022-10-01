@@ -29,19 +29,19 @@ inline bool is_trivial_operand(const T& operand){
     return operand->engine().is_trivial();
 }
 
-template<typename EngineT> auto begin_multiindex(const EngineT& engine){
+template<typename EngineT> auto begin_multiindex(EngineT& engine){
     using iterator_type = multiindex_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_broadcast_walker())>;
     return iterator_type{engine.create_broadcast_walker(), engine.host()->shape(), engine.host()->descriptor().as_descriptor_with_libdivide()->strides_libdivide()};
 }
-template<typename EngineT> auto end_multiindex(const EngineT& engine){
+template<typename EngineT> auto end_multiindex(EngineT& engine){
     using iterator_type = multiindex_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_broadcast_walker())>;
     return iterator_type{engine.create_broadcast_walker(), engine.host()->shape(), engine.host()->descriptor().as_descriptor_with_libdivide()->strides_libdivide(), engine.host()->size()};
 }
-template<typename EngineT> auto begin_flatindex(const EngineT& engine){
+template<typename EngineT> auto begin_flatindex(EngineT& engine){
     using iterator_type = flat_index_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_trivial_walker())>;
     return iterator_type{engine.create_trivial_walker()};
 }
-template<typename EngineT> auto end_flatindex(const EngineT& engine){
+template<typename EngineT> auto end_flatindex(EngineT& engine){
     using iterator_type = flat_index_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_trivial_walker())>;
     return iterator_type{engine.create_trivial_walker(), engine.host()->size()};
 }
@@ -49,6 +49,10 @@ template<typename...Ts> auto begin_multiindex(const expression_template_storage_
 template<typename...Ts> auto end_multiindex(const expression_template_storage_engine<Ts...>& engine){return engine.end();}
 template<typename...Ts> auto begin_flatindex(const expression_template_storage_engine<Ts...>& engine){return engine.begin();}
 template<typename...Ts> auto end_flatindex(const expression_template_storage_engine<Ts...>& engine){return engine.end();}
+template<typename...Ts> auto begin_multiindex(expression_template_storage_engine<Ts...>& engine){return engine.begin();}
+template<typename...Ts> auto end_multiindex(expression_template_storage_engine<Ts...>& engine){return engine.end();}
+template<typename...Ts> auto begin_flatindex(expression_template_storage_engine<Ts...>& engine){return engine.begin();}
+template<typename...Ts> auto end_flatindex(expression_template_storage_engine<Ts...>& engine){return engine.end();}
 
 template<typename> constexpr bool is_converting_descriptor = true;
 template<typename...Ts> constexpr bool is_converting_descriptor<converting_descriptor<Ts...>> = false;
@@ -85,15 +89,19 @@ public:
     using storage_engine::begin;
     using storage_engine::end;
     bool is_trivial()const override{return true;}
-    auto create_broadcast_walker()const{
-        return [this](const auto& it){
-            return storage_walker<CfgT, std::decay_t<decltype(it)>>{host()->shape(),host()->strides(),host()->reset_strides(),it};
-        }(begin());
-    }
-    auto create_trivial_walker()const{
-        return storage_trivial_walker<ValT,CfgT>{data()};
-    }
+    auto create_broadcast_walker()const{return create_broadcast_walker_helper(*this);}
+    auto create_broadcast_walker(){return create_broadcast_walker_helper(*this);}
+    auto create_trivial_walker()const{return create_trivial_walker_helper(*this);}
+    auto create_trivial_walker(){return create_trivial_walker_helper(*this);}
     auto create_indexer()const{return begin();}
+    auto create_indexer(){return begin();}
+private:
+    template<typename U> static auto create_trivial_walker_helper(U& instance){
+        return storage_trivial_walker<CfgT,std::decay_t<decltype(instance.begin())>>{instance.begin()};
+    }
+    template<typename U> static auto create_broadcast_walker_helper(U& instance){
+        return storage_walker<CfgT,std::decay_t<decltype(instance.begin())>>{instance.host()->shape(),instance.host()->strides(),instance.host()->reset_strides(),instance.begin()};
+    }
 };
 
 template<typename ValT, typename CfgT, typename F, typename...Ops>
@@ -192,23 +200,37 @@ public:
     //use multiindex_iterator for view with converting descriptor - slice, transpose
     template<typename D = DescT, std::enable_if_t<detail::is_converting_descriptor<D>,int> =0 > auto begin()const{return detail::begin_multiindex(*this);}
     template<typename D = DescT, std::enable_if_t<detail::is_converting_descriptor<D>,int> =0 > auto end()const{return detail::end_multiindex(*this);}
+    template<typename D = DescT, std::enable_if_t<detail::is_converting_descriptor<D>,int> =0 > auto begin(){return detail::begin_multiindex(*this);}
+    template<typename D = DescT, std::enable_if_t<detail::is_converting_descriptor<D>,int> =0 > auto end(){return detail::end_multiindex(*this);}
     //use flat_index_iterator for view with not converting descriptor - reshape, subdim
     template<typename D = DescT, std::enable_if_t<!detail::is_converting_descriptor<D>,int> =0 > auto begin()const{return detail::begin_flatindex(*this);}
     template<typename D = DescT, std::enable_if_t<!detail::is_converting_descriptor<D>,int> =0 > auto end()const{return detail::end_flatindex(*this);}
-    auto create_indexer()const{
+    template<typename D = DescT, std::enable_if_t<!detail::is_converting_descriptor<D>,int> =0 > auto begin(){return detail::begin_flatindex(*this);}
+    template<typename D = DescT, std::enable_if_t<!detail::is_converting_descriptor<D>,int> =0 > auto end(){return detail::end_flatindex(*this);}
+    auto create_indexer()const{return create_indexer_helper(*this);}
+    auto create_indexer(){return create_indexer_helper(*this);}
+    auto create_broadcast_walker()const{return create_broadcast_walker_helper(*this);}
+    auto create_broadcast_walker(){return create_broadcast_walker_helper(*this);}
+    auto create_trivial_walker()const{return create_trivial_walker_helper(*this);}
+    auto create_trivial_walker(){return create_trivial_walker_helper(*this);}
+private:
+    template<typename U>
+    static auto create_indexer_helper(U& instance){
         return [](const auto& descriptor, auto indexer){
             return viewing_indexer<std::decay_t<decltype(descriptor)>, std::decay_t<decltype(indexer)>>{descriptor, indexer};
-        }(parent()->descriptor(), parent()->engine().create_indexer());
+        }(instance.parent()->descriptor(), instance.parent()->engine().create_indexer());
     }
-    auto create_broadcast_walker()const{
-        return [this](const auto& it){
-            return viewing_walker<CfgT, std::decay_t<decltype(it)>>{host()->shape(),host()->descriptor().cstrides(),host()->descriptor().reset_cstrides(),host()->descriptor().offset(),it};
-        }(create_indexer());
+    template<typename U>
+    static auto create_broadcast_walker_helper(U& instance){
+        return [&](const auto& it){
+            return viewing_walker<CfgT, std::decay_t<decltype(it)>>{instance.host()->shape(),instance.host()->descriptor().cstrides(),instance.host()->descriptor().reset_cstrides(),instance.host()->descriptor().offset(),it};
+        }(instance.create_indexer());
     }
-    auto create_trivial_walker()const{
-        return [this](const auto& it){
-            return viewing_trivial_walker<DescT, std::decay_t<decltype(it)>>{static_cast<const DescT&>(host()->descriptor()),it};
-        }(create_indexer());
+    template<typename U>
+    static auto create_trivial_walker_helper(U& instance){
+        return [&](const auto& it){
+            return viewing_trivial_walker<DescT, std::decay_t<decltype(it)>>{static_cast<const DescT&>(instance.host()->descriptor()),it};
+        }(instance.create_indexer());
     }
 };
 

@@ -47,6 +47,8 @@ class tensor{
 
 protected:
     auto impl()const{return impl_;}
+    auto& engine()const{return static_cast<const impl_type*>(impl_.get())->engine();}
+    auto& engine(){return impl_->engine();}
 
 public:
     using value_type = ValT;

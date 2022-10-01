@@ -20,6 +20,7 @@ class flat_index_iterator
     using walker_type = WkrT;
     using shape_type = typename CfgT::shape_type;
     using index_type = typename CfgT::index_type;
+    using result_type = decltype(std::declval<walker_type>()[std::declval<index_type>()]);
 public:
     using iterator_category = std::random_access_iterator_tag;
     using value_type = ValT;
@@ -59,8 +60,8 @@ public:
     }
     bool operator==(const flat_index_iterator& it)const{return flat_index == it.flat_index;}
     bool operator!=(const flat_index_iterator& it)const{return flat_index != it.flat_index;}
-    value_type operator[](difference_type n)const{return *(*this+n);}
-    value_type operator*() const{return walker[static_cast<index_type>(flat_index)];}
+    result_type operator[](difference_type n)const{return *(*this+n);}
+    result_type operator*() const{return walker[static_cast<index_type>(flat_index)];}
     inline difference_type friend operator-(const flat_index_iterator& lhs, const flat_index_iterator& rhs){return lhs.flat_index - rhs.flat_index;}
 private:
     auto& advance(difference_type n){
@@ -87,6 +88,7 @@ inline bool operator<=(const flat_index_iterator<Ts...>& lhs, const flat_index_i
 template<typename ValT, typename CfgT, typename WkrT>
 class multiindex_iterator{
     using walker_type = WkrT;
+    using result_type = decltype(*std::declval<walker_type>());
     using shape_type = typename CfgT::shape_type;
     using index_type = typename CfgT::index_type;
     using strides_type = typename detail::libdiv_strides_traits<CfgT>::type;
@@ -132,8 +134,8 @@ public:
     }
     bool operator==(const multiindex_iterator& it)const{return flat_index == it.flat_index;}
     bool operator!=(const multiindex_iterator& it)const{return flat_index != it.flat_index;}
-    value_type operator[](difference_type n)const{return *(*this+n);}
-    value_type operator*() const{return *walker;}
+    result_type operator[](difference_type n)const{return *(*this+n);}
+    result_type operator*() const{return *walker;}
     inline difference_type friend operator-(const multiindex_iterator& lhs, const multiindex_iterator& rhs){return lhs.flat_index - rhs.flat_index;}
 private:
     auto& advance(difference_type);

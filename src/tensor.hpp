@@ -25,6 +25,7 @@ protected:
 public:
     const descriptor_type& descriptor()const{return descriptor_;}
     const engine_type& engine()const override{return engine_;}
+    engine_type& engine()override{return engine_;}
     index_type size()const override{return descriptor_.size();}
     index_type dim()const override{return descriptor_.dim();}
     const shape_type& shape()const override{return descriptor_.shape();}

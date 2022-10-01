@@ -10,19 +10,22 @@ namespace detail{
 }   //end of namespace detail
 
 
-template<typename DescT, typename PrevT>
+template<typename DescT, typename IndexerT>
 class viewing_indexer
 {
     using index_type = typename DescT::index_type;
+    using indexer_type = IndexerT;
     const DescT* descriptor;
-    PrevT parent_indexer;
+    indexer_type parent_indexer;
+
 public:
+    using result_type = decltype(std::declval<indexer_type>()[std::declval<index_type>()]);
     template<typename P>
     viewing_indexer(const DescT& descriptor_, P&& parent_indexer_):
         descriptor{&descriptor_},
         parent_indexer{std::forward<P>(parent_indexer_)}
     {}
-    auto operator[](const index_type& idx)const{return parent_indexer[descriptor->convert(idx)];}
+    result_type operator[](const index_type& idx)const{return parent_indexer[descriptor->convert(idx)];}
 };
 
 template<typename CfgT, typename IndexerT>
@@ -31,8 +34,9 @@ class viewing_walker : private basic_walker<CfgT, typename CfgT::index_type>
     using typename basic_walker::index_type;
     using typename basic_walker::shape_type;
     using indexer_type = IndexerT;
+    using result_type = typename indexer_type::result_type;
 
-    mutable indexer_type indexer;
+    indexer_type indexer;
 public:
     viewing_walker(const shape_type& shape_,  const shape_type& strides_, const shape_type& reset_strides_, const index_type& offset_, const indexer_type& indexer_):
         basic_walker{static_cast<index_type>(shape_.size()), shape_, strides_, reset_strides_, offset_},
@@ -44,7 +48,7 @@ public:
     void step_back(const index_type& direction){basic_walker::step_back(direction);}
     void reset(const index_type& direction){basic_walker::reset(direction);}
     void reset(){basic_walker::reset();}
-    auto operator*()const{return indexer[cursor()];}
+    result_type operator*()const{return indexer[cursor()];}
 };
 
 // template<typename ValT, typename CfgT>
