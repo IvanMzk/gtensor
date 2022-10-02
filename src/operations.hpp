@@ -14,6 +14,11 @@ struct NAME{\
     }\
 };
 
+struct assign{
+    template <typename T1, typename T2>
+    void operator()(T1&& arg1, T2&& arg2)const{(std::forward<T1>(arg1)=std::forward<T2>(arg2));}
+};
+
 BINARY_OPERATION(add,+);
 BINARY_OPERATION(sub,-);
 BINARY_OPERATION(mul,*);

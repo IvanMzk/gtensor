@@ -140,7 +140,7 @@ TEMPLATE_TEST_CASE("test_viewing_indexer","[test_expression_template_engine]",
     REQUIRE(result == expected);
 }
 
-TEST_CASE("test_indexer_result_type","[test_expression_template_engine]"){
+TEST_CASE("test_result_type","[test_expression_template_engine]"){
     using value_type = float;
     using reference_type = value_type&;
     using const_reference_type = const value_type&;
@@ -358,4 +358,21 @@ TEST_CASE("has_view_with_converting_descriptor","[test_expression_template_engin
     auto result = std::get<0>(test_data);
     auto expected = std::get<1>(test_data);
     REQUIRE(result == expected);
+}
+
+TEST_CASE("test_broadcast_assignment","[test_expression_template_engine]"){
+    using value_type = float;
+    using reference_type = value_type&;
+    using const_reference_type = const value_type&;
+    using test_expression_template_helpers::test_tensor;
+    using test_expression_template_helpers::make_test_tensor;
+    using test_config_type = typename test_config::config_engine_selector<gtensor::config::engine_expression_template>::config_type;
+    using index_type = typename test_config_type::index_type;
+    using tensor_type = gtensor::tensor<value_type, test_config_type>;
+
+    // auto lhs = tensor_type{1,2,3,4,5};
+    // lhs = tensor_type{1};
+    // REQUIRE(std::equal(lhs.begin(), lhs.end(), std::vector<float>(5,1).begin()));
+    // lhs({{{},{},2}}) = tensor_type{0};
+    // REQUIRE(std::equal(lhs.begin(), lhs.end(), std::vector<float>{0,1,0,1,0}.begin()));
 }
