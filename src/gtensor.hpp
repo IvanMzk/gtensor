@@ -83,7 +83,11 @@ public:
     explicit tensor(std::shared_ptr<impl_type>& impl__):
         impl_{impl__}
     {}
-    //constructor
+    //constructor makes tensor by copying shape and content from other, utilizes forwarding constructor
+    template<typename U = tensor, typename RVal, typename RImpl, std::enable_if_t<!std::is_same_v<U,htensor_type>,int> =0 >
+    tensor(const tensor<RVal,CfgT,RImpl>& other):
+        tensor(other.shape(),other.begin(),other.end())
+    {}
 
     auto begin(){return engine().begin();}
     auto end(){return engine().end();}

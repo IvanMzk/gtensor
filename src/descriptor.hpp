@@ -15,8 +15,8 @@ public:
     using typename descriptor_common::shape_type;
     using typename descriptor_common::index_type;
     basic_descriptor() = default;
-    template<typename ShT>
-    basic_descriptor(ShT&& shape__):
+    template<typename ShT, std::enable_if_t<!std::is_convertible_v<std::decay_t<ShT>, basic_descriptor>,int> =0 >
+    explicit basic_descriptor(ShT&& shape__):
         descriptor_common{std::forward<ShT>(shape__)}
     {}
 
@@ -46,8 +46,8 @@ public:
     using typename basic_descriptor::shape_type;
     using typename basic_descriptor::index_type;
     descriptor_with_libdivide() = default;
-    template<typename ShT>
-    descriptor_with_libdivide(ShT&& shape__):
+    template<typename ShT, std::enable_if_t<!std::is_convertible_v<std::decay_t<ShT>, descriptor_with_libdivide>,int> =0 >
+    explicit descriptor_with_libdivide(ShT&& shape__):
         basic_descriptor{std::forward<ShT>(shape__)},
         base_strides_libdivide{basic_descriptor::strides()}
     {}

@@ -1,3 +1,4 @@
+#include <list>
 #include <iostream>
 #include "catch.hpp"
 #include "descriptor.hpp"
@@ -71,6 +72,24 @@ TEMPLATE_PRODUCT_TEST_CASE("test_make_size_using_strides","[test_descriptor]", (
     REQUIRE(size_result == size_expected);
 }
 
+TEST_CASE("test_make_shape_of_type","[test_descriptor]"){
+    using gtensor::detail::make_shape_of_type;
+    using shape_type = std::vector<int>;
+    auto s = shape_type{1,2,3};
+    auto l = std::list<int>{1,2,3};
+    REQUIRE(std::is_same_v<decltype(make_shape_of_type<shape_type>(shape_type{1,2,3})), shape_type&&>);
+    REQUIRE(std::is_same_v<decltype(make_shape_of_type<shape_type>(s)), shape_type&>);
+    REQUIRE(std::is_same_v<decltype(make_shape_of_type<shape_type>(std::list{1,2,3})), shape_type>);
+    REQUIRE(std::is_same_v<decltype(make_shape_of_type<shape_type>(l)), shape_type>);
+    REQUIRE(std::is_same_v<decltype(make_shape_of_type<shape_type>({1,2,3})), shape_type>);
+
+    REQUIRE(make_shape_of_type<shape_type>(shape_type{1,2,3}) == shape_type{1,2,3});
+    REQUIRE(make_shape_of_type<shape_type>(s) == shape_type{1,2,3});
+    REQUIRE(make_shape_of_type<shape_type>(std::list{1,2,3}) == shape_type{1,2,3});
+    REQUIRE(make_shape_of_type<shape_type>(l) == shape_type{1,2,3});
+    REQUIRE(make_shape_of_type<shape_type>({1,2,3}) == shape_type{1,2,3});
+}
+
 TEST_CASE("test_basic_descriptor","[test_descriptor]"){
     using config_type = gtensor::config::default_config;
     using descriptor_type = gtensor::basic_descriptor<config_type>;
@@ -80,15 +99,16 @@ TEST_CASE("test_basic_descriptor","[test_descriptor]"){
     //0descriptor,1expected shape,2expected strides,3expected reset_strides,4expected size,5expected dim
     auto test_data = GENERATE(
         test_type(descriptor_type(),shape_type{},shape_type{},shape_type{},0,0),
-        test_type({shape_type{}},shape_type{},shape_type{},shape_type{},0,0),
-        test_type({shape_type{1}},shape_type{1},shape_type{1},shape_type{0},1,1),
-        test_type({shape_type{5}},shape_type{5},shape_type{1},shape_type{4},5,1),
-        test_type({shape_type{1,1}},shape_type{1,1},shape_type{1,1},shape_type{0,0},1,2),
-        test_type({shape_type{1,5}},shape_type{1,5},shape_type{5,1},shape_type{0,4},5,2),
-        test_type({shape_type{5,1}},shape_type{5,1},shape_type{1,1},shape_type{4,0},5,2),
-        test_type({shape_type{5,4,3}},shape_type{5,4,3},shape_type{12,3,1},shape_type{48,9,2},60,3)
+        test_type(descriptor_type{shape_type{}},shape_type{},shape_type{},shape_type{},0,0),
+        test_type(descriptor_type{shape_type{1}},shape_type{1},shape_type{1},shape_type{0},1,1),
+        test_type(descriptor_type{shape_type{5}},shape_type{5},shape_type{1},shape_type{4},5,1),
+        test_type(descriptor_type{shape_type{1,1}},shape_type{1,1},shape_type{1,1},shape_type{0,0},1,2),
+        test_type(descriptor_type{shape_type{1,5}},shape_type{1,5},shape_type{5,1},shape_type{0,4},5,2),
+        test_type(descriptor_type{shape_type{5,1}},shape_type{5,1},shape_type{1,1},shape_type{4,0},5,2),
+        test_type(descriptor_type{shape_type{5,4,3}},shape_type{5,4,3},shape_type{12,3,1},shape_type{48,9,2},60,3)
     );
     auto descriptor = std::get<0>(test_data);
+    auto dd = descriptor;
     auto expected_shape = std::get<1>(test_data);
     auto expected_strides = std::get<2>(test_data);
     auto expected_reset_strides = std::get<3>(test_data);

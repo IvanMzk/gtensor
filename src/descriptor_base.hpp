@@ -120,6 +120,20 @@ auto shape_to_str(const ShT& shape){
     return ss.str();
 }
 
+template<typename T, typename ShT>
+auto make_shape_of_type(ShT&& shape) -> std::conditional_t<std::is_same_v<T,std::decay_t<ShT>>,ShT&&,T>{
+    if constexpr (std::is_same_v<T,std::decay_t<ShT>>){
+        return std::forward<ShT>(shape);
+    }else{
+        return T(shape.begin(),shape.end());
+    }
+}
+template<typename T, typename IdxT>
+T make_shape_of_type(std::initializer_list<IdxT> shape){
+    return T(shape.begin(),shape.end());
+}
+
+
 template<typename ShT>
 auto convert_index(const ShT& cstrides, const typename ShT::value_type& offset, const ShT& idx){
     return std::inner_product(idx.begin(), idx.end(), cstrides.begin(), offset);
@@ -131,7 +145,7 @@ class descriptor_strides
     using shape_type = typename CfgT::shape_type;
     shape_type strides_;
     shape_type reset_strides_;
-protected:
+public:
     descriptor_strides() = default;
     descriptor_strides(const shape_type& shape__):
         strides_{detail::make_strides(shape__)},
@@ -168,29 +182,28 @@ public:
 
 //common implementation of descriptor
 template<typename CfgT>
-class descriptor_common :
-    private detail::descriptor_strides<CfgT>
+class descriptor_common
 {
 protected:
     using config_type = CfgT;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
-    shape_type shape_;
     auto size()const{return detail::make_size(shape(),strides());}
     auto dim()const{return shape_.size();}
     const auto& shape()const{return shape_;}
-    const auto& strides()const{return descriptor_strides::strides();}
-    const auto& reset_strides()const{return descriptor_strides::reset_strides();}
+    const auto& strides()const{return strides_.strides();}
+    const auto& reset_strides()const{return strides_.reset_strides();}
     auto to_str()const{return detail::shape_to_str(shape());}
+
     descriptor_common() = default;
-    descriptor_common(const shape_type& shape__):
-        descriptor_strides{shape__},
-        shape_{shape__}
+    template<typename ShT, std::enable_if_t<!std::is_convertible_v<std::decay_t<ShT>, descriptor_common>,int> =0 >
+    explicit descriptor_common(ShT&& shape__):
+        shape_{detail::make_shape_of_type<shape_type>(std::forward<ShT>(shape__))},
+        strides_{shape_}
     {}
-    descriptor_common(shape_type&& shape__):
-        descriptor_strides{shape__},
-        shape_{std::move(shape__)}
-    {}
+private:
+    shape_type shape_;
+    detail::descriptor_strides<CfgT> strides_;
 };
 
 
