@@ -36,7 +36,7 @@ class tensor{
 
 
     friend std::ostream& operator<<(std::ostream& os, const tensor& lhs){return os<<lhs.impl_->to_str();}
-    friend class tensor_operators_dispatcher;
+    friend class tensor_operators;
 
     std::shared_ptr<impl_type> impl_;
 
@@ -91,7 +91,9 @@ public:
     auto dim()const{return impl()->dim();}
     auto shape()const{return impl()->shape();}
     auto to_str()const{return impl()->to_str();}
-
+    //compare content of this tensor and other
+    template<typename RImpl>
+    auto equals(const tensor<value_type,CfgT,RImpl>& other)const{return gtensor::equals(*this, other);}
     //return new tensor that refers to the same implementation as this, but with reference to base type (htensor stands for homogeneous tensor)
     htensor_type as_htensor()const{return static_cast<htensor_type>(*this);}
 
@@ -104,7 +106,7 @@ public:
     //lhs that is rvalue evaluating tensor or view of evaluating tensor will not compile
     template<typename RVal, typename RImpl>
     tensor& operator=(const tensor<RVal,CfgT,RImpl>& rhs) &&{
-        tensor_operators_dispatcher::operator_assign_dispatcher(*this, rhs);
+        tensor_operators::operator_assign_dispatcher(*this, rhs);
         return *this;
     }
     //overload operator() to make different kinds of viewing tensors

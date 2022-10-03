@@ -403,5 +403,4 @@ TEST_CASE("test_broadcast_assignment","[test_expression_template_engine]"){
     //not compile, broadcast assignment to view of evaluating tensor
     // auto e = lhs+lhs;
     // e() = tensor_type{1};
-
 }
