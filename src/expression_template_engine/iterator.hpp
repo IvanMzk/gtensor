@@ -9,6 +9,21 @@
 namespace gtensor{
 
 namespace detail{
+    template<typename ValT> struct iterator_internals_selector{
+        using value_type = ValT;
+        using pointer = value_type*;
+        using reference = value_type&;
+        using const_reference = const value_type&;
+    };
+    template<> struct iterator_internals_selector<void>{
+        using value_type = void;
+        using pointer = void;
+        using reference = void;
+        using const_reference = void;
+    };
+
+
+
 }   //end of namespace detail
 
 /*
@@ -25,9 +40,9 @@ public:
     using iterator_category = std::random_access_iterator_tag;
     using value_type = ValT;
     using difference_type = typename CfgT::difference_type;
-    using pointer = value_type*;
-    using reference = value_type&;
-    using const_reference = const value_type&;
+    using pointer = typename detail::iterator_internals_selector<value_type>::pointer;
+    using reference = typename detail::iterator_internals_selector<value_type>::reference;
+    using const_reference = typename detail::iterator_internals_selector<value_type>::const_reference;
     //begin constructor
     template<typename W, std::enable_if_t<std::is_same_v<W,walker_type> ,int> =0 >
     explicit flat_index_iterator(W&& walker_):
@@ -96,9 +111,9 @@ public:
     using iterator_category = std::random_access_iterator_tag;
     using value_type = ValT;
     using difference_type = typename CfgT::difference_type;
-    using pointer = value_type*;
-    using reference = value_type&;
-    using const_reference = const value_type&;
+    using pointer = typename detail::iterator_internals_selector<value_type>::pointer;
+    using reference = typename detail::iterator_internals_selector<value_type>::reference;
+    using const_reference = typename detail::iterator_internals_selector<value_type>::const_reference;
 
     //begin constructor
     template<typename W, std::enable_if_t<std::is_same_v<W,walker_type> ,int> =0 >

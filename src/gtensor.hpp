@@ -53,6 +53,8 @@ protected:
 public:
     using value_type = ValT;
     using htensor_type = tensor<ValT, CfgT, tensor_base_type>;
+    //default constructor makes tensor without implementation
+    tensor() = default;
     //nested init_list constructors
     tensor(typename detail::nested_initializer_list_type<value_type,1>::type init_data):tensor(init_data,0){}
     tensor(typename detail::nested_initializer_list_type<value_type,2>::type init_data):tensor(init_data,0){}
@@ -93,13 +95,19 @@ public:
     //return new tensor that refers to the same implementation as this, but with reference to base type (htensor stands for homogeneous tensor)
     htensor_type as_htensor()const{return static_cast<htensor_type>(*this);}
 
-    //broadcast value assigmnent
-    template<typename RVal, typename RImpl>
-    tensor& operator=(const tensor<RVal,CfgT,RImpl>& rhs){
-        tensor_operators_impl::operator_assign_impl(*this, rhs);
+    //tensor assignment
+    tensor& operator=(const tensor& rhs) &{
+        impl_ = rhs.impl_;
         return *this;
     }
-
+    //broadcast value assigmnent, lhs may be any rvalue tensor but it makes sence only for viewing tensor to modify underlying storage tensor
+    //lhs that is rvalue evaluating tensor or view of evaluating tensor will not compile
+    template<typename RVal, typename RImpl>
+    tensor& operator=(const tensor<RVal,CfgT,RImpl>& rhs) &&{
+        tensor_operators_dispatcher::operator_assign_dispatcher(*this, rhs);
+        return *this;
+    }
+    //overload operator() to make different kinds of viewing tensors
     auto operator()(slices_init_type subs)const{
         detail::check_slices_number(subs);
         slices_collection_type filled_subs = detail::fill_slices<slice_type>(shape(),subs);

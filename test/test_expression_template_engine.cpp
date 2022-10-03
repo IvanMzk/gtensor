@@ -369,10 +369,39 @@ TEST_CASE("test_broadcast_assignment","[test_expression_template_engine]"){
     using test_config_type = typename test_config::config_engine_selector<gtensor::config::engine_expression_template>::config_type;
     using index_type = typename test_config_type::index_type;
     using tensor_type = gtensor::tensor<value_type, test_config_type>;
+    using gtensor::broadcast_exception;
 
-    // auto lhs = tensor_type{1,2,3,4,5};
-    // lhs = tensor_type{1};
-    // REQUIRE(std::equal(lhs.begin(), lhs.end(), std::vector<float>(5,1).begin()));
-    // lhs({{{},{},2}}) = tensor_type{0};
-    // REQUIRE(std::equal(lhs.begin(), lhs.end(), std::vector<float>{0,1,0,1,0}.begin()));
+    //tensor assignment
+    auto t_lhs = tensor_type();
+    t_lhs = tensor_type{1,2,3};
+    REQUIRE(std::equal(t_lhs.begin(), t_lhs.end(), std::vector<float>{1,2,3}.begin()));
+
+    //broadcast assignment
+    auto lhs = tensor_type{1,2,3,4,5};
+    lhs({{{},{},2}}) = tensor_type{0};
+    REQUIRE(std::equal(lhs.begin(), lhs.end(), std::vector<float>{0,2,0,4,0}.begin()));
+
+    auto lhs1 = tensor_type{{1,2,3},{4,5,6}};
+    lhs1() = tensor_type{0,1,2};
+    REQUIRE(std::equal(lhs1.begin(), lhs1.end(), std::vector<float>{0,1,2,0,1,2}.begin()));
+
+    auto lhs2 = tensor_type{{1,2,3},{4,5,6}};
+    lhs2(1) = tensor_type{0,1,2};
+    REQUIRE(std::equal(lhs2.begin(), lhs2.end(), std::vector<float>{1,2,3,0,1,2}.begin()));
+
+    auto lhs4 = tensor_type{1,2,3,4,5};
+    lhs4({{{},{},-1}})({{{},{},2}}) = tensor_type{0,1,2};
+    REQUIRE(std::equal(lhs4.begin(), lhs4.end(), std::vector<float>{2,2,1,4,0}.begin()));
+
+    //broadcast assignment exception, every element of lhs must be assigned only once
+    auto lhs3 = tensor_type{0};
+    REQUIRE_THROWS_AS((lhs3() = tensor_type{0,1,2}), broadcast_exception);
+
+    //not compile, broadcast assignment to evaluating tensor
+    //lhs+lhs = tensor_type{1};
+
+    //not compile, broadcast assignment to view of evaluating tensor
+    // auto e = lhs+lhs;
+    // e() = tensor_type{1};
+
 }

@@ -14,6 +14,7 @@ namespace gtensor{
     BINARY_OPERATOR(operator*, tensor_operators_dispatcher::operator_mul_dispatcher);
     BINARY_OPERATOR(operator/, tensor_operators_dispatcher::operator_div_dispatcher);
     BINARY_OPERATOR(operator>, tensor_operators_dispatcher::operator_greater_dispatcher);
+    BINARY_OPERATOR(operator<, tensor_operators_dispatcher::operator_less_dispatcher);
 
 }   //end of namespace gtensor
 

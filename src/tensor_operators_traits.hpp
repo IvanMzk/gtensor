@@ -19,8 +19,9 @@ namespace gtensor{
 namespace tensor_operator_traits{
 
 using gtensor::config::tag;
-enum class operators : std::size_t{not_defined,add,sub,mul,div,equal,greater,less};
+enum class operators : std::size_t{not_defined,assign,add,sub,mul,div,equal,greater,less};
 using not_defined_tag = tag<operators, operators::not_defined>;
+using assign_tag = tag<operators, operators::assign>;
 using add_tag = tag<operators, operators::add>;
 using sub_tag = tag<operators, operators::sub>;
 using mul_tag = tag<operators, operators::mul>;
@@ -32,6 +33,7 @@ using less_tag = tag<operators, operators::less>;
 template<typename,typename> struct tensor_operator_selector;
 template<typename OpT> struct tensor_operator_selector<gtensor::config::engine_expression_template, OpT>{
     template<typename> struct selector{using type = not_defined_tag;};
+    template<> struct selector<assign_tag>{using type = expression_template_operators::operator_assign;};
     template<> struct selector<add_tag>{using type = expression_template_operators::operator_add;};
     template<> struct selector<sub_tag>{using type = expression_template_operators::operator_sub;};
     template<> struct selector<mul_tag>{using type = expression_template_operators::operator_mul;};
@@ -45,11 +47,13 @@ template<typename OpT> struct tensor_operator_selector<gtensor::config::engine_e
 
 struct tensor_operators_dispatcher{
 
+    BINARY_OPERATOR_DISPATCHER(operator_assign_dispatcher, tensor_operator_traits::assign_tag);
     BINARY_OPERATOR_DISPATCHER(operator_add_dispatcher, tensor_operator_traits::add_tag);
     BINARY_OPERATOR_DISPATCHER(operator_sub_dispatcher, tensor_operator_traits::sub_tag);
     BINARY_OPERATOR_DISPATCHER(operator_mul_dispatcher, tensor_operator_traits::mul_tag);
     BINARY_OPERATOR_DISPATCHER(operator_div_dispatcher, tensor_operator_traits::div_tag);
     BINARY_OPERATOR_DISPATCHER(operator_greater_dispatcher, tensor_operator_traits::greater_tag);
+    BINARY_OPERATOR_DISPATCHER(operator_less_dispatcher, tensor_operator_traits::less_tag);
 
 };
 

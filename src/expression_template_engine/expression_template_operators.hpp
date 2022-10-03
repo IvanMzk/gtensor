@@ -33,16 +33,16 @@ struct NAME{\
         using impl_type = evaluating_tensor<engine_type>;\
         return tensor<result_type,CfgT, impl_type>{std::make_shared<impl_type>(operation_type{}, std::move(op1),std::move(op2))};\
     }\
-}
+};
 
 namespace gtensor{
 
 namespace expression_template_binary_operations{
 
-// struct assign{
-//     template <typename T1, typename T2>
-//     void operator()(T1&& arg1, T2&& arg2)const{(std::forward<T1>(arg1)=std::forward<T2>(arg2));}
-// };
+struct assign{
+    template <typename T1, typename T2>
+    void operator()(T1&& arg1, T2&& arg2)const{(std::forward<T1>(arg1)=std::forward<T2>(arg2));}
+};
 
 EXPRESSION_TEMPLATE_BINARY_OPERATION(add,+);
 EXPRESSION_TEMPLATE_BINARY_OPERATION(sub,-);
@@ -71,17 +71,22 @@ namespace expression_template_operators{
     EXPRESSION_TEMPLATE_BINARY_OPERATOR(operator_greater, expression_template_binary_operations::greater);
     EXPRESSION_TEMPLATE_BINARY_OPERATOR(operator_less, expression_template_binary_operations::less);
 
-    // template<typename ValT1, typename ValT2, typename ImplT1, typename ImplT2, typename CfgT>
-    // static inline auto operator_assign_impl(tensor<ValT1, CfgT, ImplT1>& lhs, const tensor<ValT2, CfgT, ImplT2>& rhs){
-    //     using operation_type = binary_operations::assign;
-    //     //using result_type = decltype(std::declval<operation_type>()(std::declval<ValT1&>(),std::declval<ValT2&>()));
-    //     using result_type = void;
-    //     using operand1_type = ImplT1;
-    //     using operand2_type = ImplT2;
-    //     using engine_type = typename detail::evaluating_engine_traits<typename CfgT::engine, result_type, CfgT, operation_type, operand1_type, operand2_type>::type;
-    //     auto assigning = evaluating_tensor<engine_type>{operation_type{}, lhs.impl(),rhs.impl()};
-    //     for(auto it = assigning.engine().begin(), auto end = assigning.engine().end(); it!=end; ++it){*it;}
-    // }
+    struct operator_assign{
+        template<typename ValT1, typename ValT2, typename ImplT1, typename ImplT2, typename CfgT>
+        auto operator()(const tensor<ValT1, CfgT, ImplT1>&, const tensor<ValT2, CfgT, ImplT2>&, std::shared_ptr<ImplT1>&& lhs, std::shared_ptr<ImplT2>&& rhs){
+            using operation_type = expression_template_binary_operations::assign;
+            using result_type = void;
+            using operand1_type = ImplT1;
+            using operand2_type = ImplT2;
+            using engine_type = typename detail::evaluating_engine_traits<typename CfgT::engine, result_type, CfgT, operation_type, operand1_type, operand2_type>::type;
+            auto lhs_size{lhs->size()};
+            auto assigning = evaluating_tensor<engine_type>{operation_type{}, std::move(lhs),std::move(rhs)};
+            if (lhs_size < assigning.size())
+            {throw broadcast_exception("shapes are not assign broadcastable, lhs would be assigned multiple times per element");}
+            for(auto it = assigning.engine().begin(), end = assigning.engine().end(); it!=end; ++it){*it;}
+        }
+    };
+
 }   //end of namespace expression_template_operators
 
 
