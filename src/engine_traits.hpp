@@ -28,8 +28,8 @@ template<typename ValT, typename CfgT> struct engine_base_traits<config::engine_
 };
 
 template<typename...> struct storage_engine_traits;
-template<typename ValT, typename CfgT> struct storage_engine_traits<config::engine_expression_template,ValT,CfgT>{
-    using type = expression_template_storage_engine<ValT,CfgT>;
+template<typename CfgT, typename StorT> struct storage_engine_traits<config::engine_expression_template,CfgT,StorT>{
+    using type = expression_template_storage_engine<CfgT,StorT>;
 };
 
 template<typename...> struct evaluating_engine_traits;

@@ -29,19 +29,19 @@ protected:
     auto host()const{return host_;}
 };
 
-template<typename ValT, typename CfgT>
+template<typename CfgT, typename StorT>
 class storage_engine :
-    protected engine_host_accessor<ValT, CfgT>
+    protected engine_host_accessor<typename StorT::value_type, CfgT>
 {
 public:
-    using value_type = ValT;
+    using value_type = typename StorT::value_type;
     using config_type = CfgT;
 protected:
+    using storage_type = StorT;
     using index_type = typename config_type::index_type;
     using typename engine_host_accessor::host_type;
-    using storage_type = typename config_type::template storage<value_type>;
-    const value_type* data()const{return elements_.data();}
-    value_type* data(){return elements_.data();}
+    // auto data()const{return elements_.data();}
+    // auto data(){return elements_.data();}
     auto begin()const{return elements_.begin();}
     auto end()const{return elements_.end();}
     auto begin(){return elements_.begin();}

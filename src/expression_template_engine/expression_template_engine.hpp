@@ -76,10 +76,10 @@ public:
     virtual bool is_trivial()const = 0;
 };
 
-template<typename ValT, typename CfgT>
+template<typename CfgT, typename StorT>
 class expression_template_storage_engine :
-    public expression_template_engine_base<ValT,CfgT>,
-    private storage_engine<ValT,CfgT>
+    public expression_template_engine_base<typename StorT::value_type,CfgT>,
+    private storage_engine<CfgT,StorT>
 {
 public:
     using typename storage_engine::value_type;

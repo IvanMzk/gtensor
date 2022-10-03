@@ -23,7 +23,11 @@ template<typename...Ts> struct is_tensor<tensor<Ts...>> : std::true_type{};
 * in aplication client use tensor abstraction objects with different implementations, can combine it using operators
 * client can evaluate tensor object with expression or view implementation to have tensor with stensor_impl implementation
 */
-template<typename ValT, typename CfgT = config::default_config, typename ImplT = storage_tensor<typename detail::storage_engine_traits<typename CfgT::engine,ValT,CfgT>::type>>
+template<
+    typename ValT,
+    typename CfgT = config::default_config,
+    typename ImplT = storage_tensor<typename detail::storage_engine_traits<typename CfgT::engine,CfgT,typename CfgT::template storage<ValT>>::type>
+>
 class tensor{
     using tensor_base_type = tensor_base<ValT, CfgT>;
     using impl_type = ImplT;
@@ -33,7 +37,6 @@ class tensor{
     using index_type = typename CfgT::index_type;
     using shape_type = typename CfgT::shape_type;
     static_assert(std::is_convertible_v<impl_type*,tensor_base_type*>);
-
 
     friend std::ostream& operator<<(std::ostream& os, const tensor& lhs){return os<<lhs.impl_->to_str();}
     friend class tensor_operators;
@@ -80,8 +83,7 @@ public:
     explicit tensor(std::shared_ptr<impl_type>& impl__):
         impl_{impl__}
     {}
-
-    explicit operator htensor_type() const {return htensor_type{std::static_pointer_cast<tensor_base_type>(impl_)};}
+    //constructor
 
     auto begin(){return engine().begin();}
     auto end(){return engine().end();}
@@ -94,8 +96,13 @@ public:
     //compare content of this tensor and other
     template<typename RImpl>
     auto equals(const tensor<value_type,CfgT,RImpl>& other)const{return gtensor::equals(*this, other);}
+
+
+
     //return new tensor that refers to the same implementation as this, but with reference to base type (htensor stands for homogeneous tensor)
     htensor_type as_htensor()const{return static_cast<htensor_type>(*this);}
+
+    explicit operator htensor_type() const {return htensor_type{std::static_pointer_cast<tensor_base_type>(impl_)};}
 
     //tensor assignment
     tensor& operator=(const tensor& rhs) &{
