@@ -64,13 +64,13 @@ public:
     storage_tensor(std::initializer_list<Nested> init_data):
         storage_tensor{detail::list_parse<index_type,shape_type>(init_data), init_data}
     {}
-    template<typename ShT, std::enable_if_t<std::is_same_v<ShT,shape_type> ,int> = 0 >
+    template<typename ShT>
     storage_tensor(ShT&& shape, const value_type& v):
         storage_tensor{detail::make_size(shape), std::forward<ShT>(shape), v}
     {}
-    template<typename ShT, std::enable_if_t<!std::is_same_v<ShT,shape_type> ,int> = 0 >
-    storage_tensor(ShT&& shape, const value_type& v):
-        storage_tensor{detail::make_size(shape), shape_type(shape.begin(),shape.end()), v}
+    template<typename ShT, typename ItT>
+    storage_tensor(ShT&& shape, ItT begin, ItT end):
+        basic_tensor{engine_type{this, begin, end}, descriptor_type{std::forward<ShT>(shape)}}
     {}
 };
 

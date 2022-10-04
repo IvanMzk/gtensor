@@ -52,10 +52,14 @@ public:
         engine_host_accessor{host},
         elements_(size)
     {detail::fill_from_list(init_data, elements_.begin());}
-
     storage_engine(host_type* host, const index_type& size, const value_type& init_data):
         engine_host_accessor{host},
         elements_(size, init_data)
+    {}
+    template<typename ItT>
+    storage_engine(host_type* host, ItT begin, ItT end):
+        engine_host_accessor{host},
+        elements_(begin, end)
     {}
 private:
     storage_type elements_;
