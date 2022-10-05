@@ -301,7 +301,23 @@ TEMPLATE_LIST_TEST_CASE("test_multiindex_iterator","[test_expression_template_en
             test_type{*(TestType{}().end()-3), value_type{4}},
             test_type{*(TestType{}().end()-4), value_type{3}},
             test_type{*(TestType{}().end()-5), value_type{2}},
-            test_type{*(TestType{}().end()-6), value_type{1}}
+            test_type{*(TestType{}().end()-6), value_type{1}},
+            test_type{*(TestType{}().begin()+=0), value_type{1}},
+            test_type{*(TestType{}().begin()+=1), value_type{2}},
+            test_type{*(TestType{}().begin()+=2), value_type{3}},
+            test_type{*(TestType{}().begin()+=3), value_type{4}},
+            test_type{*(TestType{}().begin()+=4), value_type{5}},
+            test_type{*(TestType{}().begin()+=5), value_type{6}},
+            test_type{*(TestType{}().end()-=1), value_type{6}},
+            test_type{*(TestType{}().end()-=2), value_type{5}},
+            test_type{*(TestType{}().end()-=3), value_type{4}},
+            test_type{*(TestType{}().end()-=4), value_type{3}},
+            test_type{*(TestType{}().end()-=5), value_type{2}},
+            test_type{*(TestType{}().end()-=6), value_type{1}},
+            test_type{[](){auto t = TestType{}(); auto it = t.begin(); ++it; ++it;  return *(it-2);}(), value_type{1}},
+            test_type{[](){auto t = TestType{}(); auto it = t.begin(); ++it; ++it;  return *(it+2);}(), value_type{5}},
+            test_type{[](){auto t = TestType{}(); auto it = t.end(); --it; --it;  return *(it+1);}(), value_type{6}},
+            test_type{[](){auto t = TestType{}(); auto it = t.end(); --it; --it;  return *(it-2);}(), value_type{3}}
         );
         auto deref = std::get<0>(test_data);
         auto expected_deref = std::get<1>(test_data);

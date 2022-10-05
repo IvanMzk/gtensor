@@ -183,18 +183,17 @@ auto& multiindex_iterator<ValT,CfgT,WkrT>::operator++(){
             *idx_it = index_type(1);
             ++d;
             --idx_it;
-            if (idx_it == idx_first){
-                ++flat_index;
-                ++(*idx_it);
-            }
         }
         else{
             walker.step(d);
             ++(*idx_it);
             ++flat_index;
-            break;
+            return *this;
         }
     }
+    ++flat_index;
+    ++(*idx_it);
+    //in this place iterator is at the end, next increment leads to UB
     return *this;
 }
 template<typename ValT, typename CfgT, typename WkrT>
@@ -208,18 +207,17 @@ auto& multiindex_iterator<ValT,CfgT,WkrT>::operator--(){
             *idx_it = shape.element(d);
             ++d;
             --idx_it;
-            if (idx_it == idx_first){
-                --flat_index;
-                --(*idx_it);
-            }
         }
         else{
             walker.step_back(d);
             --(*idx_it);
             --flat_index;
-            break;
+            return *this;
         }
     }
+    --flat_index;
+    --(*idx_it);
+    //in this place iterator is at the beginning, next decrement leads to UB
     return *this;
 }
 template<typename ValT, typename CfgT, typename WkrT>
