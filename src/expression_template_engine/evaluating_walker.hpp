@@ -76,7 +76,6 @@ class evaluating_indexer
     using walker_type = WlkT;
     using value_type = ValT;
     using index_type = typename CfgT::index_type;
-    using shape_type = typename CfgT::shape_type;
     using strides_type = typename detail::libdiv_strides_traits<CfgT>::type;
 
     const strides_type* strides;

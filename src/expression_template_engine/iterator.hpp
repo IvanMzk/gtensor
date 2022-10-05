@@ -21,9 +21,6 @@ namespace detail{
         using reference = void;
         using const_reference = void;
     };
-
-
-
 }   //end of namespace detail
 
 /*

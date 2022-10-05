@@ -10,22 +10,39 @@ namespace detail{
 }   //end of namespace detail
 
 
-template<typename DescT, typename IndexerT>
-class viewing_indexer
+template<typename...> class viewing_indexer;
+template<typename IdxT, typename IndexerT>
+class viewing_indexer<IdxT, IndexerT>
 {
-    using index_type = typename DescT::index_type;
-    using indexer_type = IndexerT;
-    const DescT* descriptor;
-    indexer_type parent_indexer;
-
 public:
+    using index_type = IdxT;
+    using indexer_type = IndexerT;
     using result_type = decltype(std::declval<indexer_type>()[std::declval<index_type>()]);
-    template<typename P>
-    viewing_indexer(const DescT& descriptor_, P&& parent_indexer_):
-        descriptor{&descriptor_},
-        parent_indexer{std::forward<P>(parent_indexer_)}
+    template<typename U>
+    explicit viewing_indexer(U&& indexer_):
+        indexer{std::forward<U>(indexer_)}
     {}
-    result_type operator[](const index_type& idx)const{return parent_indexer[descriptor->convert(idx)];}
+    result_type operator[](const index_type& idx)const{return indexer[idx];}
+private:
+    indexer_type indexer;
+};
+template<typename IdxT ,typename IndexerT, typename DescT>
+class viewing_indexer<IdxT, IndexerT, DescT> : public viewing_indexer<IdxT, IndexerT>
+{
+    using base_indexer_type = viewing_indexer<IdxT, IndexerT>;
+    using descriptor_type = DescT;
+public:
+    using typename base_indexer_type::index_type;
+    using typename base_indexer_type::indexer_type;
+    using typename base_indexer_type::result_type;
+    template<typename U>
+    viewing_indexer(U&& indexer_, const descriptor_type& converter_):
+        base_indexer_type{std::forward<U>(indexer_)},
+        converter{&converter_}
+    {}
+    result_type operator[](const index_type& idx)const{return base_indexer_type::operator[](converter->convert(idx));}
+private:
+    const descriptor_type* converter;
 };
 
 template<typename CfgT, typename IndexerT>
@@ -50,36 +67,6 @@ public:
     void reset(){basic_walker::reset();}
     result_type operator*()const{return indexer[cursor()];}
 };
-
-// template<typename ValT, typename CfgT>
-// class viewing_evaluating_walker :
-//     public walker_base<ValT, CfgT>,
-//     private basic_walker<CfgT, typename CfgT::index_type>
-// {
-//     using value_type = ValT;
-//     using index_type = typename CfgT::index_type;
-//     using shape_type = typename CfgT::shape_type;
-
-//     mutable indexer<ValT,CfgT> estorage;
-//     const converting_base<CfgT>* converter;
-//     std::unique_ptr<walker_base<ValT,CfgT>> clone()const override{return std::make_unique<viewing_evaluating_walker>(*this);}
-
-// public:
-//     viewing_evaluating_walker(const shape_type& shape_,  const shape_type& strides_, const index_type& offset_, const converting_base<CfgT>* converter_, indexer<ValT,CfgT> estorage_):
-//         basic_walker{static_cast<index_type>(shape_.size()), shape_, strides_, offset_},
-//         converter{converter_},
-//         estorage{std::move(estorage_)}
-//     {}
-
-//     void walk(const index_type& direction, const index_type& steps)override{basic_walker::walk(direction,steps);}
-//     void step(const index_type& direction)override{basic_walker::step(direction);}
-//     void step_back(const index_type& direction)override{basic_walker::step_back(direction);}
-//     void reset(const index_type& direction)override{basic_walker::reset(direction);}
-//     void reset()override{basic_walker::reset();}
-//     value_type operator*()const override{
-//         return estorage[converter->convert(basic_walker::cursor())];
-//     }
-// };
 
 }   //end of namespace gtensor
 

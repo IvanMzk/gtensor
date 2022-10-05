@@ -75,11 +75,8 @@ TEMPLATE_LIST_TEST_CASE("test_trivial_walker","[test_expression_template_engine]
     REQUIRE(deref == expected_deref);
 }
 
-TEMPLATE_TEST_CASE("test_indexer","[test_expression_template_engine]",
-    test_expression_template_helpers::storage_tensor_maker<>,
-    test_expression_template_helpers::notrivial_tensor_maker<>,
-    test_expression_template_helpers::trivial_subtree_tensor_maker<>,
-    test_expression_template_helpers::trivial_tensor_maker<>
+TEMPLATE_LIST_TEST_CASE("test_indexer","[test_expression_template_engine]",
+    typename test_expression_template_helpers::makers_type_list<test_expression_template_helpers::test_tensor>::type
 )
 {
     using value_type = typename TestType::value_type;
@@ -93,47 +90,6 @@ TEMPLATE_TEST_CASE("test_indexer","[test_expression_template_engine]",
         test_type{TestType{}().create_indexer()[2],value_type{3}},
         test_type{TestType{}().create_indexer()[4],value_type{5}},
         test_type{TestType{}().create_indexer()[3],value_type{4}}
-    );
-    auto result = std::get<0>(test_data);
-    auto expected = std::get<1>(test_data);
-    REQUIRE(result == expected);
-}
-
-TEMPLATE_TEST_CASE("test_viewing_indexer","[test_expression_template_engine]",
-    test_expression_template_helpers::view_slice_of_storage_maker<>,
-    test_expression_template_helpers::view_slice_of_eval_maker<>,
-    test_expression_template_helpers::view_view_slice_of_eval_maker<>
-)
-{
-    using value_type = typename TestType::value_type;
-    using test_type = std::tuple<value_type,value_type>;
-
-    //0result,1expected
-    auto test_data = GENERATE(
-        test_type{TestType{}().create_indexer()[0],value_type{0}},
-        test_type{TestType{}().create_indexer()[1],value_type{0}},
-        test_type{TestType{}().create_indexer()[2],value_type{0}},
-        test_type{TestType{}().create_indexer()[3],value_type{0}},
-        test_type{TestType{}().create_indexer()[4],value_type{0}},
-        test_type{TestType{}().create_indexer()[5],value_type{0}},
-        test_type{TestType{}().create_indexer()[6],value_type{0}},
-        test_type{TestType{}().create_indexer()[7],value_type{0}},
-        test_type{TestType{}().create_indexer()[8],value_type{0}},
-        test_type{TestType{}().create_indexer()[9],value_type{0}},
-        test_type{TestType{}().create_indexer()[10],value_type{0}},
-        test_type{TestType{}().create_indexer()[11],value_type{0}},
-        test_type{TestType{}().create_indexer()[12],value_type{1}},
-        test_type{TestType{}().create_indexer()[13],value_type{0}},
-        test_type{TestType{}().create_indexer()[14],value_type{2}},
-        test_type{TestType{}().create_indexer()[15],value_type{0}},
-        test_type{TestType{}().create_indexer()[16],value_type{3}},
-        test_type{TestType{}().create_indexer()[17],value_type{0}},
-        test_type{TestType{}().create_indexer()[18],value_type{4}},
-        test_type{TestType{}().create_indexer()[19],value_type{0}},
-        test_type{TestType{}().create_indexer()[20],value_type{5}},
-        test_type{TestType{}().create_indexer()[21],value_type{0}},
-        test_type{TestType{}().create_indexer()[22],value_type{6}},
-        test_type{TestType{}().create_indexer()[23],value_type{0}}
     );
     auto result = std::get<0>(test_data);
     auto expected = std::get<1>(test_data);
