@@ -5,10 +5,10 @@
 
 namespace benchmark_expression_template_helpers{
 
-using test_expression_template_helpers::begin_broadcast_helper;
-using test_expression_template_helpers::end_broadcast_helper;
-using test_expression_template_helpers::begin_trivial_helper;
-using test_expression_template_helpers::end_trivial_helper;
+using gtensor::detail::begin_multiindex;
+using gtensor::detail::end_multiindex;
+using gtensor::detail::begin_flatindex;
+using gtensor::detail::end_flatindex;
 
 template<typename T>
 struct test_tensor_broadcast : public T{
@@ -17,8 +17,8 @@ struct test_tensor_broadcast : public T{
     {}
     auto& engine()const{return impl()->engine();}
     bool is_trivial()const{return engine().is_trivial();}
-    auto begin()const{return begin_broadcast_helper(engine());}
-    auto end()const{return end_broadcast_helper(engine());}
+    auto begin()const{return begin_multiindex(engine());}
+    auto end()const{return end_multiindex(engine());}
 };
 template<typename T>
 struct test_tensor_trivial : public T{
@@ -27,8 +27,8 @@ struct test_tensor_trivial : public T{
     {}
     auto& engine()const{return impl()->engine();}
     bool is_trivial()const{return engine().is_trivial();}
-    auto begin()const{return begin_trivial_helper(engine());}
-    auto end()const{return end_trivial_helper(engine());}
+    auto begin()const{return begin_flatindex(engine());}
+    auto end()const{return end_flatindex(engine());}
 };
 
 template<typename T>
