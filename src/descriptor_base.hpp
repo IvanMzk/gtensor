@@ -133,7 +133,6 @@ T make_shape_of_type(std::initializer_list<IdxT> shape){
     return T(shape.begin(),shape.end());
 }
 
-
 template<typename ShT>
 auto convert_index(const ShT& cstrides, const typename ShT::value_type& offset, const ShT& idx){
     return std::inner_product(idx.begin(), idx.end(), cstrides.begin(), offset);

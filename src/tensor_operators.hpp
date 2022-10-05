@@ -44,6 +44,7 @@ template<typename OpT> struct tensor_operator_selector<gtensor::config::engine_e
     template<> struct selector<div_tag>{using type = expression_template_operators::operator_div;};
     template<> struct selector<greater_tag>{using type = expression_template_operators::operator_greater;};
     template<> struct selector<less_tag>{using type = expression_template_operators::operator_less;};
+    template<> struct selector<equal_tag>{using type = expression_template_operators::operator_equal;};
     using type = typename selector<OpT>::type;
 };
 
@@ -58,6 +59,7 @@ struct tensor_operators{
     BINARY_OPERATOR_DISPATCHER(operator_div_dispatcher, tensor_operator_traits::div_tag);
     BINARY_OPERATOR_DISPATCHER(operator_greater_dispatcher, tensor_operator_traits::greater_tag);
     BINARY_OPERATOR_DISPATCHER(operator_less_dispatcher, tensor_operator_traits::less_tag);
+    BINARY_OPERATOR_DISPATCHER(operator_equal_dispatcher, tensor_operator_traits::equal_tag);
 
     template<typename ValT, typename CfgT, typename ImplT1, typename ImplT2>
     static inline auto equals(const tensor<ValT, CfgT, ImplT1>& t1, const tensor<ValT, CfgT, ImplT2>& t2){
@@ -73,6 +75,7 @@ BINARY_TENSOR_OPERATOR(operator*, tensor_operators::operator_mul_dispatcher);
 BINARY_TENSOR_OPERATOR(operator/, tensor_operators::operator_div_dispatcher);
 BINARY_TENSOR_OPERATOR(operator>, tensor_operators::operator_greater_dispatcher);
 BINARY_TENSOR_OPERATOR(operator<, tensor_operators::operator_less_dispatcher);
+BINARY_TENSOR_OPERATOR(operator==, tensor_operators::operator_equal_dispatcher);
 BINARY_TENSOR_OPERATOR(equals, tensor_operators::equals);
 
 }   //end of namespace gtensor

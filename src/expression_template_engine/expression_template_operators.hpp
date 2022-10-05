@@ -50,6 +50,7 @@ EXPRESSION_TEMPLATE_BINARY_OPERATION(mul,*);
 EXPRESSION_TEMPLATE_BINARY_OPERATION(div,/);
 EXPRESSION_TEMPLATE_BINARY_OPERATION(greater,>);
 EXPRESSION_TEMPLATE_BINARY_OPERATION(less,<);
+EXPRESSION_TEMPLATE_BINARY_OPERATION(equal,==);
 EXPRESSION_TEMPLATE_BINARY_OPERATION(logic_and,&&);
 EXPRESSION_TEMPLATE_BINARY_OPERATION(logic_or,||);
 
@@ -70,6 +71,7 @@ namespace expression_template_operators{
     EXPRESSION_TEMPLATE_BINARY_OPERATOR(operator_div, expression_template_binary_operations::div);
     EXPRESSION_TEMPLATE_BINARY_OPERATOR(operator_greater, expression_template_binary_operations::greater);
     EXPRESSION_TEMPLATE_BINARY_OPERATOR(operator_less, expression_template_binary_operations::less);
+    EXPRESSION_TEMPLATE_BINARY_OPERATOR(operator_equal, expression_template_binary_operations::equal);
 
     struct operator_assign{
         template<typename ValT1, typename ValT2, typename ImplT1, typename ImplT2, typename CfgT>
