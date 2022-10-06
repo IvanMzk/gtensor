@@ -56,6 +56,57 @@ inline ShT broadcast(const ShT& shape1, const ShT& shape2){
     }
 }
 
+template<typename Arg>
+inline auto& vmax(const Arg& arg){
+    return arg;
+}
+template<typename Arg, typename...Args>
+inline auto& vmax(const Arg& arg, const Args&...args){
+    return std::max(arg, vmax(args...));
+}
+template<typename Arg>
+inline auto& vmin(const Arg& arg){
+    return arg;
+}
+template<typename Arg, typename...Args>
+inline auto& vmin(const Arg& arg, const Args&...args){
+    return std::min(arg, vmin(args...));
+}
+
+template<typename ShT, typename...Ts>
+inline auto broadcast_shape(const Ts&...shapes){
+    using shape_type = ShT;
+    using index_type = typename shape_type::value_type;
+    if (vmin(shapes.size()...) == 0){
+        throw broadcast_exception("shapes are not broadcastable");
+    }else{
+        auto res = shape_type(vmax(shapes.size()...),index_type(0));
+        broadcast_shape_helper(res, shapes...);
+        return res;
+    }
+}
+template<typename ShT, typename T, typename...Ts>
+inline void broadcast_shape_helper(ShT& res, const T& shape, const Ts&...shapes){
+    using shape_type = ShT;
+    using index_type = typename shape_type::value_type;
+    auto res_it = res.end();
+    auto shape_it = shape.end();
+    auto shape_begin = shape.begin();
+    while(shape_it!=shape_begin){
+        const index_type& r{*--res_it};
+        const index_type& s{*--shape_it};
+        if (r==index_type(0) || r==index_type(1)){
+            *res_it = s;
+        }
+        else if (s!=index_type(1) && s!=r){
+            throw broadcast_exception("shapes are not broadcastable");
+        }
+    }
+    broadcast_shape_helper(res, shapes...);
+}
+template<typename ShT>
+inline void broadcast_shape_helper(ShT&){}
+
 /*
 * create strides
 * parameters: shape
