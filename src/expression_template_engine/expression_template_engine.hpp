@@ -29,6 +29,14 @@ inline bool is_trivial_operand(const T& operand){
     return operand->engine().is_trivial();
 }
 
+template<typename EngineT, typename ShT> auto begin_broadcast(EngineT& engine, const ShT& shape){
+    using iterator_type = multiindex_bidirectional_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_broadcast_walker())>;
+    return iterator_type{engine.create_broadcast_walker(), shape};
+}
+template<typename EngineT, typename ShT> auto end_broadcast(EngineT& engine, const ShT& shape){
+    using iterator_type = multiindex_bidirectional_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_broadcast_walker())>;
+    return iterator_type{engine.create_broadcast_walker(), shape};
+}
 template<typename EngineT> auto begin_multiindex(EngineT& engine){
     using iterator_type = multiindex_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_broadcast_walker())>;
     return iterator_type{engine.create_broadcast_walker(), engine.host()->shape(), engine.host()->descriptor().as_descriptor_with_libdivide()->strides_libdivide()};
@@ -81,13 +89,21 @@ class expression_template_storage_engine :
     public expression_template_engine_base<typename StorT::value_type,CfgT>,
     private storage_engine<CfgT,StorT>
 {
+    using shape_type = typename CfgT::shape_type;
 public:
     using typename storage_engine::value_type;
     using typename storage_engine::config_type;
     using storage_engine::storage_engine;
     using storage_engine::host;
+    //use underlaying storage iterators
     using storage_engine::begin;
     using storage_engine::end;
+    //broadcasting iterators
+    auto begin_broadcast(const shape_type& shape)const{return detail::begin_broadcast(*this, shape);}
+    auto end_broadcast(const shape_type& shape)const{return detail::end_broadcast(*this, shape);}
+    auto begin_broadcast(const shape_type& shape){return detail::begin_broadcast(*this, shape);}
+    auto end_broadcast(const shape_type& shape){return detail::end_broadcast(*this, shape);}
+
     bool is_trivial()const override{return true;}
     auto create_broadcast_walker()const{return create_broadcast_walker_helper(*this);}
     auto create_broadcast_walker(){return create_broadcast_walker_helper(*this);}
@@ -115,6 +131,7 @@ class expression_template_nodispatching_engine :
     private evaluating_engine<ValT,CfgT,F,std::integral_constant<std::size_t,sizeof...(Ops)>>
 {
     using evaluating_engine::operands_number;
+    using shape_type = typename CfgT::shape_type;
 public:
     using typename evaluating_engine::value_type;
     using typename evaluating_engine::config_type;
@@ -130,6 +147,8 @@ public:
     }
     auto begin()const{return detail::begin_multiindex(*this);}
     auto end()const{return detail::end_multiindex(*this);}
+    auto begin_broadcast(const shape_type& shape)const{return detail::begin_broadcast(*this, shape);}
+    auto end_broadcast(const shape_type& shape){return detail::end_broadcast(*this, shape);}
     auto create_indexer()const{
         return viewing_indexer<typename config_type::index_type, decltype(create_broadcast_indexer())>{create_broadcast_indexer()};
     }
@@ -170,12 +189,15 @@ template<typename ValT, typename CfgT, typename F, typename...Ops>
 class expression_template_root_dispatching_engine :
     public expression_template_nodispatching_engine<ValT,CfgT,F,Ops...>
 {
+    using shape_type = typename CfgT::shape_type;
 public:
     using typename expression_template_nodispatching_engine::value_type;
     using typename expression_template_nodispatching_engine::config_type;
     using expression_template_nodispatching_engine::expression_template_nodispatching_engine;
     auto begin()const{return detail::begin_multiindex(*this);}
     auto end()const{return detail::end_multiindex(*this);}
+    auto begin_broadcast(const shape_type& shape)const{return detail::begin_broadcast(*this, shape);}
+    auto end_broadcast(const shape_type& shape){return detail::end_broadcast(*this, shape);}
     auto create_indexer()const{
         return viewing_indexer<typename config_type::index_type, decltype(create_indexer_helper())>{create_indexer_helper()};
     }
@@ -201,6 +223,7 @@ class expression_template_viewing_engine :
     public expression_template_engine_base<ValT,CfgT>,
     private viewing_engine<ValT,CfgT,ParentT>
 {
+    using shape_type = typename CfgT::shape_type;
 public:
     using typename viewing_engine::value_type;
     using typename viewing_engine::config_type;
@@ -217,6 +240,8 @@ public:
     template<typename D = DescT, std::enable_if_t<!detail::is_converting_descriptor<D>,int> =0 > auto end()const{return detail::end_flatindex(*this);}
     template<typename D = DescT, std::enable_if_t<!detail::is_converting_descriptor<D>,int> =0 > auto begin(){return detail::begin_flatindex(*this);}
     template<typename D = DescT, std::enable_if_t<!detail::is_converting_descriptor<D>,int> =0 > auto end(){return detail::end_flatindex(*this);}
+    auto begin_broadcast(const shape_type& shape)const{return detail::begin_broadcast(*this, shape);}
+    auto end_broadcast(const shape_type& shape){return detail::end_broadcast(*this, shape);}
     auto create_indexer()const{return create_indexer_helper(*this);}
     auto create_indexer(){return create_indexer_helper(*this);}
     auto create_broadcast_walker()const{return create_broadcast_walker_helper(*this);}

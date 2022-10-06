@@ -302,6 +302,44 @@ TEMPLATE_LIST_TEST_CASE("test_multiindex_iterator","[test_expression_template_en
     }
 }
 
+TEST_CASE("test_multiindex_iterator","[test_expression_template_engine]")
+{
+    using value_type = float;
+    using test_expression_template_helpers::test_tensor;
+    using test_expression_template_helpers::make_test_tensor;
+    using test_config_type = typename test_config::config_engine_selector<gtensor::config::engine_expression_template>::config_type;
+    using shape_type = typename test_config_type::shape_type;
+    using tensor_type = gtensor::tensor<value_type, test_config_type>;
+
+    REQUIRE([](){auto t = make_test_tensor(tensor_type{1,2,3}); auto shape = shape_type{3};
+        return std::equal(t.engine().begin_broadcast(shape), t.engine().end_broadcast(shape), tensor_type{1,2,3}.begin());}()
+    );
+    REQUIRE([](){auto t = make_test_tensor(tensor_type{1,2,3}); auto shape = shape_type{1,1,3};
+        return std::equal(t.engine().begin_broadcast(shape), t.engine().end_broadcast(shape), tensor_type{1,2,3}.begin());}()
+    );
+    REQUIRE([](){auto t = make_test_tensor(tensor_type{1,2,3}); auto shape = shape_type{2,3};
+        return std::equal(t.engine().begin_broadcast(shape), t.engine().end_broadcast(shape), tensor_type{1,2,3,1,2,3}.begin());}()
+    );
+    REQUIRE([](){auto t = make_test_tensor(tensor_type{1,2,3}); auto shape = shape_type{2,1,3};
+        return std::equal(t.engine().begin_broadcast(shape), t.engine().end_broadcast(shape), tensor_type{1,2,3,1,2,3}.begin());}()
+    );
+    REQUIRE([](){auto t = make_test_tensor(tensor_type{1,2,3}); auto shape = shape_type{2,2,3};
+        return std::equal(t.engine().begin_broadcast(shape), t.engine().end_broadcast(shape), tensor_type{1,2,3,1,2,3,1,2,3,1,2,3}.begin());}()
+    );
+    REQUIRE([](){auto t = make_test_tensor(tensor_type{{1,2,3},{4,5,6}}); auto shape = shape_type{1,2,3};
+        return std::equal(t.engine().begin_broadcast(shape), t.engine().end_broadcast(shape), tensor_type{1,2,3,4,5,6}.begin());}()
+    );
+    REQUIRE([](){auto t = make_test_tensor(tensor_type{{1,2,3},{4,5,6}}); auto shape = shape_type{2,2,3};
+        return std::equal(t.engine().begin_broadcast(shape), t.engine().end_broadcast(shape), tensor_type{1,2,3,4,5,6,1,2,3,4,5,6}.begin());}()
+    );
+    REQUIRE([](){auto t = make_test_tensor(tensor_type{-1} + tensor_type{1,2,3} + tensor_type{{1},{2},{3}} + tensor_type{1}); auto shape = shape_type{1,3,3};
+        return std::equal(t.engine().begin_broadcast(shape), t.engine().end_broadcast(shape), tensor_type{2,3,4,3,4,5,4,5,6}.begin());}()
+    );
+    REQUIRE([](){auto t = make_test_tensor((tensor_type{-1} + tensor_type{1,2,3} + tensor_type{{1},{2},{3}} + tensor_type{1})({{{},{},2}})); auto shape = shape_type{1,2,3};
+        return std::equal(t.engine().begin_broadcast(shape), t.engine().end_broadcast(shape), tensor_type{2,3,4,4,5,6}.begin());}()
+    );
+}
+
 TEST_CASE("has_view_with_converting_descriptor","[test_expression_template_engine]"){
     using value_type = float;
     using tensor_type = gtensor::tensor<value_type, test_expression_template_helpers::test_default_config_type>;

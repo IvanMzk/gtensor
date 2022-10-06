@@ -36,16 +36,6 @@ struct test_tensor : public T{
 };
 
 template<typename T>
-struct test_storage_viewing_iterator_tensor : public T{
-    test_storage_viewing_iterator_tensor(const T& base):
-        T{base}
-    {}
-    auto& engine()const{return impl()->engine();}
-    auto begin()const{return engine().begin();}
-    auto end()const{return engine().end();}
-};
-
-template<typename T>
 struct test_multiindex_iterator_tensor : public T{
     test_multiindex_iterator_tensor(const T& base):
         T{base}
