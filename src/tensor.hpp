@@ -93,7 +93,7 @@ private:
 public:
     template<typename F, typename...Args>
     evaluating_tensor(F&& f, Args&&...operands):
-        evaluating_tensor{detail::broadcast(operands->shape()...),std::forward<F>(f),std::forward<Args>(operands)...}
+        evaluating_tensor{detail::broadcast_shape<shape_type>(operands->shape()...),std::forward<F>(f),std::forward<Args>(operands)...}
     {
         //static_assert(std::is_convertible_v<engine_type*, evaluating_engine<value_type,config_type,std::decay_t<F>,std::decay_t<Args>::element_type...>*>);
     }
