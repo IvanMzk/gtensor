@@ -30,16 +30,6 @@ public:
     virtual value_type operator[](const index_type& idx) const = 0;
 };
 
-template<typename ValT, typename CfgT>
-class indexer_base{
-protected:
-    using value_type = ValT;
-    using index_type = typename CfgT::index_type;
-public:
-    virtual ~indexer_base(){}
-    virtual std::unique_ptr<indexer_base> clone()const = 0;
-    virtual value_type operator[](const index_type&)const = 0;
-};
 
 }   //end of namespace gtensor
 

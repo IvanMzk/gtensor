@@ -30,23 +30,6 @@ public:
     value_type operator*() const override{return impl_.operator*();}
 };
 
-template<typename ValT, typename CfgT, typename ImplT>
-class indexer_polymorphic : public indexer_base<ValT, CfgT>
-{
-    using typename indexer_base::index_type;
-    using typename indexer_base::value_type;
-    using impl_type = ImplT;
-
-    impl_type impl_;
-
-    std::unique_ptr<indexer_base> clone()const override{return std::make_unique<indexer_polymorphic>(*this);}
-public:
-    indexer_polymorphic(impl_type&& impl__):
-        impl_{std::move(impl__)}
-    {}
-    value_type operator[](const index_type& idx)const override{return impl_.operator[](idx);}
-};
-
 template<typename ValT, typename CfgT>
 class walker{
     using value_type = ValT;
@@ -85,27 +68,6 @@ public:
     value_type operator*() const{return impl->operator*();}
     auto& as_trivial()const{return static_cast<const walker_trivial_base<ValT,CfgT>&>(*impl.get());}
 };
-
-template<typename ValT, typename CfgT>
-class indexer{
-    using value_type = ValT;
-    using index_type = typename CfgT::index_type;
-    using impl_base_type = indexer_base<ValT, CfgT>;
-
-    std::unique_ptr<impl_base_type> impl;
-public:
-    indexer(std::unique_ptr<impl_base_type>&& impl_):
-        impl{std::move(impl_)}
-    {}
-    indexer(const indexer& other):
-        impl{other.impl->clone()}
-    {}
-    indexer(indexer&& other) = default;
-
-    value_type operator[](const index_type& idx)const{return impl->operator[](idx);}
-};
-
-
 
 }   //end of namespace gtensor
 

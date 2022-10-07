@@ -6,14 +6,12 @@
 #include "tensor_base.hpp"
 #include "tensor_init_list.hpp"
 #include "shareable_storage.hpp"
+#include "indexer.hpp"
 
 namespace gtensor{
 
-/**
- *
- * engines are about meaning not form, as opposed to descriptors that are about form
- *
- * **/
+namespace detail{
+}   //end of namespace detail
 
 template<typename ValT, typename CfgT>
 class engine_host_accessor
@@ -29,6 +27,12 @@ protected:
     auto host()const{return host_;}
 };
 
+/**
+ *
+ * engines are about meaning not form, as opposed to descriptors that are about form
+ *
+ * **/
+
 template<typename CfgT, typename StorT>
 class storage_engine :
     protected engine_host_accessor<typename StorT::value_type, CfgT>
@@ -40,8 +44,8 @@ protected:
     using storage_type = StorT;
     using index_type = typename config_type::index_type;
     using typename engine_host_accessor::host_type;
-    // auto data()const{return elements_.data();}
-    // auto data(){return elements_.data();}
+    auto create_indexer()const{return create_indexer_helper(*this);}
+    auto create_indexer(){return create_indexer_helper(*this);}
     auto begin()const{return elements_.begin();}
     auto end()const{return elements_.end();}
     auto begin(){return elements_.begin();}
@@ -62,6 +66,9 @@ public:
         elements_(begin, end)
     {}
 private:
+    template<typename U> static auto create_indexer_helper(U& instance){
+        return basic_indexer<index_type, decltype(instance.begin())>{instance.begin()};
+    }
     storage_type elements_;
 };
 
@@ -89,7 +96,7 @@ private:
     std::array<std::shared_ptr<operand_base_type>,operands_number> operands_;
 };
 
-template<typename ValT, typename CfgT, typename ParentT>
+template<typename ValT, typename CfgT, typename DescT, typename ParentT>
 class viewing_engine :
     protected engine_host_accessor<ValT, CfgT>
 {
@@ -98,9 +105,12 @@ public:
     using config_type = CfgT;
 protected:
     using typename engine_host_accessor::host_type;
+    using descriptor_type = DescT;
     using parent_type = ParentT;
     const parent_type* parent()const{return parent_.get();}
     parent_type* parent(){return parent_.get();}
+    auto create_indexer()const{return create_indexer_helper(*this);}
+    auto create_indexer(){return create_indexer_helper(*this);}
 public:
     template<typename U>
     viewing_engine(host_type* host, U&& parent):
@@ -108,6 +118,13 @@ public:
         parent_{std::forward<U>(parent)}
     {}
 private:
+    template<typename U>
+    static auto create_indexer_helper(U& instance){
+        return basic_indexer<typename config_type::index_type, decltype(instance.parent()->engine().create_indexer()), descriptor_type>{
+            instance.parent()->engine().create_indexer(),
+            static_cast<const descriptor_type&>(instance.host()->descriptor())
+        };
+    }
     std::shared_ptr<parent_type> parent_;
 };
 
