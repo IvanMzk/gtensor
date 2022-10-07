@@ -91,10 +91,48 @@ inline ShT make_view_reshape_shape(const ShT& pshape, const ShT& subs){
     }
 }
 
-/*make index view map*/
-template<typename...IndecesT>
-auto make_index_map(const IndecesT&...idx){
-
+/*
+* make index view map
+* params should be tensors with indexes, shapes of tensors must broadcast
+* MapT is type of map container with interface like std::vector and must be spesialized explicitly
+*/
+template<typename MapT, typename ShT, typename...IndexesT>
+MapT make_index_map(const ShT& pshape, const ShT& pstrides, const IndexesT&...subs){
+    using map_type = MapT;
+    using index_type = typename map_type::value_type;
+    using shape_type = ShT;
+    constexpr std::size_t index_dim = sizeof...(IndexesT);
+    if (index_dim > pshape.size()){
+        throw subscript_exception("invalid index subscript");
+    }
+    auto indexes_shape = detail::broadcast_shape<shape_type>(subs.impl()->shape()...);
+    auto indexes_size = detail::make_size(indexes_shape);
+    auto block_size = std::accumulate(pshape.begin()+index_dim,pshape.end(),index_type(1),std::multiplies<index_type>{});
+    auto res = map_type(block_size*indexes_size, index_type{0});
+    auto subs_iters = std::make_tuple(subs.engine().begin_broadcast(indexes_shape)...);
+    auto i = std::size_t{0};
+    auto j = std::size_t{0};
+    while(i!=indexes_size){
+        auto block_first  = std::apply(
+            [&pstrides](auto&...iters)
+            {
+                auto res = index_type{0};
+                auto n = std::size_t{0};
+                ((res+=*iters*pstrides[n++]),...);
+                (++iters,...);
+                return res;
+            },
+            subs_iters
+        );
+        auto block_end = j+block_size;
+        while(j!=block_end){
+            res[j] = block_first;
+            ++j;
+            ++block_first;
+        }
+        ++i;
+    }
+    return res;
 }
 
 }   //end of namespace detail

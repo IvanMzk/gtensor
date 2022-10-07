@@ -16,7 +16,6 @@ target_sources(Test PRIVATE
 
     ${CMAKE_CURRENT_SOURCE_DIR}/benchmark_walker.cpp
 
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_view_factory.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_shareable_storage.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_slice.cpp
 
@@ -35,12 +34,14 @@ target_sources(Test PRIVATE
 
     ${CMAKE_CURRENT_SOURCE_DIR}/test_libdivide_helper.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/benchmark_expression_template.cpp
-)
 
-target_sources(Test_selected PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/test_expression_template_engine.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_tensor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_descriptor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_broadcast.cpp
+)
+
+target_sources(Test_selected PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_view_factory.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test.cpp
 )

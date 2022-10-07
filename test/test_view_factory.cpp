@@ -1,6 +1,26 @@
-#include "catch.hpp"
 #include <tuple>
+#include <vector>
+#include "catch.hpp"
+#include "test_config.hpp"
 #include "view_factory.hpp"
+#include "gtensor.hpp"
+
+namespace test_view_factory{
+
+template<typename T>
+struct test_tensor : public T{
+    test_tensor(const T& base):
+        T{base}
+    {}
+    using T::engine;
+    using T::impl;
+};
+
+template<template<typename> typename TestT = test_tensor, typename T>
+auto make_test_tensor(T&& t){return TestT<std::decay_t<T>>{t};}
+
+}   //end of namespace test_view_factory
+
 
 TEMPLATE_TEST_CASE("test_make_view_slice_shape","[test_view_factory]", trivial_type_vector::uvector<std::int64_t>, std::vector<std::int64_t>){
     using index_type = typename TestType::value_type;
@@ -10,7 +30,7 @@ TEMPLATE_TEST_CASE("test_make_view_slice_shape","[test_view_factory]", trivial_t
     using gtensor::detail::make_view_slice_shape;
     using test_type = std::tuple<shape_type, slices_collection_type, shape_type>;
     //0parent_shape,1slices_collection,2expected_shape
-    auto test_data = GENERATE(                                    
+    auto test_data = GENERATE(
         test_type{shape_type{11},{}, shape_type{11}},
         test_type{shape_type{11},{slice_type{0,11,1}}, shape_type{11}},
         test_type{shape_type{11},{slice_type{0,11,2}}, shape_type{6}},
@@ -29,7 +49,7 @@ TEMPLATE_TEST_CASE("test_make_view_slice_shape","[test_view_factory]", trivial_t
     auto parent_shape = std::get<0>(test_data);
     auto slices_collection = std::get<1>(test_data);
     auto expected_shape = std::get<2>(test_data);
-    REQUIRE(make_view_slice_shape(parent_shape, slices_collection) == expected_shape);    
+    REQUIRE(make_view_slice_shape(parent_shape, slices_collection) == expected_shape);
 }
 
 TEMPLATE_TEST_CASE("test_make_view_subdim_shape","[test_view_factory]", trivial_type_vector::uvector<std::int64_t>, std::vector<std::int64_t>){
@@ -39,7 +59,7 @@ TEMPLATE_TEST_CASE("test_make_view_subdim_shape","[test_view_factory]", trivial_
     using gtensor::detail::make_view_subdim_shape;
     using test_type = std::tuple<shape_type, shape_type, shape_type>;
     //0parent_shape,1subs,2expected_shape
-    auto test_data = GENERATE(                                    
+    auto test_data = GENERATE(
         test_type{shape_type{11,1},shape_type{}, shape_type{11,1}},
         test_type{shape_type{11,1},shape_type{0}, shape_type{1}},
         test_type{shape_type{1,11},shape_type{0}, shape_type{11}},
@@ -58,7 +78,7 @@ TEMPLATE_TEST_CASE("test_make_view_reshape_shape","[test_view_factory]", trivial
     using gtensor::detail::make_view_reshape_shape;
     using test_type = std::tuple<shape_type, shape_type, shape_type>;
     //0parent_shape,1subs,2expected_shape
-    auto test_data = GENERATE(                                    
+    auto test_data = GENERATE(
         test_type{shape_type{11,1},shape_type{}, shape_type{11,1}},
         test_type{shape_type{11,1},shape_type{11}, shape_type{11}},
         test_type{shape_type{1,11},shape_type{11,1}, shape_type{11,1}},
@@ -145,7 +165,7 @@ TEMPLATE_TEST_CASE("test_make_view_slice_cstrides","[test_view_factory]", trivia
 
 TEMPLATE_PRODUCT_TEST_CASE("test_transpose","[test_view_factory]", (std::vector,trivial_type_vector::uvector),(std::size_t, std::uint32_t, int)){
     using shape_type = TestType;
-    using gtensor::detail::transpose;    
+    using gtensor::detail::transpose;
     using test_type = std::tuple<shape_type, shape_type, shape_type>;
     //0source,1indeces,2expected_transposed
     auto test_data = GENERATE(
@@ -157,10 +177,33 @@ TEMPLATE_PRODUCT_TEST_CASE("test_transpose","[test_view_factory]", (std::vector,
         test_type{shape_type{4,3,2,2},shape_type{}, shape_type{2,2,3,4}},
         test_type{shape_type{4,3,2,2},shape_type{3,1,0,2}, shape_type{2,3,4,2}}
     );
-    
+
     auto source = std::get<0>(test_data);
     auto indeces = std::get<1>(test_data);
     auto expected_transposed = std::get<2>(test_data);
-    REQUIRE(transpose(source, indeces) == expected_transposed);    
+    REQUIRE(transpose(source, indeces) == expected_transposed);
 }
 
+TEMPLATE_TEST_CASE("test_make_index_map","[test_view_factory]",
+    typename test_config::config_engine_selector<gtensor::config::engine_expression_template>::config_type
+){
+    using test_config_type = TestType;
+    using index_type = typename test_config_type::index_type;
+    using shape_type = typename test_config_type::shape_type;
+    using tensor_type = gtensor::tensor<index_type, test_config_type>;
+    using test_view_factory::test_tensor;
+    using test_view_factory::make_test_tensor;
+    using gtensor::detail::make_index_map;
+    using map_type = std::vector<index_type>;
+    using test_type = std::tuple<map_type,map_type>;
+    //0result map,1expected map
+    auto test_data = GENERATE(
+        test_type{make_index_map<map_type>(shape_type{4,3},shape_type{3,1},make_test_tensor(tensor_type{0,1,2}),make_test_tensor(tensor_type{0,1,2})), map_type{0,4,8}},
+        test_type{make_index_map<map_type>(shape_type{4,3},shape_type{3,1},make_test_tensor(tensor_type{0,1,2}),make_test_tensor(tensor_type{1})), map_type{1,4,7}},
+        test_type{make_index_map<map_type>(shape_type{4,3},shape_type{3,1},make_test_tensor(tensor_type{1,3})), map_type{3,4,5,9,10,11}}
+    );
+
+    auto result_map = std::get<0>(test_data);
+    auto expected_map = std::get<1>(test_data);
+    REQUIRE(result_map == expected_map);
+}
