@@ -5,6 +5,7 @@
 #include "tensor_init_list.hpp"
 #include "descriptor.hpp"
 #include "engine.hpp"
+#include "broadcast.hpp"
 
 namespace gtensor{
 

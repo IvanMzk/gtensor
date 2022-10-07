@@ -302,7 +302,7 @@ TEMPLATE_LIST_TEST_CASE("test_multiindex_iterator","[test_expression_template_en
     }
 }
 
-TEST_CASE("test_multiindex_iterator","[test_expression_template_engine]")
+TEST_CASE("test_broadcast_iterator","[test_expression_template_engine]")
 {
     using value_type = float;
     using test_expression_template_helpers::test_tensor;

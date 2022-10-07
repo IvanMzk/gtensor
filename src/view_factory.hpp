@@ -91,6 +91,12 @@ inline ShT make_view_reshape_shape(const ShT& pshape, const ShT& subs){
     }
 }
 
+/*make index view map*/
+template<typename...IndecesT>
+auto make_index_map(const IndecesT&...idx){
+
+}
+
 }   //end of namespace detail
 
 // template<typename ValT, template<typename> typename Cfg>
