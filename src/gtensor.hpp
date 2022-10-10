@@ -13,8 +13,51 @@ namespace gtensor{
 
 namespace detail{
 
-template<typename> struct is_tensor : std::false_type{};
-template<typename...Ts> struct is_tensor<tensor<Ts...>> : std::true_type{};
+// template<typename> struct is_tensor : std::false_type{};
+// template<typename...Ts> struct is_tensor<tensor<Ts...>> : std::true_type{};
+
+template<typename> struct true_type : std::true_type{};
+template<typename T, template<typename...> typename C = true_type> struct is_tensor{
+private:
+    template<typename...Ts> static C<typename tensor<Ts...>::value_type> selector(const tensor<Ts...>&);
+    static std::false_type selector(...);
+public:
+    using type = typename decltype(selector(std::declval<T>()))::type;
+    static constexpr bool value = type::value;
+};
+template<typename ValT, typename IdxT> struct is_index : std::is_convertible<ValT,IdxT>::type{};
+template<typename IdxT> struct is_index<bool,IdxT> : std::false_type{};
+template<typename ValT> struct is_bool : std::false_type{};
+template<> struct is_bool<bool> : std::true_type{};
+
+template<typename T, typename IdxT> struct is_index_tensor
+{
+    template<typename V> using checker = is_index<V,IdxT>;
+    using type = typename is_tensor<T, checker>::type;
+    static constexpr bool value = type::value;
+};
+template<typename T, typename IdxT> struct is_bool_tensor
+{
+    using type = typename is_tensor<T, is_bool>::type;
+    static constexpr bool value = type::value;
+};
+
+// template<typename T, typename IdxT> struct is_index_tensor{
+// private:
+//     template<typename...Ts> static is_index<typename tensor<Ts...>::value_type, IdxT> selector(const tensor<Ts...>&);
+//     static std::false_type selector(...);
+// public:
+//     using type = typename decltype(selector(std::declval<T>()))::type;
+//     static constexpr bool value = type::value;
+// };
+// template<typename T, typename IdxT> struct is_bool_tensor{
+// private:
+//     template<typename...Ts> static is_bool<typename tensor<Ts...>::value_type, IdxT> selector(const tensor<Ts...>&);
+//     static std::false_type selector(...);
+// public:
+//     using type = typename decltype(selector(std::declval<T>()))::type;
+//     static constexpr bool value = type::value;
+// };
 
 }   //end of namespace detail
 
@@ -70,7 +113,7 @@ public:
     tensor(Args&&...args):
         impl_{std::make_shared<impl_type>(std::forward<Args>(args)...)}
     {}
-    template<typename Arg, std::enable_if_t<!std::is_base_of_v<tensor, std::decay_t<Arg>> && !detail::is_tensor<std::decay_t<Arg>>::value ,int> = 0 >
+    template<typename Arg, std::enable_if_t<!detail::is_tensor<std::decay_t<Arg>>::value ,int> = 0 >
     explicit tensor(Arg&& arg):
         impl_{std::make_shared<impl_type>(std::forward<Arg>(arg))}
     {}
@@ -152,6 +195,11 @@ public:
     auto reshape(const Subs&...subs)const{
         detail::check_reshape_subs(size(), subs...);
         return view_factory<ValT,CfgT>::create_view_reshape(impl(), shape_type{subs...});
+    }
+    //make mapping view
+    template<typename...Subs, std::enable_if_t<std::conjunction_v<detail::is_tensor<Subs>...>,int> = 0 >
+    auto operator()(const Subs&...subs)const{
+        return view_factory<ValT,CfgT>::create_mapping_view(impl(), subs...);
     }
 };
 
