@@ -107,13 +107,13 @@ private:
     index_type offset_;
 };
 
-template<typename CfgT>
+template<typename CfgT, typename MapT = typename CfgT::shape_type>
 class mapping_descriptor : public basic_descriptor<CfgT>
 {
 public:
+    using map_type = MapT;
     using typename basic_descriptor::shape_type;
     using typename basic_descriptor::index_type;
-    using map_type = shape_type;
     mapping_descriptor() = default;
     template<typename ShT, typename MapT>
     mapping_descriptor(ShT&& shape__, MapT&& index_map__):

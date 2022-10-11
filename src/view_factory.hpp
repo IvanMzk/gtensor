@@ -3,7 +3,9 @@
 
 #include "engine_traits.hpp"
 #include "descriptor.hpp"
+#include "broadcast.hpp"
 #include "tensor.hpp"
+#include "slice.hpp"
 
 
 namespace gtensor{
@@ -91,39 +93,42 @@ inline ShT make_view_reshape_shape(const ShT& pshape, const ShT& subs){
     }
 }
 
+
 /*
-* make index view map
+* make mapping view shape
+*/
+template<typename ShT>
+inline ShT make_shape_index_tensor(const ShT& pshape, const ShT& index_shape, const typename ShT::value_type& index_dim){
+    using shape_type = ShT;
+    auto pdim = pshape.size();
+    if (index_dim > pdim){
+        throw subscript_exception("invalid index tensor subscript");
+    }
+    auto res = shape_type(pdim - index_dim + index_shape.size());
+    std::copy(index_shape.begin(), index_shape.end(), res.begin());
+    std::copy(pshape.begin()+index_dim, pshape.end(), res.begin()+index_shape.size());
+    return res;
+}
+/*
+* make mapping view map
 * params should be tensors with indexes, shapes of tensors must broadcast
 * MapT is type of map container with interface like std::vector and must be spesialized explicitly
 */
-template<typename MapT, typename ShT, typename...IndexesT>
-MapT make_index_map(const ShT& pshape, const ShT& pstrides, const IndexesT&...subs){
+template<typename MapT, typename ShT, typename...It>
+MapT make_map_index_tensor(const ShT& pshape, const ShT& pstrides, const typename ShT::value_type& index_size, It&&...index_iters){
     using map_type = MapT;
     using index_type = typename map_type::value_type;
     using shape_type = ShT;
-    constexpr std::size_t index_dim = sizeof...(IndexesT);
-    if (index_dim > pshape.size()){
-        throw subscript_exception("invalid index subscript");
-    }
-    auto indexes_shape = detail::broadcast_shape<shape_type>(subs.impl()->shape()...);
-    auto indexes_size = detail::make_size(indexes_shape);
+    constexpr std::size_t index_dim = sizeof...(It);
+
     auto block_size = std::accumulate(pshape.begin()+index_dim,pshape.end(),index_type(1),std::multiplies<index_type>{});
-    auto res = map_type(block_size*indexes_size, index_type{0});
-    auto subs_iters = std::make_tuple(subs.engine().begin_broadcast(indexes_shape)...);
+    auto res = map_type(block_size*index_size, index_type{0});
     auto i = std::size_t{0};
     auto j = std::size_t{0};
-    while(i!=indexes_size){
-        auto block_first  = std::apply(
-            [&pstrides](auto&...iters)
-            {
-                auto res = index_type{0};
-                auto n = std::size_t{0};
-                ((res+=*iters*pstrides[n++]),...);
-                (++iters,...);
-                return res;
-            },
-            subs_iters
-        );
+    while(i!=index_size){
+        auto n = std::size_t{0};
+        auto block_first = index_type{0};
+        ((block_first+=check_index(*index_iters,pshape[n])*pstrides[n],++n),...);
         auto block_end = j+block_size;
         while(j!=block_end){
             res[j] = block_first;
@@ -131,8 +136,18 @@ MapT make_index_map(const ShT& pshape, const ShT& pstrides, const IndexesT&...su
             ++block_first;
         }
         ++i;
+        ((++index_iters),...);
     }
     return res;
+}
+
+template<typename IdxT>
+inline auto check_index(const IdxT& idx, const IdxT& shape_element){
+    if (idx < shape_element){
+        return idx;
+    }else{
+        throw subscript_exception("invalid index tensor subscript");
+    }
 }
 
 }   //end of namespace detail
@@ -162,9 +177,11 @@ class view_factory
     using view_reshape_descriptor_type = descriptor_with_libdivide<CfgT>;
     using view_subdim_descriptor_type = descriptor_with_offset<CfgT>;
     using view_slice_descriptor_type = converting_descriptor<CfgT>;
+    using mapping_view_descriptor_type = mapping_descriptor<CfgT>;
     template<typename EngineT> using view_reshape = gtensor::viewing_tensor<view_reshape_descriptor_type, EngineT>;
     template<typename EngineT> using view_subdim = gtensor::viewing_tensor<view_subdim_descriptor_type, EngineT>;
     template<typename EngineT> using view_slice = gtensor::viewing_tensor<view_slice_descriptor_type, EngineT>;
+    template<typename EngineT> using mapping_view = gtensor::viewing_tensor<mapping_view_descriptor_type, EngineT>;
 
     static auto create_view_slice_descriptor(const shape_type& shape, const shape_type& strides, const slices_collection_type& subs){
         return view_slice_descriptor_type{
@@ -191,6 +208,14 @@ class view_factory
             detail::make_view_reshape_shape(shape,subs)
         };
     }
+    template<typename...Subs>
+    static auto create_mapping_view_descriptor_index_tensor(const shape_type& shape, const shape_type& strides, const Subs&...subs){
+        auto index_shape = detail::broadcast_shape<shape_type>(subs.impl()->shape()...);
+        return mapping_view_descriptor_type{
+            index_shape,
+
+        };
+    }
 public:
     template<typename ImplT>
     static auto create_view_slice(const std::shared_ptr<ImplT>& parent, const slices_collection_type& subs){
@@ -211,6 +236,10 @@ public:
     static auto create_view_reshape(const std::shared_ptr<ImplT>& parent, const shape_type& subs){
         using impl_type = view_reshape<typename detail::viewing_engine_traits<typename CfgT::engine, ValT, CfgT, view_reshape_descriptor_type, ImplT>::type>;
         return tensor<ValT,CfgT,impl_type>{std::make_shared<impl_type>(create_view_reshape_descriptor(parent->shape(), subs),parent)};
+    }
+    template<typename ImplT, typename...Subs>
+    static auto create_mapping_view_index_tensor(const std::shared_ptr<ImplT>& parent, const Subs&...subs){
+        using impl_type = mapping_view<typename detail::viewing_engine_traits<typename CfgT::engine, ValT, CfgT, mapping_view_descriptor_type, ImplT>::type>;
     }
 };
 

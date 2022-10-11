@@ -36,28 +36,11 @@ template<typename T, typename IdxT> struct is_index_tensor
     using type = typename is_tensor<T, checker>::type;
     static constexpr bool value = type::value;
 };
-template<typename T, typename IdxT> struct is_bool_tensor
+template<typename T> struct is_bool_tensor
 {
     using type = typename is_tensor<T, is_bool>::type;
     static constexpr bool value = type::value;
 };
-
-// template<typename T, typename IdxT> struct is_index_tensor{
-// private:
-//     template<typename...Ts> static is_index<typename tensor<Ts...>::value_type, IdxT> selector(const tensor<Ts...>&);
-//     static std::false_type selector(...);
-// public:
-//     using type = typename decltype(selector(std::declval<T>()))::type;
-//     static constexpr bool value = type::value;
-// };
-// template<typename T, typename IdxT> struct is_bool_tensor{
-// private:
-//     template<typename...Ts> static is_bool<typename tensor<Ts...>::value_type, IdxT> selector(const tensor<Ts...>&);
-//     static std::false_type selector(...);
-// public:
-//     using type = typename decltype(selector(std::declval<T>()))::type;
-//     static constexpr bool value = type::value;
-// };
 
 }   //end of namespace detail
 
@@ -197,9 +180,13 @@ public:
         return view_factory<ValT,CfgT>::create_view_reshape(impl(), shape_type{subs...});
     }
     //make mapping view
-    template<typename...Subs, std::enable_if_t<std::conjunction_v<detail::is_tensor<Subs>...>,int> = 0 >
+    template<typename...Subs, std::enable_if_t<std::conjunction_v<detail::is_index_tensor<index_type,Subs>...>,int> = 0 >
     auto operator()(const Subs&...subs)const{
-        return view_factory<ValT,CfgT>::create_mapping_view(impl(), subs...);
+        //return view_factory<ValT,CfgT>::create_mapping_view_index_tensor(impl(), subs...);
+    }
+    template<typename Sub, std::enable_if_t<detail::is_bool_tensor<Sub>::value ,int> = 0 >
+    auto operator()(const Sub& sub)const{
+        //return view_factory<ValT,CfgT>::create_mapping_view_bool_tensor(impl(), sub);
     }
 };
 
