@@ -128,7 +128,7 @@ MapT make_map_index_tensor(const ShT& pshape, const ShT& pstrides, const typenam
     while(i!=index_size){
         auto n = std::size_t{0};
         auto block_first = index_type{0};
-        ((block_first+=check_index(*index_iters,pshape[n])*pstrides[n],++n),...);
+        ((block_first+=check_index(static_cast<index_type>(*index_iters),static_cast<index_type>(pshape[n]))*static_cast<index_type>(pstrides[n]),++n),...);
         auto block_end = j+block_size;
         while(j!=block_end){
             res[j] = block_first;
@@ -210,10 +210,11 @@ class view_factory
     }
     template<typename...Subs>
     static auto create_mapping_view_descriptor_index_tensor(const shape_type& shape, const shape_type& strides, const Subs&...subs){
+        using map_type = typename mapping_view_descriptor_type::map_type;
         auto index_shape = detail::broadcast_shape<shape_type>(subs.impl()->shape()...);
         return mapping_view_descriptor_type{
-            index_shape,
-
+            detail::make_shape_index_tensor(shape,index_shape,sizeof...(Subs)),
+            detail::make_map_index_tensor<map_type>(shape,strides,detail::make_size(index_shape),subs.engine().begin_broadcast(index_shape)...)
         };
     }
 public:
@@ -240,6 +241,7 @@ public:
     template<typename ImplT, typename...Subs>
     static auto create_mapping_view_index_tensor(const std::shared_ptr<ImplT>& parent, const Subs&...subs){
         using impl_type = mapping_view<typename detail::viewing_engine_traits<typename CfgT::engine, ValT, CfgT, mapping_view_descriptor_type, ImplT>::type>;
+        return tensor<ValT,CfgT,impl_type>{std::make_shared<impl_type>(create_mapping_view_descriptor_index_tensor(parent->shape(), parent->strides(), subs...),parent)};
     }
 };
 

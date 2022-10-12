@@ -175,6 +175,7 @@ TEST_CASE("test_view_making_interface","[test_tensor]"){
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     using gtensor::subscript_exception;
+    using gtensor::broadcast_exception;
     nop_type nop;
     SECTION("test_subscripts_correctenes_check"){
         SECTION("view_slice"){
@@ -224,9 +225,29 @@ TEST_CASE("test_view_making_interface","[test_tensor]"){
             REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4},{5,6}}.reshape(10)),subscript_exception);
             REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4},{5,6}}.reshape(3,3)),subscript_exception);
         }
+        SECTION("mapping_view_index_tensor"){
+            using index_tensor_type = tensor<index_type, config_type>;
+            using index_tensor_type1 = tensor<std::size_t, config_type>;
+            REQUIRE_NOTHROW(tensor_type{1}(index_tensor_type{0}));
+            REQUIRE_NOTHROW(tensor_type{1}(index_tensor_type1{0}));
+            REQUIRE_NOTHROW(tensor_type{1}(tensor_type{0}));
+            REQUIRE_NOTHROW(tensor_type{1}(index_tensor_type{0,0,0}));
+            REQUIRE_NOTHROW(tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{0}));
+            REQUIRE_NOTHROW(tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{0,1}));
+            REQUIRE_NOTHROW(tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{0,0,1}));
+            REQUIRE_NOTHROW(tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{0,1}, index_tensor_type{1,2}));
+            REQUIRE_THROWS_AS(tensor_type{1}(tensor_type{0,0,0},tensor_type{0,0}),broadcast_exception);
+            REQUIRE_THROWS_AS(tensor_type{1}(tensor_type{0,1},tensor_type{0,1}),subscript_exception);
+            REQUIRE_THROWS_AS(tensor_type{1}(tensor_type{0,1},tensor_type{1}),subscript_exception);
+            REQUIRE_THROWS_AS(tensor_type{1}(tensor_type{0,4,0}),subscript_exception);
+            REQUIRE_THROWS_AS((tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{3})),subscript_exception);
+            REQUIRE_THROWS_AS((tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{0},index_tensor_type{1,2,3})),subscript_exception);
+            REQUIRE_THROWS_AS((tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{0},index_tensor_type{1,2,3},index_tensor_type{0})),subscript_exception);
+        }
     }
     SECTION("test_slices_filling_and_result_view"){
         using test_type = std::tuple<htensor_type, shape_type, index_type, index_type>;
+        using index_tensor_type = tensor<index_type, config_type>;
         //0view,1expected_shape,2expected size,3expected dim
         auto test_data = GENERATE_COPY(
             test_type{static_cast<htensor_type>(tensor_type{1}({{}})),shape_type{1}, 1, 1},
@@ -253,7 +274,13 @@ TEST_CASE("test_view_making_interface","[test_tensor]"){
             test_type{static_cast<htensor_type>(tensor_type{{{1,2},{3,4},{5,6}}}.reshape()),shape_type{1,3,2}, 6, 3},
             test_type{static_cast<htensor_type>(tensor_type{{{1,2},{3,4},{5,6}}}.reshape(6)),shape_type{6}, 6, 1},
             test_type{static_cast<htensor_type>(tensor_type{{{1,2},{3,4},{5,6}}}.reshape(2,1,3)),shape_type{2,1,3}, 6, 3},
-            test_type{static_cast<htensor_type>(tensor_type{{{1,2},{3,4},{5,6}}}.reshape(6,1)),shape_type{6,1}, 6, 2}
+            test_type{static_cast<htensor_type>(tensor_type{{{1,2},{3,4},{5,6}}}.reshape(6,1)),shape_type{6,1}, 6, 2},
+            test_type{static_cast<htensor_type>(tensor_type{1}(index_tensor_type{0})),shape_type{1}, 1, 1},
+            test_type{static_cast<htensor_type>(tensor_type{1}(index_tensor_type{0,0,0})),shape_type{3}, 3, 1},
+            test_type{static_cast<htensor_type>(tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{0})),shape_type{1,3}, 3, 2},
+            test_type{static_cast<htensor_type>(tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{0,1,1,0})),shape_type{4,3}, 12, 2},
+            test_type{static_cast<htensor_type>(tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{0,1}, index_tensor_type{0})),shape_type{2}, 2, 1},
+            test_type{static_cast<htensor_type>(tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{{0,0},{1,1}}, index_tensor_type{{0,2},{0,2}})),shape_type{2,2}, 4, 2}
         );
         auto view = std::get<0>(test_data);
         auto expected_shape = std::get<1>(test_data);

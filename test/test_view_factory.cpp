@@ -240,6 +240,24 @@ TEMPLATE_TEST_CASE("test_make_map_index_tensor","[test_view_factory]",
     auto test_data = GENERATE(
         test_type{
             [](){
+            auto sub1 = make_test_tensor(tensor_type{0,0,0});
+            auto index_shape = broadcast_shape<shape_type>(sub1.impl()->shape());
+            auto index_size = make_size(index_shape);
+            return make_map_index_tensor<map_type>(shape_type{1},shape_type{1},index_size,sub1.engine().begin_broadcast(index_shape));
+            }(),
+            map_type{0,0,0}
+        },
+        test_type{
+            [](){
+            auto sub1 = make_test_tensor(tensor_type{2});
+            auto index_shape = broadcast_shape<shape_type>(sub1.impl()->shape());
+            auto index_size = make_size(index_shape);
+            return make_map_index_tensor<map_type>(shape_type{10},shape_type{1},index_size,sub1.engine().begin_broadcast(index_shape));
+            }(),
+            map_type{2}
+        },
+        test_type{
+            [](){
             auto sub1 = make_test_tensor(tensor_type{0,1,2});
             auto sub2 = make_test_tensor(tensor_type{0,1,2});
             auto index_shape = broadcast_shape<shape_type>(sub1.impl()->shape(),sub2.impl()->shape());

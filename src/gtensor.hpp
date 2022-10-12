@@ -66,6 +66,7 @@ class tensor{
 
     friend std::ostream& operator<<(std::ostream& os, const tensor& lhs){return os<<lhs.impl_->to_str();}
     friend class tensor_operators;
+    template<typename,typename> friend class view_factory;
 
     std::shared_ptr<impl_type> impl_;
 
@@ -112,7 +113,7 @@ public:
     {}
     //constructor makes tensor with impl_type by copying shape and content from other, utilizes forwarding constructor
     template<typename U = tensor, typename RVal, typename RImpl, std::enable_if_t<!std::is_same_v<U,htensor_type>,int> =0 >
-    tensor(const tensor<RVal,CfgT,RImpl>& other):
+    explicit tensor(const tensor<RVal,CfgT,RImpl>& other):
         tensor(other.shape(),other.begin(),other.end())
     {}
 
@@ -180,14 +181,20 @@ public:
         return view_factory<ValT,CfgT>::create_view_reshape(impl(), shape_type{subs...});
     }
     //make mapping view
-    template<typename...Subs, std::enable_if_t<std::conjunction_v<detail::is_index_tensor<index_type,Subs>...>,int> = 0 >
+    // auto operator()(const tensor& sub)const{
+    //     return view_factory<ValT,CfgT>::create_mapping_view_index_tensor(impl(), sub);
+    // }
+
+    template<typename...Subs, std::enable_if_t<std::conjunction_v<detail::is_index_tensor<Subs,index_type>...>,int> = 0 >
     auto operator()(const Subs&...subs)const{
-        //return view_factory<ValT,CfgT>::create_mapping_view_index_tensor(impl(), subs...);
+        return view_factory<ValT,CfgT>::create_mapping_view_index_tensor(impl(), subs...);
     }
-    template<typename Sub, std::enable_if_t<detail::is_bool_tensor<Sub>::value ,int> = 0 >
-    auto operator()(const Sub& sub)const{
-        //return view_factory<ValT,CfgT>::create_mapping_view_bool_tensor(impl(), sub);
-    }
+
+
+    // template<typename Sub, std::enable_if_t<detail::is_bool_tensor<Sub>::value ,int> = 0 >
+    // auto operator()(const Sub& sub)const{
+    //     //return view_factory<ValT,CfgT>::create_mapping_view_bool_tensor(impl(), sub);
+    // }
 };
 
 }   //end of namespace gtensor

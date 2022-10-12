@@ -120,8 +120,12 @@ public:
         basic_descriptor{std::forward<ShT>(shape__)},
         index_map_{std::forward<MapT>(index_map__)}
     {}
-    index_type convert(const index_type& idx)const override{return index_map_[idx];}
-    index_type convert(const shape_type& idx)const override{return index_map_[detail::convert_index(cstrides(),offset(),idx)];}
+    index_type convert(const index_type& idx)const override{
+        return index_map_[idx];
+    }
+    index_type convert(const shape_type& idx)const override{
+        return index_map_[detail::convert_index(cstrides(),offset(),idx)];
+    }
 private:
     map_type index_map_;
 };

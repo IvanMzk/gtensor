@@ -59,8 +59,8 @@ template<typename...Ts> auto end_multiindex(expression_template_storage_engine<T
 template<typename...Ts> auto begin_flatindex(expression_template_storage_engine<Ts...>& engine){return engine.begin();}
 template<typename...Ts> auto end_flatindex(expression_template_storage_engine<Ts...>& engine){return engine.end();}
 
-template<typename> constexpr bool is_converting_descriptor = true;
-template<typename...Ts> constexpr bool is_converting_descriptor<converting_descriptor<Ts...>> = false;
+template<typename> constexpr bool is_converting_descriptor = false;
+template<typename...Ts> constexpr bool is_converting_descriptor<converting_descriptor<Ts...>> = true;
 
 template<typename> struct has_view_with_converting_descriptor{static constexpr bool value = false;};
 template<typename V,typename C, typename P, typename...Ts> struct has_view_with_converting_descriptor<expression_template_viewing_engine<V,C,converting_descriptor<Ts...>,P>>{
@@ -146,7 +146,7 @@ public:
     auto begin()const{return detail::begin_multiindex(*this);}
     auto end()const{return detail::end_multiindex(*this);}
     auto begin_broadcast(const shape_type& shape)const{return detail::begin_broadcast(*this, shape);}
-    auto end_broadcast(const shape_type& shape){return detail::end_broadcast(*this, shape);}
+    auto end_broadcast(const shape_type& shape)const{return detail::end_broadcast(*this, shape);}
     auto create_indexer()const{
         return basic_indexer<index_type, decltype(create_broadcast_indexer())>{create_broadcast_indexer()};
     }
@@ -197,7 +197,7 @@ public:
     auto begin()const{return detail::begin_multiindex(*this);}
     auto end()const{return detail::end_multiindex(*this);}
     auto begin_broadcast(const shape_type& shape)const{return detail::begin_broadcast(*this, shape);}
-    auto end_broadcast(const shape_type& shape){return detail::end_broadcast(*this, shape);}
+    auto end_broadcast(const shape_type& shape)const{return detail::end_broadcast(*this, shape);}
     auto create_indexer()const{
         return basic_indexer<index_type, decltype(create_indexer_helper())>{create_indexer_helper()};
     }
@@ -238,8 +238,12 @@ public:
     template<typename D = descriptor_type, std::enable_if_t<!detail::is_converting_descriptor<D>,int> =0 > auto end()const{return detail::end_flatindex(*this);}
     template<typename D = descriptor_type, std::enable_if_t<!detail::is_converting_descriptor<D>,int> =0 > auto begin(){return detail::begin_flatindex(*this);}
     template<typename D = descriptor_type, std::enable_if_t<!detail::is_converting_descriptor<D>,int> =0 > auto end(){return detail::end_flatindex(*this);}
+    //broadcasting iterators
     auto begin_broadcast(const shape_type& shape)const{return detail::begin_broadcast(*this, shape);}
+    auto end_broadcast(const shape_type& shape)const{return detail::end_broadcast(*this, shape);}
+    auto begin_broadcast(const shape_type& shape){return detail::begin_broadcast(*this, shape);}
     auto end_broadcast(const shape_type& shape){return detail::end_broadcast(*this, shape);}
+
     auto create_broadcast_walker()const{return create_broadcast_walker_helper(*this);}
     auto create_broadcast_walker(){return create_broadcast_walker_helper(*this);}
     auto create_trivial_walker()const{return create_trivial_walker_helper(*this);}
