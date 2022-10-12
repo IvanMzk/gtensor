@@ -351,3 +351,205 @@ TEMPLATE_TEST_CASE("test_make_map_index_tensor_exception","[test_view_factory]",
         );
     }
 }
+
+TEMPLATE_TEST_CASE("test_make_shape_bool_tensor","[test_view_factory]",
+    typename test_config::config_engine_selector<gtensor::config::engine_expression_template>::config_type
+){
+    using test_config_type = TestType;
+    using index_type = typename test_config_type::index_type;
+    using shape_type = typename test_config_type::shape_type;
+    using index_tensor_type = gtensor::tensor<bool, test_config_type>;
+    using gtensor::subscript_exception;
+    using gtensor::detail::make_shape_bool_tensor;
+    using test_type = std::tuple<shape_type,shape_type>;
+    //0result shape,1expected shape
+    auto test_data = GENERATE(
+        test_type{
+            [](){
+                auto idx = index_tensor_type{true,false,false,true,false};
+                return make_shape_bool_tensor(shape_type{5},idx.shape(), idx.begin(), idx.end());
+            }(),
+            shape_type{2}
+        },
+        test_type{
+            [](){
+                auto idx = index_tensor_type{true};
+                return make_shape_bool_tensor(shape_type{5},idx.shape(), idx.begin(), idx.end());
+            }(),
+            shape_type{1}
+        },
+        test_type{
+            [](){
+                auto idx = index_tensor_type{false,true,true};
+                return make_shape_bool_tensor(shape_type{5},idx.shape(), idx.begin(), idx.end());
+            }(),
+            shape_type{2}
+        },
+        test_type{
+            [](){
+                auto idx = index_tensor_type{false,false,false,false,false};
+                return make_shape_bool_tensor(shape_type{5},idx.shape(), idx.begin(), idx.end());
+            }(),
+            shape_type{}
+        },
+        test_type{
+            [](){
+                auto idx = index_tensor_type{false,true,false};
+                return make_shape_bool_tensor(shape_type{3,2,4},idx.shape(), idx.begin(), idx.end());
+            }(),
+            shape_type{1,2,4}
+        },
+        test_type{
+            [](){
+                auto idx = index_tensor_type{true};
+                return make_shape_bool_tensor(shape_type{3,2,4},idx.shape(), idx.begin(), idx.end());
+            }(),
+            shape_type{1,2,4}
+        },
+        test_type{
+            [](){
+                auto idx = index_tensor_type{{false,true},{true,true},{false,false}};
+                return make_shape_bool_tensor(shape_type{3,2,4},idx.shape(), idx.begin(), idx.end());
+            }(),
+            shape_type{3,4}
+        },
+        test_type{
+            [](){
+                auto idx = index_tensor_type{{false},{true}};
+                return make_shape_bool_tensor(shape_type{3,2,4},idx.shape(), idx.begin(), idx.end());
+            }(),
+            shape_type{1,4}
+        },
+        test_type{
+            [](){
+                auto idx = index_tensor_type{{false,true},{true,true},{true,false}};
+                return make_shape_bool_tensor(shape_type{3,2},idx.shape(), idx.begin(), idx.end());
+            }(),
+            shape_type{4}
+        },
+        test_type{
+            [](){
+                auto idx = index_tensor_type{{false,false},{false,false},{false,false}};
+                return make_shape_bool_tensor(shape_type{3,2},idx.shape(), idx.begin(), idx.end());
+            }(),
+            shape_type{}
+        }
+    );
+
+    auto result_shape = std::get<0>(test_data);
+    auto expected_shape = std::get<1>(test_data);
+    REQUIRE(result_shape == expected_shape);
+}
+
+TEMPLATE_TEST_CASE("test_make_shape_bool_tensor_exception","[test_view_factory]",
+    typename test_config::config_engine_selector<gtensor::config::engine_expression_template>::config_type
+){
+    using test_config_type = TestType;
+    using index_type = typename test_config_type::index_type;
+    using shape_type = typename test_config_type::shape_type;
+    using index_tensor_type = gtensor::tensor<bool, test_config_type>;
+    using gtensor::subscript_exception;
+    using gtensor::detail::make_shape_bool_tensor;
+
+
+    REQUIRE_THROWS_AS(
+        ([](){
+            auto idx = index_tensor_type{true,false,false,true,false,false};
+            return make_shape_bool_tensor(shape_type{5},idx.shape(), idx.begin(), idx.end());
+        }()),
+        subscript_exception
+    );
+    REQUIRE_THROWS_AS(
+        ([](){
+            auto idx = index_tensor_type{{true},{false}};
+            return make_shape_bool_tensor(shape_type{5},idx.shape(), idx.begin(), idx.end());
+        }()),
+        subscript_exception
+    );
+    REQUIRE_THROWS_AS(
+        ([](){
+            auto idx = index_tensor_type{{false,true,false},{true,true,false},{false,false,false}};
+            return make_shape_bool_tensor(shape_type{3,2,4},idx.shape(), idx.begin(), idx.end());
+        }()),
+        subscript_exception
+    );
+}
+
+TEMPLATE_TEST_CASE("test_make_map_bool_tensor","[test_view_factory]",
+    typename test_config::config_engine_selector<gtensor::config::engine_expression_template>::config_type
+){
+    using test_config_type = TestType;
+    using index_type = typename test_config_type::index_type;
+    using shape_type = typename test_config_type::shape_type;
+    using index_tensor_type = gtensor::tensor<bool, test_config_type>;
+    using test_view_factory::test_tensor;
+    using test_view_factory::make_test_tensor;
+    using gtensor::detail::make_shape_bool_tensor;
+    using gtensor::detail::make_map_bool_tensor;
+    using gtensor::detail::make_strides;
+    using map_type = std::vector<index_type>;
+    using test_type = std::tuple<map_type,map_type>;
+    //0result map,1expected map
+    auto test_data = GENERATE(
+        test_type{
+            [](){
+            auto sub1 = index_tensor_type{true,false,true,false,false};
+            auto view_shape = make_shape_bool_tensor(shape_type{5},sub1.shape(),sub1.begin(),sub1.end());
+            return make_map_bool_tensor<map_type>(shape_type{5},shape_type{1},view_shape,sub1.shape(),sub1.begin(),sub1.end());
+            }(),
+            map_type{0,2}
+        },
+        test_type{
+            [](){
+            auto sub1 = index_tensor_type{true,false,true};
+            auto view_shape = make_shape_bool_tensor(shape_type{5},sub1.shape(),sub1.begin(),sub1.end());
+            return make_map_bool_tensor<map_type>(shape_type{5},shape_type{1},view_shape,sub1.shape(),sub1.begin(),sub1.end());
+            }(),
+            map_type{0,2}
+        },
+        test_type{
+            [](){
+            auto sub1 = index_tensor_type{true,false,true,false};
+            auto view_shape = make_shape_bool_tensor(shape_type{4,3,2},sub1.shape(),sub1.begin(),sub1.end());
+            return make_map_bool_tensor<map_type>(shape_type{4,3,2},shape_type{6,2,1},view_shape,sub1.shape(),sub1.begin(),sub1.end());
+            }(),
+            map_type{0,1,2,3,4,5,12,13,14,15,16,17}
+        },
+        test_type{
+            [](){
+            auto sub1 = index_tensor_type{false,false,true};
+            auto view_shape = make_shape_bool_tensor(shape_type{4,3,2},sub1.shape(),sub1.begin(),sub1.end());
+            return make_map_bool_tensor<map_type>(shape_type{4,3,2},shape_type{6,2,1},view_shape,sub1.shape(),sub1.begin(),sub1.end());
+            }(),
+            map_type{12,13,14,15,16,17}
+        },
+        test_type{
+            [](){
+            auto sub1 = index_tensor_type{{false,false,true},{false,false,true},{false,false,false},{false,true,false}};
+            auto view_shape = make_shape_bool_tensor(shape_type{4,3,2},sub1.shape(),sub1.begin(),sub1.end());
+            return make_map_bool_tensor<map_type>(shape_type{4,3,2},shape_type{6,2,1},view_shape,sub1.shape(),sub1.begin(),sub1.end());
+            }(),
+            map_type{4,5,10,11,20,21}
+        },
+        test_type{
+            [](){
+            auto sub1 = index_tensor_type{{true,false},{false,true}};
+            auto view_shape = make_shape_bool_tensor(shape_type{4,3,2},sub1.shape(),sub1.begin(),sub1.end());
+            return make_map_bool_tensor<map_type>(shape_type{4,3,2},shape_type{6,2,1},view_shape,sub1.shape(),sub1.begin(),sub1.end());
+            }(),
+            map_type{0,1,6,7}
+        },
+        test_type{
+            [](){
+            auto sub1 = index_tensor_type{{false,false,true},{false,false,true},{false,false,false},{false,true,false}};
+            auto view_shape = make_shape_bool_tensor(shape_type{4,3},sub1.shape(),sub1.begin(),sub1.end());
+            return make_map_bool_tensor<map_type>(shape_type{4,3},shape_type{3,1},view_shape,sub1.shape(),sub1.begin(),sub1.end());
+            }(),
+            map_type{2,5,10}
+        }
+    );
+
+    auto result_map = std::get<0>(test_data);
+    auto expected_map = std::get<1>(test_data);
+    REQUIRE(result_map == expected_map);
+}

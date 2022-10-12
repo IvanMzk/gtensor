@@ -109,13 +109,35 @@ inline ShT make_shape_index_tensor(const ShT& pshape, const ShT& index_shape, co
     std::copy(pshape.begin()+index_dim, pshape.end(), res.begin()+index_shape.size());
     return res;
 }
+template<typename ShT, typename It>
+inline ShT make_shape_bool_tensor(const ShT& pshape, const ShT& index_shape, It&& index_begin, It&& index_end){
+    using shape_type = ShT;
+    auto pdim = pshape.size();
+    auto index_dim = index_shape.size();
+    if (index_dim > pdim){
+        throw subscript_exception("invalid bool tensor subscript");
+    }
+    auto pshape_it = pshape.begin();
+    for (auto index_it = index_shape.begin(), index_end = index_shape.end(); index_it!=index_end; ++index_it, ++pshape_it){
+        if (*index_it > *pshape_it){
+            throw subscript_exception("invalid bool tensor subscript");
+        }
+    }
+    if (auto trues_number = std::count(index_begin, index_end, true)){
+        auto res = shape_type(pdim - index_dim + 1);
+        res[0] = trues_number;
+        std::copy(pshape.begin()+index_dim, pshape.end(), res.begin()+1);
+        return res;
+    }else{
+        return shape_type{};
+    }
+}
 /*
-* make mapping view map
-* params should be tensors with indexes, shapes of tensors must broadcast
+* make mapping view map from index tensors
 * MapT is type of map container with interface like std::vector and must be spesialized explicitly
 */
 template<typename MapT, typename ShT, typename...It>
-MapT make_map_index_tensor(const ShT& pshape, const ShT& pstrides, const typename ShT::value_type& index_size, It&&...index_iters){
+MapT make_map_index_tensor(const ShT& pshape, const ShT& pstrides, const typename ShT::value_type& index_size, It&&...index_begin){
     using map_type = MapT;
     using index_type = typename map_type::value_type;
     using shape_type = ShT;
@@ -128,7 +150,7 @@ MapT make_map_index_tensor(const ShT& pshape, const ShT& pstrides, const typenam
     while(i!=index_size){
         auto n = std::size_t{0};
         auto block_first = index_type{0};
-        ((block_first+=check_index(static_cast<index_type>(*index_iters),static_cast<index_type>(pshape[n]))*static_cast<index_type>(pstrides[n]),++n),...);
+        ((block_first+=check_index(static_cast<index_type>(*index_begin),static_cast<index_type>(pshape[n]))*static_cast<index_type>(pstrides[n]),++n),...);
         auto block_end = j+block_size;
         while(j!=block_end){
             res[j] = block_first;
@@ -136,11 +158,10 @@ MapT make_map_index_tensor(const ShT& pshape, const ShT& pstrides, const typenam
             ++block_first;
         }
         ++i;
-        ((++index_iters),...);
+        ((++index_begin),...);
     }
     return res;
 }
-
 template<typename IdxT>
 inline auto check_index(const IdxT& idx, const IdxT& shape_element){
     if (idx < shape_element){
@@ -149,6 +170,38 @@ inline auto check_index(const IdxT& idx, const IdxT& shape_element){
         throw subscript_exception("invalid index tensor subscript");
     }
 }
+/*
+* make mapping view map from bool tensor
+*/
+template<typename MapT, typename ShT, typename It>
+MapT make_map_bool_tensor(const ShT& pshape, const ShT& pstrides, const ShT& view_shape, const ShT& index_shape, It&& index_begin, It&& index_end){
+    using map_type = MapT;
+    using index_type = typename map_type::value_type;
+    using shape_type = ShT;
+    auto view_size = detail::make_size(view_shape);
+    auto index_dim = index_shape.size();
+    auto index_size = detail::make_size(index_shape);
+    auto block_size = std::accumulate(pshape.begin()+index_dim,pshape.end(),index_type(1),std::multiplies<index_type>{});
+    auto stride = pstrides[index_dim-1];
+    auto res = map_type(view_size, index_type{0});
+    auto i = std::size_t{0};
+    auto j = std::size_t{0};
+    while(index_begin != index_end){
+        if (*index_begin){
+            auto block_first = i*stride;
+            auto block_end = j+block_size;
+            while(j!=block_end){
+                res[j] = block_first;
+                ++j;
+                ++block_first;
+            }
+        }
+        ++i;
+        ++index_begin;
+    }
+    return res;
+}
+
 
 }   //end of namespace detail
 

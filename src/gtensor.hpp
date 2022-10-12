@@ -180,17 +180,10 @@ public:
         detail::check_reshape_subs(size(), subs...);
         return view_factory<ValT,CfgT>::create_view_reshape(impl(), shape_type{subs...});
     }
-    //make mapping view
-    // auto operator()(const tensor& sub)const{
-    //     return view_factory<ValT,CfgT>::create_mapping_view_index_tensor(impl(), sub);
-    // }
-
     template<typename...Subs, std::enable_if_t<std::conjunction_v<detail::is_index_tensor<Subs,index_type>...>,int> = 0 >
     auto operator()(const Subs&...subs)const{
         return view_factory<ValT,CfgT>::create_mapping_view_index_tensor(impl(), subs...);
     }
-
-
     // template<typename Sub, std::enable_if_t<detail::is_bool_tensor<Sub>::value ,int> = 0 >
     // auto operator()(const Sub& sub)const{
     //     //return view_factory<ValT,CfgT>::create_mapping_view_bool_tensor(impl(), sub);
