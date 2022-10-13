@@ -132,6 +132,11 @@ protected:
             cursor_-=reset_strides.element(direction);
         }
     }
+    void reset_back(const index_type& direction){
+        if (detail::can_walk(direction, dim, shape.element(direction))){
+            cursor_+=reset_strides.element(direction);
+        }
+    }
     void reset(){cursor_ = offset_;}
 
     bool can_walk(const index_type& direction)const{return detail::can_walk(direction, dim, shape.element(direction));}
@@ -166,6 +171,7 @@ public:
     void step(const index_type& direction){broadcast_walker_common::step(direction);}
     void step_back(const index_type& direction){broadcast_walker_common::step_back(direction);}
     void reset(const index_type& direction){broadcast_walker_common::reset(direction);}
+    void reset_back(const index_type& direction){broadcast_walker_common::reset_back(direction);}
     void reset(){broadcast_walker_common::reset();}
     result_type operator*()const{return indexer[cursor()];}
 };

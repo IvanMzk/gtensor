@@ -26,6 +26,8 @@ class evaluating_walker
     template<std::size_t...I>
     void reset_helper(const index_type& direction, std::index_sequence<I...>){(std::get<I>(walkers).reset(direction),...);}
     template<std::size_t...I>
+    void reset_back_helper(const index_type& direction, std::index_sequence<I...>){(std::get<I>(walkers).reset_back(direction),...);}
+    template<std::size_t...I>
     void reset_helper(std::index_sequence<I...>){(std::get<I>(walkers).reset(),...);}
     template<std::size_t...I>
     value_type deref_helper(std::index_sequence<I...>) const {return f(*std::get<I>(walkers)...);}
@@ -57,6 +59,9 @@ public:
     }
     void reset(const index_type& direction){
         reset_helper(direction,std::make_index_sequence<sizeof...(Wks)>{});
+    }
+    void reset_back(const index_type& direction){
+        reset_back_helper(direction,std::make_index_sequence<sizeof...(Wks)>{});
     }
     void reset(){reset_helper(std::make_index_sequence<sizeof...(Wks)>{});}
     value_type operator*() const {return deref_helper(std::make_index_sequence<sizeof...(Wks)>{});}

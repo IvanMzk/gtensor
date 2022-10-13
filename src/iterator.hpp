@@ -174,7 +174,7 @@ auto& multiindex_bidirectional_iterator<ValT,CfgT,WkrT>::operator--(){
     auto idx_it = std::prev(multi_index.end());
     while(idx_it!=idx_first){
         if (*idx_it==index_type(1)){
-            walker.walk(d,shape.element(d)-1);
+            walker.reset_back(d);
             *idx_it = shape.element(d);
             ++d;
             --idx_it;

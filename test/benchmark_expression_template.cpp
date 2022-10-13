@@ -50,16 +50,20 @@ TEST_CASE("benchmark_expression_template_trivial_tree","[benchmark_expression_te
     using benchmark_helpers::symmetric_tree_maker;
     using benchmark_helpers::benchmark_with_making_iter;
     using benchmark_helpers::making_iter_iterate_deref;
+    using benchmark_helpers::making_iter_reverse_iterate_deref;
+
+    //auto benchmark_worker = making_iter_iterate_deref;
+    auto benchmark_worker = making_iter_reverse_iterate_deref;
 
     benchmark_with_making_iter(
         make_test_tensor_broadcast(asymmetric_tree_maker<50>{}(tensor_type(std::vector<int>{10,10000}, 0.0f),tensor_type(std::vector<int>{10,10000}, 0.0f))),
         "asymmetric_tree_trivial_depth50_multiiter",
-        making_iter_iterate_deref
+        benchmark_worker
     );
     benchmark_with_making_iter(
         make_test_tensor_trivial(asymmetric_tree_maker<50>{}(tensor_type(std::vector<int>{10,10000}, 0.0f),tensor_type(std::vector<int>{10,10000}, 0.0f))),
         "asymmetric_tree_trivial_depth50_flatiter",
-        making_iter_iterate_deref
+        benchmark_worker
     );
     benchmark_with_making_iter(
         make_test_tensor_trivial(
@@ -68,7 +72,7 @@ TEST_CASE("benchmark_expression_template_trivial_tree","[benchmark_expression_te
             tensor_type(std::vector<int>{10,10000}, 0.0f)({{}})
         ),
         "asymmetric_tree_trivial_view_slice_operand_depth50_flatiter",
-        making_iter_iterate_deref
+        benchmark_worker
     );
     benchmark_with_making_iter(
         make_test_tensor_broadcast(
@@ -77,7 +81,7 @@ TEST_CASE("benchmark_expression_template_trivial_tree","[benchmark_expression_te
             tensor_type(std::vector<int>{10,10000}, 0.0f)({{}})
         ),
         "asymmetric_tree_trivial_view_slice_operand_depth50_multiiter",
-        making_iter_iterate_deref
+        benchmark_worker
     );
     benchmark_with_making_iter(
         make_test_tensor_trivial(
@@ -86,7 +90,7 @@ TEST_CASE("benchmark_expression_template_trivial_tree","[benchmark_expression_te
             tensor_type(std::vector<int>{10,10000}, 0.0f).transpose(0,1)
         ),
         "asymmetric_tree_trivial_view_transpose_operand_depth50_flatiter",
-        making_iter_iterate_deref
+        benchmark_worker
     );
     benchmark_with_making_iter(
         make_test_tensor_broadcast(
@@ -95,7 +99,7 @@ TEST_CASE("benchmark_expression_template_trivial_tree","[benchmark_expression_te
             tensor_type(std::vector<int>{10,10000}, 0.0f).transpose(0,1)
         ),
         "asymmetric_tree_trivial_view_transpose_operand_depth50_multiiter",
-        making_iter_iterate_deref
+        benchmark_worker
     );
     benchmark_with_making_iter(
         make_test_tensor_trivial(
@@ -104,7 +108,7 @@ TEST_CASE("benchmark_expression_template_trivial_tree","[benchmark_expression_te
             tensor_type(std::vector<int>{10,10000}, 0.0f)()
         ),
         "asymmetric_tree_trivial_view_subdim_operand_depth50_flatiter",
-        making_iter_iterate_deref
+        benchmark_worker
     );
     benchmark_with_making_iter(
         make_test_tensor_broadcast(
@@ -113,7 +117,7 @@ TEST_CASE("benchmark_expression_template_trivial_tree","[benchmark_expression_te
             tensor_type(std::vector<int>{10,10000}, 0.0f)()
         ),
         "asymmetric_tree_trivial_view_subdim_operand_depth50_multiiter",
-        making_iter_iterate_deref
+        benchmark_worker
     );
     benchmark_with_making_iter(
         make_test_tensor_trivial(
@@ -122,7 +126,7 @@ TEST_CASE("benchmark_expression_template_trivial_tree","[benchmark_expression_te
             tensor_type(std::vector<int>{10,10000}, 0.0f).reshape(10,10000)
         ),
         "asymmetric_tree_trivial_view_reshape_operand_depth50_flatiter",
-        making_iter_iterate_deref
+        benchmark_worker
     );
     benchmark_with_making_iter(
         make_test_tensor_broadcast(
@@ -131,6 +135,6 @@ TEST_CASE("benchmark_expression_template_trivial_tree","[benchmark_expression_te
             tensor_type(std::vector<int>{10,10000}, 0.0f).reshape(10,10000)
         ),
         "asymmetric_tree_trivial_view_reshape_operand_depth50_multiiter",
-        making_iter_iterate_deref
+        benchmark_worker
     );
 }

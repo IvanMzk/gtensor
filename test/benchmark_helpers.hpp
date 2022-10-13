@@ -96,6 +96,18 @@ auto making_iter_iterate_deref = [](const auto& t){
     }
     return c;
 };
+auto making_iter_reverse_iterate_deref = [](const auto& t){
+    auto t_it = t.end();
+    auto t_begin = t.begin();
+    std::size_t c{};
+    while (t_it!=t_begin){
+        --t_it;
+        if (*t_it > 2){
+            ++c;
+        }
+    }
+    return c;
+};
 
 template<typename F, typename Arg>
 auto benchmark_with_making_iter(const Arg& arg, std::string label, const F& f = making_iter_iterate_deref){
