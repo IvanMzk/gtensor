@@ -62,6 +62,7 @@ class tensor{
     using slices_collection_type = typename CfgT::slices_collection_type;
     using index_type = typename CfgT::index_type;
     using shape_type = typename CfgT::shape_type;
+    class ctr_tag{};
     static_assert(std::is_convertible_v<impl_type*,tensor_base_type*>);
 
     friend std::ostream& operator<<(std::ostream& os, const tensor& lhs){return os<<lhs.impl_->to_str();}
@@ -71,7 +72,7 @@ class tensor{
     std::shared_ptr<impl_type> impl_;
 
     template<typename Nested>
-    tensor(std::initializer_list<Nested> init_data, int):
+    tensor(std::initializer_list<Nested> init_data, ctr_tag):
         impl_{std::make_shared<impl_type>(init_data)}
     {}
 
@@ -87,11 +88,16 @@ public:
     //default constructor makes tensor without implementation
     tensor() = default;
     //nested init_list constructors
-    tensor(typename detail::nested_initializer_list_type<value_type,1>::type init_data):tensor(init_data,0){}
-    tensor(typename detail::nested_initializer_list_type<value_type,2>::type init_data):tensor(init_data,0){}
-    tensor(typename detail::nested_initializer_list_type<value_type,3>::type init_data):tensor(init_data,0){}
-    tensor(typename detail::nested_initializer_list_type<value_type,4>::type init_data):tensor(init_data,0){}
-    tensor(typename detail::nested_initializer_list_type<value_type,5>::type init_data):tensor(init_data,0){}
+    tensor(typename detail::nested_initializer_list_type<value_type,1>::type init_data):tensor(init_data,ctr_tag{}){}
+    tensor(typename detail::nested_initializer_list_type<value_type,2>::type init_data):tensor(init_data,ctr_tag{}){}
+    tensor(typename detail::nested_initializer_list_type<value_type,3>::type init_data):tensor(init_data,ctr_tag{}){}
+    tensor(typename detail::nested_initializer_list_type<value_type,4>::type init_data):tensor(init_data,ctr_tag{}){}
+    tensor(typename detail::nested_initializer_list_type<value_type,5>::type init_data):tensor(init_data,ctr_tag{}){}
+    //init list shape constructor
+    template<typename U, typename V, std::enable_if_t<std::is_convertible_v<U,index_type> && std::is_convertible_v<V,value_type> ,int> =0 >
+    tensor(std::initializer_list<U> shape__, V&& value__):
+        impl_{std::make_shared<impl_type>(shape__, std::forward<V>(value__))}
+    {}
     //forwarding constructors
     template<typename...Args, std::enable_if_t<(sizeof...(Args) > 1),int> = 0 >
     tensor(Args&&...args):

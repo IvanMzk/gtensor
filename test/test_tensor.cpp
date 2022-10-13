@@ -111,13 +111,17 @@ TEST_CASE("test_tensor_construct_given_shape","[test_tensor]"){
     auto test_data = GENERATE(
         test_type(tensor_type(shape_type{},1.0f), shape_type{}, 0 , 0),
         test_type(tensor_type(shape_type{1},1.0f), shape_type{1}, 1 , 1),
+        test_type(tensor_type({1},1.0f), shape_type{1}, 1 , 1),
         test_type(tensor_type(shape_type{10},1.0f), shape_type{10}, 10 , 1),
         test_type(tensor_type(shape_type{1,1},1.0f), shape_type{1,1}, 1 , 2),
         test_type(tensor_type(shape_type{1,3},1.0f), shape_type{1,3}, 3 , 2),
         test_type(tensor_type(shape_type{2,3},1.0f), shape_type{2,3}, 6 , 2),
         test_type(tensor_type(std::vector<int>{1,1,4},1.0f), shape_type{1,1,4}, 4 , 3),
         test_type(tensor_type(shape_type{1,4,1},1.0f), shape_type{1,4,1}, 4 , 3),
-        test_type(tensor_type(shape_type{1,4,3},1.0f), shape_type{1,4,3}, 12 , 3)
+        test_type(tensor_type(shape_type{1,4,3},1.0f), shape_type{1,4,3}, 12 , 3),
+        test_type(tensor_type({1,4,3},1.0f), shape_type{1,4,3}, 12 , 3),
+        test_type(tensor_type({1.1f,4.9f,3.2f},1.0f), shape_type{1,4,3}, 12 , 3)
+
     );
 
     auto t = std::get<0>(test_data);
