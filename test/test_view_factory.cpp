@@ -486,7 +486,7 @@ TEMPLATE_TEST_CASE("test_make_map_bool_tensor","[test_view_factory]",
     using test_view_factory::make_test_tensor;
     using gtensor::detail::make_shape_bool_tensor;
     using gtensor::detail::make_map_bool_tensor;
-    using gtensor::detail::make_strides;
+    using gtensor::detail::make_size;
     using map_type = std::vector<index_type>;
     using test_type = std::tuple<map_type,map_type>;
     //0result map,1expected map
@@ -495,7 +495,7 @@ TEMPLATE_TEST_CASE("test_make_map_bool_tensor","[test_view_factory]",
             [](){
             auto sub1 = index_tensor_type{true,false,true,false,false};
             auto view_shape = make_shape_bool_tensor(shape_type{5},sub1.shape(),sub1.begin(),sub1.end());
-            return make_map_bool_tensor<map_type>(shape_type{5},shape_type{1},view_shape,sub1.shape(),sub1.begin(),sub1.end());
+            return make_map_bool_tensor<map_type>(shape_type{5},shape_type{1},make_size(view_shape),sub1.dim(),sub1.begin(),sub1.end());
             }(),
             map_type{0,2}
         },
@@ -503,7 +503,7 @@ TEMPLATE_TEST_CASE("test_make_map_bool_tensor","[test_view_factory]",
             [](){
             auto sub1 = index_tensor_type{true,false,true};
             auto view_shape = make_shape_bool_tensor(shape_type{5},sub1.shape(),sub1.begin(),sub1.end());
-            return make_map_bool_tensor<map_type>(shape_type{5},shape_type{1},view_shape,sub1.shape(),sub1.begin(),sub1.end());
+            return make_map_bool_tensor<map_type>(shape_type{5},shape_type{1},make_size(view_shape),sub1.dim(),sub1.begin(),sub1.end());
             }(),
             map_type{0,2}
         },
@@ -511,7 +511,7 @@ TEMPLATE_TEST_CASE("test_make_map_bool_tensor","[test_view_factory]",
             [](){
             auto sub1 = index_tensor_type{true,false,true,false};
             auto view_shape = make_shape_bool_tensor(shape_type{4,3,2},sub1.shape(),sub1.begin(),sub1.end());
-            return make_map_bool_tensor<map_type>(shape_type{4,3,2},shape_type{6,2,1},view_shape,sub1.shape(),sub1.begin(),sub1.end());
+            return make_map_bool_tensor<map_type>(shape_type{4,3,2},shape_type{6,2,1},make_size(view_shape),sub1.dim(),sub1.begin(),sub1.end());
             }(),
             map_type{0,1,2,3,4,5,12,13,14,15,16,17}
         },
@@ -519,7 +519,7 @@ TEMPLATE_TEST_CASE("test_make_map_bool_tensor","[test_view_factory]",
             [](){
             auto sub1 = index_tensor_type{false,false,true};
             auto view_shape = make_shape_bool_tensor(shape_type{4,3,2},sub1.shape(),sub1.begin(),sub1.end());
-            return make_map_bool_tensor<map_type>(shape_type{4,3,2},shape_type{6,2,1},view_shape,sub1.shape(),sub1.begin(),sub1.end());
+            return make_map_bool_tensor<map_type>(shape_type{4,3,2},shape_type{6,2,1},make_size(view_shape),sub1.dim(),sub1.begin(),sub1.end());
             }(),
             map_type{12,13,14,15,16,17}
         },
@@ -527,7 +527,7 @@ TEMPLATE_TEST_CASE("test_make_map_bool_tensor","[test_view_factory]",
             [](){
             auto sub1 = index_tensor_type{{false,false,true},{false,false,true},{false,false,false},{false,true,false}};
             auto view_shape = make_shape_bool_tensor(shape_type{4,3,2},sub1.shape(),sub1.begin(),sub1.end());
-            return make_map_bool_tensor<map_type>(shape_type{4,3,2},shape_type{6,2,1},view_shape,sub1.shape(),sub1.begin(),sub1.end());
+            return make_map_bool_tensor<map_type>(shape_type{4,3,2},shape_type{6,2,1},make_size(view_shape),sub1.dim(),sub1.begin(),sub1.end());
             }(),
             map_type{4,5,10,11,20,21}
         },
@@ -535,7 +535,7 @@ TEMPLATE_TEST_CASE("test_make_map_bool_tensor","[test_view_factory]",
             [](){
             auto sub1 = index_tensor_type{{true,false},{false,true}};
             auto view_shape = make_shape_bool_tensor(shape_type{4,3,2},sub1.shape(),sub1.begin(),sub1.end());
-            return make_map_bool_tensor<map_type>(shape_type{4,3,2},shape_type{6,2,1},view_shape,sub1.shape(),sub1.begin(),sub1.end());
+            return make_map_bool_tensor<map_type>(shape_type{4,3,2},shape_type{6,2,1},make_size(view_shape),sub1.dim(),sub1.begin(),sub1.end());
             }(),
             map_type{0,1,6,7}
         },
@@ -543,7 +543,7 @@ TEMPLATE_TEST_CASE("test_make_map_bool_tensor","[test_view_factory]",
             [](){
             auto sub1 = index_tensor_type{{false,false,true},{false,false,true},{false,false,false},{false,true,false}};
             auto view_shape = make_shape_bool_tensor(shape_type{4,3},sub1.shape(),sub1.begin(),sub1.end());
-            return make_map_bool_tensor<map_type>(shape_type{4,3},shape_type{3,1},view_shape,sub1.shape(),sub1.begin(),sub1.end());
+            return make_map_bool_tensor<map_type>(shape_type{4,3},shape_type{3,1},make_size(view_shape),sub1.dim(),sub1.begin(),sub1.end());
             }(),
             map_type{2,5,10}
         }

@@ -72,6 +72,8 @@ namespace expression_template_operators{
     EXPRESSION_TEMPLATE_BINARY_OPERATOR(operator_greater, expression_template_binary_operations::greater);
     EXPRESSION_TEMPLATE_BINARY_OPERATOR(operator_less, expression_template_binary_operations::less);
     EXPRESSION_TEMPLATE_BINARY_OPERATOR(operator_equal, expression_template_binary_operations::equal);
+    EXPRESSION_TEMPLATE_BINARY_OPERATOR(operator_logic_and, expression_template_binary_operations::logic_and);
+    EXPRESSION_TEMPLATE_BINARY_OPERATOR(operator_logic_or, expression_template_binary_operations::logic_or);
 
     struct operator_assign{
         template<typename ValT1, typename ValT2, typename ImplT1, typename ImplT2, typename CfgT>

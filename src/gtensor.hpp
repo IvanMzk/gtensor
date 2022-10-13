@@ -184,10 +184,10 @@ public:
     auto operator()(const Subs&...subs)const{
         return view_factory<ValT,CfgT>::create_mapping_view_index_tensor(impl(), subs...);
     }
-    // template<typename Sub, std::enable_if_t<detail::is_bool_tensor<Sub>::value ,int> = 0 >
-    // auto operator()(const Sub& sub)const{
-    //     //return view_factory<ValT,CfgT>::create_mapping_view_bool_tensor(impl(), sub);
-    // }
+    template<typename Sub, std::enable_if_t<detail::is_bool_tensor<Sub>::value ,int> = 0 >
+    auto operator()(const Sub& sub)const{
+        return view_factory<ValT,CfgT>::create_mapping_view_bool_tensor(impl(), sub);
+    }
 };
 
 }   //end of namespace gtensor

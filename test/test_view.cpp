@@ -12,6 +12,7 @@ TEMPLATE_TEST_CASE("test_view","[test_view]",
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     using tensor_type = gtensor::tensor<value_type,config_type>;
+    using bool_tensor_type =  gtensor::tensor<bool,config_type>;
     using test_type = std::tuple<tensor_type, tensor_type>;
     auto nop = config_type::nop_type{};
     //result tensor, expected tensor
@@ -71,7 +72,20 @@ TEMPLATE_TEST_CASE("test_view","[test_view]",
         test_type{tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}}(tensor_type{1,3}, tensor_type{0,1}).copy(),tensor_type{{5,6},{15,16}}},
         test_type{tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}}(tensor_type{1,3}, tensor_type{1}).copy(),tensor_type{{7,8},{15,16}}},
         test_type{tensor_type{{1,2,3},{4,5,6},{7,8,9},{10,11,12}}(tensor_type{{0,0},{3,3}}, tensor_type{{0,2},{0,2}}).copy(),tensor_type{{1,3},{10,12}}},
-        test_type{tensor_type{{1,2,3},{4,5,6},{7,8,9},{10,11,12}}(tensor_type{3,2,1,0})(tensor_type{{0,0},{3,3}}, tensor_type{{0,2},{0,2}}).copy(),tensor_type{{10,12},{1,3}}}
+        test_type{tensor_type{{1,2,3},{4,5,6},{7,8,9},{10,11,12}}(tensor_type{3,2,1,0})(tensor_type{{0,0},{3,3}}, tensor_type{{0,2},{0,2}}).copy(),tensor_type{{10,12},{1,3}}},
+        //mapping view bool tensor
+        //test_type{tensor_type{1}(bool_tensor_type{false}).copy(), tensor_type{}}
+        test_type{tensor_type{1}(bool_tensor_type{true}).copy(), tensor_type{1}},
+        test_type{tensor_type{1,2,3,4,5}(bool_tensor_type{false,true,false,true,false}).copy(), tensor_type{2,4}},
+        test_type{tensor_type{1,2,3,4,5}(bool_tensor_type{true,true}).copy(), tensor_type{1,2}},
+        test_type{tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}}(bool_tensor_type{true}).copy(),tensor_type{{{1,2},{3,4}}}},
+        test_type{tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}}(bool_tensor_type{true,true}).copy(),tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}},
+        test_type{tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}}(bool_tensor_type{false,true,false,true}).copy(),tensor_type{{{5,6},{7,8}},{{13,14},{15,16}}}},
+        test_type{tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}}(bool_tensor_type{{false,true},{true,false}}).copy(),tensor_type{{3,4},{5,6}}},
+        test_type{tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}}(bool_tensor_type{{{false,true}},{{true,false}}}).copy(),tensor_type{2,3}},
+        test_type{[](){auto x = tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}}; return x(x>tensor_type{10});}(),tensor_type{11,12,13,14,15,16}},
+        test_type{[](){auto x = tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}}; return x(x<tensor_type{5});}(),tensor_type{1,2,3,4}},
+        test_type{[](){auto x = tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}}; return x(x>tensor_type{5} && x<tensor_type{10});}(),tensor_type{6,7,8,9}}
     );
 
     auto result_tensor = std::get<0>(test_data);

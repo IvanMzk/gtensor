@@ -244,12 +244,33 @@ TEST_CASE("test_view_making_interface","[test_tensor]"){
             REQUIRE_THROWS_AS((tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{0},index_tensor_type{1,2,3})),subscript_exception);
             REQUIRE_THROWS_AS((tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{0},index_tensor_type{1,2,3},index_tensor_type{0})),subscript_exception);
         }
+        SECTION("mapping_view_bool_tensor"){
+            using index_tensor_type = tensor<bool,config_type>;
+            REQUIRE_NOTHROW(tensor_type{1}(index_tensor_type{true}));
+            REQUIRE_NOTHROW(tensor_type{1}(index_tensor_type{false}));
+            REQUIRE_NOTHROW(tensor_type{1,2,3,4,5}(index_tensor_type{false,false,true,true,false}));
+            REQUIRE_NOTHROW(tensor_type{1,2,3,4,5}(index_tensor_type{true}));
+            REQUIRE_NOTHROW(tensor_type{1,2,3,4,5}(index_tensor_type{false,false,true}));
+            REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}(index_tensor_type{true}));
+            REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}(index_tensor_type{true,false,true}));
+            REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}(index_tensor_type{{true}}));
+            REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}(index_tensor_type{{true,false},{false,true}}));
+            REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}(index_tensor_type{{true,false}}));
+            REQUIRE_THROWS_AS(tensor_type{1}(index_tensor_type{{true}}),subscript_exception);
+            REQUIRE_THROWS_AS(tensor_type{1}(index_tensor_type{{false}}),subscript_exception);
+            REQUIRE_THROWS_AS(tensor_type{1}(index_tensor_type{true,true}),subscript_exception);
+            REQUIRE_THROWS_AS(tensor_type{1}(index_tensor_type{false,false}),subscript_exception);
+            REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4},{5,6}}(index_tensor_type{{{true}}})),subscript_exception);
+            REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4},{5,6}}(index_tensor_type{{true,false,true}})),subscript_exception);
+        }
     }
     SECTION("test_slices_filling_and_result_view"){
         using test_type = std::tuple<htensor_type, shape_type, index_type, index_type>;
         using index_tensor_type = tensor<index_type, config_type>;
+        using bool_tensor_type = tensor<bool, config_type>;
         //0view,1expected_shape,2expected size,3expected dim
         auto test_data = GENERATE_COPY(
+            //view slice
             test_type{static_cast<htensor_type>(tensor_type{1}({{}})),shape_type{1}, 1, 1},
             test_type{static_cast<htensor_type>(tensor_type{1}({{nop,nop,-1}})),shape_type{1}, 1, 1},
             test_type{static_cast<htensor_type>(tensor_type{1,2,3,4,5}({{}})),shape_type{5}, 5, 1},
@@ -257,6 +278,7 @@ TEST_CASE("test_view_making_interface","[test_tensor]"){
             test_type{static_cast<htensor_type>(tensor_type{1,2,3,4,5}({{nop,nop,-2}})),shape_type{3}, 3, 1},
             test_type{static_cast<htensor_type>(tensor_type{{{1,2},{3,4},{5,6}}}({{},{},{0,-1}})),shape_type{1,3,1}, 3, 3},
             test_type{static_cast<htensor_type>(tensor_type{{{1,2},{3,4},{5,6}}}({{},{1,-1},{0,-1}})),shape_type{1,1,1}, 1, 3},
+            //view transpose
             test_type{static_cast<htensor_type>(tensor_type{1}.transpose()),shape_type{1}, 1, 1},
             test_type{static_cast<htensor_type>(tensor_type{1}.transpose(0)),shape_type{1}, 1, 1},
             test_type{static_cast<htensor_type>(tensor_type{1,2,3,4,5}.transpose()),shape_type{5}, 5, 1},
@@ -266,21 +288,36 @@ TEST_CASE("test_view_making_interface","[test_tensor]"){
             test_type{static_cast<htensor_type>(tensor_type{{1,2,3,4,5}}.transpose(0,1)),shape_type{1,5}, 5, 2},
             test_type{static_cast<htensor_type>(tensor_type{{{1,2},{3,4},{5,6}}}.transpose()),shape_type{2,3,1}, 6, 3},
             test_type{static_cast<htensor_type>(tensor_type{{{1,2},{3,4},{5,6}}}.transpose(0,2,1)),shape_type{1,2,3}, 6, 3},
+            //view subdim
             test_type{static_cast<htensor_type>(tensor_type{{{1,2},{3,4},{5,6}}}()),shape_type{1,3,2}, 6, 3},
             test_type{static_cast<htensor_type>(tensor_type{{{1,2},{3,4},{5,6}}}(0)),shape_type{3,2}, 6, 2},
             test_type{static_cast<htensor_type>(tensor_type{{{1,2},{3,4},{5,6}}}(0,1)),shape_type{2}, 2, 1},
+            //view reshape
             test_type{static_cast<htensor_type>(tensor_type{1}.reshape()),shape_type{1}, 1, 1},
             test_type{static_cast<htensor_type>(tensor_type{1}.reshape(1)),shape_type{1}, 1, 1},
             test_type{static_cast<htensor_type>(tensor_type{{{1,2},{3,4},{5,6}}}.reshape()),shape_type{1,3,2}, 6, 3},
             test_type{static_cast<htensor_type>(tensor_type{{{1,2},{3,4},{5,6}}}.reshape(6)),shape_type{6}, 6, 1},
             test_type{static_cast<htensor_type>(tensor_type{{{1,2},{3,4},{5,6}}}.reshape(2,1,3)),shape_type{2,1,3}, 6, 3},
             test_type{static_cast<htensor_type>(tensor_type{{{1,2},{3,4},{5,6}}}.reshape(6,1)),shape_type{6,1}, 6, 2},
+            //mapping view index tensor
             test_type{static_cast<htensor_type>(tensor_type{1}(index_tensor_type{0})),shape_type{1}, 1, 1},
             test_type{static_cast<htensor_type>(tensor_type{1}(index_tensor_type{0,0,0})),shape_type{3}, 3, 1},
             test_type{static_cast<htensor_type>(tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{0})),shape_type{1,3}, 3, 2},
             test_type{static_cast<htensor_type>(tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{0,1,1,0})),shape_type{4,3}, 12, 2},
             test_type{static_cast<htensor_type>(tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{0,1}, index_tensor_type{0})),shape_type{2}, 2, 1},
-            test_type{static_cast<htensor_type>(tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{{0,0},{1,1}}, index_tensor_type{{0,2},{0,2}})),shape_type{2,2}, 4, 2}
+            test_type{static_cast<htensor_type>(tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{{0,0},{1,1}}, index_tensor_type{{0,2},{0,2}})),shape_type{2,2}, 4, 2},
+            //mapping view bool tensor
+            test_type{static_cast<htensor_type>(tensor_type{1}(bool_tensor_type{false})),shape_type{}, 0, 0},
+            test_type{static_cast<htensor_type>(tensor_type{1}(bool_tensor_type{true})),shape_type{1}, 1, 1},
+            test_type{static_cast<htensor_type>(tensor_type{1,2,3,4,5}(bool_tensor_type{false,true,false,true,false})),shape_type{2}, 2, 1},
+            test_type{static_cast<htensor_type>(tensor_type{1,2,3,4,5}(bool_tensor_type{true,true,true,true})),shape_type{4}, 4, 1},
+            test_type{static_cast<htensor_type>(tensor_type{{1,2},{3,4},{5,6}}(bool_tensor_type{true})),shape_type{1,2}, 2, 2},
+            test_type{static_cast<htensor_type>(tensor_type{{1,2},{3,4},{5,6}}(bool_tensor_type{{true}})),shape_type{1}, 1, 1},
+            test_type{static_cast<htensor_type>(tensor_type{{1,2},{3,4},{5,6}}(bool_tensor_type{true,true})),shape_type{2,2}, 4, 2},
+            test_type{static_cast<htensor_type>(tensor_type{{1,2},{3,4},{5,6}}(bool_tensor_type{{true},{true}})),shape_type{2}, 2, 1},
+            test_type{static_cast<htensor_type>(tensor_type{{1,2},{3,4},{5,6}}(bool_tensor_type{{false,true},{false,false},{false,true}})),shape_type{2}, 2, 1},
+            test_type{static_cast<htensor_type>(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}}(bool_tensor_type{true,true})),shape_type{2,2,2}, 8, 3},
+            test_type{static_cast<htensor_type>(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}}(bool_tensor_type{{true},{true}})),shape_type{2,2}, 4, 2}
         );
         auto view = std::get<0>(test_data);
         auto expected_shape = std::get<1>(test_data);
