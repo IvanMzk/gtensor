@@ -85,7 +85,9 @@ TEMPLATE_TEST_CASE("test_view","[test_view]",
         test_type{tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}}(bool_tensor_type{{{false,true}},{{true,false}}}).copy(),tensor_type{2,3}},
         test_type{[](){auto x = tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}}; return x(x>tensor_type{10});}(),tensor_type{11,12,13,14,15,16}},
         test_type{[](){auto x = tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}}; return x(x<tensor_type{5});}(),tensor_type{1,2,3,4}},
-        test_type{[](){auto x = tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}}; return x(x>tensor_type{5} && x<tensor_type{10});}(),tensor_type{6,7,8,9}}
+        test_type{[](){auto x = tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}}; return x(x>tensor_type{5} && x<tensor_type{10});}(),tensor_type{6,7,8,9}},
+        //view composition
+        test_type{tensor_type{{1,2,3},{4,5,6}}.transpose().reshape(2,3).copy(), tensor_type{{1,4,2},{5,3,6}}}
     );
 
     auto result_tensor = std::get<0>(test_data);

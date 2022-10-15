@@ -94,13 +94,7 @@ public:
     const shape_type& cstrides()const override{return cstrides_;}
     const shape_type& reset_cstrides()const override{return reset_cstrides_;}
     index_type convert(const shape_type& idx)const override{return detail::convert_index(cstrides(),offset(),idx);}
-    index_type convert(const index_type& idx)const override{
-        return detail::convert_index(
-            cstrides(),
-            offset(),
-            detail::flat_to_multi<shape_type>(strides_libdivide(), idx)
-        );
-    }
+    index_type convert(const index_type& idx)const override{return detail::flat_to_flat(strides_libdivide(),cstrides(),offset(),idx);}
 private:
     shape_type cstrides_;
     shape_type reset_cstrides_;

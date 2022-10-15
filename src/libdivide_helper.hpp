@@ -72,8 +72,8 @@ inline auto divide(T& dividend, const libdivide_divider<T>& divider){
 * convert flat index to multi index given strides
 * ShT result multiindex type, must specialize explicit
 */
-template<typename ShT, template<typename...> typename U, typename T, typename IdxT>
-auto flat_to_multi(const U<T>& strides, const IdxT& idx){
+template<typename ShT, typename StT, typename IdxT>
+auto flat_to_multi(const StT& strides, const IdxT& idx){
     using shape_type = ShT;
     using index_type = IdxT;
     shape_type res(strides.size(), index_type(0));
@@ -83,6 +83,21 @@ auto flat_to_multi(const U<T>& strides, const IdxT& idx){
     while(idx_ != 0){
         *res_it = divide(idx_,*st_it);
         ++st_it,++res_it;
+    }
+    return res;
+}
+
+template<typename StT, typename CStT, typename IdxT>
+auto flat_to_flat(const StT& strides, const CStT& cstrides, const IdxT& offset, const IdxT& idx){
+    using index_type = IdxT;
+    index_type res{offset};
+    index_type idx_{idx};
+    auto st_it = strides.begin();
+    auto cst_it = cstrides.begin();
+    while(idx_ != 0){
+        res += *cst_it*divide(idx_,*st_it);
+        ++st_it;
+        ++cst_it;
     }
     return res;
 }

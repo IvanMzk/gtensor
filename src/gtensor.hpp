@@ -13,9 +13,6 @@ namespace gtensor{
 
 namespace detail{
 
-// template<typename> struct is_tensor : std::false_type{};
-// template<typename...Ts> struct is_tensor<tensor<Ts...>> : std::true_type{};
-
 template<typename> struct true_type : std::true_type{};
 template<typename T, template<typename...> typename C = true_type> struct is_tensor{
 private:
@@ -94,9 +91,9 @@ public:
     tensor(typename detail::nested_initializer_list_type<value_type,4>::type init_data):tensor(init_data,ctr_tag{}){}
     tensor(typename detail::nested_initializer_list_type<value_type,5>::type init_data):tensor(init_data,ctr_tag{}){}
     //init list shape constructor
-    template<typename U, typename V, std::enable_if_t<std::is_convertible_v<U,index_type> && std::is_convertible_v<V,value_type> ,int> =0 >
-    tensor(std::initializer_list<U> shape__, V&& value__):
-        impl_{std::make_shared<impl_type>(shape__, std::forward<V>(value__))}
+    template<typename U, std::enable_if_t<std::is_convertible_v<U,index_type>,int> =0 >
+    tensor(std::initializer_list<U> shape__, const value_type& value__):
+        impl_{std::make_shared<impl_type>(shape__, value__)}
     {}
     //forwarding constructors
     template<typename...Args, std::enable_if_t<(sizeof...(Args) > 1),int> = 0 >
