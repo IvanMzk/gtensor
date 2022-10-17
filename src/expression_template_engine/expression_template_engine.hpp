@@ -50,6 +50,14 @@ template<typename EngineT> auto end_flatindex(EngineT& engine){
     using iterator_type = flat_index_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_trivial_walker())>;
     return iterator_type{engine.create_trivial_walker(), engine.host()->size()};
 }
+template<typename EngineT> auto begin_flatindex_indexer(EngineT& engine){
+    using iterator_type = flat_index_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_indexer())>;
+    return iterator_type{engine.create_indexer()};
+}
+template<typename EngineT> auto end_flatindex_indexer(EngineT& engine){
+    using iterator_type = flat_index_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_indexer())>;
+    return iterator_type{engine.create_indexer(), engine.host()->size()};
+}
 template<typename...Ts> auto begin_multiindex(const expression_template_storage_engine<Ts...>& engine){return engine.begin();}
 template<typename...Ts> auto end_multiindex(const expression_template_storage_engine<Ts...>& engine){return engine.end();}
 template<typename...Ts> auto begin_flatindex(const expression_template_storage_engine<Ts...>& engine){return engine.begin();}

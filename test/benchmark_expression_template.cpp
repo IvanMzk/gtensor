@@ -9,6 +9,8 @@ using gtensor::detail::begin_multiindex;
 using gtensor::detail::end_multiindex;
 using gtensor::detail::begin_flatindex;
 using gtensor::detail::end_flatindex;
+using gtensor::detail::begin_flatindex_indexer;
+using gtensor::detail::end_flatindex_indexer;
 
 template<typename T>
 struct test_tensor_broadcast : public T{
@@ -32,9 +34,22 @@ struct test_tensor_trivial : public T{
 };
 
 template<typename T>
+struct test_tensor_indexer : public T{
+    test_tensor_indexer(const T& base):
+        tensor{base}
+    {}
+    auto& engine()const{return impl()->engine();}
+    bool is_trivial()const{return engine().is_trivial();}
+    auto begin()const{return begin_flatindex_indexer(engine());}
+    auto end()const{return end_flatindex_indexer(engine());}
+};
+
+template<typename T>
 auto make_test_tensor_broadcast(T&& t){return test_tensor_broadcast<std::decay_t<T>>{t};}
 template<typename T>
 auto make_test_tensor_trivial(T&& t){return test_tensor_trivial<std::decay_t<T>>{t};}
+template<typename T>
+auto make_test_tensor_indexer(T&& t){return test_tensor_indexer<std::decay_t<T>>{t};}
 
 }   //end of namespace benchmark_expression_template_helpers
 
@@ -46,6 +61,7 @@ TEST_CASE("benchmark_expression_template_trivial_tree","[benchmark_expression_te
     using benchmark_expression_template_helpers::test_tensor_trivial;
     using benchmark_expression_template_helpers::make_test_tensor_broadcast;
     using benchmark_expression_template_helpers::make_test_tensor_trivial;
+    using benchmark_expression_template_helpers::make_test_tensor_indexer;
     using benchmark_helpers::asymmetric_tree_maker;
     using benchmark_helpers::symmetric_tree_maker;
     using benchmark_helpers::benchmark_with_making_iter;
@@ -63,6 +79,11 @@ TEST_CASE("benchmark_expression_template_trivial_tree","[benchmark_expression_te
     benchmark_with_making_iter(
         make_test_tensor_trivial(asymmetric_tree_maker<50>{}(tensor_type(std::vector<int>{10,10000}, 0.0f),tensor_type(std::vector<int>{10,10000}, 0.0f))),
         "asymmetric_tree_trivial_depth50_flatiter",
+        benchmark_worker
+    );
+    benchmark_with_making_iter(
+        make_test_tensor_indexer(asymmetric_tree_maker<50>{}(tensor_type(std::vector<int>{10,10000}, 0.0f),tensor_type(std::vector<int>{10,10000}, 0.0f))),
+        "asymmetric_tree_trivial_depth50_flatiter_indexer",
         benchmark_worker
     );
     benchmark_with_making_iter(
