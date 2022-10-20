@@ -89,8 +89,6 @@ template<typename C> inline constexpr bool is_mode_trivial_broadcast_eval_flat =
 template<typename C> inline constexpr bool is_mode_trivial_broadcast_eval_combi = std::is_same_v<C::trivial_broadcast_eval_mode,gtensor::config::mode_trivial_broadcast_eval_combi>;
 
 
-
-
 template<typename C>
 struct is_caching_never{constexpr static bool value = std::is_same_v<C::caching_mode,gtensor::config::mode_caching_never>;};
 template<typename C>

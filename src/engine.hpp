@@ -11,6 +11,8 @@
 namespace gtensor{
 
 namespace detail{
+    template<typename, typename = void> constexpr bool is_iterator = false;
+    template<typename T> constexpr bool is_iterator<T,std::void_t<typename std::iterator_traits<T>::iterator_category>> = true;
 }   //end of namespace detail
 
 template<typename ValT, typename CfgT>
@@ -60,7 +62,7 @@ public:
         engine_host_accessor{host},
         elements_(size, init_data)
     {}
-    template<typename ItT>
+    template<typename ItT, std::enable_if_t<detail::is_iterator<ItT> ,int> =0 >
     storage_engine(host_type* host, ItT begin, ItT end):
         engine_host_accessor{host},
         elements_(begin, end)

@@ -15,6 +15,13 @@ namespace test_tensor_{
     };
 }
 
+TEST_CASE("test_is_iterator","[test_tensor]"){
+    using gtensor::detail::is_iterator;
+    REQUIRE(!is_iterator<int>);
+    REQUIRE(!is_iterator<std::vector<int>>);
+    REQUIRE(is_iterator<std::vector<int>::iterator>);
+}
+
 TEST_CASE("test_is_tensor","[test_tensor]"){
     using value_type = float;
     using config_type = gtensor::config::default_config;
@@ -134,6 +141,28 @@ TEST_CASE("test_tensor_construct_given_shape","[test_tensor]"){
     REQUIRE(t.as_htensor().shape() == expected_shape);
     REQUIRE(t.as_htensor().size() == expected_size);
     REQUIRE(t.as_htensor().dim() == expected_dim);
+}
+
+TEST_CASE("test_tensor_construct_from_iterators_range","[test_tensor]"){
+    using value_type = float;
+    using config_type = gtensor::config::default_config;
+    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using shape_type = typename config_type::shape_type;
+    using index_type = typename config_type::index_type;
+    using test_type = std::tuple<tensor_type, tensor_type>;
+    //tensor,expected_shape,expected size,expected dim
+    auto test_data = GENERATE(
+        test_type(tensor_type(shape_type{},1.0f), shape_type{}, 0 , 0),
+
+    );
+
+    auto t = std::get<0>(test_data);
+    auto expected_shape = std::get<1>(test_data);
+    auto expected_size = std::get<2>(test_data);
+    auto expected_dim = std::get<3>(test_data);
+    REQUIRE(t.shape() == expected_shape);
+    REQUIRE(t.size() == expected_size);
+    REQUIRE(t.dim() == expected_dim);
 }
 
 TEST_CASE("test_tensor_construct_using_operator","[test_tensor]"){
