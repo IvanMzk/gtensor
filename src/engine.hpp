@@ -63,10 +63,14 @@ public:
         elements_(size, init_data)
     {}
     template<typename ItT, std::enable_if_t<detail::is_iterator<ItT> ,int> =0 >
-    storage_engine(host_type* host, ItT begin, ItT end):
+    storage_engine(host_type* host, const index_type& size, ItT begin, ItT end):
         engine_host_accessor{host},
-        elements_(begin, end)
-    {}
+        elements_(size)
+    {
+        auto n = std::distance(begin,end);
+        auto n_to_copy = size > n ? n : size;
+        std::copy_n(begin,n_to_copy,elements_.begin());
+    }
 private:
     template<typename U> static auto create_indexer_helper(U& instance){
         return basic_indexer<index_type, decltype(instance.begin())>{instance.begin()};

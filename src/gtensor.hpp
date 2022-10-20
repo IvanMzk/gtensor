@@ -95,6 +95,10 @@ public:
     tensor(std::initializer_list<U> shape__, const value_type& value__):
         impl_{std::make_shared<impl_type>(shape__, value__)}
     {}
+    template<typename U, typename It, std::enable_if_t<std::is_convertible_v<U,index_type>,int> =0 >
+    tensor(std::initializer_list<U> shape__, It begin__, It end__):
+        impl_{std::make_shared<impl_type>(shape__, begin__,end__)}
+    {}
     //forwarding constructors
     template<typename...Args, std::enable_if_t<(sizeof...(Args) > 1),int> = 0 >
     tensor(Args&&...args):

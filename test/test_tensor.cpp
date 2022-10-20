@@ -1,7 +1,7 @@
-#include "catch.hpp"
-#include "gtensor.hpp"
 #include <tuple>
 #include <vector>
+#include "catch.hpp"
+#include "gtensor.hpp"
 
 namespace test_tensor_{
 
@@ -149,20 +149,43 @@ TEST_CASE("test_tensor_construct_from_iterators_range","[test_tensor]"){
     using tensor_type = gtensor::tensor<value_type, config_type>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
-    using test_type = std::tuple<tensor_type, tensor_type>;
-    //tensor,expected_shape,expected size,expected dim
-    auto test_data = GENERATE(
-        test_type(tensor_type(shape_type{},1.0f), shape_type{}, 0 , 0),
 
-    );
-
-    auto t = std::get<0>(test_data);
-    auto expected_shape = std::get<1>(test_data);
-    auto expected_size = std::get<2>(test_data);
-    auto expected_dim = std::get<3>(test_data);
-    REQUIRE(t.shape() == expected_shape);
-    REQUIRE(t.size() == expected_size);
-    REQUIRE(t.dim() == expected_dim);
+    SECTION("range_more_equal_size"){
+        using test_type = std::tuple<tensor_type, tensor_type>;
+        //0result_tensor,expected_tensor
+        auto test_data = GENERATE(
+            test_type(
+                [](){
+                    auto v = std::vector<value_type>{1,2,3,4,5,6};
+                    return tensor_type({6,1}, v.begin(), v.end());
+                }(),
+                tensor_type{{1},{2},{3},{4},{5},{6}}
+            ),
+            test_type(
+                [](){
+                    auto v = std::vector<value_type>{1,2,3,4,5,6,7,8,9,10};
+                    return tensor_type({6,1}, v.begin(), v.end());
+                }(),
+                tensor_type{{1},{2},{3},{4},{5},{6}}
+            ),
+            test_type(
+                [](){
+                    value_type v[]{1,2,3,4,5,6};
+                    return tensor_type({3,2}, v, v+6);
+                }(),
+                tensor_type{{1,2},{3,4},{5,6}}
+            )
+        );
+        auto result_tensor = std::get<0>(test_data);
+        auto expected_tensor = std::get<1>(test_data);
+        REQUIRE(result_tensor.equals(expected_tensor));
+    }
+    SECTION("range_less_size"){
+        auto v = std::vector<value_type>{1,2,3};
+        auto t = tensor_type({2,3}, v.begin(), v.end());
+        REQUIRE(t.shape() == shape_type{2,3});
+        REQUIRE(std::equal(v.begin(),v.end(),t.begin()));
+    }
 }
 
 TEST_CASE("test_tensor_construct_using_operator","[test_tensor]"){

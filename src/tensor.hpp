@@ -52,12 +52,12 @@ private:
     //static_assert(std::is_convertible_v<engine_type*, storage_engine<value_type,config_type>*>);
 
     template<typename ShT, typename Nested>
-    storage_tensor(ShT&& shape, const std::initializer_list<Nested>& init_data):
+    storage_tensor(ShT&& shape, std::initializer_list<Nested> init_data):
         storage_tensor{detail::make_size(shape), std::forward<ShT>(shape), init_data}
     {}
-    template<typename ShT, typename InitT>
-    storage_tensor(const index_type& size, ShT&& shape, const InitT& init_data):
-        basic_tensor{engine_type{this, size, init_data}, descriptor_type{std::forward<ShT>(shape)}}
+    template<typename ShT, typename...InitT>
+    storage_tensor(const index_type& size, ShT&& shape, InitT...init_data):
+        basic_tensor{engine_type{this, size, init_data...}, descriptor_type{std::forward<ShT>(shape)}}
     {}
 public:
 
@@ -71,7 +71,7 @@ public:
     {}
     template<typename ShT, typename ItT>
     storage_tensor(ShT&& shape, ItT begin, ItT end):
-        basic_tensor{engine_type{this, begin, end}, descriptor_type{std::forward<ShT>(shape)}}
+        storage_tensor{detail::make_size(shape), std::forward<ShT>(shape), begin, end}
     {}
 };
 
