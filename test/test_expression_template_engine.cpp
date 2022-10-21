@@ -102,7 +102,7 @@ TEST_CASE("test_result_type","[test_expression_template_engine]"){
     using const_reference_type = const value_type&;
     using test_expression_template_helpers::test_tensor;
     using test_expression_template_helpers::make_test_tensor;
-    using test_config_type = typename test_config::config_engine_selector<gtensor::config::engine_expression_template>::config_type;
+    using test_config_type = typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type;
     using index_type = typename test_config_type::index_type;
     using tensor_type = gtensor::tensor<value_type, test_config_type>;
 
@@ -307,7 +307,7 @@ TEST_CASE("test_broadcast_iterator","[test_expression_template_engine]")
     using value_type = float;
     using test_expression_template_helpers::test_tensor;
     using test_expression_template_helpers::make_test_tensor;
-    using test_config_type = typename test_config::config_engine_selector<gtensor::config::engine_expression_template>::config_type;
+    using test_config_type = typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type;
     using shape_type = typename test_config_type::shape_type;
     using tensor_type = gtensor::tensor<value_type, test_config_type>;
 
@@ -376,7 +376,7 @@ TEST_CASE("test_broadcast_assignment","[test_expression_template_engine]"){
     using const_reference_type = const value_type&;
     using test_expression_template_helpers::test_tensor;
     using test_expression_template_helpers::make_test_tensor;
-    using test_config_type = typename test_config::config_engine_selector<gtensor::config::engine_expression_template>::config_type;
+    using test_config_type = typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type;
     using index_type = typename test_config_type::index_type;
     using tensor_type = gtensor::tensor<value_type, test_config_type>;
     using gtensor::broadcast_exception;

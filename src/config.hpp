@@ -10,39 +10,26 @@ namespace gtensor{
 namespace config{
 
 
-enum class caching_modes : std::size_t {caching_never, caching_always, caching_broadcast};
-enum class deref_modes : std::size_t {deref_val, deref_variant};
+
 enum class div_modes : std::size_t {native, libdivide};
-enum class trivial_broadcast_eval_modes : std::size_t {flat, multi, combi};
-enum class engines : std::size_t {expression_template};
+enum class engines : std::size_t {expression_template,cuda};
 
 template<typename T, T M> struct tag{static constexpr T value = M;};
-using mode_caching_never = tag<caching_modes, caching_modes::caching_never>;
-using mode_caching_always = tag<caching_modes, caching_modes::caching_always>;
-using mode_caching_broadcast = tag<caching_modes, caching_modes::caching_broadcast>;
-using mode_deref_value = tag<deref_modes, deref_modes::deref_val>;
-using mode_deref_variant = tag<deref_modes, deref_modes::deref_variant>;
+
 using mode_div_native = tag<div_modes, div_modes::native>;
 using mode_div_libdivide = tag<div_modes, div_modes::libdivide>;
-using mode_trivial_broadcast_eval_flat = tag<trivial_broadcast_eval_modes, trivial_broadcast_eval_modes::flat>;
-using mode_trivial_broadcast_eval_multi = tag<trivial_broadcast_eval_modes, trivial_broadcast_eval_modes::multi>;
-using mode_trivial_broadcast_eval_combi = tag<trivial_broadcast_eval_modes, trivial_broadcast_eval_modes::combi>;
+
 using engine_expression_template = tag<engines, engines::expression_template>;
+using engine_cuda = tag<engines, engines::cuda>;
 
 struct NOP{};
 
 
 struct default_config{
 
-    using engine = engine_expression_template;
-
-    using caching_mode = mode_caching_broadcast;
-    //using caching_mode = typename mode_caching_always;
-    //using caching_mode = typename mode_caching_never;
-
-    using trivial_broadcast_eval_mode = mode_trivial_broadcast_eval_combi;
-    //using trivial_broadcast_eval_mode = mode_trivial_broadcast_eval_multi;
-    //using trivial_broadcast_eval_mode = mode_trivial_broadcast_eval_flat;
+    //using engine = engine_expression_template;
+    using host_engine = engine_expression_template;
+    using device_engine = engine_cuda;
 
     using div_mode = mode_div_libdivide;
     //using div_mode = mode_div_native;

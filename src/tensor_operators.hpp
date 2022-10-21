@@ -12,7 +12,7 @@ template<typename ValT1, typename ValT2, typename ImplT1, typename ImplT2, typen
 static inline auto NAME(const tensor<ValT1, CfgT, ImplT1>& t1, const tensor<ValT2, CfgT, ImplT2>& t2){\
     using operator_tag = OP;\
     using config_type = CfgT;\
-    using operator_impl_type = typename tensor_operator_traits::tensor_operator_selector<typename config_type::engine, operator_tag>::type;\
+    using operator_impl_type = typename tensor_operator_traits::tensor_operator_selector<typename config_type::host_engine, operator_tag>::type;\
     static_assert(!std::is_same_v<operator_impl_type,tensor_operator_traits::not_defined_tag>);\
     return operator_impl_type{}(t1,t2,t1.impl(),t2.impl());\
 }

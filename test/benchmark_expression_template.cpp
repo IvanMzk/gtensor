@@ -55,7 +55,7 @@ auto make_test_tensor_indexer(T&& t){return test_tensor_indexer<std::decay_t<T>>
 
 TEST_CASE("benchmark_expression_template_trivial_tree","[benchmark_expression_template]"){
     using value_type = float;
-    using test_config_type = typename test_config::config_engine_selector<gtensor::config::engine_expression_template>::config_type;
+    using test_config_type = typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type;
     using tensor_type = gtensor::tensor<value_type,test_config_type>;
     using benchmark_expression_template_helpers::test_tensor_broadcast;
     using benchmark_expression_template_helpers::test_tensor_trivial;

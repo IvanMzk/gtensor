@@ -9,8 +9,8 @@ namespace test_expression_template_helpers{
 
 using value_type = float;
 using gtensor::tensor;
-using test_config_div_native_type = typename test_config::config_engine_div_selector<gtensor::config::engine_expression_template,gtensor::config::mode_div_native>::config_type;
-using test_config_div_libdivide_type = typename test_config::config_engine_div_selector<gtensor::config::engine_expression_template,gtensor::config::mode_div_libdivide>::config_type;
+using test_config_div_native_type = typename test_config::config_host_engine_div_selector<gtensor::config::engine_expression_template,gtensor::config::mode_div_native>::config_type;
+using test_config_div_libdivide_type = typename test_config::config_host_engine_div_selector<gtensor::config::engine_expression_template,gtensor::config::mode_div_libdivide>::config_type;
 using test_default_config_type = test_config_div_native_type;
 //using test_default_config_type = test_config_div_libdivide_type;
 using gtensor::expression_template_storage_engine;

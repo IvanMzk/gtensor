@@ -468,8 +468,8 @@ TEST_CASE("test_tensor_combine_different_storages","[test_tensor]"){
     using gtensor::detail::storage_engine_traits;
     using gtensor::storage_tensor;
     using trivial_type_vector::uvector;
-    using tensor_vec_type = gtensor::tensor<value_type, config_type, storage_tensor<typename storage_engine_traits<typename config_type::engine,config_type,std::vector<value_type>>::type>>;
-    using tensor_uvec_type = gtensor::tensor<value_type, config_type, storage_tensor<typename storage_engine_traits<typename config_type::engine,config_type,uvector<value_type>>::type>>;
+    using tensor_vec_type = gtensor::tensor<value_type, config_type, storage_tensor<typename storage_engine_traits<typename config_type::host_engine,config_type,std::vector<value_type>>::type>>;
+    using tensor_uvec_type = gtensor::tensor<value_type, config_type, storage_tensor<typename storage_engine_traits<typename config_type::host_engine,config_type,uvector<value_type>>::type>>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     using test_type = std::tuple<tensor_uvec_type,tensor_vec_type>;

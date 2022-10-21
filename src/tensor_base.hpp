@@ -37,7 +37,7 @@ protected:
     using typename tensor_base_base::shape_type;
 public:
     using value_type = ValT;
-    using engine_type = typename detail::engine_base_traits<typename config_type::engine,value_type,config_type>::type;
+    using engine_type = typename detail::engine_base_traits<typename config_type::host_engine,value_type,config_type>::type;
     virtual ~tensor_base(){}
     virtual const engine_type& engine()const = 0;
     virtual engine_type& engine() = 0;

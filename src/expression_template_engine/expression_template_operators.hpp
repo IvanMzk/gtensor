@@ -29,7 +29,7 @@ struct NAME{\
         using result_type = decltype(std::declval<operation_type>()(std::declval<ValT1>(),std::declval<ValT2>()));\
         using operand1_type = ImplT1;\
         using operand2_type = ImplT2;\
-        using engine_type = typename detail::evaluating_engine_traits<typename CfgT::engine, result_type, CfgT, operation_type, operand1_type, operand2_type>::type;\
+        using engine_type = typename detail::evaluating_engine_traits<typename CfgT::host_engine, result_type, CfgT, operation_type, operand1_type, operand2_type>::type;\
         using impl_type = evaluating_tensor<engine_type>;\
         return tensor<result_type,CfgT, impl_type>{std::make_shared<impl_type>(operation_type{}, std::move(op1),std::move(op2))};\
     }\
@@ -82,7 +82,7 @@ namespace expression_template_operators{
             using result_type = void;
             using operand1_type = ImplT1;
             using operand2_type = ImplT2;
-            using engine_type = typename detail::evaluating_engine_traits<typename CfgT::engine, result_type, CfgT, operation_type, operand1_type, operand2_type>::type;
+            using engine_type = typename detail::evaluating_engine_traits<typename CfgT::host_engine, result_type, CfgT, operation_type, operand1_type, operand2_type>::type;
             auto lhs_size{lhs->size()};
             auto assigning = evaluating_tensor<engine_type>{operation_type{}, std::move(lhs),std::move(rhs)};
             if (lhs_size < assigning.size())

@@ -4,7 +4,7 @@
 #include "gtensor.hpp"
 
 TEMPLATE_TEST_CASE("test_view","[test_view]",
-    test_config::config_engine_selector<gtensor::config::engine_expression_template>::config_type
+    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
 )
 {
     using value_type = float;

@@ -49,7 +49,7 @@ template<typename T> struct is_bool_tensor
 template<
     typename ValT,
     typename CfgT = config::default_config,
-    typename ImplT = storage_tensor<typename detail::storage_engine_traits<typename CfgT::engine,CfgT,typename CfgT::template storage<ValT>>::type>
+    typename ImplT = storage_tensor<typename detail::storage_engine_traits<typename CfgT::host_engine,CfgT,typename CfgT::template storage<ValT>>::type>
 >
 class tensor{
     using tensor_base_type = tensor_base<ValT, CfgT>;
@@ -81,7 +81,7 @@ protected:
 public:
     using value_type = ValT;
     using htensor_type = tensor<ValT, CfgT, tensor_base_type>;
-    using storage_impl_type = storage_tensor<typename detail::storage_engine_traits<typename CfgT::engine,CfgT,typename CfgT::template storage<ValT>>::type>;
+    using storage_impl_type = storage_tensor<typename detail::storage_engine_traits<typename CfgT::host_engine,CfgT,typename CfgT::template storage<ValT>>::type>;
     //default constructor makes tensor without implementation
     tensor() = default;
     //nested init_list constructors

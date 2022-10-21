@@ -185,7 +185,7 @@ TEMPLATE_PRODUCT_TEST_CASE("test_transpose","[test_view_factory]", (std::vector,
 }
 
 TEMPLATE_TEST_CASE("test_make_shape_index_tensor","[test_view_factory]",
-    typename test_config::config_engine_selector<gtensor::config::engine_expression_template>::config_type
+    typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
 ){
     using test_config_type = TestType;
     using index_type = typename test_config_type::index_type;
@@ -209,7 +209,7 @@ TEMPLATE_TEST_CASE("test_make_shape_index_tensor","[test_view_factory]",
 }
 
 TEMPLATE_TEST_CASE("test_make_shape_index_tensor_exception","[test_view_factory]",
-    typename test_config::config_engine_selector<gtensor::config::engine_expression_template>::config_type
+    typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
 ){
     using test_config_type = TestType;
     using index_type = typename test_config_type::index_type;
@@ -223,7 +223,7 @@ TEMPLATE_TEST_CASE("test_make_shape_index_tensor_exception","[test_view_factory]
 }
 
 TEMPLATE_TEST_CASE("test_make_map_index_tensor","[test_view_factory]",
-    typename test_config::config_engine_selector<gtensor::config::engine_expression_template>::config_type
+    typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
 ){
     using test_config_type = TestType;
     using index_type = typename test_config_type::index_type;
@@ -302,7 +302,7 @@ TEMPLATE_TEST_CASE("test_make_map_index_tensor","[test_view_factory]",
 }
 
 TEMPLATE_TEST_CASE("test_make_map_index_tensor_exception","[test_view_factory]",
-    typename test_config::config_engine_selector<gtensor::config::engine_expression_template>::config_type
+    typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
 ){
     using test_config_type = TestType;
     using index_type = typename test_config_type::index_type;
@@ -353,7 +353,7 @@ TEMPLATE_TEST_CASE("test_make_map_index_tensor_exception","[test_view_factory]",
 }
 
 TEMPLATE_TEST_CASE("test_make_shape_bool_tensor","[test_view_factory]",
-    typename test_config::config_engine_selector<gtensor::config::engine_expression_template>::config_type
+    typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
 ){
     using test_config_type = TestType;
     using index_type = typename test_config_type::index_type;
@@ -442,7 +442,7 @@ TEMPLATE_TEST_CASE("test_make_shape_bool_tensor","[test_view_factory]",
 }
 
 TEMPLATE_TEST_CASE("test_make_shape_bool_tensor_exception","[test_view_factory]",
-    typename test_config::config_engine_selector<gtensor::config::engine_expression_template>::config_type
+    typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
 ){
     using test_config_type = TestType;
     using index_type = typename test_config_type::index_type;
@@ -476,7 +476,7 @@ TEMPLATE_TEST_CASE("test_make_shape_bool_tensor_exception","[test_view_factory]"
 }
 
 TEMPLATE_TEST_CASE("test_make_map_bool_tensor","[test_view_factory]",
-    typename test_config::config_engine_selector<gtensor::config::engine_expression_template>::config_type
+    typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
 ){
     using test_config_type = TestType;
     using index_type = typename test_config_type::index_type;
