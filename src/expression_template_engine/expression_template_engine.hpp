@@ -36,11 +36,11 @@ template<typename EngineT, typename ShT> auto end_broadcast(EngineT& engine, con
 }
 template<typename EngineT> auto begin_multiindex(EngineT& engine){
     using iterator_type = multiindex_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_broadcast_walker())>;
-    return iterator_type{engine.create_broadcast_walker(), engine.host()->shape(), engine.host()->descriptor().as_descriptor_with_libdivide()->strides_libdivide()};
+    return iterator_type{engine.create_broadcast_walker(), engine.holder()->shape(), engine.holder()->descriptor().as_descriptor_with_libdivide()->strides_libdivide()};
 }
 template<typename EngineT> auto end_multiindex(EngineT& engine){
     using iterator_type = multiindex_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_broadcast_walker())>;
-    return iterator_type{engine.create_broadcast_walker(), engine.host()->shape(), engine.host()->descriptor().as_descriptor_with_libdivide()->strides_libdivide(), engine.host()->size()};
+    return iterator_type{engine.create_broadcast_walker(), engine.holder()->shape(), engine.holder()->descriptor().as_descriptor_with_libdivide()->strides_libdivide(), engine.holder()->size()};
 }
 template<typename EngineT> auto begin_flatindex(EngineT& engine){
     using iterator_type = flat_index_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_trivial_walker())>;
@@ -48,7 +48,7 @@ template<typename EngineT> auto begin_flatindex(EngineT& engine){
 }
 template<typename EngineT> auto end_flatindex(EngineT& engine){
     using iterator_type = flat_index_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_trivial_walker())>;
-    return iterator_type{engine.create_trivial_walker(), engine.host()->size()};
+    return iterator_type{engine.create_trivial_walker(), engine.holder()->size()};
 }
 template<typename EngineT> auto begin_flatindex_indexer(EngineT& engine){
     using iterator_type = flat_index_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_indexer())>;
@@ -56,7 +56,7 @@ template<typename EngineT> auto begin_flatindex_indexer(EngineT& engine){
 }
 template<typename EngineT> auto end_flatindex_indexer(EngineT& engine){
     using iterator_type = flat_index_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_indexer())>;
-    return iterator_type{engine.create_indexer(), engine.host()->size()};
+    return iterator_type{engine.create_indexer(), engine.holder()->size()};
 }
 template<typename...Ts> auto begin_multiindex(const expression_template_storage_engine<Ts...>& engine){return engine.begin();}
 template<typename...Ts> auto end_multiindex(const expression_template_storage_engine<Ts...>& engine){return engine.end();}
@@ -99,7 +99,7 @@ public:
     using typename storage_engine::value_type;
     using typename storage_engine::config_type;
     using storage_engine::storage_engine;
-    using storage_engine::host;
+    using storage_engine::holder;
     using storage_engine::begin;
     using storage_engine::end;
     using storage_engine::create_indexer;
@@ -120,10 +120,10 @@ private:
     }
     template<typename U> static auto create_broadcast_walker_helper(U& instance){
         return indexer_walker<CfgT, std::decay_t<decltype(instance.create_indexer())>>{
-            instance.host()->shape(),
-            instance.host()->descriptor().cstrides(),
-            instance.host()->descriptor().reset_cstrides(),
-            instance.host()->descriptor().offset(),
+            instance.holder()->shape(),
+            instance.holder()->descriptor().cstrides(),
+            instance.holder()->descriptor().reset_cstrides(),
+            instance.holder()->descriptor().offset(),
             instance.create_indexer()
         };
     }
@@ -142,11 +142,11 @@ public:
     using typename evaluating_engine::value_type;
     using typename evaluating_engine::config_type;
     using evaluating_engine::evaluating_engine;
-    using evaluating_engine::host;
+    using evaluating_engine::holder;
     bool is_trivial()const override{
         return std::apply(
             [this](const auto&...operands){
-                return gtensor::detail::is_trivial(host()->size(),static_cast<Ops*>(operands.get())...);
+                return gtensor::detail::is_trivial(holder()->size(),static_cast<Ops*>(operands.get())...);
             },
             operands()
         );
@@ -160,7 +160,7 @@ public:
     }
     auto create_broadcast_indexer()const{
         return evaluating_indexer<ValT,CfgT,std::decay_t<decltype(create_broadcast_walker())>>{
-            host()->descriptor().as_descriptor_with_libdivide()->strides_libdivide(),
+            holder()->descriptor().as_descriptor_with_libdivide()->strides_libdivide(),
             create_broadcast_walker()
         };
     }
@@ -188,7 +188,7 @@ private:
     }
     template<typename...Args>
     auto create_broadcast_walker_helper(Args&&...walkers)const{
-        return evaluating_walker<ValT,CfgT,F,std::decay_t<Args>...>{host()->shape(), std::forward<Args>(walkers)...};
+        return evaluating_walker<ValT,CfgT,F,std::decay_t<Args>...>{holder()->shape(), std::forward<Args>(walkers)...};
     }
 };
 
@@ -234,7 +234,7 @@ public:
     using typename viewing_engine::config_type;
     using viewing_engine::viewing_engine;
     using viewing_engine::create_indexer;
-    using viewing_engine::host;
+    using viewing_engine::holder;
     bool is_trivial()const override{return true;}
     //use multiindex_iterator for view with converting descriptor - slice, transpose
     template<typename D = descriptor_type, std::enable_if_t<detail::is_converting_descriptor<D>,int> =0 > auto begin()const{return detail::begin_multiindex(*this);}
@@ -260,10 +260,10 @@ private:
     template<typename U>
     static auto create_broadcast_walker_helper(U& instance){
         return indexer_walker<CfgT, std::decay_t<decltype(instance.parent()->engine().create_indexer())>>{
-            instance.host()->shape(),
-            instance.host()->descriptor().cstrides(),
-            instance.host()->descriptor().reset_cstrides(),
-            instance.host()->descriptor().offset(),
+            instance.holder()->shape(),
+            instance.holder()->descriptor().cstrides(),
+            instance.holder()->descriptor().reset_cstrides(),
+            instance.holder()->descriptor().offset(),
             instance.parent()->engine().create_indexer()
         };
     }
