@@ -97,8 +97,8 @@ template<typename CfgT>
 class descriptor_strides
 {
     using shape_type = typename CfgT::shape_type;
-    shape_type strides_;
-    shape_type reset_strides_;
+    const shape_type strides_;
+    const shape_type reset_strides_;
 public:
     descriptor_strides() = default;
     descriptor_strides(const shape_type& shape__):
@@ -156,8 +156,8 @@ protected:
         strides_{shape_}
     {}
 private:
-    shape_type shape_;
-    detail::descriptor_strides<CfgT> strides_;
+    const shape_type shape_;
+    const detail::descriptor_strides<CfgT> strides_;
 };
 
 
