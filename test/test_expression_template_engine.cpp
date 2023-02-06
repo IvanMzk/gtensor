@@ -13,14 +13,14 @@ TEST_CASE("test_is_trivial","[test_expression_template_engine]"){
     using test_type = std::tuple<bool, bool>;
     //0result is_trivial,1expected_is_trivial
     auto test_data = GENERATE(
-                                test_type(make_test_tensor(tensor_type{1}+tensor_type{1}).is_trivial(), true),
-                                test_type(make_test_tensor(tensor_type{1,2,3,4,5}+tensor_type{1}).is_trivial(), false),
-                                test_type(make_test_tensor(tensor_type{1,2,3,4,5}+tensor_type{1,2,3,4,5}).is_trivial(), true),
-                                test_type(make_test_tensor(tensor_type{{1},{2},{3},{4},{5}}+tensor_type{{1,2,3,4,5}}).is_trivial(), false),
-                                test_type(make_test_tensor(tensor_type{1,2,3}+tensor_type{1,2,3}+tensor_type{3,4,5}+tensor_type{3,4,5}).is_trivial(), true),
-                                test_type(make_test_tensor((tensor_type{1,2,3}+tensor_type{1,2,3})+(tensor_type{3,4,5}+tensor_type{3,4,5})).is_trivial(), true),
-                                test_type(make_test_tensor((tensor_type{1}+tensor_type{1,2,3})+(tensor_type{3,4,5}+tensor_type{3,4,5})).is_trivial(), false)
-                            );
+        test_type(make_test_tensor(tensor_type{1}+tensor_type{1}).is_trivial(), true),
+        test_type(make_test_tensor(tensor_type{1,2,3,4,5}+tensor_type{1}).is_trivial(), false),
+        test_type(make_test_tensor(tensor_type{1,2,3,4,5}+tensor_type{1,2,3,4,5}).is_trivial(), true),
+        test_type(make_test_tensor(tensor_type{{1},{2},{3},{4},{5}}+tensor_type{{1,2,3,4,5}}).is_trivial(), false),
+        test_type(make_test_tensor(tensor_type{1,2,3}+tensor_type{1,2,3}+tensor_type{3,4,5}+tensor_type{3,4,5}).is_trivial(), true),
+        test_type(make_test_tensor((tensor_type{1,2,3}+tensor_type{1,2,3})+(tensor_type{3,4,5}+tensor_type{3,4,5})).is_trivial(), true),
+        test_type(make_test_tensor((tensor_type{1}+tensor_type{1,2,3})+(tensor_type{3,4,5}+tensor_type{3,4,5})).is_trivial(), false)
+    );
 
     auto result_is_trivial = std::get<0>(test_data);
     auto expected_is_trivial = std::get<1>(test_data);
@@ -307,37 +307,32 @@ TEST_CASE("test_broadcast_iterator","[test_expression_template_engine]")
     using value_type = float;
     using test_expression_template_helpers::test_tensor;
     using test_expression_template_helpers::make_test_tensor;
+    using helpers_for_testing::apply_by_element;
     using test_config_type = typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type;
     using shape_type = typename test_config_type::shape_type;
     using tensor_type = gtensor::tensor<value_type, test_config_type>;
 
-    REQUIRE([](){auto t = make_test_tensor(tensor_type{1,2,3}); auto shape = shape_type{3};
-        return std::equal(t.engine().begin_broadcast(shape), t.engine().end_broadcast(shape), tensor_type{1,2,3}.begin());}()
+    auto test_data = std::make_tuple(
+        std::make_tuple(tensor_type{1,2,3}, shape_type{3}, std::vector<value_type>{1,2,3}),
+        std::make_tuple(tensor_type{1,2,3}, shape_type{1,1,3}, std::vector<value_type>{1,2,3}),
+        std::make_tuple(tensor_type{1,2,3}, shape_type{2,3}, std::vector<value_type>{1,2,3,1,2,3}),
+        std::make_tuple(tensor_type{1,2,3}, shape_type{2,2,3}, std::vector<value_type>{1,2,3,1,2,3,1,2,3,1,2,3}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, shape_type{1,2,3}, std::vector<value_type>{1,2,3,4,5,6}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, shape_type{2,2,3}, std::vector<value_type>{1,2,3,4,5,6,1,2,3,4,5,6}),
+        std::make_tuple(tensor_type{{1},{2},{3}}, shape_type{3,3}, std::vector<value_type>{1,1,1,2,2,2,3,3,3}),
+        std::make_tuple(tensor_type{-1} + tensor_type{1,2,3} + tensor_type{{1},{2},{3}} + tensor_type{1}, shape_type{1,3,3}, std::vector<value_type>{2,3,4,3,4,5,4,5,6}),
+        std::make_tuple((tensor_type{-1} + tensor_type{1,2,3} + tensor_type{{1},{2},{3}} + tensor_type{1})({{{},{},2}}), shape_type{1,2,3}, std::vector<value_type>{2,3,4,4,5,6})
     );
-    REQUIRE([](){auto t = make_test_tensor(tensor_type{1,2,3}); auto shape = shape_type{1,1,3};
-        return std::equal(t.engine().begin_broadcast(shape), t.engine().end_broadcast(shape), tensor_type{1,2,3}.begin());}()
-    );
-    REQUIRE([](){auto t = make_test_tensor(tensor_type{1,2,3}); auto shape = shape_type{2,3};
-        return std::equal(t.engine().begin_broadcast(shape), t.engine().end_broadcast(shape), tensor_type{1,2,3,1,2,3}.begin());}()
-    );
-    REQUIRE([](){auto t = make_test_tensor(tensor_type{1,2,3}); auto shape = shape_type{2,1,3};
-        return std::equal(t.engine().begin_broadcast(shape), t.engine().end_broadcast(shape), tensor_type{1,2,3,1,2,3}.begin());}()
-    );
-    REQUIRE([](){auto t = make_test_tensor(tensor_type{1,2,3}); auto shape = shape_type{2,2,3};
-        return std::equal(t.engine().begin_broadcast(shape), t.engine().end_broadcast(shape), tensor_type{1,2,3,1,2,3,1,2,3,1,2,3}.begin());}()
-    );
-    REQUIRE([](){auto t = make_test_tensor(tensor_type{{1,2,3},{4,5,6}}); auto shape = shape_type{1,2,3};
-        return std::equal(t.engine().begin_broadcast(shape), t.engine().end_broadcast(shape), tensor_type{1,2,3,4,5,6}.begin());}()
-    );
-    REQUIRE([](){auto t = make_test_tensor(tensor_type{{1,2,3},{4,5,6}}); auto shape = shape_type{2,2,3};
-        return std::equal(t.engine().begin_broadcast(shape), t.engine().end_broadcast(shape), tensor_type{1,2,3,4,5,6,1,2,3,4,5,6}.begin());}()
-    );
-    REQUIRE([](){auto t = make_test_tensor(tensor_type{-1} + tensor_type{1,2,3} + tensor_type{{1},{2},{3}} + tensor_type{1}); auto shape = shape_type{1,3,3};
-        return std::equal(t.engine().begin_broadcast(shape), t.engine().end_broadcast(shape), tensor_type{2,3,4,3,4,5,4,5,6}.begin());}()
-    );
-    REQUIRE([](){auto t = make_test_tensor((tensor_type{-1} + tensor_type{1,2,3} + tensor_type{{1},{2},{3}} + tensor_type{1})({{{},{},2}})); auto shape = shape_type{1,2,3};
-        return std::equal(t.engine().begin_broadcast(shape), t.engine().end_broadcast(shape), tensor_type{2,3,4,4,5,6}.begin());}()
-    );
+    auto test = [](const auto& test_data_){
+        auto test_ten = make_test_tensor(std::get<0>(test_data_));
+        auto broadcast_shape = std::get<1>(test_data_);
+        auto expected = std::get<2>(test_data_);
+        auto begin = test_ten.engine().begin_broadcast(broadcast_shape);
+        auto end = test_ten.engine().end_broadcast(broadcast_shape);
+        REQUIRE(std::distance(begin,end) == expected.size());
+        REQUIRE(std::equal(expected.begin(),expected.end(), begin));
+    };
+    apply_by_element(test, test_data);
 }
 
 TEST_CASE("has_view_with_converting_descriptor","[test_expression_template_engine]"){

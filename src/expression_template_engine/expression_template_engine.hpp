@@ -32,7 +32,7 @@ template<typename EngineT, typename ShT> auto begin_broadcast(EngineT& engine, c
 }
 template<typename EngineT, typename ShT> auto end_broadcast(EngineT& engine, const ShT& shape){
     using iterator_type = multiindex_bidirectional_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_broadcast_walker())>;
-    return iterator_type{engine.create_broadcast_walker(), shape};
+    return iterator_type{engine.create_broadcast_walker(), shape, detail::make_size(shape)};
 }
 template<typename EngineT> auto begin_multiindex(EngineT& engine){
     using iterator_type = multiindex_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_broadcast_walker())>;
@@ -67,8 +67,8 @@ template<typename...Ts> auto end_multiindex(expression_template_storage_engine<T
 template<typename...Ts> auto begin_flatindex(expression_template_storage_engine<Ts...>& engine){return engine.begin();}
 template<typename...Ts> auto end_flatindex(expression_template_storage_engine<Ts...>& engine){return engine.end();}
 
-template<typename> constexpr bool is_converting_descriptor = false;
-template<typename...Ts> constexpr bool is_converting_descriptor<converting_descriptor<Ts...>> = true;
+template<typename> constexpr bool is_converting_descriptor_v = false;
+template<typename...Ts> constexpr bool is_converting_descriptor_v<converting_descriptor<Ts...>> = true;
 
 template<typename> struct has_view_with_converting_descriptor{static constexpr bool value = false;};
 template<typename V,typename C, typename P, typename...Ts> struct has_view_with_converting_descriptor<expression_template_viewing_engine<V,C,converting_descriptor<Ts...>,P>>{
@@ -236,24 +236,39 @@ public:
     using viewing_engine::create_indexer;
     using viewing_engine::holder;
     bool is_trivial()const override{return true;}
-    //use multiindex_iterator for view with converting descriptor - slice, transpose
-    template<typename D = descriptor_type, std::enable_if_t<detail::is_converting_descriptor<D>,int> =0 > auto begin()const{return detail::begin_multiindex(*this);}
-    template<typename D = descriptor_type, std::enable_if_t<detail::is_converting_descriptor<D>,int> =0 > auto end()const{return detail::end_multiindex(*this);}
-    template<typename D = descriptor_type, std::enable_if_t<detail::is_converting_descriptor<D>,int> =0 > auto begin(){return detail::begin_multiindex(*this);}
-    template<typename D = descriptor_type, std::enable_if_t<detail::is_converting_descriptor<D>,int> =0 > auto end(){return detail::end_multiindex(*this);}
-    //use flat_index_iterator for view with not converting descriptor - reshape, subdim
-    template<typename D = descriptor_type, std::enable_if_t<!detail::is_converting_descriptor<D>,int> =0 > auto begin()const{return detail::begin_flatindex(*this);}
-    template<typename D = descriptor_type, std::enable_if_t<!detail::is_converting_descriptor<D>,int> =0 > auto end()const{return detail::end_flatindex(*this);}
-    template<typename D = descriptor_type, std::enable_if_t<!detail::is_converting_descriptor<D>,int> =0 > auto begin(){return detail::begin_flatindex(*this);}
-    template<typename D = descriptor_type, std::enable_if_t<!detail::is_converting_descriptor<D>,int> =0 > auto end(){return detail::end_flatindex(*this);}
+
+
+    // auto begin()const{return detail::begin_multiindex(*this);}
+    // auto end()const{return detail::end_multiindex(*this);}
+    // auto begin(){return detail::begin_multiindex(*this);}
+    // auto end(){return detail::end_multiindex(*this);}
+
+    // auto begin()const{return detail::begin_flatindex(*this);}
+    // auto end()const{return detail::end_flatindex(*this);}
+    // auto begin(){return detail::begin_flatindex(*this);}
+    // auto end(){return detail::end_flatindex(*this);}
+
+    //use multiindex_iterator and broadcast_walker for view with converting descriptor - slice, transpose
+    template<typename D = descriptor_type, std::enable_if_t<detail::is_converting_descriptor_v<D>,int> =0 > auto begin()const{return detail::begin_multiindex(*this);}
+    template<typename D = descriptor_type, std::enable_if_t<detail::is_converting_descriptor_v<D>,int> =0 > auto end()const{return detail::end_multiindex(*this);}
+    template<typename D = descriptor_type, std::enable_if_t<detail::is_converting_descriptor_v<D>,int> =0 > auto begin(){return detail::begin_multiindex(*this);}
+    template<typename D = descriptor_type, std::enable_if_t<detail::is_converting_descriptor_v<D>,int> =0 > auto end(){return detail::end_multiindex(*this);}
+    //use flat_index_iterator and trivial_walker for view with not converting descriptor - reshape, subdim
+    template<typename D = descriptor_type, std::enable_if_t<!detail::is_converting_descriptor_v<D>,int> =0 > auto begin()const{return detail::begin_flatindex(*this);}
+    template<typename D = descriptor_type, std::enable_if_t<!detail::is_converting_descriptor_v<D>,int> =0 > auto end()const{return detail::end_flatindex(*this);}
+    template<typename D = descriptor_type, std::enable_if_t<!detail::is_converting_descriptor_v<D>,int> =0 > auto begin(){return detail::begin_flatindex(*this);}
+    template<typename D = descriptor_type, std::enable_if_t<!detail::is_converting_descriptor_v<D>,int> =0 > auto end(){return detail::end_flatindex(*this);}
     //broadcasting iterators
     auto begin_broadcast(const shape_type& shape)const{return detail::begin_broadcast(*this, shape);}
     auto end_broadcast(const shape_type& shape)const{return detail::end_broadcast(*this, shape);}
     auto begin_broadcast(const shape_type& shape){return detail::begin_broadcast(*this, shape);}
     auto end_broadcast(const shape_type& shape){return detail::end_broadcast(*this, shape);}
 
+    //both broadcast and trivial walker utilize parent's indexer subscript operator to access data
+    //return indexer_walker with parent indexer (chain of indexers starts from parent's indexer)
     auto create_broadcast_walker()const{return create_broadcast_walker_helper(*this);}
     auto create_broadcast_walker(){return create_broadcast_walker_helper(*this);}
+    //return indexer, chain of indexers starts from this view indexer
     auto create_trivial_walker()const{return create_trivial_walker_helper(*this);}
     auto create_trivial_walker(){return create_trivial_walker_helper(*this);}
 private:

@@ -34,8 +34,8 @@ template<typename CfgT, typename StorT> struct storage_engine_traits<config::eng
 
 template<typename...> struct evaluating_engine_traits;
 template<typename ValT, typename CfgT,  typename F, typename...Ops> struct evaluating_engine_traits<config::engine_expression_template, ValT,CfgT,F,Ops...>{
-    //using type = expression_template_nodispatching_engine<ValT,CfgT,F,Ops...>;
-    using type = expression_template_root_dispatching_engine<ValT,CfgT,F,Ops...>;
+    using type = expression_template_nodispatching_engine<ValT,CfgT,F,Ops...>;
+    //using type = expression_template_root_dispatching_engine<ValT,CfgT,F,Ops...>;
 };
 
 template<typename...> struct viewing_engine_traits;

@@ -1,6 +1,8 @@
 #ifndef HELPERS_FOR_TESTING_HPP_
 #define HELPERS_FOR_TESTING_HPP_
 
+#include <tuple>
+
 namespace helpers_for_testing{
 
 template<typename, typename> struct list_concat;
@@ -21,6 +23,19 @@ struct cross_product<PairT, L<>, L<Vs...>>{
     using type = L<>;
 };
 
+template<typename F, typename Tuple>
+auto apply_by_element(F&& f, Tuple&& t){
+    using tuple_type = std::decay_t<Tuple>;
+    return apply_by_element(std::forward<F>(f), std::forward<Tuple>(t), std::make_index_sequence<std::tuple_size_v<tuple_type>>{});
+}
+template<typename F, typename Tuple, std::size_t...I>
+auto apply_by_element(F&& f, Tuple&& t, std::index_sequence<I...>){
+    if constexpr(std::disjunction_v<std::is_void<decltype(std::invoke(std::forward<F>(f), std::get<I>(std::forward<Tuple>(t))))>...>){
+        (std::invoke(std::forward<F>(f), std::get<I>(std::forward<Tuple>(t))),...);
+    }else{
+        return std::make_tuple(std::invoke(std::forward<F>(f), std::get<I>(std::forward<Tuple>(t)))...);
+    }
+}
 
 }   //end of namespace helpers_for_testing
 
