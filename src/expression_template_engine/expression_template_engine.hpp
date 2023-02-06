@@ -72,17 +72,6 @@ template<typename...Ts> struct is_converting_descriptor<converting_descriptor<Ts
 template<typename T> using is_converting_descriptor_t = typename is_converting_descriptor<T>::type;
 template<typename T> constexpr bool is_converting_descriptor_v = is_converting_descriptor_t<T>();
 
-template<typename> struct has_view_with_converting_descriptor{static constexpr bool value = false;};
-template<typename V,typename C, typename P, typename...Ts> struct has_view_with_converting_descriptor<expression_template_viewing_engine<V,C,converting_descriptor<Ts...>,P>>{
-    static constexpr bool value = true;
-};
-template<typename V,typename C, typename F, typename...Ops> struct has_view_with_converting_descriptor<expression_template_nodispatching_engine<V,C,F,Ops...>>{
-    static constexpr bool value = (has_view_with_converting_descriptor<typename Ops::engine_type>::value||...);
-};
-template<typename V,typename C, typename F, typename...Ops> struct has_view_with_converting_descriptor<expression_template_root_dispatching_engine<V,C,F,Ops...>>{
-    static constexpr bool value = (has_view_with_converting_descriptor<typename Ops::engine_type>::value||...);
-};
-
 }   //end of namespace detail
 
 template<typename ValT, typename CfgT>
@@ -212,11 +201,8 @@ public:
         return basic_indexer<index_type, decltype(create_indexer_helper())>{create_indexer_helper()};
     }
 private:
-    bool should_use_trivial()const{
-        return typename detail::has_view_with_converting_descriptor<expression_template_nodispatching_engine>::value && is_trivial();
-    }
     auto create_indexer_helper()const{
-        if (should_use_trivial()){
+        if (is_trivial()){
             return poly_indexer<index_type, value_type>{create_trivial_indexer()};
         }else{
             return poly_indexer<index_type, value_type>{create_broadcast_indexer()};

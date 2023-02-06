@@ -178,85 +178,34 @@ TEST_CASE("benchmark_expression_template_view","[benchmark_expression_template]"
     using benchmark_helpers::making_iter_reverse_iterate_deref;
 
     auto benchmark_worker = making_iter_iterate_deref;
-    //auto benchmark_worker = making_iter_reverse_iterate_deref;
 
-    //auto tt = []{return tensor_type(std::vector<int>{1000,1000}, 0.0f) + tensor_type(std::vector<int>{1000,1000}, 0.0f);};
-    //auto tt = []{return tensor_type(std::vector<int>{1000,1000}, 0.0f);};
-    //auto tt = []{return tensor_type(std::vector<int>{1000,1000}, 0.0f).transpose(1,0);};
-    auto tt = []{return asymmetric_tree_maker<1>{}(tensor_type(std::vector<int>{1000,1000}, 0.0f),tensor_type(std::vector<int>{1000,1000}, 0.0f));};
+    auto trivial = []{return asymmetric_tree_maker<1>{}(tensor_type({1000,1000}, 0.0f),tensor_type({1000,1000}, 0.0f));};
+    auto trivial_converting_view_operand = []{return asymmetric_tree_maker<1>{}(tensor_type({1000,1000}, 0.0f).transpose(1,0),tensor_type({1000,1000}, 0.0f));};
+    auto not_trivial = []{return asymmetric_tree_maker<1>{}(tensor_type({100,100,100}, 0.0f),tensor_type({100,100}, 0.0f));};
 
-    //transpose view of storage tensor iterate using multiindex iterator, broadcast walker, parent indexer
-    benchmark_with_making_iter(
-        tt().transpose(1,0),
-        "transpose_view_of_storage_tensor_multiiter",
-        benchmark_worker
-    );
-    //slice view of storage tensor iterate using multiindex iterator, broadcast walker, parent indexer
-    benchmark_with_making_iter(
-        tt()({{}}),
-        "slice_view_of_storage_tensor_multiiter",
-        benchmark_worker
-    );
-    //reshape view of storage tensor iterate using multiindex iterator, broadcast walker, parent indexer
-    benchmark_with_making_iter(
-        tt().reshape(),
-        "reshape_view_of_storage_tensor_multiiter",
-        benchmark_worker
-    );
-    //subdim view of storage tensor iterate using multiindex iterator, broadcast walker, parent indexer
-    benchmark_with_making_iter(
-        tt()(),
-        "subdim_view_of_storage_tensor_multiiter",
-        benchmark_worker
-    );
+    //benchmark efficiency view of expression
+    //must be run with and without dispatch based on is_trivial of expression
+    //view requires making its parent indexer
+    //in general expression indexer is not efficient, every flat subscription must be transformed to multiindex, such transformation uses division
+    //for trivial expression trivial indexer, that use only flat index, can be used, but polymorphic wrapper needed to have single return type in interface
+    //benchmark result:
+    //wrapper has small overhead for non trivial expresion, but using trivial indexer with wrapper 2-3 times faster
 
-    // //transpose view of storage tensor iterate using multiindex iterator, broadcast walker, parent indexer
-    // benchmark_with_making_iter(
-    //     make_test_tensor_broadcast(tt().transpose(1,0)),
-    //     "transpose_view_of_storage_tensor_multiiter",
-    //     benchmark_worker
-    // );
-    // //slice view of storage tensor iterate using multiindex iterator, broadcast walker, parent indexer
-    // benchmark_with_making_iter(
-    //     make_test_tensor_broadcast(tt()({{}})),
-    //     "slice_view_of_storage_tensor_multiiter",
-    //     benchmark_worker
-    // );
-    // //reshape view of storage tensor iterate using multiindex iterator, broadcast walker, parent indexer
-    // benchmark_with_making_iter(
-    //     make_test_tensor_broadcast(tt().reshape()),
-    //     "reshape_view_of_storage_tensor_multiiter",
-    //     benchmark_worker
-    // );
-    // //subdim view of storage tensor iterate using multiindex iterator, broadcast walker, parent indexer
-    // benchmark_with_making_iter(
-    //     make_test_tensor_broadcast(tt()()),
-    //     "subdim_view_of_storage_tensor_multiiter",
-    //     benchmark_worker
-    // );
+    //view of trivial expression
+    benchmark_with_making_iter(trivial().transpose(),"transpose_view_of_trivial_expression",benchmark_worker);
+    benchmark_with_making_iter(trivial()({{}}),"slice_view_of_trivial_expression",benchmark_worker);
+    benchmark_with_making_iter(trivial().reshape(),"reshape_view_of_trivial_expression",benchmark_worker);
+    benchmark_with_making_iter(trivial()(),"subdim_view_of_trivial_expression",benchmark_worker);
 
-    // //transpose view of storage tensor iterate using flatindex iterator, broadcast walker, parent indexer
-    // benchmark_with_making_iter(
-    //     make_test_tensor_trivial(tt().transpose(1,0)),
-    //     "transpose_view_of_storage_tensor_flatiter",
-    //     benchmark_worker
-    // );
-    // //slice view of storage tensor iterate using flatindex iterator, broadcast walker, parent indexer
-    // benchmark_with_making_iter(
-    //     make_test_tensor_trivial(tt()({{}})),
-    //     "slice_view_of_storage_tensor_flatiter",
-    //     benchmark_worker
-    // );
-    // //reshape view of storage tensor iterate using flatindex iterator, broadcast walker, parent indexer
-    // benchmark_with_making_iter(
-    //     make_test_tensor_trivial(tt().reshape()),
-    //     "reshape_view_of_storage_tensor_flatiter",
-    //     benchmark_worker
-    // );
-    // //subdim view of storage tensor iterate using flatindex iterator, broadcast walker, parent indexer
-    // benchmark_with_making_iter(
-    //     make_test_tensor_trivial(tt()()),
-    //     "subdim_view_of_storage_tensor_flatiter",
-    //     benchmark_worker
-    // );
+    //view of not trivial expression
+    benchmark_with_making_iter(not_trivial().transpose(),"transpose_view_of_not_trivial_expression",benchmark_worker);
+    benchmark_with_making_iter(not_trivial()({{}}),"slice_view_of_not_trivial_expression",benchmark_worker);
+    benchmark_with_making_iter(not_trivial().reshape(),"reshape_view_of_not_trivial_expression",benchmark_worker);
+    benchmark_with_making_iter(not_trivial()(),"subdim_view_of_not_trivial_expression",benchmark_worker);
+
+    //view of not trivial expression with converting view operand
+    benchmark_with_making_iter(trivial_converting_view_operand().transpose(),"transpose_view_of_trivial_converting_view_operand_expression",benchmark_worker);
+    benchmark_with_making_iter(trivial_converting_view_operand()({{}}),"slice_view_of_trivial_converting_view_operand_expression",benchmark_worker);
+    benchmark_with_making_iter(trivial_converting_view_operand().reshape(),"reshape_view_of_trivial_converting_view_operand_expression",benchmark_worker);
+    benchmark_with_making_iter(trivial_converting_view_operand()(),"subdim_view_of_trivial_converting_view_operand_expression",benchmark_worker);
 }
