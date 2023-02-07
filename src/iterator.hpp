@@ -203,7 +203,7 @@ protected:
     using typename multiindex_bidirectional_iterator::result_type;
     using typename multiindex_bidirectional_iterator::shape_type;
     using typename multiindex_bidirectional_iterator::index_type;
-    using strides_type = typename detail::libdiv_strides_traits<CfgT>::type;
+    using strides_type = typename detail::strides_div_type<CfgT>::type;
 public:
     using iterator_category = std::random_access_iterator_tag;
     using typename multiindex_bidirectional_iterator::value_type;

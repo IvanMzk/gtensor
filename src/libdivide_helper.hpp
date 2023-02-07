@@ -8,18 +8,8 @@
 namespace gtensor{
 namespace detail{
 
-template<typename> inline constexpr bool is_libdivide_div = false;
-template<typename T, libdivide::Branching Algo> inline constexpr bool is_libdivide_div<libdivide::divider<T,Algo>> = true;
 template<typename T> using libdivide_divider = libdivide::divider<T>;
 template<typename T> using libdivide_vector = std::vector<libdivide_divider<T>>;
-
-template<typename CfgT>
-struct libdiv_strides_traits{
-    template<typename> struct selector{using type = typename CfgT::shape_type;};
-    template<> struct selector<config::mode_div_native>{using type = typename CfgT::shape_type;};
-    template<> struct selector<config::mode_div_libdivide>{using type = libdivide_vector<typename CfgT::index_type>;};
-    using type = typename selector<typename CfgT::div_mode>::type;
-};
 
 template<template<typename> typename D, template<typename...> typename U, typename T>
 auto make_libdivide_vector_helper(const U<T>& src){
@@ -45,11 +35,6 @@ template<typename CfgT, template<typename...> typename U, typename T, std::enabl
 auto make_dividers(const U<T>& src){
     return src;
 }
-
-// template<template<typename...> typename U, typename T>
-// auto make_brfr_strides(const U<T>& strides){
-//     return make_libdiv_strides<libdivide::branchfree_divider>(strides);
-// }
 
 /*
 * return quotient
@@ -127,40 +112,6 @@ protected:
     collection_libdivide_extension(const shape_type&)
     {}
 };
-
-
-
-
-// template<typename ValT,  template<typename> typename Cfg, typename Mode> class reference_libdivide_extension;
-
-// template<typename ValT,  template<typename> typename Cfg>
-// class reference_libdivide_extension<ValT,Cfg,config::mode_div_libdivide>
-// {
-//     using config_type = Cfg<ValT>;
-//     using shape_type = typename config_type::shape_type;
-//     using index_type = typename config_type::index_type;
-//     using libdivide_collection_type = detail::libdivide_vector<index_type>;
-//     const libdivide_collection_type* dividers_libdivide_;
-// protected:
-//     reference_libdivide_extension() = default;
-//     reference_libdivide_extension(const libdivide_collection_type& dividers_libdivide__):
-//         dividers_libdivide_{&dividers_libdivide__}
-//     {}
-//     const auto&  dividers_libdivide()const{return *dividers_libdivide_;}
-// };
-
-// template<typename ValT,  template<typename> typename Cfg>
-// class reference_libdivide_extension<ValT,Cfg,config::mode_div_native>
-// {
-//     using config_type = Cfg<ValT>;
-//     using index_type = typename config_type::index_type;
-//     using libdivide_collection_type = detail::libdivide_vector<index_type>;
-// protected:
-//     reference_libdivide_extension() = default;
-//     reference_libdivide_extension(const libdivide_collection_type&)
-//     {}
-// };
-
 
 }   //end of namespace detail
 }   //end of namespace gtensor

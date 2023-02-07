@@ -3,18 +3,6 @@
 #include "libdivide_helper.hpp"
 #include "test_config.hpp"
 
-
-TEMPLATE_TEST_CASE("test_is_libdivide_div","[test_libdivide]", std::int64_t, std::uint64_t){
-    using index_type = TestType;
-    using branchfull_divider = libdivide::divider<index_type>;
-    using branchfree_divider = libdivide::branchfree_divider<index_type>;
-
-
-    REQUIRE(gtensor::detail::is_libdivide_div<index_type> == false);
-    REQUIRE(gtensor::detail::is_libdivide_div<branchfull_divider> == true);
-    REQUIRE(gtensor::detail::is_libdivide_div<branchfree_divider> == true);
-}
-
 TEMPLATE_TEST_CASE("test_flat_to_multi_mode_native", "[test_flat_to_multi]", gtensor::config::mode_div_native){
     using value_type = float;
     using config_type = test_config::config_div_mode_selector<TestType>::config_type;

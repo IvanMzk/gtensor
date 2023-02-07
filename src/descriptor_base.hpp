@@ -94,6 +94,13 @@ auto convert_index(const ShT& cstrides, const typename ShT::value_type& offset, 
 }
 
 template<typename CfgT>
+struct strides_div_type{
+    template<typename> struct selector{using type = typename CfgT::shape_type;};    //native division
+    template<> struct selector<config::mode_div_libdivide>{using type = libdivide_vector<typename CfgT::index_type>;};  //libdivide division
+    using type = typename selector<typename CfgT::div_mode>::type;
+};
+
+template<typename CfgT>
 class descriptor_strides
 {
     using shape_type = typename CfgT::shape_type;

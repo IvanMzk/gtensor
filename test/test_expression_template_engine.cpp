@@ -335,36 +335,6 @@ TEST_CASE("test_broadcast_iterator","[test_expression_template_engine]")
     apply_by_element(test, test_data);
 }
 
-TEST_CASE("has_view_with_converting_descriptor","[test_expression_template_engine]"){
-    using value_type = float;
-    using tensor_type = gtensor::tensor<value_type, test_expression_template_helpers::test_default_config_type>;
-    using gtensor::detail::has_view_with_converting_descriptor;
-    using test_expression_template_helpers::make_test_tensor;
-    using test_type = std::tuple<bool,bool>;
-    auto test_data = GENERATE(
-        test_type{has_view_with_converting_descriptor<std::decay_t<decltype(make_test_tensor(tensor_type{1}).engine())>>::value,false},
-        test_type{has_view_with_converting_descriptor<std::decay_t<decltype(make_test_tensor(tensor_type{1}+tensor_type{1}).engine())>>::value,false},
-        test_type{has_view_with_converting_descriptor<std::decay_t<decltype(make_test_tensor(tensor_type{1}+tensor_type{1}+tensor_type{1}).engine())>>::value,false},
-        test_type{has_view_with_converting_descriptor<std::decay_t<decltype(make_test_tensor((tensor_type{1}+tensor_type{1})+(tensor_type{1}+tensor_type{1})).engine())>>::value,false},
-        test_type{has_view_with_converting_descriptor<std::decay_t<decltype(make_test_tensor(tensor_type{1}()).engine())>>::value,false},
-        test_type{has_view_with_converting_descriptor<std::decay_t<decltype(make_test_tensor(tensor_type{1}()+tensor_type{1}()+tensor_type{1}()).engine())>>::value,false},
-        test_type{has_view_with_converting_descriptor<std::decay_t<decltype(make_test_tensor(tensor_type{1} + tensor_type{1}()+ tensor_type{1}).engine())>>::value,false},
-        test_type{has_view_with_converting_descriptor<std::decay_t<decltype(make_test_tensor(tensor_type{1}.reshape() + tensor_type{1} + tensor_type{1}() + tensor_type{1}()).engine())>>::value,false},
-        test_type{has_view_with_converting_descriptor<std::decay_t<decltype(make_test_tensor(tensor_type{1}({{}})).engine())>>::value,true},
-        test_type{has_view_with_converting_descriptor<std::decay_t<decltype(make_test_tensor(tensor_type{1}({{}}) + tensor_type{1}({{}}) + tensor_type{1}({{}})).engine())>>::value,true},
-        test_type{has_view_with_converting_descriptor<std::decay_t<decltype(make_test_tensor(tensor_type{1}({{}}) + tensor_type{1} + tensor_type{1}).engine())>>::value,true},
-        test_type{has_view_with_converting_descriptor<std::decay_t<decltype(make_test_tensor((tensor_type{1}() + tensor_type{1}({{}})) + (tensor_type{1}.reshape() + tensor_type{1})).engine())>>::value,true},
-        test_type{has_view_with_converting_descriptor<std::decay_t<decltype(make_test_tensor(tensor_type{1}.transpose()).engine())>>::value,true},
-        test_type{has_view_with_converting_descriptor<std::decay_t<decltype(make_test_tensor(tensor_type{1}.transpose() + tensor_type{1}.transpose() + tensor_type{1}.transpose()).engine())>>::value,true},
-        test_type{has_view_with_converting_descriptor<std::decay_t<decltype(make_test_tensor(tensor_type{1} + tensor_type{1}.transpose() + tensor_type{1}).engine())>>::value,true},
-        test_type{has_view_with_converting_descriptor<std::decay_t<decltype(make_test_tensor(tensor_type{1} + tensor_type{1}.transpose() + tensor_type{1}({{}}) + tensor_type{1}).engine())>>::value,true}
-    );
-
-    auto result = std::get<0>(test_data);
-    auto expected = std::get<1>(test_data);
-    REQUIRE(result == expected);
-}
-
 TEST_CASE("test_broadcast_assignment","[test_expression_template_engine]"){
     using value_type = float;
     using reference_type = value_type&;

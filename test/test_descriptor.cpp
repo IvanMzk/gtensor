@@ -231,7 +231,7 @@ TEMPLATE_TEST_CASE("test_descriptor_with_libdivide","[test_descriptor]", gtensor
     using config_type = test_config::config_div_mode_selector<TestType>::config_type;
     using descriptor_type = gtensor::descriptor_with_libdivide<config_type>;
     using descriptor_base_type = gtensor::descriptor_base<config_type>;
-    using strides_libdivide_type = gtensor::detail::libdiv_strides_traits<config_type>::type;
+    using strides_libdivide_type = gtensor::detail::strides_div_type<config_type>::type;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     using gtensor::detail::make_dividers;
@@ -272,7 +272,7 @@ TEMPLATE_TEST_CASE("test_converting_descriptor_getters", "[test_descriptor]", gt
     using descriptor_type = gtensor::converting_descriptor<config_type>;
     using descriptor_base_type = gtensor::descriptor_base<config_type>;
     using descriptor_with_libdivide_type = gtensor::descriptor_with_libdivide<config_type>;
-    using strides_libdivide_type = gtensor::detail::libdiv_strides_traits<config_type>::type;
+    using strides_libdivide_type = gtensor::detail::strides_div_type<config_type>::type;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     using gtensor::detail::make_dividers;

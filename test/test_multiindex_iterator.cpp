@@ -13,10 +13,10 @@ using gtensor::walker;
 
 template<typename ValT, typename CfgT>
 struct test_tensor : public tensor<ValT,CfgT>{
-    using base_type = tensor<ValT,CfgT>;    
+    using base_type = tensor<ValT,CfgT>;
     using expression_base = evaluating_base<ValT,CfgT>;
     using iterator_type = multiindex_iterator<ValT,CfgT,walker<ValT,CfgT>>;
-    using strides_type = typename gtensor::detail::libdiv_strides_traits<CfgT>::type;
+    using strides_type = typename gtensor::detail::strides_div_type<CfgT>::type;
 
     strides_type strides{gtensor::detail::make_dividers<CfgT>(impl()->strides())};
 
@@ -24,7 +24,7 @@ struct test_tensor : public tensor<ValT,CfgT>{
     test_tensor(const base_type& base):
         base_type{base}
     {}
-    
+
     auto begin()const{return iterator_type{impl()->as_evaluating()->create_walker(), impl()->shape(), strides};}
     auto end()const{return iterator_type{impl()->as_evaluating()->create_walker(), impl()->shape(), strides, impl()->size()};}
 };
@@ -82,7 +82,7 @@ TEMPLATE_TEST_CASE("test_multiindex_iterator","[test_multiindex_iterator]",gtens
             test_type{emaker_type{}().end()[-3], value_type{4}},
             test_type{emaker_type{}().end()[-4], value_type{3}},
             test_type{emaker_type{}().end()[-5], value_type{2}},
-            test_type{emaker_type{}().end()[-6], value_type{1}},        
+            test_type{emaker_type{}().end()[-6], value_type{1}},
             test_type{*(emaker_type{}().begin()+0), value_type{1}},
             test_type{*(emaker_type{}().begin()+1), value_type{2}},
             test_type{*(emaker_type{}().begin()+2), value_type{3}},

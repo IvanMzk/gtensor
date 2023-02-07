@@ -179,6 +179,9 @@ TEST_CASE("benchmark_expression_template_view","[benchmark_expression_template]"
 
     auto benchmark_worker = making_iter_iterate_deref;
 
+    // auto trivial = []{return asymmetric_tree_maker<1>{}(tensor_type({100,100}, 0.0f),tensor_type({100,100}, 0.0f));};
+    // auto trivial_converting_view_operand = []{return asymmetric_tree_maker<1>{}(tensor_type({100,100}, 0.0f).transpose(1,0),tensor_type({100,100}, 0.0f));};
+    // auto not_trivial = []{return asymmetric_tree_maker<1>{}(tensor_type({10,100,10}, 0.0f),tensor_type({100,10}, 0.0f));};
     auto trivial = []{return asymmetric_tree_maker<1>{}(tensor_type({1000,1000}, 0.0f),tensor_type({1000,1000}, 0.0f));};
     auto trivial_converting_view_operand = []{return asymmetric_tree_maker<1>{}(tensor_type({1000,1000}, 0.0f).transpose(1,0),tensor_type({1000,1000}, 0.0f));};
     auto not_trivial = []{return asymmetric_tree_maker<1>{}(tensor_type({100,100,100}, 0.0f),tensor_type({100,100}, 0.0f));};
