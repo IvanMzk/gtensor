@@ -37,7 +37,7 @@
 // disable warning C4146: unary minus operator applied
 // to unsigned type, result still unsigned
 #pragma warning(disable : 4146)
-// disable warning C4204: nonstandard extension used : non-constant aggregate 
+// disable warning C4204: nonstandard extension used : non-constant aggregate
 // initializer
 //
 // It's valid C99
@@ -240,7 +240,7 @@ static LIBDIVIDE_INLINE int16_t libdivide_s16_do_raw(
 static LIBDIVIDE_INLINE int16_t libdivide_s16_do(
     int16_t numer, const struct libdivide_s16_t* denom);
 static LIBDIVIDE_INLINE uint16_t libdivide_u16_do_raw(
-    uint16_t numer, uint16_t magic, uint8_t more);    
+    uint16_t numer, uint16_t magic, uint8_t more);
 static LIBDIVIDE_INLINE uint16_t libdivide_u16_do(
     uint16_t numer, const struct libdivide_u16_t* denom);
 static LIBDIVIDE_INLINE int32_t libdivide_s32_do(
@@ -764,7 +764,7 @@ uint16_t libdivide_u16_do_raw(uint16_t numer, uint16_t magic, uint8_t more) {
             // don't need to mask them off.
             return q >> more;
         }
-    }    
+    }
 }
 
 uint16_t libdivide_u16_do(uint16_t numer, const struct libdivide_u16_t* denom) {
@@ -2997,8 +2997,6 @@ struct dispatcher<uint64_t, BRANCHFREE> {
 // based on the integer and algorithm template parameters.
 template <typename T, Branching ALGO = BRANCHFULL>
 class divider {
-    public:
-    using value_type = T;
    private:
     typedef dispatcher<T, ALGO> dispatcher_t;
 
@@ -3009,9 +3007,8 @@ class divider {
     divider() {}
 
     // Constructor that takes the divisor as a parameter
-    LIBDIVIDE_INLINE divider(T d) : 
-    div(d),
-    div_(d)
+    LIBDIVIDE_INLINE divider(T d) :
+    div(d)
     {}
 
     // Divides n by the divisor
@@ -3020,8 +3017,6 @@ class divider {
     // Recovers the divisor, returns the value that was
     // used to initialize this divider object.
     T recover() const { return div.recover(); }
-    value_type divisor()const{return div_;}
-
 
     bool operator==(const divider<T, ALGO> &other) const {
         return div.denom.magic == other.div.denom.magic && div.denom.more == other.div.denom.more;
@@ -3048,9 +3043,8 @@ class divider {
 #endif
 
    private:
-    // Storage for the actual divisor    
+    // Storage for the actual divisor
     dispatcher_t div;
-    value_type div_{};
 };
 
 // Overload of operator / for scalar division

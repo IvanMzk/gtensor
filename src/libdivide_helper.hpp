@@ -8,32 +8,45 @@
 namespace gtensor{
 namespace detail{
 
-template<typename T> using libdivide_divider = libdivide::divider<T>;
+
+template<typename T>
+class libdivide_divider : public libdivide::divider<T>
+{
+    using divider_base = libdivide::divider<T>;
+    T divider_;
+public:
+    libdivide_divider() = default;
+    explicit libdivide_divider(const T& divider__):
+        divider_base{divider__},
+        divider_{divider__}
+    {}
+    auto divider()const{return divider_;}
+};
+
 template<typename T> using libdivide_vector = std::vector<libdivide_divider<T>>;
 
-template<template<typename> typename D, template<typename...> typename U, typename T>
-inline auto make_libdivide_vector_helper(const U<T>& src){
-    using div_type = D<T>;
-    std::vector<div_type> res{};
+template<typename ShT>
+inline auto make_libdivide_vector(const ShT& src){
+    using value_type = typename ShT::value_type;
+    libdivide_vector<value_type> res{};
     res.reserve(src.size());
     for(const auto& i:src){
-        res.push_back(div_type(i));
+        res.push_back(libdivide_divider<value_type>(i));
     }
     return res;
 }
 
-template<template<typename...> typename U, typename T>
-inline auto make_libdivide_vector(const U<T>& src){
-    return make_libdivide_vector_helper<libdivide::divider>(src);
-}
-
-template<typename CfgT, template<typename...> typename U, typename T, std::enable_if_t<is_mode_div_libdivide<CfgT>, int> =0 >
-inline auto make_dividers(const U<T>& src){
+template<typename ShT>
+inline auto make_dividers(const ShT& src, gtensor::config::mode_div_libdivide){
     return make_libdivide_vector(src);
 }
-template<typename CfgT, template<typename...> typename U, typename T, std::enable_if_t<is_mode_div_native<CfgT>, int> =0 >
-inline auto make_dividers(const U<T>& src){
+template<typename ShT>
+inline auto make_dividers(const ShT& src, gtensor::config::mode_div_native){
     return src;
+}
+template<typename CfgT, typename ShT>
+inline auto make_dividers(const ShT& src){
+    return make_dividers(src, typename CfgT::div_mode{});
 }
 
 /*
@@ -49,7 +62,7 @@ inline auto divide(T& dividend, const T& divider){
 template<typename T>
 inline auto divide(T& dividend, const libdivide_divider<T>& divider){
     auto q = dividend/divider;
-    dividend -= q*divider.divisor();
+    dividend -= q*divider.divider();
     return q;
 }
 
