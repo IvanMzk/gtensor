@@ -102,7 +102,7 @@ private:
         return instance.create_indexer();
     }
     template<typename U> static auto create_broadcast_walker_helper(U& instance){
-        return indexer_walker<CfgT, std::decay_t<decltype(instance.create_indexer())>>{
+        return broadcast_indexer_walker<CfgT, std::decay_t<decltype(instance.create_indexer())>>{
             instance.holder()->shape(),
             instance.holder()->descriptor().cstrides(),
             instance.holder()->descriptor().reset_cstrides(),
@@ -229,7 +229,7 @@ public:
     auto end_broadcast(const shape_type& shape){return detail::end_broadcast(*this, shape);}
 
     //both broadcast and trivial walker utilize parent's indexer subscript operator to access data
-    //return indexer_walker with parent indexer (chain of indexers starts from parent's indexer)
+    //return broadcast_indexer_walker with parent indexer (chain of indexers starts from parent's indexer)
     auto create_broadcast_walker()const{return create_broadcast_walker_helper(*this);}
     auto create_broadcast_walker(){return create_broadcast_walker_helper(*this);}
     //return indexer, chain of indexers starts from this view indexer
@@ -249,7 +249,7 @@ private:
 
     template<typename U>
     static auto create_broadcast_walker_helper(U& instance){
-        return indexer_walker<CfgT, std::decay_t<decltype(instance.parent()->engine().create_indexer())>>{
+        return broadcast_indexer_walker<CfgT, std::decay_t<decltype(instance.parent()->engine().create_indexer())>>{
             instance.holder()->shape(),
             instance.holder()->descriptor().cstrides(),
             instance.holder()->descriptor().reset_cstrides(),

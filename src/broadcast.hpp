@@ -68,10 +68,6 @@ template<typename IdxT>
 constexpr inline bool can_walk(const IdxT& direction, const IdxT& dim, const IdxT& direction_dim){
     return direction < dim && direction_dim != IdxT(1);
 }
-// template<typename IdxT>
-// constexpr inline bool can_walk(const IdxT& direction, const IdxT& dim, const IdxT&){
-//     return direction < dim;
-// }
 
 template<typename IdxT, typename ShT>
 class shape_inverter
@@ -96,10 +92,13 @@ public:
 
 }   //end of namespace detail
 
+//broadcast walker cursor moving functionality
+//CursorT is type of cursor, operations like cursor+n, cursor+=n, cursor-n, cursor-=n, where n is index_type must be defined
+//e.g. CursorT can be integral type or can be random access iterator type
 template<typename CfgT, typename CursorT>
 class broadcast_walker_common
 {
-protected:
+public:
     using cursor_type = CursorT;
     using index_type = typename CfgT::index_type;
     using shape_type = typename CfgT::shape_type;
@@ -152,28 +151,31 @@ private:
     cursor_type cursor_{offset_};
 };
 
+//broadcast walker
+//IndexerT is indexer type, must provide subscription operator
 template<typename CfgT, typename IndexerT>
-class indexer_walker : private broadcast_walker_common<CfgT, typename CfgT::index_type>
+class broadcast_indexer_walker
 {
-    using typename broadcast_walker_common::index_type;
-    using typename broadcast_walker_common::shape_type;
+    using index_type = typename CfgT::index_type;
+    using shape_type = typename CfgT::shape_type;
     using indexer_type = IndexerT;
     using result_type = typename indexer_type::result_type;
 
+    broadcast_walker_common<CfgT, index_type> index_walker;
     indexer_type indexer;
 public:
-    indexer_walker(const shape_type& shape_,  const shape_type& strides_, const shape_type& reset_strides_, const index_type& offset_, const indexer_type& indexer_):
-        broadcast_walker_common{static_cast<index_type>(shape_.size()), shape_, strides_, reset_strides_, offset_},
+    broadcast_indexer_walker(const shape_type& shape_,  const shape_type& strides_, const shape_type& reset_strides_, const index_type& offset_, const indexer_type& indexer_):
+        index_walker{static_cast<index_type>(shape_.size()), shape_, strides_, reset_strides_, offset_},
         indexer{indexer_}
     {}
 
-    void walk(const index_type& direction, const index_type& steps){broadcast_walker_common::walk(direction,steps);}
-    void step(const index_type& direction){broadcast_walker_common::step(direction);}
-    void step_back(const index_type& direction){broadcast_walker_common::step_back(direction);}
-    void reset(const index_type& direction){broadcast_walker_common::reset(direction);}
-    void reset_back(const index_type& direction){broadcast_walker_common::reset_back(direction);}
-    void reset(){broadcast_walker_common::reset();}
-    result_type operator*()const{return indexer[cursor()];}
+    void walk(const index_type& direction, const index_type& steps){index_walker.walk(direction,steps);}
+    void step(const index_type& direction){index_walker.step(direction);}
+    void step_back(const index_type& direction){index_walker.step_back(direction);}
+    void reset(const index_type& direction){index_walker.reset(direction);}
+    void reset_back(const index_type& direction){index_walker.reset_back(direction);}
+    void reset(){index_walker.reset();}
+    result_type operator*()const{return indexer[index_walker.cursor()];}
 };
 
 }   //end of namespace gtensor
