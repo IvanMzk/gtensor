@@ -36,30 +36,6 @@ public:
 };
 
 template<typename CfgT>
-class descriptor_with_libdivide :
-    public basic_descriptor<CfgT>,
-    private detail::collection_libdivide_extension<CfgT,typename CfgT::div_mode>
-{
-    using base_strides_libdivide = detail::collection_libdivide_extension<CfgT,typename CfgT::div_mode>;
-    const descriptor_with_libdivide* as_descriptor_with_libdivide()const override{return this;}
-
-public:
-    using typename basic_descriptor::shape_type;
-    using typename basic_descriptor::index_type;
-    descriptor_with_libdivide() = default;
-    template<typename ShT, std::enable_if_t<!std::is_convertible_v<std::decay_t<ShT>, descriptor_with_libdivide>,int> =0 >
-    explicit descriptor_with_libdivide(ShT&& shape__):
-        basic_descriptor{std::forward<ShT>(shape__)},
-        base_strides_libdivide{basic_descriptor::strides()}
-    {}
-
-    template<typename C=CfgT, std::enable_if_t<detail::is_mode_div_libdivide<C> ,int> =0 >
-    const auto& strides_libdivide()const{return base_strides_libdivide::dividers_libdivide();}
-    template<typename C=CfgT, std::enable_if_t<detail::is_mode_div_native<C> ,int> =0 >
-    const auto& strides_libdivide()const{return basic_descriptor::strides();}
-};
-
-template<typename CfgT>
 class descriptor_with_offset : public basic_descriptor<CfgT>
 {
     using basic_descriptor_base = basic_descriptor<CfgT>;
@@ -80,28 +56,28 @@ private:
 };
 
 template<typename CfgT>
-class converting_descriptor : public basic_descriptor<CfgT>
+class converting_descriptor : public descriptor_with_offset<CfgT>
 {
-    using basic_descriptor_base = basic_descriptor<CfgT>;
+    using descriptor_with_offset_base = descriptor_with_offset<CfgT>;
 public:
-    using typename basic_descriptor_base::index_type;
-    using typename basic_descriptor_base::shape_type;
+    using typename descriptor_with_offset_base::index_type;
+    using typename descriptor_with_offset_base::shape_type;
+    using descriptor_with_offset_base::shape;
+    using descriptor_with_offset_base::offset;
+    using descriptor_with_offset_base::strides_div;
     template<typename ShT, typename StT>
     converting_descriptor(ShT&& shape__, StT&& cstrides__,  const index_type& offset__):
-        basic_descriptor_base{std::forward<ShT>(shape__)},
+        descriptor_with_offset_base{std::forward<ShT>(shape__), offset__},
         cstrides_{std::forward<StT>(cstrides__)},
-        reset_cstrides_{detail::make_reset_strides(basic_descriptor_base::shape(),cstrides_)},
-        offset_{offset__}
+        reset_cstrides_{detail::make_reset_strides(shape(),cstrides_)}
     {}
-    index_type offset()const override{return offset_;}
     const shape_type& cstrides()const override{return cstrides_;}
     const shape_type& reset_cstrides()const override{return reset_cstrides_;}
     index_type convert(const shape_type& idx)const override{return detail::convert_index(cstrides(),offset(),idx);}
-    index_type convert(const index_type& idx)const override{return detail::flat_to_flat(basic_descriptor_base::strides_div(),cstrides(),offset(),idx);}
+    index_type convert(const index_type& idx)const override{return detail::flat_to_flat(strides_div(),cstrides(),offset(),idx);}
 private:
     shape_type cstrides_;
     shape_type reset_cstrides_;
-    index_type offset_;
 };
 
 template<typename CfgT, typename MapT = typename CfgT::shape_type>
