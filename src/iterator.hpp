@@ -26,10 +26,10 @@ namespace detail{
 /*
 * flatindex_iterator
 */
-template<typename ValT, typename CfgT, typename WkrT>
+template<typename ValT, typename CfgT, typename WalkerT>
 class flat_index_iterator
 {
-    using walker_type = WkrT;
+    using walker_type = WalkerT;
     using shape_type = typename CfgT::shape_type;
     using index_type = typename CfgT::index_type;
     using result_type = decltype(std::declval<walker_type>()[std::declval<index_type>()]);
@@ -95,12 +95,13 @@ template<typename...Ts>
 inline bool operator<=(const flat_index_iterator<Ts...>& lhs, const flat_index_iterator<Ts...>& rhs){return !(lhs > rhs);}
 
 /*
-* multiindex_bidirectional_iterator
+* bidirectional broadcast iterator
+* WalkerT broadcast walker type, must satisfy broadcast walker interface
 */
-template<typename ValT, typename CfgT, typename WkrT>
-class multiindex_bidirectional_iterator{
+template<typename ValT, typename CfgT, typename WalkerT>
+class broadcast_bidirectional_iterator{
 protected:
-    using walker_type = WkrT;
+    using walker_type = WalkerT;
     using result_type = decltype(*std::declval<walker_type>());
     using shape_type = typename CfgT::shape_type;
     using index_type = typename CfgT::index_type;
@@ -114,7 +115,7 @@ public:
 
     //begin constructor
     template<typename W, std::enable_if_t<std::is_same_v<W,walker_type> ,int> =0 >
-    multiindex_bidirectional_iterator(W&& walker_, const shape_type& shape_):
+    broadcast_bidirectional_iterator(W&& walker_, const shape_type& shape_):
         walker{std::forward<W>(walker_)},
         dim_dec{static_cast<index_type>(shape_.size()-1)},
         shape{shape_},
@@ -122,7 +123,7 @@ public:
     {}
     //end constructor
     template<typename W, std::enable_if_t<std::is_same_v<W,walker_type> ,int> =0 >
-    multiindex_bidirectional_iterator(W&& walker_, const shape_type& shape_, const difference_type& size_):
+    broadcast_bidirectional_iterator(W&& walker_, const shape_type& shape_, const difference_type& size_):
         walker{std::forward<W>(walker_)},
         dim_dec{static_cast<index_type>(shape_.size()-1)},
         shape{shape_},
@@ -132,8 +133,8 @@ public:
     }
     auto& operator++();
     auto& operator--();
-    bool operator==(const multiindex_bidirectional_iterator& other)const{return flat_index == other.flat_index;}
-    bool operator!=(const multiindex_bidirectional_iterator& other)const{return flat_index != other.flat_index;}
+    bool operator==(const broadcast_bidirectional_iterator& other)const{return flat_index == other.flat_index;}
+    bool operator!=(const broadcast_bidirectional_iterator& other)const{return flat_index != other.flat_index;}
     result_type operator*() const{return *walker;}
 protected:
     walker_type walker;
@@ -143,8 +144,8 @@ protected:
     shape_type multi_index = shape_type(dim_dec+2,index_type(1));
 };
 
-template<typename ValT, typename CfgT, typename WkrT>
-auto& multiindex_bidirectional_iterator<ValT,CfgT,WkrT>::operator++(){
+template<typename ValT, typename CfgT, typename WalkerT>
+auto& broadcast_bidirectional_iterator<ValT,CfgT,WalkerT>::operator++(){
     index_type d{0};
     auto idx_first = multi_index.begin();
     auto idx_it = std::prev(multi_index.end());
@@ -167,8 +168,8 @@ auto& multiindex_bidirectional_iterator<ValT,CfgT,WkrT>::operator++(){
     //in this place iterator is at the end, next increment leads to UB
     return *this;
 }
-template<typename ValT, typename CfgT, typename WkrT>
-auto& multiindex_bidirectional_iterator<ValT,CfgT,WkrT>::operator--(){
+template<typename ValT, typename CfgT, typename WalkerT>
+auto& broadcast_bidirectional_iterator<ValT,CfgT,WalkerT>::operator--(){
     index_type d{0};
     auto idx_first = multi_index.begin();
     auto idx_it = std::prev(multi_index.end());
@@ -193,35 +194,35 @@ auto& multiindex_bidirectional_iterator<ValT,CfgT,WkrT>::operator--(){
 }
 
 /*
-* random access multiindex_iterator
+* random access broadcast iterator
 */
-template<typename ValT, typename CfgT, typename WkrT>
-class multiindex_iterator : public multiindex_bidirectional_iterator<ValT,CfgT,WkrT>
+template<typename ValT, typename CfgT, typename WalkerT>
+class broadcast_iterator : public broadcast_bidirectional_iterator<ValT,CfgT,WalkerT>
 {
 protected:
-    using typename multiindex_bidirectional_iterator::walker_type;
-    using typename multiindex_bidirectional_iterator::result_type;
-    using typename multiindex_bidirectional_iterator::shape_type;
-    using typename multiindex_bidirectional_iterator::index_type;
+    using typename broadcast_bidirectional_iterator::walker_type;
+    using typename broadcast_bidirectional_iterator::result_type;
+    using typename broadcast_bidirectional_iterator::shape_type;
+    using typename broadcast_bidirectional_iterator::index_type;
     using strides_div_type = typename detail::strides_div_traits<CfgT>::type;
 public:
     using iterator_category = std::random_access_iterator_tag;
-    using typename multiindex_bidirectional_iterator::value_type;
-    using typename multiindex_bidirectional_iterator::difference_type;
-    using typename multiindex_bidirectional_iterator::pointer;
-    using typename multiindex_bidirectional_iterator::reference;
-    using typename multiindex_bidirectional_iterator::const_reference;
+    using typename broadcast_bidirectional_iterator::value_type;
+    using typename broadcast_bidirectional_iterator::difference_type;
+    using typename broadcast_bidirectional_iterator::pointer;
+    using typename broadcast_bidirectional_iterator::reference;
+    using typename broadcast_bidirectional_iterator::const_reference;
 
     //begin constructor
     template<typename W, std::enable_if_t<std::is_same_v<W,walker_type> ,int> =0 >
-    multiindex_iterator(W&& walker_, const shape_type& shape_, const strides_div_type& strides_):
-        multiindex_bidirectional_iterator{std::forward<W>(walker_), shape_},
+    broadcast_iterator(W&& walker_, const shape_type& shape_, const strides_div_type& strides_):
+        broadcast_bidirectional_iterator{std::forward<W>(walker_), shape_},
         strides{&strides_}
     {}
     //end constructor
     template<typename W, std::enable_if_t<std::is_same_v<W,walker_type> ,int> =0 >
-    multiindex_iterator(W&& walker_, const shape_type& shape_, const strides_div_type& strides_, const difference_type& size_):
-        multiindex_bidirectional_iterator{std::forward<W>(walker_), shape_, size_},
+    broadcast_iterator(W&& walker_, const shape_type& shape_, const strides_div_type& strides_, const difference_type& size_):
+        broadcast_bidirectional_iterator{std::forward<W>(walker_), shape_, size_},
         strides{&strides_}
     {}
     auto& operator+=(difference_type n){return advance(n);}
@@ -235,23 +236,23 @@ public:
         return it.advance(-n);
     }
     result_type operator[](difference_type n)const{return *(*this+n);}
-    inline difference_type friend operator-(const multiindex_iterator& lhs, const multiindex_iterator& rhs){return lhs.flat_index - rhs.flat_index;}
+    inline difference_type friend operator-(const broadcast_iterator& lhs, const broadcast_iterator& rhs){return lhs.flat_index - rhs.flat_index;}
 private:
     auto& advance(difference_type);
     const strides_div_type* strides;
 };
 
 template<typename...Ts>
-inline bool operator>(const multiindex_iterator<Ts...>& lhs, const multiindex_iterator<Ts...>& rhs){return (lhs - rhs) > typename multiindex_iterator<Ts...>::difference_type(0);}
+inline bool operator>(const broadcast_iterator<Ts...>& lhs, const broadcast_iterator<Ts...>& rhs){return (lhs - rhs) > typename broadcast_iterator<Ts...>::difference_type(0);}
 template<typename...Ts>
-inline bool operator<(const multiindex_iterator<Ts...>& lhs, const multiindex_iterator<Ts...>& rhs){return (rhs - lhs) > typename multiindex_iterator<Ts...>::difference_type(0);}
+inline bool operator<(const broadcast_iterator<Ts...>& lhs, const broadcast_iterator<Ts...>& rhs){return (rhs - lhs) > typename broadcast_iterator<Ts...>::difference_type(0);}
 template<typename...Ts>
-inline bool operator>=(const multiindex_iterator<Ts...>& lhs, const multiindex_iterator<Ts...>& rhs){return !(lhs < rhs);}
+inline bool operator>=(const broadcast_iterator<Ts...>& lhs, const broadcast_iterator<Ts...>& rhs){return !(lhs < rhs);}
 template<typename...Ts>
-inline bool operator<=(const multiindex_iterator<Ts...>& lhs, const multiindex_iterator<Ts...>& rhs){return !(lhs > rhs);}
+inline bool operator<=(const broadcast_iterator<Ts...>& lhs, const broadcast_iterator<Ts...>& rhs){return !(lhs > rhs);}
 
-template<typename ValT, typename CfgT, typename WkrT>
-auto& multiindex_iterator<ValT,CfgT,WkrT>::advance(difference_type n){
+template<typename ValT, typename CfgT, typename WalkerT>
+auto& broadcast_iterator<ValT,CfgT,WalkerT>::advance(difference_type n){
     index_type idx{flat_index + n};
     flat_index = idx;
     walker.reset();

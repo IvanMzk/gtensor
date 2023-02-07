@@ -81,35 +81,6 @@ private:
     storage_type elements_;
 };
 
-// template<typename CfgT, typename StorT>
-// class device_storage_engine
-// {
-// public:
-//     using storage_type = StorT;
-//     using config_type = CfgT;
-//     using value_type = typename StorT::value_type;
-//     //device pointer type provided by device storage type, data pointed by is on device, should be diffrent type from regular pointer to descriminate host-device data
-//     using pointer_type = typename storage_type::pointer_type;
-//     using const_pointer_type = typename storage_type::const_pointer_type;
-// protected:
-//     using index_type = typename config_type::index_type;
-//     using holder_accessor_type = engine_holder_accessor<value_type, config_type>;
-//     using holder_type = typename holder_accessor_type::holder_type;
-//     auto holder()const{return holder_accessor.holder();}
-// public:
-//     template<typename ItT, std::enable_if_t<detail::is_iterator<ItT> ,int> =0 >
-//     device_storage_engine(holder_type* holder, const index_type& size, ItT begin, ItT end):
-//         holder_accessor{holder},
-//         elements_(size)
-//     {
-
-//     }
-// private:
-
-//     holder_accessor_type holder_accessor;
-//     storage_type elements_;
-// };
-
 template<typename ValT, typename CfgT, typename F, typename OperandsNumber>
 class evaluating_engine
 {

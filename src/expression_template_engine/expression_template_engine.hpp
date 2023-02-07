@@ -27,45 +27,37 @@ inline bool is_trivial_operand(const T& operand){
 }
 
 template<typename EngineT, typename ShT> auto begin_broadcast(EngineT& engine, const ShT& shape){
-    using iterator_type = multiindex_bidirectional_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_broadcast_walker())>;
-    return iterator_type{engine.create_broadcast_walker(), shape};
+    using iterator_type = broadcast_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_broadcast_walker())>;
+    return iterator_type{engine.create_broadcast_walker(), shape, make_dividers<EngineT::config_type>(shape)};
 }
 template<typename EngineT, typename ShT> auto end_broadcast(EngineT& engine, const ShT& shape){
-    using iterator_type = multiindex_bidirectional_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_broadcast_walker())>;
-    return iterator_type{engine.create_broadcast_walker(), shape, detail::make_size(shape)};
+    using iterator_type = broadcast_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_broadcast_walker())>;
+    return iterator_type{engine.create_broadcast_walker(), shape, make_dividers<EngineT::config_type>(shape), make_size(shape)};
 }
-template<typename EngineT> auto begin_multiindex(EngineT& engine){
-    using iterator_type = multiindex_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_broadcast_walker())>;
+template<typename EngineT> auto begin_broadcast(EngineT& engine){
+    using iterator_type = broadcast_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_broadcast_walker())>;
     return iterator_type{engine.create_broadcast_walker(), engine.holder()->shape(), engine.holder()->descriptor().strides_div()};
 }
-template<typename EngineT> auto end_multiindex(EngineT& engine){
-    using iterator_type = multiindex_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_broadcast_walker())>;
+template<typename EngineT> auto end_broadcast(EngineT& engine){
+    using iterator_type = broadcast_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_broadcast_walker())>;
     return iterator_type{engine.create_broadcast_walker(), engine.holder()->shape(), engine.holder()->descriptor().strides_div(), engine.holder()->size()};
 }
-template<typename EngineT> auto begin_flatindex(EngineT& engine){
+template<typename EngineT> auto begin_trivial(EngineT& engine){
     using iterator_type = flat_index_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_trivial_walker())>;
     return iterator_type{engine.create_trivial_walker()};
 }
-template<typename EngineT> auto end_flatindex(EngineT& engine){
+template<typename EngineT> auto end_trivial(EngineT& engine){
     using iterator_type = flat_index_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_trivial_walker())>;
     return iterator_type{engine.create_trivial_walker(), engine.holder()->size()};
 }
-template<typename EngineT> auto begin_flatindex_indexer(EngineT& engine){
-    using iterator_type = flat_index_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_indexer())>;
-    return iterator_type{engine.create_indexer()};
-}
-template<typename EngineT> auto end_flatindex_indexer(EngineT& engine){
-    using iterator_type = flat_index_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_indexer())>;
-    return iterator_type{engine.create_indexer(), engine.holder()->size()};
-}
-template<typename...Ts> auto begin_multiindex(const expression_template_storage_engine<Ts...>& engine){return engine.begin();}
-template<typename...Ts> auto end_multiindex(const expression_template_storage_engine<Ts...>& engine){return engine.end();}
-template<typename...Ts> auto begin_flatindex(const expression_template_storage_engine<Ts...>& engine){return engine.begin();}
-template<typename...Ts> auto end_flatindex(const expression_template_storage_engine<Ts...>& engine){return engine.end();}
-template<typename...Ts> auto begin_multiindex(expression_template_storage_engine<Ts...>& engine){return engine.begin();}
-template<typename...Ts> auto end_multiindex(expression_template_storage_engine<Ts...>& engine){return engine.end();}
-template<typename...Ts> auto begin_flatindex(expression_template_storage_engine<Ts...>& engine){return engine.begin();}
-template<typename...Ts> auto end_flatindex(expression_template_storage_engine<Ts...>& engine){return engine.end();}
+template<typename...Ts> auto begin_broadcast(const expression_template_storage_engine<Ts...>& engine){return engine.begin();}
+template<typename...Ts> auto end_broadcast(const expression_template_storage_engine<Ts...>& engine){return engine.end();}
+template<typename...Ts> auto begin_trivial(const expression_template_storage_engine<Ts...>& engine){return engine.begin();}
+template<typename...Ts> auto end_trivial(const expression_template_storage_engine<Ts...>& engine){return engine.end();}
+template<typename...Ts> auto begin_broadcast(expression_template_storage_engine<Ts...>& engine){return engine.begin();}
+template<typename...Ts> auto end_broadcast(expression_template_storage_engine<Ts...>& engine){return engine.end();}
+template<typename...Ts> auto begin_trivial(expression_template_storage_engine<Ts...>& engine){return engine.begin();}
+template<typename...Ts> auto end_trivial(expression_template_storage_engine<Ts...>& engine){return engine.end();}
 
 template<typename> struct is_converting_descriptor : public std::false_type{};
 template<typename...Ts> struct is_converting_descriptor<converting_descriptor<Ts...>> : public std::true_type{};
@@ -142,8 +134,8 @@ public:
             operands()
         );
     }
-    auto begin()const{return detail::begin_multiindex(*this);}
-    auto end()const{return detail::end_multiindex(*this);}
+    auto begin()const{return detail::begin_broadcast(*this);}
+    auto end()const{return detail::end_broadcast(*this);}
     auto begin_broadcast(const shape_type& shape)const{return detail::begin_broadcast(*this, shape);}
     auto end_broadcast(const shape_type& shape)const{return detail::end_broadcast(*this, shape);}
     auto create_indexer()const{
@@ -193,8 +185,8 @@ public:
     using typename expression_template_nodispatching_engine::value_type;
     using typename expression_template_nodispatching_engine::config_type;
     using expression_template_nodispatching_engine::expression_template_nodispatching_engine;
-    auto begin()const{return detail::begin_multiindex(*this);}
-    auto end()const{return detail::end_multiindex(*this);}
+    auto begin()const{return detail::begin_broadcast(*this);}
+    auto end()const{return detail::end_broadcast(*this);}
     auto begin_broadcast(const shape_type& shape)const{return detail::begin_broadcast(*this, shape);}
     auto end_broadcast(const shape_type& shape)const{return detail::end_broadcast(*this, shape);}
     auto create_indexer()const{
@@ -246,14 +238,14 @@ public:
 private:
     //slice, transpose view iterator
     template<typename U>
-    static auto begin(U& instance, std::true_type){return detail::begin_multiindex(instance);}
+    static auto begin(U& instance, std::true_type){return detail::begin_broadcast(instance);}
     template<typename U>
-    static auto end(U& instance, std::true_type){return detail::end_multiindex(instance);}
+    static auto end(U& instance, std::true_type){return detail::end_broadcast(instance);}
     //reshape, subdim view iterator
     template<typename U>
-    static auto begin(U& instance, std::false_type){return detail::begin_flatindex(instance);}
+    static auto begin(U& instance, std::false_type){return detail::begin_trivial(instance);}
     template<typename U>
-    static auto end(U& instance, std::false_type){return detail::end_flatindex(instance);}
+    static auto end(U& instance, std::false_type){return detail::end_trivial(instance);}
 
     template<typename U>
     static auto create_broadcast_walker_helper(U& instance){

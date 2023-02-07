@@ -12,7 +12,7 @@ template<typename T> using libdivide_divider = libdivide::divider<T>;
 template<typename T> using libdivide_vector = std::vector<libdivide_divider<T>>;
 
 template<template<typename> typename D, template<typename...> typename U, typename T>
-auto make_libdivide_vector_helper(const U<T>& src){
+inline auto make_libdivide_vector_helper(const U<T>& src){
     using div_type = D<T>;
     std::vector<div_type> res{};
     res.reserve(src.size());
@@ -23,16 +23,16 @@ auto make_libdivide_vector_helper(const U<T>& src){
 }
 
 template<template<typename...> typename U, typename T>
-auto make_libdivide_vector(const U<T>& src){
+inline auto make_libdivide_vector(const U<T>& src){
     return make_libdivide_vector_helper<libdivide::divider>(src);
 }
 
 template<typename CfgT, template<typename...> typename U, typename T, std::enable_if_t<is_mode_div_libdivide<CfgT>, int> =0 >
-auto make_dividers(const U<T>& src){
+inline auto make_dividers(const U<T>& src){
     return make_libdivide_vector(src);
 }
 template<typename CfgT, template<typename...> typename U, typename T, std::enable_if_t<is_mode_div_native<CfgT>, int> =0 >
-auto make_dividers(const U<T>& src){
+inline auto make_dividers(const U<T>& src){
     return src;
 }
 
@@ -72,6 +72,7 @@ auto flat_to_multi(const StT& strides, const IdxT& idx){
     return res;
 }
 
+//converts flat index to flat index given strides and converting strides
 template<typename StT, typename CStT, typename IdxT>
 auto flat_to_flat(const StT& strides, const CStT& cstrides, const IdxT& offset, const IdxT& idx){
     using index_type = IdxT;
@@ -86,32 +87,6 @@ auto flat_to_flat(const StT& strides, const CStT& cstrides, const IdxT& offset, 
     }
     return res;
 }
-
-template<typename CfgT, typename Mode> class collection_libdivide_extension;
-
-template<typename CfgT>
-class collection_libdivide_extension<CfgT,gtensor::config::mode_div_libdivide>
-{
-    using shape_type = typename CfgT::shape_type;
-    using index_type = typename CfgT::index_type;
-    detail::libdivide_vector<index_type> dividers_libdivide_;
-protected:
-    collection_libdivide_extension() = default;
-    collection_libdivide_extension(const shape_type& dividers):
-        dividers_libdivide_{detail::make_libdivide_vector(dividers)}
-    {}
-    const auto&  dividers_libdivide()const{return dividers_libdivide_;}
-};
-
-template<typename CfgT>
-class collection_libdivide_extension<CfgT,gtensor::config::mode_div_native>
-{
-    using shape_type = typename CfgT::shape_type;
-protected:
-    collection_libdivide_extension() = default;
-    collection_libdivide_extension(const shape_type&)
-    {}
-};
 
 }   //end of namespace detail
 }   //end of namespace gtensor

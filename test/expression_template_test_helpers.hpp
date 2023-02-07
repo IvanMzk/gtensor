@@ -14,12 +14,12 @@ using test_config_div_libdivide_type = typename test_config::config_host_engine_
 using test_default_config_type = test_config_div_native_type;
 //using test_default_config_type = test_config_div_libdivide_type;
 using gtensor::expression_template_storage_engine;
-using gtensor::multiindex_iterator;
+using gtensor::broadcast_iterator;
 using gtensor::flat_index_iterator;
-using gtensor::detail::begin_multiindex;
-using gtensor::detail::end_multiindex;
-using gtensor::detail::begin_flatindex;
-using gtensor::detail::end_flatindex;
+using gtensor::detail::begin_broadcast;
+using gtensor::detail::end_broadcast;
+using gtensor::detail::begin_trivial;
+using gtensor::detail::end_trivial;
 static test_default_config_type::nop_type nop{};
 
 template<typename T>
@@ -36,13 +36,13 @@ struct test_tensor : public T{
 };
 
 template<typename T>
-struct test_multiindex_iterator_tensor : public T{
-    test_multiindex_iterator_tensor(const T& base):
+struct test_broadcast_iterator_tensor : public T{
+    test_broadcast_iterator_tensor(const T& base):
         T{base}
     {}
     auto& engine()const{return impl()->engine();}
-    auto begin()const{return begin_multiindex(engine());}
-    auto end()const{return end_multiindex(engine());}
+    auto begin()const{return begin_broadcast(engine());}
+    auto end()const{return end_broadcast(engine());}
 };
 
 template<typename T>
@@ -51,8 +51,8 @@ struct test_flatindex_iterator_tensor : public T{
         T{base}
     {}
     auto& engine()const{return impl()->engine();}
-    auto begin()const{return begin_flatindex(engine());}
-    auto end()const{return end_flatindex(engine());}
+    auto begin()const{return begin_trivial(engine());}
+    auto end()const{return end_trivial(engine());}
 };
 
 template<template<typename> typename TestT = test_tensor, typename T>
