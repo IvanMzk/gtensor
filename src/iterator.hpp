@@ -27,7 +27,7 @@ namespace detail{
 * random access trivial-broadcast iterator
 * WalkerT is trivial-broadcast walker type, must satisfy trivial-broadcast walker interface
 */
-template<typename ValT, typename CfgT, typename WalkerT>
+template<typename CfgT, typename WalkerT>
 class trivial_broadcast_iterator
 {
     using walker_type = WalkerT;
@@ -36,7 +36,8 @@ class trivial_broadcast_iterator
     using result_type = decltype(std::declval<walker_type>()[std::declval<index_type>()]);
 public:
     using iterator_category = std::random_access_iterator_tag;
-    using value_type = ValT;
+    //using value_type = ValT;
+    using value_type = std::decay_t<result_type>;
     using difference_type = typename CfgT::difference_type;
     using pointer = typename detail::iterator_internals_selector<value_type>::pointer;
     using reference = typename detail::iterator_internals_selector<value_type>::reference;
@@ -86,20 +87,20 @@ private:
     difference_type flat_index;
 };
 
-template<typename...Ts>
-inline bool operator>(const trivial_broadcast_iterator<Ts...>& lhs, const trivial_broadcast_iterator<Ts...>& rhs){return (lhs - rhs) > typename trivial_broadcast_iterator<Ts...>::difference_type(0);}
-template<typename...Ts>
-inline bool operator<(const trivial_broadcast_iterator<Ts...>& lhs, const trivial_broadcast_iterator<Ts...>& rhs){return (rhs - lhs) > typename trivial_broadcast_iterator<Ts...>::difference_type(0);}
-template<typename...Ts>
-inline bool operator>=(const trivial_broadcast_iterator<Ts...>& lhs, const trivial_broadcast_iterator<Ts...>& rhs){return !(lhs < rhs);}
-template<typename...Ts>
-inline bool operator<=(const trivial_broadcast_iterator<Ts...>& lhs, const trivial_broadcast_iterator<Ts...>& rhs){return !(lhs > rhs);}
+template<typename CfgT, typename WalkerT>
+inline bool operator>(const trivial_broadcast_iterator<CfgT,WalkerT>& lhs, const trivial_broadcast_iterator<CfgT,WalkerT>& rhs){return (lhs - rhs) > typename trivial_broadcast_iterator<CfgT,WalkerT>::difference_type(0);}
+template<typename CfgT, typename WalkerT>
+inline bool operator<(const trivial_broadcast_iterator<CfgT,WalkerT>& lhs, const trivial_broadcast_iterator<CfgT,WalkerT>& rhs){return (rhs - lhs) > typename trivial_broadcast_iterator<CfgT,WalkerT>::difference_type(0);}
+template<typename CfgT, typename WalkerT>
+inline bool operator>=(const trivial_broadcast_iterator<CfgT,WalkerT>& lhs, const trivial_broadcast_iterator<CfgT,WalkerT>& rhs){return !(lhs < rhs);}
+template<typename CfgT, typename WalkerT>
+inline bool operator<=(const trivial_broadcast_iterator<CfgT,WalkerT>& lhs, const trivial_broadcast_iterator<CfgT,WalkerT>& rhs){return !(lhs > rhs);}
 
 /*
 * bidirectional broadcast iterator
 * WalkerT broadcast walker type, must satisfy broadcast walker interface
 */
-template<typename ValT, typename CfgT, typename WalkerT>
+template<typename CfgT, typename WalkerT>
 class broadcast_bidirectional_iterator{
 protected:
     using walker_type = WalkerT;
@@ -108,7 +109,8 @@ protected:
     using index_type = typename CfgT::index_type;
 public:
     using iterator_category = std::bidirectional_iterator_tag;
-    using value_type = ValT;
+    //using value_type = ValT;
+    using value_type = std::decay_t<result_type>;
     using difference_type = typename CfgT::difference_type;
     using pointer = typename detail::iterator_internals_selector<value_type>::pointer;
     using reference = typename detail::iterator_internals_selector<value_type>::reference;
@@ -145,8 +147,8 @@ protected:
     shape_type multi_index = shape_type(dim_dec+2,index_type(1));
 };
 
-template<typename ValT, typename CfgT, typename WalkerT>
-auto& broadcast_bidirectional_iterator<ValT,CfgT,WalkerT>::operator++(){
+template<typename CfgT, typename WalkerT>
+auto& broadcast_bidirectional_iterator<CfgT,WalkerT>::operator++(){
     index_type d{0};
     auto idx_first = multi_index.begin();
     auto idx_it = std::prev(multi_index.end());
@@ -169,8 +171,8 @@ auto& broadcast_bidirectional_iterator<ValT,CfgT,WalkerT>::operator++(){
     //in this place iterator is at the end, next increment leads to UB
     return *this;
 }
-template<typename ValT, typename CfgT, typename WalkerT>
-auto& broadcast_bidirectional_iterator<ValT,CfgT,WalkerT>::operator--(){
+template<typename CfgT, typename WalkerT>
+auto& broadcast_bidirectional_iterator<CfgT,WalkerT>::operator--(){
     index_type d{0};
     auto idx_first = multi_index.begin();
     auto idx_it = std::prev(multi_index.end());
@@ -197,8 +199,8 @@ auto& broadcast_bidirectional_iterator<ValT,CfgT,WalkerT>::operator--(){
 /*
 * random access broadcast iterator
 */
-template<typename ValT, typename CfgT, typename WalkerT>
-class broadcast_iterator : public broadcast_bidirectional_iterator<ValT,CfgT,WalkerT>
+template<typename CfgT, typename WalkerT>
+class broadcast_iterator : public broadcast_bidirectional_iterator<CfgT,WalkerT>
 {
 protected:
     using typename broadcast_bidirectional_iterator::walker_type;
@@ -243,17 +245,17 @@ private:
     const strides_div_type* strides;
 };
 
-template<typename...Ts>
-inline bool operator>(const broadcast_iterator<Ts...>& lhs, const broadcast_iterator<Ts...>& rhs){return (lhs - rhs) > typename broadcast_iterator<Ts...>::difference_type(0);}
-template<typename...Ts>
-inline bool operator<(const broadcast_iterator<Ts...>& lhs, const broadcast_iterator<Ts...>& rhs){return (rhs - lhs) > typename broadcast_iterator<Ts...>::difference_type(0);}
-template<typename...Ts>
-inline bool operator>=(const broadcast_iterator<Ts...>& lhs, const broadcast_iterator<Ts...>& rhs){return !(lhs < rhs);}
-template<typename...Ts>
-inline bool operator<=(const broadcast_iterator<Ts...>& lhs, const broadcast_iterator<Ts...>& rhs){return !(lhs > rhs);}
+template<typename CfgT, typename WalkerT>
+inline bool operator>(const broadcast_iterator<CfgT,WalkerT>& lhs, const broadcast_iterator<CfgT,WalkerT>& rhs){return (lhs - rhs) > typename broadcast_iterator<CfgT,WalkerT>::difference_type(0);}
+template<typename CfgT, typename WalkerT>
+inline bool operator<(const broadcast_iterator<CfgT,WalkerT>& lhs, const broadcast_iterator<CfgT,WalkerT>& rhs){return (rhs - lhs) > typename broadcast_iterator<CfgT,WalkerT>::difference_type(0);}
+template<typename CfgT, typename WalkerT>
+inline bool operator>=(const broadcast_iterator<CfgT,WalkerT>& lhs, const broadcast_iterator<CfgT,WalkerT>& rhs){return !(lhs < rhs);}
+template<typename CfgT, typename WalkerT>
+inline bool operator<=(const broadcast_iterator<CfgT,WalkerT>& lhs, const broadcast_iterator<CfgT,WalkerT>& rhs){return !(lhs > rhs);}
 
-template<typename ValT, typename CfgT, typename WalkerT>
-auto& broadcast_iterator<ValT,CfgT,WalkerT>::advance(difference_type n){
+template<typename CfgT, typename WalkerT>
+auto& broadcast_iterator<CfgT,WalkerT>::advance(difference_type n){
     index_type idx{flat_index + n};
     flat_index = idx;
     walker.reset();

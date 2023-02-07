@@ -16,7 +16,7 @@ template<typename ValT, typename CfgT> class walker_base;
 template<typename ValT, typename CfgT, typename F, typename...Wks> class evaluating_trivial_walker;
 template<typename ValT, typename CfgT> class viewing_evaluating_walker;
 template<typename ValT, typename CfgT> class tensor_wrapper;
-template<typename ValT, typename CfgT, typename Wkr> class broadcast_iterator;
+template<typename CfgT, typename Wkr> class broadcast_iterator;
 template<typename ValT, typename CfgT> class vwalker_impl;
 template<typename DifT, typename N> struct slice;
 

@@ -27,27 +27,27 @@ inline bool is_trivial_operand(const T& operand){
 }
 
 template<typename EngineT, typename ShT> auto begin_broadcast(EngineT& engine, const ShT& shape){
-    using iterator_type = broadcast_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_broadcast_walker())>;
+    using iterator_type = broadcast_iterator<typename EngineT::config_type, decltype(engine.create_broadcast_walker())>;
     return iterator_type{engine.create_broadcast_walker(), shape, make_dividers<EngineT::config_type>(shape)};
 }
 template<typename EngineT, typename ShT> auto end_broadcast(EngineT& engine, const ShT& shape){
-    using iterator_type = broadcast_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_broadcast_walker())>;
+    using iterator_type = broadcast_iterator<typename EngineT::config_type, decltype(engine.create_broadcast_walker())>;
     return iterator_type{engine.create_broadcast_walker(), shape, make_dividers<EngineT::config_type>(shape), make_size(shape)};
 }
 template<typename EngineT> auto begin_broadcast(EngineT& engine){
-    using iterator_type = broadcast_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_broadcast_walker())>;
+    using iterator_type = broadcast_iterator<typename EngineT::config_type, decltype(engine.create_broadcast_walker())>;
     return iterator_type{engine.create_broadcast_walker(), engine.holder()->shape(), engine.holder()->descriptor().strides_div()};
 }
 template<typename EngineT> auto end_broadcast(EngineT& engine){
-    using iterator_type = broadcast_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_broadcast_walker())>;
+    using iterator_type = broadcast_iterator<typename EngineT::config_type, decltype(engine.create_broadcast_walker())>;
     return iterator_type{engine.create_broadcast_walker(), engine.holder()->shape(), engine.holder()->descriptor().strides_div(), engine.holder()->size()};
 }
 template<typename EngineT> auto begin_trivial(EngineT& engine){
-    using iterator_type = trivial_broadcast_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_trivial_walker())>;
+    using iterator_type = trivial_broadcast_iterator<typename EngineT::config_type, decltype(engine.create_trivial_walker())>;
     return iterator_type{engine.create_trivial_walker()};
 }
 template<typename EngineT> auto end_trivial(EngineT& engine){
-    using iterator_type = trivial_broadcast_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_trivial_walker())>;
+    using iterator_type = trivial_broadcast_iterator<typename EngineT::config_type, decltype(engine.create_trivial_walker())>;
     return iterator_type{engine.create_trivial_walker(), engine.holder()->size()};
 }
 template<typename...Ts> auto begin_broadcast(const expression_template_storage_engine<Ts...>& engine){return engine.begin();}
