@@ -43,11 +43,11 @@ template<typename EngineT> auto end_broadcast(EngineT& engine){
     return iterator_type{engine.create_broadcast_walker(), engine.holder()->shape(), engine.holder()->descriptor().strides_div(), engine.holder()->size()};
 }
 template<typename EngineT> auto begin_trivial(EngineT& engine){
-    using iterator_type = flat_index_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_trivial_walker())>;
+    using iterator_type = trivial_broadcast_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_trivial_walker())>;
     return iterator_type{engine.create_trivial_walker()};
 }
 template<typename EngineT> auto end_trivial(EngineT& engine){
-    using iterator_type = flat_index_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_trivial_walker())>;
+    using iterator_type = trivial_broadcast_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_trivial_walker())>;
     return iterator_type{engine.create_trivial_walker(), engine.holder()->size()};
 }
 template<typename...Ts> auto begin_broadcast(const expression_template_storage_engine<Ts...>& engine){return engine.begin();}

@@ -24,10 +24,11 @@ namespace detail{
 }   //end of namespace detail
 
 /*
-* flatindex_iterator
+* random access trivial-broadcast iterator
+* WalkerT is trivial-broadcast walker type, must satisfy trivial-broadcast walker interface
 */
 template<typename ValT, typename CfgT, typename WalkerT>
-class flat_index_iterator
+class trivial_broadcast_iterator
 {
     using walker_type = WalkerT;
     using shape_type = typename CfgT::shape_type;
@@ -42,13 +43,13 @@ public:
     using const_reference = typename detail::iterator_internals_selector<value_type>::const_reference;
     //begin constructor
     template<typename W, std::enable_if_t<std::is_same_v<W,walker_type> ,int> =0 >
-    explicit flat_index_iterator(W&& walker_):
+    explicit trivial_broadcast_iterator(W&& walker_):
         walker{std::forward<W>(walker_)},
         flat_index{0}
     {}
     //end constructor
     template<typename W, std::enable_if_t<std::is_same_v<W,walker_type> ,int> =0 >
-    flat_index_iterator(W&& walker_, const difference_type& flat_index_):
+    trivial_broadcast_iterator(W&& walker_, const difference_type& flat_index_):
         walker{std::forward<W>(walker_)},
         flat_index{flat_index_}
     {}
@@ -70,11 +71,11 @@ public:
         auto it = *this;
         return it.advance(-n);
     }
-    bool operator==(const flat_index_iterator& it)const{return flat_index == it.flat_index;}
-    bool operator!=(const flat_index_iterator& it)const{return flat_index != it.flat_index;}
+    bool operator==(const trivial_broadcast_iterator& it)const{return flat_index == it.flat_index;}
+    bool operator!=(const trivial_broadcast_iterator& it)const{return flat_index != it.flat_index;}
     result_type operator[](difference_type n)const{return *(*this+n);}
     result_type operator*() const{return walker[static_cast<index_type>(flat_index)];}
-    inline difference_type friend operator-(const flat_index_iterator& lhs, const flat_index_iterator& rhs){return lhs.flat_index - rhs.flat_index;}
+    inline difference_type friend operator-(const trivial_broadcast_iterator& lhs, const trivial_broadcast_iterator& rhs){return lhs.flat_index - rhs.flat_index;}
 private:
     auto& advance(difference_type n){
         flat_index+=n;
@@ -86,13 +87,13 @@ private:
 };
 
 template<typename...Ts>
-inline bool operator>(const flat_index_iterator<Ts...>& lhs, const flat_index_iterator<Ts...>& rhs){return (lhs - rhs) > typename flat_index_iterator<Ts...>::difference_type(0);}
+inline bool operator>(const trivial_broadcast_iterator<Ts...>& lhs, const trivial_broadcast_iterator<Ts...>& rhs){return (lhs - rhs) > typename trivial_broadcast_iterator<Ts...>::difference_type(0);}
 template<typename...Ts>
-inline bool operator<(const flat_index_iterator<Ts...>& lhs, const flat_index_iterator<Ts...>& rhs){return (rhs - lhs) > typename flat_index_iterator<Ts...>::difference_type(0);}
+inline bool operator<(const trivial_broadcast_iterator<Ts...>& lhs, const trivial_broadcast_iterator<Ts...>& rhs){return (rhs - lhs) > typename trivial_broadcast_iterator<Ts...>::difference_type(0);}
 template<typename...Ts>
-inline bool operator>=(const flat_index_iterator<Ts...>& lhs, const flat_index_iterator<Ts...>& rhs){return !(lhs < rhs);}
+inline bool operator>=(const trivial_broadcast_iterator<Ts...>& lhs, const trivial_broadcast_iterator<Ts...>& rhs){return !(lhs < rhs);}
 template<typename...Ts>
-inline bool operator<=(const flat_index_iterator<Ts...>& lhs, const flat_index_iterator<Ts...>& rhs){return !(lhs > rhs);}
+inline bool operator<=(const trivial_broadcast_iterator<Ts...>& lhs, const trivial_broadcast_iterator<Ts...>& rhs){return !(lhs > rhs);}
 
 /*
 * bidirectional broadcast iterator

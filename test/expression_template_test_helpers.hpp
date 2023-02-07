@@ -15,7 +15,7 @@ using test_default_config_type = test_config_div_native_type;
 //using test_default_config_type = test_config_div_libdivide_type;
 using gtensor::expression_template_storage_engine;
 using gtensor::broadcast_iterator;
-using gtensor::flat_index_iterator;
+using gtensor::trivial_broadcast_iterator;
 using gtensor::detail::begin_broadcast;
 using gtensor::detail::end_broadcast;
 using gtensor::detail::begin_trivial;
