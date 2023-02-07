@@ -28,7 +28,6 @@ template<typename CfgT> class converting_base;
 
 template<typename CfgT> class descriptor_base;
 template<typename CfgT> class basic_descriptor;
-template<typename CfgT> class descriptor_with_libdivide;
 template<typename CfgT> class descriptor_with_offset;
 template<typename CfgT> class converting_descriptor;
 

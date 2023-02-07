@@ -227,56 +227,55 @@ TEST_CASE("test_descriptor_with_offset_convert", "[test_descriptor]"){
     REQUIRE(descriptor.convert(flat_idx) == expected_convert_flat_idx);
 }
 
-TEMPLATE_TEST_CASE("test_descriptor_with_libdivide","[test_descriptor]", gtensor::config::mode_div_libdivide, gtensor::config::mode_div_native){
-    using config_type = test_config::config_div_mode_selector<TestType>::config_type;
-    using descriptor_type = gtensor::descriptor_with_libdivide<config_type>;
-    using descriptor_base_type = gtensor::descriptor_base<config_type>;
-    using strides_libdivide_type = gtensor::detail::strides_div_type<config_type>::type;
-    using shape_type = typename config_type::shape_type;
-    using index_type = typename config_type::index_type;
-    using gtensor::detail::make_dividers;
+// TEMPLATE_TEST_CASE("test_descriptor_with_libdivide","[test_descriptor]", gtensor::config::mode_div_libdivide, gtensor::config::mode_div_native){
+//     using config_type = test_config::config_div_mode_selector<TestType>::config_type;
+//     using descriptor_type = gtensor::descriptor_with_libdivide<config_type>;
+//     using descriptor_base_type = gtensor::descriptor_base<config_type>;
+//     using strides_libdivide_type = gtensor::detail::strides_div_type<config_type>::type;
+//     using shape_type = typename config_type::shape_type;
+//     using index_type = typename config_type::index_type;
+//     using gtensor::detail::make_dividers;
 
-    using test_type = std::tuple<descriptor_type, shape_type, shape_type, strides_libdivide_type, index_type, index_type>;
-    //0descriptor,1expected shape,2expected strides,3expected_strides_libdivide, 4expected size,5expected dim
-    auto test_data = GENERATE(
-        test_type(descriptor_type(),shape_type{},shape_type{}, make_dividers<config_type>(shape_type{}),0,0),
-        test_type(descriptor_type{shape_type{}},shape_type{},shape_type{},make_dividers<config_type>(shape_type{}),0,0),
-        test_type(descriptor_type{shape_type{1}},shape_type{1},shape_type{1},make_dividers<config_type>(shape_type{1}),1,1),
-        test_type(descriptor_type{shape_type{5}},shape_type{5},shape_type{1},make_dividers<config_type>(shape_type{1}),5,1),
-        test_type(descriptor_type{shape_type{1,1}},shape_type{1,1},shape_type{1,1},make_dividers<config_type>(shape_type{1,1}),1,2),
-        test_type(descriptor_type{shape_type{1,5}},shape_type{1,5},shape_type{5,1},make_dividers<config_type>(shape_type{5,1}),5,2),
-        test_type(descriptor_type{shape_type{5,1}},shape_type{5,1},shape_type{1,1},make_dividers<config_type>(shape_type{1,1}),5,2),
-        test_type(descriptor_type{shape_type{5,4,3}},shape_type{5,4,3},shape_type{12,3,1},make_dividers<config_type>(shape_type{12,3,1}),60,3)
-    );
-    auto descriptor = std::get<0>(test_data);
-    const descriptor_base_type& descriptor_base = descriptor;
-    auto expected_shape = std::get<1>(test_data);
-    auto expected_strides = std::get<2>(test_data);
-    auto expected_strides_libdivide = std::get<3>(test_data);
-    auto expected_size = std::get<4>(test_data);
-    auto expected_dim = std::get<5>(test_data);
-    auto expected_offset = index_type{0};
-    REQUIRE(descriptor.shape() == expected_shape);
-    REQUIRE(descriptor.strides() == expected_strides);
-    REQUIRE(descriptor.cstrides() == expected_strides);
-    REQUIRE(descriptor.strides_libdivide() == expected_strides_libdivide);
-    REQUIRE(descriptor.size() == expected_size);
-    REQUIRE(descriptor.dim() == expected_dim);
-    REQUIRE(descriptor.offset() == expected_offset);
-    REQUIRE(descriptor_base.as_descriptor_with_libdivide() == &descriptor);
-    REQUIRE(descriptor_base.as_descriptor_with_libdivide()->strides_libdivide() == expected_strides_libdivide);
-}
+//     using test_type = std::tuple<descriptor_type, shape_type, shape_type, strides_libdivide_type, index_type, index_type>;
+//     //0descriptor,1expected shape,2expected strides,3expected_strides_libdivide, 4expected size,5expected dim
+//     auto test_data = GENERATE(
+//         test_type(descriptor_type(),shape_type{},shape_type{}, make_dividers<config_type>(shape_type{}),0,0),
+//         test_type(descriptor_type{shape_type{}},shape_type{},shape_type{},make_dividers<config_type>(shape_type{}),0,0),
+//         test_type(descriptor_type{shape_type{1}},shape_type{1},shape_type{1},make_dividers<config_type>(shape_type{1}),1,1),
+//         test_type(descriptor_type{shape_type{5}},shape_type{5},shape_type{1},make_dividers<config_type>(shape_type{1}),5,1),
+//         test_type(descriptor_type{shape_type{1,1}},shape_type{1,1},shape_type{1,1},make_dividers<config_type>(shape_type{1,1}),1,2),
+//         test_type(descriptor_type{shape_type{1,5}},shape_type{1,5},shape_type{5,1},make_dividers<config_type>(shape_type{5,1}),5,2),
+//         test_type(descriptor_type{shape_type{5,1}},shape_type{5,1},shape_type{1,1},make_dividers<config_type>(shape_type{1,1}),5,2),
+//         test_type(descriptor_type{shape_type{5,4,3}},shape_type{5,4,3},shape_type{12,3,1},make_dividers<config_type>(shape_type{12,3,1}),60,3)
+//     );
+//     auto descriptor = std::get<0>(test_data);
+//     const descriptor_base_type& descriptor_base = descriptor;
+//     auto expected_shape = std::get<1>(test_data);
+//     auto expected_strides = std::get<2>(test_data);
+//     auto expected_strides_libdivide = std::get<3>(test_data);
+//     auto expected_size = std::get<4>(test_data);
+//     auto expected_dim = std::get<5>(test_data);
+//     auto expected_offset = index_type{0};
+//     REQUIRE(descriptor.shape() == expected_shape);
+//     REQUIRE(descriptor.strides() == expected_strides);
+//     REQUIRE(descriptor.cstrides() == expected_strides);
+//     REQUIRE(descriptor.strides_libdivide() == expected_strides_libdivide);
+//     REQUIRE(descriptor.size() == expected_size);
+//     REQUIRE(descriptor.dim() == expected_dim);
+//     REQUIRE(descriptor.offset() == expected_offset);
+//     REQUIRE(descriptor_base.as_descriptor_with_libdivide() == &descriptor);
+//     REQUIRE(descriptor_base.as_descriptor_with_libdivide()->strides_libdivide() == expected_strides_libdivide);
+// }
 
 TEMPLATE_TEST_CASE("test_converting_descriptor_getters", "[test_descriptor]", gtensor::config::mode_div_libdivide, gtensor::config::mode_div_native){
     using config_type = test_config::config_div_mode_selector<TestType>::config_type;
     using descriptor_type = gtensor::converting_descriptor<config_type>;
     using descriptor_base_type = gtensor::descriptor_base<config_type>;
-    using descriptor_with_libdivide_type = gtensor::descriptor_with_libdivide<config_type>;
-    using strides_libdivide_type = gtensor::detail::strides_div_type<config_type>::type;
+    using strides_div_type = gtensor::detail::strides_div_traits<config_type>::type;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     using gtensor::detail::make_dividers;
-    using test_type = std::tuple<descriptor_type, shape_type, shape_type, shape_type, index_type, index_type,index_type,shape_type, strides_libdivide_type>;
+    using test_type = std::tuple<descriptor_type, shape_type, shape_type, shape_type, index_type, index_type,index_type,shape_type, strides_div_type>;
     //0descriptor, 1expected_shape, 2expected_strides, 3expected_cstrides, 4expected_dim, 5expected_size, 6expected_offset 7expected_reset_cstrides 8expected_strides_libdivide
     auto test_data = GENERATE(
         test_type{descriptor_type{shape_type{15},shape_type{-1},14},shape_type{15},shape_type{1},shape_type{-1},1,15,14, shape_type{-14}, make_dividers<config_type>(shape_type{1})},
@@ -285,7 +284,6 @@ TEMPLATE_TEST_CASE("test_converting_descriptor_getters", "[test_descriptor]", gt
     );
     auto descriptor = std::get<0>(test_data);
     const descriptor_base_type& descriptor_base= descriptor;
-    const descriptor_with_libdivide_type& descriptor_with_libdivide = descriptor;
     auto expected_shape = std::get<1>(test_data);
     auto expected_strides = std::get<2>(test_data);
     auto expected_cstrides = std::get<3>(test_data);
@@ -293,7 +291,7 @@ TEMPLATE_TEST_CASE("test_converting_descriptor_getters", "[test_descriptor]", gt
     auto expected_size = std::get<5>(test_data);
     auto expected_offset = std::get<6>(test_data);
     auto expected_reset_cstrides = std::get<7>(test_data);
-    auto expected_strides_libdivide = std::get<8>(test_data);
+    auto expected_strides_div = std::get<8>(test_data);
     REQUIRE(descriptor.shape() == expected_shape);
     REQUIRE(descriptor.strides() == expected_strides);
     REQUIRE(descriptor.cstrides() == expected_cstrides);
@@ -301,9 +299,7 @@ TEMPLATE_TEST_CASE("test_converting_descriptor_getters", "[test_descriptor]", gt
     REQUIRE(descriptor.size() == expected_size);
     REQUIRE(descriptor.offset() == expected_offset);
     REQUIRE(descriptor.reset_cstrides() == expected_reset_cstrides);
-    REQUIRE(descriptor.strides_libdivide() == expected_strides_libdivide);
-    REQUIRE(descriptor_base.as_descriptor_with_libdivide() == &descriptor_with_libdivide);
-    REQUIRE(descriptor_base.as_descriptor_with_libdivide()->strides_libdivide() == expected_strides_libdivide);
+    REQUIRE(descriptor.strides_div() == expected_strides_div);
 }
 
 TEMPLATE_TEST_CASE("test_converting_descriptor_convert", "[test_descriptor]", gtensor::config::mode_div_native, gtensor::config::mode_div_libdivide){

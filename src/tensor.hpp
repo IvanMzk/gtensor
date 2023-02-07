@@ -76,7 +76,7 @@ public:
 };
 
 template<typename EngineT>
-class evaluating_tensor : public basic_tensor<descriptor_with_libdivide<typename EngineT::config_type>, EngineT>
+class evaluating_tensor : public basic_tensor<basic_descriptor<typename EngineT::config_type>, EngineT>
 {
 public:
     using engine_type = typename basic_tensor::engine_type;

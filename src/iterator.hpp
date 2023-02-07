@@ -203,7 +203,7 @@ protected:
     using typename multiindex_bidirectional_iterator::result_type;
     using typename multiindex_bidirectional_iterator::shape_type;
     using typename multiindex_bidirectional_iterator::index_type;
-    using strides_type = typename detail::strides_div_type<CfgT>::type;
+    using strides_div_type = typename detail::strides_div_traits<CfgT>::type;
 public:
     using iterator_category = std::random_access_iterator_tag;
     using typename multiindex_bidirectional_iterator::value_type;
@@ -214,13 +214,13 @@ public:
 
     //begin constructor
     template<typename W, std::enable_if_t<std::is_same_v<W,walker_type> ,int> =0 >
-    multiindex_iterator(W&& walker_, const shape_type& shape_, const strides_type& strides_):
+    multiindex_iterator(W&& walker_, const shape_type& shape_, const strides_div_type& strides_):
         multiindex_bidirectional_iterator{std::forward<W>(walker_), shape_},
         strides{&strides_}
     {}
     //end constructor
     template<typename W, std::enable_if_t<std::is_same_v<W,walker_type> ,int> =0 >
-    multiindex_iterator(W&& walker_, const shape_type& shape_, const strides_type& strides_, const difference_type& size_):
+    multiindex_iterator(W&& walker_, const shape_type& shape_, const strides_div_type& strides_, const difference_type& size_):
         multiindex_bidirectional_iterator{std::forward<W>(walker_), shape_, size_},
         strides{&strides_}
     {}
@@ -238,7 +238,7 @@ public:
     inline difference_type friend operator-(const multiindex_iterator& lhs, const multiindex_iterator& rhs){return lhs.flat_index - rhs.flat_index;}
 private:
     auto& advance(difference_type);
-    const strides_type* strides;
+    const strides_div_type* strides;
 };
 
 template<typename...Ts>

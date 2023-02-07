@@ -36,11 +36,11 @@ template<typename EngineT, typename ShT> auto end_broadcast(EngineT& engine, con
 }
 template<typename EngineT> auto begin_multiindex(EngineT& engine){
     using iterator_type = multiindex_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_broadcast_walker())>;
-    return iterator_type{engine.create_broadcast_walker(), engine.holder()->shape(), engine.holder()->descriptor().as_descriptor_with_libdivide()->strides_libdivide()};
+    return iterator_type{engine.create_broadcast_walker(), engine.holder()->shape(), engine.holder()->descriptor().strides_div()};
 }
 template<typename EngineT> auto end_multiindex(EngineT& engine){
     using iterator_type = multiindex_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_broadcast_walker())>;
-    return iterator_type{engine.create_broadcast_walker(), engine.holder()->shape(), engine.holder()->descriptor().as_descriptor_with_libdivide()->strides_libdivide(), engine.holder()->size()};
+    return iterator_type{engine.create_broadcast_walker(), engine.holder()->shape(), engine.holder()->descriptor().strides_div(), engine.holder()->size()};
 }
 template<typename EngineT> auto begin_flatindex(EngineT& engine){
     using iterator_type = flat_index_iterator<typename EngineT::value_type,typename EngineT::config_type,decltype(engine.create_trivial_walker())>;
@@ -151,7 +151,7 @@ public:
     }
     auto create_broadcast_indexer()const{
         return evaluating_indexer<ValT,CfgT,std::decay_t<decltype(create_broadcast_walker())>>{
-            holder()->descriptor().as_descriptor_with_libdivide()->strides_libdivide(),
+            holder()->descriptor().strides_div(),
             create_broadcast_walker()
         };
     }

@@ -94,26 +94,75 @@ auto convert_index(const ShT& cstrides, const typename ShT::value_type& offset, 
 }
 
 template<typename CfgT>
-struct strides_div_type{
+struct strides_div_traits{
     template<typename> struct selector{using type = typename CfgT::shape_type;};    //native division
     template<> struct selector<config::mode_div_libdivide>{using type = libdivide_vector<typename CfgT::index_type>;};  //libdivide division
     using type = typename selector<typename CfgT::div_mode>::type;
 };
 
+template<typename CfgT, typename Mode> class strides_div_extension;
+
 template<typename CfgT>
-class descriptor_strides
+class strides_div_extension<CfgT,gtensor::config::mode_div_libdivide>
+{
+    using shape_type = typename CfgT::shape_type;
+    using index_type = typename CfgT::index_type;
+    using strides_div_type = typename detail::strides_div_traits<CfgT>::type;
+    strides_div_type strides_div_;
+protected:
+    strides_div_extension() = default;
+    strides_div_extension(const shape_type& strides__):
+        strides_div_{detail::make_libdivide_vector(strides__)}
+    {}
+    const auto&  strides_div()const{return strides_div_;}
+};
+
+template<typename CfgT>
+class strides_div_extension<CfgT,gtensor::config::mode_div_native>
+{
+    using shape_type = typename CfgT::shape_type;
+protected:
+    strides_div_extension() = default;
+    strides_div_extension(const shape_type&)
+    {}
+};
+
+template<typename CfgT>
+class strides_extension
 {
     using shape_type = typename CfgT::shape_type;
     const shape_type strides_;
     const shape_type reset_strides_;
-public:
-    descriptor_strides() = default;
-    descriptor_strides(const shape_type& shape__):
+protected:
+    strides_extension() = default;
+    strides_extension(const shape_type& shape__):
         strides_{detail::make_strides(shape__)},
         reset_strides_{detail::make_reset_strides(shape__,strides_)}
     {}
     const auto&  strides()const{return strides_;}
     const auto&  reset_strides()const{return reset_strides_;}
+};
+
+template<typename CfgT>
+class descriptor_strides :
+    private strides_extension<CfgT>,
+    private strides_div_extension<CfgT, typename CfgT::div_mode>
+{
+    using strides_extension_base = strides_extension<CfgT>;
+    using strides_div_extension_base = strides_div_extension<CfgT, typename CfgT::div_mode>;
+    using shape_type = typename CfgT::shape_type;
+
+    const auto& strides_div(gtensor::config::mode_div_libdivide)const{return strides_div_extension_base::strides_div();}
+    const auto& strides_div(gtensor::config::mode_div_native)const{return strides_extension_base::strides();}
+public:
+    descriptor_strides() = default;
+    descriptor_strides(const shape_type& shape__):
+        strides_extension_base{shape__},
+        strides_div_extension_base{strides_extension_base::strides()}
+    {}
+    const auto& strides_div()const{return strides_div(CfgT::div_mode{});}
+    const auto& strides()const{return strides_extension_base::strides();}
+    const auto& reset_strides()const{return strides_extension_base::reset_strides();}
 };
 
 }   //end of namespace detail
@@ -125,6 +174,7 @@ public:
     using config_type = CfgT;
     using index_type = typename config_type::index_type;
     using shape_type = typename config_type::shape_type;
+    using strides_div_type = typename detail::strides_div_traits<config_type>::type;
 
     virtual index_type convert(const shape_type& idx)const = 0;
     virtual index_type convert(const index_type& idx)const = 0;
@@ -132,26 +182,25 @@ public:
     virtual index_type size()const = 0;
     virtual index_type offset()const = 0;
     virtual const shape_type& shape()const = 0;
+    virtual const strides_div_type& strides_div()const = 0; //strides optimized for division
     virtual const shape_type& strides()const = 0;
     virtual const shape_type& reset_strides()const = 0;
     virtual const shape_type& cstrides()const = 0;
     virtual const shape_type& reset_cstrides()const = 0;
     virtual std::string to_str()const = 0;
-
-    virtual const descriptor_with_libdivide<config_type>* as_descriptor_with_libdivide()const {return nullptr;}
 };
 
-//common implementation of descriptor
 template<typename CfgT>
 class descriptor_common
 {
-protected:
+public:
     using config_type = CfgT;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     auto size()const{return detail::make_size(shape(),strides());}
     auto dim()const{return shape_.size();}
     const auto& shape()const{return shape_;}
+    const auto& strides_div()const{return strides_.strides_div();}
     const auto& strides()const{return strides_.strides();}
     const auto& reset_strides()const{return strides_.reset_strides();}
     auto to_str()const{return detail::shape_to_str(shape());}

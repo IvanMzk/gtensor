@@ -73,9 +73,9 @@ class evaluating_indexer
     using walker_type = WlkT;
     using value_type = ValT;
     using index_type = typename CfgT::index_type;
-    using strides_type = typename detail::strides_div_type<CfgT>::type;
+    using strides_div_type = typename detail::strides_div_traits<CfgT>::type;
 
-    const strides_type* strides;
+    const strides_div_type* strides;
     mutable walker_type walker_;
     mutable value_type data_cache{evaluate_at(0)};
     mutable index_type index_cache{0};
@@ -98,7 +98,7 @@ class evaluating_indexer
         return data_cache;
     }
 public:
-    evaluating_indexer(const strides_type& strides_, walker_type&& walker__):
+    evaluating_indexer(const strides_div_type& strides_, walker_type&& walker__):
         strides{&strides_},
         walker_{std::move(walker__)}
     {}
