@@ -200,9 +200,10 @@ TEST_CASE("test_result_type","[test_expression_template_engine]"){
 
 namespace test_iterator_helpers{
 using test_iterator_makers = typename helpers_for_testing::list_concat<
-        typename test_expression_template_helpers::makers_type_list<test_expression_template_helpers::test_broadcast_iterator_tensor>::type,
-        typename test_expression_template_helpers::makers_trivial_type_list<test_expression_template_helpers::test_flatindex_iterator_tensor>::type
-        >::type;
+    typename test_expression_template_helpers::makers_type_list<test_expression_template_helpers::test_broadcast_iterator_tensor>::type,
+    typename test_expression_template_helpers::makers_trivial_type_list<test_expression_template_helpers::test_flatindex_iterator_tensor>::type,
+    typename test_expression_template_helpers::makers_type_list<test_expression_template_helpers::test_poly_iterator_tensor>::type
+    >::type;
 }
 
 TEMPLATE_LIST_TEST_CASE("test_iterator","[test_expression_template_engine]",test_iterator_helpers::test_iterator_makers)

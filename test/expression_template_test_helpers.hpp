@@ -20,10 +20,13 @@ using gtensor::detail::begin_broadcast;
 using gtensor::detail::end_broadcast;
 using gtensor::detail::begin_trivial;
 using gtensor::detail::end_trivial;
+using gtensor::detail::begin_poly;
+using gtensor::detail::end_poly;
 static test_default_config_type::nop_type nop{};
 
 template<typename T>
-struct test_tensor : public T{
+struct test_tensor : public T
+{
     test_tensor(const T& base):
         T{base}
     {}
@@ -36,7 +39,8 @@ struct test_tensor : public T{
 };
 
 template<typename T>
-struct test_broadcast_iterator_tensor : public T{
+struct test_broadcast_iterator_tensor : public T
+{
     test_broadcast_iterator_tensor(const T& base):
         T{base}
     {}
@@ -46,13 +50,25 @@ struct test_broadcast_iterator_tensor : public T{
 };
 
 template<typename T>
-struct test_flatindex_iterator_tensor : public T{
+struct test_flatindex_iterator_tensor : public T
+{
     test_flatindex_iterator_tensor(const T& base):
         T{base}
     {}
     auto& engine()const{return impl()->engine();}
     auto begin()const{return begin_trivial(engine());}
     auto end()const{return end_trivial(engine());}
+};
+
+template<typename T>
+struct test_poly_iterator_tensor : public T
+{
+    test_poly_iterator_tensor(const T& base):
+        T{base}
+    {}
+    auto& engine()const{return impl()->engine();}
+    auto begin()const{return begin_poly(engine());}
+    auto end()const{return end_poly(engine());}
 };
 
 template<template<typename> typename TestT = test_tensor, typename T>
@@ -219,33 +235,33 @@ struct view_eval_view_operand_maker{
 template<template<typename> typename TestT>
 struct makers_type_list{
     using type = std::tuple<
-        test_expression_template_helpers::storage_tensor_maker<TestT, test_config_div_native_type>,
-        test_expression_template_helpers::notrivial_tensor_maker<TestT, test_config_div_native_type>,
-        test_expression_template_helpers::trivial_subtree_tensor_maker<TestT, test_config_div_native_type>,
-        test_expression_template_helpers::trivial_tensor_maker<TestT, test_config_div_native_type>,
-        test_expression_template_helpers::view_slice_of_storage_maker<TestT, test_config_div_native_type>,
-        test_expression_template_helpers::view_slice_of_eval_maker<TestT, test_config_div_native_type>,
-        test_expression_template_helpers::view_view_slice_of_eval_maker<TestT, test_config_div_native_type>,
-        test_expression_template_helpers::view_transpose_of_storage_maker<TestT, test_config_div_native_type>,
-        test_expression_template_helpers::view_subdim_of_storage_maker<TestT, test_config_div_native_type>,
-        test_expression_template_helpers::view_reshape_of_storage_maker<TestT, test_config_div_native_type>,
-        test_expression_template_helpers::eval_view_operand_maker<TestT, test_config_div_native_type>,
-        test_expression_template_helpers::trivial_view_operand_maker<TestT, test_config_div_native_type>,
-        test_expression_template_helpers::view_eval_view_operand_maker<TestT, test_config_div_native_type>,
+        storage_tensor_maker<TestT, test_config_div_native_type>,
+        notrivial_tensor_maker<TestT, test_config_div_native_type>,
+        trivial_subtree_tensor_maker<TestT, test_config_div_native_type>,
+        trivial_tensor_maker<TestT, test_config_div_native_type>,
+        view_slice_of_storage_maker<TestT, test_config_div_native_type>,
+        view_slice_of_eval_maker<TestT, test_config_div_native_type>,
+        view_view_slice_of_eval_maker<TestT, test_config_div_native_type>,
+        view_transpose_of_storage_maker<TestT, test_config_div_native_type>,
+        view_subdim_of_storage_maker<TestT, test_config_div_native_type>,
+        view_reshape_of_storage_maker<TestT, test_config_div_native_type>,
+        eval_view_operand_maker<TestT, test_config_div_native_type>,
+        trivial_view_operand_maker<TestT, test_config_div_native_type>,
+        view_eval_view_operand_maker<TestT, test_config_div_native_type>,
 
-        test_expression_template_helpers::storage_tensor_maker<TestT, test_config_div_libdivide_type>,
-        test_expression_template_helpers::notrivial_tensor_maker<TestT, test_config_div_libdivide_type>,
-        test_expression_template_helpers::trivial_subtree_tensor_maker<TestT, test_config_div_libdivide_type>,
-        test_expression_template_helpers::trivial_tensor_maker<TestT, test_config_div_libdivide_type>,
-        test_expression_template_helpers::view_slice_of_storage_maker<TestT, test_config_div_libdivide_type>,
-        test_expression_template_helpers::view_slice_of_eval_maker<TestT, test_config_div_libdivide_type>,
-        test_expression_template_helpers::view_view_slice_of_eval_maker<TestT, test_config_div_libdivide_type>,
-        test_expression_template_helpers::view_transpose_of_storage_maker<TestT, test_config_div_libdivide_type>,
-        test_expression_template_helpers::view_subdim_of_storage_maker<TestT, test_config_div_libdivide_type>,
-        test_expression_template_helpers::view_reshape_of_storage_maker<TestT, test_config_div_libdivide_type>,
-        test_expression_template_helpers::eval_view_operand_maker<TestT, test_config_div_libdivide_type>,
-        test_expression_template_helpers::trivial_view_operand_maker<TestT, test_config_div_libdivide_type>,
-        test_expression_template_helpers::view_eval_view_operand_maker<TestT, test_config_div_libdivide_type>
+        storage_tensor_maker<TestT, test_config_div_libdivide_type>,
+        notrivial_tensor_maker<TestT, test_config_div_libdivide_type>,
+        trivial_subtree_tensor_maker<TestT, test_config_div_libdivide_type>,
+        trivial_tensor_maker<TestT, test_config_div_libdivide_type>,
+        view_slice_of_storage_maker<TestT, test_config_div_libdivide_type>,
+        view_slice_of_eval_maker<TestT, test_config_div_libdivide_type>,
+        view_view_slice_of_eval_maker<TestT, test_config_div_libdivide_type>,
+        view_transpose_of_storage_maker<TestT, test_config_div_libdivide_type>,
+        view_subdim_of_storage_maker<TestT, test_config_div_libdivide_type>,
+        view_reshape_of_storage_maker<TestT, test_config_div_libdivide_type>,
+        eval_view_operand_maker<TestT, test_config_div_libdivide_type>,
+        trivial_view_operand_maker<TestT, test_config_div_libdivide_type>,
+        view_eval_view_operand_maker<TestT, test_config_div_libdivide_type>
     >;
 };
 
@@ -253,27 +269,27 @@ template<template<typename> typename TestT>
 struct makers_trivial_type_list
 {
     using type = std::tuple<
-        test_expression_template_helpers::storage_tensor_maker<TestT, test_config_div_native_type>,
-        test_expression_template_helpers::trivial_tensor_maker<TestT, test_config_div_native_type>,
-        test_expression_template_helpers::view_slice_of_storage_maker<TestT, test_config_div_native_type>,
-        test_expression_template_helpers::view_slice_of_eval_maker<TestT, test_config_div_native_type>,
-        test_expression_template_helpers::view_view_slice_of_eval_maker<TestT, test_config_div_native_type>,
-        test_expression_template_helpers::view_transpose_of_storage_maker<TestT, test_config_div_native_type>,
-        test_expression_template_helpers::view_subdim_of_storage_maker<TestT, test_config_div_native_type>,
-        test_expression_template_helpers::view_reshape_of_storage_maker<TestT, test_config_div_native_type>,
-        test_expression_template_helpers::trivial_view_operand_maker<TestT, test_config_div_native_type>,
-        test_expression_template_helpers::view_eval_view_operand_maker<TestT, test_config_div_native_type>,
+        storage_tensor_maker<TestT, test_config_div_native_type>,
+        trivial_tensor_maker<TestT, test_config_div_native_type>,
+        view_slice_of_storage_maker<TestT, test_config_div_native_type>,
+        view_slice_of_eval_maker<TestT, test_config_div_native_type>,
+        view_view_slice_of_eval_maker<TestT, test_config_div_native_type>,
+        view_transpose_of_storage_maker<TestT, test_config_div_native_type>,
+        view_subdim_of_storage_maker<TestT, test_config_div_native_type>,
+        view_reshape_of_storage_maker<TestT, test_config_div_native_type>,
+        trivial_view_operand_maker<TestT, test_config_div_native_type>,
+        view_eval_view_operand_maker<TestT, test_config_div_native_type>,
 
-        test_expression_template_helpers::storage_tensor_maker<TestT, test_config_div_libdivide_type>,
-        test_expression_template_helpers::trivial_tensor_maker<TestT, test_config_div_libdivide_type>,
-        test_expression_template_helpers::view_slice_of_storage_maker<TestT, test_config_div_libdivide_type>,
-        test_expression_template_helpers::view_slice_of_eval_maker<TestT, test_config_div_libdivide_type>,
-        test_expression_template_helpers::view_view_slice_of_eval_maker<TestT, test_config_div_libdivide_type>,
-        test_expression_template_helpers::view_transpose_of_storage_maker<TestT, test_config_div_libdivide_type>,
-        test_expression_template_helpers::view_subdim_of_storage_maker<TestT, test_config_div_libdivide_type>,
-        test_expression_template_helpers::view_reshape_of_storage_maker<TestT, test_config_div_libdivide_type>,
-        test_expression_template_helpers::trivial_view_operand_maker<TestT, test_config_div_libdivide_type>,
-        test_expression_template_helpers::view_eval_view_operand_maker<TestT, test_config_div_libdivide_type>
+        storage_tensor_maker<TestT, test_config_div_libdivide_type>,
+        trivial_tensor_maker<TestT, test_config_div_libdivide_type>,
+        view_slice_of_storage_maker<TestT, test_config_div_libdivide_type>,
+        view_slice_of_eval_maker<TestT, test_config_div_libdivide_type>,
+        view_view_slice_of_eval_maker<TestT, test_config_div_libdivide_type>,
+        view_transpose_of_storage_maker<TestT, test_config_div_libdivide_type>,
+        view_subdim_of_storage_maker<TestT, test_config_div_libdivide_type>,
+        view_reshape_of_storage_maker<TestT, test_config_div_libdivide_type>,
+        trivial_view_operand_maker<TestT, test_config_div_libdivide_type>,
+        view_eval_view_operand_maker<TestT, test_config_div_libdivide_type>
     >;
 };
 

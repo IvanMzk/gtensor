@@ -51,7 +51,8 @@ template<typename EngineT> auto end_trivial(EngineT& engine){
     return iterator_type{engine.create_trivial_walker(), engine.holder()->size()};
 }
 template<typename EngineT> auto begin_poly(EngineT& engine){
-    using iterator_type = random_access_iterator<typename EngineT::value_type, typename EngineT::config_type::difference_type>;
+    using config_type = typename EngineT::config_type;
+    using iterator_type = random_access_iterator<typename EngineT::value_type, typename config_type::difference_type>;
     if(engine.is_trivial()){
         return iterator_type{begin_trivial(engine)};
     }else{
@@ -59,7 +60,8 @@ template<typename EngineT> auto begin_poly(EngineT& engine){
     }
 }
 template<typename EngineT> auto end_poly(EngineT& engine){
-    using iterator_type = random_access_iterator<typename EngineT::value_type, typename EngineT::config_type::difference_type>;
+    using config_type = typename EngineT::config_type;
+    using iterator_type = random_access_iterator<typename EngineT::value_type, typename config_type::difference_type>;
     if(engine.is_trivial()){
         return iterator_type{end_trivial(engine)};
     }else{
@@ -201,8 +203,8 @@ public:
     using typename expression_template_nodispatching_engine::value_type;
     using typename expression_template_nodispatching_engine::config_type;
     using expression_template_nodispatching_engine::expression_template_nodispatching_engine;
-    auto begin()const{return detail::begin_broadcast(*this);}
-    auto end()const{return detail::end_broadcast(*this);}
+    auto begin()const{return detail::begin_poly(*this);}
+    auto end()const{return detail::end_poly(*this);}
     auto begin_broadcast(const shape_type& shape)const{return detail::begin_broadcast(*this, shape);}
     auto end_broadcast(const shape_type& shape)const{return detail::end_broadcast(*this, shape);}
     auto create_indexer()const{

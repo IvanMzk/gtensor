@@ -74,7 +74,8 @@ public:
         std::copy_n(begin,n_to_copy,elements_.begin());
     }
 private:
-    template<typename U> static auto create_indexer_helper(U& instance){
+    template<typename U>
+    static auto create_indexer_helper(U& instance){
         return basic_indexer<index_type, decltype(instance.begin())>{instance.begin()};
     }
     holder_accessor_type holder_accessor;

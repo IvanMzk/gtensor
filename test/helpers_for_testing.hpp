@@ -5,10 +5,18 @@
 
 namespace helpers_for_testing{
 
-template<typename, typename> struct list_concat;
+template<typename...> struct list_concat;
+template<template<typename...> typename L, typename...Us>
+struct list_concat<L<Us...>>{
+    using type = L<Us...>;
+};
 template<template<typename...> typename L, typename...Us, typename...Vs>
 struct list_concat<L<Us...>,L<Vs...>>{
     using type = L<Us...,Vs...>;
+};
+template<typename T1, typename T2, typename...Tail>
+struct list_concat<T1,T2,Tail...>{
+    using type = typename list_concat<typename list_concat<T1,T2>::type, Tail...>::type;
 };
 
 template<template <typename...> typename, typename, typename> struct cross_product;

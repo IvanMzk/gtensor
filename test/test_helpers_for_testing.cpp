@@ -2,7 +2,7 @@
 #include "catch.hpp"
 #include "helpers_for_testing.hpp"
 
-namespace test_cross_product{
+namespace test_helpers_for_testing{
 struct A{};
 struct B{};
 struct C{};
@@ -21,18 +21,39 @@ template<typename F, typename S> struct type_pair{
     using second_type = S;
 };
 
-}   //end of namespace test_cross_product
+}   //end of namespace test_helpers_for_testing
+
+TEST_CASE("test_list_concat","[test_helpers_for_testing]"){
+    using helpers_for_testing::list_concat;
+    using test_helpers_for_testing::type_list;
+    using test_helpers_for_testing::A;
+    using test_helpers_for_testing::B;
+    using test_helpers_for_testing::C;
+    using test_helpers_for_testing::D;
+    using test_helpers_for_testing::E;
+    using test_helpers_for_testing::F;
+
+    using l1 = type_list<A>;
+    using l2 = type_list<B,C>;
+    using l3 = type_list<D,E,F>;
+    using l4 = type_list<>;
+
+    REQUIRE(std::is_same_v<list_concat<l1,l2>::type, type_list<A,B,C>>);
+    REQUIRE(std::is_same_v<list_concat<l2,l1>::type, type_list<B,C,A>>);
+    REQUIRE(std::is_same_v<list_concat<l4,l1>::type, type_list<A>>);
+    REQUIRE(std::is_same_v<list_concat<l3,l4,l1,l2>::type, type_list<D,E,F,A,B,C>>);
+}
 
 TEST_CASE("test_types_cross_product_with_type_list","[test_helpers_for_testing]"){
     using helpers_for_testing::cross_product;
-    using test_cross_product::type_list;
-    using test_cross_product::type_pair;
-    using test_cross_product::A;
-    using test_cross_product::B;
-    using test_cross_product::C;
-    using test_cross_product::D;
-    using test_cross_product::E;
-    using test_cross_product::F;
+    using test_helpers_for_testing::type_list;
+    using test_helpers_for_testing::type_pair;
+    using test_helpers_for_testing::A;
+    using test_helpers_for_testing::B;
+    using test_helpers_for_testing::C;
+    using test_helpers_for_testing::D;
+    using test_helpers_for_testing::E;
+    using test_helpers_for_testing::F;
 
     REQUIRE(std::is_same_v<
         cross_product<type_list, type_list<A,B,C>, type_list<D,E,F>>::type ,
@@ -54,12 +75,12 @@ TEST_CASE("test_types_cross_product_with_type_list","[test_helpers_for_testing]"
 
 TEST_CASE("test_types_cross_product_with_tuple","[test_helpers_for_testing]"){
     using helpers_for_testing::cross_product;
-    using test_cross_product::A;
-    using test_cross_product::B;
-    using test_cross_product::C;
-    using test_cross_product::D;
-    using test_cross_product::E;
-    using test_cross_product::F;
+    using test_helpers_for_testing::A;
+    using test_helpers_for_testing::B;
+    using test_helpers_for_testing::C;
+    using test_helpers_for_testing::D;
+    using test_helpers_for_testing::E;
+    using test_helpers_for_testing::F;
 
     REQUIRE(std::is_same_v<
         cross_product<std::tuple, std::tuple<A,B,C>, std::tuple<D,E,F>>::type ,
