@@ -273,6 +273,107 @@ auto& broadcast_iterator<CfgT,WalkerT>::advance(difference_type n){
     return *this;
 }
 
+template<typename ValT, typename DiffT>
+class random_access_iterator
+{
+public:
+    using iterator_category = std::random_access_iterator_tag;
+    using value_type = ValT;
+    using difference_type = DiffT;
+    using pointer = value_type*;
+    using reference = value_type&;
+    using const_reference = const value_type&;
+
+    template<typename U, std::enable_if_t<!std::is_convertible_v<std::decay_t<U>, random_access_iterator>,int> =0>
+    explicit random_access_iterator(U&& iter__):
+        impl_{std::make_unique<engine<std::decay_t<U>>>(std::forward<U>(iter__))}
+    {}
+
+    random_access_iterator(const random_access_iterator& other):
+        impl_{other.impl_->clone()}
+    {}
+    random_access_iterator& operator=(const random_access_iterator& other){
+        impl_->assign(*other.impl_.get());
+        return *this;
+    }
+    random_access_iterator(random_access_iterator&&) = default;
+    random_access_iterator& operator=(random_access_iterator&&) = default;
+
+    auto& operator++(){
+        impl_->advance(difference_type{1});
+        return *this;
+    };
+    auto& operator--(){
+        impl_.advance(difference_type{-1});
+        return *this;
+    };
+    auto& operator+=(difference_type n){
+        impl_.advance(n);
+        return *this;
+    }
+    auto& operator-=(difference_type n){
+        return this->operator+=(-n);
+    }
+    auto operator+(difference_type n) const{
+        random_access_iterator it{*this};
+        it.impl_.advance(n);
+        return it;
+    }
+    auto operator-(difference_type n) const{
+        return this->operator+(-n);
+    }
+    bool operator==(const random_access_iterator& other)const{return impl_->equal(*other.impl_.get());}
+    bool operator!=(const random_access_iterator& other)const{return !(*this == other);}
+    difference_type operator-(const random_access_iterator& other){return impl_->diff(*other.impl_.get());}
+    value_type operator*() const{return impl_->deref();}
+    value_type operator[](difference_type n)const{return *(*this+n);}
+
+private:
+    class engine_base
+    {
+        virtual void advance(difference_type) = 0;
+        virtual value_type deref()const = 0;
+        virtual difference_type diff(const engine_base& other)const = 0;
+        virtual bool equal(const engine_base& other)const = 0;
+        virtual void assign(const engine_base& other)const = 0;
+        virtual std::unique_ptr<engine_base> clone()const = 0;
+    };
+
+    template<typename Iter>
+    class engine : public engine_base
+    {
+        Iter iter_;
+
+        std::unique_ptr<engine_base> clone()const override{return std::make_unique<engine>{*this};}
+        void advance(difference_type n) override{std::advance(iter_, n);}
+        difference_type diff(const engine_base& other) const override{ return iter_ - static_cast<const engine&>(other).iter_;}
+        bool equal(const engine_base& other) const override{return iter_ == static_cast<const engine&>(other).iter_;}
+        void assign(const engine_base& other) const override{iter_ = static_cast<const engine&>(other).iter_}
+        value_type deref()const override{return *iter_;}
+
+        engine(const engine&) = default;
+        engine(engine&&) = default;
+        engine& operator=(const engine&) = default;
+        engine& operator=(engine&&) = default;
+    public:
+        template<typename U>
+        explicit engine(U&& iter__):
+            iter_{std::forward<U>(iter__)}
+        {}
+    };
+
+    std::unique_ptr<engine_base> impl_;
+};
+
+template<typename ValT, typename DiffT>
+inline bool operator>(const random_access_iterator<ValT,DiffT>& lhs, const random_access_iterator<ValT,DiffT>& rhs){return (lhs - rhs) > typename random_access_iterator<ValT,DiffT>::difference_type(0);}
+template<typename ValT, typename DiffT>
+inline bool operator<(const random_access_iterator<ValT,DiffT>& lhs, const random_access_iterator<ValT,DiffT>& rhs){return (rhs - lhs) > typename random_access_iterator<ValT,DiffT>::difference_type(0);}
+template<typename ValT, typename DiffT>
+inline bool operator>=(const random_access_iterator<ValT,DiffT>& lhs, const random_access_iterator<ValT,DiffT>& rhs){return !(lhs < rhs);}
+template<typename ValT, typename DiffT>
+inline bool operator<=(const random_access_iterator<ValT,DiffT>& lhs, const random_access_iterator<ValT,DiffT>& rhs){return !(lhs > rhs);}
+
 }   //end of namespace gtensor
 
 

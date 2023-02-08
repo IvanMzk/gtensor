@@ -6,12 +6,10 @@ namespace gtensor{
 namespace detail{
 }   //end of namespace detail
 
-/**
-* basic_indexer provides interface for random access of underlaying storage using subscription operator
-* for storage engine it may wrapps its iterator, random access iterator required
-* for viewing engine it is wrapper around its parent's indexer and use descriptor for index mapping
-* for evaluating engine it must be defined for any particular engine
-**/
+//basic_indexer provides interface for random access of underlaying storage using subscription operator
+//for storage engine it may wrapps its iterator, random access iterator required
+//for viewing engine it is wrapper around its parent's indexer and use descriptor for index mapping
+//subscription operator result can be used for assigning, if underlaying indexer's subscription result allows it
 template<typename...> class basic_indexer;
 template<typename IdxT, typename IndexerT>
 class basic_indexer<IdxT, IndexerT>
@@ -48,6 +46,10 @@ private:
     const descriptor_type* converter;
 };
 
+//polymorphic indexer, can hold any indexer implementation
+//subscription operator result type is always ValT
+//IdxT is subscriptor type
+//ValT is subscription result type
 template<typename IdxT, typename ValT>
 class poly_indexer{
     using value_type = ValT;

@@ -50,6 +50,22 @@ template<typename EngineT> auto end_trivial(EngineT& engine){
     using iterator_type = trivial_broadcast_iterator<typename EngineT::config_type, decltype(engine.create_trivial_walker())>;
     return iterator_type{engine.create_trivial_walker(), engine.holder()->size()};
 }
+template<typename EngineT> auto begin_poly(EngineT& engine){
+    using iterator_type = random_access_iterator<typename EngineT::value_type, typename EngineT::config_type::difference_type>;
+    if(engine.is_trivial()){
+        return iterator_type{begin_trivial(engine)};
+    }else{
+        return iterator_type{begin_broadcast(engine)};
+    }
+}
+template<typename EngineT> auto end_poly(EngineT& engine){
+    using iterator_type = random_access_iterator<typename EngineT::value_type, typename EngineT::config_type::difference_type>;
+    if(engine.is_trivial()){
+        return iterator_type{end_trivial(engine)};
+    }else{
+        return iterator_type{end_broadcast(engine)};
+    }
+}
 template<typename...Ts> auto begin_broadcast(const expression_template_storage_engine<Ts...>& engine){return engine.begin();}
 template<typename...Ts> auto end_broadcast(const expression_template_storage_engine<Ts...>& engine){return engine.end();}
 template<typename...Ts> auto begin_trivial(const expression_template_storage_engine<Ts...>& engine){return engine.begin();}

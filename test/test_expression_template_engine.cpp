@@ -205,7 +205,7 @@ using test_iterator_makers = typename helpers_for_testing::list_concat<
         >::type;
 }
 
-TEMPLATE_LIST_TEST_CASE("test_broadcast_iterator","[test_expression_template_engine]",test_iterator_helpers::test_iterator_makers)
+TEMPLATE_LIST_TEST_CASE("test_iterator","[test_expression_template_engine]",test_iterator_helpers::test_iterator_makers)
 {
     SECTION("test_iter_deref"){
         using value_type = typename TestType::value_type;
