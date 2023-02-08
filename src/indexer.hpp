@@ -60,6 +60,7 @@ class poly_indexer{
         virtual ~indexer_base(){}
         virtual std::unique_ptr<indexer_base> clone()const = 0;
         virtual value_type operator[](const index_type&)const = 0;
+        virtual void assign(const indexer_base&) = 0;
     };
 
     template<typename ImplT>
@@ -68,11 +69,12 @@ class poly_indexer{
         using impl_type = ImplT;
         impl_type impl_;
         std::unique_ptr<indexer_base> clone()const override{return std::make_unique<indexer_wrapper>(*this);}
+        value_type operator[](const index_type& idx)const override{return impl_.operator[](idx);}
+        void assign(const indexer_base& other) override{impl_ = static_cast<const indexer_wrapper&>(other).impl_;}
     public:
         indexer_wrapper(impl_type&& impl__):
             impl_{std::move(impl__)}
         {}
-        value_type operator[](const index_type& idx)const override{return impl_.operator[](idx);}
     };
 
     std::unique_ptr<indexer_base> impl_;
@@ -81,11 +83,16 @@ public:
     explicit poly_indexer(ImplT&& impl__):
         impl_{std::make_unique<indexer_wrapper<std::decay_t<ImplT>>>(std::forward<ImplT>(impl__))}
     {}
+    poly_indexer() = default;
     poly_indexer(const poly_indexer& other):
         impl_{other.impl_->clone()}
     {}
+    poly_indexer& operator=(const poly_indexer& other){
+        impl_->assign(*other.impl_.get());
+        return *this;
+    }
     poly_indexer(poly_indexer&& other) = default;
-    poly_indexer() = default;
+    poly_indexer& operator=(poly_indexer&&) = default;
 
     value_type operator[](const index_type& idx)const{return impl_->operator[](idx);}
 };
