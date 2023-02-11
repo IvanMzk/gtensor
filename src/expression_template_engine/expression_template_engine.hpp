@@ -149,7 +149,7 @@ private:
     }
     template<std::size_t...I>
     auto create_trivial_walker_helper(std::index_sequence<I...>)const{
-        return evaluating_trivial_walker<value_type,CfgT,F,std::decay_t<decltype(operand<I>().engine().create_trivial_walker())>...>{operand<I>().engine().create_trivial_walker()...};
+        return evaluating_trivial_walker<CfgT,F,std::decay_t<decltype(operand<I>().engine().create_trivial_walker())>...>{operand<I>().engine().create_trivial_walker()...};
     }
     template<std::size_t...I>
     auto create_broadcast_walker_helper(std::index_sequence<I...>)const{

@@ -109,10 +109,10 @@ public:
     }
 };
 
-template<typename ValT, typename CfgT, typename F, typename...Wks>
+template<typename CfgT, typename F, typename...Wks>
 class evaluating_trivial_walker
 {
-    using value_type = ValT;
+    //using value_type = ValT;
     using index_type = typename CfgT::index_type;
 
     std::tuple<Wks...> walkers;
@@ -121,7 +121,7 @@ public:
     evaluating_trivial_walker(Wks&&...walkers_):
         walkers{std::move(walkers_)...}
     {}
-    value_type operator[](const index_type& idx)const {
+    auto operator[](const index_type& idx)const {
         return std::apply([&](const auto&...args){return f(args[idx]...);}, walkers);
     }
 };

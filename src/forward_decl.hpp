@@ -13,7 +13,7 @@ template<typename ValT, typename CfgT> class storage_walker_polymorphic;
 template<typename ValT, typename CfgT> class walker;
 template<typename ValT, typename CfgT> class indexer;
 template<typename ValT, typename CfgT> class walker_base;
-template<typename ValT, typename CfgT, typename F, typename...Wks> class evaluating_trivial_walker;
+template<typename CfgT, typename F, typename...Wks> class evaluating_trivial_walker;
 template<typename ValT, typename CfgT> class viewing_evaluating_walker;
 template<typename ValT, typename CfgT> class tensor_wrapper;
 template<typename CfgT, typename Wkr> class broadcast_iterator;
