@@ -5,49 +5,6 @@
 #include "uvector.h"
 
 
-
-TEST_CASE("test_vmax","test_descriptor"){
-    using gtensor::detail::vmax;
-    using index_type = std::int64_t;
-    using test_type = std::tuple<index_type,index_type>;
-    auto test_data = GENERATE(
-        test_type{vmax(index_type(1)),index_type(1)},
-        test_type{vmax(index_type(0), index_type(1)),index_type(1)},
-        test_type{vmax(index_type(1), index_type(0)),index_type(1)},
-        test_type{vmax(index_type(1), index_type(1)),index_type(1)},
-        test_type{vmax(index_type(1), index_type(1),index_type(2),index_type(0)),index_type(2)},
-        test_type{vmax(index_type(3), index_type(1),index_type(2),index_type(0)),index_type(3)},
-        test_type{vmax(index_type(3), index_type(1),index_type(2),index_type(3)),index_type(3)},
-        test_type{vmax(index_type(3), index_type(1),index_type(2),index_type(4)),index_type(4)},
-        test_type{vmax(index_type(3), index_type(5),index_type(5),index_type(4)),index_type(5)},
-        test_type{vmax(index_type(3), index_type(3),index_type(3),index_type(3)),index_type(3)}
-    );
-    auto result = std::get<0>(test_data);
-    auto expected = std::get<1>(test_data);
-    REQUIRE(result == expected);
-}
-
-TEST_CASE("test_vmin","test_descriptor"){
-    using gtensor::detail::vmin;
-    using index_type = std::int64_t;
-    using test_type = std::tuple<index_type,index_type>;
-    auto test_data = GENERATE(
-        test_type{vmin(index_type(1)),index_type(1)},
-        test_type{vmin(index_type(0), index_type(1)),index_type(0)},
-        test_type{vmin(index_type(1), index_type(0)),index_type(0)},
-        test_type{vmin(index_type(1), index_type(1)),index_type(1)},
-        test_type{vmin(index_type(1), index_type(1),index_type(2),index_type(0)),index_type(0)},
-        test_type{vmin(index_type(3), index_type(1),index_type(2),index_type(0)),index_type(0)},
-        test_type{vmin(index_type(3), index_type(1),index_type(2),index_type(3)),index_type(1)},
-        test_type{vmin(index_type(3), index_type(1),index_type(2),index_type(4)),index_type(1)},
-        test_type{vmin(index_type(3), index_type(5),index_type(5),index_type(4)),index_type(3)},
-        test_type{vmin(index_type(3), index_type(3),index_type(3),index_type(3)),index_type(3)}
-    );
-    auto result = std::get<0>(test_data);
-    auto expected = std::get<1>(test_data);
-    REQUIRE(result == expected);
-}
-
 TEMPLATE_PRODUCT_TEST_CASE("test_variadic_broadcast_shape","[test_descriptor]", (std::vector,trivial_type_vector::uvector),(std::int64_t)){
     using shape_type = TestType;
     using result_shape_type = std::vector<std::int64_t>;

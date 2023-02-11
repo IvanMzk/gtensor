@@ -20,8 +20,6 @@ using gtensor::detail::begin_broadcast;
 using gtensor::detail::end_broadcast;
 using gtensor::detail::begin_trivial;
 using gtensor::detail::end_trivial;
-using gtensor::detail::begin_poly;
-using gtensor::detail::end_poly;
 static test_default_config_type::nop_type nop{};
 
 template<typename T>
@@ -50,9 +48,9 @@ struct test_broadcast_iterator_tensor : public T
 };
 
 template<typename T>
-struct test_flatindex_iterator_tensor : public T
+struct test_trivial_iterator_tensor : public T
 {
-    test_flatindex_iterator_tensor(const T& base):
+    test_trivial_iterator_tensor(const T& base):
         T{base}
     {}
     auto& engine()const{return impl()->engine();}
@@ -60,19 +58,9 @@ struct test_flatindex_iterator_tensor : public T
     auto end()const{return end_trivial(engine());}
 };
 
-template<typename T>
-struct test_poly_iterator_tensor : public T
-{
-    test_poly_iterator_tensor(const T& base):
-        T{base}
-    {}
-    auto& engine()const{return impl()->engine();}
-    auto begin()const{return begin_poly(engine());}
-    auto end()const{return end_poly(engine());}
-};
 
 template<template<typename> typename TestT = test_tensor, typename T>
-auto make_test_tensor(T&& t){return TestT<std::decay_t<T>>{t};}
+auto make_test_tensor(T&& t){return TestT<std::decay_t<T>>{std::forward<T>(t)};}
 
 template<template<typename> typename TestT = test_tensor , typename CfgT = test_default_config_type, typename ValT = value_type>
 struct storage_tensor_maker{

@@ -50,24 +50,6 @@ template<typename EngineT> auto end_trivial(EngineT& engine){
     using iterator_type = trivial_broadcast_iterator<typename EngineT::config_type, decltype(engine.create_trivial_walker())>;
     return iterator_type{engine.create_trivial_walker(), engine.holder()->size()};
 }
-template<typename EngineT> auto begin_poly(EngineT& engine){
-    using config_type = typename EngineT::config_type;
-    using iterator_type = random_access_iterator<typename EngineT::value_type, typename config_type::difference_type>;
-    if(engine.is_trivial()){
-        return iterator_type{begin_trivial(engine)};
-    }else{
-        return iterator_type{begin_broadcast(engine)};
-    }
-}
-template<typename EngineT> auto end_poly(EngineT& engine){
-    using config_type = typename EngineT::config_type;
-    using iterator_type = random_access_iterator<typename EngineT::value_type, typename config_type::difference_type>;
-    if(engine.is_trivial()){
-        return iterator_type{end_trivial(engine)};
-    }else{
-        return iterator_type{end_broadcast(engine)};
-    }
-}
 template<typename...Ts> auto begin_broadcast(const expression_template_storage_engine<Ts...>& engine){return engine.begin();}
 template<typename...Ts> auto end_broadcast(const expression_template_storage_engine<Ts...>& engine){return engine.end();}
 template<typename...Ts> auto begin_trivial(const expression_template_storage_engine<Ts...>& engine){return engine.begin();}
@@ -131,7 +113,7 @@ private:
 };
 
 template<typename ValT, typename CfgT, typename F, typename...Ops>
-class expression_template_nodispatching_engine :
+class expression_template_evaluating_engine :
     public expression_template_engine_base<ValT,CfgT>,
     private evaluating_engine<ValT,CfgT,F,std::integral_constant<std::size_t,sizeof...(Ops)>>
 {
@@ -157,7 +139,7 @@ public:
     auto begin_broadcast(const shape_type& shape)const{return detail::begin_broadcast(*this, shape);}
     auto end_broadcast(const shape_type& shape)const{return detail::end_broadcast(*this, shape);}
     auto create_indexer()const{
-        return basic_indexer<index_type, decltype(create_broadcast_indexer())>{create_broadcast_indexer()};
+        return basic_indexer<index_type, decltype(create_indexer_helper())>{create_indexer_helper()};
     }
     auto create_broadcast_indexer()const{
         return evaluating_indexer<ValT,CfgT,std::decay_t<decltype(create_broadcast_walker())>>{
@@ -191,26 +173,6 @@ private:
     auto create_broadcast_walker_helper(Args&&...walkers)const{
         return evaluating_walker<ValT,CfgT,F,std::decay_t<Args>...>{holder()->shape(), std::forward<Args>(walkers)...};
     }
-};
-
-template<typename ValT, typename CfgT, typename F, typename...Ops>
-class expression_template_root_dispatching_engine :
-    public expression_template_nodispatching_engine<ValT,CfgT,F,Ops...>
-{
-    using typename expression_template_nodispatching_engine::shape_type;
-    using typename expression_template_nodispatching_engine::index_type;
-public:
-    using typename expression_template_nodispatching_engine::value_type;
-    using typename expression_template_nodispatching_engine::config_type;
-    using expression_template_nodispatching_engine::expression_template_nodispatching_engine;
-    auto begin()const{return detail::begin_poly(*this);}
-    auto end()const{return detail::end_poly(*this);}
-    auto begin_broadcast(const shape_type& shape)const{return detail::begin_broadcast(*this, shape);}
-    auto end_broadcast(const shape_type& shape)const{return detail::end_broadcast(*this, shape);}
-    auto create_indexer()const{
-        return basic_indexer<index_type, decltype(create_indexer_helper())>{create_indexer_helper()};
-    }
-private:
     auto create_indexer_helper()const{
         if (is_trivial()){
             return poly_indexer<index_type, value_type>{create_trivial_indexer()};

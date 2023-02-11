@@ -109,6 +109,14 @@ auto making_iter_reverse_iterate_deref = [](const auto& t){
     return c;
 };
 
+template<typename F, typename...Args>
+auto benchmark(std::string label, const F& f, Args&&...args){
+    BENCHMARK_ADVANCED(label.c_str())(Catch::Benchmark::Chronometer meter) {
+        meter.measure([&] { return f(std::forward<Args>(args)...); });
+    };
+    return 0;
+}
+
 template<typename F, typename Arg>
 auto benchmark_with_making_iter(const Arg& arg, std::string label, const F& f = making_iter_iterate_deref){
     BENCHMARK_ADVANCED(label.c_str())(Catch::Benchmark::Chronometer meter) {
@@ -116,9 +124,10 @@ auto benchmark_with_making_iter(const Arg& arg, std::string label, const F& f = 
     };
     return 0;
 }
-template<typename F, typename Arg>
-auto benchmark_without_making_iter(const Arg& arg, std::string label, const F& f = iterate_deref){
+template<typename Arg>
+auto benchmark_without_making_iter(std::string label, const Arg& arg){
     BENCHMARK_ADVANCED(label.c_str())(Catch::Benchmark::Chronometer meter) {
+        auto f = iterate_deref;
         auto v = make_iterators(meter.runs(),arg);
         meter.measure([&f,&v,&arg](int i) { return f(v[i].first, v[i].second); });
     };

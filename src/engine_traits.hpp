@@ -12,8 +12,7 @@ template<typename ValT, typename CfgT, typename DescT, typename ParentT> class v
 template<typename ValT, typename CfgT> class expression_template_engine_base;
 template<typename ValT, typename CfgT, typename DescT, typename ParentT> class expression_template_viewing_engine;
 template<typename ValT, typename CfgT> class expression_template_storage_engine;
-template<typename ValT, typename CfgT, typename F, typename...Ops> class expression_template_nodispatching_engine;
-template<typename ValT, typename CfgT, typename F, typename...Ops> class expression_template_root_dispatching_engine;
+template<typename ValT, typename CfgT, typename F, typename...Ops> class expression_template_evaluating_engine;
 
 // template<typename ValT, typename CfgT> class expression_template_engine_base;
 // template<typename ValT, typename CfgT, typename DescT> class expression_template_view_engine;
@@ -34,8 +33,7 @@ template<typename CfgT, typename StorT> struct storage_engine_traits<config::eng
 
 template<typename...> struct evaluating_engine_traits;
 template<typename ValT, typename CfgT,  typename F, typename...Ops> struct evaluating_engine_traits<config::engine_expression_template, ValT,CfgT,F,Ops...>{
-    //using type = expression_template_nodispatching_engine<ValT,CfgT,F,Ops...>;
-    using type = expression_template_root_dispatching_engine<ValT,CfgT,F,Ops...>;
+    using type = expression_template_evaluating_engine<ValT,CfgT,F,Ops...>;
 };
 
 template<typename...> struct viewing_engine_traits;

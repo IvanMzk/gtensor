@@ -9,22 +9,6 @@ class broadcast_exception : public std::runtime_error{
 
 namespace detail{
 
-template<typename Arg>
-inline auto& vmax(const Arg& arg){
-    return arg;
-}
-template<typename Arg, typename...Args>
-inline auto& vmax(const Arg& arg, const Args&...args){
-    return std::max(arg, vmax(args...));
-}
-template<typename Arg>
-inline auto& vmin(const Arg& arg){
-    return arg;
-}
-template<typename Arg, typename...Args>
-inline auto& vmin(const Arg& arg, const Args&...args){
-    return std::min(arg, vmin(args...));
-}
 /*
 * create broadcast shape
 * parameters: shapes to broadcast
@@ -34,10 +18,10 @@ template<typename ShT, typename...Ts>
 inline auto broadcast_shape(const Ts&...shapes){
     using shape_type = ShT;
     using index_type = typename shape_type::value_type;
-    if (vmin(shapes.size()...) == 0){
+    if (std::min({shapes.size()...}) == 0){
         throw broadcast_exception("shapes are not broadcastable");
     }else{
-        auto res = shape_type(vmax(shapes.size()...),index_type(0));
+        auto res = shape_type(std::max({shapes.size()...}),index_type(0));
         broadcast_shape_helper(res, shapes...);
         return res;
     }
