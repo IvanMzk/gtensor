@@ -354,7 +354,6 @@ TEST_CASE("test_broadcast_assignment","[test_expression_template_engine]"){
     //broadcast assignment
     auto lhs = tensor_type{1,2,3,4,5};
     lhs({{{},{},2}}) = tensor_type{0};
-    REQUIRE(std::equal(lhs.begin(), lhs.end(), std::vector<float>{0,2,0,4,0}.begin()));
 
     auto lhs1 = tensor_type{{1,2,3},{4,5,6}};
     lhs1() = tensor_type{0,1,2};

@@ -112,27 +112,24 @@ private:
     }
 };
 
-template<typename ValT, typename CfgT, typename F, typename...Ops>
+template<typename CfgT, typename F, typename...Operands>
 class expression_template_evaluating_engine :
     public expression_template_engine_base,
-    private evaluating_engine<ValT,CfgT,F,std::integral_constant<std::size_t,sizeof...(Ops)>>
+    private evaluating_engine<CfgT,F,Operands...>
 {
-protected:
-    using evaluating_engine::operands_number;
+    using evaluating_engine_base = evaluating_engine<CfgT,F,Operands...>;
+    using evaluating_engine_base::operands_number;
     using shape_type = typename CfgT::shape_type;
     using index_type = typename CfgT::index_type;
+    using evaluating_engine_base::operands;
+    using evaluating_engine_base::operand;
 public:
-    using typename evaluating_engine::value_type;
-    using typename evaluating_engine::config_type;
-    using evaluating_engine::evaluating_engine;
-    using evaluating_engine::holder;
+    using typename evaluating_engine_base::value_type;
+    using typename evaluating_engine_base::config_type;
+    using evaluating_engine_base::evaluating_engine;
+    using evaluating_engine_base::holder;
     bool is_trivial()const override{
-        return std::apply(
-            [this](const auto&...operands){
-                return gtensor::detail::is_trivial(holder()->size(),static_cast<Ops*>(operands.get())...);
-            },
-            operands()
-        );
+        return is_trivial_helper(std::make_index_sequence<operands_number>{});
     }
     auto begin()const{return detail::begin_broadcast(*this);}
     auto end()const{return detail::end_broadcast(*this);}
@@ -142,7 +139,7 @@ public:
         return basic_indexer<index_type, decltype(create_indexer_helper())>{create_indexer_helper()};
     }
     auto create_broadcast_indexer()const{
-        return evaluating_indexer<ValT,CfgT,std::decay_t<decltype(create_broadcast_walker())>>{
+        return evaluating_indexer<value_type,CfgT,std::decay_t<decltype(create_broadcast_walker())>>{
             holder()->descriptor().strides_div(),
             create_broadcast_walker()
         };
@@ -158,20 +155,16 @@ public:
     }
 private:
     template<std::size_t...I>
-    auto create_trivial_walker_helper(std::index_sequence<I...>)const{
-        return create_trivial_walker_helper(static_cast<Ops*>(operands()[I].get())->engine().create_trivial_walker()...);
+    auto is_trivial_helper(std::index_sequence<I...>)const{
+        return detail::is_trivial(holder()->size(), &operand<I>()...);
     }
-    template<typename...Args>
-    auto create_trivial_walker_helper(Args&&...walkers)const{
-        return evaluating_trivial_walker<ValT,CfgT,F,std::decay_t<Args>...>{std::forward<Args>(walkers)...};
+    template<std::size_t...I>
+    auto create_trivial_walker_helper(std::index_sequence<I...>)const{
+        return evaluating_trivial_walker<value_type,CfgT,F,std::decay_t<decltype(operand<I>().engine().create_trivial_walker())>...>{operand<I>().engine().create_trivial_walker()...};
     }
     template<std::size_t...I>
     auto create_broadcast_walker_helper(std::index_sequence<I...>)const{
-        return create_broadcast_walker_helper(static_cast<Ops*>(operands()[I].get())->engine().create_broadcast_walker()...);
-    }
-    template<typename...Args>
-    auto create_broadcast_walker_helper(Args&&...walkers)const{
-        return evaluating_walker<ValT,CfgT,F,std::decay_t<Args>...>{holder()->shape(), std::forward<Args>(walkers)...};
+        return evaluating_walker<value_type,CfgT,F,std::decay_t<decltype(operand<I>().engine().create_broadcast_walker())>...>{holder()->shape(), operand<I>().engine().create_broadcast_walker()...};
     }
     auto create_indexer_helper()const{
         if (is_trivial()){

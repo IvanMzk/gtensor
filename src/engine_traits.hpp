@@ -6,13 +6,13 @@
 namespace gtensor{
 
 template<typename ValT, typename CfgT> class storage_engine;
-template<typename ValT, typename CfgT, typename F, typename OperandsNumber> class evaluating_engine;
+template<typename CfgT, typename F, typename...Operands> class evaluating_engine;
 template<typename CfgT, typename DescT, typename ParentT> class viewing_engine;
 
 class expression_template_engine_base;
 template<typename CfgT, typename DescT, typename ParentT> class expression_template_viewing_engine;
 template<typename ValT, typename CfgT> class expression_template_storage_engine;
-template<typename ValT, typename CfgT, typename F, typename...Ops> class expression_template_evaluating_engine;
+template<typename CfgT, typename F, typename...Operands> class expression_template_evaluating_engine;
 
 // template<typename ValT, typename CfgT> class expression_template_engine_base;
 // template<typename ValT, typename CfgT, typename DescT> class expression_template_view_engine;
@@ -32,8 +32,8 @@ template<typename CfgT, typename StorT> struct storage_engine_traits<config::eng
 };
 
 template<typename...> struct evaluating_engine_traits;
-template<typename ValT, typename CfgT,  typename F, typename...Ops> struct evaluating_engine_traits<config::engine_expression_template, ValT,CfgT,F,Ops...>{
-    using type = expression_template_evaluating_engine<ValT,CfgT,F,Ops...>;
+template<typename CfgT,  typename F, typename...Operands> struct evaluating_engine_traits<config::engine_expression_template,CfgT,F,Operands...>{
+    using type = expression_template_evaluating_engine<CfgT,F,Operands...>;
 };
 
 template<typename...> struct viewing_engine_traits;
