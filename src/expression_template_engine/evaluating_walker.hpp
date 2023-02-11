@@ -6,17 +6,15 @@
 
 namespace gtensor{
 
-template<typename ValT, typename CfgT, typename F, typename...Wks>
+template<typename CfgT, typename F, typename...Wks>
 class evaluating_walker
 {
-    using value_type = ValT;
     using index_type = typename CfgT::index_type;
     using shape_type = typename CfgT::shape_type;
 
     index_type dim_;
     detail::shape_inverter<index_type,shape_type> shape;
-    std::pair<Wks...> walkers;
-    //std::tuple<Wks...> walkers;
+    std::tuple<Wks...> walkers;
     F f{};
 
     template<std::size_t...I>
@@ -30,7 +28,7 @@ class evaluating_walker
     template<std::size_t...I>
     void reset_helper(std::index_sequence<I...>){(std::get<I>(walkers).reset(),...);}
     template<std::size_t...I>
-    value_type deref_helper(std::index_sequence<I...>) const {return f(*std::get<I>(walkers)...);}
+    auto deref_helper(std::index_sequence<I...>) const {return f(*std::get<I>(walkers)...);}
     template<std::size_t...I>
     void walk_helper(const index_type& direction, const index_type& steps, std::index_sequence<I...>){(std::get<I>(walkers).walk(direction,steps),...);}
 
@@ -64,7 +62,7 @@ public:
         reset_back_helper(direction,std::make_index_sequence<sizeof...(Wks)>{});
     }
     void reset(){reset_helper(std::make_index_sequence<sizeof...(Wks)>{});}
-    value_type operator*() const {return deref_helper(std::make_index_sequence<sizeof...(Wks)>{});}
+    auto operator*() const {return deref_helper(std::make_index_sequence<sizeof...(Wks)>{});}
 };
 
 template<typename ValT, typename CfgT, typename WlkT>
@@ -117,8 +115,7 @@ class evaluating_trivial_walker
     using value_type = ValT;
     using index_type = typename CfgT::index_type;
 
-    //std::tuple<Wks...> walkers;
-    std::pair<Wks...> walkers;
+    std::tuple<Wks...> walkers;
     F f{};
 public:
     evaluating_trivial_walker(Wks&&...walkers_):

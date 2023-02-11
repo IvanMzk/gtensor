@@ -82,7 +82,7 @@ private:
     storage_type elements_;
 };
 
-//Operands can be specializations of storage_tensor, evaluating_tensor and viewing_tensor
+//Operands can be only specializations of storage_tensor, evaluating_tensor and viewing_tensor
 template<typename CfgT, typename F, typename...Operands>
 class evaluating_engine
 {
@@ -108,8 +108,6 @@ private:
     F f_;
     std::tuple<std::shared_ptr<Operands>...> operands_;
 };
-
-
 
 template<typename CfgT, typename DescT, typename ParentT>
 class viewing_engine

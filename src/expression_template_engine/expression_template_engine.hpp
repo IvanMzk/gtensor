@@ -153,7 +153,7 @@ private:
     }
     template<std::size_t...I>
     auto create_broadcast_walker_helper(std::index_sequence<I...>)const{
-        return evaluating_walker<value_type,CfgT,F,std::decay_t<decltype(operand<I>().engine().create_broadcast_walker())>...>{holder()->shape(), operand<I>().engine().create_broadcast_walker()...};
+        return evaluating_walker<CfgT,F,std::decay_t<decltype(operand<I>().engine().create_broadcast_walker())>...>{holder()->shape(), operand<I>().engine().create_broadcast_walker()...};
     }
     auto create_indexer_helper()const{
         if (is_trivial()){
