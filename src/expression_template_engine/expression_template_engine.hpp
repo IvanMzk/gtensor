@@ -66,15 +66,15 @@ template<typename T> constexpr bool is_converting_descriptor_v = is_converting_d
 
 }   //end of namespace detail
 
-template<typename ValT, typename CfgT>
-class expression_template_engine_base{
+class expression_template_engine_base
+{
 public:
     virtual bool is_trivial()const = 0;
 };
 
 template<typename CfgT, typename StorT>
 class expression_template_storage_engine :
-    public expression_template_engine_base<typename StorT::value_type,CfgT>,
+    public expression_template_engine_base,
     private storage_engine<CfgT,StorT>
 {
     using shape_type = typename CfgT::shape_type;
@@ -114,7 +114,7 @@ private:
 
 template<typename ValT, typename CfgT, typename F, typename...Ops>
 class expression_template_evaluating_engine :
-    public expression_template_engine_base<ValT,CfgT>,
+    public expression_template_engine_base,
     private evaluating_engine<ValT,CfgT,F,std::integral_constant<std::size_t,sizeof...(Ops)>>
 {
 protected:
@@ -182,19 +182,20 @@ private:
     }
 };
 
-template<typename ValT, typename CfgT, typename DescT, typename ParentT>
+template<typename CfgT, typename DescT, typename ParentT>
 class expression_template_viewing_engine :
-    public expression_template_engine_base<ValT,CfgT>,
-    private viewing_engine<ValT,CfgT,DescT, ParentT>
+    public expression_template_engine_base,
+    private viewing_engine<CfgT,DescT, ParentT>
 {
+    using viewing_engine_base = viewing_engine<CfgT,DescT, ParentT>;
     using shape_type = typename CfgT::shape_type;
     using descriptor_type = typename viewing_engine::descriptor_type;
 public:
-    using typename viewing_engine::value_type;
-    using typename viewing_engine::config_type;
-    using viewing_engine::viewing_engine;
-    using viewing_engine::create_indexer;
-    using viewing_engine::holder;
+    using typename viewing_engine_base::value_type;
+    using typename viewing_engine_base::config_type;
+    using viewing_engine_base::viewing_engine;
+    using viewing_engine_base::create_indexer;
+    using viewing_engine_base::holder;
     bool is_trivial()const override{return true;}
 
     auto begin()const{return begin(*this, detail::is_converting_descriptor_t<descriptor_type>{});}

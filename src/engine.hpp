@@ -108,11 +108,11 @@ private:
     std::array<std::shared_ptr<operand_base_type>,operands_number> operands_;
 };
 
-template<typename ValT, typename CfgT, typename DescT, typename ParentT>
+template<typename CfgT, typename DescT, typename ParentT>
 class viewing_engine
 {
 public:
-    using value_type = ValT;
+    using value_type = typename ParentT::value_type;
     using config_type = CfgT;
 protected:
     using holder_accessor_type = engine_holder_accessor<value_type, config_type>;
