@@ -128,7 +128,7 @@ public:
         return basic_indexer<index_type, decltype(create_indexer_helper())>{create_indexer_helper()};
     }
     auto create_broadcast_indexer()const{
-        return evaluating_indexer<value_type,CfgT,std::decay_t<decltype(create_broadcast_walker())>>{
+        return evaluating_indexer<CfgT,decltype(create_broadcast_walker())>{
             holder()->descriptor().strides_div(),
             create_broadcast_walker()
         };
@@ -149,11 +149,11 @@ private:
     }
     template<std::size_t...I>
     auto create_trivial_walker_helper(std::index_sequence<I...>)const{
-        return evaluating_trivial_walker<CfgT,F,std::decay_t<decltype(operand<I>().engine().create_trivial_walker())>...>{operand<I>().engine().create_trivial_walker()...};
+        return evaluating_trivial_walker<CfgT,F,decltype(operand<I>().engine().create_trivial_walker())...>{operand<I>().engine().create_trivial_walker()...};
     }
     template<std::size_t...I>
     auto create_broadcast_walker_helper(std::index_sequence<I...>)const{
-        return evaluating_walker<CfgT,F,std::decay_t<decltype(operand<I>().engine().create_broadcast_walker())>...>{holder()->shape(), operand<I>().engine().create_broadcast_walker()...};
+        return evaluating_walker<CfgT,F,decltype(operand<I>().engine().create_broadcast_walker())...>{holder()->shape(), operand<I>().engine().create_broadcast_walker()...};
     }
     auto create_indexer_helper()const{
         if (is_trivial()){

@@ -1,4 +1,4 @@
-#ifndef EVALUATING_WALKER_HPP_
+#ifndef EVALUATING_WALKER_HPP_test_trivial_iterator_tensor
 #define EVALUATING_WALKER_HPP_
 
 #include "libdivide_helper.hpp"
@@ -6,7 +6,7 @@
 
 namespace gtensor{
 
-template<typename CfgT, typename F, typename...Wks>
+template<typename CfgT, typename F, typename...Walkers>
 class evaluating_walker
 {
     using index_type = typename CfgT::index_type;
@@ -14,7 +14,7 @@ class evaluating_walker
 
     index_type dim_;
     detail::shape_inverter<index_type,shape_type> shape;
-    std::tuple<Wks...> walkers;
+    std::tuple<Walkers...> walkers;
     F f{};
 
     template<std::size_t...I>
@@ -34,7 +34,7 @@ class evaluating_walker
 
 public:
 
-    evaluating_walker(const shape_type& shape_, Wks&&...walkers_):
+    evaluating_walker(const shape_type& shape_, Walkers&&...walkers_):
         dim_{static_cast<index_type>(shape_.size())},
         shape{shape_},
         walkers{std::move(walkers_)...}
@@ -44,32 +44,32 @@ public:
 
     //walk method without check to utilize in evaluating_indexer
     void walk_without_check(const index_type& direction, const index_type& steps){
-        walk_helper(direction,steps,std::make_index_sequence<sizeof...(Wks)>{});
+        walk_helper(direction,steps,std::make_index_sequence<sizeof...(Walkers)>{});
     }
     void walk(const index_type& direction, const index_type& steps){
-        walk_helper(direction,steps,std::make_index_sequence<sizeof...(Wks)>{});
+        walk_helper(direction,steps,std::make_index_sequence<sizeof...(Walkers)>{});
     }
     void step(const index_type& direction){
-        step_helper(direction,std::make_index_sequence<sizeof...(Wks)>{});
+        step_helper(direction,std::make_index_sequence<sizeof...(Walkers)>{});
     }
     void step_back(const index_type& direction){
-        step_back_helper(direction,std::make_index_sequence<sizeof...(Wks)>{});
+        step_back_helper(direction,std::make_index_sequence<sizeof...(Walkers)>{});
     }
     void reset(const index_type& direction){
-        reset_helper(direction,std::make_index_sequence<sizeof...(Wks)>{});
+        reset_helper(direction,std::make_index_sequence<sizeof...(Walkers)>{});
     }
     void reset_back(const index_type& direction){
-        reset_back_helper(direction,std::make_index_sequence<sizeof...(Wks)>{});
+        reset_back_helper(direction,std::make_index_sequence<sizeof...(Walkers)>{});
     }
-    void reset(){reset_helper(std::make_index_sequence<sizeof...(Wks)>{});}
-    auto operator*() const {return deref_helper(std::make_index_sequence<sizeof...(Wks)>{});}
+    void reset(){reset_helper(std::make_index_sequence<sizeof...(Walkers)>{});}
+    auto operator*() const {return deref_helper(std::make_index_sequence<sizeof...(Walkers)>{});}
 };
 
-template<typename ValT, typename CfgT, typename WlkT>
+template<typename CfgT, typename Walker>
 class evaluating_indexer
 {
-    using walker_type = WlkT;
-    using value_type = ValT;
+    using walker_type = Walker;
+    using value_type = decltype(std::declval<walker_type>().operator*());
     using index_type = typename CfgT::index_type;
     using strides_div_type = typename detail::strides_div_traits<CfgT>::type;
 
@@ -81,7 +81,7 @@ class evaluating_indexer
     void walk(const index_type& direction, const index_type& steps)const{
         walker_.walk_without_check(direction,steps);
     }
-    value_type evaluate_at(index_type idx)const{
+    auto evaluate_at(index_type idx)const{
         index_cache = idx;
         walker_.reset();
         auto sit_begin{(*strides).begin()};
@@ -100,7 +100,7 @@ public:
         strides{&strides_},
         walker_{std::move(walker__)}
     {}
-    value_type operator[](index_type idx)const{
+    auto operator[](index_type idx)const{
         if (index_cache == idx){
             return data_cache;
         }else{
@@ -109,16 +109,16 @@ public:
     }
 };
 
-template<typename CfgT, typename F, typename...Wks>
+template<typename CfgT, typename F, typename...Walkers>
 class evaluating_trivial_walker
 {
     //using value_type = ValT;
     using index_type = typename CfgT::index_type;
 
-    std::tuple<Wks...> walkers;
+    std::tuple<Walkers...> walkers;
     F f{};
 public:
-    evaluating_trivial_walker(Wks&&...walkers_):
+    evaluating_trivial_walker(Walkers&&...walkers_):
         walkers{std::move(walkers_)...}
     {}
     auto operator[](const index_type& idx)const {
@@ -126,17 +126,17 @@ public:
     }
 };
 
-// template<typename ValT, typename CfgT, typename F, typename...Wks>
+// template<typename ValT, typename CfgT, typename F, typename...Walkers>
 // class evaluating_trivial_root_walker :
 //     private broadcast_walker_common<CfgT, typename CfgT::index_type>,
-//     private evaluating_trivial_walker<ValT,CfgT,F,Wks...>
+//     private evaluating_trivial_walker<ValT,CfgT,F,Walkers...>
 // {
 //     using value_type = ValT;
 //     using index_type = typename CfgT::index_type;
 //     using shape_type = typename CfgT::shape_type;
 
 // public:
-//     evaluating_trivial_root_walker(const shape_type& shape_, const shape_type& strides_, const shape_type& reset_strides_,  Wks&&...walkers_):
+//     evaluating_trivial_root_walker(const shape_type& shape_, const shape_type& strides_, const shape_type& reset_strides_,  Walkers&&...walkers_):
 //         broadcast_walker_common{static_cast<index_type>(shape_.size()), shape_, strides_, reset_strides_, index_type{0}},
 //         evaluating_trivial_walker{std::move(walkers_)...}
 //     {}
