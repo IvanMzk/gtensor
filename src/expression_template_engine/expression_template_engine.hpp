@@ -12,20 +12,6 @@ namespace gtensor{
 
 namespace detail{
 
-/*
-* is expression is trivial broadcast i.e. shapes of all nodes in expression tree is same
-* flat index access without walkers is used to evaluate broadcast expression
-* stensor and view are trivial
-*/
-template<typename IdxT,typename...Ops>
-inline bool is_trivial(const IdxT& root_size, const Ops&...root_operands){
-    return ((root_size==root_operands->size())&&...) && (is_trivial_operand(root_operands)&&...);
-}
-template<typename T>
-inline bool is_trivial_operand(const T& operand){
-    return operand->engine().is_trivial();
-}
-
 template<typename EngineT, typename ShT> auto begin_broadcast(EngineT& engine, const ShT& shape){
     using iterator_type = broadcast_iterator<typename EngineT::config_type, decltype(engine.create_broadcast_walker())>;
     return iterator_type{engine.create_broadcast_walker(), shape, make_dividers<EngineT::config_type>(shape)};
@@ -69,6 +55,9 @@ template<typename T> constexpr bool is_converting_descriptor_v = is_converting_d
 class expression_template_engine_base
 {
 public:
+
+    //storage_tensor and viewing_tensor are trivial broadcast
+    //evaluating_tensor is trivial broadcast when shapes of all nodes in expression tree are the same
     virtual bool is_trivial()const = 0;
 };
 
@@ -156,7 +145,7 @@ public:
 private:
     template<std::size_t...I>
     auto is_trivial_helper(std::index_sequence<I...>)const{
-        return detail::is_trivial(holder()->size(), &operand<I>()...);
+        return ((holder()->size()==operand<I>().size())&&...) && (operand<I>().engine().is_trivial()&&...);
     }
     template<std::size_t...I>
     auto create_trivial_walker_helper(std::index_sequence<I...>)const{

@@ -82,32 +82,6 @@ private:
     storage_type elements_;
 };
 
-// template<typename ValT, typename CfgT, typename F, typename OperandsNumber>
-// class evaluating_engine
-// {
-// public:
-//     using value_type = ValT;
-//     using config_type = CfgT;
-// protected:
-//     constexpr static std::size_t operands_number  = OperandsNumber::value;
-//     using operand_base_type = tensor_base_base<config_type>;
-//     using holder_accessor_type = engine_holder_accessor<value_type, config_type>;
-//     using holder_type = typename holder_accessor_type::holder_type;
-//     auto holder()const{return holder_accessor.holder();}
-//     const auto& operands()const{return operands_;}
-// public:
-//     template<typename...Ts>
-//     evaluating_engine(holder_type* holder, F&& f, Ts&&...operands):
-//         holder_accessor{holder},
-//         f_{std::move(f)},
-//         operands_{std::forward<Ts>(operands)...}
-//     {}
-// private:
-//     holder_accessor_type holder_accessor;
-//     F f_;
-//     std::array<std::shared_ptr<operand_base_type>,operands_number> operands_;
-// };
-
 //Operands can be specializations of storage_tensor, evaluating_tensor and viewing_tensor
 template<typename CfgT, typename F, typename...Operands>
 class evaluating_engine

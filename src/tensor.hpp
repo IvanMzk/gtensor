@@ -87,14 +87,14 @@ private:
     using typename basic_tensor::index_type;
     using typename basic_tensor::shape_type;
 
-    template<typename F, typename...Args>
-    evaluating_tensor(shape_type&& shape, F&& f, Args&&...operands):
-        basic_tensor{engine_type{this, std::forward<F>(f),std::forward<Args>(operands)...}, descriptor_type{std::move(shape)}}
+    template<typename F, typename...Operands>
+    evaluating_tensor(shape_type&& shape, F&& f, Operands&&...operands):
+        basic_tensor{engine_type{this, std::forward<F>(f),std::forward<Operands>(operands)...}, descriptor_type{std::move(shape)}}
     {}
 public:
-    template<typename F, typename...Args>
-    evaluating_tensor(F&& f, Args&&...operands):
-        evaluating_tensor{detail::broadcast_shape<shape_type>(operands->shape()...),std::forward<F>(f),std::forward<Args>(operands)...}
+    template<typename F, typename...Operands>
+    evaluating_tensor(F&& f, Operands&&...operands):
+        evaluating_tensor{detail::broadcast_shape<shape_type>(operands->shape()...),std::forward<F>(f),std::forward<Operands>(operands)...}
     {
         //static_assert(std::is_convertible_v<engine_type*, evaluating_engine<value_type,config_type,std::decay_t<F>,std::decay_t<Args>::element_type...>*>);
     }
