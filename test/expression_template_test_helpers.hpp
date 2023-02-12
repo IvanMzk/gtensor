@@ -62,160 +62,108 @@ struct test_trivial_iterator_tensor : public T
 template<template<typename> typename TestT = test_tensor, typename T>
 auto make_test_tensor(T&& t){return TestT<std::decay_t<T>>{std::forward<T>(t)};}
 
-template<template<typename> typename TestT = test_tensor , typename CfgT = test_default_config_type, typename ValT = value_type>
+template<typename TensorT>
 struct storage_tensor_maker{
-    using value_type = ValT;
-    using tensor_type = tensor<ValT,CfgT>;
     auto operator()(){
-        return make_test_tensor<TestT>(
-            tensor_type{{{1,2,3},{4,5,6}}}
-        );
+        return TensorT{{{1,2,3},{4,5,6}}};
     }
 };
 
-template<template<typename> typename TestT = test_tensor , typename CfgT = test_default_config_type, typename ValT = value_type>
+template<typename TensorT>
 struct notrivial_tensor_maker{
-    using value_type = ValT;
-    using tensor_type = tensor<ValT,CfgT>;
     auto operator()(){
-        return make_test_tensor<TestT>(
-            tensor_type{{{0},{3}}} + tensor_type{1,2,3}
-        );
+        return TensorT{{{0},{3}}} + TensorT{1,2,3};
     }
 };
 
-template<template<typename> typename TestT = test_tensor , typename CfgT = test_default_config_type, typename ValT = value_type>
+template<typename TensorT>
 struct trivial_subtree_tensor_maker{
-    using value_type = ValT;
-    using tensor_type = tensor<ValT,CfgT>;
     auto operator()(){
-        return make_test_tensor<TestT>(
-            tensor_type{2} * tensor_type{-1,-1,-1} + (tensor_type{{{1,2,3},{1,2,3}}} + tensor_type{{{0,0,0},{3,3,3}}}) + tensor_type{5,5,5} - tensor_type{3}
-        );
+        return TensorT{2} * TensorT{-1,-1,-1} + (TensorT{{{1,2,3},{1,2,3}}} + TensorT{{{0,0,0},{3,3,3}}}) + TensorT{5,5,5} - TensorT{3};
     }
 };
 
-template<template<typename> typename TestT = test_tensor , typename CfgT = test_default_config_type, typename ValT = value_type>
+template<typename TensorT>
 struct trivial_tensor_maker{
-    using value_type = ValT;
-    using tensor_type = tensor<ValT,CfgT>;
     auto operator()(){
-        return make_test_tensor<TestT>(
-            tensor_type{{{-1,-1,-1},{-1,-1,-1}}} + tensor_type{{{1,2,3},{1,2,3}}} + tensor_type{{{1,1,1},{4,4,4}}}
-        );
+        return TensorT{{{-1,-1,-1},{-1,-1,-1}}} + TensorT{{{1,2,3},{1,2,3}}} + TensorT{{{1,1,1},{4,4,4}}};
     }
 };
 
-template<template<typename> typename TestT = test_tensor , typename CfgT = test_default_config_type, typename ValT = value_type>
+template<typename TensorT>
 struct view_slice_of_storage_maker{
-    using value_type = ValT;
-    using tensor_type = tensor<ValT,CfgT>;
     auto operator()(){
-        return make_test_tensor<TestT>(
-            tensor_type{{{0,0,0,0,0,0},{0,0,0,0,0,0}},{{1,0,2,0,3,0},{4,0,5,0,6,0}}}({{1,2},{},{nop,nop,2}})
-        );
+        return TensorT{{{0,0,0,0,0,0},{0,0,0,0,0,0}},{{1,0,2,0,3,0},{4,0,5,0,6,0}}}({{1,2},{},{nop,nop,2}});
     }
 };
 
-template<template<typename> typename TestT = test_tensor , typename CfgT = test_default_config_type, typename ValT = value_type>
+template<typename TensorT>
 struct view_slice_of_eval_maker{
-    using value_type = ValT;
-    using tensor_type = tensor<ValT,CfgT>;
     auto operator()(){
-        return make_test_tensor<TestT>(
-            (tensor_type{2} * tensor_type{{1,1,1,1,1,1}} + tensor_type{{{0,0,0,0,0,0},{0,0,0,0,0,0}},{{1,0,2,0,3,0},{4,0,5,0,6,0}}} - tensor_type{{{3,3,3,3,3,3}}} + tensor_type{1})({{1,2},{},{nop,nop,2}})
-        );
+        return TensorT{2} * TensorT{{1,1,1,1,1,1}} + TensorT{{{0,0,0,0,0,0},{0,0,0,0,0,0}},{{1,0,2,0,3,0},{4,0,5,0,6,0}}} - TensorT{{{3,3,3,3,3,3}}} + TensorT{1})({{1,2},{},{nop,nop,2}});
     }
 };
 
-template<template<typename> typename TestT = test_tensor , typename CfgT = test_default_config_type, typename ValT = value_type>
+template<typename TensorT>
 struct view_view_slice_of_eval_maker{
-    using value_type = ValT;
-    using tensor_type = tensor<ValT,CfgT>;
     auto operator()(){
-        return make_test_tensor<TestT>(
-            (tensor_type{2} * tensor_type{{1,1,1,1,1,1}} + tensor_type{{{0,0,0,0,0,0},{0,0,0,0,0,0}},{{0,3,0,2,0,1},{0,6,0,5,0,4}}} - tensor_type{{{3,3,3,3,3,3}}} + tensor_type{1})({{},{},{nop,nop,-1}})({{1,2},{},{nop,nop,2}})
-        );
+        return (TensorT{2} * TensorT{{1,1,1,1,1,1}} + TensorT{{{0,0,0,0,0,0},{0,0,0,0,0,0}},{{0,3,0,2,0,1},{0,6,0,5,0,4}}} - TensorT{{{3,3,3,3,3,3}}} + TensorT{1})({{},{},{nop,nop,-1}})({{1,2},{},{nop,nop,2}});
     }
 };
 
-template<template<typename> typename TestT = test_tensor , typename CfgT = test_default_config_type, typename ValT = value_type>
+template<typename TensorT>
 struct view_transpose_of_storage_maker{
-    using value_type = ValT;
-    using tensor_type = tensor<ValT,CfgT>;
     auto operator()(){
-        return make_test_tensor<TestT>(
-            tensor_type{{{1},{4}},{{2},{5}},{{3},{6}}}.transpose()
-        );
+        return TensorT{{{1},{4}},{{2},{5}},{{3},{6}}}.transpose();
     }
 };
 
-template<template<typename> typename TestT = test_tensor , typename CfgT = test_default_config_type, typename ValT = value_type>
+template<typename TensorT>
 struct view_subdim_of_storage_maker{
-    using value_type = ValT;
-    using tensor_type = tensor<ValT,CfgT>;
     auto operator()(){
-        return make_test_tensor<TestT>(
-            tensor_type{{{{0,0,0},{0,0,0}}},{{{1,2,3},{4,5,6}}}}(1)
-        );
+        return TensorT{{{{0,0,0},{0,0,0}}},{{{1,2,3},{4,5,6}}}}(1);
     }
 };
 
-template<template<typename> typename TestT = test_tensor , typename CfgT = test_default_config_type, typename ValT = value_type>
+template<typename TensorT>
 struct view_reshape_of_storage_maker{
-    using value_type = ValT;
-    using tensor_type = tensor<ValT,CfgT>;
     auto operator()(){
-        return make_test_tensor<TestT>(
-            tensor_type{{{1},{2},{3}},{{4},{5},{6}}}.reshape(1,2,3)
-        );
+        return TensorT{{{1},{2},{3}},{{4},{5},{6}}}.reshape(1,2,3);
     }
 };
 
-template<template<typename> typename TestT = test_tensor , typename CfgT = test_default_config_type, typename ValT = value_type>
+template<typename TensorT>
 struct eval_view_operand_maker{
-    using value_type = ValT;
-    using tensor_type = tensor<ValT,CfgT>;
     auto operator()(){
-        return make_test_tensor<TestT>(
-            view_transpose_of_storage_maker<TestT,CfgT,ValT>{}() +
-            storage_tensor_maker<TestT,CfgT,ValT>{}() -
-            trivial_subtree_tensor_maker<TestT,CfgT,ValT>{}() +
-            view_view_slice_of_eval_maker<TestT,CfgT,ValT>{}() -
-            trivial_tensor_maker<TestT,CfgT,ValT>{}()
-        );
+        return view_transpose_of_storage_maker<TensorT>{}() +
+            storage_tensor_maker<TensorT>{}() -
+            trivial_subtree_tensor_maker<TensorT>{}() +
+            view_view_slice_of_eval_maker<TensorT>{}() -
+            trivial_tensor_maker<TensorT>{}()
     }
 };
 
-template<template<typename> typename TestT = test_tensor , typename CfgT = test_default_config_type, typename ValT = value_type>
+template<typename TensorT>
 struct trivial_view_operand_maker{
-    using value_type = ValT;
-    using tensor_type = tensor<ValT,CfgT>;
     auto operator()(){
-        return make_test_tensor<TestT>(
-            (storage_tensor_maker<TestT,CfgT,ValT>{}() +
-            view_transpose_of_storage_maker<TestT,CfgT,ValT>{}()) +
-            (storage_tensor_maker<TestT,CfgT,ValT>{}() -
-            view_view_slice_of_eval_maker<TestT,CfgT,ValT>{}() -
-            trivial_tensor_maker<TestT,CfgT,ValT>{}())
-        );
+        return storage_tensor_maker<TensorT>{}() +
+            view_transpose_of_storage_maker<TensorT>{}()) +
+            (storage_tensor_maker<TensorT>{}() -
+            view_view_slice_of_eval_maker<TensorT>{}() -
+            trivial_tensor_maker<TensorT>{}());
     }
 };
 
-template<template<typename> typename TestT = test_tensor , typename CfgT = test_default_config_type, typename ValT = value_type>
+template<typename TensorT>
 struct view_eval_view_operand_maker{
-    using value_type = ValT;
-    using tensor_type = tensor<ValT,CfgT>;
     auto operator()(){
-        return make_test_tensor<TestT>(
-            (view_transpose_of_storage_maker<TestT,CfgT,ValT>{}() +
-                storage_tensor_maker<TestT,CfgT,ValT>{}() -
-                trivial_subtree_tensor_maker<TestT,CfgT,ValT>{}() +
-                view_view_slice_of_eval_maker<TestT,CfgT,ValT>{}() -
-                trivial_tensor_maker<TestT,CfgT,ValT>{}() +
-                tensor_type{{{0,0,0},{0,0,0}},{{2,0,-2},{2,0,-2}}}
-            )({{1},{},{nop,nop,-1}})
-        );
+        return (view_transpose_of_storage_maker<TensorT>{}() +
+                storage_tensor_maker<TensorT>{}() -
+                trivial_subtree_tensor_maker<TensorT>{}() +
+                view_view_slice_of_eval_maker<TensorT>{}() -
+                trivial_tensor_maker<TensorT>{}() +
+                TensorT{{{0,0,0},{0,0,0}},{{2,0,-2},{2,0,-2}}}
+                )({{1},{},{nop,nop,-1}});
     }
 };
 
@@ -281,10 +229,7 @@ struct makers_trivial_type_list
     >;
 };
 
-// template<>
-// struct test_tensors{
 
-// };
 
 
 

@@ -110,7 +110,6 @@ class expression_template_evaluating_engine :
     using evaluating_engine_base::operands_number;
     using shape_type = typename CfgT::shape_type;
     using index_type = typename CfgT::index_type;
-    using evaluating_engine_base::operands;
     using evaluating_engine_base::operand;
 public:
     using typename evaluating_engine_base::value_type;

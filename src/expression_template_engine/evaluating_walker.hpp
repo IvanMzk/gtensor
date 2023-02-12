@@ -1,4 +1,4 @@
-#ifndef EVALUATING_WALKER_HPP_test_trivial_iterator_tensor
+#ifndef EVALUATING_WALKER_HPP_
 #define EVALUATING_WALKER_HPP_
 
 #include "libdivide_helper.hpp"
@@ -125,30 +125,6 @@ public:
         return std::apply([&](const auto&...args){return f(args[idx]...);}, walkers);
     }
 };
-
-// template<typename ValT, typename CfgT, typename F, typename...Walkers>
-// class evaluating_trivial_root_walker :
-//     private broadcast_walker_common<CfgT, typename CfgT::index_type>,
-//     private evaluating_trivial_walker<ValT,CfgT,F,Walkers...>
-// {
-//     using value_type = ValT;
-//     using index_type = typename CfgT::index_type;
-//     using shape_type = typename CfgT::shape_type;
-
-// public:
-//     evaluating_trivial_root_walker(const shape_type& shape_, const shape_type& strides_, const shape_type& reset_strides_,  Walkers&&...walkers_):
-//         broadcast_walker_common{static_cast<index_type>(shape_.size()), shape_, strides_, reset_strides_, index_type{0}},
-//         evaluating_trivial_walker{std::move(walkers_)...}
-//     {}
-
-//     void walk(const index_type& direction, const index_type& steps){broadcast_walker_common::walk(direction,steps);}
-//     void step(const index_type& direction){broadcast_walker_common::step(direction);}
-//     void step_back(const index_type& direction){broadcast_walker_common::step_back(direction);}
-//     void reset(const index_type& direction){broadcast_walker_common::reset(direction);}
-//     void reset(){broadcast_walker_common::reset();}
-//     value_type operator[](const index_type& idx)const {return evaluating_trivial_walker::operator[](idx);}
-//     value_type operator*() const {return operator[](cursor());}
-// };
 
 }   //end of namespace gtensor
 

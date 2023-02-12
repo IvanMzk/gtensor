@@ -26,12 +26,11 @@ struct NAME{\
     template<typename ValT1, typename ValT2, typename ImplT1, typename ImplT2, typename CfgT>\
     auto operator()(const tensor<ValT1, CfgT, ImplT1>&, const tensor<ValT2, CfgT, ImplT2>&, std::shared_ptr<ImplT1>&& op1, std::shared_ptr<ImplT2>&& op2){\
         using operation_type = OP;\
-        using result_type = decltype(std::declval<operation_type>()(std::declval<ValT1>(),std::declval<ValT2>()));\
         using operand1_type = ImplT1;\
         using operand2_type = ImplT2;\
-        using engine_type = typename detail::evaluating_engine_traits<typename CfgT::host_engine, CfgT, operation_type, operand1_type, operand2_type>::type;\
+        using engine_type = expression_template_evaluating_engine<CfgT, operation_type, operand1_type, operand2_type>;\
         using impl_type = evaluating_tensor<engine_type>;\
-        return tensor<result_type,CfgT, impl_type>{std::make_shared<impl_type>(operation_type{}, std::move(op1),std::move(op2))};\
+        return tensor<typename impl_type::value_type, CfgT, impl_type>{std::make_shared<impl_type>(operation_type{}, std::move(op1),std::move(op2))};\
     }\
 };
 
@@ -79,10 +78,9 @@ namespace expression_template_operators{
         template<typename ValT1, typename ValT2, typename ImplT1, typename ImplT2, typename CfgT>
         auto operator()(const tensor<ValT1, CfgT, ImplT1>&, const tensor<ValT2, CfgT, ImplT2>&, std::shared_ptr<ImplT1>&& lhs, std::shared_ptr<ImplT2>&& rhs){
             using operation_type = expression_template_binary_operations::assign;
-            using result_type = void;
             using operand1_type = ImplT1;
             using operand2_type = ImplT2;
-            using engine_type = typename detail::evaluating_engine_traits<typename CfgT::host_engine, CfgT, operation_type, operand1_type, operand2_type>::type;
+            using engine_type = expression_template_evaluating_engine<CfgT, operation_type, operand1_type, operand2_type>;\
             auto lhs_size{lhs->size()};
             auto assigning = evaluating_tensor<engine_type>{operation_type{}, std::move(lhs),std::move(rhs)};
             if (lhs_size < assigning.size())

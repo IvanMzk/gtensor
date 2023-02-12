@@ -52,15 +52,15 @@ template<
     typename ImplT = storage_tensor<typename detail::storage_engine_traits<typename CfgT::host_engine,CfgT,typename CfgT::template storage<ValT>>::type>
 >
 class tensor{
-    using tensor_base_type = tensor_base<ValT, CfgT>;
     using impl_type = ImplT;
+    using tensor_base_type = std::conditional_t< std::is_const_v<impl_type>, const tensor_base<ValT,CfgT>, tensor_base<ValT,CfgT> >;
     using slice_type = typename CfgT::slice_type;
     using slices_init_type = typename CfgT::slices_init_type;
     using slices_collection_type = typename CfgT::slices_collection_type;
     using index_type = typename CfgT::index_type;
     using shape_type = typename CfgT::shape_type;
+    static_assert(std::is_convertible_v<std::remove_const_t<impl_type>*,tensor_base_type*>);
     class ctr_tag{};
-    static_assert(std::is_convertible_v<impl_type*,tensor_base_type*>);
 
     friend std::ostream& operator<<(std::ostream& os, const tensor& lhs){return os<<lhs.impl_->to_str();}
     friend class tensor_operators;
@@ -79,6 +79,7 @@ protected:
     auto& engine(){return impl_->engine();}
 
 public:
+    using config_type = CfgT;
     using value_type = ValT;
     using htensor_type = tensor<ValT, CfgT, tensor_base_type>;
     using storage_impl_type = storage_tensor<typename detail::storage_engine_traits<typename CfgT::host_engine,CfgT,typename CfgT::template storage<ValT>>::type>;
