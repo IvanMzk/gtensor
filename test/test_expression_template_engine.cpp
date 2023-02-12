@@ -95,7 +95,7 @@ TEST_CASE("test_walker","[test_expression_template_engine]")
     using helpers_for_testing::apply_by_element;
 
     //{{{1,2,3},{4,5,6}}}, shape is (1,2,3), direction indexes are (2,1,0)
-    auto test_data = test_expression_template_engine::test_data<value_type,config_type>();
+    auto test_data = test_expression_template_engine::test_data<value_type,config_type>{};
 
     //tests for broadcast walker
     auto tests = std::make_tuple(
@@ -119,18 +119,15 @@ TEST_CASE("test_walker","[test_expression_template_engine]")
         [](auto& t_){auto t = make_test_tensor(t_); auto w = t.engine().create_walker(); w.walk(1,1); w.walk(0,2); w.reset(); REQUIRE(*w == value_type{1});},
         [](auto& t_){auto t = make_test_tensor(t_); auto w = t.engine().create_walker(); w.walk(0,2); w.reset(); REQUIRE(*w == value_type{1});}
     );
-
     auto apply_tests = [&test_data](auto& test){
         //apply test to each tensor in test_data
         apply_by_element(test, test_data());
     };
-
     //apply to each test in tests
     apply_by_element(apply_tests, tests);
-
 }
 
-TEST_CASE("test_trivial_walker","[test_expression_template_engine]")
+TEST_CASE("test_indexer","[test_expression_template_engine]")
 {
     using value_type = float;
     using config_type = gtensor::config::default_config;
@@ -138,242 +135,149 @@ TEST_CASE("test_trivial_walker","[test_expression_template_engine]")
     using test_expression_template_engine::make_test_tensor;
     using helpers_for_testing::apply_by_element;
 
-    //{{{1,2,3},{4,5,6}}}, shape is (1,2,3), direction indexes are (2,1,0)
-    auto test_data = test_expression_template_engine::test_data<value_type,config_type>();
-
+    auto test_data = test_expression_template_engine::test_data<value_type,config_type>{};
     auto test = [](auto& t_){
         auto t = make_test_tensor(t_);
-        auto w = t.engine().create_trivial_walker();
+        auto indexer = t.engine().create_indexer();
+        std::vector<value_type> expected{1,2,3,4,5,6};
+        for (std::size_t i{0}; i!=expected.size(); ++i){
+            REQUIRE(indexer[i] == expected[i]);
+        }
     };
-
+    apply_by_element(test, test_data());
 }
 
-// TEMPLATE_LIST_TEST_CASE("test_indexer","[test_expression_template_engine]",
-//     typename test_expression_template_helpers::makers_type_list<test_expression_template_helpers::test_tensor>::type
-// )
-// {
-//     using value_type = typename TestType::value_type;
-//     using test_type = std::tuple<value_type,value_type>;
+TEST_CASE("test_result_type","[test_expression_template_engine]"){
+    using value_type = float;
+    using reference_type = value_type&;
+    using const_reference_type = const value_type&;
+    using tensor_type = gtensor::tensor<value_type>;
+    using index_type = typename tensor_type::config_type::index_type;
+    using test_expression_template_engine::make_test_tensor;
 
-//     //0result,1expected
-//     auto test_data = GENERATE(
-//         test_type{TestType{}().create_indexer()[0],value_type{1}},
-//         test_type{TestType{}().create_indexer()[5],value_type{6}},
-//         test_type{TestType{}().create_indexer()[1],value_type{2}},
-//         test_type{TestType{}().create_indexer()[2],value_type{3}},
-//         test_type{TestType{}().create_indexer()[4],value_type{5}},
-//         test_type{TestType{}().create_indexer()[3],value_type{4}}
-//     );
-//     auto result = std::get<0>(test_data);
-//     auto expected = std::get<1>(test_data);
-//     REQUIRE(result == expected);
-// }
+    auto t = make_test_tensor(tensor_type{1,2,3});
+    SECTION("storage"){
+        auto& re = t.engine();
+        const auto& cre = re;
+        REQUIRE(std::is_same_v<decltype(re.create_indexer()[std::declval<index_type>()]),reference_type>);
+        REQUIRE(std::is_same_v<decltype(cre.create_indexer()[std::declval<index_type>()]),const_reference_type>);
+        REQUIRE(std::is_same_v<decltype(re.create_trivial_indexer()[std::declval<index_type>()]),reference_type>);
+        REQUIRE(std::is_same_v<decltype(cre.create_trivial_indexer()[std::declval<index_type>()]),const_reference_type>);
+        REQUIRE(std::is_same_v<decltype(*re.create_walker()),reference_type>);
+        REQUIRE(std::is_same_v<decltype(*cre.create_walker()),const_reference_type>);
+        REQUIRE(std::is_same_v<decltype(*re.begin()),reference_type>);
+        REQUIRE(std::is_same_v<decltype(*re.end()),reference_type>);
+        REQUIRE(std::is_same_v<decltype(*cre.begin()),const_reference_type>);
+        REQUIRE(std::is_same_v<decltype(*cre.end()),const_reference_type>);
+    }
+    SECTION("view_of_storage"){
+        auto vt = make_test_tensor(t({{}}));
+        auto& re = vt.engine();
+        const auto& cre = re;
+        REQUIRE(std::is_same_v<decltype(re.create_indexer()[std::declval<index_type>()]),reference_type>);
+        REQUIRE(std::is_same_v<decltype(cre.create_indexer()[std::declval<index_type>()]),const_reference_type>);
+        REQUIRE(std::is_same_v<decltype(re.create_trivial_indexer()[std::declval<index_type>()]),reference_type>);
+        REQUIRE(std::is_same_v<decltype(cre.create_trivial_indexer()[std::declval<index_type>()]),const_reference_type>);
+        REQUIRE(std::is_same_v<decltype(*re.create_walker()),reference_type>);
+        REQUIRE(std::is_same_v<decltype(*cre.create_walker()),const_reference_type>);
+        REQUIRE(std::is_same_v<decltype(*re.begin()),reference_type>);
+        REQUIRE(std::is_same_v<decltype(*re.end()),reference_type>);
+        REQUIRE(std::is_same_v<decltype(*cre.begin()),const_reference_type>);
+        REQUIRE(std::is_same_v<decltype(*cre.end()),const_reference_type>);
+    }
+    SECTION("view_view_of_storage"){
+        auto vvt = make_test_tensor(t({{}}).transpose().reshape());
+        auto& re = vvt.engine();
+        const auto& cre = re;
+        REQUIRE(std::is_same_v<decltype(re.create_indexer()[std::declval<index_type>()]),reference_type>);
+        REQUIRE(std::is_same_v<decltype(cre.create_indexer()[std::declval<index_type>()]),const_reference_type>);
+        REQUIRE(std::is_same_v<decltype(re.create_trivial_indexer()[std::declval<index_type>()]),reference_type>);
+        REQUIRE(std::is_same_v<decltype(cre.create_trivial_indexer()[std::declval<index_type>()]),const_reference_type>);
+        REQUIRE(std::is_same_v<decltype(*re.create_walker()),reference_type>);
+        REQUIRE(std::is_same_v<decltype(*cre.create_walker()),const_reference_type>);
+        REQUIRE(std::is_same_v<decltype(*re.begin()),reference_type>);
+        REQUIRE(std::is_same_v<decltype(*re.end()),reference_type>);
+        REQUIRE(std::is_same_v<decltype(*cre.begin()),const_reference_type>);
+        REQUIRE(std::is_same_v<decltype(*cre.end()),const_reference_type>);
+    }
+    SECTION("evaluating"){
+        auto e = make_test_tensor(t+t+t);
+        auto& re = e.engine();
+        const auto& cre = re;
+        REQUIRE(std::is_same_v<decltype(re.create_indexer()[std::declval<index_type>()]),value_type>);
+        REQUIRE(std::is_same_v<decltype(cre.create_indexer()[std::declval<index_type>()]),value_type>);
+        REQUIRE(std::is_same_v<decltype(re.create_trivial_indexer()[std::declval<index_type>()]),value_type>);
+        REQUIRE(std::is_same_v<decltype(cre.create_trivial_indexer()[std::declval<index_type>()]),value_type>);
+        REQUIRE(std::is_same_v<decltype(*re.create_walker()),value_type>);
+        REQUIRE(std::is_same_v<decltype(*cre.create_walker()),value_type>);
+        REQUIRE(std::is_same_v<decltype(*re.begin()),value_type>);
+        REQUIRE(std::is_same_v<decltype(*re.end()),value_type>);
+        REQUIRE(std::is_same_v<decltype(*cre.begin()),value_type>);
+        REQUIRE(std::is_same_v<decltype(*cre.end()),value_type>);
+    }
+    SECTION("view_of_evaluating"){
+        auto ve = make_test_tensor((t+t+t).transpose());
+        auto& re = ve.engine();
+        const auto& cre = re;
+        REQUIRE(std::is_same_v<decltype(re.create_indexer()[std::declval<index_type>()]),value_type>);
+        REQUIRE(std::is_same_v<decltype(cre.create_indexer()[std::declval<index_type>()]),value_type>);
+        REQUIRE(std::is_same_v<decltype(re.create_trivial_indexer()[std::declval<index_type>()]),value_type>);
+        REQUIRE(std::is_same_v<decltype(cre.create_trivial_indexer()[std::declval<index_type>()]),value_type>);
+        REQUIRE(std::is_same_v<decltype(*re.create_walker()),value_type>);
+        REQUIRE(std::is_same_v<decltype(*cre.create_walker()),value_type>);
+        REQUIRE(std::is_same_v<decltype(*re.begin()),value_type>);
+        REQUIRE(std::is_same_v<decltype(*re.end()),value_type>);
+        REQUIRE(std::is_same_v<decltype(*cre.begin()),value_type>);
+        REQUIRE(std::is_same_v<decltype(*cre.end()),value_type>);
+    }
+    SECTION("view_view_of_evaluating"){
+        auto vve = make_test_tensor((t+t+t).transpose().reshape()({{}})());
+        auto& re = vve.engine();
+        const auto& cre = re;
+        REQUIRE(std::is_same_v<decltype(re.create_indexer()[std::declval<index_type>()]),value_type>);
+        REQUIRE(std::is_same_v<decltype(cre.create_indexer()[std::declval<index_type>()]),value_type>);
+        REQUIRE(std::is_same_v<decltype(re.create_trivial_indexer()[std::declval<index_type>()]),value_type>);
+        REQUIRE(std::is_same_v<decltype(cre.create_trivial_indexer()[std::declval<index_type>()]),value_type>);
+        REQUIRE(std::is_same_v<decltype(*re.create_walker()),value_type>);
+        REQUIRE(std::is_same_v<decltype(*cre.create_walker()),value_type>);
+        REQUIRE(std::is_same_v<decltype(*re.begin()),value_type>);
+        REQUIRE(std::is_same_v<decltype(*re.end()),value_type>);
+        REQUIRE(std::is_same_v<decltype(*cre.begin()),value_type>);
+        REQUIRE(std::is_same_v<decltype(*cre.end()),value_type>);
+    }
+}
 
-// TEST_CASE("test_result_type","[test_expression_template_engine]"){
-//     using value_type = float;
-//     using reference_type = value_type&;
-//     using const_reference_type = const value_type&;
-//     using test_expression_template_helpers::test_tensor;
-//     using test_expression_template_helpers::make_test_tensor;
-//     using test_config_type = typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type;
-//     using index_type = typename test_config_type::index_type;
-//     using tensor_type = gtensor::tensor<value_type, test_config_type>;
+TEMPLATE_TEST_CASE("test_iterator","[test_expression_template_engine]",
+    test_expression_template_engine::test_config_div_native,
+    test_expression_template_engine::test_config_div_libdivide
+)
+{
+    using value_type = float;
+    using config_type = TestType;
+    using shape_type = typename config_type::shape_type;
+    using test_expression_template_engine::test_tensor;
+    using helpers_for_testing::apply_by_element;
 
-//     auto t = make_test_tensor<test_tensor>(tensor_type{1,2,3});
-//     SECTION("storage"){
-//         auto& re = t.engine();
-//         const auto& cre = re;
-//         REQUIRE(std::is_same_v<decltype(re.create_indexer()[std::declval<index_type>()]),reference_type>);
-//         REQUIRE(std::is_same_v<decltype(cre.create_indexer()[std::declval<index_type>()]),const_reference_type>);
-//         REQUIRE(std::is_same_v<decltype(re.create_trivial_walker()[std::declval<index_type>()]),reference_type>);
-//         REQUIRE(std::is_same_v<decltype(cre.create_trivial_walker()[std::declval<index_type>()]),const_reference_type>);
-//         REQUIRE(std::is_same_v<decltype(*re.create_broadcast_walker()),reference_type>);
-//         REQUIRE(std::is_same_v<decltype(*cre.create_broadcast_walker()),const_reference_type>);
-//         REQUIRE(std::is_same_v<decltype(*re.begin()),reference_type>);
-//         REQUIRE(std::is_same_v<decltype(*re.end()),reference_type>);
-//         REQUIRE(std::is_same_v<decltype(*cre.begin()),const_reference_type>);
-//         REQUIRE(std::is_same_v<decltype(*cre.end()),const_reference_type>);
-//     }
-//     SECTION("view_of_storage"){
-//         auto vt = make_test_tensor<test_tensor>(t({{}}));
-//         auto& re = vt.engine();
-//         const auto& cre = re;
-//         REQUIRE(std::is_same_v<decltype(re.create_indexer()[std::declval<index_type>()]),reference_type>);
-//         REQUIRE(std::is_same_v<decltype(cre.create_indexer()[std::declval<index_type>()]),const_reference_type>);
-//         REQUIRE(std::is_same_v<decltype(re.create_trivial_walker()[std::declval<index_type>()]),reference_type>);
-//         REQUIRE(std::is_same_v<decltype(cre.create_trivial_walker()[std::declval<index_type>()]),const_reference_type>);
-//         REQUIRE(std::is_same_v<decltype(*re.create_broadcast_walker()),reference_type>);
-//         REQUIRE(std::is_same_v<decltype(*cre.create_broadcast_walker()),const_reference_type>);
-//         REQUIRE(std::is_same_v<decltype(*re.begin()),reference_type>);
-//         REQUIRE(std::is_same_v<decltype(*re.end()),reference_type>);
-//         REQUIRE(std::is_same_v<decltype(*cre.begin()),const_reference_type>);
-//         REQUIRE(std::is_same_v<decltype(*cre.end()),const_reference_type>);
-//     }
-//     SECTION("view_view_of_storage"){
-//         auto vvt = make_test_tensor<test_tensor>(t({{}}).transpose().reshape());
-//         auto& re = vvt.engine();
-//         const auto& cre = re;
-//         REQUIRE(std::is_same_v<decltype(re.create_indexer()[std::declval<index_type>()]),reference_type>);
-//         REQUIRE(std::is_same_v<decltype(cre.create_indexer()[std::declval<index_type>()]),const_reference_type>);
-//         REQUIRE(std::is_same_v<decltype(re.create_trivial_walker()[std::declval<index_type>()]),reference_type>);
-//         REQUIRE(std::is_same_v<decltype(cre.create_trivial_walker()[std::declval<index_type>()]),const_reference_type>);
-//         REQUIRE(std::is_same_v<decltype(*re.create_broadcast_walker()),reference_type>);
-//         REQUIRE(std::is_same_v<decltype(*cre.create_broadcast_walker()),const_reference_type>);
-//         REQUIRE(std::is_same_v<decltype(*re.begin()),reference_type>);
-//         REQUIRE(std::is_same_v<decltype(*re.end()),reference_type>);
-//         REQUIRE(std::is_same_v<decltype(*cre.begin()),const_reference_type>);
-//         REQUIRE(std::is_same_v<decltype(*cre.end()),const_reference_type>);
-//     }
-//     SECTION("evaluating"){
-//         auto e = make_test_tensor<test_tensor>(t+t+t);
-//         auto& re = e.engine();
-//         const auto& cre = re;
-//         REQUIRE(std::is_same_v<decltype(re.create_indexer()[std::declval<index_type>()]),value_type>);
-//         REQUIRE(std::is_same_v<decltype(cre.create_indexer()[std::declval<index_type>()]),value_type>);
-//         REQUIRE(std::is_same_v<decltype(re.create_trivial_walker()[std::declval<index_type>()]),value_type>);
-//         REQUIRE(std::is_same_v<decltype(cre.create_trivial_walker()[std::declval<index_type>()]),value_type>);
-//         REQUIRE(std::is_same_v<decltype(*re.create_broadcast_walker()),value_type>);
-//         REQUIRE(std::is_same_v<decltype(*cre.create_broadcast_walker()),value_type>);
-//         REQUIRE(std::is_same_v<decltype(*re.begin()),value_type>);
-//         REQUIRE(std::is_same_v<decltype(*re.end()),value_type>);
-//         REQUIRE(std::is_same_v<decltype(*cre.begin()),value_type>);
-//         REQUIRE(std::is_same_v<decltype(*cre.end()),value_type>);
-//     }
-//     SECTION("view_of_evaluating"){
-//         auto ve = make_test_tensor<test_tensor>((t+t+t).transpose());
-//         auto& re = ve.engine();
-//         const auto& cre = re;
-//         REQUIRE(std::is_same_v<decltype(re.create_indexer()[std::declval<index_type>()]),value_type>);
-//         REQUIRE(std::is_same_v<decltype(cre.create_indexer()[std::declval<index_type>()]),value_type>);
-//         REQUIRE(std::is_same_v<decltype(re.create_trivial_walker()[std::declval<index_type>()]),value_type>);
-//         REQUIRE(std::is_same_v<decltype(cre.create_trivial_walker()[std::declval<index_type>()]),value_type>);
-//         REQUIRE(std::is_same_v<decltype(*re.create_broadcast_walker()),value_type>);
-//         REQUIRE(std::is_same_v<decltype(*cre.create_broadcast_walker()),value_type>);
-//         REQUIRE(std::is_same_v<decltype(*re.begin()),value_type>);
-//         REQUIRE(std::is_same_v<decltype(*re.end()),value_type>);
-//         REQUIRE(std::is_same_v<decltype(*cre.begin()),value_type>);
-//         REQUIRE(std::is_same_v<decltype(*cre.end()),value_type>);
-//     }
-//     SECTION("view_view_of_evaluating"){
-//         auto vve = make_test_tensor<test_tensor>((t+t+t).transpose().reshape()({{}})());
-//         auto& re = vve.engine();
-//         const auto& cre = re;
-//         REQUIRE(std::is_same_v<decltype(re.create_indexer()[std::declval<index_type>()]),value_type>);
-//         REQUIRE(std::is_same_v<decltype(cre.create_indexer()[std::declval<index_type>()]),value_type>);
-//         REQUIRE(std::is_same_v<decltype(re.create_trivial_walker()[std::declval<index_type>()]),value_type>);
-//         REQUIRE(std::is_same_v<decltype(cre.create_trivial_walker()[std::declval<index_type>()]),value_type>);
-//         REQUIRE(std::is_same_v<decltype(*re.create_broadcast_walker()),value_type>);
-//         REQUIRE(std::is_same_v<decltype(*cre.create_broadcast_walker()),value_type>);
-//         REQUIRE(std::is_same_v<decltype(*re.begin()),value_type>);
-//         REQUIRE(std::is_same_v<decltype(*re.end()),value_type>);
-//         REQUIRE(std::is_same_v<decltype(*cre.begin()),value_type>);
-//         REQUIRE(std::is_same_v<decltype(*cre.end()),value_type>);
-//     }
-// }
-
-// namespace test_iterator_helpers{
-// using test_iterator_makers = typename helpers_for_testing::list_concat<
-//     typename test_expression_template_helpers::makers_type_list<test_expression_template_helpers::test_broadcast_iterator_tensor>::type,
-//     typename test_expression_template_helpers::makers_trivial_type_list<test_expression_template_helpers::test_trivial_iterator_tensor>::type
-//     >::type;
-// }
-
-// TEMPLATE_LIST_TEST_CASE("test_iterator","[test_expression_template_engine]",test_iterator_helpers::test_iterator_makers)
-// {
-//     SECTION("test_iter_deref"){
-//         using value_type = typename TestType::value_type;
-//         using test_type = std::tuple<value_type, value_type>;
-//         //0deref,1expected_deref
-//         auto test_data = GENERATE(
-//             test_type{[](){auto t = TestType{}(); auto it = t.begin(); return *it;}(), value_type{1}},
-//             test_type{[](){auto t = TestType{}(); auto it = t.begin(); ++it; return *it;}(), value_type{2}},
-//             test_type{[](){auto t = TestType{}(); auto it = t.begin(); ++it; ++it; return *it;}(), value_type{3}},
-//             test_type{[](){auto t = TestType{}(); auto it = t.begin(); ++it; ++it; ++it; return *it;}(), value_type{4}},
-//             test_type{[](){auto t = TestType{}(); auto it = t.begin(); ++it; ++it; ++it; ++it; return *it;}(), value_type{5}},
-//             test_type{[](){auto t = TestType{}(); auto it = t.begin(); ++it; ++it; ++it; ++it; ++it; return *it;}(), value_type{6}},
-//             test_type{[](){auto t = TestType{}(); auto it = t.begin(); ++it; ++it; ++it; ++it; ++it; --it; return *it;}(), value_type{5}},
-//             test_type{[](){auto t = TestType{}(); auto it = t.begin(); ++it; ++it; ++it; ++it; ++it; --it; --it; return *it;}(), value_type{4}},
-//             test_type{[](){auto t = TestType{}(); auto it = t.begin(); ++it; ++it; ++it; ++it; ++it; --it; --it; --it; return *it;}(), value_type{3}},
-//             test_type{[](){auto t = TestType{}(); auto it = t.begin(); ++it; ++it; ++it; ++it; ++it; --it; --it; --it; --it; return *it;}(), value_type{2}},
-//             test_type{[](){auto t = TestType{}(); auto it = t.begin(); ++it; ++it; ++it; ++it; ++it; --it; --it; --it; --it; --it; return *it;}(), value_type{1}},
-//             test_type{[](){auto t = TestType{}(); auto it = t.end(); --it; return *it;}(), value_type{6}},
-//             test_type{[](){auto t = TestType{}(); auto it = t.end(); --it; --it; return *it;}(), value_type{5}},
-//             test_type{[](){auto t = TestType{}(); auto it = t.end(); --it; --it; --it; return *it;}(), value_type{4}},
-//             test_type{[](){auto t = TestType{}(); auto it = t.end(); --it; --it; --it; --it; return *it;}(), value_type{3}},
-//             test_type{[](){auto t = TestType{}(); auto it = t.end(); --it; --it; --it; --it; --it; return *it;}(), value_type{2}},
-//             test_type{[](){auto t = TestType{}(); auto it = t.end(); --it; --it; --it; --it; --it; --it; return *it;}(), value_type{1}},
-//             test_type{[](){auto t = TestType{}(); auto it = t.end(); --it; --it; --it; --it; --it; --it; ++it; return *it;}(), value_type{2}},
-//             test_type{[](){auto t = TestType{}(); auto it = t.end(); --it; --it; --it; --it; --it; --it; ++it; ++it; return *it;}(), value_type{3}},
-//             test_type{[](){auto t = TestType{}(); auto it = t.end(); --it; --it; --it; --it; --it; --it; ++it; ++it; ++it; return *it;}(), value_type{4}},
-//             test_type{[](){auto t = TestType{}(); auto it = t.end(); --it; --it; --it; --it; --it; --it; ++it; ++it; ++it; ++it; return *it;}(), value_type{5}},
-//             test_type{[](){auto t = TestType{}(); auto it = t.end(); --it; --it; --it; --it; --it; --it; ++it; ++it; ++it; ++it; ++it; return *it;}(), value_type{6}},
-//             test_type{TestType{}().begin()[0], value_type{1}},
-//             test_type{TestType{}().begin()[1], value_type{2}},
-//             test_type{TestType{}().begin()[2], value_type{3}},
-//             test_type{TestType{}().begin()[3], value_type{4}},
-//             test_type{TestType{}().begin()[4], value_type{5}},
-//             test_type{TestType{}().begin()[5], value_type{6}},
-//             test_type{TestType{}().end()[-1], value_type{6}},
-//             test_type{TestType{}().end()[-2], value_type{5}},
-//             test_type{TestType{}().end()[-3], value_type{4}},
-//             test_type{TestType{}().end()[-4], value_type{3}},
-//             test_type{TestType{}().end()[-5], value_type{2}},
-//             test_type{TestType{}().end()[-6], value_type{1}},
-//             test_type{*(TestType{}().begin()+0), value_type{1}},
-//             test_type{*(TestType{}().begin()+1), value_type{2}},
-//             test_type{*(TestType{}().begin()+2), value_type{3}},
-//             test_type{*(TestType{}().begin()+3), value_type{4}},
-//             test_type{*(TestType{}().begin()+4), value_type{5}},
-//             test_type{*(TestType{}().begin()+5), value_type{6}},
-//             test_type{*(TestType{}().end()-1), value_type{6}},
-//             test_type{*(TestType{}().end()-2), value_type{5}},
-//             test_type{*(TestType{}().end()-3), value_type{4}},
-//             test_type{*(TestType{}().end()-4), value_type{3}},
-//             test_type{*(TestType{}().end()-5), value_type{2}},
-//             test_type{*(TestType{}().end()-6), value_type{1}},
-//             test_type{[](){auto t = TestType{}(); auto it = t.begin(); it+=0; return *it;}(), value_type{1}},
-//             test_type{[](){auto t = TestType{}(); auto it = t.begin(); it+=1; return *it;}(), value_type{2}},
-//             test_type{[](){auto t = TestType{}(); auto it = t.begin(); it+=2; return *it;}(), value_type{3}},
-//             test_type{[](){auto t = TestType{}(); auto it = t.begin(); it+=3; return *it;}(), value_type{4}},
-//             test_type{[](){auto t = TestType{}(); auto it = t.begin(); it+=4; return *it;}(), value_type{5}},
-//             test_type{[](){auto t = TestType{}(); auto it = t.begin(); it+=5; return *it;}(), value_type{6}},
-//             test_type{[](){auto t = TestType{}(); auto it = t.end(); it-=1; return *it;}(), value_type{6}},
-//             test_type{[](){auto t = TestType{}(); auto it = t.end(); it-=2; return *it;}(), value_type{5}},
-//             test_type{[](){auto t = TestType{}(); auto it = t.end(); it-=3; return *it;}(), value_type{4}},
-//             test_type{[](){auto t = TestType{}(); auto it = t.end(); it-=4; return *it;}(), value_type{3}},
-//             test_type{[](){auto t = TestType{}(); auto it = t.end(); it-=5; return *it;}(), value_type{2}},
-//             test_type{[](){auto t = TestType{}(); auto it = t.end(); it-=6; return *it;}(), value_type{1}},
-//             test_type{[](){auto t = TestType{}(); auto it = t.begin(); ++it; ++it;  return *(it-2);}(), value_type{1}},
-//             test_type{[](){auto t = TestType{}(); auto it = t.begin(); ++it; ++it;  return *(it+2);}(), value_type{5}},
-//             test_type{[](){auto t = TestType{}(); auto it = t.end(); --it; --it;  return *(it+1);}(), value_type{6}},
-//             test_type{[](){auto t = TestType{}(); auto it = t.end(); --it; --it;  return *(it-2);}(), value_type{3}}
-//         );
-//         auto deref = std::get<0>(test_data);
-//         auto expected_deref = std::get<1>(test_data);
-//         REQUIRE(deref == expected_deref);
-//     }
-//     SECTION("test_iter_cmp"){
-//         using test_type = std::tuple<bool,bool>;
-//         //0cmp_result,1expected_cmp_result
-//         auto test_data = GENERATE(
-//             test_type{[](){auto t = TestType{}(); return t.begin() > t.end();}(), false},
-//             test_type{[](){auto t = TestType{}(); return t.end() > t.begin();}(), true},
-//             test_type{[](){auto t = TestType{}(); return t.begin() < t.end();}(), true},
-//             test_type{[](){auto t = TestType{}(); return t.end() < t.begin();}(), false},
-//             test_type{[](){auto t = TestType{}(); return t.end() > t.end();}(), false},
-//             test_type{[](){auto t = TestType{}(); return t.begin() > t.begin();}(), false},
-//             test_type{[](){auto t = TestType{}(); return t.end() < t.end();}(), false},
-//             test_type{[](){auto t = TestType{}(); return t.begin() < t.begin();}(), false},
-//             test_type{[](){auto t = TestType{}(); return t.end() >= t.end();}(), true},
-//             test_type{[](){auto t = TestType{}(); return t.begin() >= t.begin();}(), true},
-//             test_type{[](){auto t = TestType{}(); return t.end() <= t.end();}(), true},
-//             test_type{[](){auto t = TestType{}(); return t.begin() <= t.begin();}(), true}
-//         );
-//         auto cmp_result = std::get<0>(test_data);
-//         auto expected_cmp_result = std::get<1>(test_data);
-//         REQUIRE(cmp_result == expected_cmp_result);
-//     }
-// }
+    auto test_data = test_expression_template_engine::test_data<value_type,config_type>{};
+    auto test = [](auto& t){
+        std::vector<value_type> expected{1,2,3,4,5,6};
+        REQUIRE(std::distance(t.begin(),t.begin()) == 0);
+        REQUIRE(std::distance(t.end(),t.end()) == 0);
+        REQUIRE(std::equal(t.begin(),t.end(),expected.begin()));
+        REQUIRE(std::equal(expected.begin(),expected.end(),t.begin()));
+        for (std::size_t i{0}; i!=expected.size(); ++i){
+            REQUIRE(t.begin()[i] == expected[i]);
+        }
+        auto it = std::prev(t.end());
+        for (std::size_t i{expected.size()}; i!=0; --it){
+            REQUIRE(*it == expected[--i]);
+        }
+        REQUIRE(t.end() - t.end() == 0);
+        REQUIRE(t.begin() - t.begin() == 0);
+        REQUIRE(t.end() - t.begin() > 0);
+    };
+    apply_by_element(test, test_data());
+}
 
 TEMPLATE_TEST_CASE("test_broadcast_iterator","[test_expression_template_engine]",
     test_expression_template_engine::test_config_div_native,
