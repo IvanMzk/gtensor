@@ -13,28 +13,28 @@ namespace gtensor{
 namespace detail{
 
 template<typename EngineT, typename ShT> auto begin_broadcast(EngineT& engine, const ShT& shape){
-    using iterator_type = broadcast_iterator<typename EngineT::config_type, decltype(engine.create_broadcast_walker())>;
-    return iterator_type{engine.create_broadcast_walker(), shape, make_dividers<EngineT::config_type>(shape)};
+    using iterator_type = broadcast_iterator<typename EngineT::config_type, decltype(engine.create_walker())>;
+    return iterator_type{engine.create_walker(), shape, make_dividers<EngineT::config_type>(shape)};
 }
 template<typename EngineT, typename ShT> auto end_broadcast(EngineT& engine, const ShT& shape){
-    using iterator_type = broadcast_iterator<typename EngineT::config_type, decltype(engine.create_broadcast_walker())>;
-    return iterator_type{engine.create_broadcast_walker(), shape, make_dividers<EngineT::config_type>(shape), make_size(shape)};
+    using iterator_type = broadcast_iterator<typename EngineT::config_type, decltype(engine.create_walker())>;
+    return iterator_type{engine.create_walker(), shape, make_dividers<EngineT::config_type>(shape), make_size(shape)};
 }
 template<typename EngineT> auto begin_broadcast(EngineT& engine){
-    using iterator_type = broadcast_iterator<typename EngineT::config_type, decltype(engine.create_broadcast_walker())>;
-    return iterator_type{engine.create_broadcast_walker(), engine.holder()->shape(), engine.holder()->descriptor().strides_div()};
+    using iterator_type = broadcast_iterator<typename EngineT::config_type, decltype(engine.create_walker())>;
+    return iterator_type{engine.create_walker(), engine.holder()->shape(), engine.holder()->descriptor().strides_div()};
 }
 template<typename EngineT> auto end_broadcast(EngineT& engine){
-    using iterator_type = broadcast_iterator<typename EngineT::config_type, decltype(engine.create_broadcast_walker())>;
-    return iterator_type{engine.create_broadcast_walker(), engine.holder()->shape(), engine.holder()->descriptor().strides_div(), engine.holder()->size()};
+    using iterator_type = broadcast_iterator<typename EngineT::config_type, decltype(engine.create_walker())>;
+    return iterator_type{engine.create_walker(), engine.holder()->shape(), engine.holder()->descriptor().strides_div(), engine.holder()->size()};
 }
 template<typename EngineT> auto begin_trivial(EngineT& engine){
-    using iterator_type = trivial_broadcast_iterator<typename EngineT::config_type, decltype(engine.create_trivial_walker())>;
-    return iterator_type{engine.create_trivial_walker()};
+    using iterator_type = trivial_broadcast_iterator<typename EngineT::config_type, decltype(engine.create_trivial_indexer())>;
+    return iterator_type{engine.create_trivial_indexer()};
 }
 template<typename EngineT> auto end_trivial(EngineT& engine){
-    using iterator_type = trivial_broadcast_iterator<typename EngineT::config_type, decltype(engine.create_trivial_walker())>;
-    return iterator_type{engine.create_trivial_walker(), engine.holder()->size()};
+    using iterator_type = trivial_broadcast_iterator<typename EngineT::config_type, decltype(engine.create_trivial_indexer())>;
+    return iterator_type{engine.create_trivial_indexer(), engine.holder()->size()};
 }
 template<typename...Ts> auto begin_broadcast(const expression_template_storage_engine<Ts...>& engine){return engine.begin();}
 template<typename...Ts> auto end_broadcast(const expression_template_storage_engine<Ts...>& engine){return engine.end();}
@@ -82,16 +82,13 @@ public:
     auto begin_broadcast(const shape_type& shape){return detail::begin_broadcast(*this, shape);}
     auto end_broadcast(const shape_type& shape){return detail::end_broadcast(*this, shape);}
 
-    auto create_broadcast_walker()const{return create_broadcast_walker_helper(*this);}
-    auto create_broadcast_walker(){return create_broadcast_walker_helper(*this);}
-    auto create_trivial_walker()const{return create_trivial_walker_helper(*this);}
-    auto create_trivial_walker(){return create_trivial_walker_helper(*this);}
+    auto create_walker()const{return create_walker_helper(*this);}
+    auto create_walker(){return create_walker_helper(*this);}
+    auto create_trivial_indexer()const{return create_indexer();}
+    auto create_trivial_indexer(){return create_indexer();}
 private:
-    template<typename U> static auto create_trivial_walker_helper(U& instance){
-        return instance.create_indexer();
-    }
-    template<typename U> static auto create_broadcast_walker_helper(U& instance){
-        return broadcast_indexer_walker<CfgT, std::decay_t<decltype(instance.create_indexer())>>{
+    template<typename U> static auto create_walker_helper(U& instance){
+        return walker<CfgT, std::decay_t<decltype(instance.create_indexer())>>{
             instance.holder()->shape(),
             instance.holder()->descriptor().cstrides(),
             instance.holder()->descriptor().reset_cstrides(),
@@ -123,43 +120,38 @@ public:
     auto end()const{return detail::end_broadcast(*this);}
     auto begin_broadcast(const shape_type& shape)const{return detail::begin_broadcast(*this, shape);}
     auto end_broadcast(const shape_type& shape)const{return detail::end_broadcast(*this, shape);}
+
     auto create_indexer()const{
-        return basic_indexer<index_type, decltype(create_indexer_helper())>{create_indexer_helper()};
+        if (is_trivial()){
+            return poly_indexer<index_type, value_type>{create_trivial_indexer()};
+        }else{
+            return poly_indexer<index_type, value_type>{create_walking_indexer()};
+        }
     }
-    auto create_broadcast_indexer()const{
-        return evaluating_indexer<CfgT,decltype(create_broadcast_walker())>{
-            holder()->descriptor().strides_div(),
-            create_broadcast_walker()
-        };
+    auto create_walker()const{
+        return create_walker_helper(std::make_index_sequence<operands_number>{});
     }
     auto create_trivial_indexer()const{
-        return create_trivial_walker();
-    }
-    auto create_broadcast_walker()const{
-        return create_broadcast_walker_helper(std::make_index_sequence<operands_number>{});
-    }
-    auto create_trivial_walker()const{
-        return create_trivial_walker_helper(std::make_index_sequence<operands_number>{});
+        return create_trivial_indexer_helper(std::make_index_sequence<operands_number>{});
     }
 private:
+    auto create_walking_indexer()const{
+        return evaluating_indexer<CfgT,decltype(create_walker())>{
+            holder()->descriptor().strides_div(),
+            create_walker()
+        };
+    }
     template<std::size_t...I>
     auto is_trivial_helper(std::index_sequence<I...>)const{
         return ((holder()->size()==operand<I>().size())&&...) && (operand<I>().engine().is_trivial()&&...);
     }
     template<std::size_t...I>
-    auto create_trivial_walker_helper(std::index_sequence<I...>)const{
-        return evaluating_trivial_walker<CfgT,F,decltype(operand<I>().engine().create_trivial_walker())...>{operand<I>().engine().create_trivial_walker()...};
+    auto create_trivial_indexer_helper(std::index_sequence<I...>)const{
+        return evaluating_trivial_indexer<CfgT,F,decltype(operand<I>().engine().create_trivial_indexer())...>{operand<I>().engine().create_trivial_indexer()...};
     }
     template<std::size_t...I>
-    auto create_broadcast_walker_helper(std::index_sequence<I...>)const{
-        return evaluating_walker<CfgT,F,decltype(operand<I>().engine().create_broadcast_walker())...>{holder()->shape(), operand<I>().engine().create_broadcast_walker()...};
-    }
-    auto create_indexer_helper()const{
-        if (is_trivial()){
-            return poly_indexer<index_type, value_type>{create_trivial_indexer()};
-        }else{
-            return poly_indexer<index_type, value_type>{create_broadcast_indexer()};
-        }
+    auto create_walker_helper(std::index_sequence<I...>)const{
+        return evaluating_walker<CfgT,F,decltype(operand<I>().engine().create_walker())...>{holder()->shape(), operand<I>().engine().create_walker()...};
     }
 };
 
@@ -191,12 +183,12 @@ public:
     auto end_broadcast(const shape_type& shape){return detail::end_broadcast(*this, shape);}
 
     //both broadcast and trivial walker utilize parent's indexer subscript operator to access data
-    //return broadcast_indexer_walker with parent indexer (chain of indexers starts from parent's indexer)
-    auto create_broadcast_walker()const{return create_broadcast_walker_helper(*this);}
-    auto create_broadcast_walker(){return create_broadcast_walker_helper(*this);}
+    //return walker with parent indexer (chain of indexers starts from parent's indexer)
+    auto create_walker()const{return create_walker_helper(*this);}
+    auto create_walker(){return create_walker_helper(*this);}
     //return indexer, chain of indexers starts from this view indexer
-    auto create_trivial_walker()const{return create_trivial_walker_helper(*this);}
-    auto create_trivial_walker(){return create_trivial_walker_helper(*this);}
+    auto create_trivial_indexer()const{return create_indexer();}
+    auto create_trivial_indexer(){return create_indexer();}
 private:
     //slice, transpose view iterator
     template<typename U>
@@ -210,18 +202,14 @@ private:
     static auto end(U& instance, std::false_type){return detail::end_trivial(instance);}
 
     template<typename U>
-    static auto create_broadcast_walker_helper(U& instance){
-        return broadcast_indexer_walker<CfgT, std::decay_t<decltype(instance.parent()->engine().create_indexer())>>{
+    static auto create_walker_helper(U& instance){
+        return walker<CfgT, std::decay_t<decltype(instance.parent()->engine().create_indexer())>>{
             instance.holder()->shape(),
             instance.holder()->descriptor().cstrides(),
             instance.holder()->descriptor().reset_cstrides(),
             instance.holder()->descriptor().offset(),
             instance.parent()->engine().create_indexer()
         };
-    }
-    template<typename U>
-    static auto create_trivial_walker_helper(U& instance){
-        return instance.create_indexer();
     }
 };
 

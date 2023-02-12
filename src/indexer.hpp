@@ -79,6 +79,8 @@ class poly_indexer{
 
     std::unique_ptr<indexer_base> impl_;
 public:
+    using result_type = value_type;
+
     template<typename ImplT, std::enable_if_t<!std::is_convertible_v<std::decay_t<ImplT>, poly_indexer>,int> =0 >
     explicit poly_indexer(ImplT&& impl__):
         impl_{std::make_unique<indexer_wrapper<std::decay_t<ImplT>>>(std::forward<ImplT>(impl__))}

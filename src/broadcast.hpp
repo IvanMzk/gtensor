@@ -80,14 +80,14 @@ public:
 //CursorT is type of cursor, operations like cursor+n, cursor+=n, cursor-n, cursor-=n, where n is index_type must be defined
 //e.g. CursorT can be integral type or can be random access iterator type
 template<typename CfgT, typename CursorT>
-class broadcast_walker_common
+class walker_common
 {
 public:
     using cursor_type = CursorT;
     using index_type = typename CfgT::index_type;
     using shape_type = typename CfgT::shape_type;
 
-    broadcast_walker_common(const index_type& dim_, const shape_type& shape_, const shape_type& strides_, const shape_type& reset_strides_, const cursor_type& offset__):
+    walker_common(const index_type& dim_, const shape_type& shape_, const shape_type& strides_, const shape_type& reset_strides_, const cursor_type& offset__):
         dim{dim_},
         shape{shape_},
         strides{strides_},
@@ -138,17 +138,17 @@ private:
 //broadcast walker
 //IndexerT is indexer type, must provide subscription operator
 template<typename CfgT, typename IndexerT>
-class broadcast_indexer_walker
+class walker
 {
     using index_type = typename CfgT::index_type;
     using shape_type = typename CfgT::shape_type;
     using indexer_type = IndexerT;
     using result_type = typename indexer_type::result_type;
 
-    broadcast_walker_common<CfgT, index_type> index_walker;
+    walker_common<CfgT, index_type> index_walker;
     indexer_type indexer;
 public:
-    broadcast_indexer_walker(const shape_type& shape_,  const shape_type& strides_, const shape_type& reset_strides_, const index_type& offset_, const indexer_type& indexer_):
+    walker(const shape_type& shape_,  const shape_type& strides_, const shape_type& reset_strides_, const index_type& offset_, const indexer_type& indexer_):
         index_walker{static_cast<index_type>(shape_.size()), shape_, strides_, reset_strides_, offset_},
         indexer{indexer_}
     {}

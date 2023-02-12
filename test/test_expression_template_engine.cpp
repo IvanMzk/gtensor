@@ -86,7 +86,7 @@ TEST_CASE("test_is_trivial","[test_expression_template_engine]")
     apply_by_element(test, test_data);
 }
 
-TEST_CASE("test_broadcast_walker","[test_expression_template_engine]")
+TEST_CASE("test_walker","[test_expression_template_engine]")
 {
     using value_type = float;
     using config_type = gtensor::config::default_config;
@@ -99,25 +99,25 @@ TEST_CASE("test_broadcast_walker","[test_expression_template_engine]")
 
     //tests for broadcast walker
     auto tests = std::make_tuple(
-        [](auto& t_){auto t = make_test_tensor(t_); auto w = t.engine().create_broadcast_walker(); REQUIRE(*w == value_type{1});},
-        [](auto& t_){auto t = make_test_tensor(t_); auto w = t.engine().create_broadcast_walker(); w.walk(0,1); REQUIRE(*w == value_type{2});},
-        [](auto& t_){auto t = make_test_tensor(t_); auto w = t.engine().create_broadcast_walker(); w.walk(1,1); REQUIRE(*w == value_type{4});},
-        [](auto& t_){auto t = make_test_tensor(t_); auto w = t.engine().create_broadcast_walker(); w.walk(0,1); w.walk(1,1); REQUIRE(*w == value_type{5});},
-        [](auto& t_){auto t = make_test_tensor(t_); auto w = t.engine().create_broadcast_walker(); w.walk(1,1); w.walk(0,2); REQUIRE(*w == value_type{6});},
+        [](auto& t_){auto t = make_test_tensor(t_); auto w = t.engine().create_walker(); REQUIRE(*w == value_type{1});},
+        [](auto& t_){auto t = make_test_tensor(t_); auto w = t.engine().create_walker(); w.walk(0,1); REQUIRE(*w == value_type{2});},
+        [](auto& t_){auto t = make_test_tensor(t_); auto w = t.engine().create_walker(); w.walk(1,1); REQUIRE(*w == value_type{4});},
+        [](auto& t_){auto t = make_test_tensor(t_); auto w = t.engine().create_walker(); w.walk(0,1); w.walk(1,1); REQUIRE(*w == value_type{5});},
+        [](auto& t_){auto t = make_test_tensor(t_); auto w = t.engine().create_walker(); w.walk(1,1); w.walk(0,2); REQUIRE(*w == value_type{6});},
         //walk in direction 2 has no effect, its dimension 1
-        [](auto& t_){auto t = make_test_tensor(t_); auto w = t.engine().create_broadcast_walker(); w.walk(2,1); REQUIRE(*w == value_type{1});},
+        [](auto& t_){auto t = make_test_tensor(t_); auto w = t.engine().create_walker(); w.walk(2,1); REQUIRE(*w == value_type{1});},
         //walk in direction 3 has no effect, no such dimension
-        [](auto& t_){auto t = make_test_tensor(t_); auto w = t.engine().create_broadcast_walker(); w.walk(3,1); REQUIRE(*w == value_type{1});},
+        [](auto& t_){auto t = make_test_tensor(t_); auto w = t.engine().create_walker(); w.walk(3,1); REQUIRE(*w == value_type{1});},
         //call reset when on the end of direction
-        [](auto& t_){auto t = make_test_tensor(t_); auto w = t.engine().create_broadcast_walker(); w.walk(0,2); w.reset(0); REQUIRE(*w == value_type{1});},
-        [](auto& t_){auto t = make_test_tensor(t_); auto w = t.engine().create_broadcast_walker(); w.walk(1,1); w.walk(0,2); w.reset(1); REQUIRE(*w == value_type{3});},
+        [](auto& t_){auto t = make_test_tensor(t_); auto w = t.engine().create_walker(); w.walk(0,2); w.reset(0); REQUIRE(*w == value_type{1});},
+        [](auto& t_){auto t = make_test_tensor(t_); auto w = t.engine().create_walker(); w.walk(1,1); w.walk(0,2); w.reset(1); REQUIRE(*w == value_type{3});},
         //reset on direction with dimension 1 has no effect
-        [](auto& t_){auto t = make_test_tensor(t_); auto w = t.engine().create_broadcast_walker(); w.walk(1,1); w.walk(0,2); w.reset(2); REQUIRE(*w == value_type{6});},
+        [](auto& t_){auto t = make_test_tensor(t_); auto w = t.engine().create_walker(); w.walk(1,1); w.walk(0,2); w.reset(2); REQUIRE(*w == value_type{6});},
         //reset on direction 3 has no effect, no such direction
-        [](auto& t_){auto t = make_test_tensor(t_); auto w = t.engine().create_broadcast_walker(); w.walk(1,1); w.walk(0,1); w.reset(3); REQUIRE(*w == value_type{5});},
+        [](auto& t_){auto t = make_test_tensor(t_); auto w = t.engine().create_walker(); w.walk(1,1); w.walk(0,1); w.reset(3); REQUIRE(*w == value_type{5});},
         //reset to first from any position
-        [](auto& t_){auto t = make_test_tensor(t_); auto w = t.engine().create_broadcast_walker(); w.walk(1,1); w.walk(0,2); w.reset(); REQUIRE(*w == value_type{1});},
-        [](auto& t_){auto t = make_test_tensor(t_); auto w = t.engine().create_broadcast_walker(); w.walk(0,2); w.reset(); REQUIRE(*w == value_type{1});}
+        [](auto& t_){auto t = make_test_tensor(t_); auto w = t.engine().create_walker(); w.walk(1,1); w.walk(0,2); w.reset(); REQUIRE(*w == value_type{1});},
+        [](auto& t_){auto t = make_test_tensor(t_); auto w = t.engine().create_walker(); w.walk(0,2); w.reset(); REQUIRE(*w == value_type{1});}
     );
 
     auto apply_tests = [&test_data](auto& test){
