@@ -52,14 +52,6 @@ template<typename EngineT> auto rend_trivial(EngineT& engine){
     using iterator_type = reverse_trivial_broadcast_iterator<typename EngineT::config_type, decltype(engine.create_trivial_indexer())>;
     return iterator_type{engine.create_trivial_indexer()};
 }
-template<typename...Ts> auto begin_broadcast(const expression_template_storage_engine<Ts...>& engine){return engine.begin();}
-template<typename...Ts> auto end_broadcast(const expression_template_storage_engine<Ts...>& engine){return engine.end();}
-template<typename...Ts> auto begin_trivial(const expression_template_storage_engine<Ts...>& engine){return engine.begin();}
-template<typename...Ts> auto end_trivial(const expression_template_storage_engine<Ts...>& engine){return engine.end();}
-template<typename...Ts> auto begin_broadcast(expression_template_storage_engine<Ts...>& engine){return engine.begin();}
-template<typename...Ts> auto end_broadcast(expression_template_storage_engine<Ts...>& engine){return engine.end();}
-template<typename...Ts> auto begin_trivial(expression_template_storage_engine<Ts...>& engine){return engine.begin();}
-template<typename...Ts> auto end_trivial(expression_template_storage_engine<Ts...>& engine){return engine.end();}
 
 template<typename> struct is_converting_descriptor : public std::false_type{};
 template<typename...Ts> struct is_converting_descriptor<converting_descriptor<Ts...>> : public std::true_type{};
