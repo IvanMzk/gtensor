@@ -53,7 +53,11 @@ struct test_data{
             //slice of broadcast
             (tensor_type{2} * tensor_type{{1,1,1,1,1,1}} + tensor_type{{{0,0,0,0,0,0},{0,0,0,0,0,0}},{{1,0,2,0,3,0},{4,0,5,0,6,0}}} - tensor_type{{{3,3,3,3,3,3}}} + tensor_type{1})({{1,2},{},{nop,nop,2}}),
             //slice chain of broadcast
-            (tensor_type{2} * tensor_type{{1,1,1,1,1,1}} + tensor_type{{{0,0,0,0,0,0},{0,0,0,0,0,0}},{{0,3,0,2,0,1},{0,6,0,5,0,4}}} - tensor_type{{{3,3,3,3,3,3}}} + tensor_type{1})({{},{},{nop,nop,-1}})({{1,2},{},{nop,nop,2}})
+            (tensor_type{2} * tensor_type{{1,1,1,1,1,1}} + tensor_type{{{0,0,0,0,0,0},{0,0,0,0,0,0}},{{0,3,0,2,0,1},{0,6,0,5,0,4}}} - tensor_type{{{3,3,3,3,3,3}}} + tensor_type{1})({{},{},{nop,nop,-1}})({{1,2},{},{nop,nop,2}}),
+            //reshape of broadcast
+            (tensor_type{1,1,1,0,0,0} + tensor_type{0,1,2,4,5,6}).reshape(1,2,3),
+            //view operand
+            (tensor_type{{{0},{1},{2}},{{0},{1},{2}}}.transpose() + tensor_type{{1,2},{1,2}}({{},{0,1}}).reshape(1,2) + tensor_type{{0,1},{1,2},{2,3}}).reshape(1,2,3)
         );
     }
 };
@@ -260,21 +264,35 @@ TEMPLATE_TEST_CASE("test_iterator","[test_expression_template_engine]",
 
     auto test_data = test_expression_template_engine::test_data<value_type,config_type>{};
     auto test = [](auto& t){
-        std::vector<value_type> expected{1,2,3,4,5,6};
-        REQUIRE(std::distance(t.begin(),t.begin()) == 0);
-        REQUIRE(std::distance(t.end(),t.end()) == 0);
-        REQUIRE(std::equal(t.begin(),t.end(),expected.begin()));
-        REQUIRE(std::equal(expected.begin(),expected.end(),t.begin()));
-        for (std::size_t i{0}; i!=expected.size(); ++i){
-            REQUIRE(t.begin()[i] == expected[i]);
-        }
-        auto it = std::prev(t.end());
-        for (std::size_t i{expected.size()}; i!=0; --it){
-            REQUIRE(*it == expected[--i]);
-        }
-        REQUIRE(t.end() - t.end() == 0);
-        REQUIRE(t.begin() - t.begin() == 0);
-        REQUIRE(t.end() - t.begin() > 0);
+        auto begin = [](auto& c){return c.begin();};
+        auto end = [](auto& c){return c.end();};
+        auto rbegin = [](auto& c){return c.rbegin();};
+        auto rend = [](auto& c){return c.rend();};
+
+        auto test_impl = [&t](auto& begin, auto& end){
+            std::vector<value_type> expected{1,2,3,4,5,6};
+            REQUIRE(std::distance(begin(t),begin(t)) == 0);
+            REQUIRE(std::distance(end(t),end(t)) == 0);
+            REQUIRE(std::equal(begin(t),end(t),begin(expected)));
+            REQUIRE(std::equal(begin(expected),end(expected),begin(t)));
+            for (std::size_t i{0}; i!=expected.size(); ++i){
+                REQUIRE(begin(t)[i] == begin(expected)[i]);
+            }
+            auto it = std::prev(end(t));
+            auto expected_it = std::prev(end(expected));
+            for (std::size_t i{expected.size()}; i!=0; --it, --expected_it, --i){
+                REQUIRE(*it == *expected_it);
+            }
+            REQUIRE(end(t) - end(t) == 0);
+            REQUIRE(begin(t) - begin(t) == 0);
+            REQUIRE(end(t) - begin(t) > 0);
+            REQUIRE(end(t) == end(t));
+            REQUIRE(begin(t) == begin(t));
+            REQUIRE(end(t) >= begin(t));
+            REQUIRE(begin(t) <= end(t));
+        };
+        test_impl(begin, end);
+        test_impl(rbegin, rend);
     };
     apply_by_element(test, test_data());
 }

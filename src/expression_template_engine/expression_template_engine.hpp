@@ -28,6 +28,14 @@ template<typename EngineT> auto end_broadcast(EngineT& engine){
     using iterator_type = broadcast_iterator<typename EngineT::config_type, decltype(engine.create_walker())>;
     return iterator_type{engine.create_walker(), engine.holder()->shape(), engine.holder()->descriptor().strides_div(), engine.holder()->size()};
 }
+template<typename EngineT> auto rbegin_broadcast(EngineT& engine){
+    using iterator_type = reverse_broadcast_iterator<typename EngineT::config_type, decltype(engine.create_walker())>;
+    return iterator_type{engine.create_walker(), engine.holder()->shape(), engine.holder()->descriptor().strides_div(), engine.holder()->size()};
+}
+template<typename EngineT> auto rend_broadcast(EngineT& engine){
+    using iterator_type = reverse_broadcast_iterator<typename EngineT::config_type, decltype(engine.create_walker())>;
+    return iterator_type{engine.create_walker(), engine.holder()->shape(), engine.holder()->descriptor().strides_div()};
+}
 template<typename EngineT> auto begin_trivial(EngineT& engine){
     using iterator_type = trivial_broadcast_iterator<typename EngineT::config_type, decltype(engine.create_trivial_indexer())>;
     return iterator_type{engine.create_trivial_indexer()};
@@ -35,6 +43,14 @@ template<typename EngineT> auto begin_trivial(EngineT& engine){
 template<typename EngineT> auto end_trivial(EngineT& engine){
     using iterator_type = trivial_broadcast_iterator<typename EngineT::config_type, decltype(engine.create_trivial_indexer())>;
     return iterator_type{engine.create_trivial_indexer(), engine.holder()->size()};
+}
+template<typename EngineT> auto rbegin_trivial(EngineT& engine){
+    using iterator_type = reverse_trivial_broadcast_iterator<typename EngineT::config_type, decltype(engine.create_trivial_indexer())>;
+    return iterator_type{engine.create_trivial_indexer(), engine.holder()->size()};
+}
+template<typename EngineT> auto rend_trivial(EngineT& engine){
+    using iterator_type = reverse_trivial_broadcast_iterator<typename EngineT::config_type, decltype(engine.create_trivial_indexer())>;
+    return iterator_type{engine.create_trivial_indexer()};
 }
 template<typename...Ts> auto begin_broadcast(const expression_template_storage_engine<Ts...>& engine){return engine.begin();}
 template<typename...Ts> auto end_broadcast(const expression_template_storage_engine<Ts...>& engine){return engine.end();}
@@ -74,6 +90,8 @@ public:
     using storage_engine::holder;
     using storage_engine::begin;
     using storage_engine::end;
+    using storage_engine::rbegin;
+    using storage_engine::rend;
     using storage_engine::create_indexer;
     bool is_trivial()const override{return true;}
     //broadcasting iterators
@@ -118,6 +136,9 @@ public:
     }
     auto begin()const{return detail::begin_broadcast(*this);}
     auto end()const{return detail::end_broadcast(*this);}
+    auto rbegin()const{return detail::rbegin_broadcast(*this);}
+    auto rend()const{return detail::rend_broadcast(*this);}
+
     auto begin_broadcast(const shape_type& shape)const{return detail::begin_broadcast(*this, shape);}
     auto end_broadcast(const shape_type& shape)const{return detail::end_broadcast(*this, shape);}
 
@@ -176,6 +197,11 @@ public:
     auto begin(){return begin(*this, detail::is_converting_descriptor_t<descriptor_type>{});}
     auto end(){return end(*this, detail::is_converting_descriptor_t<descriptor_type>{});}
 
+    auto rbegin()const{return rbegin(*this, detail::is_converting_descriptor_t<descriptor_type>{});}
+    auto rend()const{return rend(*this, detail::is_converting_descriptor_t<descriptor_type>{});}
+    auto rbegin(){return rbegin(*this, detail::is_converting_descriptor_t<descriptor_type>{});}
+    auto rend(){return rend(*this, detail::is_converting_descriptor_t<descriptor_type>{});}
+
     //broadcasting iterators
     auto begin_broadcast(const shape_type& shape)const{return detail::begin_broadcast(*this, shape);}
     auto end_broadcast(const shape_type& shape)const{return detail::end_broadcast(*this, shape);}
@@ -200,6 +226,17 @@ private:
     static auto begin(U& instance, std::false_type){return detail::begin_trivial(instance);}
     template<typename U>
     static auto end(U& instance, std::false_type){return detail::end_trivial(instance);}
+
+    //slice, transpose view iterator
+    template<typename U>
+    static auto rbegin(U& instance, std::true_type){return detail::rbegin_broadcast(instance);}
+    template<typename U>
+    static auto rend(U& instance, std::true_type){return detail::rend_broadcast(instance);}
+    //reshape, subdim view iterator
+    template<typename U>
+    static auto rbegin(U& instance, std::false_type){return detail::rbegin_trivial(instance);}
+    template<typename U>
+    static auto rend(U& instance, std::false_type){return detail::rend_trivial(instance);}
 
     template<typename U>
     static auto create_walker_helper(U& instance){

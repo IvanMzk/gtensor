@@ -54,6 +54,10 @@ protected:
     auto end()const{return elements_.end();}
     auto begin(){return elements_.begin();}
     auto end(){return elements_.end();}
+    auto rbegin(){return elements_.rbegin();}
+    auto rend(){return elements_.rend();}
+    auto rbegin()const{return elements_.rbegin();}
+    auto rend()const{return elements_.rend();}
 public:
     template<typename Nested>
     storage_engine(holder_type* holder, const index_type& size, std::initializer_list<Nested> init_data):

@@ -129,6 +129,10 @@ public:
     auto end(){return engine().end();}
     auto begin()const{return engine().begin();}
     auto end()const{return engine().end();}
+    auto rbegin(){return engine().rbegin();}
+    auto rend(){return engine().rend();}
+    auto rbegin()const{return engine().rbegin();}
+    auto rend()const{return engine().rend();}
     auto size()const{return impl()->size();}
     auto dim()const{return impl()->dim();}
     auto shape()const{return impl()->shape();}
