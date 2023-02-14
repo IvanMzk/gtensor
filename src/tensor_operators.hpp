@@ -1,5 +1,5 @@
-#ifndef TENSOR_OPERATORS_TRAITS_HPP_
-#define TENSOR_OPERATORS_TRAITS_HPP_
+#ifndef TENSOR_OPERATORS_HPP_
+#define TENSOR_OPERATORS_HPP_
 
 #include "expression_template_operators.hpp"
 

@@ -43,7 +43,7 @@ class storage_tensor : public basic_tensor<basic_descriptor<typename EngineT::co
 {
     using basic_tensor_base = basic_tensor<basic_descriptor<typename EngineT::config_type>, EngineT>;
 public:
-    using engine_type = typename basic_tensor::engine_type;
+    using typename basic_tensor_base::engine_type;
     using typename basic_tensor_base::value_type;
     using typename basic_tensor_base::config_type;
 private:
@@ -80,18 +80,19 @@ public:
 template<typename EngineT>
 class evaluating_tensor : public basic_tensor<basic_descriptor<typename EngineT::config_type>, EngineT>
 {
+    using basic_tensor_base = basic_tensor<basic_descriptor<typename EngineT::config_type>, EngineT>;
 public:
-    using engine_type = typename basic_tensor::engine_type;
-    using typename basic_tensor::value_type;
-    using typename basic_tensor::config_type;
+    using basic_tensor_base::engine_type;
+    using typename basic_tensor_base::value_type;
+    using typename basic_tensor_base::config_type;
 private:
-    using typename basic_tensor::descriptor_type;
-    using typename basic_tensor::index_type;
-    using typename basic_tensor::shape_type;
+    using typename basic_tensor_base::descriptor_type;
+    using typename basic_tensor_base::index_type;
+    using typename basic_tensor_base::shape_type;
 
     template<typename F, typename...Operands>
     evaluating_tensor(shape_type&& shape, F&& f, Operands&&...operands):
-        basic_tensor{engine_type{this, std::forward<F>(f),std::forward<Operands>(operands)...}, descriptor_type{std::move(shape)}}
+        basic_tensor_base{engine_type{this, std::forward<F>(f),std::forward<Operands>(operands)...}, descriptor_type{std::move(shape)}}
     {}
 public:
     template<typename F, typename...Operands>
@@ -103,18 +104,19 @@ public:
 template<typename DescT, typename EngineT>
 class viewing_tensor : public basic_tensor<DescT, EngineT>
 {
+    using basic_tensor_base = basic_tensor<DescT, EngineT>;
 public:
-    using engine_type = typename basic_tensor::engine_type;
-    using typename basic_tensor::value_type;
-    using typename basic_tensor::config_type;
+    using typename basic_tensor_base::engine_type;
+    using typename basic_tensor_base::value_type;
+    using typename basic_tensor_base::config_type;
 private:
-    using typename basic_tensor::descriptor_type;
-    using typename basic_tensor::index_type;
-    using typename basic_tensor::shape_type;
+    using typename basic_tensor_base::descriptor_type;
+    using typename basic_tensor_base::index_type;
+    using typename basic_tensor_base::shape_type;
 public:
     template<typename U>
     viewing_tensor(descriptor_type&& descriptor, U&& parent):
-        basic_tensor{engine_type{this,std::forward<U>(parent)},std::move(descriptor)}
+        basic_tensor_base{engine_type{this,std::forward<U>(parent)},std::move(descriptor)}
     {}
 };
 
