@@ -28,7 +28,7 @@ struct NAME{\
         using config_type = typename ImplT1::config_type;\
         static_assert(std::is_same_v<config_type, typename ImplT2::config_type>);\
         using operation_type = OP;\
-        using impl_type = evaluating_tensor<expression_template_evaluating_engine<config_type, operation_type, ImplT1, ImplT2>>;\
+        using impl_type = const evaluating_tensor<expression_template_evaluating_engine<config_type, operation_type, ImplT1, ImplT2>>;\
         return tensor<typename impl_type::value_type, config_type, impl_type>::make_tensor(operation_type{}, std::move(op1), std::move(op2));\
     }\
 };

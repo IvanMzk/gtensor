@@ -53,13 +53,9 @@ template<
 >
 class tensor{
     using impl_type = ImplT;
-    using tensor_base_type = std::conditional_t< std::is_const_v<impl_type>, const tensor_base<ValT,CfgT>, tensor_base<ValT,CfgT> >;
     using slice_type = typename CfgT::slice_type;
     using slices_init_type = typename CfgT::slices_init_type;
     using slices_collection_type = typename CfgT::slices_collection_type;
-    using index_type = typename CfgT::index_type;
-    using shape_type = typename CfgT::shape_type;
-    static_assert(std::is_convertible_v<std::remove_const_t<impl_type>*,tensor_base_type*>);
     class forward_tag{};
 
     friend class tensor_operator_dispatcher;
@@ -79,6 +75,8 @@ protected:
 
 public:
     using config_type = CfgT;
+    using index_type = typename CfgT::index_type;
+    using shape_type = typename CfgT::shape_type;
     using value_type = ValT;
     //constructs tensor using default implementation constructor
     tensor():

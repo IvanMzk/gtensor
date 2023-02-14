@@ -126,11 +126,17 @@ public:
     bool is_trivial()const override{
         return is_trivial_helper(std::make_index_sequence<operands_number>{});
     }
+    auto begin(){return detail::begin_broadcast(*this);}
+    auto end(){return detail::end_broadcast(*this);}
     auto begin()const{return detail::begin_broadcast(*this);}
     auto end()const{return detail::end_broadcast(*this);}
+    auto rbegin(){return detail::rbegin_broadcast(*this);}
+    auto rend(){return detail::rend_broadcast(*this);}
     auto rbegin()const{return detail::rbegin_broadcast(*this);}
     auto rend()const{return detail::rend_broadcast(*this);}
 
+    auto begin_broadcast(const shape_type& shape){return detail::begin_broadcast(*this, shape);}
+    auto end_broadcast(const shape_type& shape){return detail::end_broadcast(*this, shape);}
     auto begin_broadcast(const shape_type& shape)const{return detail::begin_broadcast(*this, shape);}
     auto end_broadcast(const shape_type& shape)const{return detail::end_broadcast(*this, shape);}
 
@@ -141,12 +147,9 @@ public:
             return poly_indexer<index_type, value_type>{create_walking_indexer()};
         }
     }
-    auto create_walker()const{
-        return create_walker_helper(std::make_index_sequence<operands_number>{});
-    }
-    auto create_trivial_indexer()const{
-        return create_trivial_indexer_helper(std::make_index_sequence<operands_number>{});
-    }
+    auto create_walker(){return create_walker_helper(*this, std::make_index_sequence<operands_number>{});}
+    auto create_walker()const{return create_walker_helper(*this, std::make_index_sequence<operands_number>{});}
+    auto create_trivial_indexer()const{return create_trivial_indexer_helper(*this, std::make_index_sequence<operands_number>{});}
 private:
     auto create_walking_indexer()const{
         return evaluating_indexer<CfgT,decltype(create_walker())>{
@@ -158,13 +161,13 @@ private:
     auto is_trivial_helper(std::index_sequence<I...>)const{
         return ((holder()->size()==operand<I>().size())&&...) && (operand<I>().engine().is_trivial()&&...);
     }
-    template<std::size_t...I>
-    auto create_trivial_indexer_helper(std::index_sequence<I...>)const{
-        return evaluating_trivial_indexer<CfgT,F,decltype(operand<I>().engine().create_trivial_indexer())...>{operand<I>().engine().create_trivial_indexer()...};
+    template<typename U, std::size_t...I>
+    static auto create_trivial_indexer_helper(U& instance, std::index_sequence<I...>){
+        return evaluating_trivial_indexer<CfgT,F,decltype(instance.operand<I>().engine().create_trivial_indexer())...>{instance.operand<I>().engine().create_trivial_indexer()...};
     }
-    template<std::size_t...I>
-    auto create_walker_helper(std::index_sequence<I...>)const{
-        return evaluating_walker<CfgT,F,decltype(operand<I>().engine().create_walker())...>{holder()->shape(), operand<I>().engine().create_walker()...};
+    template<typename U, std::size_t...I>
+    static auto create_walker_helper(U& instance, std::index_sequence<I...>){
+        return evaluating_walker<CfgT,F,decltype(instance.operand<I>().engine().create_walker())...>{instance.holder()->shape(), instance.operand<I>().engine().create_walker()...};
     }
 };
 
