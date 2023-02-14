@@ -107,6 +107,7 @@ protected:
     const auto& operands()const{return operands_;}
     template<std::size_t I> auto& operand(){return *std::get<I>(operands_).get();}
     template<std::size_t I> const auto& operand()const{return *std::get<I>(operands_).get();}
+    const auto& operation()const{return f_;}
 public:
     template<typename F_, typename...Operands_>
     evaluating_engine(holder_type* holder__, F_&& f__, Operands_&&...operands__):

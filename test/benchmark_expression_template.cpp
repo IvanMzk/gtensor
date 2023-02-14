@@ -1,22 +1,8 @@
 #include "gtensor.hpp"
 #include "test_config.hpp"
 #include "benchmark_helpers.hpp"
-#include "expression_template_test_helpers.hpp"
 
 namespace benchmark_expression_template_helpers{
-
-
-using test_expression_template_helpers::test_broadcast_iterator_tensor;
-using test_expression_template_helpers::test_trivial_iterator_tensor;
-using test_expression_template_helpers::test_poly_iterator_tensor;
-
-template<typename T>
-auto make_test_tensor_broadcast(T&& t){return test_broadcast_iterator_tensor<std::decay_t<T>>{t};}
-template<typename T>
-auto make_test_tensor_trivial(T&& t){return test_trivial_iterator_tensor<std::decay_t<T>>{t};}
-template<typename T>
-auto make_test_tensor_poly(T&& t){return test_poly_iterator_tensor<std::decay_t<T>>{t};}
-
 }   //end of namespace benchmark_expression_template_helpers
 
 // TEST_CASE("benchmark_expression_template_trivial_tree","[benchmark_expression_template]"){

@@ -14,8 +14,8 @@ class evaluating_walker
 
     index_type dim_;
     detail::shape_inverter<index_type,shape_type> shape;
+    F f;
     std::tuple<Walkers...> walkers;
-    F f{};
 
     template<std::size_t...I>
     void step_helper(const index_type& direction, std::index_sequence<I...>){(std::get<I>(walkers).step(direction),...);}
@@ -34,9 +34,10 @@ class evaluating_walker
 
 public:
 
-    evaluating_walker(const shape_type& shape_, Walkers&&...walkers_):
+    evaluating_walker(const shape_type& shape_, const F& f_, Walkers&&...walkers_):
         dim_{static_cast<index_type>(shape_.size())},
         shape{shape_},
+        f{f_},
         walkers{std::move(walkers_)...}
     {}
 
@@ -114,10 +115,11 @@ class evaluating_trivial_indexer
 {
     using index_type = typename CfgT::index_type;
 
+    F f;
     std::tuple<Indexers...> indexers;
-    F f{};
 public:
-    evaluating_trivial_indexer(Indexers&&...indexers_):
+    evaluating_trivial_indexer(const F& f_, Indexers&&...indexers_):
+        f{f_},
         indexers{std::move(indexers_)...}
     {}
     auto operator[](const index_type& idx)const {

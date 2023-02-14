@@ -118,6 +118,7 @@ class expression_template_evaluating_engine :
     using shape_type = typename CfgT::shape_type;
     using index_type = typename CfgT::index_type;
     using evaluating_engine_base::operand;
+    using evaluating_engine_base::operation;
 public:
     using typename evaluating_engine_base::value_type;
     using typename evaluating_engine_base::config_type;
@@ -149,7 +150,7 @@ public:
     }
     auto create_walker(){return create_walker_helper(*this, std::make_index_sequence<operands_number>{});}
     auto create_walker()const{return create_walker_helper(*this, std::make_index_sequence<operands_number>{});}
-    auto create_trivial_indexer()const{return create_trivial_indexer_helper(*this, std::make_index_sequence<operands_number>{});}
+    auto create_trivial_indexer()const{return create_trivial_indexer_helper(std::make_index_sequence<operands_number>{});}
 private:
     auto create_walking_indexer()const{
         return evaluating_indexer<CfgT,decltype(create_walker())>{
@@ -161,13 +162,13 @@ private:
     auto is_trivial_helper(std::index_sequence<I...>)const{
         return ((holder()->size()==operand<I>().size())&&...) && (operand<I>().engine().is_trivial()&&...);
     }
-    template<typename U, std::size_t...I>
-    static auto create_trivial_indexer_helper(U& instance, std::index_sequence<I...>){
-        return evaluating_trivial_indexer<CfgT,F,decltype(instance.operand<I>().engine().create_trivial_indexer())...>{instance.operand<I>().engine().create_trivial_indexer()...};
+    template<std::size_t...I>
+    auto create_trivial_indexer_helper(std::index_sequence<I...>)const{
+        return evaluating_trivial_indexer<CfgT,F,decltype(operand<I>().engine().create_trivial_indexer())...>{operation(), operand<I>().engine().create_trivial_indexer()...};
     }
     template<typename U, std::size_t...I>
     static auto create_walker_helper(U& instance, std::index_sequence<I...>){
-        return evaluating_walker<CfgT,F,decltype(instance.operand<I>().engine().create_walker())...>{instance.holder()->shape(), instance.operand<I>().engine().create_walker()...};
+        return evaluating_walker<CfgT,F,decltype(instance.operand<I>().engine().create_walker())...>{instance.holder()->shape(), instance.operation(), instance.operand<I>().engine().create_walker()...};
     }
 };
 
