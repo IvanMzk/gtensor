@@ -81,7 +81,6 @@ protected:
 public:
     using config_type = CfgT;
     using value_type = ValT;
-    using htensor_type = tensor<ValT, CfgT, tensor_base_type>;
     using storage_impl_type = storage_tensor<typename detail::storage_engine_traits<typename CfgT::host_engine,CfgT,typename CfgT::template storage<ValT>>::type>;
     //default constructor makes tensor without implementation
     tensor() = default;
@@ -120,7 +119,7 @@ public:
         impl_{impl__}
     {}
     //constructor makes tensor with impl_type by copying shape and content from other, utilizes forwarding constructor
-    template<typename U = tensor, typename RVal, typename RImpl, std::enable_if_t<!std::is_same_v<U,htensor_type>,int> =0 >
+    template<typename U = tensor, typename RVal, typename RImpl>
     explicit tensor(const tensor<RVal,CfgT,RImpl>& other):
         tensor(other.shape(),other.begin(),other.end())
     {}
@@ -142,10 +141,6 @@ public:
     auto equals(const tensor<value_type,CfgT,RImpl>& other)const{return gtensor::equals(*this, other);}
     //makes tensor with storage_impl_type by copying shape and content from this tensor
     auto copy()const{return tensor<value_type,CfgT,storage_impl_type>(*this);}
-    //return new tensor that refers to the same implementation as this, but with reference to base type (htensor stands for homogeneous tensor)
-    htensor_type as_htensor()const{return static_cast<htensor_type>(*this);}
-
-    explicit operator htensor_type() const {return htensor_type{std::static_pointer_cast<tensor_base_type>(impl_)};}
 
     //tensor assignment
     tensor& operator=(const tensor& rhs) &{
