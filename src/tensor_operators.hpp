@@ -5,7 +5,7 @@
 
 #define BINARY_TENSOR_OPERATOR(NAME,TAG)\
 template<typename ValT1, typename ValT2, typename ImplT1, typename ImplT2, typename CfgT>\
-inline auto NAME(const tensor<ValT1, CfgT, ImplT1>& op1, const tensor<ValT2, CfgT, ImplT2>& op2){return tensor_operators::binary_dispatcher(op1,op2,TAG{});}
+inline auto NAME(const tensor<ValT1, CfgT, ImplT1>& op1, const tensor<ValT2, CfgT, ImplT2>& op2){return tensor_operator_dispatcher::binary_dispatcher(op1,op2,TAG{});}
 
 namespace gtensor{
 namespace tensor_operator_traits{
@@ -44,7 +44,7 @@ template<typename OperatorTag> struct tensor_operator_selector<gtensor::config::
 
 }   //end of namespace tensor_operator_traits
 
-struct tensor_operators{
+struct tensor_operator_dispatcher{
     template<typename ValT1, typename ValT2, typename ImplT1, typename ImplT2, typename CfgT, typename Tag>
     static inline auto binary_dispatcher(const tensor<ValT1, CfgT, ImplT1>& t1, const tensor<ValT2, CfgT, ImplT2>& t2, Tag){
         using operator_impl_type = typename tensor_operator_traits::tensor_operator_selector<typename CfgT::host_engine, Tag>::type;

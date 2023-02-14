@@ -62,7 +62,7 @@ class tensor{
     static_assert(std::is_convertible_v<std::remove_const_t<impl_type>*,tensor_base_type*>);
     class forward_tag{};
 
-    friend class tensor_operators;
+    friend class tensor_operator_dispatcher;
     template<typename,typename> friend class view_factory;
 
     //initialize implementation by forwarding arguments, this constructor should be used by all public constructors
