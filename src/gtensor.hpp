@@ -42,9 +42,8 @@ template<typename T> struct is_bool_tensor
 }   //end of namespace detail
 
 /*
-* tensor is abstraction of stensor_impl, expression or view which are implementations
-* in aplication client use tensor abstraction objects with different implementations, can combine it using operators
-* client can evaluate tensor object with expression or view implementation to have tensor with stensor_impl implementation
+* tensor is abstraction of tensor implementation
+* tensors can be combined using operators or view of tensor can be made, that makes new tensor with apropriate implementation
 */
 template<
     typename ValT,

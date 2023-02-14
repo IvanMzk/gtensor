@@ -30,18 +30,18 @@ private:
 template<typename IdxT ,typename IndexerT, typename DescT>
 class basic_indexer<IdxT, IndexerT, DescT> : public basic_indexer<IdxT, IndexerT>
 {
-    using base_indexer_type = basic_indexer<IdxT, IndexerT>;
+    using basic_indexer_base = basic_indexer<IdxT, IndexerT>;
     using descriptor_type = DescT;
 public:
-    using typename base_indexer_type::index_type;
-    using typename base_indexer_type::indexer_type;
-    using typename base_indexer_type::result_type;
+    using typename basic_indexer_base::index_type;
+    using typename basic_indexer_base::indexer_type;
+    using typename basic_indexer_base::result_type;
     template<typename U>
     basic_indexer(U&& indexer_, const descriptor_type& converter_):
-        base_indexer_type{std::forward<U>(indexer_)},
+        basic_indexer_base{std::forward<U>(indexer_)},
         converter{&converter_}
     {}
-    result_type operator[](const index_type& idx)const{return base_indexer_type::operator[](converter->convert(idx));}
+    result_type operator[](const index_type& idx)const{return basic_indexer_base::operator[](converter->convert(idx));}
 private:
     const descriptor_type* converter;
 };
