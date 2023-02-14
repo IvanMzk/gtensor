@@ -49,7 +49,7 @@ struct tensor_operators{
     static inline auto binary_dispatcher(const tensor<ValT1, CfgT, ImplT1>& t1, const tensor<ValT2, CfgT, ImplT2>& t2, Tag){
         using operator_impl_type = typename tensor_operator_traits::tensor_operator_selector<typename CfgT::host_engine, Tag>::type;
         static_assert(!std::is_same_v<operator_impl_type,tensor_operator_traits::not_defined_tag>);
-        return operator_impl_type{}(t1,t2,t1.impl(),t2.impl());
+        return operator_impl_type{}(t1.impl(),t2.impl());
     }
 };
 

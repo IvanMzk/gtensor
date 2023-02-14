@@ -23,14 +23,13 @@ struct NAME{\
 
 #define EXPRESSION_TEMPLATE_BINARY_OPERATOR(NAME,OP)\
 struct NAME{\
-    template<typename ValT1, typename ValT2, typename ImplT1, typename ImplT2, typename CfgT>\
-    auto operator()(const tensor<ValT1, CfgT, ImplT1>&, const tensor<ValT2, CfgT, ImplT2>&, std::shared_ptr<ImplT1>&& op1, std::shared_ptr<ImplT2>&& op2){\
+    template<typename ImplT1, typename ImplT2>\
+    auto operator()(std::shared_ptr<ImplT1>&& op1, std::shared_ptr<ImplT2>&& op2){\
+        using config_type = typename ImplT1::config_type;\
+        static_assert(std::is_same_v<config_type, typename ImplT2::config_type>);\
         using operation_type = OP;\
-        using operand1_type = ImplT1;\
-        using operand2_type = ImplT2;\
-        using engine_type = expression_template_evaluating_engine<CfgT, operation_type, operand1_type, operand2_type>;\
-        using impl_type = evaluating_tensor<engine_type>;\
-        return tensor<typename impl_type::value_type, CfgT, impl_type>::make_tensor(operation_type{}, std::move(op1), std::move(op2));\
+        using impl_type = evaluating_tensor<expression_template_evaluating_engine<config_type, operation_type, ImplT1, ImplT2>>;\
+        return tensor<typename impl_type::value_type, config_type, impl_type>::make_tensor(operation_type{}, std::move(op1), std::move(op2));\
     }\
 };
 
@@ -75,12 +74,12 @@ namespace expression_template_operators{
     EXPRESSION_TEMPLATE_BINARY_OPERATOR(operator_logic_or, expression_template_binary_operations::logic_or);
 
     struct operator_assign{
-        template<typename ValT1, typename ValT2, typename ImplT1, typename ImplT2, typename CfgT>
-        auto operator()(const tensor<ValT1, CfgT, ImplT1>&, const tensor<ValT2, CfgT, ImplT2>&, std::shared_ptr<ImplT1>&& lhs, std::shared_ptr<ImplT2>&& rhs){
+        template<typename ImplT1, typename ImplT2>
+        auto operator()(std::shared_ptr<ImplT1>&& lhs, std::shared_ptr<ImplT2>&& rhs){
+            using config_type = typename ImplT1::config_type;\
+            static_assert(std::is_same_v<config_type, typename ImplT2::config_type>);\
             using operation_type = expression_template_binary_operations::assign;
-            using operand1_type = ImplT1;
-            using operand2_type = ImplT2;
-            using engine_type = expression_template_evaluating_engine<CfgT, operation_type, operand1_type, operand2_type>;\
+            using engine_type = expression_template_evaluating_engine<config_type, operation_type, ImplT1, ImplT2>;\
             auto lhs_size{lhs->size()};
             auto assigning = evaluating_tensor<engine_type>{operation_type{}, std::move(lhs),std::move(rhs)};
             if (lhs_size < assigning.size())
