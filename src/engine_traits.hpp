@@ -5,13 +5,13 @@
 
 namespace gtensor{
 
-template<typename ValT, typename CfgT> class storage_engine;
+template<typename CfgT, typename StorT> class storage_engine;
 template<typename CfgT, typename F, typename...Operands> class evaluating_engine;
 template<typename CfgT, typename DescT, typename ParentT> class viewing_engine;
 
 class expression_template_engine_base;
 template<typename CfgT, typename DescT, typename ParentT> class expression_template_viewing_engine;
-template<typename ValT, typename CfgT> class expression_template_storage_engine;
+template<typename CfgT, typename StorT> class expression_template_storage_engine;
 template<typename CfgT, typename F, typename...Operands> class expression_template_evaluating_engine;
 
 // template<typename ValT, typename CfgT> class expression_template_engine_base;

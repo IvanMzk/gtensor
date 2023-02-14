@@ -60,19 +60,18 @@ class tensor{
     using index_type = typename CfgT::index_type;
     using shape_type = typename CfgT::shape_type;
     static_assert(std::is_convertible_v<std::remove_const_t<impl_type>*,tensor_base_type*>);
-    class ctr_tag{};
+    class forward_tag{};
 
-    friend std::ostream& operator<<(std::ostream& os, const tensor& lhs){return os<<lhs.impl_->to_str();}
     friend class tensor_operators;
     template<typename,typename> friend class view_factory;
 
-    std::shared_ptr<impl_type> impl_;
-
-    template<typename Nested>
-    tensor(std::initializer_list<Nested> init_data, ctr_tag):
-        impl_{std::make_shared<impl_type>(init_data)}
+    //initialize implementation by forwarding arguments, this constructor should be used by all public constructors
+    template<typename...Args>
+    tensor(forward_tag, Args&&...args):
+        impl_{std::make_shared<impl_type>(std::forward<Args>(args)...)}
     {}
 
+    std::shared_ptr<impl_type> impl_;
 protected:
     auto impl()const{return impl_;}
     auto& engine()const{return static_cast<const impl_type*>(impl_.get())->engine();}
@@ -81,49 +80,52 @@ protected:
 public:
     using config_type = CfgT;
     using value_type = ValT;
-    using storage_impl_type = storage_tensor<typename detail::storage_engine_traits<typename CfgT::host_engine,CfgT,typename CfgT::template storage<ValT>>::type>;
-    //default constructor makes tensor without implementation
-    tensor() = default;
-    //nested init_list constructors
-    tensor(typename detail::nested_initializer_list_type<value_type,1>::type init_data):tensor(init_data,ctr_tag{}){}
-    tensor(typename detail::nested_initializer_list_type<value_type,2>::type init_data):tensor(init_data,ctr_tag{}){}
-    tensor(typename detail::nested_initializer_list_type<value_type,3>::type init_data):tensor(init_data,ctr_tag{}){}
-    tensor(typename detail::nested_initializer_list_type<value_type,4>::type init_data):tensor(init_data,ctr_tag{}){}
-    tensor(typename detail::nested_initializer_list_type<value_type,5>::type init_data):tensor(init_data,ctr_tag{}){}
-    //init list shape constructor
-    template<typename U, std::enable_if_t<std::is_convertible_v<U,index_type>,int> =0 >
-    tensor(std::initializer_list<U> shape__, const value_type& value__):
-        impl_{std::make_shared<impl_type>(shape__, value__)}
+    //constructs tensor using default implementation constructor
+    tensor():
+        tensor(forward_tag{})
     {}
-    template<typename U, typename It, std::enable_if_t<std::is_convertible_v<U,index_type>,int> =0 >
-    tensor(std::initializer_list<U> shape__, It begin__, It end__):
-        impl_{std::make_shared<impl_type>(shape__, begin__,end__)}
-    {}
-    //forwarding constructors
-    template<typename...Args, std::enable_if_t<(sizeof...(Args) > 1),int> = 0 >
-    tensor(Args&&...args):
-        impl_{std::make_shared<impl_type>(std::forward<Args>(args)...)}
-    {}
-    template<typename Arg, std::enable_if_t<!detail::is_tensor<std::decay_t<Arg>>::value ,int> = 0 >
-    explicit tensor(Arg&& arg):
-        impl_{std::make_shared<impl_type>(std::forward<Arg>(arg))}
-    {}
-    //construct from impl made by caller
-    explicit tensor(std::shared_ptr<impl_type>&& impl__):
-        impl_{std::move(impl__)}
-    {}
-    explicit tensor(const std::shared_ptr<impl_type>& impl__):
-        impl_{impl__}
-    {}
-    explicit tensor(std::shared_ptr<impl_type>& impl__):
-        impl_{impl__}
-    {}
-    //constructor makes tensor with impl_type by copying shape and content from other, utilizes forwarding constructor
-    template<typename U = tensor, typename RVal, typename RImpl>
-    explicit tensor(const tensor<RVal,CfgT,RImpl>& other):
-        tensor(other.shape(),other.begin(),other.end())
-    {}
+    //copy operartions has reference semantic, to copy by value should use copy method
+    tensor(const tensor&) = default;
+    tensor& operator=(const tensor&) = default;
+    tensor(tensor&&) = default;
+    tensor& operator=(tensor&&) = default;
 
+    //storage tensor constructors
+    //nested init_list constructors
+    tensor(typename detail::nested_initializer_list_type<value_type,1>::type init_data):tensor(forward_tag{}, init_data){}
+    tensor(typename detail::nested_initializer_list_type<value_type,2>::type init_data):tensor(forward_tag{}, init_data){}
+    tensor(typename detail::nested_initializer_list_type<value_type,3>::type init_data):tensor(forward_tag{}, init_data){}
+    tensor(typename detail::nested_initializer_list_type<value_type,4>::type init_data):tensor(forward_tag{}, init_data){}
+    tensor(typename detail::nested_initializer_list_type<value_type,5>::type init_data):tensor(forward_tag{}, init_data){}
+    //init list shape and value
+    template<typename U>
+    tensor(std::initializer_list<U> shape__, const value_type& value__):
+        tensor(forward_tag{}, shape__, value__)
+    {}
+    //init list shape and range
+    template<typename U, typename It>
+    tensor(std::initializer_list<U> shape__, It begin__, It end__):
+        tensor(forward_tag{}, shape__, begin__, end__)
+    {}
+    //arbitrary container shape and value
+    template<typename U>
+    tensor(U&& shape__, const value_type& value__):
+        tensor(forward_tag{}, std::forward<U>(shape__), value__)
+    {}
+    //arbitrary container shape and range
+    template<typename U, typename It>
+    tensor(U&& shape__, It begin__, It end__):
+        tensor(forward_tag{}, std::forward<U>(shape__), begin__, end__)
+    {}
+    template<typename...Args>
+    static tensor make_tensor(Args&&...args){
+        return tensor(forward_tag{}, std::forward<Args>(args)...);
+    }
+    //makes new storage tensor by copying shape and elements from this tensor
+    auto copy()const{
+        using storage_impl_type = storage_tensor<typename detail::storage_engine_traits<typename CfgT::host_engine,CfgT,typename CfgT::template storage<ValT>>::type>;
+        return tensor<value_type,CfgT,storage_impl_type>::make_tensor(shape(),begin(),end());
+    }
     auto begin(){return engine().begin();}
     auto end(){return engine().end();}
     auto begin()const{return engine().begin();}
@@ -139,14 +141,6 @@ public:
     //compare content of this tensor and other
     template<typename RImpl>
     auto equals(const tensor<value_type,CfgT,RImpl>& other)const{return gtensor::equals(*this, other);}
-    //makes tensor with storage_impl_type by copying shape and content from this tensor
-    auto copy()const{return tensor<value_type,CfgT,storage_impl_type>(*this);}
-
-    //tensor assignment
-    tensor& operator=(const tensor& rhs) &{
-        impl_ = rhs.impl_;
-        return *this;
-    }
     //broadcast value assigmnent, lhs may be any rvalue tensor but it makes sence only for viewing tensor to modify underlying storage tensor
     //lhs that is rvalue evaluating tensor or view of evaluating tensor will not compile
     template<typename RVal, typename RImpl>
@@ -154,7 +148,10 @@ public:
         tensor_operators::operator_assign_dispatcher(*this, rhs);
         return *this;
     }
-    //overload operator() to make different kinds of viewing tensors
+    friend std::ostream& operator<<(std::ostream& os, const tensor& lhs){return os<<lhs.impl_->to_str();}
+
+    //view construction operators and methods
+    //slice view
     auto operator()(slices_init_type subs)const{
         detail::check_slices_number(subs);
         slices_collection_type filled_subs = detail::fill_slices<slice_type>(shape(),subs);
@@ -168,11 +165,13 @@ public:
         detail::check_slices(shape(), filled_subs);
         return view_factory<ValT,CfgT>::create_view_slice(impl(), filled_subs);
     }
+    //transpose view
     template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,index_type>...>,int> = 0 >
     auto transpose(const Subs&...subs)const{
         detail::check_transpose_subs(dim(),subs...);
         return view_factory<ValT,CfgT>::create_view_transpose(impl(), shape_type{subs...});
     }
+    //subdimension view
     template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,index_type>...>,int> = 0 >
     auto operator()(const Subs&...subs)const{
         detail::check_subdim_subs(shape(), subs...);
@@ -182,11 +181,13 @@ public:
         detail::check_subdim_subs(shape());
         return view_factory<ValT,CfgT>::create_view_subdim(impl(), shape_type{});
     }
+    //reshape view
     template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,index_type>...>,int> = 0 >
     auto reshape(const Subs&...subs)const{
         detail::check_reshape_subs(size(), subs...);
         return view_factory<ValT,CfgT>::create_view_reshape(impl(), shape_type{subs...});
     }
+    //mapping view
     template<typename...Subs, std::enable_if_t<std::conjunction_v<detail::is_index_tensor<Subs,index_type>...>,int> = 0 >
     auto operator()(const Subs&...subs)const{
         return view_factory<ValT,CfgT>::create_mapping_view_index_tensor(impl(), subs...);

@@ -65,6 +65,7 @@ public:
     using descriptor_with_offset_base::shape;
     using descriptor_with_offset_base::offset;
     using descriptor_with_offset_base::strides_div;
+    converting_descriptor() = default;
     template<typename ShT, typename StT>
     converting_descriptor(ShT&& shape__, StT&& cstrides__,  const index_type& offset__):
         descriptor_with_offset_base{std::forward<ShT>(shape__), offset__},

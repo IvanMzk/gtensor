@@ -59,11 +59,17 @@ protected:
     auto rbegin()const{return elements_.rbegin();}
     auto rend()const{return elements_.rend();}
 public:
+    storage_engine(holder_type* holder):
+        holder_accessor{holder},
+        elements_{}
+    {}
     template<typename Nested>
     storage_engine(holder_type* holder, const index_type& size, std::initializer_list<Nested> init_data):
         holder_accessor{holder},
         elements_(size)
-    {detail::fill_from_list(init_data, elements_.begin());}
+    {
+        detail::fill_from_list(init_data, elements_.begin());
+    }
     storage_engine(holder_type* holder, const index_type& size, const value_type& init_data):
         holder_accessor{holder},
         elements_(size, init_data)

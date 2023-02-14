@@ -202,22 +202,6 @@ MapT make_map_bool_tensor(const ShT& pshape, const ShT& pstrides, const typename
 
 }   //end of namespace detail
 
-// template<typename ValT, template<typename> typename Cfg>
-// class view_factory_base{
-//     using tensor_base_type = tensor_base<ValT,Cfg>;
-//     using config_type = Cfg<ValT>;
-//     using shape_type = typename config_type::shape_type;
-//     using slices_collection_type = typename config_type::slices_collection_type;
-// public:
-//     virtual ~view_factory_base(){}
-//     virtual std::shared_ptr<tensor_base_type> create_view_slice(const std::shared_ptr<tensor_base_type>&, const slices_collection_type&)const = 0;
-//     virtual std::shared_ptr<tensor_base_type> create_view_transpose(const std::shared_ptr<tensor_base_type>&, const shape_type&)const = 0;
-//     virtual std::shared_ptr<tensor_base_type> create_view_subdim(const std::shared_ptr<tensor_base_type>&, const shape_type&)const = 0;
-//     virtual std::shared_ptr<tensor_base_type> create_view_reshape(const std::shared_ptr<tensor_base_type>&, const shape_type&)const = 0;
-
-//     static std::shared_ptr<view_factory_base> create_factory();
-// };
-
 template<typename ValT, typename CfgT>
 class view_factory
 {
@@ -281,32 +265,32 @@ public:
     template<typename ImplT>
     static auto create_view_slice(const std::shared_ptr<ImplT>& parent, const slices_collection_type& subs){
         using impl_type = view_slice<typename detail::viewing_engine_traits<typename CfgT::host_engine, CfgT, view_slice_descriptor_type, ImplT>::type>;
-        return tensor<ValT,CfgT,impl_type>{std::make_shared<impl_type>(create_view_slice_descriptor(parent->shape(), parent->strides(), subs),parent)};
+        return tensor<ValT,CfgT,impl_type>::make_tensor(create_view_slice_descriptor(parent->shape(), parent->strides(), subs),parent);
     }
     template<typename ImplT>
     static auto create_view_transpose(const std::shared_ptr<ImplT>& parent, const shape_type& subs){
         using impl_type = view_slice<typename detail::viewing_engine_traits<typename CfgT::host_engine, CfgT, view_slice_descriptor_type, ImplT>::type>;
-        return tensor<ValT,CfgT,impl_type>{std::make_shared<impl_type>(create_view_transpose_descriptor(parent->shape(), parent->strides(), subs),parent)};
+        return tensor<ValT,CfgT,impl_type>::make_tensor(create_view_transpose_descriptor(parent->shape(), parent->strides(), subs),parent);
     }
     template<typename ImplT>
     static auto create_view_subdim(const std::shared_ptr<ImplT>& parent, const shape_type& subs){
         using impl_type = view_subdim<typename detail::viewing_engine_traits<typename CfgT::host_engine, CfgT, view_subdim_descriptor_type, ImplT>::type>;
-        return tensor<ValT,CfgT,impl_type>{std::make_shared<impl_type>(create_view_subdim_descriptor(parent->shape(), parent->strides(), subs),parent)};
+        return tensor<ValT,CfgT,impl_type>::make_tensor(create_view_subdim_descriptor(parent->shape(), parent->strides(), subs),parent);
     }
     template<typename ImplT>
     static auto create_view_reshape(const std::shared_ptr<ImplT>& parent, const shape_type& subs){
         using impl_type = view_reshape<typename detail::viewing_engine_traits<typename CfgT::host_engine, CfgT, view_reshape_descriptor_type, ImplT>::type>;
-        return tensor<ValT,CfgT,impl_type>{std::make_shared<impl_type>(create_view_reshape_descriptor(parent->shape(), subs),parent)};
+        return tensor<ValT,CfgT,impl_type>::make_tensor(create_view_reshape_descriptor(parent->shape(), subs),parent);
     }
     template<typename ImplT, typename...Subs>
     static auto create_mapping_view_index_tensor(const std::shared_ptr<ImplT>& parent, const Subs&...subs){
         using impl_type = mapping_view<typename detail::viewing_engine_traits<typename CfgT::host_engine, CfgT, mapping_view_descriptor_type, ImplT>::type>;
-        return tensor<ValT,CfgT,impl_type>{std::make_shared<impl_type>(create_mapping_view_descriptor_index_tensor(parent->shape(), parent->strides(), subs...),parent)};
+        return tensor<ValT,CfgT,impl_type>::make_tensor(create_mapping_view_descriptor_index_tensor(parent->shape(), parent->strides(), subs...),parent);
     }
     template<typename ImplT, typename Sub>
     static auto create_mapping_view_bool_tensor(const std::shared_ptr<ImplT>& parent, const Sub& sub){
         using impl_type = mapping_view<typename detail::viewing_engine_traits<typename CfgT::host_engine, CfgT, mapping_view_descriptor_type, ImplT>::type>;
-        return tensor<ValT,CfgT,impl_type>{std::make_shared<impl_type>(create_mapping_view_descriptor_bool_tensor(parent->shape(), parent->strides(), sub),parent)};
+        return tensor<ValT,CfgT,impl_type>::make_tensor(create_mapping_view_descriptor_bool_tensor(parent->shape(), parent->strides(), sub),parent);
     }
 };
 

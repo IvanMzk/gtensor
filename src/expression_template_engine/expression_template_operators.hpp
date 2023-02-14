@@ -30,7 +30,7 @@ struct NAME{\
         using operand2_type = ImplT2;\
         using engine_type = expression_template_evaluating_engine<CfgT, operation_type, operand1_type, operand2_type>;\
         using impl_type = evaluating_tensor<engine_type>;\
-        return tensor<typename impl_type::value_type, CfgT, impl_type>{std::make_shared<impl_type>(operation_type{}, std::move(op1),std::move(op2))};\
+        return tensor<typename impl_type::value_type, CfgT, impl_type>::make_tensor(operation_type{}, std::move(op1), std::move(op2));\
     }\
 };
 

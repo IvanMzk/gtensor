@@ -41,15 +41,15 @@ private:
 template<typename EngineT>
 class storage_tensor : public basic_tensor<basic_descriptor<typename EngineT::config_type>, EngineT>
 {
+    using basic_tensor_base = basic_tensor<basic_descriptor<typename EngineT::config_type>, EngineT>;
 public:
     using engine_type = typename basic_tensor::engine_type;
-    using typename basic_tensor::value_type;
-    using typename basic_tensor::config_type;
+    using typename basic_tensor_base::value_type;
+    using typename basic_tensor_base::config_type;
 private:
-    using typename basic_tensor::descriptor_type;
-    using typename basic_tensor::index_type;
-    using typename basic_tensor::shape_type;
-    //static_assert(std::is_convertible_v<engine_type*, storage_engine<value_type,config_type>*>);
+    using typename basic_tensor_base::descriptor_type;
+    using typename basic_tensor_base::index_type;
+    using typename basic_tensor_base::shape_type;
 
     template<typename ShT, typename Nested>
     storage_tensor(ShT&& shape, std::initializer_list<Nested> init_data):
@@ -57,10 +57,12 @@ private:
     {}
     template<typename ShT, typename...InitT>
     storage_tensor(const index_type& size, ShT&& shape, InitT...init_data):
-        basic_tensor{engine_type{this, size, init_data...}, descriptor_type{std::forward<ShT>(shape)}}
+        basic_tensor_base{engine_type{this, size, init_data...}, descriptor_type{std::forward<ShT>(shape)}}
     {}
 public:
-
+    storage_tensor():
+        basic_tensor_base{engine_type{this}, descriptor_type{}}
+    {}
     template<typename Nested>
     storage_tensor(std::initializer_list<Nested> init_data):
         storage_tensor{detail::list_parse<index_type,shape_type>(init_data), init_data}
@@ -95,9 +97,7 @@ public:
     template<typename F, typename...Operands>
     evaluating_tensor(F&& f, Operands&&...operands):
         evaluating_tensor{detail::broadcast_shape<shape_type>(operands->shape()...),std::forward<F>(f),std::forward<Operands>(operands)...}
-    {
-        //static_assert(std::is_convertible_v<engine_type*, evaluating_engine<value_type,config_type,std::decay_t<F>,std::decay_t<Args>::element_type...>*>);
-    }
+    {}
 };
 
 template<typename DescT, typename EngineT>
@@ -115,9 +115,7 @@ public:
     template<typename U>
     viewing_tensor(descriptor_type&& descriptor, U&& parent):
         basic_tensor{engine_type{this,std::forward<U>(parent)},std::move(descriptor)}
-    {
-        //static_assert(std::is_convertible_v<engine_type*, viewing_engine<value_type,config_type,std::decay_t<U>::element_type>*>);
-    }
+    {}
 };
 
 }   //end of namespace gtensor
