@@ -145,7 +145,7 @@ public:
     //lhs that is rvalue evaluating tensor or view of evaluating tensor will not compile
     template<typename RVal, typename RImpl>
     tensor& operator=(const tensor<RVal,CfgT,RImpl>& rhs) &&{
-        tensor_operators::operator_assign_dispatcher(*this, rhs);
+        operator_assign(*this, rhs);
         return *this;
     }
     friend std::ostream& operator<<(std::ostream& os, const tensor& lhs){return os<<lhs.impl_->to_str();}
