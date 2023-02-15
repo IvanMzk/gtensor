@@ -6,7 +6,7 @@
 #include "tensor_operators.hpp"
 #include "slice.hpp"
 #include "view_factory.hpp"
-#include "expression_template_engine//expression_template_engine.hpp"
+#include "expression_template_engine.hpp"
 
 
 namespace gtensor{

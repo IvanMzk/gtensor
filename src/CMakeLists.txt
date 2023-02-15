@@ -1,8 +1,7 @@
-add_executable(Main)
-target_include_directories(Main PRIVATE ${${project_name}_SOURCE_DIR}\\src)
-target_compile_options(Main PRIVATE -W1 -std:c++17)
-
-target_sources(Main PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
+add_library(expression_template INTERFACE)
+target_include_directories(expression_template INTERFACE
+    ${${project_name}_SOURCE_DIR}\\src
+    ${${project_name}_SOURCE_DIR}\\src\\expression_template_engine
 )
+target_compile_options(expression_template INTERFACE -W1 -std:c++17)
 
