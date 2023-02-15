@@ -2,10 +2,9 @@
 #include <vector>
 #include "catch.hpp"
 #include "broadcast.hpp"
-#include "uvector.h"
 
-
-TEMPLATE_PRODUCT_TEST_CASE("test_variadic_broadcast_shape","[test_descriptor]", (std::vector,trivial_type_vector::uvector),(std::int64_t)){
+TEMPLATE_TEST_CASE("test_variadic_broadcast_shape","[test_descriptor]", std::vector<std::int64_t>)
+{
     using shape_type = TestType;
     using result_shape_type = std::vector<std::int64_t>;
     using test_type = std::tuple<result_shape_type, result_shape_type>;
@@ -35,7 +34,8 @@ TEMPLATE_PRODUCT_TEST_CASE("test_variadic_broadcast_shape","[test_descriptor]", 
     REQUIRE(std::equal(expected_broadcast_shape.begin(),expected_broadcast_shape.end(),result_broadcast_shape.begin()));
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("test_variadic_broadcast_shape_exception","[test_descriptor]", (std::vector,trivial_type_vector::uvector),(std::size_t, std::int64_t)){
+TEMPLATE_TEST_CASE("test_variadic_broadcast_shape_exception","[test_descriptor]", std::vector<std::int64_t>)
+{
     using shape_type = TestType;
     using gtensor::detail::broadcast_shape;
     using gtensor::broadcast_exception;

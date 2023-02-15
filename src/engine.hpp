@@ -5,7 +5,6 @@
 #include <array>
 #include "tensor_base.hpp"
 #include "tensor_init_list.hpp"
-#include "shareable_storage.hpp"
 #include "indexer.hpp"
 
 namespace gtensor{

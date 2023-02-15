@@ -22,7 +22,7 @@ auto make_test_tensor(T&& t){return TestT<std::decay_t<T>>{t};}
 }   //end of namespace test_view_factory
 
 
-TEMPLATE_TEST_CASE("test_make_view_slice_shape","[test_view_factory]", trivial_type_vector::uvector<std::int64_t>, std::vector<std::int64_t>){
+TEMPLATE_TEST_CASE("test_make_view_slice_shape","[test_view_factory]", std::vector<std::int64_t>){
     using index_type = typename TestType::value_type;
     using shape_type = TestType;
     using slice_type = gtensor::slice<index_type>;
@@ -52,7 +52,7 @@ TEMPLATE_TEST_CASE("test_make_view_slice_shape","[test_view_factory]", trivial_t
     REQUIRE(make_view_slice_shape(parent_shape, slices_collection) == expected_shape);
 }
 
-TEMPLATE_TEST_CASE("test_make_view_subdim_shape","[test_view_factory]", trivial_type_vector::uvector<std::int64_t>, std::vector<std::int64_t>){
+TEMPLATE_TEST_CASE("test_make_view_subdim_shape","[test_view_factory]", std::vector<std::int64_t>){
     using index_type = typename TestType::value_type;
     using shape_type = TestType;
     using slice_type = gtensor::slice<index_type>;
@@ -71,7 +71,7 @@ TEMPLATE_TEST_CASE("test_make_view_subdim_shape","[test_view_factory]", trivial_
     REQUIRE(make_view_subdim_shape(parent_shape, subs) == expected_shape);
 }
 
-TEMPLATE_TEST_CASE("test_make_view_reshape_shape","[test_view_factory]", trivial_type_vector::uvector<std::int64_t>, std::vector<std::int64_t>){
+TEMPLATE_TEST_CASE("test_make_view_reshape_shape","[test_view_factory]", std::vector<std::int64_t>){
     using index_type = typename TestType::value_type;
     using shape_type = TestType;
     using slice_type = gtensor::slice<index_type>;
@@ -91,7 +91,7 @@ TEMPLATE_TEST_CASE("test_make_view_reshape_shape","[test_view_factory]", trivial
     REQUIRE(make_view_reshape_shape(parent_shape, subs) == expected_shape);
 }
 
-TEMPLATE_TEST_CASE("test_make_view_slice_offset","[test_view_factory]", trivial_type_vector::uvector<std::int64_t>, std::vector<std::int64_t>){
+TEMPLATE_TEST_CASE("test_make_view_slice_offset","[test_view_factory]", std::vector<std::int64_t>){
     using index_type = typename TestType::value_type;
     using shape_type = TestType;
     using slice_type = gtensor::slice<index_type>;
@@ -114,7 +114,7 @@ TEMPLATE_TEST_CASE("test_make_view_slice_offset","[test_view_factory]", trivial_
     REQUIRE(make_view_slice_offset(parent_strides, slices_collection) == expected_offset);
 }
 
-TEMPLATE_TEST_CASE("test_make_view_subdim_offset","[test_view_factory]", trivial_type_vector::uvector<std::int64_t>, std::vector<std::int64_t>){
+TEMPLATE_TEST_CASE("test_make_view_subdim_offset","[test_view_factory]", std::vector<std::int64_t>){
     using index_type = typename TestType::value_type;
     using shape_type = TestType;
     using slice_type = gtensor::slice<index_type>;
@@ -137,7 +137,7 @@ TEMPLATE_TEST_CASE("test_make_view_subdim_offset","[test_view_factory]", trivial
     REQUIRE(make_view_subdim_offset(parent_strides, subs) == expected_offset);
 }
 
-TEMPLATE_TEST_CASE("test_make_view_slice_cstrides","[test_view_factory]", trivial_type_vector::uvector<std::int64_t>){
+TEMPLATE_TEST_CASE("test_make_view_slice_cstrides","[test_view_factory]", std::vector<std::int64_t>){
     using index_type = typename TestType::value_type;
     using shape_type = TestType;
     using slice_type = gtensor::slice<index_type>;
@@ -163,7 +163,7 @@ TEMPLATE_TEST_CASE("test_make_view_slice_cstrides","[test_view_factory]", trivia
 
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("test_transpose","[test_view_factory]", (std::vector,trivial_type_vector::uvector),(std::size_t, std::uint32_t, int)){
+TEMPLATE_TEST_CASE("test_transpose","[test_view_factory]", std::vector<std::int64_t>){
     using shape_type = TestType;
     using gtensor::detail::transpose;
     using test_type = std::tuple<shape_type, shape_type, shape_type>;
