@@ -49,7 +49,6 @@ struct default_config{
     using slice_init_type = std::initializer_list<slice_item_type>;
     using slices_init_type = std::initializer_list<slice_init_type>;
     using slices_collection_type = std::vector<slice_type>;
-
 };
 
 }

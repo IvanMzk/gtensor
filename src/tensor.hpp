@@ -30,14 +30,15 @@ public:
     basic_tensor(basic_tensor&&) = delete;
     basic_tensor& operator=(basic_tensor&&) = delete;
 
-    const descriptor_type& descriptor()const{return descriptor_;}
-    const engine_type& engine()const override{return engine_;}
-    engine_type& engine()override{return engine_;}
+    const descriptor_type& descriptor()const override{return descriptor_;}
     index_type size()const override{return descriptor_.size();}
     index_type dim()const override{return descriptor_.dim();}
     const shape_type& shape()const override{return descriptor_.shape();}
     const shape_type& strides()const override{return descriptor_.strides();}
-    const shape_type& reset_strides()const override{return descriptor_.reset_strides();}
+
+    const engine_type& engine()const{return engine_;}
+    engine_type& engine(){return engine_;}
+
 private:
     engine_type engine_;
     descriptor_type descriptor_;
