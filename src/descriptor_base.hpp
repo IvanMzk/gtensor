@@ -187,7 +187,6 @@ public:
     virtual const shape_type& reset_strides()const = 0;
     virtual const shape_type& cstrides()const = 0;
     virtual const shape_type& reset_cstrides()const = 0;
-    virtual std::string to_str()const = 0;
 };
 
 template<typename CfgT>
@@ -203,7 +202,6 @@ public:
     const auto& strides_div()const{return strides_.strides_div();}
     const auto& strides()const{return strides_.strides();}
     const auto& reset_strides()const{return strides_.reset_strides();}
-    auto to_str()const{return detail::shape_to_str(shape());}
 
     descriptor_common() = default;
     template<typename ShT, std::enable_if_t<!std::is_convertible_v<std::decay_t<ShT>, descriptor_common>,int> =0 >

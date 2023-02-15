@@ -58,7 +58,6 @@ class tensor{
     class forward_tag{};
 
     friend class tensor_operator_dispatcher;
-    template<typename,typename> friend class view_factory;
 
     //initialize implementation by forwarding arguments, this constructor should be used by all public constructors
     template<typename...Args>
@@ -69,7 +68,7 @@ class tensor{
     std::shared_ptr<impl_type> impl_;
 protected:
     auto impl()const{return impl_;}
-    auto& engine()const{return static_cast<const impl_type*>(impl_.get())->engine();}
+    const auto& engine()const{return static_cast<const impl_type*>(impl_.get())->engine();}
     auto& engine(){return impl_->engine();}
 
 public:
@@ -130,6 +129,7 @@ public:
     auto rbegin(){return engine().rbegin();}
     auto rend(){return engine().rend();}
     auto rbegin()const{return engine().rbegin();}
+    auto rend()const{return engine().rend();}
     auto begin_broadcast(const shape_type& shape){return engine().begin_broadcast(shape);}
     auto end_broadcast(const shape_type& shape){return engine().end_broadcast(shape);}
     auto begin_broadcast(const shape_type& shape)const{return engine().begin_broadcast(shape);}
@@ -139,11 +139,9 @@ public:
     auto rbegin_broadcast(const shape_type& shape)const{return engine().rbegin_broadcast(shape);}
     auto rend_broadcast(const shape_type& shape)const{return engine().rend_broadcast(shape);}
 
-    auto rend()const{return engine().rend();}
     auto size()const{return impl()->size();}
     auto dim()const{return impl()->dim();}
     auto shape()const{return impl()->shape();}
-    auto to_str()const{return impl()->to_str();}
     //compare content of this tensor and other
     template<typename RImpl>
     auto equals(const tensor<value_type,CfgT,RImpl>& other)const{return gtensor::equals(*this, other);}
@@ -154,7 +152,6 @@ public:
         operator_assign(*this, rhs);
         return *this;
     }
-    friend std::ostream& operator<<(std::ostream& os, const tensor& lhs){return os<<lhs.impl_->to_str();}
 
     //view construction operators and methods
     //slice view
@@ -203,6 +200,16 @@ public:
         return view_factory<ValT,CfgT>::create_mapping_view_bool_tensor(impl(), sub);
     }
 };
+
+template<typename...Ts>
+auto str(const tensor<Ts...>& t){
+    std::stringstream ss{};
+    ss<<"{"<<detail::shape_to_str(t.shape())<<[&]{for(const auto& i:t){ss<<i<<" ";}; return "}";}();
+    return ss.str();
+}
+
+template<typename...Ts>
+std::ostream& operator<<(std::ostream& os, const tensor<Ts...>& lhs){return os<<str(lhs);}
 
 }   //end of namespace gtensor
 

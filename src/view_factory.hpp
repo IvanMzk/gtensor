@@ -245,20 +245,20 @@ class view_factory
     template<typename...Subs>
     static auto create_mapping_view_descriptor_index_tensor(const shape_type& shape, const shape_type& strides, const Subs&...subs){
         using map_type = typename mapping_view_descriptor_type::map_type;
-        auto index_shape = detail::broadcast_shape<shape_type>(subs.impl()->shape()...);
+        auto index_shape = detail::broadcast_shape<shape_type>(subs.shape()...);
         return mapping_view_descriptor_type{
             detail::make_shape_index_tensor(shape,index_shape,sizeof...(Subs)),
-            detail::make_map_index_tensor<map_type>(shape,strides,detail::make_size(index_shape),subs.engine().begin_broadcast(index_shape)...)
+            detail::make_map_index_tensor<map_type>(shape,strides,detail::make_size(index_shape),subs.begin_broadcast(index_shape)...)
         };
     }
     template<typename Sub>
     static auto create_mapping_view_descriptor_bool_tensor(const shape_type& shape, const shape_type& strides, const Sub& sub){
         using map_type = typename mapping_view_descriptor_type::map_type;
-        auto view_shape = detail::make_shape_bool_tensor(shape,sub.impl()->shape(),sub.begin(),sub.end());
+        auto view_shape = detail::make_shape_bool_tensor(shape,sub.shape(),sub.begin(),sub.end());
         auto view_size = detail::make_size(view_shape);
         return mapping_view_descriptor_type{
             std::move(view_shape),
-            detail::make_map_bool_tensor<map_type>(shape,strides,view_size,sub.impl()->dim(),sub.begin(),sub.end())
+            detail::make_map_bool_tensor<map_type>(shape,strides,view_size,sub.dim(),sub.begin(),sub.end())
         };
     }
 public:

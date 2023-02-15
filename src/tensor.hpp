@@ -38,7 +38,6 @@ public:
     const shape_type& shape()const override{return descriptor_.shape();}
     const shape_type& strides()const override{return descriptor_.strides();}
     const shape_type& reset_strides()const override{return descriptor_.reset_strides();}
-    std::string to_str()const override{return descriptor_.to_str();}
 private:
     engine_type engine_;
     descriptor_type descriptor_;

@@ -349,11 +349,6 @@ TEST_CASE("test_broadcast_assignment","[test_expression_template_engine]"){
     using tensor_type = gtensor::tensor<value_type>;
     using gtensor::broadcast_exception;
 
-    //reference semantic assignment
-    // auto t_lhs = tensor_type();
-    // t_lhs = tensor_type{1,2,3};
-    // REQUIRE(std::equal(t_lhs.begin(), t_lhs.end(), std::vector<float>{1,2,3}.begin()));
-
     //broadcast assignment
     auto lhs = tensor_type{1,2,3,4,5};
     lhs({{{},{},2}}) = tensor_type{0};

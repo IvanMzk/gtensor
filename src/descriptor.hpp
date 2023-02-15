@@ -26,8 +26,6 @@ public:
     const strides_div_type& strides_div()const override{return impl_.strides_div();}
     const shape_type& strides()const override{return impl_.strides();}
     const shape_type& reset_strides()const override{return impl_.reset_strides();}
-    std::string to_str()const override{return impl_.to_str();}
-
     index_type offset()const override{return index_type{0};}
     const shape_type& cstrides()const override{return strides();}
     const shape_type& reset_cstrides()const override{return reset_strides();}
@@ -95,12 +93,8 @@ public:
         basic_descriptor_base{std::forward<ShT>(shape__)},
         index_map_{std::forward<MapT>(index_map__)}
     {}
-    index_type convert(const index_type& idx)const override{
-        return index_map_[idx];
-    }
-    index_type convert(const shape_type& idx)const override{
-        return index_map_[detail::convert_index(basic_descriptor_base::cstrides(),basic_descriptor_base::offset(),idx)];
-    }
+    index_type convert(const index_type& idx)const override{return index_map_[idx];}
+    index_type convert(const shape_type& idx)const override{return index_map_[detail::convert_index(basic_descriptor_base::cstrides(),basic_descriptor_base::offset(),idx)];}
 private:
     map_type index_map_;
 };

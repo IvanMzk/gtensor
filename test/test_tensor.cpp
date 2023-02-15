@@ -428,3 +428,4 @@ TEST_CASE("test_tensor_copy","[test_tensor]"){
     auto expected_tensor = std::get<1>(test_data);
     REQUIRE(result_tensor.equals(expected_tensor));
 }
+

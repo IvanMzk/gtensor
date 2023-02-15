@@ -22,10 +22,7 @@ public:
     virtual const shape_type& shape()const = 0;
     virtual const shape_type& strides()const = 0;
     virtual const shape_type& reset_strides()const = 0;
-    virtual std::string to_str()const = 0;
     virtual const descriptor_base<config_type>& descriptor()const = 0;
-
-    virtual const converting_base<config_type>* as_converting()const{return nullptr;}
 };
 
 template<typename ValT, typename CfgT>
@@ -44,18 +41,6 @@ public:
 
 };
 
-
-template<typename CfgT>
-class converting_base
-{
-    using index_type = typename CfgT::index_type;
-    virtual index_type view_index_convert(const index_type&)const = 0;
-
-public:
-    virtual ~converting_base(){}
-    auto convert(const index_type& idx)const{return view_index_convert(idx);}
-
-};
 
 }   //end of namespace gtensor
 
