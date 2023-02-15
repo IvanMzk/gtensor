@@ -9,33 +9,13 @@ target_link_options(Test_selected PRIVATE /STACK:104857600)
 target_sources(Test PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/test.cpp
 
-
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_libdivide.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_dispatcher.cpp
-
-    ${CMAKE_CURRENT_SOURCE_DIR}/benchmark_walker.cpp
-
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_shareable_storage.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_slice.cpp
-
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_multiindex_iterator.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_evaluating_tensor.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_storage_tensor.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_walker.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_test.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_deep_tree_compilation.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/benchmark_experimental_expression_template.cpp
-
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_init_list.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_variadic_container.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_experimental_expression_template.cpp
-
-
 )
 
 target_sources(Test_selected PRIVATE
     #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_expression_template.cpp
 
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_init_list.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_slice.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_helpers_for_testing.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_libdivide_helper.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_descriptor.cpp

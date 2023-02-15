@@ -58,10 +58,10 @@ struct Nop{};
 /*
 * k is always set
 */
-template<typename DifT, typename N = Nop>
+template<typename DifT, typename NopT = Nop>
 struct slice{
     using difference_type = DifT;
-    using nop_type = N;
+    using nop_type = NopT;
     using mask_type = typename detail::mask_type;
     using slice_item_type = typename detail::slice_item<difference_type, nop_type>;
 

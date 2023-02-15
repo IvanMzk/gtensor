@@ -40,8 +40,6 @@ void h(Args...args){}
 
 }
 
-
-
 TEST_CASE("signed_unsigned","signed_unsigned"){
     std::size_t ui{10};
     std::ptrdiff_t i{-20};
@@ -76,20 +74,20 @@ TEST_CASE("slice_init_type","[slice_init_type]"){
     v({{1,2,3},{},{0,{},-1}});
     v({{},{},{1,2,3,4}});
     g(l);
-    
+
 }
 
-TEST_CASE("slice_item","[slice_item]"){    
+TEST_CASE("slice_item","[slice_item]"){
     using index_type = typename gtensor::config::default_config::index_type;
     using slice_item_type =  typename test_slice_::slice_item<index_type>;
     SECTION("use_init_list"){
         using slice_init_type = typename std::initializer_list<slice_item_type>;
         slice_init_type l = {};
-        
+
         slice_init_type l1 = {1};
         REQUIRE(l1.begin()[0].i == 1);
         REQUIRE(!l1.begin()[0].nop);
-        
+
         slice_init_type l2 = {0,-1,1};
         REQUIRE(l2.begin()[0].i == 0);
         REQUIRE(!l2.begin()[0].nop);
@@ -97,15 +95,15 @@ TEST_CASE("slice_item","[slice_item]"){
         REQUIRE(!l2.begin()[1].nop);
         REQUIRE(l2.begin()[2].i == 1);
         REQUIRE(!l2.begin()[2].nop);
-        
-        slice_init_type l3 = {{},{},-1};    
+
+        slice_init_type l3 = {{},{},-1};
         REQUIRE(l3.begin()[0].nop);
         REQUIRE(l3.begin()[1].nop);
         REQUIRE(l3.begin()[2].i == -1);
         REQUIRE(!l3.begin()[2].nop);
     }
     SECTION("use_array"){
-        using slice_init_type = typename slice_item_type[3];        
+        using slice_init_type = typename slice_item_type[3];
         /*
         slice_init_type l_{{},{},{},{}};
         */
@@ -128,8 +126,8 @@ TEST_CASE("slice_item","[slice_item]"){
         REQUIRE(!l2[1].nop);
         REQUIRE(l2[2].i == 1);
         REQUIRE(!l2[2].nop);
-        
-        slice_init_type l3 = {{},{},-1};    
+
+        slice_init_type l3 = {{},{},-1};
         REQUIRE(l3[0].nop);
         REQUIRE(l3[1].nop);
         REQUIRE(l3[2].i == -1);
@@ -157,12 +155,12 @@ TEST_CASE("slice_item","[slice_item]"){
         REQUIRE(!l2[2].nop);
 
         /*
-        slice_init_type l3 = {{},{},-1};    
+        slice_init_type l3 = {{},{},-1};
         REQUIRE(l3[0].nop);
         REQUIRE(l3[1].nop);
         REQUIRE(l3[2].i == -1);
         REQUIRE(!l3[2].nop);
-        */        
+        */
     }
     SECTION("use_tuple"){
         using slice_init_type = typename std::tuple<slice_item_type,slice_item_type,slice_item_type>;
@@ -170,7 +168,7 @@ TEST_CASE("slice_item","[slice_item]"){
         REQUIRE(std::get<0>(l).nop);
         REQUIRE(std::get<1>(l).nop);
         REQUIRE(std::get<2>(l).nop);
-        
+
         /*
         slice_init_type l1 = {1};
         */
@@ -180,12 +178,12 @@ TEST_CASE("slice_item","[slice_item]"){
         REQUIRE(std::get<0>(l1).i == 1);
         REQUIRE(std::get<1>(l1).nop);
         REQUIRE(std::get<2>(l1).nop);
-    }     
+    }
 }
 
 TEST_CASE("test_slice","[test_slice]"){
     using slice_type = typename gtensor::slice<std::ptrdiff_t>;
-    using nop_type = gtensor::config::NOP;
+    using nop_type = typename slice_type::nop_type;
     nop_type nop{};
     SECTION("default_construction"){
         slice_type slice{};
@@ -195,17 +193,17 @@ TEST_CASE("test_slice","[test_slice]"){
     }
     SECTION("construction_i__"){
         slice_type slice{-3};
-        REQUIRE(slice.start == -3);        
+        REQUIRE(slice.start == -3);
         REQUIRE(slice.is_start());
         REQUIRE(!slice.is_stop());
         REQUIRE(slice.is_step());
         slice_type slice1{0,nop,nop};
-        REQUIRE(slice1.start == 0);        
+        REQUIRE(slice1.start == 0);
         REQUIRE(slice1.is_start());
         REQUIRE(!slice1.is_stop());
         REQUIRE(slice1.is_step());
         slice_type slice2 = {3,{},{}};
-        REQUIRE(slice2.start == 3);        
+        REQUIRE(slice2.start == 3);
         REQUIRE(slice2.is_start());
         REQUIRE(!slice2.is_stop());
         REQUIRE(slice2.is_step());
@@ -231,14 +229,14 @@ TEST_CASE("test_slice","[test_slice]"){
         REQUIRE(slice.step == -2);
         REQUIRE(slice.is_start());
         REQUIRE(slice.is_stop());
-        REQUIRE(slice.is_step());        
+        REQUIRE(slice.is_step());
     }
     SECTION("construction___k"){
         slice_type slice{{},{nop},-2};
         REQUIRE(slice.step == -2);
         REQUIRE(!slice.is_start());
         REQUIRE(!slice.is_stop());
-        REQUIRE(slice.is_step());        
+        REQUIRE(slice.is_step());
     }
 
 }
@@ -246,7 +244,7 @@ TEST_CASE("test_slice","[test_slice]"){
 TEST_CASE("test_fill_slice","[test_slice]"){
     using index_type = std::ptrdiff_t;
     using slice_type = typename gtensor::slice<index_type>;
-    using nop_type = gtensor::config::NOP;
+    using nop_type = typename slice_type::nop_type;
     nop_type nop{};
     using test_type = std::tuple<slice_type,slice_type,index_type>;
     auto test_data = GENERATE(
@@ -262,19 +260,18 @@ TEST_CASE("test_fill_slice","[test_slice]"){
         test_type{slice_type(4,0,-1),slice_type(4,0,-1),11},
         test_type{slice_type(4,0,-1),slice_type(4,0,-1),11}
         );
-    REQUIRE(gtensor::detail::fill_slice(std::get<0>(test_data),std::get<2>(test_data)) == std::get<1>(test_data));    
+    REQUIRE(gtensor::detail::fill_slice(std::get<0>(test_data),std::get<2>(test_data)) == std::get<1>(test_data));
 }
 
 TEST_CASE("test_fill_slices","[test_fill_slices]"){
-    using gtensor::detail::fill_slices;    
-    using nop_type = gtensor::config::NOP;
     using difference_type = typename gtensor::config::default_config::difference_type;
     using shape_type = typename gtensor::config::default_config::shape_type;
-    //using slice_item_type =  typename test_slice_::slice_item<difference_type>;
+    using slice_type = typename gtensor::slice<difference_type>;
+    using nop_type = typename slice_type::nop_type;
     using slice_item_type =  typename gtensor::detail::slice_item<difference_type, nop_type>;
     using slice_init_type = typename std::initializer_list<slice_item_type>;
-    using slice_type = typename gtensor::slice<difference_type>;
     using vec_type = typename std::vector<slice_type>;
+    using gtensor::detail::fill_slices;
     nop_type nop{};
 
     SECTION("init_list"){
@@ -282,24 +279,24 @@ TEST_CASE("test_fill_slices","[test_fill_slices]"){
         REQUIRE(fill_slices<slice_type>(shape_type{2,3,4},{{}}) == std::vector<slice_type>{{0,2,1}} );
         REQUIRE(fill_slices<slice_type>(shape_type{2,3,4},{{},{},{}}) == std::vector<slice_type>{{0,2,1},{0,3,1},{0,4,1}} );
         REQUIRE(fill_slices<slice_type>(shape_type{4,3,2},{{1,3,{nop}},{},{}}) == std::vector<slice_type>{{1,3,1},{0,3,1},{0,2,1}} );
-        REQUIRE(fill_slices<slice_type>(shape_type{3,4},{{nop,nop,-1},{-4,nop,-1}}) == std::vector<slice_type>{{2,-1,-1},{0,-1,-1}});        
-        REQUIRE(fill_slices<slice_type>(shape_type{2,3,4},{{},{1},{1,3}}) == std::vector<slice_type>{{0,2,1},{1,3,1},{1,3,1}});        
+        REQUIRE(fill_slices<slice_type>(shape_type{3,4},{{nop,nop,-1},{-4,nop,-1}}) == std::vector<slice_type>{{2,-1,-1},{0,-1,-1}});
+        REQUIRE(fill_slices<slice_type>(shape_type{2,3,4},{{},{1},{1,3}}) == std::vector<slice_type>{{0,2,1},{1,3,1},{1,3,1}});
     }
     SECTION("variadic"){
         REQUIRE(fill_slices<slice_type>(shape_type{2,3,4}) == std::vector<slice_type>{} );
         REQUIRE(fill_slices<slice_type>(shape_type{4,2,3},slice_type{}) == std::vector<slice_type>{slice_type{0,4,1}} );
         REQUIRE(fill_slices<slice_type>(shape_type{4,3,2},slice_type{},slice_type{},slice_type{}) == std::vector<slice_type>{slice_type{0,4,1},slice_type{0,3,1},slice_type{0,2,1}} );
         REQUIRE(fill_slices<slice_type>(shape_type{4,3,2},slice_type{1,3,{nop}},slice_type{},slice_type{}) == std::vector<slice_type>{slice_type{1,3,1},slice_type{0,3,1},slice_type{0,2,1}} );
-        REQUIRE(fill_slices<slice_type>(shape_type{3,4},slice_type{nop,nop,-1},slice_type{-4,nop,-1}) == std::vector<slice_type>{slice_type{2,-1,-1},slice_type{0,-1,-1}});        
+        REQUIRE(fill_slices<slice_type>(shape_type{3,4},slice_type{nop,nop,-1},slice_type{-4,nop,-1}) == std::vector<slice_type>{slice_type{2,-1,-1},slice_type{0,-1,-1}});
     }
 }
 
 TEST_CASE("test_check_slice","[test_check_slice]"){
     using value_type = float;
-    using nop_type = gtensor::config::NOP;
     using difference_type = typename gtensor::config::default_config::difference_type;
     using shape_type = typename gtensor::config::default_config::shape_type;
     using slice_type = typename gtensor::slice<difference_type>;
+    using nop_type = typename slice_type::nop_type;
     using gtensor::detail::check_slice;
     nop_type nop{};
 
@@ -321,7 +318,7 @@ TEST_CASE("test_check_slice","[test_check_slice]"){
     REQUIRE_THROWS_AS(check_slice(slice_type{-1,5,1},difference_type(5)), gtensor::subscript_exception);
     REQUIRE_THROWS_AS(check_slice(slice_type{1,-1,1},difference_type(5)), gtensor::subscript_exception);
     REQUIRE_THROWS_AS(check_slice(slice_type{0,0,1},difference_type(5)), gtensor::subscript_exception);
-    REQUIRE_THROWS_AS(check_slice(slice_type{0,6,1},difference_type(5)), gtensor::subscript_exception);    
+    REQUIRE_THROWS_AS(check_slice(slice_type{0,6,1},difference_type(5)), gtensor::subscript_exception);
     REQUIRE_THROWS_AS(check_slice(slice_type{2,0,1},difference_type(5)), gtensor::subscript_exception);
     REQUIRE_THROWS_AS(check_slice(slice_type{5,5,-1},difference_type(5)), gtensor::subscript_exception);
     REQUIRE_THROWS_AS(check_slice(slice_type{-1,5,-1},difference_type(5)), gtensor::subscript_exception);
@@ -332,15 +329,15 @@ TEST_CASE("test_check_slice","[test_check_slice]"){
 
 TEST_CASE("test_is_slices", "[test_is_slices]"){
     using value_type = float;
-    using nop_type = gtensor::config::NOP;
     using difference_type = typename gtensor::config::default_config::difference_type;
     using shape_type = typename gtensor::config::default_config::shape_type;
     using slice_type = typename gtensor::slice<difference_type>;
+    using nop_type = typename slice_type::nop_type;
     using gtensor::detail::is_slice;
     using gtensor::detail::is_slices;
     nop_type nop{};
 
-    REQUIRE(is_slice<slice_type>);    
+    REQUIRE(is_slice<slice_type>);
     REQUIRE(!is_slice<shape_type>);
     REQUIRE(!is_slice<difference_type>);
 
@@ -355,16 +352,16 @@ TEST_CASE("test_is_slices", "[test_is_slices]"){
 TEST_CASE("test_check_slices","[test_check_slices]"){
     using gtensor::detail::check_slices;
     using value_type = float;
-    using nop_type = gtensor::config::NOP;
     using difference_type = typename gtensor::config::default_config::difference_type;
     using shape_type = typename gtensor::config::default_config::shape_type;
     using slice_type = typename gtensor::slice<difference_type>;
+    using nop_type = typename slice_type::nop_type;
     REQUIRE_NOTHROW(check_slices(shape_type{5},std::vector<slice_type>{}));
     REQUIRE_NOTHROW(check_slices(shape_type{5},std::vector{slice_type{0,5,1}}));
     REQUIRE_NOTHROW(check_slices(shape_type{5,3,4},std::vector{slice_type{0,5,1}}));
     REQUIRE_NOTHROW(check_slices(shape_type{5,4,3},std::vector{slice_type{0,5,1}, slice_type{0,4,1}}));
     REQUIRE_NOTHROW(check_slices(shape_type{5,4,3},std::vector{slice_type{0,5,1}, slice_type{0,4,1}, slice_type{2,-1,-1}}));
-    
+
     REQUIRE_THROWS_AS(check_slices(shape_type{5},std::vector{slice_type{0,5,1}, slice_type{0,5,1}}), gtensor::subscript_exception);
     REQUIRE_THROWS_AS(check_slices(shape_type{5},std::vector{slice_type{0,-1,1}}), gtensor::subscript_exception);
     REQUIRE_THROWS_AS(check_slices(shape_type{3,4,5},std::vector{slice_type{0,5,1}, slice_type{0,5,1}}), gtensor::subscript_exception);
@@ -374,53 +371,46 @@ TEST_CASE("test_check_slices","[test_check_slices]"){
 TEST_CASE("test_check_slices_number","[test_check_slices]"){
     using gtensor::detail::check_slices_number;
     using value_type = float;
-    using nop_type = gtensor::config::NOP;
     using difference_type = typename gtensor::config::default_config::difference_type;
     using shape_type = typename gtensor::config::default_config::shape_type;
     using slice_type = typename gtensor::slice<difference_type>;
+    using nop_type = typename slice_type::nop_type;
     using slice_item_type =  typename gtensor::detail::slice_item<difference_type, nop_type>;
     using slice_init_type = typename std::initializer_list<slice_item_type>;
     using slices_init_type = typename std::initializer_list<slice_init_type>;
     nop_type nop{};
-        
+
     REQUIRE_NOTHROW(check_slices_number(shape_type{5},slice_type{}));
     REQUIRE_NOTHROW(check_slices_number(shape_type{5,6},slice_type{}));
     REQUIRE_NOTHROW(check_slices_number(shape_type{5,6},slice_type{},slice_type{}));
     REQUIRE_NOTHROW(check_slices_number(shape_type{5},slices_init_type{{}}));
     REQUIRE_NOTHROW(check_slices_number(shape_type{5,6},slices_init_type{{},{}}));
     REQUIRE_NOTHROW(check_slices_number(shape_type{5,6},slices_init_type{{}}));
-    
-    
+
+
     REQUIRE_THROWS_AS(check_slices_number(shape_type{5},slice_type{},slice_type{}), gtensor::subscript_exception);
     REQUIRE_THROWS_AS(check_slices_number(shape_type{5,6},slice_type{},slice_type{},slice_type{},slice_type{}), gtensor::subscript_exception);
     REQUIRE_THROWS_AS(check_slices_number(shape_type{5,6},slices_init_type{{},{},{}}), gtensor::subscript_exception);
     REQUIRE_THROWS_AS(check_slices_number(shape_type{5},slices_init_type{{},{}}), gtensor::subscript_exception);
 }
 
-
-
 TEST_CASE("test_check_subdim_subs","[test_check_subdim_subs]"){
+    using shape_type = typename gtensor::config::default_config::shape_type;
     using gtensor::detail::check_subdim_subs;
-    using value_type = float;
-    using nop_type = gtensor::config::NOP;
-    using difference_type = typename gtensor::config::default_config::difference_type;
-    using shape_type = typename gtensor::config::default_config::shape_type;    
+
     REQUIRE_NOTHROW(check_subdim_subs(shape_type{5,4,3},4));
     REQUIRE_NOTHROW(check_subdim_subs(shape_type{5,4,3},4,3));
-    
     REQUIRE_THROWS_AS(check_subdim_subs(shape_type{5},0), gtensor::subscript_exception);
-    REQUIRE_THROWS_AS(check_subdim_subs(shape_type{5},0,0), gtensor::subscript_exception);    
+    REQUIRE_THROWS_AS(check_subdim_subs(shape_type{5},0,0), gtensor::subscript_exception);
     REQUIRE_THROWS_AS(check_subdim_subs(shape_type{5,4,3},1,2,3), gtensor::subscript_exception);
     REQUIRE_THROWS_AS(check_subdim_subs(shape_type{5,4,3},5), gtensor::subscript_exception);
     REQUIRE_THROWS_AS(check_subdim_subs(shape_type{5,4,3},0,4), gtensor::subscript_exception);
 }
 
 TEST_CASE("test_check_reshape_subs","[test_check_reshape_subs]"){
+    using gtensor::subscript_exception;
     using gtensor::detail::check_reshape_subs;
-    using value_type = float;
-    using nop_type = gtensor::config::NOP;
-    using difference_type = typename gtensor::config::default_config::difference_type;
-    using shape_type = typename gtensor::config::default_config::shape_type;    
+
     REQUIRE_NOTHROW(check_reshape_subs(5));
     REQUIRE_NOTHROW(check_reshape_subs(5, 5));
     REQUIRE_NOTHROW(check_reshape_subs(20, 4,5));
@@ -429,20 +419,18 @@ TEST_CASE("test_check_reshape_subs","[test_check_reshape_subs]"){
     REQUIRE_NOTHROW(check_reshape_subs(20, 2,10));
     REQUIRE_NOTHROW(check_reshape_subs(20, 2,5,2,1));
     REQUIRE_NOTHROW(check_reshape_subs(20, 4,5));
-    
-    REQUIRE_THROWS_AS(check_reshape_subs(5, 0), gtensor::subscript_exception);
-    REQUIRE_THROWS_AS(check_reshape_subs(5, 5,0), gtensor::subscript_exception);
-    REQUIRE_THROWS_AS(check_reshape_subs(5, 3,2), gtensor::subscript_exception);
-    REQUIRE_THROWS_AS(check_reshape_subs(60, 70), gtensor::subscript_exception);
-    REQUIRE_THROWS_AS(check_reshape_subs(60, 2,3,2,4), gtensor::subscript_exception);
+
+    REQUIRE_THROWS_AS(check_reshape_subs(5, 0), subscript_exception);
+    REQUIRE_THROWS_AS(check_reshape_subs(5, 5,0), subscript_exception);
+    REQUIRE_THROWS_AS(check_reshape_subs(5, 3,2), subscript_exception);
+    REQUIRE_THROWS_AS(check_reshape_subs(60, 70), subscript_exception);
+    REQUIRE_THROWS_AS(check_reshape_subs(60, 2,3,2,4), subscript_exception);
 }
 
 TEST_CASE("test_check_transpose_subs","[test_check_transpose_subs]"){
+    using gtensor::subscript_exception;
     using gtensor::detail::check_transpose_subs;
-    using value_type = float;
-    using nop_type = gtensor::config::NOP;
-    using difference_type = typename gtensor::config::default_config::difference_type;
-    using shape_type = typename gtensor::config::default_config::shape_type;    
+
     REQUIRE_NOTHROW(check_transpose_subs(1));
     REQUIRE_NOTHROW(check_transpose_subs(1,0));
     REQUIRE_NOTHROW(check_transpose_subs(3,0,1,2));
@@ -451,13 +439,13 @@ TEST_CASE("test_check_transpose_subs","[test_check_transpose_subs]"){
     REQUIRE_NOTHROW(check_transpose_subs(3,2,0,1));
     REQUIRE_NOTHROW(check_transpose_subs(3,1,0,2));
     REQUIRE_NOTHROW(check_transpose_subs(3,1,0,2));
-    
-    REQUIRE_THROWS_AS(check_transpose_subs(1,0,0), gtensor::subscript_exception);
-    REQUIRE_THROWS_AS(check_transpose_subs(2,0,0), gtensor::subscript_exception);
-    REQUIRE_THROWS_AS(check_transpose_subs(3,0,1,2,3), gtensor::subscript_exception);
-    REQUIRE_THROWS_AS(check_transpose_subs(3,0,1,1), gtensor::subscript_exception);
-    REQUIRE_THROWS_AS(check_transpose_subs(3,0,2,2), gtensor::subscript_exception);
-    REQUIRE_THROWS_AS(check_transpose_subs(3,0,0,1), gtensor::subscript_exception);
-    REQUIRE_THROWS_AS(check_transpose_subs(3,2,1,1), gtensor::subscript_exception);
+
+    REQUIRE_THROWS_AS(check_transpose_subs(1,0,0), subscript_exception);
+    REQUIRE_THROWS_AS(check_transpose_subs(2,0,0), subscript_exception);
+    REQUIRE_THROWS_AS(check_transpose_subs(3,0,1,2,3), subscript_exception);
+    REQUIRE_THROWS_AS(check_transpose_subs(3,0,1,1), subscript_exception);
+    REQUIRE_THROWS_AS(check_transpose_subs(3,0,2,2), subscript_exception);
+    REQUIRE_THROWS_AS(check_transpose_subs(3,0,0,1), subscript_exception);
+    REQUIRE_THROWS_AS(check_transpose_subs(3,2,1,1), subscript_exception);
 }
 
