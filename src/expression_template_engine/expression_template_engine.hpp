@@ -67,19 +67,8 @@ template<typename T> using is_converting_descriptor_t = typename is_converting_d
 template<typename T> constexpr bool is_converting_descriptor_v = is_converting_descriptor_t<T>();
 }   //end of namespace detail
 
-class expression_template_engine_base
-{
-public:
-
-    //storage_tensor and viewing_tensor are trivial broadcast
-    //evaluating_tensor is trivial broadcast when shapes of all nodes in expression tree are the same
-    virtual bool is_trivial()const = 0;
-};
-
 template<typename CfgT, typename StorT>
-class expression_template_storage_engine :
-    public expression_template_engine_base,
-    private storage_engine<CfgT,StorT>
+class expression_template_storage_engine : private storage_engine<CfgT,StorT>
 {
     using shape_type = typename CfgT::shape_type;
 public:
@@ -92,7 +81,7 @@ public:
     using storage_engine::rbegin;
     using storage_engine::rend;
     using storage_engine::create_indexer;
-    bool is_trivial()const override{return true;}
+    bool is_trivial()const{return true;}
     //broadcasting iterators
     auto begin_broadcast(const shape_type& shape){return detail::begin_broadcast(*this, shape);}
     auto end_broadcast(const shape_type& shape){return detail::end_broadcast(*this, shape);}
@@ -120,9 +109,7 @@ private:
 };
 
 template<typename CfgT, typename F, typename...Operands>
-class expression_template_evaluating_engine :
-    public expression_template_engine_base,
-    private evaluating_engine<CfgT,F,Operands...>
+class expression_template_evaluating_engine : private evaluating_engine<CfgT,F,Operands...>
 {
     using evaluating_engine_base = evaluating_engine<CfgT,F,Operands...>;
     using evaluating_engine_base::operands_number;
@@ -135,7 +122,8 @@ public:
     using typename evaluating_engine_base::config_type;
     using evaluating_engine_base::evaluating_engine;
     using evaluating_engine_base::holder;
-    bool is_trivial()const override{
+    //true if all nodes in expression tree are the same shape, false otherwise
+    bool is_trivial()const{
         return is_trivial_helper(std::make_index_sequence<operands_number>{});
     }
     auto begin(){return detail::begin_broadcast(*this);}
@@ -188,9 +176,7 @@ private:
 };
 
 template<typename CfgT, typename DescT, typename ParentT>
-class expression_template_viewing_engine :
-    public expression_template_engine_base,
-    private viewing_engine<CfgT,DescT, ParentT>
+class expression_template_viewing_engine : private viewing_engine<CfgT,DescT, ParentT>
 {
     using viewing_engine_base = viewing_engine<CfgT,DescT, ParentT>;
     using shape_type = typename CfgT::shape_type;
@@ -201,7 +187,7 @@ public:
     using viewing_engine_base::viewing_engine;
     using viewing_engine_base::create_indexer;
     using viewing_engine_base::holder;
-    bool is_trivial()const override{return true;}
+    bool is_trivial()const{return true;}
 
     auto begin()const{return begin(*this, detail::is_converting_descriptor_t<descriptor_type>{});}
     auto end()const{return end(*this, detail::is_converting_descriptor_t<descriptor_type>{});}
