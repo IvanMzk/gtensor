@@ -212,8 +212,8 @@ TEST_CASE("test_view_making_interface","[test_tensor]"){
     using gtensor::tensor;
     using config_type = gtensor::config::default_config;
     using tensor_type = tensor<value_type, config_type>;
-    using slice_type = typename config_type::slice_type;
-    using nop_type = typename config_type::nop_type;
+    using slice_type = typename gtensor::slice_traits<config_type>::slice_type;
+    using nop_type = typename gtensor::slice_traits<config_type>::nop_type;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     using gtensor::subscript_exception;

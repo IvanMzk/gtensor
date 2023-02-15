@@ -1,9 +1,7 @@
 #ifndef TENSOR_BASE_HPP_
 #define TENSOR_BASE_HPP_
 
-#include "config.hpp"
 #include "forward_decl.hpp"
-#include "engine_traits.hpp"
 
 namespace gtensor{
 

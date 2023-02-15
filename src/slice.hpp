@@ -54,11 +54,11 @@ inline mask_type mask(std::initializer_list<slice_item<T,N>> l){
 
 }   //end of namespace detail
 
-
+struct Nop{};
 /*
 * k is always set
 */
-template<typename DifT, typename N = config::NOP>
+template<typename DifT, typename N = Nop>
 struct slice{
     using difference_type = DifT;
     using nop_type = N;
@@ -147,6 +147,16 @@ struct slice{
     const difference_type step{1};
 };
 
+template<typename CfgT>
+struct slice_traits{
+    using nop_type = Nop;
+    using slice_type = slice<typename CfgT::difference_type, nop_type>;
+    using slice_item_type = detail::slice_item<typename CfgT::difference_type, nop_type>;
+    using slice_init_type = std::initializer_list<slice_item_type>;
+    using slices_init_type = std::initializer_list<slice_init_type>;
+    using slices_collection_type = std::vector<slice_type>;
+};
+
 namespace detail{
 
 template<typename> inline constexpr bool is_slice = false;
@@ -215,7 +225,6 @@ inline auto fill_check_slice(const slice<T,N>& slice_, const T& n){
     return check_slice_(fill_slice(slice_,n),n);
 }
 
-
 /*make collection of filled slices from slices args*/
 template<typename SlT, typename ShT, typename...Subs, typename std::enable_if_t<is_slices<Subs...>,int> = 0 >
 inline auto fill_slices(const ShT& shape, const Subs&...subs){
@@ -239,7 +248,7 @@ inline std::vector<SlT> fill_slices(const ShT& shape, std::initializer_list<std:
     using slice_type = SlT;
     std::vector<slice_type> res{};
     res.reserve(subs.size());
-    auto sh_begin{shape.begin()};        
+    auto sh_begin{shape.begin()};
     for_each(subs.begin(), subs.end(), [&sh_begin, &res](const auto& sub){res.push_back(fill_slice(slice_type(sub),*sh_begin));++sh_begin;});
     return res;
 }
@@ -264,10 +273,10 @@ inline void check_slices_number(const ShT& shape, const Subs&...){
 template<typename T>
 inline void check_transpose_subs(const T&){}
 template<typename T, typename...Subs>
-inline void check_transpose_subs(const T& dim, const Subs&...subs){        
+inline void check_transpose_subs(const T& dim, const Subs&...subs){
     if (dim!=sizeof...(Subs)){throw subscript_exception("transpose must have no or dim subscripts");}
     std::array<bool, sizeof...(Subs)> check_buffer;
-    check_buffer.fill(false);    
+    check_buffer.fill(false);
     ([&check_buffer](const auto& sub){if (sub>=sizeof...(Subs) || check_buffer[sub]){throw subscript_exception("invalid transpose subscript");}else{check_buffer[sub]=true;}}(subs),...);
 }
 
@@ -283,16 +292,13 @@ template<typename IdxT>
 inline void check_reshape_subs(const IdxT&){}
 template<typename IdxT, typename...Subs>
 inline void check_reshape_subs(const IdxT& size, const Subs&...subs){
-    using index_type = IdxT;    
+    using index_type = IdxT;
     index_type vsize{1};
     ([&vsize](const auto& sub){vsize*=sub;}(subs),...);
     if (size != vsize){throw subscript_exception("invalid new shape; size of reshape view must be equal to size of its parent");}
 }
 
-
-
 }   //end of namespace detail
-
 }   //end of namespace gtensor
 
 

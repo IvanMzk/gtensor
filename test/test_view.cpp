@@ -14,7 +14,7 @@ TEMPLATE_TEST_CASE("test_view","[test_view]",
     using index_type = typename config_type::index_type;
     using tensor_type = gtensor::tensor<value_type,config_type>;
     using bool_tensor_type =  gtensor::tensor<bool,config_type>;
-    auto nop = config_type::nop_type{};
+    auto nop = gtensor::slice_traits<config_type>::nop_type{};
     using helpers_for_testing::apply_by_element;
 
     //0result,1expected

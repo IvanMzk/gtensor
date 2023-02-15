@@ -30,7 +30,7 @@ auto make_test_tensor(T&& t){return test_tensor<std::decay_t<T>>{std::forward<T>
 template<typename ValT, typename CfgT>
 struct test_data{
     using tensor_type = gtensor::tensor<ValT, CfgT>;
-    typename CfgT::nop_type nop{};
+    gtensor::Nop nop{};
     auto operator()()const{
         return std::make_tuple(
             //storage

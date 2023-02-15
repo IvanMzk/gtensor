@@ -52,14 +52,13 @@ template<
 >
 class tensor{
     using impl_type = ImplT;
-    using slice_type = typename CfgT::slice_type;
-    using slices_init_type = typename CfgT::slices_init_type;
-    using slices_collection_type = typename CfgT::slices_collection_type;
-    class forward_tag{};
-
+    using slice_type = typename slice_traits<CfgT>::slice_type;
+    using slices_init_type = typename slice_traits<CfgT>::slices_init_type;
+    using slices_collection_type = typename slice_traits<CfgT>::slices_collection_type;
     friend class tensor_operator_dispatcher;
 
     //initialize implementation by forwarding arguments, this constructor should be used by all public constructors
+    class forward_tag{};
     template<typename...Args>
     tensor(forward_tag, Args&&...args):
         impl_{std::make_shared<impl_type>(std::forward<Args>(args)...)}

@@ -17,12 +17,12 @@ struct config_tmpl_{
 
     using shape_type = typename gtensor::config::default_config::shape_type;
 
-    using nop_type = typename gtensor::config::default_config::nop_type;;
-    using slice_type = typename gtensor::config::default_config::slice_type;;
-    using slice_item_type = typename gtensor::config::default_config::slice_item_type;
-    using slice_init_type = typename gtensor::config::default_config::slice_init_type;
-    using slices_init_type = typename gtensor::config::default_config::slices_init_type;
-    using slices_collection_type = typename gtensor::config::default_config::slices_collection_type;
+    // using nop_type = typename gtensor::config::default_config::nop_type;;
+    // using slice_type = typename gtensor::config::default_config::slice_type;;
+    // using slice_item_type = typename gtensor::config::default_config::slice_item_type;
+    // using slice_init_type = typename gtensor::config::default_config::slice_init_type;
+    // using slices_init_type = typename gtensor::config::default_config::slices_init_type;
+    // using slices_collection_type = typename gtensor::config::default_config::slices_collection_type;
 };
 
 template<typename HEng, typename Div>
