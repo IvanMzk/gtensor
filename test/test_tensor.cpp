@@ -137,7 +137,7 @@ TEST_CASE("test_tensor_constructor_shape_value","[test_tensor]"){
         test_type(tensor_type(shape_type{1,4,1},1.0f), shape_type{1,4,1}, 4 , 3),
         test_type(tensor_type(shape_type{1,4,3},1.0f), shape_type{1,4,3}, 12 , 3),
         test_type(tensor_type({1,4,3},1.0f), shape_type{1,4,3}, 12 , 3),
-        test_type(tensor_type({1.1f,4.9f,3.2f},1.0f), shape_type{1,4,3}, 12 , 3)
+        test_type(tensor_type({1,4,3},1.0f), shape_type{1,4,3}, 12 , 3)
 
     );
 

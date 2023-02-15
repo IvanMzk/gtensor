@@ -37,11 +37,11 @@ struct default_config{
     using difference_type = std::int64_t;
     using index_type = difference_type;
     //template<typename ValT> using storage = gtensor::detail::shareable_storage<std::vector<ValT>>;
-    //template<typename ValT> using storage = std::vector<ValT>;
-    template<typename ValT> using storage = trivial_type_vector::uvector<ValT>;
+    template<typename ValT> using storage = std::vector<ValT>;
+    //template<typename ValT> using storage = trivial_type_vector::uvector<ValT>;
     //using storage_type = gtensor::detail::shareable_storage<std::vector<value_type>>;
-    using shape_type = trivial_type_vector::uvector<index_type>;
-    //using shape_type = std::vector<index_type>;
+    //using shape_type = trivial_type_vector::uvector<index_type>;
+    using shape_type = std::vector<index_type>;
 
     using nop_type = NOP;
     using slice_type = slice<index_type, nop_type>;

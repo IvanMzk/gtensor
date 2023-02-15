@@ -133,8 +133,8 @@ protected:
     using descriptor_type = DescT;
     using parent_type = ParentT;
     auto holder()const{return holder_accessor.holder();}
-    const parent_type* parent()const{return parent_.get();}
-    parent_type* parent(){return parent_.get();}
+    const parent_type& parent()const{return *parent_.get();}
+    parent_type& parent(){return *parent_.get();}
     auto create_indexer()const{return create_indexer_helper(*this);}
     auto create_indexer(){return create_indexer_helper(*this);}
 public:
@@ -146,8 +146,8 @@ public:
 private:
     template<typename U>
     static auto create_indexer_helper(U& instance){
-        return basic_indexer<typename config_type::index_type, decltype(instance.parent()->engine().create_indexer()), descriptor_type>{
-            instance.parent()->engine().create_indexer(),
+        return basic_indexer<typename config_type::index_type, decltype(instance.parent().engine().create_indexer()), descriptor_type>{
+            instance.parent().engine().create_indexer(),
             static_cast<const descriptor_type&>(instance.holder()->descriptor())
         };
     }

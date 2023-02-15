@@ -171,18 +171,24 @@ TEST_CASE("benchmark_expression_template","[benchmark_expression_template]"){
     using benchmark_helpers::symmetric_tree_maker;
     using benchmark_helpers::benchmark;
     using benchmark_helpers::making_iter_iterate_deref;
-    using benchmark_helpers::making_iter_reverse_iterate_deref;
+    using benchmark_helpers::making_riter_iterate_deref;
 
     auto benchmark_worker = making_iter_iterate_deref;
+    //auto benchmark_worker = making_riter_iterate_deref;
     static constexpr std::size_t tree_depth = 5;
     static constexpr std::size_t deep_tree_depth = 50;
 
 
     // auto trivial_tensor_maker = []{return asymmetric_tree_maker<tree_depth>{}(tensor_type({100,100}, 0.0f),tensor_type({100,100}, 0.0f));};
     // auto broadcast_tensor_maker = []{return asymmetric_tree_maker<tree_depth>{}(tensor_type({10,100,10}, 0.0f),tensor_type({100,10}, 0.0f));};
+
     auto trivial_tensor_maker = []{return asymmetric_tree_maker<tree_depth>{}(tensor_type({1000,1000}, 0.0f),tensor_type({1000,1000}, 0.0f));};
     auto broadcast_tensor_maker = []{return asymmetric_tree_maker<tree_depth>{}(tensor_type({100,100,100}, 0.0f),tensor_type({100,100}, 0.0f));};
     auto deep_tree_tensor_maker = []{return asymmetric_tree_maker<deep_tree_depth>{}(tensor_type({10,10000}, 0.0f),tensor_type({10,10000}, 0.0f));};
+
+    // auto trivial_tensor_maker = []{return asymmetric_tree_maker<deep_tree_depth>{}(tensor_type({10000,10}, 0.0f),tensor_type({10000,10}, 0.0f));};
+    // auto broadcast_tensor_maker = []{return asymmetric_tree_maker<deep_tree_depth>{}(tensor_type({100,100,10}, 0.0f),tensor_type({100,10}, 0.0f));};
+
 
     benchmark("broadcast",benchmark_worker, broadcast_tensor_maker());
     benchmark("trivial_broadcast",benchmark_worker, trivial_tensor_maker());

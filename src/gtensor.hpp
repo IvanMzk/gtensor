@@ -130,6 +130,15 @@ public:
     auto rbegin(){return engine().rbegin();}
     auto rend(){return engine().rend();}
     auto rbegin()const{return engine().rbegin();}
+    auto begin_broadcast(const shape_type& shape){return engine().begin_broadcast(shape);}
+    auto end_broadcast(const shape_type& shape){return engine().end_broadcast(shape);}
+    auto begin_broadcast(const shape_type& shape)const{return engine().begin_broadcast(shape);}
+    auto end_broadcast(const shape_type& shape)const{return engine().end_broadcast(shape);}
+    auto rbegin_broadcast(const shape_type& shape){return engine().rbegin_broadcast(shape);}
+    auto rend_broadcast(const shape_type& shape){return engine().rend_broadcast(shape);}
+    auto rbegin_broadcast(const shape_type& shape)const{return engine().rbegin_broadcast(shape);}
+    auto rend_broadcast(const shape_type& shape)const{return engine().rend_broadcast(shape);}
+
     auto rend()const{return engine().rend();}
     auto size()const{return impl()->size();}
     auto dim()const{return impl()->dim();}

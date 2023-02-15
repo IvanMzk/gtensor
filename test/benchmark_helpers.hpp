@@ -85,28 +85,24 @@ auto iterate_deref = [](auto& it_begin, auto& it_end){
     return c;
 };
 auto making_iter_iterate_deref = [](const auto& t){
-    auto t_it = t.begin();
-    auto t_end = t.end();
-    std::size_t c{};
-    while (t_it!=t_end){
-        if (*t_it > 2){
-            ++c;
-        }
-        ++t_it;
+    auto it = t.begin();
+    auto end = t.end();
+    typename std::iterator_traits<decltype(it)>::value_type tmp{};
+    while (it!=end){
+        tmp = *it;
+        ++it;
     }
-    return c;
+    return tmp;
 };
-auto making_iter_reverse_iterate_deref = [](const auto& t){
-    auto t_it = t.end();
-    auto t_begin = t.begin();
-    std::size_t c{};
-    while (t_it!=t_begin){
-        --t_it;
-        if (*t_it > 2){
-            ++c;
-        }
+auto making_riter_iterate_deref = [](const auto& t){
+    auto it = t.rbegin();
+    auto end = t.rend();
+    typename std::iterator_traits<decltype(it)>::value_type tmp{};
+    while (it!=end){
+        tmp = *it;
+        ++it;
     }
-    return c;
+    return tmp;
 };
 
 template<typename F, typename...Args>

@@ -12,18 +12,24 @@ namespace gtensor{
 template<typename DescT, typename EngineT>
 class basic_tensor : public tensor_base<typename EngineT::value_type, typename EngineT::config_type>
 {
+    using tensor_base_type = tensor_base<typename EngineT::value_type, typename EngineT::config_type>;
 protected:
     using descriptor_type = DescT;
     using engine_type = EngineT;
-    using typename tensor_base::value_type;
-    using typename tensor_base::config_type;
-    using typename tensor_base::index_type;
-    using typename tensor_base::shape_type;
+    using typename tensor_base_type::value_type;
+    using typename tensor_base_type::config_type;
+    using typename tensor_base_type::index_type;
+    using typename tensor_base_type::shape_type;
     basic_tensor(engine_type&& engine__,descriptor_type&& descriptor__):
         engine_{std::move(engine__)},
         descriptor_{std::move(descriptor__)}
     {}
 public:
+    basic_tensor(const basic_tensor&) = delete;
+    basic_tensor& operator=(const basic_tensor&) = delete;
+    basic_tensor(basic_tensor&&) = delete;
+    basic_tensor& operator=(basic_tensor&&) = delete;
+
     const descriptor_type& descriptor()const{return descriptor_;}
     const engine_type& engine()const override{return engine_;}
     engine_type& engine()override{return engine_;}

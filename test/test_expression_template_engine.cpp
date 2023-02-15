@@ -56,8 +56,10 @@ struct test_data{
             (tensor_type{2} * tensor_type{{1,1,1,1,1,1}} + tensor_type{{{0,0,0,0,0,0},{0,0,0,0,0,0}},{{0,3,0,2,0,1},{0,6,0,5,0,4}}} - tensor_type{{{3,3,3,3,3,3}}} + tensor_type{1})({{},{},{nop,nop,-1}})({{1,2},{},{nop,nop,2}}),
             //reshape of broadcast
             (tensor_type{1,1,1,0,0,0} + tensor_type{0,1,2,4,5,6}).reshape(1,2,3),
-            //view operand
-            (tensor_type{{{0},{1},{2}},{{0},{1},{2}}}.transpose() + tensor_type{{1,2},{1,2}}({{},{0,1}}).reshape(1,2) + tensor_type{{0,1},{1,2},{2,3}}).reshape(1,2,3)
+            //view of storage operand
+            (tensor_type{{{0},{1},{2}},{{0},{1},{2}}}.transpose() + tensor_type{{1,2},{1,2}}({{},{0,1}}).reshape(1,2) + tensor_type{{0,1},{1,2},{2,3}}).reshape(1,2,3),
+            //view of broadcast operand
+            ((tensor_type{{0},{1},{2}} + tensor_type{{0,1,2}}).transpose()({{1,2},{}}) + (tensor_type{{0,3}} + tensor_type{{0},{0},{0}}).transpose()).reshape(1,2,3)
         );
     }
 };
@@ -320,16 +322,26 @@ TEMPLATE_TEST_CASE("test_broadcast_iterator","[test_expression_template_engine]"
         std::make_tuple(tensor_type{-1} + tensor_type{1,2,3} + tensor_type{{1},{2},{3}} + tensor_type{1}, shape_type{1,3,3}, std::vector<value_type>{2,3,4,3,4,5,4,5,6}),
         std::make_tuple((tensor_type{-1} + tensor_type{1,2,3} + tensor_type{{1},{2},{3}} + tensor_type{1})({{{},{},2}}), shape_type{1,2,3}, std::vector<value_type>{2,3,4,4,5,6})
     );
-    auto test = [](const auto& test_data_){
-        auto test_ten = test_tensor{std::get<0>(test_data_)};
-        auto broadcast_shape = std::get<1>(test_data_);
-        auto expected = std::get<2>(test_data_);
-        auto begin = test_ten.engine().begin_broadcast(broadcast_shape);
-        auto end = test_ten.engine().end_broadcast(broadcast_shape);
+    auto test = [](const auto& t){
+        auto ten = std::get<0>(t);
+        auto broadcast_shape = std::get<1>(t);
+        auto expected = std::get<2>(t);
+        auto begin = ten.begin_broadcast(broadcast_shape);
+        auto end = ten.end_broadcast(broadcast_shape);
         REQUIRE(std::distance(begin,end) == expected.size());
         REQUIRE(std::equal(expected.begin(),expected.end(), begin));
     };
+    auto test_reverse = [](const auto& t){
+        auto ten = std::get<0>(t);
+        auto broadcast_shape = std::get<1>(t);
+        auto expected = std::get<2>(t);
+        auto begin = ten.rbegin_broadcast(broadcast_shape);
+        auto end = ten.rend_broadcast(broadcast_shape);
+        REQUIRE(std::distance(begin,end) == expected.size());
+        REQUIRE(std::equal(expected.rbegin(),expected.rend(), begin));
+    };
     apply_by_element(test, test_data);
+    apply_by_element(test_reverse, test_data);
 }
 
 TEST_CASE("test_broadcast_assignment","[test_expression_template_engine]"){
@@ -346,21 +358,21 @@ TEST_CASE("test_broadcast_assignment","[test_expression_template_engine]"){
     auto lhs = tensor_type{1,2,3,4,5};
     lhs({{{},{},2}}) = tensor_type{0};
 
-    // auto lhs1 = tensor_type{{1,2,3},{4,5,6}};
-    // lhs1() = tensor_type{0,1,2};
-    // REQUIRE(std::equal(lhs1.begin(), lhs1.end(), std::vector<float>{0,1,2,0,1,2}.begin()));
+    auto lhs1 = tensor_type{{1,2,3},{4,5,6}};
+    lhs1() = tensor_type{0,1,2};
+    REQUIRE(std::equal(lhs1.begin(), lhs1.end(), std::vector<float>{0,1,2,0,1,2}.begin()));
 
-    // auto lhs2 = tensor_type{{1,2,3},{4,5,6}};
-    // lhs2(1) = tensor_type{0,1,2};
-    // REQUIRE(std::equal(lhs2.begin(), lhs2.end(), std::vector<float>{1,2,3,0,1,2}.begin()));
+    auto lhs2 = tensor_type{{1,2,3},{4,5,6}};
+    lhs2(1) = tensor_type{0,1,2};
+    REQUIRE(std::equal(lhs2.begin(), lhs2.end(), std::vector<float>{1,2,3,0,1,2}.begin()));
 
-    // auto lhs4 = tensor_type{1,2,3,4,5};
-    // lhs4({{{},{},-1}})({{{},{},2}}) = tensor_type{0,1,2};
-    // REQUIRE(std::equal(lhs4.begin(), lhs4.end(), std::vector<float>{2,2,1,4,0}.begin()));
+    auto lhs4 = tensor_type{1,2,3,4,5};
+    lhs4({{{},{},-1}})({{{},{},2}}) = tensor_type{0,1,2};
+    REQUIRE(std::equal(lhs4.begin(), lhs4.end(), std::vector<float>{2,2,1,4,0}.begin()));
 
-    // //broadcast assignment exception, every element of lhs must be assigned only once
-    // auto lhs3 = tensor_type{0};
-    // REQUIRE_THROWS_AS((lhs3() = tensor_type{0,1,2}), broadcast_exception);
+    //broadcast assignment exception, every element of lhs must be assigned only once
+    auto lhs3 = tensor_type{0};
+    REQUIRE_THROWS_AS((lhs3() = tensor_type{0,1,2}), broadcast_exception);
 
     //not compile, broadcast assignment to evaluating tensor
     //lhs+lhs = tensor_type{1};
