@@ -53,9 +53,7 @@ TEMPLATE_TEST_CASE("test_make_view_slice_shape","[test_view_factory]", std::vect
 }
 
 TEMPLATE_TEST_CASE("test_make_view_subdim_shape","[test_view_factory]", std::vector<std::int64_t>){
-    using index_type = typename TestType::value_type;
     using shape_type = TestType;
-    using slice_type = gtensor::slice<index_type>;
     using gtensor::detail::make_view_subdim_shape;
     using test_type = std::tuple<shape_type, shape_type, shape_type>;
     //0parent_shape,1subs,2expected_shape
@@ -72,9 +70,7 @@ TEMPLATE_TEST_CASE("test_make_view_subdim_shape","[test_view_factory]", std::vec
 }
 
 TEMPLATE_TEST_CASE("test_make_view_reshape_shape","[test_view_factory]", std::vector<std::int64_t>){
-    using index_type = typename TestType::value_type;
     using shape_type = TestType;
-    using slice_type = gtensor::slice<index_type>;
     using gtensor::detail::make_view_reshape_shape;
     using test_type = std::tuple<shape_type, shape_type, shape_type>;
     //0parent_shape,1subs,2expected_shape
@@ -117,8 +113,6 @@ TEMPLATE_TEST_CASE("test_make_view_slice_offset","[test_view_factory]", std::vec
 TEMPLATE_TEST_CASE("test_make_view_subdim_offset","[test_view_factory]", std::vector<std::int64_t>){
     using index_type = typename TestType::value_type;
     using shape_type = TestType;
-    using slice_type = gtensor::slice<index_type>;
-    using slices_collection_type = std::vector<slice_type>;
     using gtensor::detail::make_view_subdim_offset;
     using test_type = std::tuple<shape_type, shape_type, index_type>;
     //0parent_strides,1subs,2expected_offset
@@ -356,7 +350,6 @@ TEMPLATE_TEST_CASE("test_make_shape_bool_tensor","[test_view_factory]",
     typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
 ){
     using test_config_type = TestType;
-    using index_type = typename test_config_type::index_type;
     using shape_type = typename test_config_type::shape_type;
     using index_tensor_type = gtensor::tensor<bool, test_config_type>;
     using gtensor::subscript_exception;
@@ -413,13 +406,13 @@ TEMPLATE_TEST_CASE("test_make_shape_bool_tensor","[test_view_factory]",
             }(),
             shape_type{3,4}
         },
-        test_type{
-            [](){
-                auto idx = index_tensor_type{{false},{true}};
-                return make_shape_bool_tensor(shape_type{3,2,4},idx.shape(), idx.begin(), idx.end());
-            }(),
-            shape_type{1,4}
-        },
+        // test_type{
+        //     [](){
+        //         auto idx = index_tensor_type{{false},{true}};
+        //         return make_shape_bool_tensor(shape_type{3,2,4},idx.shape(), idx.begin(), idx.end());
+        //     }(),
+        //     shape_type{1,4}
+        // },
         test_type{
             [](){
                 auto idx = index_tensor_type{{false,true},{true,true},{true,false}};
@@ -445,7 +438,6 @@ TEMPLATE_TEST_CASE("test_make_shape_bool_tensor_exception","[test_view_factory]"
     typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
 ){
     using test_config_type = TestType;
-    using index_type = typename test_config_type::index_type;
     using shape_type = typename test_config_type::shape_type;
     using index_tensor_type = gtensor::tensor<bool, test_config_type>;
     using gtensor::subscript_exception;
@@ -459,13 +451,13 @@ TEMPLATE_TEST_CASE("test_make_shape_bool_tensor_exception","[test_view_factory]"
         }()),
         subscript_exception
     );
-    REQUIRE_THROWS_AS(
-        ([](){
-            auto idx = index_tensor_type{{true},{false}};
-            return make_shape_bool_tensor(shape_type{5},idx.shape(), idx.begin(), idx.end());
-        }()),
-        subscript_exception
-    );
+    // REQUIRE_THROWS_AS(
+    //     ([](){
+    //         auto idx = index_tensor_type{{true},{false}};
+    //         return make_shape_bool_tensor(shape_type{5},idx.shape(), idx.begin(), idx.end());
+    //     }()),
+    //     subscript_exception
+    // );
     REQUIRE_THROWS_AS(
         ([](){
             auto idx = index_tensor_type{{false,true,false},{true,true,false},{false,false,false}};

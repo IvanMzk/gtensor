@@ -242,7 +242,6 @@ TEST_CASE("test_descriptor_with_offset_convert", "[test_descriptor]"){
 TEMPLATE_TEST_CASE("test_converting_descriptor_getters", "[test_descriptor]", gtensor::config::mode_div_libdivide, gtensor::config::mode_div_native){
     using config_type = typename test_config::config_div_mode_selector<TestType>::config_type;
     using descriptor_type = gtensor::converting_descriptor<config_type>;
-    using descriptor_base_type = gtensor::descriptor_base<config_type>;
     using strides_div_type = typename gtensor::detail::strides_div_traits<config_type>::type;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
@@ -255,7 +254,6 @@ TEMPLATE_TEST_CASE("test_converting_descriptor_getters", "[test_descriptor]", gt
         test_type{descriptor_type{shape_type{3,1,7},shape_type{7,7,-1},6},shape_type{3,1,7},shape_type{7,7,1},shape_type{7,7,-1},3,21,6, shape_type{14,0,-6}, make_dividers<config_type>(shape_type{7,7,1})}
     );
     auto descriptor = std::get<0>(test_data);
-    const descriptor_base_type& descriptor_base= descriptor;
     auto expected_shape = std::get<1>(test_data);
     auto expected_strides = std::get<2>(test_data);
     auto expected_cstrides = std::get<3>(test_data);
@@ -279,20 +277,19 @@ TEMPLATE_TEST_CASE("test_converting_descriptor_convert", "[test_descriptor]", gt
     using descriptor_type = gtensor::converting_descriptor<config_type>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
-    using test_type = std::tuple<descriptor_type, shape_type, index_type, index_type, index_type,index_type>;
-    //0descriptor,1multi_idx,2flat_idx,3converted_multi_idx,4converted_flat_idx,5converted_by_prev
+    using test_type = std::tuple<descriptor_type, shape_type, index_type, index_type, index_type>;
+    //0descriptor,1multi_idx,2flat_idx,3converted_multi_idx,4converted_flat_idx
     auto test_data = GENERATE(
-                                test_type{descriptor_type{shape_type{15},shape_type{1},0},shape_type{0},0,0,0,0},
-                                test_type{descriptor_type{shape_type{15},shape_type{1},0},shape_type{7},7,7,7,7},
-                                test_type{descriptor_type{shape_type{3,3,5},shape_type{15,5,1},5},shape_type{1,0,4},22,24,27,22},     //(3,3,5) (15,5,1)  22->(1,1,2)->22
-                                test_type{descriptor_type{shape_type{3,2,5},shape_type{-20,10,1},40},shape_type{1,0,4},22,24,2,22}   //(3,2,5) (10,5,1)  22->(2,0,2)->-38
+                                test_type{descriptor_type{shape_type{15},shape_type{1},0},shape_type{0},0,0,0},
+                                test_type{descriptor_type{shape_type{15},shape_type{1},0},shape_type{7},7,7,7},
+                                test_type{descriptor_type{shape_type{3,3,5},shape_type{15,5,1},5},shape_type{1,0,4},22,24,27},     //(3,3,5) (15,5,1)  22->(1,1,2)->22
+                                test_type{descriptor_type{shape_type{3,2,5},shape_type{-20,10,1},40},shape_type{1,0,4},22,24,2}   //(3,2,5) (10,5,1)  22->(2,0,2)->-38
     );
     auto descriptor = std::get<0>(test_data);
     auto multi_idx = std::get<1>(test_data);
     auto flat_idx = std::get<2>(test_data);
     auto expected_convert_multi_idx = std::get<3>(test_data);
     auto expected_convert_flat_idx = std::get<4>(test_data);
-    auto expected_convert_by_prev_flat_idx = std::get<5>(test_data);
 
     REQUIRE(descriptor.convert(multi_idx) == expected_convert_multi_idx);
     REQUIRE(descriptor.convert(flat_idx) == expected_convert_flat_idx);

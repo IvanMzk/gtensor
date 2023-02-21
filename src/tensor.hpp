@@ -88,7 +88,7 @@ class evaluating_tensor : public basic_tensor<basic_descriptor<typename EngineT:
 {
     using basic_tensor_base = basic_tensor<basic_descriptor<typename EngineT::config_type>, EngineT>;
 public:
-    using basic_tensor_base::engine_type;
+    using typename basic_tensor_base::engine_type;
     using typename basic_tensor_base::value_type;
     using typename basic_tensor_base::config_type;
 private:

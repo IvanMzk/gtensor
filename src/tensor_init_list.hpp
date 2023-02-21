@@ -75,7 +75,7 @@ inline void list_parse_(const T&, S*){}
 template<std::size_t Dims_number, std::size_t Dim = 0, typename T, typename S>
 inline void list_parse_(std::initializer_list<T> list, S* shape_){
     if (shape_->size() == Dims_number){
-        if ((*shape_)[Dim] != list.size()){
+        if (static_cast<std::size_t>((*shape_)[Dim]) != list.size()){
             throw tensor_init_list_exception("list bad shape - different list size for dim");
         }
     }

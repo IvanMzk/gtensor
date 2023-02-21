@@ -14,19 +14,19 @@ namespace detail{
 
 template<typename EngineT, typename ShT> auto begin_broadcast(EngineT& engine, const ShT& shape){
     using iterator_type = broadcast_iterator<typename EngineT::config_type, decltype(engine.create_walker())>;
-    return iterator_type{engine.create_walker(), shape, make_dividers<EngineT::config_type>(shape)};
+    return iterator_type{engine.create_walker(), shape, make_dividers<typename EngineT::config_type>(shape)};
 }
 template<typename EngineT, typename ShT> auto end_broadcast(EngineT& engine, const ShT& shape){
     using iterator_type = broadcast_iterator<typename EngineT::config_type, decltype(engine.create_walker())>;
-    return iterator_type{engine.create_walker(), shape, make_dividers<EngineT::config_type>(shape), make_size(shape)};
+    return iterator_type{engine.create_walker(), shape, make_dividers<typename EngineT::config_type>(shape), make_size(shape)};
 }
 template<typename EngineT, typename ShT> auto rbegin_broadcast(EngineT& engine, const ShT& shape){
     using iterator_type = reverse_broadcast_iterator<typename EngineT::config_type, decltype(engine.create_walker())>;
-    return iterator_type{engine.create_walker(), shape, make_dividers<EngineT::config_type>(shape), make_size(shape)};
+    return iterator_type{engine.create_walker(), shape, make_dividers<typename EngineT::config_type>(shape), make_size(shape)};
 }
 template<typename EngineT, typename ShT> auto rend_broadcast(EngineT& engine, const ShT& shape){
     using iterator_type = reverse_broadcast_iterator<typename EngineT::config_type, decltype(engine.create_walker())>;
-    return iterator_type{engine.create_walker(), shape, make_dividers<EngineT::config_type>(shape)};
+    return iterator_type{engine.create_walker(), shape, make_dividers<typename EngineT::config_type>(shape)};
 }
 template<typename EngineT> auto begin_broadcast(EngineT& engine){
     using iterator_type = broadcast_iterator<typename EngineT::config_type, decltype(engine.create_walker())>;
@@ -70,17 +70,18 @@ template<typename T> constexpr bool is_converting_descriptor_v = is_converting_d
 template<typename CfgT, typename StorT>
 class expression_template_storage_engine : private storage_engine<CfgT,StorT>
 {
+    using storage_engine_base = storage_engine<CfgT,StorT>;
     using shape_type = typename CfgT::shape_type;
 public:
-    using typename storage_engine::value_type;
-    using typename storage_engine::config_type;
-    using storage_engine::storage_engine;
-    using storage_engine::holder;
-    using storage_engine::begin;
-    using storage_engine::end;
-    using storage_engine::rbegin;
-    using storage_engine::rend;
-    using storage_engine::create_indexer;
+    using typename storage_engine_base::value_type;
+    using typename storage_engine_base::config_type;
+    using storage_engine_base::storage_engine_base;
+    using storage_engine_base::holder;
+    using storage_engine_base::begin;
+    using storage_engine_base::end;
+    using storage_engine_base::rbegin;
+    using storage_engine_base::rend;
+    using storage_engine_base::create_indexer;
     bool is_trivial()const{return true;}
     //broadcasting iterators
     auto begin_broadcast(const shape_type& shape){return detail::begin_broadcast(*this, shape);}
@@ -115,7 +116,6 @@ class expression_template_evaluating_engine : private evaluating_engine<CfgT,F,O
     using evaluating_engine_base::operands_number;
     using shape_type = typename CfgT::shape_type;
     using index_type = typename CfgT::index_type;
-    using evaluating_engine_base::operand;
     using evaluating_engine_base::operation;
 public:
     using typename evaluating_engine_base::value_type;
@@ -163,15 +163,19 @@ private:
     }
     template<std::size_t...I>
     auto is_trivial_helper(std::index_sequence<I...>)const{
-        return ((holder()->size()==operand<I>().size())&&...) && (operand<I>().engine().is_trivial()&&...);
+        return ((holder()->size()==evaluating_engine_base::template operand<I>().size())&&...) && (evaluating_engine_base::template operand<I>().engine().is_trivial()&&...);
     }
     template<std::size_t...I>
     auto create_trivial_indexer_helper(std::index_sequence<I...>)const{
-        return evaluating_trivial_indexer<CfgT,F,decltype(operand<I>().engine().create_trivial_indexer())...>{operation(), operand<I>().engine().create_trivial_indexer()...};
+        return evaluating_trivial_indexer<CfgT,F,decltype(evaluating_engine_base::template operand<I>().engine().create_trivial_indexer())...>{
+            operation(), evaluating_engine_base::template operand<I>().engine().create_trivial_indexer()...
+        };
     }
     template<typename U, std::size_t...I>
     static auto create_walker_helper(U& instance, std::index_sequence<I...>){
-        return evaluating_walker<CfgT,F,decltype(instance.operand<I>().engine().create_walker())...>{instance.holder()->shape(), instance.operation(), instance.operand<I>().engine().create_walker()...};
+        return evaluating_walker<CfgT,F,decltype(instance.template operand<I>().engine().create_walker())...>{
+            instance.holder()->shape(), instance.operation(), instance.template operand<I>().engine().create_walker()...
+        };
     }
 };
 
@@ -180,7 +184,7 @@ class expression_template_viewing_engine : private viewing_engine<CfgT,DescT, Pa
 {
     using viewing_engine_base = viewing_engine<CfgT,DescT, ParentT>;
     using shape_type = typename CfgT::shape_type;
-    using descriptor_type = typename viewing_engine::descriptor_type;
+    using descriptor_type = typename viewing_engine_base::descriptor_type;
 public:
     using typename viewing_engine_base::value_type;
     using typename viewing_engine_base::config_type;

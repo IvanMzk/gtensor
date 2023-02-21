@@ -277,7 +277,7 @@ inline void check_transpose_subs(const T& dim, const Subs&...subs){
     if (dim!=sizeof...(Subs)){throw subscript_exception("transpose must have no or dim subscripts");}
     std::array<bool, sizeof...(Subs)> check_buffer;
     check_buffer.fill(false);
-    ([&check_buffer](const auto& sub){if (sub>=sizeof...(Subs) || check_buffer[sub]){throw subscript_exception("invalid transpose subscript");}else{check_buffer[sub]=true;}}(subs),...);
+    ([&check_buffer](const auto& sub){if (static_cast<std::size_t>(sub)>=sizeof...(Subs) || check_buffer[sub]){throw subscript_exception("invalid transpose subscript");}else{check_buffer[sub]=true;}}(subs),...);
 }
 
 template<typename ShT, typename...Subs>

@@ -279,6 +279,10 @@ template<typename CfgT, typename WalkerT>
 class broadcast_iterator : public broadcast_bidirectional_iterator<CfgT,WalkerT>
 {
     using broadcast_bidirectional_iterator_base = broadcast_bidirectional_iterator<CfgT,WalkerT>;
+    using broadcast_bidirectional_iterator_base::flat_index;
+    using broadcast_bidirectional_iterator_base::walker;
+    using broadcast_bidirectional_iterator_base::dim_dec;
+    using broadcast_bidirectional_iterator_base::multi_index;
 protected:
     using typename broadcast_bidirectional_iterator_base::walker_type;
     using typename broadcast_bidirectional_iterator_base::result_type;

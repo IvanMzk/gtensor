@@ -38,22 +38,7 @@ void v(std::initializer_list<slice_init_type> l){}
 template<typename...Args>
 void h(Args...args){}
 
-}
-
-TEST_CASE("signed_unsigned","signed_unsigned"){
-    std::size_t ui{10};
-    std::ptrdiff_t i{-20};
-    std::ptrdiff_t i1{-2};
-    std::ptrdiff_t i2{-10};
-    auto res = ui+i;
-    auto res_ = ui+static_cast<std::size_t>(i);
-    auto res1 = ui+i1;
-    auto res1_ = ui+static_cast<std::size_t>(i1);
-    auto res2 = ui+i2;
-
-    //std::cout<<static_cast<std::size_t>(i)<<" "<<static_cast<std::size_t>(i1)<<std::endl;
-    //std::cout<<res<<" "<<res_<<" "<<res1<<" "<<res1_<<" "<<res2;
-}
+}   //end of namespace test_slice
 
 TEST_CASE("slice_init_type","[slice_init_type]"){
     using test_slice_::slice_init_type;
@@ -82,7 +67,6 @@ TEST_CASE("slice_item","[slice_item]"){
     using slice_item_type =  typename test_slice_::slice_item<index_type>;
     SECTION("use_init_list"){
         using slice_init_type = typename std::initializer_list<slice_item_type>;
-        slice_init_type l = {};
 
         slice_init_type l1 = {1};
         REQUIRE(l1.begin()[0].i == 1);
@@ -245,7 +229,6 @@ TEST_CASE("test_fill_slice","[test_slice]"){
     using index_type = std::ptrdiff_t;
     using slice_type = typename gtensor::slice<index_type>;
     using nop_type = typename slice_type::nop_type;
-    nop_type nop{};
     using test_type = std::tuple<slice_type,slice_type,index_type>;
     auto test_data = GENERATE(
         test_type{slice_type(),slice_type(0,11,1),11},
@@ -268,9 +251,6 @@ TEST_CASE("test_fill_slices","[test_fill_slices]"){
     using shape_type = typename gtensor::config::default_config::shape_type;
     using slice_type = typename gtensor::slice<difference_type>;
     using nop_type = typename slice_type::nop_type;
-    using slice_item_type =  typename gtensor::detail::slice_item<difference_type, nop_type>;
-    using slice_init_type = typename std::initializer_list<slice_item_type>;
-    using vec_type = typename std::vector<slice_type>;
     using gtensor::detail::fill_slices;
     nop_type nop{};
 
@@ -292,13 +272,9 @@ TEST_CASE("test_fill_slices","[test_fill_slices]"){
 }
 
 TEST_CASE("test_check_slice","[test_check_slice]"){
-    using value_type = float;
     using difference_type = typename gtensor::config::default_config::difference_type;
-    using shape_type = typename gtensor::config::default_config::shape_type;
     using slice_type = typename gtensor::slice<difference_type>;
-    using nop_type = typename slice_type::nop_type;
     using gtensor::detail::check_slice;
-    nop_type nop{};
 
     REQUIRE_NOTHROW(check_slice(slice_type{0,5,1}, difference_type(5)));
     REQUIRE_NOTHROW(check_slice(slice_type{0,5,1}, difference_type(5)));
@@ -328,14 +304,12 @@ TEST_CASE("test_check_slice","[test_check_slice]"){
 }
 
 TEST_CASE("test_is_slices", "[test_is_slices]"){
-    using value_type = float;
     using difference_type = typename gtensor::config::default_config::difference_type;
     using shape_type = typename gtensor::config::default_config::shape_type;
     using slice_type = typename gtensor::slice<difference_type>;
-    using nop_type = typename slice_type::nop_type;
     using gtensor::detail::is_slice;
     using gtensor::detail::is_slices;
-    nop_type nop{};
+
 
     REQUIRE(is_slice<slice_type>);
     REQUIRE(!is_slice<shape_type>);
@@ -351,11 +325,9 @@ TEST_CASE("test_is_slices", "[test_is_slices]"){
 
 TEST_CASE("test_check_slices","[test_check_slices]"){
     using gtensor::detail::check_slices;
-    using value_type = float;
     using difference_type = typename gtensor::config::default_config::difference_type;
     using shape_type = typename gtensor::config::default_config::shape_type;
     using slice_type = typename gtensor::slice<difference_type>;
-    using nop_type = typename slice_type::nop_type;
     REQUIRE_NOTHROW(check_slices(shape_type{5},std::vector<slice_type>{}));
     REQUIRE_NOTHROW(check_slices(shape_type{5},std::vector{slice_type{0,5,1}}));
     REQUIRE_NOTHROW(check_slices(shape_type{5,3,4},std::vector{slice_type{0,5,1}}));
@@ -370,7 +342,6 @@ TEST_CASE("test_check_slices","[test_check_slices]"){
 
 TEST_CASE("test_check_slices_number","[test_check_slices]"){
     using gtensor::detail::check_slices_number;
-    using value_type = float;
     using difference_type = typename gtensor::config::default_config::difference_type;
     using shape_type = typename gtensor::config::default_config::shape_type;
     using slice_type = typename gtensor::slice<difference_type>;
@@ -378,7 +349,6 @@ TEST_CASE("test_check_slices_number","[test_check_slices]"){
     using slice_item_type =  typename gtensor::detail::slice_item<difference_type, nop_type>;
     using slice_init_type = typename std::initializer_list<slice_item_type>;
     using slices_init_type = typename std::initializer_list<slice_init_type>;
-    nop_type nop{};
 
     REQUIRE_NOTHROW(check_slices_number(shape_type{5},slice_type{}));
     REQUIRE_NOTHROW(check_slices_number(shape_type{5,6},slice_type{}));

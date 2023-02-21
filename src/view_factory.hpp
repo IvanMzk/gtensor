@@ -17,7 +17,7 @@ inline auto make_view_shape_element(const T& sub){
     using difference_type = typename T::difference_type;
     difference_type step_ = sub.step > difference_type(0) ? sub.step : -sub.step;
     return sub.start == sub.stop ?
-        typename difference_type(0) :
+        difference_type(0) :
         sub.start < sub.stop ?
             (sub.stop - sub.start-difference_type(1))/step_ + difference_type(1) :
             (sub.start - sub.stop-difference_type(1))/step_ + difference_type(1);
@@ -42,7 +42,6 @@ inline typename ShT::value_type make_view_slice_offset(const ShT& pstrides, cons
 /*make view slice cstrides*/
 template<typename ShT, typename SubsT>
 inline ShT make_view_slice_cstrides(const ShT& pstrides, const SubsT& subs){
-    using index_type = typename ShT::value_type;
     ShT res{};
     res.reserve(pstrides.size());
     auto pstrides_it = pstrides.begin();
@@ -98,9 +97,9 @@ inline ShT make_view_reshape_shape(const ShT& pshape, const ShT& subs){
 * make mapping view shape
 */
 template<typename ShT>
-inline ShT make_shape_index_tensor(const ShT& pshape, const ShT& index_shape, const typename ShT::value_type& index_dim){
+inline ShT make_shape_index_tensor(const ShT& pshape, const ShT& index_shape, const std::size_t& index_dim){
     using shape_type = ShT;
-    auto pdim = pshape.size();
+    auto pdim = static_cast<std::size_t>(pshape.size());
     if (index_dim > pdim){
         throw subscript_exception("invalid index tensor subscript");
     }
@@ -136,11 +135,18 @@ inline ShT make_shape_bool_tensor(const ShT& pshape, const ShT& index_shape, It&
 * make mapping view map from index tensors
 * MapT is type of map container with interface like std::vector and must be spesialized explicitly
 */
+template<typename IdxT>
+inline auto check_index(const IdxT& idx, const IdxT& shape_element){
+    if (idx < shape_element){
+        return idx;
+    }else{
+        throw subscript_exception("invalid index tensor subscript");
+    }
+}
 template<typename MapT, typename ShT, typename...It>
-MapT make_map_index_tensor(const ShT& pshape, const ShT& pstrides, const typename ShT::value_type& index_size, It&&...index_begin){
+MapT make_map_index_tensor(const ShT& pshape, const ShT& pstrides, const std::size_t& index_size, It&&...index_begin){
     using map_type = MapT;
     using index_type = typename map_type::value_type;
-    using shape_type = ShT;
     constexpr std::size_t index_dim = sizeof...(It);
 
     auto block_size = std::accumulate(pshape.begin()+index_dim,pshape.end(),index_type(1),std::multiplies<index_type>{});
@@ -162,14 +168,6 @@ MapT make_map_index_tensor(const ShT& pshape, const ShT& pstrides, const typenam
     }
     return res;
 }
-template<typename IdxT>
-inline auto check_index(const IdxT& idx, const IdxT& shape_element){
-    if (idx < shape_element){
-        return idx;
-    }else{
-        throw subscript_exception("invalid index tensor subscript");
-    }
-}
 /*
 * make mapping view map from bool tensor
 */
@@ -177,7 +175,6 @@ template<typename MapT, typename ShT, typename It>
 MapT make_map_bool_tensor(const ShT& pshape, const ShT& pstrides, const typename ShT::value_type& view_size, const typename ShT::value_type& index_dim, It&& index_begin, It&& index_end){
     using map_type = MapT;
     using index_type = typename map_type::value_type;
-    using shape_type = ShT;
     auto block_size = std::accumulate(pshape.begin()+index_dim,pshape.end(),index_type(1),std::multiplies<index_type>{});
     auto stride = pstrides[index_dim-1];
     auto res = map_type(view_size, index_type{0});
