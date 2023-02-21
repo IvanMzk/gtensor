@@ -240,10 +240,10 @@ TEST_CASE("test_descriptor_with_offset_convert", "[test_descriptor]"){
 }
 
 TEMPLATE_TEST_CASE("test_converting_descriptor_getters", "[test_descriptor]", gtensor::config::mode_div_libdivide, gtensor::config::mode_div_native){
-    using config_type = test_config::config_div_mode_selector<TestType>::config_type;
+    using config_type = typename test_config::config_div_mode_selector<TestType>::config_type;
     using descriptor_type = gtensor::converting_descriptor<config_type>;
     using descriptor_base_type = gtensor::descriptor_base<config_type>;
-    using strides_div_type = gtensor::detail::strides_div_traits<config_type>::type;
+    using strides_div_type = typename gtensor::detail::strides_div_traits<config_type>::type;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     using gtensor::detail::make_dividers;
@@ -275,12 +275,11 @@ TEMPLATE_TEST_CASE("test_converting_descriptor_getters", "[test_descriptor]", gt
 }
 
 TEMPLATE_TEST_CASE("test_converting_descriptor_convert", "[test_descriptor]", gtensor::config::mode_div_native, gtensor::config::mode_div_libdivide){
-    using config_type = test_config::config_div_mode_selector<TestType>::config_type;
+    using config_type = typename test_config::config_div_mode_selector<TestType>::config_type;
     using descriptor_type = gtensor::converting_descriptor<config_type>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     using test_type = std::tuple<descriptor_type, shape_type, index_type, index_type, index_type,index_type>;
-    //descriptor{shape,cstrides,offset}
     //0descriptor,1multi_idx,2flat_idx,3converted_multi_idx,4converted_flat_idx,5converted_by_prev
     auto test_data = GENERATE(
                                 test_type{descriptor_type{shape_type{15},shape_type{1},0},shape_type{0},0,0,0,0},

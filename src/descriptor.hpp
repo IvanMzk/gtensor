@@ -2,13 +2,14 @@
 #define DESCRIPTOR_HPP_
 
 #include <numeric>
+#include <sstream>
 #include "libdivide_helper.hpp"
 
 namespace gtensor{
 namespace detail{
 
 template<typename ShT>
-inline ShT make_strides(const ShT& shape, typename ShT::value_type min_stride = ShT::value_type(1)){
+inline ShT make_strides(const ShT& shape, typename ShT::value_type min_stride = typename ShT::value_type(1)){
     if (!shape.empty()){
         ShT res(shape.size(), min_stride);
         auto shape_begin{shape.begin()};
@@ -87,9 +88,9 @@ auto convert_index(const ShT& cstrides, const typename ShT::value_type& offset, 
 
 template<typename CfgT>
 struct strides_div_traits{
-    template<typename> struct selector{using type = typename CfgT::shape_type;};    //native division
-    template<> struct selector<config::mode_div_libdivide>{using type = libdivide_vector<typename CfgT::index_type>;};  //libdivide division
-    using type = typename selector<typename CfgT::div_mode>::type;
+    template<typename, typename> struct selector{using type = typename CfgT::shape_type;};    //native division
+    template<typename Dummy> struct selector<config::mode_div_libdivide, Dummy>{using type = libdivide_vector<typename CfgT::index_type>;};  //libdivide division
+    using type = typename selector<typename CfgT::div_mode, void>::type;
 };
 
 template<typename CfgT, typename Mode> class strides_div_extension;
@@ -152,7 +153,7 @@ public:
         strides_extension_base{shape__},
         strides_div_extension_base{strides_extension_base::strides()}
     {}
-    const auto& strides_div()const{return strides_div(CfgT::div_mode{});}
+    const auto& strides_div()const{return strides_div(typename CfgT::div_mode{});}
     const auto& strides()const{return strides_extension_base::strides();}
     const auto& reset_strides()const{return strides_extension_base::reset_strides();}
 };
@@ -211,12 +212,13 @@ private:
 template<typename CfgT>
 class basic_descriptor : public descriptor_base<CfgT>
 {
+    using descriptor_base_type = descriptor_base<CfgT>;
     descriptor_common<CfgT> impl_;
 public:
-    using typename descriptor_base::config_type;
-    using typename descriptor_base::index_type;
-    using typename descriptor_base::shape_type;
-    using typename descriptor_base::strides_div_type;
+    using typename descriptor_base_type::config_type;
+    using typename descriptor_base_type::index_type;
+    using typename descriptor_base_type::shape_type;
+    using typename descriptor_base_type::strides_div_type;
     basic_descriptor() = default;
     template<typename ShT, std::enable_if_t<!std::is_convertible_v<std::decay_t<ShT>, basic_descriptor>,int> =0 >
     explicit basic_descriptor(ShT&& shape__):
@@ -291,10 +293,10 @@ public:
     using typename basic_descriptor_base::shape_type;
     using typename basic_descriptor_base::index_type;
     mapping_descriptor() = default;
-    template<typename ShT, typename MapT>
-    mapping_descriptor(ShT&& shape__, MapT&& index_map__):
+    template<typename ShT, typename MapT_>
+    mapping_descriptor(ShT&& shape__, MapT_&& index_map__):
         basic_descriptor_base{std::forward<ShT>(shape__)},
-        index_map_{std::forward<MapT>(index_map__)}
+        index_map_{std::forward<MapT_>(index_map__)}
     {}
     index_type convert(const index_type& idx)const override{return index_map_[idx];}
     index_type convert(const shape_type& idx)const override{return index_map_[detail::convert_index(basic_descriptor_base::cstrides(),basic_descriptor_base::offset(),idx)];}
