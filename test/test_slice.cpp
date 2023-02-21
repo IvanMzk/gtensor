@@ -103,7 +103,7 @@ TEST_CASE("slice_item","[slice_item]"){
         REQUIRE(!l3.begin()[2].nop);
     }
     SECTION("use_array"){
-        using slice_init_type = typename slice_item_type[3];
+        using slice_init_type = slice_item_type[3];
         /*
         slice_init_type l_{{},{},{},{}};
         */

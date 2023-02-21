@@ -226,6 +226,13 @@ inline auto fill_check_slice(const slice<T,N>& slice_, const T& n){
 }
 
 /*make collection of filled slices from slices args*/
+template<std::size_t I, typename R, typename ShT>
+inline void fill_slices_helper(R&, const ShT&){}
+template<std::size_t I, typename R, typename ShT,typename Sub, typename...Subs>
+inline void fill_slices_helper(R& res, const ShT& shape, const Sub& sub, const Subs&...subs){
+    res.push_back(fill_slice(sub,shape[I]));
+    fill_slices_helper<I+1>(res,shape,subs...);
+}
 template<typename SlT, typename ShT, typename...Subs, typename std::enable_if_t<is_slices<Subs...>,int> = 0 >
 inline auto fill_slices(const ShT& shape, const Subs&...subs){
     using slice_type = SlT;
@@ -234,13 +241,6 @@ inline auto fill_slices(const ShT& shape, const Subs&...subs){
     fill_slices_helper<0>(res,shape,subs...);
     return res;
 }
-template<std::size_t I, typename R, typename ShT,typename Sub, typename...Subs>
-inline void fill_slices_helper(R& res, const ShT& shape, const Sub& sub, const Subs&...subs){
-    res.push_back(fill_slice(sub,shape[I]));
-    fill_slices_helper<I+1>(res,shape,subs...);
-}
-template<std::size_t I, typename R, typename ShT>
-inline void fill_slices_helper(R&, const ShT&){}
 
 /*make collection of filled slices from init_list of intit_list of slice_items*/
 template<typename SlT, typename ShT>
