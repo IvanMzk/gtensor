@@ -26,7 +26,7 @@ struct nested_initializer_list_type{
 };
 template<typename T>
 struct nested_initializer_list_type<T, 0>{
-    using type = typename T;
+    using type = T;
 };
 
 /*
@@ -45,11 +45,9 @@ struct nested_initialiser_list_depth<std::initializer_list<T>, Depth>{
 /*
 * nested list elements number
 */
-template<typename T>
-inline auto list_size(std::initializer_list<T> list){
-    std::size_t size = 0;
-    list_size_(list, &size);
-    return size;
+template<typename T, typename U>
+inline auto list_size_(T , U*){
+    return true;
 }
 template<typename T, typename U>
 inline auto list_size_(std::initializer_list<T> list, U* size){
@@ -61,24 +59,19 @@ inline auto list_size_(std::initializer_list<T> list, U* size){
     }
     return false;
 }
-template<typename T, typename U>
-inline auto list_size_(T , U*){
-    return true;
+template<typename T>
+inline auto list_size(std::initializer_list<T> list){
+    std::size_t size = 0;
+    list_size_(list, &size);
+    return size;
 }
-
 
 /*
 * parse nested list and return its shape
 * exception if list has invalid structure
 */
-template<typename IdxT = std::size_t, typename S = std::vector<IdxT>, typename T>
-inline auto list_parse(std::initializer_list<T> list){
-    constexpr std::size_t dims_number{nested_initialiser_list_depth<decltype(list)>::value};
-    S shape;
-    shape.reserve(dims_number);
-    list_parse_<dims_number>(list,&shape);
-    return shape;
-}
+template<std::size_t, std::size_t, typename T, typename S>
+inline void list_parse_(const T&, S*){}
 template<std::size_t Dims_number, std::size_t Dim = 0, typename T, typename S>
 inline void list_parse_(std::initializer_list<T> list, S* shape_){
     if (shape_->size() == Dims_number){
@@ -96,22 +89,23 @@ inline void list_parse_(std::initializer_list<T> list, S* shape_){
         list_parse_<Dims_number, Dim+1>(*p, shape_);
     }
 }
-template<std::size_t, std::size_t, typename T, typename S>
-inline void list_parse_(const T&, S*){}
-
 template<typename IdxT = std::size_t, typename S = std::vector<IdxT>, typename T>
-inline auto list_parse_with_size(std::initializer_list<T> list){
-    auto std::make_pair()
+inline auto list_parse(std::initializer_list<T> list){
+    constexpr std::size_t dims_number{nested_initialiser_list_depth<decltype(list)>::value};
+    S shape;
+    shape.reserve(dims_number);
+    list_parse_<dims_number>(list,&shape);
+    return shape;
 }
 
 /*
 * copy init list to Dst
 */
 template<typename Dst_It, typename T>
-std::size_t fill_from_list(std::initializer_list<T> list, Dst_It dst_it){
-    std::size_t size_{0};
-    fill_from_list_(list, dst_it, size_);
-    return size_;
+void fill_from_list_(const T& v, Dst_It& dst_it, std::size_t& size_){
+    *dst_it = v;
+    ++dst_it;
+    ++size_;
 }
 template<typename Dst_It, typename T>
 void fill_from_list_(std::initializer_list<T> list, Dst_It& dst_it, std::size_t& size_){
@@ -120,12 +114,11 @@ void fill_from_list_(std::initializer_list<T> list, Dst_It& dst_it, std::size_t&
     }
 }
 template<typename Dst_It, typename T>
-void fill_from_list_(const T& v, Dst_It& dst_it, std::size_t& size_){
-    *dst_it = v;
-    ++dst_it;
-    ++size_;
+std::size_t fill_from_list(std::initializer_list<T> list, Dst_It dst_it){
+    std::size_t size_{0};
+    fill_from_list_(list, dst_it, size_);
+    return size_;
 }
-
 }   //end of namespace detail
 
 }   //end of namespace gtensor
