@@ -14,18 +14,8 @@ namespace detail{
 * parameters: shapes to broadcast
 * exception if shapes are not broadcastable
 */
-template<typename ShT, typename...Ts>
-inline auto broadcast_shape(const Ts&...shapes){
-    using shape_type = ShT;
-    using index_type = typename shape_type::value_type;
-    if (std::min({shapes.size()...}) == 0){
-        throw broadcast_exception("shapes are not broadcastable");
-    }else{
-        auto res = shape_type(std::max({shapes.size()...}),index_type(0));
-        broadcast_shape_helper(res, shapes...);
-        return res;
-    }
-}
+template<typename ShT>
+inline void broadcast_shape_helper(ShT&){}
 template<typename ShT, typename T, typename...Ts>
 inline void broadcast_shape_helper(ShT& res, const T& shape, const Ts&...shapes){
     using shape_type = ShT;
@@ -45,8 +35,18 @@ inline void broadcast_shape_helper(ShT& res, const T& shape, const Ts&...shapes)
     }
     broadcast_shape_helper(res, shapes...);
 }
-template<typename ShT>
-inline void broadcast_shape_helper(ShT&){}
+template<typename ShT, typename...Ts>
+inline auto broadcast_shape(const Ts&...shapes){
+    using shape_type = ShT;
+    using index_type = typename shape_type::value_type;
+    if (std::min({shapes.size()...}) == 0){
+        throw broadcast_exception("shapes are not broadcastable");
+    }else{
+        auto res = shape_type(std::max({shapes.size()...}),index_type(0));
+        broadcast_shape_helper(res, shapes...);
+        return res;
+    }
+}
 
 template<typename IdxT>
 constexpr inline bool can_walk(const IdxT& direction, const IdxT& dim, const IdxT& direction_dim){
