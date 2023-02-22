@@ -29,6 +29,13 @@ struct nested_initializer_list_type<T, 0>{
     using type = T;
 };
 
+template<typename T> using nested_init_list1_t = std::initializer_list<T>;
+template<typename T> using nested_init_list2_t = std::initializer_list<nested_init_list1_t<T>>;
+template<typename T> using nested_init_list3_t = std::initializer_list<nested_init_list2_t<T>>;
+template<typename T> using nested_init_list4_t = std::initializer_list<nested_init_list3_t<T>>;
+template<typename T> using nested_init_list5_t = std::initializer_list<nested_init_list4_t<T>>;
+
+
 /*
 * compile time nested init list depth
 * T list type

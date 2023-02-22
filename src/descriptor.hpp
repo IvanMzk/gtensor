@@ -1,6 +1,7 @@
 #ifndef DESCRIPTOR_HPP_
 #define DESCRIPTOR_HPP_
 
+#include <iostream>
 #include <numeric>
 #include <sstream>
 #include "libdivide_helper.hpp"

@@ -99,3 +99,28 @@ TEST_CASE("test_types_cross_product_with_tuple","[test_helpers_for_testing]"){
     REQUIRE(std::is_same_v<cross_product<std::tuple, std::tuple<>, std::tuple<>>::type , std::tuple<>>);
     REQUIRE(std::is_same_v<cross_product<std::tuple, std::tuple<A,B,C>, std::tuple<>>::type , std::tuple<>>);
 }
+
+TEST_CASE("test_apply_by_element","[test_helpers_for_testing]"){
+    using helpers_for_testing::apply_by_element;
+
+    auto tests = std::make_tuple(
+        [](const auto& t){REQUIRE(t == t);},
+        [](const auto& t){REQUIRE((t+0) == t);},
+        [](const auto& t){REQUIRE(t+1 > t);},
+        [](const auto& t){REQUIRE(t-1 < t);}
+    );
+
+    auto test_data = std::make_tuple(
+        int{0},
+        int{1},
+        float{0},
+        float{1},
+        double{0},
+        double{1}
+    );
+
+    auto apply_tests = [&test_data](auto& test){
+        apply_by_element(test, test_data);
+    };
+    apply_by_element(apply_tests, tests);
+}

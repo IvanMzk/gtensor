@@ -4,7 +4,7 @@ target_compile_features(Test PRIVATE cxx_std_17)
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     target_compile_options(Test PRIVATE /W4 /arch:AVX2 /Zc:__cplusplus "$<$<CONFIG:RELEASE>:/O2>")
 else()
-    target_compile_options(Test PRIVATE -Werror "$<$<CONFIG:RELEASE>:-O3>")
+    target_compile_options(Test PRIVATE -Wall "$<$<CONFIG:RELEASE>:-O3>")
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         target_compile_options(Test PRIVATE -stdlib=libc++)
     else()
@@ -22,8 +22,8 @@ target_sources(Test PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/test_broadcast.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_descriptor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_view_factory.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_expression_template_engine.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_view.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_view.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_expression_template_engine.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_tensor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test.cpp
 )

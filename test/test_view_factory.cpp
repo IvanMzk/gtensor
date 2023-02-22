@@ -406,13 +406,13 @@ TEMPLATE_TEST_CASE("test_make_shape_bool_tensor","[test_view_factory]",
             }(),
             shape_type{3,4}
         },
-        // test_type{
-        //     [](){
-        //         auto idx = index_tensor_type{{false},{true}};
-        //         return make_shape_bool_tensor(shape_type{3,2,4},idx.shape(), idx.begin(), idx.end());
-        //     }(),
-        //     shape_type{1,4}
-        // },
+        test_type{
+            [](){
+                auto idx = index_tensor_type{{false},{true}};
+                return make_shape_bool_tensor(shape_type{3,2,4},idx.shape(), idx.begin(), idx.end());
+            }(),
+            shape_type{1,4}
+        },
         test_type{
             [](){
                 auto idx = index_tensor_type{{false,true},{true,true},{true,false}};

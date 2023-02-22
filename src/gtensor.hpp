@@ -55,7 +55,6 @@ class tensor{
     using slice_type = typename slice_traits<CfgT>::slice_type;
     using slices_init_type = typename slice_traits<CfgT>::slices_init_type;
     using slices_collection_type = typename slice_traits<CfgT>::slices_collection_type;
-    friend class tensor_operator_dispatcher;
 
     //initialize implementation by forwarding arguments, this constructor should be used by all public constructors
     class forward_tag{};
@@ -64,6 +63,7 @@ class tensor{
         impl_{std::make_shared<impl_type>(std::forward<Args>(args)...)}
     {}
 
+    friend struct tensor_operator_dispatcher;
     std::shared_ptr<impl_type> impl_;
 protected:
     auto impl()const{return impl_;}
@@ -87,11 +87,11 @@ public:
 
     //storage tensor constructors
     //nested init_list constructors
-    tensor(typename detail::nested_initializer_list_type<value_type,1>::type init_data):tensor(forward_tag{}, init_data){}
-    tensor(typename detail::nested_initializer_list_type<value_type,2>::type init_data):tensor(forward_tag{}, init_data){}
-    tensor(typename detail::nested_initializer_list_type<value_type,3>::type init_data):tensor(forward_tag{}, init_data){}
-    tensor(typename detail::nested_initializer_list_type<value_type,4>::type init_data):tensor(forward_tag{}, init_data){}
-    tensor(typename detail::nested_initializer_list_type<value_type,5>::type init_data):tensor(forward_tag{}, init_data){}
+    template<typename U, std::enable_if_t<std::is_convertible_v<U,value_type>,int> =0> tensor(std::initializer_list<U> init_data):tensor(forward_tag{}, init_data){}
+    template<typename U, std::enable_if_t<std::is_convertible_v<U,value_type>,int> =0> tensor(std::initializer_list<std::initializer_list<U>> init_data):tensor(forward_tag{}, init_data){}
+    template<typename U, std::enable_if_t<std::is_convertible_v<U,value_type>,int> =0> tensor(std::initializer_list<std::initializer_list<std::initializer_list<U>>> init_data):tensor(forward_tag{}, init_data){}
+    template<typename U, std::enable_if_t<std::is_convertible_v<U,value_type>,int> =0> tensor(std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<U>>>> init_data):tensor(forward_tag{}, init_data){}
+    template<typename U, std::enable_if_t<std::is_convertible_v<U,value_type>,int> =0> tensor(std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<U>>>>> init_data):tensor(forward_tag{}, init_data){}
     //init list shape and value
     template<typename U>
     tensor(std::initializer_list<U> shape__, const value_type& value__):
