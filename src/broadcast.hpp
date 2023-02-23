@@ -4,7 +4,10 @@
 namespace gtensor{
 
 class broadcast_exception : public std::runtime_error{
-    public: broadcast_exception(const char* what):runtime_error(what){}
+public:
+    explicit broadcast_exception(const char* what):
+        runtime_error(what)
+    {}
 };
 
 namespace detail{
