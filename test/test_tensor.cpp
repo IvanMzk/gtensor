@@ -155,6 +155,7 @@ TEST_CASE("test_tensor_constructor_container_shape_range","[test_tensor]"){
     using tensor_type = gtensor::tensor<value_type>;
     using shape_type = typename tensor_type::config_type::shape_type;
     using helpers_for_testing::apply_by_element;
+    using helpers_for_testing::cmp_equal;
     using gtensor::detail::shape_to_str;
     //0shape,1src_elements,2expected_elements
     auto test_data = std::make_tuple(
@@ -166,7 +167,7 @@ TEST_CASE("test_tensor_constructor_container_shape_range","[test_tensor]"){
         auto src_elements = std::get<1>(t);
         auto expected_elements = std::get<2>(t);
         tensor_type result_tensor{shape, src_elements.begin(), src_elements.end()};
-        REQUIRE(std::distance(result_tensor.begin(),result_tensor.end()) == expected_elements.size());
+        REQUIRE(cmp_equal(std::distance(result_tensor.begin(),result_tensor.end()), expected_elements.size()));
         REQUIRE(std::equal(result_tensor.begin(),result_tensor.end(),expected_elements.begin()));
     };
     apply_by_element(test,test_data);
@@ -176,12 +177,13 @@ TEST_CASE("test_tensor_constructor_init_list_shape_range","[test_tensor]"){
     using value_type = int;
     using tensor_type = gtensor::tensor<value_type>;
     using helpers_for_testing::apply_by_element;
+    using helpers_for_testing::cmp_equal;
     using gtensor::detail::shape_to_str;
 
     std::vector<value_type> elements{1,2,3,4,5,6};
     std::vector<value_type> expected_elements(elements);
     tensor_type result_tensor(std::initializer_list<int>{2,3}, elements.begin(), elements.end());
-    REQUIRE(std::distance(result_tensor.begin(),result_tensor.end()) == expected_elements.size());
+    REQUIRE(cmp_equal(std::distance(result_tensor.begin(),result_tensor.end()), expected_elements.size()));
     REQUIRE(std::equal(result_tensor.begin(),result_tensor.end(),expected_elements.begin()));
 }
 

@@ -308,6 +308,7 @@ TEMPLATE_TEST_CASE("test_broadcast_iterator","[test_expression_template_engine]"
     using tensor_type = gtensor::tensor<value_type,config_type>;
     using test_expression_template_engine::test_tensor;
     using helpers_for_testing::apply_by_element;
+    using helpers_for_testing::cmp_equal;
 
     auto test_data = std::make_tuple(
         std::make_tuple(tensor_type{1,2,3}, shape_type{3}, std::vector<value_type>{1,2,3}),
@@ -326,7 +327,7 @@ TEMPLATE_TEST_CASE("test_broadcast_iterator","[test_expression_template_engine]"
         auto expected = std::get<2>(t);
         auto begin = ten.begin_broadcast(broadcast_shape);
         auto end = ten.end_broadcast(broadcast_shape);
-        REQUIRE(std::distance(begin,end) == expected.size());
+        REQUIRE(cmp_equal(std::distance(begin,end), expected.size()));
         REQUIRE(std::equal(expected.begin(),expected.end(), begin));
     };
     auto test_reverse = [](const auto& t){
@@ -335,7 +336,7 @@ TEMPLATE_TEST_CASE("test_broadcast_iterator","[test_expression_template_engine]"
         auto expected = std::get<2>(t);
         auto begin = ten.rbegin_broadcast(broadcast_shape);
         auto end = ten.rend_broadcast(broadcast_shape);
-        REQUIRE(std::distance(begin,end) == expected.size());
+        REQUIRE(cmp_equal(std::distance(begin,end), expected.size()));
         REQUIRE(std::equal(expected.rbegin(),expected.rend(), begin));
     };
     apply_by_element(test, test_data);
