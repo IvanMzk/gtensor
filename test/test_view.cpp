@@ -10,8 +10,6 @@ TEMPLATE_TEST_CASE("test_view","[test_view]",
 {
     using value_type = float;
     using config_type = TestType;
-    using shape_type = typename config_type::shape_type;
-    using index_type = typename config_type::index_type;
     using tensor_type = gtensor::tensor<value_type,config_type>;
     using bool_tensor_type =  gtensor::tensor<bool,config_type>;
     auto nop = typename gtensor::slice_traits<config_type>::nop_type{};

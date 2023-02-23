@@ -175,7 +175,6 @@ TEST_CASE("test_tensor_constructor_container_shape_range","[test_tensor]"){
 TEST_CASE("test_tensor_constructor_init_list_shape_range","[test_tensor]"){
     using value_type = int;
     using tensor_type = gtensor::tensor<value_type>;
-    using shape_type = typename tensor_type::config_type::shape_type;
     using helpers_for_testing::apply_by_element;
     using gtensor::detail::shape_to_str;
 
@@ -191,7 +190,6 @@ TEST_CASE("test_tensor_construct_using_operator","[test_tensor]"){
     using config_type = gtensor::config::default_config;
     using tensor_type = gtensor::tensor<value_type, config_type>;
     using shape_type = typename config_type::shape_type;
-    using index_type = typename config_type::index_type;
     using helpers_for_testing::apply_by_element;
     //0tensor,1expected_shape,2expected_size,3expected_dim
     auto test_data = std::make_tuple(
@@ -225,7 +223,6 @@ TEST_CASE("test_view_making_interface","[test_tensor]"){
     using gtensor::tensor;
     using config_type = gtensor::config::default_config;
     using tensor_type = tensor<value_type, config_type>;
-    using slice_type = typename gtensor::slice_traits<config_type>::slice_type;
     using nop_type = typename gtensor::slice_traits<config_type>::nop_type;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
@@ -392,8 +389,6 @@ TEST_CASE("test_tensor_equals","[test_tensor]"){
     using value_type = float;
     using config_type = gtensor::config::default_config;
     using tensor_type = gtensor::tensor<value_type, config_type>;
-    using shape_type = typename config_type::shape_type;
-    using index_type = typename config_type::index_type;
     using test_type = std::tuple<bool,bool,bool>;
     using gtensor::equals;
     auto t = tensor_type{{1,2,3},{4,5,6}};
@@ -423,8 +418,6 @@ TEST_CASE("test_tensor_copy","[test_tensor]"){
     using value_type = float;
     using config_type = gtensor::config::default_config;
     using tensor_type = gtensor::tensor<value_type, config_type>;
-    using shape_type = typename config_type::shape_type;
-    using index_type = typename config_type::index_type;
     using test_type = std::tuple<tensor_type,tensor_type>;
     //0result tensor,expected tensor
     auto test_data = GENERATE(

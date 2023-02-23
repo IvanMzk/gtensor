@@ -259,7 +259,6 @@ TEMPLATE_TEST_CASE("test_iterator","[test_expression_template_engine]",
 {
     using value_type = float;
     using config_type = TestType;
-    using shape_type = typename config_type::shape_type;
     using test_expression_template_engine::test_tensor;
     using helpers_for_testing::apply_by_element;
 

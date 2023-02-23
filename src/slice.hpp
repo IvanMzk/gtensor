@@ -284,8 +284,15 @@ template<typename ShT, typename...Subs>
 inline void check_subdim_subs(const ShT& shape, const Subs&...subs){
     using index_type = typename ShT::value_type;
     if (sizeof...(subs) >= shape.size()){throw subscript_exception("subdim subscripts number must be less than dim");}
-    auto sh_it = shape.begin();
-    ([&sh_it](const auto& sub){auto n = *sh_it; if (sub >=index_type(0) && sub < n){}else{throw subscript_exception("invalid subdim subscript");} ++sh_it;}(subs),...);
+    auto it = shape.begin();
+    auto checker = [&it](const auto& sub){
+        auto n = *it;
+        if (sub >=index_type(0) && sub < n){}
+        else{throw subscript_exception("invalid subdim subscript");}
+        ++it;
+    };
+    (checker(subs),...);
+    if (std::is_void_v<decltype((checker(subs),...))>); //suppress warning set but unused checker variable
 }
 
 template<typename IdxT>
