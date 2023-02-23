@@ -14,13 +14,13 @@ namespace detail{
 
 template<typename T>
 inline auto make_view_shape_element(const T& sub){
-    using difference_type = typename T::difference_type;
-    difference_type step_ = sub.step > difference_type(0) ? sub.step : -sub.step;
+    using index_type = typename T::index_type;
+    index_type step_ = sub.step > index_type(0) ? sub.step : -sub.step;
     return sub.start == sub.stop ?
-        difference_type(0) :
+        index_type(0) :
         sub.start < sub.stop ?
-            (sub.stop - sub.start-difference_type(1))/step_ + difference_type(1) :
-            (sub.start - sub.stop-difference_type(1))/step_ + difference_type(1);
+            (sub.stop - sub.start-index_type(1))/step_ + index_type(1) :
+            (sub.start - sub.stop-index_type(1))/step_ + index_type(1);
 }
 /*make view slice shape*/
 template<typename ShT, typename SubsT>

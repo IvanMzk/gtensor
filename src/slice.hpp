@@ -16,14 +16,14 @@ enum class mask_type : char {
     };
 static char operator&(mask_type lhs, mask_type rhs){return static_cast<char>(lhs)&static_cast<char>(rhs);}
 
-template<typename DifT, typename N>
+template<typename IdxT, typename N>
 struct slice_item{
-    using difference_type = DifT;
+    using index_type = IdxT;
     using nop_type = N;
     slice_item():nop{1}{}
     slice_item(const nop_type&):nop{1}{}
-    slice_item(const difference_type& i_):i{i_}{}
-    const difference_type i{};
+    slice_item(const index_type& i_):i{i_}{}
+    const index_type i{};
     const char nop{0};
 };
 
@@ -58,74 +58,74 @@ struct Nop{};
 /*
 * k is always set
 */
-template<typename DifT, typename NopT = Nop>
+template<typename IdxT, typename NopT = Nop>
 struct slice{
-    using difference_type = DifT;
+    using index_type = IdxT;
     using nop_type = NopT;
     using mask_type = typename detail::mask_type;
-    using slice_item_type = typename detail::slice_item<difference_type, nop_type>;
+    using slice_item_type = typename detail::slice_item<index_type, nop_type>;
 
     slice(std::initializer_list<slice_item_type> l):
         mask{detail::mask(l)},
-        start{is_start() ? l.begin()[0].i : difference_type{}},
-        stop{is_stop() ? l.begin()[1].i : difference_type{}},
-        step{l.size()>2 ? l.begin()[2].nop ? difference_type{1} : l.begin()[2].i : difference_type{1} }
+        start{is_start() ? l.begin()[0].i : index_type{}},
+        stop{is_stop() ? l.begin()[1].i : index_type{}},
+        step{l.size()>2 ? l.begin()[2].nop ? index_type{1} : l.begin()[2].i : index_type{1} }
     {}
 
     slice() = default;
     slice(const nop_type&, const nop_type&, const nop_type&):
         slice()
     {}
-    slice(const nop_type&, const nop_type&, const difference_type& step_):
+    slice(const nop_type&, const nop_type&, const index_type& step_):
         mask{mask_type::__k},
         step{step_}
     {}
-    slice(const nop_type&, const difference_type& stop_, const nop_type&):
+    slice(const nop_type&, const index_type& stop_, const nop_type&):
         mask{mask_type::_jk},
         stop{stop_}
     {}
-    slice(const difference_type& start_, const nop_type&, const nop_type&):
+    slice(const index_type& start_, const nop_type&, const nop_type&):
         mask{mask_type::i_k},
         start{start_}
     {}
-    slice(const nop_type&, const difference_type& stop_, const difference_type& step_):
+    slice(const nop_type&, const index_type& stop_, const index_type& step_):
         mask{mask_type::_jk},
         stop{stop_},
         step{step_}
     {}
-    slice(const difference_type& start_, const nop_type&, const difference_type& step_):
+    slice(const index_type& start_, const nop_type&, const index_type& step_):
         mask{mask_type::i_k},
         start{start_},
         step{step_}
     {}
-    slice(const difference_type& start_, const difference_type& stop_, const nop_type&):
+    slice(const index_type& start_, const index_type& stop_, const nop_type&):
         mask{mask_type::ijk},
         start{start_},
         stop{stop_}
     {}
-    slice(const difference_type& start_, const difference_type& stop_, const difference_type& step_):
+    slice(const index_type& start_, const index_type& stop_, const index_type& step_):
         mask{mask_type::ijk},
         start{start_},
         stop{stop_},
         step{step_}
     {}
-    slice(const nop_type&, const difference_type& stop_):
+    slice(const nop_type&, const index_type& stop_):
         mask{mask_type::_jk},
         stop{stop_}
     {}
-    slice(const difference_type& start_, const nop_type&):
+    slice(const index_type& start_, const nop_type&):
         mask{mask_type::i_k},
         start{start_}
     {}
     slice(const nop_type&, const nop_type&):
         slice()
     {}
-    slice(const difference_type& start_, const difference_type& stop_):
+    slice(const index_type& start_, const index_type& stop_):
         mask{mask_type::ijk},
         start{start_},
         stop{stop_}
     {}
-    explicit slice(const difference_type& start_):
+    explicit slice(const index_type& start_):
         mask{mask_type::i_k},
         start{start_}
     {}
@@ -142,9 +142,9 @@ struct slice{
         return os;
     }
     const mask_type mask{mask_type::__k};
-    const difference_type start{};
-    const difference_type stop{};
-    const difference_type step{1};
+    const index_type start{};
+    const index_type stop{};
+    const index_type step{1};
 };
 
 template<typename CfgT>
@@ -200,22 +200,22 @@ inline auto fill_slice(const slice<T,N>& slice_, const T& n){
 */
 template<typename T, typename N>
 inline void check_slice(const slice<T,N>& slice_, const T& n){
-    using difference_type = T;
+    using index_type = T;
     if (
-        slice_.step > 0 ? slice_.start<slice_.stop && slice_.start>=difference_type(0) && slice_.start<n && slice_.stop>difference_type(0) && slice_.stop<=n ? true : false
+        slice_.step > 0 ? slice_.start<slice_.stop && slice_.start>=index_type(0) && slice_.start<n && slice_.stop>index_type(0) && slice_.stop<=n ? true : false
         :
-        slice_.start>slice_.stop && slice_.start>=difference_type(0) && slice_.start<n && slice_.stop>=difference_type(-1) && slice_.stop<n-1 ? true : false
+        slice_.start>slice_.stop && slice_.start>=index_type(0) && slice_.start<n && slice_.stop>=index_type(-1) && slice_.stop<n-1 ? true : false
         ){}
         else{throw subscript_exception("invalid slice subscript");}
 }
 
 template<typename T, typename N>
 inline auto check_slice_(const slice<T,N>& slice_, const T& n){
-    using difference_type = T;
+    using index_type = T;
     if (
-        slice_.step > 0 ? slice_.start<slice_.stop && slice_.start>=difference_type(0) && slice_.start<n && slice_.stop>difference_type(0) && slice_.stop<=n ? true : false
+        slice_.step > 0 ? slice_.start<slice_.stop && slice_.start>=index_type(0) && slice_.start<n && slice_.stop>index_type(0) && slice_.stop<=n ? true : false
         :
-        slice_.start>slice_.stop && slice_.start>=difference_type(0) && slice_.start<n && slice_.stop>=difference_type(-1) && slice_.stop<n-1 ? true : false
+        slice_.start>slice_.stop && slice_.start>=index_type(0) && slice_.start<n && slice_.stop>=index_type(-1) && slice_.stop<n-1 ? true : false
         ){return slice_;}
         else{throw subscript_exception("invalid slice subscript");}
 }
@@ -244,7 +244,7 @@ inline auto fill_slices(const ShT& shape, const Subs&...subs){
 
 /*make collection of filled slices from init_list of intit_list of slice_items*/
 template<typename SlT, typename ShT>
-inline std::vector<SlT> fill_slices(const ShT& shape, std::initializer_list<std::initializer_list<slice_item<typename SlT::difference_type, typename SlT::nop_type>>> subs){
+inline std::vector<SlT> fill_slices(const ShT& shape, std::initializer_list<std::initializer_list<slice_item<typename SlT::index_type, typename SlT::nop_type>>> subs){
     using slice_type = SlT;
     std::vector<slice_type> res{};
     res.reserve(subs.size());
