@@ -155,6 +155,8 @@ public:
     auto create_walker()const{return create_walker_helper(*this, std::make_index_sequence<operands_number>{});}
     auto create_trivial_indexer()const{return create_trivial_indexer_helper(std::make_index_sequence<operands_number>{});}
 private:
+    template<std::size_t I> auto& operand(){return evaluating_engine_base::template operand<I>();}
+    template<std::size_t I> const auto& operand()const{return evaluating_engine_base::template operand<I>();}
     auto create_walking_indexer()const{
         return evaluating_indexer<CfgT,decltype(create_walker())>{
             holder()->descriptor().strides_div(),
@@ -163,12 +165,12 @@ private:
     }
     template<std::size_t...I>
     auto is_trivial_helper(std::index_sequence<I...>)const{
-        return ((holder()->size()==evaluating_engine_base::template operand<I>().size())&&...) && (evaluating_engine_base::template operand<I>().engine().is_trivial()&&...);
+        return ((holder()->size()==operand<I>().size())&&...) && (operand<I>().engine().is_trivial()&&...);
     }
     template<std::size_t...I>
     auto create_trivial_indexer_helper(std::index_sequence<I...>)const{
-        return evaluating_trivial_indexer<CfgT,F,decltype(evaluating_engine_base::template operand<I>().engine().create_trivial_indexer())...>{
-            operation(), evaluating_engine_base::template operand<I>().engine().create_trivial_indexer()...
+        return evaluating_trivial_indexer<CfgT,F,decltype(operand<I>().engine().create_trivial_indexer())...>{
+            operation(), operand<I>().engine().create_trivial_indexer()...
         };
     }
     template<typename U, std::size_t...I>

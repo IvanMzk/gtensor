@@ -209,22 +209,6 @@ inline void check_slice(const slice<T,N>& slice_, const T& n){
         else{throw subscript_exception("invalid slice subscript");}
 }
 
-template<typename T, typename N>
-inline auto check_slice_(const slice<T,N>& slice_, const T& n){
-    using index_type = T;
-    if (
-        slice_.step > 0 ? slice_.start<slice_.stop && slice_.start>=index_type(0) && slice_.start<n && slice_.stop>index_type(0) && slice_.stop<=n ? true : false
-        :
-        slice_.start>slice_.stop && slice_.start>=index_type(0) && slice_.start<n && slice_.stop>=index_type(-1) && slice_.stop<n-1 ? true : false
-        ){return slice_;}
-        else{throw subscript_exception("invalid slice subscript");}
-}
-
-template<typename T, typename N>
-inline auto fill_check_slice(const slice<T,N>& slice_, const T& n){
-    return check_slice_(fill_slice(slice_,n),n);
-}
-
 /*make collection of filled slices from slices args*/
 template<std::size_t I, typename R, typename ShT>
 inline void fill_slices_helper(R&, const ShT&){}
@@ -292,7 +276,6 @@ inline void check_subdim_subs(const ShT& shape, const Subs&...subs){
         ++it;
     };
     (checker(subs),...);
-    if (std::is_void_v<decltype((checker(subs),...))>); //suppress warning set but unused checker variable
 }
 
 template<typename IdxT>

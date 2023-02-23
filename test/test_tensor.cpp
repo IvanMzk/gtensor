@@ -12,7 +12,7 @@ namespace test_tensor_{
     class test_tensor : public gtensor::tensor<ValT, CfgT>
     {
         using base_tensor = gtensor::tensor<ValT, CfgT>;
-        using base_tensor::tensor;
+        using base_tensor::base_tensor;
     };
 }
 
