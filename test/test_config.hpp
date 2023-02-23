@@ -9,7 +9,6 @@ struct config_tmpl_{
     using host_engine = HEng;
     //using device_engine = DEng;
     using div_mode = Div;
-    using difference_type = typename gtensor::config::default_config::difference_type;
     using index_type = typename gtensor::config::default_config::index_type;
     template<typename ValT> using storage = typename gtensor::config::default_config::storage<ValT>;
 

@@ -20,9 +20,7 @@ struct default_config{
     using host_engine = engine_expression_template;
     using div_mode = mode_div_libdivide;
     //using div_mode = mode_div_native;
-    using difference_type = std::int64_t;
-    using index_type = difference_type;
-    //using index_type = std::size_t;
+    using index_type = std::int64_t;
     template<typename ValT> using storage = std::vector<ValT>;
     using shape_type = std::vector<index_type>;
 };

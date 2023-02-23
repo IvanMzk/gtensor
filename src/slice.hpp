@@ -150,8 +150,8 @@ struct slice{
 template<typename CfgT>
 struct slice_traits{
     using nop_type = Nop;
-    using slice_type = slice<typename CfgT::difference_type, nop_type>;
-    using slice_item_type = detail::slice_item<typename CfgT::difference_type, nop_type>;
+    using slice_type = slice<typename CfgT::index_type, nop_type>;
+    using slice_item_type = detail::slice_item<typename CfgT::index_type, nop_type>;
     using slice_init_type = std::initializer_list<slice_item_type>;
     using slices_init_type = std::initializer_list<slice_init_type>;
     using slices_collection_type = std::vector<slice_type>;

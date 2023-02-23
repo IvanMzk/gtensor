@@ -37,7 +37,7 @@ protected:
 public:
     using iterator_category = std::random_access_iterator_tag;
     using value_type = std::decay_t<result_type>;
-    using difference_type = typename CfgT::difference_type;
+    using difference_type = typename CfgT::index_type;
     using pointer = typename detail::iterator_internals_selector<value_type>::pointer;
     using reference = typename detail::iterator_internals_selector<value_type>::reference;
     using const_reference = typename detail::iterator_internals_selector<value_type>::const_reference;
@@ -187,7 +187,7 @@ protected:
 public:
     using iterator_category = std::bidirectional_iterator_tag;
     using value_type = std::decay_t<result_type>;
-    using difference_type = typename CfgT::difference_type;
+    using difference_type = typename CfgT::index_type;
     using pointer = typename detail::iterator_internals_selector<value_type>::pointer;
     using reference = typename detail::iterator_internals_selector<value_type>::reference;
     using const_reference = typename detail::iterator_internals_selector<value_type>::const_reference;
