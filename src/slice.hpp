@@ -275,7 +275,9 @@ inline void check_subdim_subs(const ShT& shape, const Subs&...subs){
         else{throw subscript_exception("invalid subdim subscript");}
         ++it;
     };
-    (checker(subs),...);
+    if constexpr (true || std::is_void_v<decltype(checker)>){
+        (checker(subs),...);
+    }
 }
 
 template<typename IdxT>
