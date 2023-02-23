@@ -132,12 +132,12 @@ TEST_CASE("test_tensor_constructor_shape_value","[test_tensor]"){
         test_type(tensor_type(shape_type{10},1.0f), shape_type{10}, 10 , 1),
         test_type(tensor_type(shape_type{1,1},1.0f), shape_type{1,1}, 1 , 2),
         test_type(tensor_type(shape_type{1,3},1.0f), shape_type{1,3}, 3 , 2),
-        test_type(tensor_type(shape_type{2,3},1.0f), shape_type{2,3}, 6 , 2),
+        test_type(tensor_type(std::vector<std::size_t>{2,3},1.0f), shape_type{2,3}, 6 , 2),
         test_type(tensor_type(std::vector<int>{1,1,4},1.0f), shape_type{1,1,4}, 4 , 3),
         test_type(tensor_type(shape_type{1,4,1},1.0f), shape_type{1,4,1}, 4 , 3),
         test_type(tensor_type(shape_type{1,4,3},1.0f), shape_type{1,4,3}, 12 , 3),
         test_type(tensor_type({1,4,3},1.0f), shape_type{1,4,3}, 12 , 3),
-        test_type(tensor_type({1,4,3},1.0f), shape_type{1,4,3}, 12 , 3)
+        test_type(tensor_type(std::initializer_list<std::size_t>{1,4,3},1.0f), shape_type{1,4,3}, 12 , 3)
 
     );
 

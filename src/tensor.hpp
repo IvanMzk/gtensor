@@ -75,11 +75,11 @@ public:
     {}
     template<typename ShT>
     storage_tensor(ShT&& shape, const value_type& v):
-        storage_tensor{detail::make_size(shape), std::forward<ShT>(shape), v}
+        storage_tensor{detail::make_size<index_type>(shape), std::forward<ShT>(shape), v}
     {}
     template<typename ShT, typename ItT>
     storage_tensor(ShT&& shape, ItT begin, ItT end):
-        storage_tensor{detail::make_size(shape), std::forward<ShT>(shape), begin, end}
+        storage_tensor{detail::make_size<index_type>(shape), std::forward<ShT>(shape), begin, end}
     {}
 };
 
