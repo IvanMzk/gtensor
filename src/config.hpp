@@ -20,9 +20,27 @@ struct default_config{
     using host_engine = engine_expression_template;
     using div_mode = mode_div_libdivide;
     //using div_mode = mode_div_native;
-    using index_type = std::int64_t;
+
+    //data elements storage template
+    //must provide random access interface
     template<typename ValT> using storage = std::vector<ValT>;
+
+    //index_type defines data elements address space
+    //used in indexed access to data elements:
+    //  index_type must be convertible to storage<value_type>::iterator::difference_type
+    //shape and strides elements are of index_type
+    //slice, reshape, subdim view subscripts are of index_type
+    //must have semantic of signed integral type
+    using index_type = std::int64_t;
+
+    //meta-data elements storage type i.e. shape, strides are of shape_type
+    //must provide random access interface
     using shape_type = std::vector<index_type>;
+
+    //used in indexed access to meta-data elements e.g. index of direction, directions number
+    //transpose view subscripts are of meta_index_type, since they are directions indexes
+    //must have semantic of integral type, may be unsigned
+    using meta_index_type = std::size_t;
 };
 
 }   //end of namespace config

@@ -7,11 +7,10 @@ namespace test_config{
 template<typename Div, typename HEng>
 struct config_tmpl_{
     using host_engine = HEng;
-    //using device_engine = DEng;
     using div_mode = Div;
     using index_type = typename gtensor::config::default_config::index_type;
+    using meta_index_type = typename gtensor::config::default_config::meta_index_type;
     template<typename ValT> using storage = typename gtensor::config::default_config::storage<ValT>;
-
     using shape_type = typename gtensor::config::default_config::shape_type;
 };
 
