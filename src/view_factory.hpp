@@ -117,8 +117,8 @@ inline ShT make_shape_bool_tensor(const ShT& pshape, const ShT& index_shape, It&
         throw subscript_exception("invalid bool tensor subscript");
     }
     auto pshape_it = pshape.begin();
-    for (auto index_it = index_shape.begin(), index_end = index_shape.end(); index_it!=index_end; ++index_it, ++pshape_it){
-        if (*index_it > *pshape_it){
+    for (auto index_shape_it = index_shape.begin(), index_shape_end = index_shape.end(); index_shape_it!=index_shape_end; ++index_shape_it, ++pshape_it){
+        if (*index_shape_it > *pshape_it){
             throw subscript_exception("invalid bool tensor subscript");
         }
     }
