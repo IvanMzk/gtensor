@@ -193,7 +193,6 @@ TEST_CASE("test_fill_slice","[test_slice]"){
 
 TEST_CASE("test_fill_slices","[test_fill_slices]"){
     using config_type = gtensor::config::default_config;
-    using index_type = typename config_type::index_type;
     using shape_type = typename config_type::shape_type;
     using slice_type = typename gtensor::slice_traits<config_type>::slice_type;
     using nop_type = typename gtensor::slice_traits<config_type>::nop_type;
@@ -273,7 +272,6 @@ TEST_CASE("test_is_slices", "[test_is_slices]"){
 
 TEST_CASE("test_check_slices","[test_check_slices]"){
     using config_type = gtensor::config::default_config;
-    using index_type = typename config_type::index_type;
     using shape_type = typename config_type::shape_type;
     using slice_type = typename gtensor::slice_traits<config_type>::slice_type;
     using gtensor::detail::check_slices;
@@ -291,11 +289,9 @@ TEST_CASE("test_check_slices","[test_check_slices]"){
 
 TEST_CASE("test_check_slices_number","[test_check_slices]"){
     using config_type = gtensor::config::default_config;
-    using index_type = typename config_type::index_type;
     using shape_type = typename config_type::shape_type;
     using slice_type = typename gtensor::slice_traits<config_type>::slice_type;
     using slices_init_type = typename gtensor::slice_traits<config_type>::slices_init_type;
-    using nop_type = typename gtensor::slice_traits<config_type>::nop_type;
     using gtensor::detail::check_slices_number;
 
     REQUIRE_NOTHROW(check_slices_number(shape_type{5},slice_type{}));
