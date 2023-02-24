@@ -24,7 +24,7 @@ TEST_CASE("test_is_iterator","[test_tensor]"){
 }
 
 TEST_CASE("test_is_tensor","[test_tensor]"){
-    using value_type = float;
+    using value_type = double;
     using config_type = gtensor::config::default_config;
     using tensor_type = gtensor::tensor<value_type, config_type>;
     using test_tensor_type = test_tensor_::test_tensor<value_type,config_type>;
@@ -77,7 +77,7 @@ TEST_CASE("test_is_tensor","[test_tensor]"){
 }
 
 TEST_CASE("test_tensor_default_constructor","[test_tensor]"){
-    using value_type = float;
+    using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
     using shape_type = typename tensor_type::config_type::shape_type;
 
@@ -90,7 +90,7 @@ TEST_CASE("test_tensor_default_constructor","[test_tensor]"){
 }
 
 TEST_CASE("test_tensor_constructor_from_list","[test_tensor]"){
-    using value_type = float;
+    using value_type = double;
     using config_type = gtensor::config::default_config;
     using tensor_type = gtensor::tensor<value_type, config_type>;
     using shape_type = typename config_type::shape_type;
@@ -118,7 +118,7 @@ TEST_CASE("test_tensor_constructor_from_list","[test_tensor]"){
 }
 
 TEST_CASE("test_tensor_constructor_shape_value","[test_tensor]"){
-    using value_type = float;
+    using value_type = double;
     using config_type = gtensor::config::default_config;
     using tensor_type = gtensor::tensor<value_type, config_type>;
     using shape_type = typename config_type::shape_type;
@@ -188,7 +188,7 @@ TEST_CASE("test_tensor_constructor_init_list_shape_range","[test_tensor]"){
 }
 
 TEST_CASE("test_tensor_construct_using_operator","[test_tensor]"){
-    using value_type = float;
+    using value_type = double;
     using config_type = gtensor::config::default_config;
     using tensor_type = gtensor::tensor<value_type, config_type>;
     using shape_type = typename config_type::shape_type;
@@ -221,7 +221,7 @@ TEST_CASE("test_tensor_construct_using_operator","[test_tensor]"){
 }
 
 TEST_CASE("test_view_making_interface","[test_tensor]"){
-    using value_type = float;
+    using value_type = double;
     using gtensor::tensor;
     using config_type = gtensor::config::default_config;
     using tensor_type = tensor<value_type, config_type>;
@@ -388,7 +388,7 @@ TEST_CASE("test_view_making_interface","[test_tensor]"){
 }
 
 TEST_CASE("test_tensor_equals","[test_tensor]"){
-    using value_type = float;
+    using value_type = double;
     using config_type = gtensor::config::default_config;
     using tensor_type = gtensor::tensor<value_type, config_type>;
     using test_type = std::tuple<bool,bool,bool>;
@@ -417,7 +417,7 @@ TEST_CASE("test_tensor_equals","[test_tensor]"){
 }
 
 TEST_CASE("test_tensor_copy","[test_tensor]"){
-    using value_type = float;
+    using value_type = double;
     using config_type = gtensor::config::default_config;
     using tensor_type = gtensor::tensor<value_type, config_type>;
     using test_type = std::tuple<tensor_type,tensor_type>;
@@ -436,4 +436,3 @@ TEST_CASE("test_tensor_copy","[test_tensor]"){
     auto expected_tensor = std::get<1>(test_data);
     REQUIRE(result_tensor.equals(expected_tensor));
 }
-
