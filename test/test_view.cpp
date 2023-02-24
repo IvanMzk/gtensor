@@ -8,7 +8,7 @@ TEMPLATE_TEST_CASE("test_view","[test_view]",
     test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
 )
 {
-    using value_type = float;
+    using value_type = double;
     using config_type = TestType;
     using tensor_type = gtensor::tensor<value_type,config_type>;
     using bool_tensor_type =  gtensor::tensor<bool,config_type>;
