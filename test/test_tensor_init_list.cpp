@@ -23,7 +23,7 @@ TEST_CASE("test_list_parser_empty","[test_tensor_init_list]"){
 
 }
 
-TEMPLATE_TEST_CASE("test_list_parser","[test_tensor_init_list]",std::vector<std::size_t>)
+TEMPLATE_TEST_CASE("test_list_parser","[test_tensor_init_list]",std::vector<std::size_t>, std::vector<std::int64_t>)
 {
     using container_type = TestType;
     using value_type = typename container_type::value_type;
@@ -35,7 +35,7 @@ TEMPLATE_TEST_CASE("test_list_parser","[test_tensor_init_list]",std::vector<std:
     REQUIRE( gtensor::detail::list_parse<value_type, container_type>(l3) == container_type{3,2,1});
 }
 
-TEMPLATE_TEST_CASE("test_list_parser_exception","[test_tensor_init_list]",std::size_t, std::uint32_t, int){
+TEMPLATE_TEST_CASE("test_list_parser_exception","[test_tensor_init_list]",std::size_t, std::uint64_t){
     gtensor::detail::nested_initializer_list_type<int,2>::type l2 = {{1,2,3},{3,4},{5,6}};
     gtensor::detail::nested_initializer_list_type<int,3>::type l3 = {{{1},{2}},{{3},{4},{0}},{{5},{6}}};
     gtensor::detail::nested_initializer_list_type<int,3>::type l3_ = {{{1,2},{2}},{{3},{4}},{{5},{6}}};
