@@ -68,7 +68,7 @@ struct test_data{
 
 TEST_CASE("test_is_trivial","[test_expression_template_engine]")
 {
-    using value_type = float;
+    using value_type = int;
     using tensor_type = gtensor::tensor<value_type>;
     using test_expression_template_engine::test_tensor;
     using helpers_for_testing::apply_by_element;
@@ -93,7 +93,7 @@ TEST_CASE("test_is_trivial","[test_expression_template_engine]")
 
 TEST_CASE("test_walker","[test_expression_template_engine]")
 {
-    using value_type = float;
+    using value_type = double;
     using config_type = gtensor::config::default_config;
     using test_expression_template_engine::test_tensor;
     using test_expression_template_engine::make_test_tensor;
@@ -134,7 +134,7 @@ TEST_CASE("test_walker","[test_expression_template_engine]")
 
 TEST_CASE("test_indexer","[test_expression_template_engine]")
 {
-    using value_type = float;
+    using value_type = double;
     using config_type = gtensor::config::default_config;
     using test_expression_template_engine::test_tensor;
     using test_expression_template_engine::make_test_tensor;
@@ -153,7 +153,7 @@ TEST_CASE("test_indexer","[test_expression_template_engine]")
 }
 
 TEST_CASE("test_result_type","[test_expression_template_engine]"){
-    using value_type = float;
+    using value_type = int;
     using reference_type = value_type&;
     using const_reference_type = const value_type&;
     using tensor_type = gtensor::tensor<value_type>;
@@ -257,7 +257,7 @@ TEMPLATE_TEST_CASE("test_iterator","[test_expression_template_engine]",
     test_expression_template_engine::test_config_div_libdivide
 )
 {
-    using value_type = float;
+    using value_type = double;
     using config_type = TestType;
     using test_expression_template_engine::test_tensor;
     using helpers_for_testing::apply_by_element;
@@ -302,7 +302,7 @@ TEMPLATE_TEST_CASE("test_broadcast_iterator","[test_expression_template_engine]"
     test_expression_template_engine::test_config_div_libdivide
 )
 {
-    using value_type = float;
+    using value_type = double;
     using config_type = TestType;
     using shape_type = typename config_type::shape_type;
     using tensor_type = gtensor::tensor<value_type,config_type>;
@@ -344,7 +344,7 @@ TEMPLATE_TEST_CASE("test_broadcast_iterator","[test_expression_template_engine]"
 }
 
 TEST_CASE("test_broadcast_assignment","[test_expression_template_engine]"){
-    using value_type = float;
+    using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
     using gtensor::broadcast_exception;
 
@@ -354,15 +354,15 @@ TEST_CASE("test_broadcast_assignment","[test_expression_template_engine]"){
 
     auto lhs1 = tensor_type{{1,2,3},{4,5,6}};
     lhs1() = tensor_type{0,1,2};
-    REQUIRE(std::equal(lhs1.begin(), lhs1.end(), std::vector<float>{0,1,2,0,1,2}.begin()));
+    REQUIRE(std::equal(lhs1.begin(), lhs1.end(), std::vector<value_type>{0,1,2,0,1,2}.begin()));
 
     auto lhs2 = tensor_type{{1,2,3},{4,5,6}};
     lhs2(1) = tensor_type{0,1,2};
-    REQUIRE(std::equal(lhs2.begin(), lhs2.end(), std::vector<float>{1,2,3,0,1,2}.begin()));
+    REQUIRE(std::equal(lhs2.begin(), lhs2.end(), std::vector<value_type>{1,2,3,0,1,2}.begin()));
 
     auto lhs4 = tensor_type{1,2,3,4,5};
     lhs4({{{},{},-1}})({{{},{},2}}) = tensor_type{0,1,2};
-    REQUIRE(std::equal(lhs4.begin(), lhs4.end(), std::vector<float>{2,2,1,4,0}.begin()));
+    REQUIRE(std::equal(lhs4.begin(), lhs4.end(), std::vector<value_type>{2,2,1,4,0}.begin()));
 
     //broadcast assignment exception, every element of lhs must be assigned only once
     auto lhs3 = tensor_type{0};
