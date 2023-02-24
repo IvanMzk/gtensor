@@ -9,17 +9,19 @@ class subscript_exception : public std::runtime_error{
     public: subscript_exception(const char* what):runtime_error(what){}
 };
 
+struct Nop{};
+
 namespace detail{
 
 enum class mask_type : char {
-        nop=0b00000000, __k = 0b00000001, _j_ = 0b00000010, _jk = 0b00000011, i__ = 0b00000100, i_k = 0b00000101, ij_ = 0b00000110, ijk = 0b00000111
-    };
+    nop=0b00000000, __k = 0b00000001, _j_ = 0b00000010, _jk = 0b00000011, i__ = 0b00000100, i_k = 0b00000101, ij_ = 0b00000110, ijk = 0b00000111
+};
 static char operator&(mask_type lhs, mask_type rhs){return static_cast<char>(lhs)&static_cast<char>(rhs);}
 
-template<typename IdxT, typename N>
+template<typename IdxT, typename NopT = Nop>
 struct slice_item{
     using index_type = IdxT;
-    using nop_type = N;
+    using nop_type = NopT;
     slice_item():nop{1}{}
     slice_item(const nop_type&):nop{1}{}
     slice_item(const index_type& i_):i{i_}{}
@@ -54,7 +56,6 @@ inline mask_type mask(std::initializer_list<slice_item<T,N>> l){
 
 }   //end of namespace detail
 
-struct Nop{};
 /*
 * k is always set
 */

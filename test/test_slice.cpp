@@ -6,67 +6,11 @@
 #include <tuple>
 #include "slice.hpp"
 
-namespace test_slice_{
-
-template<typename IdxT>
-struct slice_item{
-    using index_type = IdxT;
-    slice_item():nop{1}{}
-    slice_item(const index_type& i_):i{i_}{}
-    const index_type i{0};
-    const char nop{0};
-};
-
-using value_type = float;
-using index_type = typename gtensor::config::default_config::index_type;
-using slice_item_type =  typename test_slice_::slice_item<index_type>;
-using slice_init_type = typename std::initializer_list<slice_item_type>;
-
-void f(slice_init_type l){}
-
-template<typename...Args, std::enable_if_t<std::conjunction_v<std::is_convertible<Args,slice_init_type>...>,int> =0 >
-void g(Args...args){}
-
-template<typename...Args, std::enable_if_t<std::conjunction_v<std::is_same<Args,slice_init_type>...>,int> =0 >
-void t(Args...args){}
-
-template<typename...Ts, std::enable_if_t<std::conjunction_v<std::is_convertible<Ts,slice_item_type>...>,int> =0 >
-void u(std::initializer_list<Ts>...args){}
-
-void v(std::initializer_list<slice_init_type> l){}
-
-template<typename...Args>
-void h(Args...args){}
-
-}   //end of namespace test_slice
-
-TEST_CASE("slice_init_type","[slice_init_type]"){
-    using test_slice_::slice_init_type;
-    using test_slice_::f;
-    using test_slice_::g;
-    using test_slice_::h;
-    using test_slice_::t;
-    using test_slice_::u;
-    using test_slice_::v;
-    slice_init_type l{0,0,1};
-    f(l);
-    f({0,0,1});
-    f({});
-    //g({0,0,1});
-    //h({0,0,1});
-    //t({0,0,1});
-    u({0,{},1});
-    v({{1,2,3},{},{0,{},-1}});
-    v({{},{},{1,2,3,4}});
-    g(l);
-
-}
-
 TEST_CASE("slice_item","[slice_item]"){
-    using index_type = typename gtensor::config::default_config::index_type;
-    using slice_item_type =  typename test_slice_::slice_item<index_type>;
+    using config_type = gtensor::config::default_config;
+    using slice_item_type =  typename gtensor::slice_traits<config_type>::slice_item_type;
     SECTION("use_init_list"){
-        using slice_init_type = typename std::initializer_list<slice_item_type>;
+        using slice_init_type = typename gtensor::slice_traits<config_type>::slice_init_type;
 
         slice_init_type l1 = {1};
         REQUIRE(l1.begin()[0].i == 1);
@@ -166,8 +110,9 @@ TEST_CASE("slice_item","[slice_item]"){
 }
 
 TEST_CASE("test_slice","[test_slice]"){
-    using slice_type = typename gtensor::slice<std::ptrdiff_t>;
-    using nop_type = typename slice_type::nop_type;
+    using config_type = gtensor::config::default_config;
+    using slice_type = typename gtensor::slice_traits<config_type>::slice_type;
+    using nop_type = typename gtensor::slice_traits<config_type>::nop_type;
     nop_type nop{};
     SECTION("default_construction"){
         slice_type slice{};
@@ -222,13 +167,13 @@ TEST_CASE("test_slice","[test_slice]"){
         REQUIRE(!slice.is_stop());
         REQUIRE(slice.is_step());
     }
-
 }
 
 TEST_CASE("test_fill_slice","[test_slice]"){
-    using index_type = std::ptrdiff_t;
-    using slice_type = typename gtensor::slice<index_type>;
-    using nop_type = typename slice_type::nop_type;
+    using config_type = gtensor::config::default_config;
+    using index_type = typename gtensor::config::default_config::index_type;
+    using slice_type = typename gtensor::slice_traits<config_type>::slice_type;
+    using nop_type = typename gtensor::slice_traits<config_type>::nop_type;
     using test_type = std::tuple<slice_type,slice_type,index_type>;
     auto test_data = GENERATE(
         test_type{slice_type(),slice_type(0,11,1),11},
@@ -247,10 +192,11 @@ TEST_CASE("test_fill_slice","[test_slice]"){
 }
 
 TEST_CASE("test_fill_slices","[test_fill_slices]"){
-    using index_type = typename gtensor::config::default_config::index_type;
-    using shape_type = typename gtensor::config::default_config::shape_type;
-    using slice_type = typename gtensor::slice<index_type>;
-    using nop_type = typename slice_type::nop_type;
+    using config_type = gtensor::config::default_config;
+    using index_type = typename config_type::index_type;
+    using shape_type = typename config_type::shape_type;
+    using slice_type = typename gtensor::slice_traits<config_type>::slice_type;
+    using nop_type = typename gtensor::slice_traits<config_type>::nop_type;
     using gtensor::detail::fill_slices;
     nop_type nop{};
 
@@ -272,8 +218,9 @@ TEST_CASE("test_fill_slices","[test_fill_slices]"){
 }
 
 TEST_CASE("test_check_slice","[test_check_slice]"){
-    using index_type = typename gtensor::config::default_config::index_type;
-    using slice_type = typename gtensor::slice<index_type>;
+    using config_type = gtensor::config::default_config;
+    using index_type = typename config_type::index_type;
+    using slice_type = typename gtensor::slice_traits<config_type>::slice_type;
     using gtensor::detail::check_slice;
 
     REQUIRE_NOTHROW(check_slice(slice_type{0,5,1}, index_type(5)));
@@ -304,9 +251,10 @@ TEST_CASE("test_check_slice","[test_check_slice]"){
 }
 
 TEST_CASE("test_is_slices", "[test_is_slices]"){
-    using index_type = typename gtensor::config::default_config::index_type;
-    using shape_type = typename gtensor::config::default_config::shape_type;
-    using slice_type = typename gtensor::slice<index_type>;
+    using config_type = gtensor::config::default_config;
+    using index_type = typename config_type::index_type;
+    using shape_type = typename config_type::shape_type;
+    using slice_type = typename gtensor::slice_traits<config_type>::slice_type;
     using gtensor::detail::is_slice;
     using gtensor::detail::is_slices;
 
@@ -324,10 +272,11 @@ TEST_CASE("test_is_slices", "[test_is_slices]"){
 }
 
 TEST_CASE("test_check_slices","[test_check_slices]"){
+    using config_type = gtensor::config::default_config;
+    using index_type = typename config_type::index_type;
+    using shape_type = typename config_type::shape_type;
+    using slice_type = typename gtensor::slice_traits<config_type>::slice_type;
     using gtensor::detail::check_slices;
-    using index_type = typename gtensor::config::default_config::index_type;
-    using shape_type = typename gtensor::config::default_config::shape_type;
-    using slice_type = typename gtensor::slice<index_type>;
     REQUIRE_NOTHROW(check_slices(shape_type{5},std::vector<slice_type>{}));
     REQUIRE_NOTHROW(check_slices(shape_type{5},std::vector{slice_type{0,5,1}}));
     REQUIRE_NOTHROW(check_slices(shape_type{5,3,4},std::vector{slice_type{0,5,1}}));
@@ -341,14 +290,13 @@ TEST_CASE("test_check_slices","[test_check_slices]"){
 }
 
 TEST_CASE("test_check_slices_number","[test_check_slices]"){
+    using config_type = gtensor::config::default_config;
+    using index_type = typename config_type::index_type;
+    using shape_type = typename config_type::shape_type;
+    using slice_type = typename gtensor::slice_traits<config_type>::slice_type;
+    using slices_init_type = typename gtensor::slice_traits<config_type>::slices_init_type;
+    using nop_type = typename gtensor::slice_traits<config_type>::nop_type;
     using gtensor::detail::check_slices_number;
-    using index_type = typename gtensor::config::default_config::index_type;
-    using shape_type = typename gtensor::config::default_config::shape_type;
-    using slice_type = typename gtensor::slice<index_type>;
-    using nop_type = typename slice_type::nop_type;
-    using slice_item_type =  typename gtensor::detail::slice_item<index_type, nop_type>;
-    using slice_init_type = typename std::initializer_list<slice_item_type>;
-    using slices_init_type = typename std::initializer_list<slice_init_type>;
 
     REQUIRE_NOTHROW(check_slices_number(shape_type{5},slice_type{}));
     REQUIRE_NOTHROW(check_slices_number(shape_type{5,6},slice_type{}));
