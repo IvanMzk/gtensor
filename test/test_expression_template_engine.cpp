@@ -29,7 +29,10 @@ auto make_test_tensor(T&& t){return test_tensor<std::decay_t<T>>{std::forward<T>
 //result tensor is evaluated to {{{1,2,3},{4,5,6}}}, shape is (1,2,3)
 template<typename ValT, typename CfgT>
 struct test_data{
+    using index_type = typename CfgT::index_type;
     using tensor_type = gtensor::tensor<ValT, CfgT>;
+    using bool_tensor_type = gtensor::tensor<bool,CfgT>;
+    using index_tensor_type = gtensor::tensor<index_type,CfgT>;
     gtensor::Nop nop{};
     auto operator()()const{
         return std::make_tuple(
@@ -59,7 +62,14 @@ struct test_data{
             //view of storage operand
             (tensor_type{{{0},{1},{2}},{{0},{1},{2}}}.transpose() + tensor_type{{1,2},{1,2}}({{},{0,1}}).reshape(1,2) + tensor_type{{0,1},{1,2},{2,3}}).reshape(1,2,3),
             //view of broadcast operand
-            ((tensor_type{{0},{1},{2}} + tensor_type{{0,1,2}}).transpose()({{1,2},{}}) + (tensor_type{{0,3}} + tensor_type{{0},{0},{0}}).transpose()).reshape(1,2,3)
+            ((tensor_type{{0},{1},{2}} + tensor_type{{0,1,2}}).transpose()({{1,2},{}}) + (tensor_type{{0,3}} + tensor_type{{0},{0},{0}}).transpose()).reshape(1,2,3),
+            //bool mapping view
+            tensor_type{{{0,0,0},{1,1,1}},{{1,2,3},{4,5,6}}}(bool_tensor_type{false, true}),
+            tensor_type{1,1,2,2,3,3,4,4,5,5,6,6}(bool_tensor_type{false,true,true,false,true,false,true,false,false,true,true,false}).reshape(1,2,3),
+            //index mapping view
+            tensor_type{{{0,0,0},{1,1,1}},{{1,2,3},{4,5,6}}}(index_tensor_type{1}),
+            tensor_type{6,5,4,3,2,1}(index_tensor_type{5,4,3,2,1,0}).reshape(1,2,3)
+
         );
     }
 };

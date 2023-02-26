@@ -65,6 +65,13 @@ template<typename> struct is_converting_descriptor : public std::false_type{};
 template<typename...Ts> struct is_converting_descriptor<converting_descriptor<Ts...>> : public std::true_type{};
 template<typename T> using is_converting_descriptor_t = typename is_converting_descriptor<T>::type;
 template<typename T> constexpr bool is_converting_descriptor_v = is_converting_descriptor_t<T>();
+
+template<typename> struct is_striding_descriptor : public std::false_type{};
+template<typename...Ts> struct is_striding_descriptor<basic_descriptor<Ts...>> : public std::true_type{};
+template<typename...Ts> struct is_striding_descriptor<descriptor_with_offset<Ts...>> : public std::true_type{};
+template<typename...Ts> struct is_striding_descriptor<converting_descriptor<Ts...>> : public std::true_type{};
+template<typename T> using is_striding_descriptor_t = typename is_striding_descriptor<T>::type;
+template<typename T> constexpr bool is_striding_descriptor_v = is_striding_descriptor_t<T>();
 }   //end of namespace detail
 
 template<typename CfgT, typename StorT>
@@ -72,6 +79,7 @@ class expression_template_storage_engine : private storage_engine<CfgT,StorT>
 {
     using storage_engine_base = storage_engine<CfgT,StorT>;
     using shape_type = typename CfgT::shape_type;
+    using index_type = typename CfgT::index_type;
 public:
     using typename storage_engine_base::value_type;
     using typename storage_engine_base::config_type;
@@ -101,9 +109,9 @@ private:
     template<typename U> static auto create_walker_helper(U& instance){
         return walker<CfgT, std::decay_t<decltype(instance.create_indexer())>>{
             instance.holder()->shape(),
-            instance.holder()->descriptor().cstrides(),
-            instance.holder()->descriptor().reset_cstrides(),
-            instance.holder()->descriptor().offset(),
+            instance.holder()->descriptor().strides(),
+            instance.holder()->descriptor().reset_strides(),
+            index_type{0},
             instance.create_indexer()
         };
     }
@@ -186,6 +194,7 @@ class expression_template_viewing_engine : private viewing_engine<CfgT,DescT, Pa
 {
     using viewing_engine_base = viewing_engine<CfgT,DescT, ParentT>;
     using shape_type = typename CfgT::shape_type;
+    using index_type = typename CfgT::index_type;
     using descriptor_type = typename viewing_engine_base::descriptor_type;
 public:
     using typename viewing_engine_base::value_type;
@@ -215,8 +224,8 @@ public:
     auto rend_broadcast(const shape_type& shape)const{return detail::rend_broadcast(*this, shape);}
 
     //return walker with parent indexer (chain of indexers starts from parent's indexer)
-    auto create_walker()const{return create_walker_helper(*this);}
-    auto create_walker(){return create_walker_helper(*this);}
+    auto create_walker()const{return create_walker_helper(*this, detail::is_striding_descriptor_t<descriptor_type>{});}
+    auto create_walker(){return create_walker_helper(*this, detail::is_striding_descriptor_t<descriptor_type>{});}
     auto create_trivial_indexer()const{return create_indexer();}
     auto create_trivial_indexer(){return create_indexer();}
 private:
@@ -241,13 +250,23 @@ private:
     template<typename U>
     static auto rend(U& instance, std::false_type){return detail::rend_trivial(instance);}
     template<typename U>
-    static auto create_walker_helper(U& instance){
+    static auto create_walker_helper(U& instance, std::true_type){
         return walker<CfgT, std::decay_t<decltype(instance.parent().engine().create_indexer())>>{
             instance.holder()->shape(),
             instance.holder()->descriptor().cstrides(),
             instance.holder()->descriptor().reset_cstrides(),
             instance.holder()->descriptor().offset(),
             instance.parent().engine().create_indexer()
+        };
+    }
+    template<typename U>
+    static auto create_walker_helper(U& instance, std::false_type){
+        return walker<CfgT, std::decay_t<decltype(instance.create_indexer())>>{
+            instance.holder()->shape(),
+            instance.holder()->descriptor().strides(),
+            instance.holder()->descriptor().reset_strides(),
+            index_type{0},
+            instance.create_indexer()
         };
     }
 };
