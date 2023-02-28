@@ -1,8 +1,10 @@
 #ifndef BROADCAST_HPP_
 #define BROADCAST_HPP_
 
-namespace gtensor{
+#include "libdivide_helper.hpp"
+#include "descriptor.hpp"
 
+namespace gtensor{
 class broadcast_exception : public std::runtime_error{
 public:
     explicit broadcast_exception(const char* what):
@@ -163,6 +165,99 @@ public:
     void reset_back(const index_type& direction){index_walker.reset_back(direction);}
     void reset(){index_walker.reset();}
     result_type operator*()const{return indexer[index_walker.cursor()];}
+};
+
+template<typename CfgT, typename Walker>
+class walker_iterator_adapter{
+
+    using config_type = CfgT;
+    using walker_type = Walker;
+    using shape_type = typename config_type::shape_type;
+    using index_type = typename config_type::index_type;
+    using strides_div_type = typename detail::strides_div_traits<CfgT>::type;
+    //using size_type = typename config_type::size_type;
+
+    const index_type dim_;
+    const detail::shape_inverter<index_type, shape_type> shape_;
+    const strides_div_type* strides_;
+    walker_type walker_;
+    shape_type index_;
+public:
+    template<typename Walker_>
+    walker_iterator_adapter(const shape_type& shape__, const strides_div_type& strides__ ,Walker_&& walker__):
+        dim_(shape__.size()),
+        shape_{shape__},
+        strides_{&strides__},
+        walker_{std::forward<Walker_>(walker__)},
+        index_(dim_+1, index_type{0})
+    {}
+    const auto& index()const{return index_;}
+    const auto& walker()const{return walker_;}
+    void reset(){
+        walker_.reset();
+        //reset index
+    }
+    bool next(){
+        index_type direction{0}; //start from direction with min stride
+        auto index_it = index_.end();
+        for(;direction!=dim_;++direction){
+            if (*--index_it == shape_.element(direction)-1){   //direction at their max
+                *index_it = index_type{0};
+                walker_.reset(direction);
+            }else{  //can next on direction
+                ++(*index_it);
+                walker_.step(direction);
+                return true;
+            }
+        }
+        if (*--index_it == index_type{-1}){
+            ++(*index_it);
+            return true;
+        }else{
+            ++(*index_it);
+            return false;
+        }
+        // ++(*--index_it);
+        // return false;
+    }
+    bool prev(){
+        index_type direction{0}; //start from direction with min stride
+        auto index_it = index_.end();
+        for(;direction!=dim_;++direction){
+            if (*--index_it == index_type{0}){   //direction at their min
+                *index_it = shape_.element(direction)-1;
+                walker_.reset_back(direction);
+            }else{  //can prev on direction
+                --(*index_it);
+                walker_.step_back(direction);
+                return true;
+            }
+        }
+        if (*--index_it == index_type{1}){
+            --(*index_it);
+            return true;
+        }else{
+            --(*index_it);
+            return false;
+        }
+    }
+    void move(index_type n){
+        walker_.reset();
+        auto strides_it = strides_->begin();
+        auto strides_end = strides_->end();
+        auto index_it = index_.begin();
+        *index_it = index_type{0};
+        index_type direction{dim_};
+        for(;strides_it!=strides_end; ++strides_it){
+            ++index_it;
+            --direction;
+            auto steps = detail::divide(n,*strides_it);
+            if (steps!=index_type{0}){
+                walker_.walk(direction,steps);
+            }
+            *index_it = steps;
+        }
+    }
 };
 
 }   //end of namespace gtensor
