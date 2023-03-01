@@ -167,25 +167,79 @@ public:
     result_type operator*()const{return indexer[index_walker.cursor()];}
 };
 
+/*
+
+//variant with shape reverse, with modified strides, only subscription
+shape_type strides = ...;   //init in constructor
+index_type strides_last_idx = strides.size()-1; //init in constructor
+index_type dim = ...; //init in constructor
+void step_old(const index_type& direction){
+    if (direction < dim){
+        cursor+=strides[strides_last_idx - direction];
+    }
+}
+
+//variant with shape reverse, with modified strides
+index_type* strides_last = ...; //init in constructor
+index_type dim = ...; /init in constructor
+void step_old(const index_type& direction){
+    if (direction < dim){
+        cursor+=*(strides_last - direction);
+    }
+}
+
+
+
+
+//variant with direction offset, without shape reverse, with modified strides
+index_type direction_offset = ...;  //init in constructor
+index_type* strides = ...; //init in constructor
+void step_new(const index_type& direction){
+    if (direction >= direction_offset){ //can move in direction
+        direction-=direction_offset;
+        cursor+=*(strides + direction);
+    }
+}
+//variant with direction offset, without shape reverse, with modified strides, subscription only
+index_type direction_offset = ...;  //init in constructor
+shape_type strides = ...; //init in constructor
+void step_new(const index_type& direction){
+    if (direction >= direction_offset){ //can move in direction
+        cursor+=strides[direction-direction_offset];
+    }
+}
+
+//variant with strides as param
+void step_new(const index_type& direction, const shape_type& strides){
+    if (direction >= direction_offset){ //can move in direction
+        cursor+=strides[direction-direction_offset];
+    }
+}
+
+*/
+
 template<typename CfgT, typename Walker>
-class walker_bidirectional_adapter
+class walker_iterator_adapter
 {
 protected:
     using config_type = CfgT;
     using walker_type = Walker;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
+    using strides_div_type = typename detail::strides_div_traits<CfgT>::type;
     //using size_type = typename config_type::size_type;
 
     const index_type dim_;
     const detail::shape_inverter<index_type, shape_type> shape_;
+    const strides_div_type* strides_;
     walker_type walker_;
     shape_type index_;
 public:
     template<typename Walker_>
-    walker_bidirectional_adapter(const shape_type& shape__, Walker_&& walker__):
+    walker_iterator_adapter(const shape_type& shape__, const strides_div_type& strides__, Walker_&& walker__):
         dim_(shape__.size()),
         shape_{shape__},
+        strides_{&strides__},
         walker_{std::forward<Walker_>(walker__)},
         index_(dim_+1, index_type{0})
     {}
@@ -233,28 +287,6 @@ public:
             return false;
         }
     }
-};
-
-template<typename CfgT, typename Walker>
-class walker_random_access_adapter : public walker_bidirectional_adapter<CfgT, Walker>
-{
-    using walker_bidirectional_adapter_base = walker_bidirectional_adapter<CfgT, Walker>;
-    using typename walker_bidirectional_adapter_base::config_type;
-    using typename walker_bidirectional_adapter_base::walker_type;
-    using typename walker_bidirectional_adapter_base::shape_type;
-    using typename walker_bidirectional_adapter_base::index_type;
-    using strides_div_type = typename detail::strides_div_traits<CfgT>::type;
-    using walker_bidirectional_adapter_base::walker_;
-    using walker_bidirectional_adapter_base::dim_;
-    using walker_bidirectional_adapter_base::index_;
-    //using size_type = typename config_type::size_type;
-    const strides_div_type* strides_;
-public:
-    template<typename Walker_>
-    walker_random_access_adapter(const shape_type& shape__, const strides_div_type& strides__ ,Walker_&& walker__):
-        walker_bidirectional_adapter_base(shape__,walker__),
-        strides_{&strides__}
-    {}
     void move(index_type n){
         walker_.reset();
         auto strides_it = strides_->begin();
@@ -273,6 +305,113 @@ public:
         }
     }
 };
+
+// template<typename CfgT, typename Walker>
+// class walker_bidirectional_adapter
+// {
+// protected:
+//     using config_type = CfgT;
+//     using walker_type = Walker;
+//     using shape_type = typename config_type::shape_type;
+//     using index_type = typename config_type::index_type;
+//     //using size_type = typename config_type::size_type;
+
+//     const index_type dim_;
+//     const detail::shape_inverter<index_type, shape_type> shape_;
+//     walker_type walker_;
+//     shape_type index_;
+// public:
+//     template<typename Walker_>
+//     walker_bidirectional_adapter(const shape_type& shape__, Walker_&& walker__):
+//         dim_(shape__.size()),
+//         shape_{shape__},
+//         walker_{std::forward<Walker_>(walker__)},
+//         index_(dim_+1, index_type{0})
+//     {}
+//     const auto& index()const{return index_;}
+//     const auto& walker()const{return walker_;}
+//     bool next(){
+//         index_type direction{0}; //start from direction with min stride
+//         auto index_it = index_.end();
+//         for(;direction!=dim_;++direction){
+//             if (*--index_it == shape_.element(direction)-1){   //direction at their max
+//                 *index_it = index_type{0};
+//                 walker_.reset(direction);
+//             }else{  //can next on direction
+//                 ++(*index_it);
+//                 walker_.step(direction);
+//                 return true;
+//             }
+//         }
+//         if (*--index_it == index_type{-1}){
+//             ++(*index_it);
+//             return true;
+//         }else{
+//             ++(*index_it);
+//             return false;
+//         }
+//     }
+//     bool prev(){
+//         index_type direction{0}; //start from direction with min stride
+//         auto index_it = index_.end();
+//         for(;direction!=dim_;++direction){
+//             if (*--index_it == index_type{0}){   //direction at their min
+//                 *index_it = shape_.element(direction)-1;
+//                 walker_.reset_back(direction);
+//             }else{  //can prev on direction
+//                 --(*index_it);
+//                 walker_.step_back(direction);
+//                 return true;
+//             }
+//         }
+//         if (*--index_it == index_type{1}){
+//             --(*index_it);
+//             return true;
+//         }else{
+//             --(*index_it);
+//             return false;
+//         }
+//     }
+// };
+
+// template<typename CfgT, typename Walker>
+// class walker_random_access_adapter : public walker_bidirectional_adapter<CfgT, Walker>
+// {
+//     using walker_bidirectional_adapter_base = walker_bidirectional_adapter<CfgT, Walker>;
+//     using typename walker_bidirectional_adapter_base::config_type;
+//     using typename walker_bidirectional_adapter_base::walker_type;
+//     using typename walker_bidirectional_adapter_base::shape_type;
+//     using typename walker_bidirectional_adapter_base::index_type;
+//     using strides_div_type = typename detail::strides_div_traits<CfgT>::type;
+//     using walker_bidirectional_adapter_base::walker_;
+//     using walker_bidirectional_adapter_base::dim_;
+//     using walker_bidirectional_adapter_base::index_;
+//     //using size_type = typename config_type::size_type;
+//     const strides_div_type* strides_;
+// public:
+//     template<typename Walker_>
+//     walker_random_access_adapter(const shape_type& shape__, const strides_div_type& strides__ ,Walker_&& walker__):
+//         walker_bidirectional_adapter_base(shape__,walker__),
+//         strides_{&strides__}
+//     {}
+//     void move(index_type n){
+//         walker_.reset();
+//         auto strides_it = strides_->begin();
+//         auto strides_end = strides_->end();
+//         auto index_it = index_.begin();
+//         *index_it = index_type{0};
+//         index_type direction{dim_};
+//         for(;strides_it!=strides_end; ++strides_it){
+//             ++index_it;
+//             --direction;
+//             auto steps = detail::divide(n,*strides_it);
+//             if (steps!=index_type{0}){
+//                 walker_.walk(direction,steps);
+//             }
+//             *index_it = steps;
+//         }
+//     }
+// };
 
 }   //end of namespace gtensor
 

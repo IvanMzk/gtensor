@@ -9,23 +9,43 @@
 namespace gtensor{
 namespace detail{
 
-template<typename ShT>
-inline ShT make_strides(const ShT& shape, typename ShT::value_type min_stride = typename ShT::value_type(1)){
+template<typename ResT, typename ShT>
+inline ResT make_strides(const ShT& shape, typename ShT::value_type min_stride = typename ShT::value_type(1)){
+    using result_type = ResT;
+    using result_value_type = typename result_type::value_type;
     if (!shape.empty()){
-        ShT res(shape.size(), min_stride);
-        auto shape_begin{shape.begin()};
-        auto shape_end{shape.end()};
+        result_type res(shape.size(), result_value_type());
+        auto shape_begin = shape.begin();
+        auto shape_it = shape.end();
         auto res_end{res.end()};
-        --res_end;
-        while (shape_begin!=--shape_end){
-            min_stride*=*shape_end;
-            *--res_end = min_stride;
+        *--res_end = result_value_type(min_stride);
+        while (--shape_it!=shape_begin){
+            min_stride*=*shape_it;
+            *--res_end = result_value_type(min_stride);
         }
         return res;
     }
     else{
-        return ShT{};
+        return result_type{};
     }
+}
+template<typename ShT>
+inline ShT make_strides(const ShT& shape, typename ShT::value_type min_stride = typename ShT::value_type(1)){
+    return make_strides<ShT,ShT>(shape,min_stride);
+}
+
+template<typename ShT>
+inline auto make_strides_div(const ShT& shape, gtensor::config::mode_div_libdivide){
+    using value_type = typename ShT::value_type;
+    return make_strides<detail::libdivide_vector<value_type>>(shape);
+}
+template<typename ShT>
+inline auto make_strides_div(const ShT& shape, gtensor::config::mode_div_native){
+    return make_strides(shape);
+}
+template<typename CfgT, typename ShT>
+inline auto make_strides_div(const ShT& shape){
+    return make_strides_div(shape, typename CfgT::div_mode{});
 }
 
 template<typename ShT>

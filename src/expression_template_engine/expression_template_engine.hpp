@@ -13,20 +13,20 @@ namespace gtensor{
 namespace detail{
 
 template<typename EngineT, typename ShT> auto begin_broadcast(EngineT& engine, const ShT& shape){
-    using iterator_type = broadcast_iterator<typename EngineT::config_type, decltype(engine.create_walker())>;
-    return iterator_type{engine.create_walker(), shape, make_dividers<typename EngineT::config_type>(shape)};
+    using iterator_type = broadcast_shape_iterator<typename EngineT::config_type, decltype(engine.create_walker())>;
+    return iterator_type{engine.create_walker(), shape, make_strides_div<typename EngineT::config_type>(shape)};
 }
 template<typename EngineT, typename ShT> auto end_broadcast(EngineT& engine, const ShT& shape){
-    using iterator_type = broadcast_iterator<typename EngineT::config_type, decltype(engine.create_walker())>;
-    return iterator_type{engine.create_walker(), shape, make_dividers<typename EngineT::config_type>(shape), make_size(shape)};
+    using iterator_type = broadcast_shape_iterator<typename EngineT::config_type, decltype(engine.create_walker())>;
+    return iterator_type{engine.create_walker(), shape, make_strides_div<typename EngineT::config_type>(shape), make_size(shape)};
 }
 template<typename EngineT, typename ShT> auto rbegin_broadcast(EngineT& engine, const ShT& shape){
-    using iterator_type = reverse_broadcast_iterator<typename EngineT::config_type, decltype(engine.create_walker())>;
-    return iterator_type{engine.create_walker(), shape, make_dividers<typename EngineT::config_type>(shape), make_size(shape)};
+    using iterator_type = reverse_broadcast_shape_iterator<typename EngineT::config_type, decltype(engine.create_walker())>;
+    return iterator_type{engine.create_walker(), shape, make_strides_div<typename EngineT::config_type>(shape), make_size(shape)};
 }
 template<typename EngineT, typename ShT> auto rend_broadcast(EngineT& engine, const ShT& shape){
-    using iterator_type = reverse_broadcast_iterator<typename EngineT::config_type, decltype(engine.create_walker())>;
-    return iterator_type{engine.create_walker(), shape, make_dividers<typename EngineT::config_type>(shape)};
+    using iterator_type = reverse_broadcast_shape_iterator<typename EngineT::config_type, decltype(engine.create_walker())>;
+    return iterator_type{engine.create_walker(), shape, make_strides_div<typename EngineT::config_type>(shape)};
 }
 template<typename EngineT> auto begin_broadcast(EngineT& engine){
     using iterator_type = broadcast_iterator<typename EngineT::config_type, decltype(engine.create_walker())>;

@@ -92,7 +92,7 @@ TEST_CASE("test_walker_iterator_adapter", "[test_broadcast]"){
     using storage_type = std::vector<value_type>;
     using indexer_type = gtensor::basic_indexer<index_type, typename storage_type::iterator>;
     using walker_type = gtensor::walker<config_type,indexer_type>;
-    using walker_adapter_type = gtensor::walker_random_access_adapter<config_type,walker_type>;
+    using walker_adapter_type = gtensor::walker_iterator_adapter<config_type,walker_type>;
     using gtensor::detail::make_size;
     using gtensor::detail::make_strides;
     using gtensor::detail::make_reset_strides;
