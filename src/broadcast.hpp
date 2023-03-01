@@ -168,35 +168,29 @@ public:
 };
 
 template<typename CfgT, typename Walker>
-class walker_iterator_adapter{
-
+class walker_bidirectional_adapter
+{
+protected:
     using config_type = CfgT;
     using walker_type = Walker;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
-    using strides_div_type = typename detail::strides_div_traits<CfgT>::type;
     //using size_type = typename config_type::size_type;
 
     const index_type dim_;
     const detail::shape_inverter<index_type, shape_type> shape_;
-    const strides_div_type* strides_;
     walker_type walker_;
     shape_type index_;
 public:
     template<typename Walker_>
-    walker_iterator_adapter(const shape_type& shape__, const strides_div_type& strides__ ,Walker_&& walker__):
+    walker_bidirectional_adapter(const shape_type& shape__, Walker_&& walker__):
         dim_(shape__.size()),
         shape_{shape__},
-        strides_{&strides__},
         walker_{std::forward<Walker_>(walker__)},
         index_(dim_+1, index_type{0})
     {}
     const auto& index()const{return index_;}
     const auto& walker()const{return walker_;}
-    void reset(){
-        walker_.reset();
-        //reset index
-    }
     bool next(){
         index_type direction{0}; //start from direction with min stride
         auto index_it = index_.end();
@@ -217,8 +211,6 @@ public:
             ++(*index_it);
             return false;
         }
-        // ++(*--index_it);
-        // return false;
     }
     bool prev(){
         index_type direction{0}; //start from direction with min stride
@@ -241,6 +233,28 @@ public:
             return false;
         }
     }
+};
+
+template<typename CfgT, typename Walker>
+class walker_random_access_adapter : public walker_bidirectional_adapter<CfgT, Walker>
+{
+    using walker_bidirectional_adapter_base = walker_bidirectional_adapter<CfgT, Walker>;
+    using typename walker_bidirectional_adapter_base::config_type;
+    using typename walker_bidirectional_adapter_base::walker_type;
+    using typename walker_bidirectional_adapter_base::shape_type;
+    using typename walker_bidirectional_adapter_base::index_type;
+    using strides_div_type = typename detail::strides_div_traits<CfgT>::type;
+    using walker_bidirectional_adapter_base::walker_;
+    using walker_bidirectional_adapter_base::dim_;
+    using walker_bidirectional_adapter_base::index_;
+    //using size_type = typename config_type::size_type;
+    const strides_div_type* strides_;
+public:
+    template<typename Walker_>
+    walker_random_access_adapter(const shape_type& shape__, const strides_div_type& strides__ ,Walker_&& walker__):
+        walker_bidirectional_adapter_base(shape__,walker__),
+        strides_{&strides__}
+    {}
     void move(index_type n){
         walker_.reset();
         auto strides_it = strides_->begin();
