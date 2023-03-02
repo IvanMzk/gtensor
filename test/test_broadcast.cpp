@@ -103,31 +103,31 @@ TEST_CASE("test_walker_iterator_adapter", "[test_broadcast]"){
     //0shape,1elements,2action_on_adapter,3result_index,4result_walker_deref
     auto test_data = std::make_tuple(
         //first
-        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){}, shape_type{0,0,0,0}, value_type{1}),
+        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){}, shape_type{0,0,0}, value_type{1}),
         //prev first
-        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){a.prev();}, shape_type{-1,0,1,2}, value_type{6}),
-        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){a.prev(); a.next();}, shape_type{0,0,0,0}, value_type{1}),
+        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){a.prev();}, shape_type{0,1,2}, value_type{6}),
+        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){a.prev(); a.next();}, shape_type{0,0,0}, value_type{1}),
         //last
-        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){a.next(); a.next(); a.next(); a.next(); a.next();}, shape_type{0,0,1,2}, value_type{6}),
+        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){a.next(); a.next(); a.next(); a.next(); a.next();}, shape_type{0,1,2}, value_type{6}),
         //past last
-        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){a.next(); a.next(); a.next(); a.next(); a.next(); a.next();}, shape_type{1,0,0,0}, value_type{1}),
-        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){a.next(); a.next(); a.next(); a.next(); a.next(); a.next(); a.prev();}, shape_type{0,0,1,2}, value_type{6}),
-        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){a.next(); a.next(); a.prev(); a.next(); a.next(); a.prev(); a.prev();}, shape_type{0,0,0,1}, value_type{2}),
+        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){a.next(); a.next(); a.next(); a.next(); a.next(); a.next();}, shape_type{0,0,0}, value_type{1}),
+        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){a.next(); a.next(); a.next(); a.next(); a.next(); a.next(); a.prev();}, shape_type{0,1,2}, value_type{6}),
+        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){a.next(); a.next(); a.prev(); a.next(); a.next(); a.prev(); a.prev();}, shape_type{0,0,1}, value_type{2}),
         //move
-        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){a.move(0);}, shape_type{0,0,0,0}, value_type{1}),
-        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){a.move(1);}, shape_type{0,0,0,1}, value_type{2}),
-        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){a.move(5);}, shape_type{0,0,1,2}, value_type{6}),
-        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){a.move(5); a.move(0);}, shape_type{0,0,0,0}, value_type{1}),
-        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){a.move(1); a.move(0); a.move(3);}, shape_type{0,0,1,0}, value_type{4}),
+        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){a.move(0);}, shape_type{0,0,0}, value_type{1}),
+        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){a.move(1);}, shape_type{0,0,1}, value_type{2}),
+        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){a.move(5);}, shape_type{0,1,2}, value_type{6}),
+        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){a.move(5); a.move(0);}, shape_type{0,0,0}, value_type{1}),
+        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){a.move(1); a.move(0); a.move(3);}, shape_type{0,1,0}, value_type{4}),
         //next prev move
-        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){a.move(0); a.next();}, shape_type{0,0,0,1}, value_type{2}),
-        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){a.move(1); a.prev();}, shape_type{0,0,0,0}, value_type{1}),
-        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){a.move(1); a.next();}, shape_type{0,0,0,2}, value_type{3}),
-        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){a.move(0); a.prev();}, shape_type{-1,0,1,2}, value_type{6}),
-        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){a.prev(); a.move(4);}, shape_type{0,0,1,1}, value_type{5}),
-        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){a.next(); a.next(); a.move(3);}, shape_type{0,0,1,0}, value_type{4}),
-        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){a.next(); a.next(); a.next(); a.next(); a.next(); a.next(); a.move(3);}, shape_type{0,0,1,0}, value_type{4}),
-        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){a.prev(); a.next(); a.move(4); a.prev(); a.next();}, shape_type{0,0,1,1}, value_type{5})
+        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){a.move(0); a.next();}, shape_type{0,0,1}, value_type{2}),
+        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){a.move(1); a.prev();}, shape_type{0,0,0}, value_type{1}),
+        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){a.move(1); a.next();}, shape_type{0,0,2}, value_type{3}),
+        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){a.move(0); a.prev();}, shape_type{0,1,2}, value_type{6}),
+        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){a.prev(); a.move(4);}, shape_type{0,1,1}, value_type{5}),
+        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){a.next(); a.next(); a.move(3);}, shape_type{0,1,0}, value_type{4}),
+        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){a.next(); a.next(); a.next(); a.next(); a.next(); a.next(); a.move(3);}, shape_type{0,1,0}, value_type{4}),
+        std::make_tuple(shape_type{1,2,3}, storage_type{1,2,3,4,5,6}, [](auto& a){a.prev(); a.next(); a.move(4); a.prev(); a.next();}, shape_type{0,1,1}, value_type{5})
     );
 
     auto test = [](const auto& t){

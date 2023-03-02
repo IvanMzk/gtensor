@@ -234,6 +234,7 @@ protected:
     const strides_div_type* strides_;
     walker_type walker_;
     shape_type index_;
+    index_type overflow_{0};
 public:
     template<typename Walker_>
     walker_iterator_adapter(const shape_type& shape__, const strides_div_type& strides__, Walker_&& walker__):
@@ -241,7 +242,7 @@ public:
         shape_{shape__},
         strides_{&strides__},
         walker_{std::forward<Walker_>(walker__)},
-        index_(dim_+1, index_type{0})
+        index_(dim_, index_type{0})
     {}
     const auto& index()const{return index_;}
     const auto& walker()const{return walker_;}
@@ -258,11 +259,11 @@ public:
                 return true;
             }
         }
-        if (*--index_it == index_type{-1}){
-            ++(*index_it);
+        if (overflow_ == index_type{-1}){
+            ++overflow_;
             return true;
         }else{
-            ++(*index_it);
+            ++overflow_;
             return false;
         }
     }
@@ -279,11 +280,11 @@ public:
                 return true;
             }
         }
-        if (*--index_it == index_type{1}){
-            --(*index_it);
+        if (overflow_ == index_type{1}){
+            --overflow_;
             return true;
         }else{
-            --(*index_it);
+            --overflow_;
             return false;
         }
     }
@@ -292,10 +293,8 @@ public:
         auto strides_it = strides_->begin();
         auto strides_end = strides_->end();
         auto index_it = index_.begin();
-        *index_it = index_type{0};
         index_type direction{dim_};
-        for(;strides_it!=strides_end; ++strides_it){
-            ++index_it;
+        for(;strides_it!=strides_end; ++strides_it,++index_it){
             --direction;
             auto steps = detail::divide(n,*strides_it);
             if (steps!=index_type{0}){
