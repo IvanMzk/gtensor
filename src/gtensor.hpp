@@ -70,6 +70,8 @@ protected:
     auto impl()const{return impl_;}
     const auto& engine()const{return static_cast<const impl_type*>(impl_.get())->engine();}
     auto& engine(){return impl_->engine();}
+    const auto& descriptor()const{return static_cast<const impl_type*>(impl_.get())->descriptor();}
+    auto& descriptor(){return impl_->descriptor();}
 
 public:
     using config_type = CfgT;
@@ -195,9 +197,10 @@ public:
     auto operator()(const Subs&...subs)const{
         return view_factory<ValT,CfgT>::create_mapping_view_index_tensor(impl(), subs...);
     }
-    template<typename Sub, std::enable_if_t<detail::is_bool_tensor<Sub>::value ,int> = 0 >
-    auto operator()(const Sub& sub)const{
-        return view_factory<ValT,CfgT>::create_mapping_view_bool_tensor(impl(), sub);
+    template<typename Subs, std::enable_if_t<detail::is_bool_tensor<Subs>::value ,int> = 0 >
+    auto operator()(const Subs& subs)const{
+        detail::check_bool_mapping_view_subs(shape(), subs.shape());
+        return view_factory<ValT,CfgT>::create_mapping_view_bool_tensor(impl(), subs);
     }
 };
 

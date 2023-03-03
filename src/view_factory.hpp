@@ -212,13 +212,16 @@ auto check_bool_mapping_view_subs(const ShT& pshape, const ShT& subs_shape){
     using index_type = typename ShT::value_type;
     index_type pdim = pshape.size();
     index_type subs_dim = subs_shape.size();
-    if (subs_dim > pdim){
-        throw subscript_exception("invalid bool tensor subscript");
-    }
-    auto pshape_it = pshape.begin();
-    for (auto subs_shape_it = subs_shape.begin(), subs_shape_end = subs_shape.end(); subs_shape_it!=subs_shape_end; ++subs_shape_it, ++pshape_it){
-        if (*subs_shape_it > *pshape_it){
+    if (pdim > index_type{0})
+    {
+        if (subs_dim > pdim){
             throw subscript_exception("invalid bool tensor subscript");
+        }
+        auto pshape_it = pshape.begin();
+        for (auto subs_shape_it = subs_shape.begin(), subs_shape_end = subs_shape.end(); subs_shape_it!=subs_shape_end; ++subs_shape_it, ++pshape_it){
+            if (*subs_shape_it > *pshape_it){
+                throw subscript_exception("invalid bool tensor subscript");
+            }
         }
     }
 }
@@ -328,7 +331,7 @@ class view_factory
         };
     }
     template<typename...Subs>
-    static auto create_mapping_view_descriptor_index_tensor(const shape_type& shape, const shape_type& strides, const Subs&...subs){
+    static auto create_index_mapping_view_descriptor(const shape_type& shape, const shape_type& strides, const Subs&...subs){
         using map_type = typename mapping_view_descriptor_type::map_type;
         auto index_shape = detail::broadcast_shape<shape_type>(subs.shape()...);
         return mapping_view_descriptor_type{
@@ -336,13 +339,16 @@ class view_factory
             detail::make_map_index_tensor<map_type>(shape,strides,detail::make_size(index_shape),subs.begin_broadcast(index_shape)...)
         };
     }
-    template<typename Sub>
-    static auto create_mapping_view_descriptor_bool_tensor(const shape_type& shape, const shape_type& strides, const Sub& sub){
+    template<typename Subs>
+    static auto create_bool_mapping_view_descriptor(const shape_type& shape, const shape_type& strides, const Subs& subs){
         using map_type = typename mapping_view_descriptor_type::map_type;
-        using walker_adapter_type = walker_iterator_adapter<CfgT, decltype(sub.engine().create_walker())>;
-        auto map = detail::make_bool_mapping_view_map<map_type>(shape, strides, sub.shape(), sub.size(), walker_adapter_type{sub.shape(),sub.impl()->descriptor().strides_div(), sub.engine().create_walker()});
+        using walker_adapter_type = walker_iterator_adapter<CfgT, decltype(subs.engine().create_walker())>;
+        auto subs_size = subs.size();
+        auto block_size = detail::bool_mapping_view_block_size(shape, subs);
+        auto map = detail::make_bool_mapping_view_map<map_type>(shape, block_size, subs_size);
+        auto map_size = detail::fill_bool_mapping_view_map(map, strides, block_size, subs_size, walker_adapter_type{subs.descriptor().shape(),subs.descriptor().strides_div(), subs.engine().create_walker()});
         return mapping_view_descriptor_type{
-            detail::make_bool_mapping_view_shape(shape, sub.shape(), map.size()),
+            detail::make_bool_mapping_view_shape(shape, subs.descriptor().shape(), block_size, map_size),
             std::move(map)
         };
     }
@@ -380,12 +386,12 @@ public:
     template<typename ImplT, typename...Subs>
     static auto create_mapping_view_index_tensor(const std::shared_ptr<ImplT>& parent, const Subs&...subs){
         using impl_type = mapping_view<typename detail::viewing_engine_traits<typename CfgT::host_engine, CfgT, mapping_view_descriptor_type, ImplT>::type>;
-        return tensor<ValT,CfgT,impl_type>::make_tensor(create_mapping_view_descriptor_index_tensor(parent->shape(), parent->strides(), subs...),parent);
+        return tensor<ValT,CfgT,impl_type>::make_tensor(create_index_mapping_view_descriptor(parent->shape(), parent->strides(), subs...),parent);
     }
     template<typename ImplT, typename Sub>
     static auto create_mapping_view_bool_tensor(const std::shared_ptr<ImplT>& parent, const Sub& sub){
         using impl_type = mapping_view<typename detail::viewing_engine_traits<typename CfgT::host_engine, CfgT, mapping_view_descriptor_type, ImplT>::type>;
-        return tensor<ValT,CfgT,impl_type>::make_tensor(create_mapping_view_descriptor_bool_tensor(parent->shape(), parent->strides(), sub),parent);
+        return tensor<ValT,CfgT,impl_type>::make_tensor(create_bool_mapping_view_descriptor(parent->shape(), parent->strides(), sub),parent);
     }
 };
 
