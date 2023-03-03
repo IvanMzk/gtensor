@@ -178,23 +178,23 @@ TEMPLATE_TEST_CASE("test_transpose","[test_view_factory]", std::vector<std::int6
     REQUIRE(transpose(source, indeces) == expected_transposed);
 }
 
-TEMPLATE_TEST_CASE("test_make_shape_index_tensor","[test_view_factory]",
+TEMPLATE_TEST_CASE("test_make_index_mapping_view_shape","[test_view_factory]",
     typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
 ){
     using test_config_type = TestType;
     using index_type = typename test_config_type::index_type;
     using shape_type = typename test_config_type::shape_type;
     using gtensor::subscript_exception;
-    using gtensor::detail::make_shape_index_tensor;
+    using gtensor::detail::make_index_mapping_view_shape;
     using gtensor::detail::broadcast_shape;
     using test_type = std::tuple<shape_type,shape_type>;
     //0result shape,1expected shape
     auto test_data = GENERATE(
-        test_type{make_shape_index_tensor(shape_type{10},broadcast_shape<shape_type>(shape_type{4}),index_type{1}), shape_type{4}},
-        test_type{make_shape_index_tensor(shape_type{10},broadcast_shape<shape_type>(shape_type{2,2}),index_type{1}), shape_type{2,2}},
-        test_type{make_shape_index_tensor(shape_type{5,4,3,2},broadcast_shape<shape_type>(shape_type{8},shape_type{8}),index_type{2}), shape_type{8,3,2}},
-        test_type{make_shape_index_tensor(shape_type{5,4,3,2},broadcast_shape<shape_type>(shape_type{3,4},shape_type{1},shape_type{3,1}),index_type{3}), shape_type{3,4,2}},
-        test_type{make_shape_index_tensor(shape_type{5,4,3,2},broadcast_shape<shape_type>(shape_type{3,4},shape_type{1},shape_type{3,1}, shape_type{1,4}),index_type{4}), shape_type{3,4}}
+        test_type{make_index_mapping_view_shape(shape_type{10},broadcast_shape<shape_type>(shape_type{4}),index_type{1}), shape_type{4}},
+        test_type{make_index_mapping_view_shape(shape_type{10},broadcast_shape<shape_type>(shape_type{2,2}),index_type{1}), shape_type{2,2}},
+        test_type{make_index_mapping_view_shape(shape_type{5,4,3,2},broadcast_shape<shape_type>(shape_type{8},shape_type{8}),index_type{2}), shape_type{8,3,2}},
+        test_type{make_index_mapping_view_shape(shape_type{5,4,3,2},broadcast_shape<shape_type>(shape_type{3,4},shape_type{1},shape_type{3,1}),index_type{3}), shape_type{3,4,2}},
+        test_type{make_index_mapping_view_shape(shape_type{5,4,3,2},broadcast_shape<shape_type>(shape_type{3,4},shape_type{1},shape_type{3,1}, shape_type{1,4}),index_type{4}), shape_type{3,4}}
     );
 
     auto result_shape = std::get<0>(test_data);
@@ -202,21 +202,21 @@ TEMPLATE_TEST_CASE("test_make_shape_index_tensor","[test_view_factory]",
     REQUIRE(result_shape == expected_shape);
 }
 
-TEMPLATE_TEST_CASE("test_make_shape_index_tensor_exception","[test_view_factory]",
+TEMPLATE_TEST_CASE("test_make_index_mapping_view_shape_exception","[test_view_factory]",
     typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
 ){
     using test_config_type = TestType;
     using index_type = typename test_config_type::index_type;
     using shape_type = typename test_config_type::shape_type;
     using gtensor::subscript_exception;
-    using gtensor::detail::make_shape_index_tensor;
+    using gtensor::detail::make_index_mapping_view_shape;
     using gtensor::detail::broadcast_shape;
 
-    REQUIRE_THROWS_AS(make_shape_index_tensor(shape_type{10},broadcast_shape<shape_type>(shape_type{4}, shape_type{4}),index_type{2}), subscript_exception);
-    REQUIRE_THROWS_AS(make_shape_index_tensor(shape_type{3,4},broadcast_shape<shape_type>(shape_type{4}, shape_type{4}, shape_type{1}),index_type{3}), subscript_exception);
+    REQUIRE_THROWS_AS(make_index_mapping_view_shape(shape_type{10},broadcast_shape<shape_type>(shape_type{4}, shape_type{4}),index_type{2}), subscript_exception);
+    REQUIRE_THROWS_AS(make_index_mapping_view_shape(shape_type{3,4},broadcast_shape<shape_type>(shape_type{4}, shape_type{4}, shape_type{1}),index_type{3}), subscript_exception);
 }
 
-TEMPLATE_TEST_CASE("test_make_map_index_tensor","[test_view_factory]",
+TEMPLATE_TEST_CASE("test_make_index_mapping_view_map","[test_view_factory]",
     typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
 ){
     using test_config_type = TestType;
@@ -225,7 +225,7 @@ TEMPLATE_TEST_CASE("test_make_map_index_tensor","[test_view_factory]",
     using tensor_type = gtensor::tensor<index_type, test_config_type>;
     using test_view_factory::test_tensor;
     using test_view_factory::make_test_tensor;
-    using gtensor::detail::make_map_index_tensor;
+    using gtensor::detail::make_index_mapping_view_map;
     using gtensor::detail::broadcast_shape;
     using gtensor::detail::make_size;
     using map_type = std::vector<index_type>;
@@ -237,7 +237,7 @@ TEMPLATE_TEST_CASE("test_make_map_index_tensor","[test_view_factory]",
             auto sub1 = make_test_tensor(tensor_type{0,0,0});
             auto index_shape = broadcast_shape<shape_type>(sub1.impl()->shape());
             auto index_size = make_size(index_shape);
-            return make_map_index_tensor<map_type>(shape_type{1},shape_type{1},index_size,sub1.engine().begin_broadcast(index_shape));
+            return make_index_mapping_view_map<map_type>(shape_type{1},shape_type{1},index_size,sub1.engine().begin_broadcast(index_shape));
             }(),
             map_type{0,0,0}
         },
@@ -246,7 +246,7 @@ TEMPLATE_TEST_CASE("test_make_map_index_tensor","[test_view_factory]",
             auto sub1 = make_test_tensor(tensor_type{2});
             auto index_shape = broadcast_shape<shape_type>(sub1.impl()->shape());
             auto index_size = make_size(index_shape);
-            return make_map_index_tensor<map_type>(shape_type{10},shape_type{1},index_size,sub1.engine().begin_broadcast(index_shape));
+            return make_index_mapping_view_map<map_type>(shape_type{10},shape_type{1},index_size,sub1.engine().begin_broadcast(index_shape));
             }(),
             map_type{2}
         },
@@ -256,7 +256,7 @@ TEMPLATE_TEST_CASE("test_make_map_index_tensor","[test_view_factory]",
             auto sub2 = make_test_tensor(tensor_type{0,1,2});
             auto index_shape = broadcast_shape<shape_type>(sub1.impl()->shape(),sub2.impl()->shape());
             auto index_size = make_size(index_shape);
-            return make_map_index_tensor<map_type>(shape_type{4,3},shape_type{3,1},index_size,sub1.engine().begin_broadcast(index_shape), sub2.engine().begin_broadcast(index_shape));
+            return make_index_mapping_view_map<map_type>(shape_type{4,3},shape_type{3,1},index_size,sub1.engine().begin_broadcast(index_shape), sub2.engine().begin_broadcast(index_shape));
             }(),
             map_type{0,4,8}
         },
@@ -266,7 +266,7 @@ TEMPLATE_TEST_CASE("test_make_map_index_tensor","[test_view_factory]",
                 auto sub2 = make_test_tensor(tensor_type{1});
                 auto index_shape = broadcast_shape<shape_type>(sub1.impl()->shape(),sub2.impl()->shape());
                 auto index_size = make_size(index_shape);
-                return make_map_index_tensor<map_type>(shape_type{4,3},shape_type{3,1},index_size,sub1.engine().begin_broadcast(index_shape), sub2.engine().begin_broadcast(index_shape));
+                return make_index_mapping_view_map<map_type>(shape_type{4,3},shape_type{3,1},index_size,sub1.engine().begin_broadcast(index_shape), sub2.engine().begin_broadcast(index_shape));
             }(),
             map_type{1,4,7}
         },
@@ -275,7 +275,7 @@ TEMPLATE_TEST_CASE("test_make_map_index_tensor","[test_view_factory]",
                 auto sub1 = make_test_tensor(tensor_type{1,3});
                 auto index_shape = broadcast_shape<shape_type>(sub1.impl()->shape());
                 auto index_size = make_size(index_shape);
-                return make_map_index_tensor<map_type>(shape_type{4,3},shape_type{3,1},index_size,sub1.engine().begin_broadcast(index_shape));
+                return make_index_mapping_view_map<map_type>(shape_type{4,3},shape_type{3,1},index_size,sub1.engine().begin_broadcast(index_shape));
             }(),
             map_type{3,4,5,9,10,11}
         },
@@ -284,7 +284,7 @@ TEMPLATE_TEST_CASE("test_make_map_index_tensor","[test_view_factory]",
                 auto sub1 = make_test_tensor(tensor_type{1,3,0,1});
                 auto index_shape = broadcast_shape<shape_type>(sub1.impl()->shape());
                 auto index_size = make_size(index_shape);
-                return make_map_index_tensor<map_type>(shape_type{4,3},shape_type{3,1},index_size,sub1.engine().begin_broadcast(index_shape));
+                return make_index_mapping_view_map<map_type>(shape_type{4,3},shape_type{3,1},index_size,sub1.engine().begin_broadcast(index_shape));
             }(),
             map_type{3,4,5,9,10,11,0,1,2,3,4,5}
         }
@@ -295,7 +295,7 @@ TEMPLATE_TEST_CASE("test_make_map_index_tensor","[test_view_factory]",
     REQUIRE(result_map == expected_map);
 }
 
-TEMPLATE_TEST_CASE("test_make_map_index_tensor_exception","[test_view_factory]",
+TEMPLATE_TEST_CASE("test_make_index_mapping_view_map_exception","[test_view_factory]",
     typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
 ){
     using test_config_type = TestType;
@@ -304,7 +304,7 @@ TEMPLATE_TEST_CASE("test_make_map_index_tensor_exception","[test_view_factory]",
     using tensor_type = gtensor::tensor<index_type, test_config_type>;
     using test_view_factory::test_tensor;
     using test_view_factory::make_test_tensor;
-    using gtensor::detail::make_map_index_tensor;
+    using gtensor::detail::make_index_mapping_view_map;
     using gtensor::detail::broadcast_shape;
     using gtensor::detail::make_size;
     using gtensor::subscript_exception;
@@ -325,7 +325,7 @@ TEMPLATE_TEST_CASE("test_make_map_index_tensor_exception","[test_view_factory]",
         auto index_shape = broadcast_shape<shape_type>(sub1.impl()->shape(),sub2.impl()->shape());
         auto index_size = make_size(index_shape);
         REQUIRE_THROWS_AS(
-            make_map_index_tensor<map_type>(shape_type{4,3},shape_type{3,1},index_size, sub1.engine().begin_broadcast(index_shape), sub2.engine().begin_broadcast(index_shape)),
+            make_index_mapping_view_map<map_type>(shape_type{4,3},shape_type{3,1},index_size, sub1.engine().begin_broadcast(index_shape), sub2.engine().begin_broadcast(index_shape)),
             subscript_exception
         );
     }
@@ -340,212 +340,11 @@ TEMPLATE_TEST_CASE("test_make_map_index_tensor_exception","[test_view_factory]",
         auto index_shape = broadcast_shape<shape_type>(sub1.impl()->shape());
         auto index_size = make_size(index_shape);
         REQUIRE_THROWS_AS(
-            make_map_index_tensor<map_type>(shape_type{4,3},shape_type{3,1},index_size, sub1.engine().begin_broadcast(index_shape)),
+            make_index_mapping_view_map<map_type>(shape_type{4,3},shape_type{3,1},index_size, sub1.engine().begin_broadcast(index_shape)),
             subscript_exception
         );
     }
 }
-
-TEMPLATE_TEST_CASE("test_make_shape_bool_tensor","[test_view_factory]",
-    typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-){
-    using test_config_type = TestType;
-    using shape_type = typename test_config_type::shape_type;
-    using index_tensor_type = gtensor::tensor<bool, test_config_type>;
-    using gtensor::subscript_exception;
-    using gtensor::detail::make_shape_bool_tensor;
-    using test_type = std::tuple<shape_type,shape_type>;
-    //0result shape,1expected shape
-    auto test_data = GENERATE(
-        test_type{
-            [](){
-                auto idx = index_tensor_type{true,false,false,true,false};
-                return make_shape_bool_tensor(shape_type{5},idx.shape(), idx.begin(), idx.end());
-            }(),
-            shape_type{2}
-        },
-        test_type{
-            [](){
-                auto idx = index_tensor_type{true};
-                return make_shape_bool_tensor(shape_type{5},idx.shape(), idx.begin(), idx.end());
-            }(),
-            shape_type{1}
-        },
-        test_type{
-            [](){
-                auto idx = index_tensor_type{false,true,true};
-                return make_shape_bool_tensor(shape_type{5},idx.shape(), idx.begin(), idx.end());
-            }(),
-            shape_type{2}
-        },
-        test_type{
-            [](){
-                auto idx = index_tensor_type{false,false,false,false,false};
-                return make_shape_bool_tensor(shape_type{5},idx.shape(), idx.begin(), idx.end());
-            }(),
-            shape_type{}
-        },
-        test_type{
-            [](){
-                auto idx = index_tensor_type{false,true,false};
-                return make_shape_bool_tensor(shape_type{3,2,4},idx.shape(), idx.begin(), idx.end());
-            }(),
-            shape_type{1,2,4}
-        },
-        test_type{
-            [](){
-                auto idx = index_tensor_type{true};
-                return make_shape_bool_tensor(shape_type{3,2,4},idx.shape(), idx.begin(), idx.end());
-            }(),
-            shape_type{1,2,4}
-        },
-        test_type{
-            [](){
-                auto idx = index_tensor_type{{false,true},{true,true},{false,false}};
-                return make_shape_bool_tensor(shape_type{3,2,4},idx.shape(), idx.begin(), idx.end());
-            }(),
-            shape_type{3,4}
-        },
-        test_type{
-            [](){
-                auto idx = index_tensor_type{{false},{true}};
-                return make_shape_bool_tensor(shape_type{3,2,4},idx.shape(), idx.begin(), idx.end());
-            }(),
-            shape_type{1,4}
-        },
-        test_type{
-            [](){
-                auto idx = index_tensor_type{{false,true},{true,true},{true,false}};
-                return make_shape_bool_tensor(shape_type{3,2},idx.shape(), idx.begin(), idx.end());
-            }(),
-            shape_type{4}
-        },
-        test_type{
-            [](){
-                auto idx = index_tensor_type{{false,false},{false,false},{false,false}};
-                return make_shape_bool_tensor(shape_type{3,2},idx.shape(), idx.begin(), idx.end());
-            }(),
-            shape_type{}
-        }
-    );
-
-    auto result_shape = std::get<0>(test_data);
-    auto expected_shape = std::get<1>(test_data);
-    REQUIRE(result_shape == expected_shape);
-}
-
-TEMPLATE_TEST_CASE("test_make_shape_bool_tensor_exception","[test_view_factory]",
-    typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-){
-    using test_config_type = TestType;
-    using shape_type = typename test_config_type::shape_type;
-    using index_tensor_type = gtensor::tensor<bool, test_config_type>;
-    using gtensor::subscript_exception;
-    using gtensor::detail::make_shape_bool_tensor;
-
-
-    REQUIRE_THROWS_AS(
-        ([](){
-            auto idx = index_tensor_type{true,false,false,true,false,false};
-            return make_shape_bool_tensor(shape_type{5},idx.shape(), idx.begin(), idx.end());
-        }()),
-        subscript_exception
-    );
-    // REQUIRE_THROWS_AS(
-    //     ([](){
-    //         auto idx = index_tensor_type{{true},{false}};
-    //         return make_shape_bool_tensor(shape_type{5},idx.shape(), idx.begin(), idx.end());
-    //     }()),
-    //     subscript_exception
-    // );
-    REQUIRE_THROWS_AS(
-        ([](){
-            auto idx = index_tensor_type{{false,true,false},{true,true,false},{false,false,false}};
-            return make_shape_bool_tensor(shape_type{3,2,4},idx.shape(), idx.begin(), idx.end());
-        }()),
-        subscript_exception
-    );
-}
-
-TEMPLATE_TEST_CASE("test_make_map_bool_tensor","[test_view_factory]",
-    typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-){
-    using test_config_type = TestType;
-    using index_type = typename test_config_type::index_type;
-    using shape_type = typename test_config_type::shape_type;
-    using index_tensor_type = gtensor::tensor<bool, test_config_type>;
-    using test_view_factory::test_tensor;
-    using test_view_factory::make_test_tensor;
-    using gtensor::detail::make_shape_bool_tensor;
-    using gtensor::detail::make_map_bool_tensor;
-    using gtensor::detail::make_size;
-    using map_type = std::vector<index_type>;
-    using test_type = std::tuple<map_type,map_type>;
-    //0result map,1expected map
-    auto test_data = GENERATE(
-        test_type{
-            [](){
-            auto sub1 = index_tensor_type{true,false,true,false,false};
-            auto view_shape = make_shape_bool_tensor(shape_type{5},sub1.shape(),sub1.begin(),sub1.end());
-            return make_map_bool_tensor<map_type>(shape_type{5},shape_type{1},make_size(view_shape),sub1.dim(),sub1.begin(),sub1.end());
-            }(),
-            map_type{0,2}
-        },
-        test_type{
-            [](){
-            auto sub1 = index_tensor_type{true,false,true};
-            auto view_shape = make_shape_bool_tensor(shape_type{5},sub1.shape(),sub1.begin(),sub1.end());
-            return make_map_bool_tensor<map_type>(shape_type{5},shape_type{1},make_size(view_shape),sub1.dim(),sub1.begin(),sub1.end());
-            }(),
-            map_type{0,2}
-        },
-        test_type{
-            [](){
-            auto sub1 = index_tensor_type{true,false,true,false};
-            auto view_shape = make_shape_bool_tensor(shape_type{4,3,2},sub1.shape(),sub1.begin(),sub1.end());
-            return make_map_bool_tensor<map_type>(shape_type{4,3,2},shape_type{6,2,1},make_size(view_shape),sub1.dim(),sub1.begin(),sub1.end());
-            }(),
-            map_type{0,1,2,3,4,5,12,13,14,15,16,17}
-        },
-        test_type{
-            [](){
-            auto sub1 = index_tensor_type{false,false,true};
-            auto view_shape = make_shape_bool_tensor(shape_type{4,3,2},sub1.shape(),sub1.begin(),sub1.end());
-            return make_map_bool_tensor<map_type>(shape_type{4,3,2},shape_type{6,2,1},make_size(view_shape),sub1.dim(),sub1.begin(),sub1.end());
-            }(),
-            map_type{12,13,14,15,16,17}
-        },
-        test_type{
-            [](){
-            auto sub1 = index_tensor_type{{false,false,true},{false,false,true},{false,false,false},{false,true,false}};
-            auto view_shape = make_shape_bool_tensor(shape_type{4,3,2},sub1.shape(),sub1.begin(),sub1.end());
-            return make_map_bool_tensor<map_type>(shape_type{4,3,2},shape_type{6,2,1},make_size(view_shape),sub1.dim(),sub1.begin(),sub1.end());
-            }(),
-            map_type{4,5,10,11,20,21}
-        },
-        test_type{
-            [](){
-            auto sub1 = index_tensor_type{{true,false},{false,true}};
-            auto view_shape = make_shape_bool_tensor(shape_type{4,3,2},sub1.shape(),sub1.begin(),sub1.end());
-            return make_map_bool_tensor<map_type>(shape_type{4,3,2},shape_type{6,2,1},make_size(view_shape),sub1.dim(),sub1.begin(),sub1.end());
-            }(),
-            map_type{0,1,6,7}
-        },
-        test_type{
-            [](){
-            auto sub1 = index_tensor_type{{false,false,true},{false,false,true},{false,false,false},{false,true,false}};
-            auto view_shape = make_shape_bool_tensor(shape_type{4,3},sub1.shape(),sub1.begin(),sub1.end());
-            return make_map_bool_tensor<map_type>(shape_type{4,3},shape_type{3,1},make_size(view_shape),sub1.dim(),sub1.begin(),sub1.end());
-            }(),
-            map_type{2,5,10}
-        }
-    );
-
-    auto result_map = std::get<0>(test_data);
-    auto expected_map = std::get<1>(test_data);
-    REQUIRE(result_map == expected_map);
-}
-
 
 TEMPLATE_TEST_CASE("test_check_bool_mapping_view_subs","[test_view_factory]",
     typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
