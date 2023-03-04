@@ -226,7 +226,7 @@ TEMPLATE_TEST_CASE("test_make_index_mapping_view_map","[test_view_factory]",
     using index_tensor_type = gtensor::tensor<index_type, config_type>;
     using test_view_factory::test_tensor;
     using map_type = std::vector<index_type>;
-    using gtensor::walker_iterator_adapter;
+    using gtensor::walker_bidirectional_adapter;
     using test_view_factory::make_test_tensor;
     using gtensor::detail::make_index_mapping_view_map;
     using gtensor::detail::broadcast_shape;
@@ -262,15 +262,14 @@ TEMPLATE_TEST_CASE("test_make_index_mapping_view_map","[test_view_factory]",
             return broadcast_shape<shape_type>(subs.shape()...);
         };
         auto subs_shape = std::apply(broadcast_shape_maker, subs);
-        auto subs_strides_div = make_strides_div<config_type>(subs_shape);
         auto subs_size = make_size(subs_shape);
 
-        auto result_map_maker = [&pshape,&pstrides,&subs_size,&subs_shape,&subs_strides_div](const auto&...subs){
+        auto result_map_maker = [&pshape,&pstrides,&subs_size,&subs_shape](const auto&...subs){
             return make_index_mapping_view_map<map_type>(
                 pshape,
                 pstrides,
                 subs_size,
-                walker_iterator_adapter<config_type, decltype(make_test_tensor(subs).engine().create_walker())>{subs_shape, subs_strides_div, make_test_tensor(subs).engine().create_walker()}...
+                walker_bidirectional_adapter<config_type, decltype(make_test_tensor(subs).engine().create_walker())>{subs_shape, make_test_tensor(subs).engine().create_walker()}...
             );
         };
         auto result_map = std::apply(result_map_maker, subs);
@@ -441,7 +440,7 @@ TEMPLATE_TEST_CASE("test_fill_bool_mapping_view_map","[test_view_factory]",
     using shape_type = typename config_type::shape_type;
     using index_tensor_type = gtensor::tensor<bool, config_type>;
     using map_type = std::vector<index_type>;
-    using gtensor::walker_iterator_adapter;
+    using gtensor::walker_bidirectional_adapter;
     using test_view_factory::make_test_tensor;
     using gtensor::detail::fill_bool_mapping_view_map;
     using gtensor::detail::make_bool_mapping_view_map;
@@ -474,12 +473,12 @@ TEMPLATE_TEST_CASE("test_fill_bool_mapping_view_map","[test_view_factory]",
     auto subs = std::get<1>(test_data);
     auto expected_map = std::get<2>(test_data);
     auto subs_ = make_test_tensor(subs);
-    using walker_adapter_type = walker_iterator_adapter<config_type,decltype(subs_.engine().create_walker())>;
+    using walker_adapter_type = walker_bidirectional_adapter<config_type,decltype(subs_.engine().create_walker())>;
     auto block_size = bool_mapping_view_block_size(pshape,subs_);
     auto subs_size = subs_.size();
     auto result_map = make_bool_mapping_view_map<map_type>(pshape,block_size,subs_size);
     auto map_size = fill_bool_mapping_view_map(
-        result_map, make_strides(pshape), block_size, subs_size, walker_adapter_type{subs_.shape(), subs_.impl()->descriptor().strides_div(), subs_.engine().create_walker()}
+        result_map, make_strides(pshape), block_size, subs_size, walker_adapter_type{subs_.shape(), subs_.engine().create_walker()}
     );
     REQUIRE(map_size == expected_map.size());
     REQUIRE(result_map == expected_map);

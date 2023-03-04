@@ -292,23 +292,22 @@ class view_factory
     static auto create_index_mapping_view_descriptor(const shape_type& shape, const shape_type& strides, const Subs&...subs){
         using map_type = typename mapping_view_descriptor_type::map_type;
         auto subs_shape = detail::broadcast_shape<shape_type>(subs.descriptor().shape()...);
-        auto subs_strides_div = detail::make_strides_div<CfgT>(subs_shape);
         auto subs_size = detail::make_size(subs_shape);
         return mapping_view_descriptor_type{
             detail::make_index_mapping_view_shape(shape, subs_shape, sizeof...(Subs)),
             detail::make_index_mapping_view_map<map_type>(
-                shape, strides, subs_size, walker_iterator_adapter<CfgT, decltype(subs.engine().create_walker())>{subs_shape, subs_strides_div, subs.engine().create_walker()}...
+                shape, strides, subs_size, walker_bidirectional_adapter<CfgT, decltype(subs.engine().create_walker())>{subs_shape, subs.engine().create_walker()}...
             )
         };
     }
     template<typename Subs>
     static auto create_bool_mapping_view_descriptor(const shape_type& shape, const shape_type& strides, const Subs& subs){
         using map_type = typename mapping_view_descriptor_type::map_type;
-        using walker_adapter_type = walker_iterator_adapter<CfgT, decltype(subs.engine().create_walker())>;
+        using walker_adapter_type = walker_bidirectional_adapter<CfgT, decltype(subs.engine().create_walker())>;
         auto subs_size = subs.size();
         auto block_size = detail::bool_mapping_view_block_size(shape, subs);
         auto map = detail::make_bool_mapping_view_map<map_type>(shape, block_size, subs_size);
-        auto map_size = detail::fill_bool_mapping_view_map(map, strides, block_size, subs_size, walker_adapter_type{subs.descriptor().shape(),subs.descriptor().strides_div(), subs.engine().create_walker()});
+        auto map_size = detail::fill_bool_mapping_view_map(map, strides, block_size, subs_size, walker_adapter_type{subs.descriptor().shape(), subs.engine().create_walker()});
         return mapping_view_descriptor_type{
             detail::make_bool_mapping_view_shape(shape, subs.descriptor().shape(), block_size, map_size),
             std::move(map)
