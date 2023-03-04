@@ -4,6 +4,7 @@
 #include "test_config.hpp"
 #include "view_factory.hpp"
 #include "gtensor.hpp"
+#include "helpers_for_testing.hpp"
 
 namespace test_view_factory{
 
@@ -219,131 +220,122 @@ TEMPLATE_TEST_CASE("test_make_index_mapping_view_shape_exception","[test_view_fa
 TEMPLATE_TEST_CASE("test_make_index_mapping_view_map","[test_view_factory]",
     typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
 ){
-    using test_config_type = TestType;
-    using index_type = typename test_config_type::index_type;
-    using shape_type = typename test_config_type::shape_type;
-    using tensor_type = gtensor::tensor<index_type, test_config_type>;
+    using config_type = TestType;
+    using index_type = typename config_type::index_type;
+    using shape_type = typename config_type::shape_type;
+    using index_tensor_type = gtensor::tensor<index_type, config_type>;
     using test_view_factory::test_tensor;
+    using map_type = std::vector<index_type>;
+    using gtensor::walker_iterator_adapter;
     using test_view_factory::make_test_tensor;
     using gtensor::detail::make_index_mapping_view_map;
     using gtensor::detail::broadcast_shape;
     using gtensor::detail::make_size;
-    using map_type = std::vector<index_type>;
-    using test_type = std::tuple<map_type,map_type>;
-    //0result map,1expected map
-    auto test_data = GENERATE(
-        test_type{
-            [](){
-            auto sub1 = make_test_tensor(tensor_type{0,0,0});
-            auto index_shape = broadcast_shape<shape_type>(sub1.impl()->shape());
-            auto index_size = make_size(index_shape);
-            return make_index_mapping_view_map<map_type>(shape_type{1},shape_type{1},index_size,sub1.engine().begin_broadcast(index_shape));
-            }(),
-            map_type{0,0,0}
-        },
-        test_type{
-            [](){
-            auto sub1 = make_test_tensor(tensor_type{2});
-            auto index_shape = broadcast_shape<shape_type>(sub1.impl()->shape());
-            auto index_size = make_size(index_shape);
-            return make_index_mapping_view_map<map_type>(shape_type{10},shape_type{1},index_size,sub1.engine().begin_broadcast(index_shape));
-            }(),
-            map_type{2}
-        },
-        test_type{
-            [](){
-            auto sub1 = make_test_tensor(tensor_type{0,1,2});
-            auto sub2 = make_test_tensor(tensor_type{0,1,2});
-            auto index_shape = broadcast_shape<shape_type>(sub1.impl()->shape(),sub2.impl()->shape());
-            auto index_size = make_size(index_shape);
-            return make_index_mapping_view_map<map_type>(shape_type{4,3},shape_type{3,1},index_size,sub1.engine().begin_broadcast(index_shape), sub2.engine().begin_broadcast(index_shape));
-            }(),
-            map_type{0,4,8}
-        },
-        test_type{
-            [](){
-                auto sub1 = make_test_tensor(tensor_type{0,1,2});
-                auto sub2 = make_test_tensor(tensor_type{1});
-                auto index_shape = broadcast_shape<shape_type>(sub1.impl()->shape(),sub2.impl()->shape());
-                auto index_size = make_size(index_shape);
-                return make_index_mapping_view_map<map_type>(shape_type{4,3},shape_type{3,1},index_size,sub1.engine().begin_broadcast(index_shape), sub2.engine().begin_broadcast(index_shape));
-            }(),
-            map_type{1,4,7}
-        },
-        test_type{
-            [](){
-                auto sub1 = make_test_tensor(tensor_type{1,3});
-                auto index_shape = broadcast_shape<shape_type>(sub1.impl()->shape());
-                auto index_size = make_size(index_shape);
-                return make_index_mapping_view_map<map_type>(shape_type{4,3},shape_type{3,1},index_size,sub1.engine().begin_broadcast(index_shape));
-            }(),
-            map_type{3,4,5,9,10,11}
-        },
-        test_type{
-            [](){
-                auto sub1 = make_test_tensor(tensor_type{1,3,0,1});
-                auto index_shape = broadcast_shape<shape_type>(sub1.impl()->shape());
-                auto index_size = make_size(index_shape);
-                return make_index_mapping_view_map<map_type>(shape_type{4,3},shape_type{3,1},index_size,sub1.engine().begin_broadcast(index_shape));
-            }(),
-            map_type{3,4,5,9,10,11,0,1,2,3,4,5}
-        }
+    using gtensor::detail::make_strides;
+    using gtensor::detail::make_strides_div;
+    using gtensor::detail::broadcast_shape;
+    using helpers_for_testing::apply_by_element;
+
+    //0pshape,1subs,2expected_map
+    auto test_data = std::make_tuple(
+        std::make_tuple(shape_type{}, std::make_tuple(index_tensor_type{0,1,2}),map_type{}),
+        std::make_tuple(shape_type{1}, std::make_tuple(index_tensor_type{0,0,0}),map_type{0,0,0}),
+        std::make_tuple(shape_type{10}, std::make_tuple(index_tensor_type{0,2,0,1,0}),map_type{0,2,0,1,0}),
+        std::make_tuple(shape_type{5}, std::make_tuple(index_tensor_type{4,3,2,1,0}),map_type{4,3,2,1,0}),
+        std::make_tuple(shape_type{10}, std::make_tuple(index_tensor_type{{0,2,4,6,8},{1,3,5,7,9}}),map_type{0,2,4,6,8,1,3,5,7,9}),
+        std::make_tuple(shape_type{5}, std::make_tuple(index_tensor_type{{0,2,4,0,2},{1,3,1,3,1}}),map_type{0,2,4,0,2,1,3,1,3,1}),
+        std::make_tuple(shape_type{4,3}, std::make_tuple(index_tensor_type{1,3,0,1}),map_type{3,4,5,9,10,11,0,1,2,3,4,5}),
+        std::make_tuple(shape_type{4,3}, std::make_tuple(index_tensor_type{{1},{3}}),map_type{3,4,5,9,10,11}),
+        std::make_tuple(shape_type{4,3}, std::make_tuple(index_tensor_type{0,1,2}, index_tensor_type{0,1,2}),map_type{0,4,8}),
+        std::make_tuple(shape_type{4,3}, std::make_tuple(index_tensor_type{{1,2},{0,1}}, index_tensor_type{{0,1},{1,2}}),map_type{3,7,1,5}),
+        std::make_tuple(shape_type{4,3}, std::make_tuple(index_tensor_type{0,1,2}, index_tensor_type{1}),map_type{1,4,7}),
+        std::make_tuple(shape_type{5,4,3}, std::make_tuple(index_tensor_type{0,1,2}, index_tensor_type{1}),map_type{3,4,5,15,16,17,27,28,29}),
+        std::make_tuple(shape_type{5,4,3}, std::make_tuple(index_tensor_type{0,1,2}, index_tensor_type{3}, index_tensor_type{2}),map_type{11,23,35})
     );
 
-    auto result_map = std::get<0>(test_data);
-    auto expected_map = std::get<1>(test_data);
-    REQUIRE(result_map == expected_map);
+    auto test = [](const auto& t){
+        auto pshape = std::get<0>(t);
+        auto subs = std::get<1>(t);
+        auto expected_map = std::get<2>(t);
+        auto pstrides = make_strides(pshape);
+        auto broadcast_shape_maker = [](const auto&...subs){
+            return broadcast_shape<shape_type>(subs.shape()...);
+        };
+        auto subs_shape = std::apply(broadcast_shape_maker, subs);
+        auto subs_strides_div = make_strides_div<config_type>(subs_shape);
+        auto subs_size = make_size(subs_shape);
+
+        auto result_map_maker = [&pshape,&pstrides,&subs_size,&subs_shape,&subs_strides_div](const auto&...subs){
+            return make_index_mapping_view_map<map_type>(
+                pshape,
+                pstrides,
+                subs_size,
+                walker_iterator_adapter<config_type, decltype(make_test_tensor(subs).engine().create_walker())>{subs_shape, subs_strides_div, make_test_tensor(subs).engine().create_walker()}...
+            );
+        };
+        auto result_map = std::apply(result_map_maker, subs);
+        REQUIRE(result_map == expected_map);
+    };
+
+    apply_by_element(test, test_data);
 }
 
 TEMPLATE_TEST_CASE("test_make_index_mapping_view_map_exception","[test_view_factory]",
     typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
 ){
-    using test_config_type = TestType;
-    using index_type = typename test_config_type::index_type;
-    using shape_type = typename test_config_type::shape_type;
-    using tensor_type = gtensor::tensor<index_type, test_config_type>;
+    using config_type = TestType;
+    using index_type = typename config_type::index_type;
+    using shape_type = typename config_type::shape_type;
+    using index_tensor_type = gtensor::tensor<index_type, config_type>;
     using test_view_factory::test_tensor;
+    using map_type = std::vector<index_type>;
+    using gtensor::walker_iterator_adapter;
+    using gtensor::subscript_exception;
     using test_view_factory::make_test_tensor;
     using gtensor::detail::make_index_mapping_view_map;
     using gtensor::detail::broadcast_shape;
     using gtensor::detail::make_size;
-    using gtensor::subscript_exception;
-    using map_type = std::vector<index_type>;
+    using gtensor::detail::make_strides;
+    using gtensor::detail::make_strides_div;
+    using gtensor::detail::broadcast_shape;
+    using helpers_for_testing::apply_by_element;
 
-    SECTION("two_subscripts"){
-        using test_type = std::tuple<tensor_type,tensor_type>;
-        //sub0,sub1
-        auto test_data = GENERATE(
-            test_type{tensor_type{0,1,2}, tensor_type{0,1,3}},
-            test_type{tensor_type{0,5,2}, tensor_type{0,1,2}},
-            test_type{tensor_type{0,1,2}, tensor_type{4}},
-            test_type{tensor_type{4,4,4}, tensor_type{2}}
-        );
+    //0pshape,1subs
+    auto test_data = std::make_tuple(
+        std::make_tuple(shape_type{1}, std::make_tuple(index_tensor_type{0,0,3})),
+        std::make_tuple(shape_type{10}, std::make_tuple(index_tensor_type{0,20,0,1,0})),
+        std::make_tuple(shape_type{10}, std::make_tuple(index_tensor_type{{0,2,4,16,8},{1,3,5,7,9}})),
+        std::make_tuple(shape_type{4,3}, std::make_tuple(index_tensor_type{1,3,0,4})),
+        std::make_tuple(shape_type{4,3}, std::make_tuple(index_tensor_type{{11},{3}})),
+        std::make_tuple(shape_type{4,3}, std::make_tuple(index_tensor_type{{1,2},{5,1}}, index_tensor_type{{0,1},{1,2}})),
+        std::make_tuple(shape_type{4,3}, std::make_tuple(index_tensor_type{{1,2},{0,1}}, index_tensor_type{{0,1},{1,4}})),
+        std::make_tuple(shape_type{4,3}, std::make_tuple(index_tensor_type{0,1,5}, index_tensor_type{1})),
+        std::make_tuple(shape_type{4,3}, std::make_tuple(index_tensor_type{0,1,2}, index_tensor_type{3})),
+        std::make_tuple(shape_type{5,4,3}, std::make_tuple(index_tensor_type{0,1,2}, index_tensor_type{4}, index_tensor_type{2}))
+    );
 
-        auto sub1 = make_test_tensor(std::get<0>(test_data));
-        auto sub2 = make_test_tensor(std::get<1>(test_data));
-        auto index_shape = broadcast_shape<shape_type>(sub1.impl()->shape(),sub2.impl()->shape());
-        auto index_size = make_size(index_shape);
-        REQUIRE_THROWS_AS(
-            make_index_mapping_view_map<map_type>(shape_type{4,3},shape_type{3,1},index_size, sub1.engine().begin_broadcast(index_shape), sub2.engine().begin_broadcast(index_shape)),
-            subscript_exception
-        );
-    }
-    SECTION("one_subscript"){
-        using test_type = std::tuple<tensor_type>;
-        //sub0
-        auto test_data = GENERATE(
-            test_type{tensor_type{5,3,0,0}}
-        );
+    auto test = [](const auto& t){
+        auto pshape = std::get<0>(t);
+        auto subs = std::get<1>(t);
+        auto pstrides = make_strides(pshape);
+        auto broadcast_shape_maker = [](const auto&...subs){
+            return broadcast_shape<shape_type>(subs.shape()...);
+        };
+        auto subs_shape = std::apply(broadcast_shape_maker, subs);
+        auto subs_strides_div = make_strides_div<config_type>(subs_shape);
+        auto subs_size = make_size(subs_shape);
 
-        auto sub1 = make_test_tensor(std::get<0>(test_data));
-        auto index_shape = broadcast_shape<shape_type>(sub1.impl()->shape());
-        auto index_size = make_size(index_shape);
-        REQUIRE_THROWS_AS(
-            make_index_mapping_view_map<map_type>(shape_type{4,3},shape_type{3,1},index_size, sub1.engine().begin_broadcast(index_shape)),
-            subscript_exception
-        );
-    }
+        auto result_map_maker = [&pshape,&pstrides,&subs_size,&subs_shape,&subs_strides_div](const auto&...subs){
+            return make_index_mapping_view_map<map_type>(
+                pshape,
+                pstrides,
+                subs_size,
+                walker_iterator_adapter<config_type, decltype(make_test_tensor(subs).engine().create_walker())>{subs_shape, subs_strides_div, make_test_tensor(subs).engine().create_walker()}...
+            );
+        };
+        REQUIRE_THROWS_AS(std::apply(result_map_maker, subs), subscript_exception);
+    };
+    apply_by_element(test, test_data);
 }
 
 TEMPLATE_TEST_CASE("test_check_bool_mapping_view_subs","[test_view_factory]",

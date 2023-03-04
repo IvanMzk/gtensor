@@ -127,30 +127,41 @@ inline auto check_index(const IdxT& idx, const IdxT& shape_element){
     }
 }
 
-template<typename MapT, typename ShT, typename...It>
-MapT make_index_mapping_view_map(const ShT& pshape, const ShT& pstrides, const std::size_t& index_size, It&&...subs_it){
+template<typename MapT, typename ShT, typename...WalkerAdapter>
+MapT make_index_mapping_view_map(const ShT& pshape, const ShT& pstrides, const std::size_t& subs_size, WalkerAdapter...subs_it){
     using map_type = MapT;
     using index_type = typename map_type::value_type;
-    constexpr std::size_t subs_number = sizeof...(It);
+    constexpr std::size_t subs_number = sizeof...(WalkerAdapter);
 
-    auto block_size = mapping_view_block_size(pshape, subs_number);
-    auto res = map_type(block_size*index_size, index_type{0});
-    auto i = std::size_t{0};
-    auto j = std::size_t{0};
-    while(i!=index_size){
-        auto n = std::size_t{0};
+    const auto block_size = mapping_view_block_size(pshape, subs_number);
+    const auto map_size = block_size*subs_size;
+    if (map_size > index_type{0}){
+        auto res = map_type(map_size, index_type{0});
         auto block_first = index_type{0};
-        ((block_first+=check_index(static_cast<index_type>(*subs_it),static_cast<index_type>(pshape[n]))*static_cast<index_type>(pstrides[n]),++n),...);
-        auto block_end = j+block_size;
-        while(j!=block_end){
-            res[j] = block_first;
-            ++j;
-            ++block_first;
+        if (block_size == index_type{1}){
+            for(index_type i{0}; i!=subs_size; ++i,((subs_it.next()),...)){
+                block_first = index_type{0};
+                auto n = std::size_t{0};
+                ((block_first+=check_index(static_cast<index_type>(*subs_it.walker()),static_cast<index_type>(pshape[n]))*static_cast<index_type>(pstrides[n]),++n),...);
+                res[i] = block_first;
+            }
+        }else{
+            index_type j{0};
+            for(index_type i{0}; i!=subs_size; ++i,((subs_it.next()),...)){
+                block_first = index_type{0};
+                auto n = std::size_t{0};
+                ((block_first+=check_index(static_cast<index_type>(*subs_it.walker()),static_cast<index_type>(pshape[n]))*static_cast<index_type>(pstrides[n]),++n),...);
+                auto block_index_end = j+block_size;
+                for(; j!=block_index_end; ++j){
+                    res[j] = block_first;
+                    ++block_first;
+                }
+            }
         }
-        ++i;
-        ((++subs_it),...);
+        return res;
+    }else{
+        return map_type{};
     }
-    return res;
 }
 
 //helpers for making bool_mapping_view
@@ -190,7 +201,7 @@ auto fill_bool_mapping_view_map(MapT& map, const ShT& pstrides, const typename S
     using index_type = typename ShT::value_type;
     if (subs_size > index_type{0} && map.size() > index_type{0}){
         index_type map_size{0};
-        if (block_size == 1){
+        if (block_size == index_type{1}){
             do{
                 if(*subs_it.walker()){
                     map[map_size] = std::inner_product(subs_it.index().begin(), subs_it.index().end(), pstrides.begin(), index_type{0});
@@ -280,11 +291,14 @@ class view_factory
     template<typename...Subs>
     static auto create_index_mapping_view_descriptor(const shape_type& shape, const shape_type& strides, const Subs&...subs){
         using map_type = typename mapping_view_descriptor_type::map_type;
-        auto index_shape = detail::broadcast_shape<shape_type>(subs.descriptor().shape()...);
-        auto index_size = detail::make_size(index_shape);
+        auto subs_shape = detail::broadcast_shape<shape_type>(subs.descriptor().shape()...);
+        auto subs_strides_div = detail::make_strides_div<CfgT>(subs_shape);
+        auto subs_size = detail::make_size(subs_shape);
         return mapping_view_descriptor_type{
-            detail::make_index_mapping_view_shape(shape, index_shape, sizeof...(Subs)),
-            detail::make_index_mapping_view_map<map_type>(shape, strides, index_size, subs.begin_broadcast(index_shape)...)
+            detail::make_index_mapping_view_shape(shape, subs_shape, sizeof...(Subs)),
+            detail::make_index_mapping_view_map<map_type>(
+                shape, strides, subs_size, walker_iterator_adapter<CfgT, decltype(subs.engine().create_walker())>{subs_shape, subs_strides_div, subs.engine().create_walker()}...
+            )
         };
     }
     template<typename Subs>
