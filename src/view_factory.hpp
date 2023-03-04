@@ -339,10 +339,11 @@ public:
         using impl_type = mapping_view<typename detail::viewing_engine_traits<typename CfgT::host_engine, CfgT, mapping_view_descriptor_type, ImplT>::type>;
         return tensor<ValT,CfgT,impl_type>::make_tensor(create_index_mapping_view_descriptor(parent->shape(), parent->strides(), subs...),parent);
     }
-    template<typename ImplT, typename Sub>
-    static auto create_mapping_view_bool_tensor(const std::shared_ptr<ImplT>& parent, const Sub& sub){
+    template<typename ImplT, typename Subs>
+    static auto create_mapping_view_bool_tensor(const std::shared_ptr<ImplT>& parent, const Subs& subs){
         using impl_type = mapping_view<typename detail::viewing_engine_traits<typename CfgT::host_engine, CfgT, mapping_view_descriptor_type, ImplT>::type>;
-        return tensor<ValT,CfgT,impl_type>::make_tensor(create_bool_mapping_view_descriptor(parent->shape(), parent->strides(), sub),parent);
+        detail::check_bool_mapping_view_subs(parent->shape(), subs.descriptor().shape());
+        return tensor<ValT,CfgT,impl_type>::make_tensor(create_bool_mapping_view_descriptor(parent->shape(), parent->strides(), subs),parent);
     }
 };
 

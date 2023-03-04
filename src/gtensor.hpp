@@ -122,7 +122,7 @@ public:
     //makes new storage tensor by copying shape and elements from this tensor
     auto copy()const{
         using storage_impl_type = storage_tensor<typename detail::storage_engine_traits<typename CfgT::host_engine,CfgT,typename CfgT::template storage<ValT>>::type>;
-        return tensor<value_type,CfgT,storage_impl_type>::make_tensor(shape(),begin(),end());
+        return tensor<value_type,CfgT,storage_impl_type>::make_tensor(descriptor().shape(),begin(),end());
     }
     auto begin(){return engine().begin();}
     auto end(){return engine().end();}
@@ -141,9 +141,9 @@ public:
     auto rbegin_broadcast(const shape_type& shape)const{return engine().rbegin_broadcast(shape);}
     auto rend_broadcast(const shape_type& shape)const{return engine().rend_broadcast(shape);}
 
-    auto size()const{return impl()->size();}
-    auto dim()const{return impl()->dim();}
-    auto shape()const{return impl()->shape();}
+    auto size()const{return descriptor().size();}
+    auto dim()const{return descriptor().dim();}
+    auto shape()const{return descriptor().shape();}
     //compare content of this tensor and other
     template<typename RImpl>
     auto equals(const tensor<value_type,CfgT,RImpl>& other)const{return gtensor::equals(*this, other);}
@@ -159,15 +159,15 @@ public:
     //slice view
     auto operator()(slices_init_type subs)const{
         detail::check_slices_number(subs);
-        slices_collection_type filled_subs = detail::fill_slices<slice_type>(shape(),subs);
-        detail::check_slices(shape(), filled_subs);
+        slices_collection_type filled_subs = detail::fill_slices<slice_type>(descriptor().shape(),subs);
+        detail::check_slices(descriptor().shape(), filled_subs);
         return view_factory<ValT,CfgT>::create_view_slice(impl(), filled_subs);
     }
     template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,slice_type>...>,int> = 0 >
     auto operator()(const Subs&...subs)const{
         detail::check_slices_number(subs...);
-        slices_collection_type filled_subs = detail::fill_slices<slice_type>(shape(),subs...);
-        detail::check_slices(shape(), filled_subs);
+        slices_collection_type filled_subs = detail::fill_slices<slice_type>(descriptor().shape(),subs...);
+        detail::check_slices(descriptor().shape(), filled_subs);
         return view_factory<ValT,CfgT>::create_view_slice(impl(), filled_subs);
     }
     //transpose view
@@ -179,11 +179,11 @@ public:
     //subdimension view
     template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,index_type>...>,int> = 0 >
     auto operator()(const Subs&...subs)const{
-        detail::check_subdim_subs(shape(), subs...);
+        detail::check_subdim_subs(descriptor().shape(), subs...);
         return view_factory<ValT,CfgT>::create_view_subdim(impl(), shape_type{subs...});
     }
     auto operator()()const{
-        detail::check_subdim_subs(shape());
+        detail::check_subdim_subs(descriptor().shape());
         return view_factory<ValT,CfgT>::create_view_subdim(impl(), shape_type{});
     }
     //reshape view
@@ -199,7 +199,6 @@ public:
     }
     template<typename Subs, std::enable_if_t<detail::is_bool_tensor<Subs>::value ,int> = 0 >
     auto operator()(const Subs& subs)const{
-        detail::check_bool_mapping_view_subs(shape(), subs.shape());
         return view_factory<ValT,CfgT>::create_mapping_view_bool_tensor(impl(), subs);
     }
 };
