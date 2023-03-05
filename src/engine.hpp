@@ -62,6 +62,11 @@ public:
         holder_accessor{holder},
         elements_{}
     {}
+    template<typename StorT_>
+    storage_engine(holder_type* holder, StorT_&& init_data):
+        holder_accessor{holder},
+        elements_(std::forward<StorT_>(init_data))
+    {}
     template<typename Nested>
     storage_engine(holder_type* holder, const index_type& size, std::initializer_list<Nested> init_data):
         holder_accessor{holder},
