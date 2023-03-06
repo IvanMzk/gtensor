@@ -322,5 +322,20 @@ TEMPLATE_TEST_CASE("test_converting_descriptor_convert", "[test_descriptor]", gt
     REQUIRE(descriptor.convert(flat_idx) == expected_convert_flat_idx);
 }
 
+TEMPLATE_TEST_CASE("test_descriptor_copy_assignment", "[test_descriptor]",
+    gtensor::config::mode_div_native,
+    gtensor::config::mode_div_libdivide
+)
+{
+    using config_type = typename test_config::config_div_mode_selector<TestType>::config_type;
+    using descriptor_type = gtensor::descriptor_common<config_type>;
+    using shape_type = typename config_type::shape_type;
+    using index_type = typename config_type::index_type;
 
+    descriptor_type desc{shape_type{1,2,3}};
+    descriptor_type desc_copy{shape_type{}};
+
+    desc_copy = desc;
+
+}
 

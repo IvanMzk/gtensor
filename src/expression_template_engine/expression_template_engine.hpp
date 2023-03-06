@@ -90,6 +90,7 @@ public:
     using storage_engine_base::rbegin;
     using storage_engine_base::rend;
     using storage_engine_base::create_indexer;
+    using storage_engine_base::resize;
     bool is_trivial()const{return true;}
     //broadcasting iterators
     auto begin_broadcast(const shape_type& shape){return detail::begin_broadcast(*this, shape);}

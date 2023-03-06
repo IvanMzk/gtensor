@@ -13,6 +13,7 @@ struct test_tensor : public T{
     test_tensor(const T& base):
         T{base}
     {}
+    using T::descriptor;
     using T::engine;
     using T::impl;
 };
@@ -217,18 +218,20 @@ TEMPLATE_TEST_CASE("test_make_index_mapping_view_shape_exception","[test_view_fa
     REQUIRE_THROWS_AS(make_index_mapping_view_shape(shape_type{3,4},broadcast_shape<shape_type>(shape_type{4}, shape_type{4}, shape_type{1}),index_type{3}), subscript_exception);
 }
 
-TEMPLATE_TEST_CASE("test_make_index_mapping_view_map","[test_view_factory]",
+TEMPLATE_TEST_CASE("test_fill_index_mapping_view","[test_view_factory]",
     typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
 ){
     using config_type = TestType;
+    using value_type = int;
     using index_type = typename config_type::index_type;
     using shape_type = typename config_type::shape_type;
     using index_tensor_type = gtensor::tensor<index_type, config_type>;
+    using tensor_type = gtensor::tensor<value_type, config_type>;
     using test_view_factory::test_tensor;
-    using map_type = std::vector<index_type>;
     using gtensor::walker_bidirectional_adapter;
     using test_view_factory::make_test_tensor;
-    using gtensor::detail::make_index_mapping_view_map;
+    using gtensor::detail::fill_index_mapping_view;
+    using gtensor::detail::make_index_mapping_view_shape;
     using gtensor::detail::broadcast_shape;
     using gtensor::detail::make_size;
     using gtensor::detail::make_strides;
@@ -238,60 +241,74 @@ TEMPLATE_TEST_CASE("test_make_index_mapping_view_map","[test_view_factory]",
 
     //0pshape,1subs,2expected_map
     auto test_data = std::make_tuple(
-        std::make_tuple(shape_type{}, std::make_tuple(index_tensor_type{0,1,2}),map_type{}),
-        std::make_tuple(shape_type{1}, std::make_tuple(index_tensor_type{0,0,0}),map_type{0,0,0}),
-        std::make_tuple(shape_type{10}, std::make_tuple(index_tensor_type{0,2,0,1,0}),map_type{0,2,0,1,0}),
-        std::make_tuple(shape_type{5}, std::make_tuple(index_tensor_type{4,3,2,1,0}),map_type{4,3,2,1,0}),
-        std::make_tuple(shape_type{10}, std::make_tuple(index_tensor_type{{0,2,4,6,8},{1,3,5,7,9}}),map_type{0,2,4,6,8,1,3,5,7,9}),
-        std::make_tuple(shape_type{5}, std::make_tuple(index_tensor_type{{0,2,4,0,2},{1,3,1,3,1}}),map_type{0,2,4,0,2,1,3,1,3,1}),
-        std::make_tuple(shape_type{4,3}, std::make_tuple(index_tensor_type{1,3,0,1}),map_type{3,4,5,9,10,11,0,1,2,3,4,5}),
-        std::make_tuple(shape_type{4,3}, std::make_tuple(index_tensor_type{{1},{3}}),map_type{3,4,5,9,10,11}),
-        std::make_tuple(shape_type{4,3}, std::make_tuple(index_tensor_type{0,1,2}, index_tensor_type{0,1,2}),map_type{0,4,8}),
-        std::make_tuple(shape_type{4,3}, std::make_tuple(index_tensor_type{{1,2},{0,1}}, index_tensor_type{{0,1},{1,2}}),map_type{3,7,1,5}),
-        std::make_tuple(shape_type{4,3}, std::make_tuple(index_tensor_type{0,1,2}, index_tensor_type{1}),map_type{1,4,7}),
-        std::make_tuple(shape_type{5,4,3}, std::make_tuple(index_tensor_type{0,1,2}, index_tensor_type{1}),map_type{3,4,5,15,16,17,27,28,29}),
-        std::make_tuple(shape_type{5,4,3}, std::make_tuple(index_tensor_type{0,1,2}, index_tensor_type{3}, index_tensor_type{2}),map_type{11,23,35})
+        std::make_tuple(tensor_type{}, std::make_tuple(index_tensor_type{0,1,2}),std::vector<value_type>{}),
+        std::make_tuple(tensor_type{0}, std::make_tuple(index_tensor_type{0,0,0}),std::vector<value_type>{0,0,0}),
+        std::make_tuple(tensor_type{0,1,2,3,4,5,6,7,8,9}, std::make_tuple(index_tensor_type{0,2,0,1,0}),std::vector<value_type>{0,2,0,1,0}),
+        std::make_tuple(tensor_type{0,1,2,3,4}, std::make_tuple(index_tensor_type{4,3,2,1,0}),std::vector<value_type>{4,3,2,1,0}),
+        std::make_tuple(tensor_type{0,1,2,3,4,5,6,7,8,9}, std::make_tuple(index_tensor_type{{0,2,4,6,8},{1,3,5,7,9}}),std::vector<value_type>{0,2,4,6,8,1,3,5,7,9}),
+        std::make_tuple(tensor_type{0,1,2,3,4}, std::make_tuple(index_tensor_type{{0,2,4,0,2},{1,3,1,3,1}}),std::vector<value_type>{0,2,4,0,2,1,3,1,3,1}),
+        std::make_tuple(tensor_type{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{1,3,0,1}),std::vector<value_type>{3,4,5,9,10,11,0,1,2,3,4,5}),
+        std::make_tuple(tensor_type{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{{1},{3}}),std::vector<value_type>{3,4,5,9,10,11}),
+        std::make_tuple(tensor_type{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{0,1,2}, index_tensor_type{0,1,2}),std::vector<value_type>{0,4,8}),
+        std::make_tuple(tensor_type{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{{1,2},{0,1}}, index_tensor_type{{0,1},{1,2}}),std::vector<value_type>{3,7,1,5}),
+        std::make_tuple(tensor_type{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{0,1,2}, index_tensor_type{1}),std::vector<value_type>{1,4,7}),
+        std::make_tuple(
+            tensor_type{{{0,1,2},{3,4,5},{6,7,8},{9,10,11}},{{12,13,14},{15,16,17},{18,19,20},{21,22,23}}},
+            std::make_tuple(index_tensor_type{0,1}, index_tensor_type{1}),
+            std::vector<value_type>{3,4,5,15,16,17}
+        ),
+        std::make_tuple(
+            tensor_type{{{0,1,2},{3,4,5},{6,7,8},{9,10,11}},{{12,13,14},{15,16,17},{18,19,20},{21,22,23}}},
+            std::make_tuple(index_tensor_type{0,1}, index_tensor_type{3}, index_tensor_type{2}),
+            std::vector<value_type>{11,23}
+        )
     );
 
     auto test = [](const auto& t){
-        auto pshape = std::get<0>(t);
+        auto parent = make_test_tensor(std::get<0>(t));
         auto subs = std::get<1>(t);
-        auto expected_map = std::get<2>(t);
-        auto pstrides = make_strides(pshape);
+        auto expected_elements = std::get<2>(t);
         auto broadcast_shape_maker = [](const auto&...subs){
             return broadcast_shape<shape_type>(subs.shape()...);
         };
         auto subs_shape = std::apply(broadcast_shape_maker, subs);
         auto subs_size = make_size(subs_shape);
-
-        auto result_map_maker = [&pshape,&pstrides,&subs_size,&subs_shape](const auto&...subs){
-            return make_index_mapping_view_map<map_type>(
-                pshape,
-                pstrides,
+        auto view_shape = make_index_mapping_view_shape(parent.shape(), subs_shape, std::tuple_size_v<std::decay_t<decltype(subs)>>);
+        auto expected_view_size = make_size(view_shape);
+        std::vector<value_type> result_elements(expected_view_size);
+        auto elements_filler = [&result_elements,&parent,&subs_size,&subs_shape](const auto&...subs){
+            return fill_index_mapping_view(
+                result_elements.begin(),
+                parent.begin(),
+                parent.shape(),
+                parent.descriptor().strides(),
                 subs_size,
                 walker_bidirectional_adapter<config_type, decltype(make_test_tensor(subs).engine().create_walker())>{subs_shape, make_test_tensor(subs).engine().create_walker()}...
             );
         };
-        auto result_map = std::apply(result_map_maker, subs);
-        REQUIRE(result_map == expected_map);
+        auto result_view_size = std::apply(elements_filler, subs);
+        REQUIRE(result_view_size == expected_view_size);
+        REQUIRE(result_elements == expected_elements);
     };
 
     apply_by_element(test, test_data);
 }
 
-TEMPLATE_TEST_CASE("test_make_index_mapping_view_map_exception","[test_view_factory]",
+TEMPLATE_TEST_CASE("test_fill_index_mapping_view_exception","[test_view_factory]",
     typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
 ){
     using config_type = TestType;
+    using value_type = int;
     using index_type = typename config_type::index_type;
     using shape_type = typename config_type::shape_type;
     using index_tensor_type = gtensor::tensor<index_type, config_type>;
+    using tensor_type = gtensor::tensor<value_type, config_type>;
     using test_view_factory::test_tensor;
-    using map_type = std::vector<index_type>;
-    using gtensor::walker_iterator_adapter;
+    using gtensor::walker_bidirectional_adapter;
     using gtensor::subscript_exception;
     using test_view_factory::make_test_tensor;
-    using gtensor::detail::make_index_mapping_view_map;
+    using gtensor::detail::fill_index_mapping_view;
+    using gtensor::detail::make_index_mapping_view_shape;
     using gtensor::detail::broadcast_shape;
     using gtensor::detail::make_size;
     using gtensor::detail::make_strides;
@@ -301,38 +318,43 @@ TEMPLATE_TEST_CASE("test_make_index_mapping_view_map_exception","[test_view_fact
 
     //0pshape,1subs
     auto test_data = std::make_tuple(
-        std::make_tuple(shape_type{1}, std::make_tuple(index_tensor_type{0,0,3})),
-        std::make_tuple(shape_type{10}, std::make_tuple(index_tensor_type{0,20,0,1,0})),
-        std::make_tuple(shape_type{10}, std::make_tuple(index_tensor_type{{0,2,4,16,8},{1,3,5,7,9}})),
-        std::make_tuple(shape_type{4,3}, std::make_tuple(index_tensor_type{1,3,0,4})),
-        std::make_tuple(shape_type{4,3}, std::make_tuple(index_tensor_type{{11},{3}})),
-        std::make_tuple(shape_type{4,3}, std::make_tuple(index_tensor_type{{1,2},{5,1}}, index_tensor_type{{0,1},{1,2}})),
-        std::make_tuple(shape_type{4,3}, std::make_tuple(index_tensor_type{{1,2},{0,1}}, index_tensor_type{{0,1},{1,4}})),
-        std::make_tuple(shape_type{4,3}, std::make_tuple(index_tensor_type{0,1,5}, index_tensor_type{1})),
-        std::make_tuple(shape_type{4,3}, std::make_tuple(index_tensor_type{0,1,2}, index_tensor_type{3})),
-        std::make_tuple(shape_type{5,4,3}, std::make_tuple(index_tensor_type{0,1,2}, index_tensor_type{4}, index_tensor_type{2}))
+        std::make_tuple(tensor_type{0}, std::make_tuple(index_tensor_type{0,0,3})),
+        std::make_tuple(tensor_type{0,1,2,3,4,5,6,7,8,9}, std::make_tuple(index_tensor_type{0,20,0,1,0})),
+        std::make_tuple(tensor_type{0,1,2,3,4,5,6,7,8,9}, std::make_tuple(index_tensor_type{{0,2,4,16,8},{1,3,5,7,9}})),
+        std::make_tuple(tensor_type{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{1,3,0,4})),
+        std::make_tuple(tensor_type{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{{11},{3}})),
+        std::make_tuple(tensor_type{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{{1,2},{5,1}}, index_tensor_type{{0,1},{1,2}})),
+        std::make_tuple(tensor_type{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{{1,2},{0,1}}, index_tensor_type{{0,1},{1,4}})),
+        std::make_tuple(tensor_type{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{0,1,5}, index_tensor_type{1})),
+        std::make_tuple(tensor_type{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{0,1,2}, index_tensor_type{3})),
+        std::make_tuple(
+            tensor_type{{{0,1,2},{3,4,5},{6,7,8},{9,10,11}},{{12,13,14},{15,16,17},{18,19,20},{21,22,23}}},
+            std::make_tuple(index_tensor_type{0,1,2}, index_tensor_type{4}, index_tensor_type{2})
+        )
     );
 
     auto test = [](const auto& t){
-        auto pshape = std::get<0>(t);
+        auto parent = make_test_tensor(std::get<0>(t));
         auto subs = std::get<1>(t);
-        auto pstrides = make_strides(pshape);
         auto broadcast_shape_maker = [](const auto&...subs){
             return broadcast_shape<shape_type>(subs.shape()...);
         };
         auto subs_shape = std::apply(broadcast_shape_maker, subs);
-        auto subs_strides_div = make_strides_div<config_type>(subs_shape);
         auto subs_size = make_size(subs_shape);
-
-        auto result_map_maker = [&pshape,&pstrides,&subs_size,&subs_shape,&subs_strides_div](const auto&...subs){
-            return make_index_mapping_view_map<map_type>(
-                pshape,
-                pstrides,
+        auto view_shape = make_index_mapping_view_shape(parent.shape(), subs_shape, std::tuple_size_v<std::decay_t<decltype(subs)>>);
+        auto expected_view_size = make_size(view_shape);
+        std::vector<value_type> result_elements(expected_view_size);
+        auto elements_filler = [&result_elements,&parent,&subs_size,&subs_shape](const auto&...subs){
+            return fill_index_mapping_view(
+                result_elements.begin(),
+                parent.begin(),
+                parent.shape(),
+                parent.descriptor().strides(),
                 subs_size,
-                walker_iterator_adapter<config_type, decltype(make_test_tensor(subs).engine().create_walker())>{subs_shape, subs_strides_div, make_test_tensor(subs).engine().create_walker()}...
+                walker_bidirectional_adapter<config_type, decltype(make_test_tensor(subs).engine().create_walker())>{subs_shape, make_test_tensor(subs).engine().create_walker()}...
             );
         };
-        REQUIRE_THROWS_AS(std::apply(result_map_maker, subs), subscript_exception);
+        REQUIRE_THROWS_AS(std::apply(elements_filler, subs), subscript_exception);
     };
     apply_by_element(test, test_data);
 }
@@ -432,54 +454,66 @@ TEMPLATE_TEST_CASE("test_make_bool_mapping_view_shape","[test_view_factory]",
     REQUIRE(result_shape == expected_shape);
 }
 
-TEMPLATE_TEST_CASE("test_fill_bool_mapping_view_map","[test_view_factory]",
+TEMPLATE_TEST_CASE("test_fill_bool_mapping_view","[test_view_factory]",
     typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
 ){
     using config_type = TestType;
-    using index_type = typename config_type::index_type;
-    using shape_type = typename config_type::shape_type;
+    using value_type = float;
     using index_tensor_type = gtensor::tensor<bool, config_type>;
-    using map_type = std::vector<index_type>;
+    using tensor_type = gtensor::tensor<value_type, config_type>;
     using gtensor::walker_bidirectional_adapter;
     using test_view_factory::make_test_tensor;
-    using gtensor::detail::fill_bool_mapping_view_map;
-    using gtensor::detail::make_bool_mapping_view_map;
+    using gtensor::detail::fill_bool_mapping_view;
     using gtensor::detail::bool_mapping_view_block_size;
     using gtensor::detail::make_size;
     using gtensor::detail::make_strides;
 
-    using test_type = std::tuple<shape_type,index_tensor_type,map_type>;
-    //0parent_shape,1subs,2expected_map
+    using test_type = std::tuple<tensor_type,index_tensor_type,std::vector<value_type>>;
+    //0parent_tensor,1subs,2expected_map
     auto test_data = GENERATE(
-        test_type{shape_type{1}, index_tensor_type{}, map_type{}},
-        test_type{shape_type{1}, index_tensor_type{true}, map_type{0}},
-        test_type{shape_type{1}, index_tensor_type{false}, map_type{}},
-        test_type{shape_type{5}, index_tensor_type{false,false,false,false,false}, map_type{}},
-        test_type{shape_type{5}, index_tensor_type{false,true,false,true,false}, map_type{1,3}},
-        test_type{shape_type{10}, index_tensor_type{true,false,true,false,false}, map_type{0,2}},
-        test_type{shape_type{4,3}, index_tensor_type{true,false,true,false}, map_type{0,1,2,6,7,8}},
-        test_type{shape_type{4,3}, index_tensor_type{{false,true,true}}, map_type{1,2}},
-        test_type{shape_type{4,3}, index_tensor_type{{false},{true},{true}}, map_type{3,6}},
-        test_type{shape_type{3,3}, index_tensor_type{{true,true,true},{true,true,true},{true,true,true}}, map_type{0,1,2,3,4,5,6,7,8}},
-        test_type{shape_type{3,3}, index_tensor_type{{false,false,false},{false,false,false},{false,false,false}}, map_type{}},
-        test_type{shape_type{4,3}, index_tensor_type{{false,true},{true,false}}, map_type{1,3}},
-        test_type{shape_type{3,4}, index_tensor_type{{false,false,true},{false,false,true},{false,true,false}}, map_type{2,6,9}},
-        test_type{shape_type{3,4}, index_tensor_type{{false,false,true,false},{false,false,true,true},{false,true,false,true}}, map_type{2,6,7,9,11}},
-        test_type{shape_type{3,4,5}, index_tensor_type{{false,false,true,false},{false,false,false,true},{false,true,false,true}}, map_type{10,11,12,13,14,35,36,37,38,39,45,46,47,48,49,55,56,57,58,59}},
-        test_type{shape_type{3,4,5}, index_tensor_type{{{true,false,false,true,false},{false,false,false,true,false},{false,true,false,true,false}}}, map_type{0,3,8,11,13}}
+        test_type{tensor_type{0}, index_tensor_type{}, std::vector<value_type>{}},
+        test_type{tensor_type{0}, index_tensor_type{true}, std::vector<value_type>{0}},
+        test_type{tensor_type{0}, index_tensor_type{false}, std::vector<value_type>{}},
+        test_type{tensor_type{0,1,2,3,4,5}, index_tensor_type{false,false,false,false,false}, std::vector<value_type>{}},
+        test_type{tensor_type{0,1,2,3,4,5}, index_tensor_type{false,true,false,true,false}, std::vector<value_type>{1,3}},
+        test_type{tensor_type{0,1,2,3,4,5,6,7,8,9}, index_tensor_type{true,false,true,false,false}, std::vector<value_type>{0,2}},
+        test_type{tensor_type{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, index_tensor_type{true,false,true,false}, std::vector<value_type>{0,1,2,6,7,8}},
+        test_type{tensor_type{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, index_tensor_type{{false,true,true}}, std::vector<value_type>{1,2}},
+        test_type{tensor_type{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, index_tensor_type{{false},{true},{true}}, std::vector<value_type>{3,6}},
+        test_type{tensor_type{{0,1,2},{3,4,5},{6,7,8}}, index_tensor_type{{true,true,true},{true,true,true},{true,true,true}}, std::vector<value_type>{0,1,2,3,4,5,6,7,8}},
+        test_type{tensor_type{{0,1,2},{3,4,5},{6,7,8}}, index_tensor_type{{false,false,false},{false,false,false},{false,false,false}}, std::vector<value_type>{}},
+        test_type{tensor_type{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, index_tensor_type{{false,true},{true,false}}, std::vector<value_type>{1,3}},
+        test_type{tensor_type{{0,1,2,3},{4,5,6,7},{8,9,10,11}}, index_tensor_type{{false,false,true},{false,false,true},{false,true,false}}, std::vector<value_type>{2,6,9}},
+        test_type{tensor_type{{0,1,2,3},{4,5,6,7},{8,9,10,11}}, index_tensor_type{{false,false,true,false},{false,false,true,true},{false,true,false,true}}, std::vector<value_type>{2,6,7,9,11}},
+        test_type{
+            tensor_type{{{0,1},{2,3},{4,5},{6,7}},{{8,9},{10,11},{12,13},{14,15}},{{16,17},{18,19},{20,21},{22,23}}},
+            index_tensor_type{{false,false,true,false},{false,false,false,true},{false,true,false,true}},
+            std::vector<value_type>{4,5,14,15,18,19,22,23}
+        },
+        test_type{
+            tensor_type{{{0,1},{2,3},{4,5},{6,7}},{{8,9},{10,11},{12,13},{14,15}},{{16,17},{18,19},{20,21},{22,23}}},
+            index_tensor_type{{{true,false},{false,true},{false,false}}},
+            std::vector<value_type>{0,3}
+        }
     );
 
-    auto pshape = std::get<0>(test_data);
-    auto subs = std::get<1>(test_data);
-    auto expected_map = std::get<2>(test_data);
-    auto subs_ = make_test_tensor(subs);
-    using walker_adapter_type = walker_bidirectional_adapter<config_type,decltype(subs_.engine().create_walker())>;
-    auto block_size = bool_mapping_view_block_size(pshape,subs_);
-    auto subs_size = subs_.size();
-    auto result_map = make_bool_mapping_view_map<map_type>(pshape,block_size,subs_size);
-    auto map_size = fill_bool_mapping_view_map(
-        result_map, make_strides(pshape), block_size, subs_size, walker_adapter_type{subs_.shape(), subs_.engine().create_walker()}
+    auto parent = make_test_tensor(std::get<0>(test_data));
+    auto subs = make_test_tensor(std::get<1>(test_data));
+    auto expected_elements = std::get<2>(test_data);
+    auto expected_size = expected_elements.size();
+    using walker_adapter_type = walker_bidirectional_adapter<config_type,decltype(subs.engine().create_walker())>;
+    auto block_size = bool_mapping_view_block_size(parent.shape(),subs);
+    auto subs_size = subs.size();
+    std::vector<value_type> result_elements(parent.size());
+    auto result_size = fill_bool_mapping_view(
+        result_elements.begin(),
+        parent.begin(),
+        parent.descriptor().strides(),
+        block_size,
+        subs_size,
+        walker_adapter_type{subs.shape(), subs.engine().create_walker()}
     );
-    REQUIRE(map_size == expected_map.size());
-    REQUIRE(result_map == expected_map);
+    result_elements.resize(result_size);
+    REQUIRE(result_size == expected_size);
+    REQUIRE(result_elements == expected_elements);
 }

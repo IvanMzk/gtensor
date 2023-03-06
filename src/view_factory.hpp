@@ -109,13 +109,17 @@ template<typename ShT>
 inline ShT make_index_mapping_view_shape(const ShT& pshape, const ShT& index_shape, const std::size_t& subs_number){
     using shape_type = ShT;
     auto pdim = static_cast<std::size_t>(pshape.size());
-    if (subs_number > pdim){
-        throw subscript_exception("invalid index tensor subscript");
+    if (pdim > 0){
+        if (subs_number > pdim){
+            throw subscript_exception("invalid index tensor subscript");
+        }
+        auto res = shape_type(pdim - subs_number + index_shape.size());
+        std::copy(index_shape.begin(), index_shape.end(), res.begin());
+        std::copy(pshape.begin()+subs_number, pshape.end(), res.begin()+index_shape.size());
+        return res;
+    }else{
+        return shape_type{};
     }
-    auto res = shape_type(pdim - subs_number + index_shape.size());
-    std::copy(index_shape.begin(), index_shape.end(), res.begin());
-    std::copy(pshape.begin()+subs_number, pshape.end(), res.begin()+index_shape.size());
-    return res;
 }
 
 template<typename IdxT>
@@ -127,23 +131,22 @@ inline auto check_index(const IdxT& idx, const IdxT& shape_element){
     }
 }
 
-template<typename MapT, typename ShT, typename...WalkerAdapter>
-MapT make_index_mapping_view_map(const ShT& pshape, const ShT& pstrides, const std::size_t& subs_size, WalkerAdapter...subs_it){
-    using map_type = MapT;
-    using index_type = typename map_type::value_type;
+template<typename It, typename ParentIndexer, typename ShT, typename...WalkerAdapter>
+auto fill_index_mapping_view(It it, ParentIndexer pindexer, const ShT& pshape, const ShT& pstrides, const typename ShT::value_type& subs_size, WalkerAdapter...subs_it){
+    using index_type = typename ShT::value_type;
     constexpr std::size_t subs_number = sizeof...(WalkerAdapter);
 
     const auto block_size = mapping_view_block_size(pshape, subs_number);
-    const auto map_size = block_size*subs_size;
-    if (map_size > index_type{0}){
-        auto res = map_type(map_size, index_type{0});
+    const auto view_size = block_size*subs_size;
+    if (view_size > index_type{0}){
         auto block_first = index_type{0};
         if (block_size == index_type{1}){
             for(index_type i{0}; i!=subs_size; ++i,((subs_it.next()),...)){
                 block_first = index_type{0};
                 auto n = std::size_t{0};
                 ((block_first+=check_index(static_cast<index_type>(*subs_it.walker()),static_cast<index_type>(pshape[n]))*static_cast<index_type>(pstrides[n]),++n),...);
-                res[i] = block_first;
+                *it = pindexer[block_first];
+                ++it;
             }
         }else{
             index_type j{0};
@@ -153,15 +156,14 @@ MapT make_index_mapping_view_map(const ShT& pshape, const ShT& pstrides, const s
                 ((block_first+=check_index(static_cast<index_type>(*subs_it.walker()),static_cast<index_type>(pshape[n]))*static_cast<index_type>(pstrides[n]),++n),...);
                 auto block_index_end = j+block_size;
                 for(; j!=block_index_end; ++j){
-                    res[j] = block_first;
+                    *it = pindexer[block_first];
                     ++block_first;
+                    ++it;
                 }
             }
         }
-        return res;
-    }else{
-        return map_type{};
     }
+    return view_size;
 }
 
 //helpers for making bool_mapping_view
@@ -189,43 +191,6 @@ inline auto bool_mapping_view_block_size(const ShT& pshape, const Subs& subs){
     return mapping_view_block_size(pshape,subs.dim());
 }
 
-template<typename MapT, typename ShT>
-MapT make_bool_mapping_view_map(const ShT& pshape, typename ShT::value_type& block_size, typename ShT::value_type& subs_size){
-    using index_type = typename ShT::value_type;
-    index_type map_size = block_size*subs_size;
-    return MapT(map_size);
-}
-
-template<typename MapT, typename ShT, typename WalkerAdapter>
-auto fill_bool_mapping_view_map(MapT& map, const ShT& pstrides, const typename ShT::value_type& block_size, const typename ShT::value_type& subs_size, WalkerAdapter subs_it){
-    using index_type = typename ShT::value_type;
-    if (subs_size > index_type{0} && map.size() > index_type{0}){
-        index_type map_size{0};
-        if (block_size == index_type{1}){
-            do{
-                if(*subs_it.walker()){
-                    map[map_size] = std::inner_product(subs_it.index().begin(), subs_it.index().end(), pstrides.begin(), index_type{0});
-                    ++map_size;
-                }
-            }while(subs_it.next());
-        }else{
-            do{
-                if(*subs_it.walker()){
-                    auto block_first = std::inner_product(subs_it.index().begin(), subs_it.index().end(), pstrides.begin(), index_type{0});
-                    for(index_type i{0}; i!=block_size; ++i){
-                        map[map_size] = block_first+i;
-                        ++map_size;
-                    }
-                }
-            }while(subs_it.next());
-        }
-        map.resize(map_size);
-        return map_size;
-    }else{
-        return index_type{0};
-    }
-}
-
 template<typename ShT>
 inline ShT make_bool_mapping_view_shape(const ShT& pshape, const ShT& subs_shape, const typename ShT::value_type& block_size, const typename ShT::value_type& filled_map_size){
     using shape_type = ShT;
@@ -242,6 +207,38 @@ inline ShT make_bool_mapping_view_shape(const ShT& pshape, const ShT& subs_shape
         return res;
     }else{
         return shape_type{};
+    }
+}
+
+template<typename It, typename ParentIndexer, typename ShT, typename WalkerAdapter>
+auto fill_bool_mapping_view(It it, ParentIndexer pindexer, const ShT& pstrides, const typename ShT::value_type& block_size, const typename ShT::value_type& subs_size, WalkerAdapter subs_it){
+    using index_type = typename ShT::value_type;
+    if (subs_size > index_type{0} && block_size > index_type{0}){
+        index_type view_size{0};
+        if (block_size == index_type{1}){
+            do{
+                if(*subs_it.walker()){
+                    ++view_size;
+                    index_type pindex = std::inner_product(subs_it.index().begin(), subs_it.index().end(), pstrides.begin(), index_type{0});
+                    *it = pindexer[pindex];
+                    ++it;
+                }
+            }while(subs_it.next());
+        }else{
+            do{
+                if(*subs_it.walker()){
+                    view_size+=block_size;
+                    auto block_first = std::inner_product(subs_it.index().begin(), subs_it.index().end(), pstrides.begin(), index_type{0});
+                    for(index_type i{0}; i!=block_size; ++i){
+                        *it = pindexer[block_first+i];
+                        ++it;
+                    }
+                }
+            }while(subs_it.next());
+        }
+        return view_size;
+    }else{
+        return index_type{0};
     }
 }
 
@@ -288,31 +285,6 @@ class view_factory
             detail::make_view_reshape_shape(shape,subs)
         };
     }
-    template<typename...Subs>
-    static auto create_index_mapping_view_descriptor(const shape_type& shape, const shape_type& strides, const Subs&...subs){
-        using map_type = typename mapping_view_descriptor_type::map_type;
-        auto subs_shape = detail::broadcast_shape<shape_type>(subs.descriptor().shape()...);
-        auto subs_size = detail::make_size(subs_shape);
-        return mapping_view_descriptor_type{
-            detail::make_index_mapping_view_shape(shape, subs_shape, sizeof...(Subs)),
-            detail::make_index_mapping_view_map<map_type>(
-                shape, strides, subs_size, walker_bidirectional_adapter<CfgT, decltype(subs.engine().create_walker())>{subs_shape, subs.engine().create_walker()}...
-            )
-        };
-    }
-    template<typename Subs>
-    static auto create_bool_mapping_view_descriptor(const shape_type& shape, const shape_type& strides, const Subs& subs){
-        using map_type = typename mapping_view_descriptor_type::map_type;
-        using walker_adapter_type = walker_bidirectional_adapter<CfgT, decltype(subs.engine().create_walker())>;
-        auto subs_size = subs.size();
-        auto block_size = detail::bool_mapping_view_block_size(shape, subs);
-        auto map = detail::make_bool_mapping_view_map<map_type>(shape, block_size, subs_size);
-        auto map_size = detail::fill_bool_mapping_view_map(map, strides, block_size, subs_size, walker_adapter_type{subs.descriptor().shape(), subs.engine().create_walker()});
-        return mapping_view_descriptor_type{
-            detail::make_bool_mapping_view_shape(shape, subs.descriptor().shape(), block_size, map_size),
-            std::move(map)
-        };
-    }
 public:
     template<typename ImplT>
     static auto create_view_slice(const std::shared_ptr<ImplT>& parent, const slices_collection_type& subs){
@@ -335,15 +307,39 @@ public:
         return tensor<ValT,CfgT,impl_type>::make_tensor(create_view_reshape_descriptor(parent->shape(), subs),parent);
     }
     template<typename ImplT, typename...Subs>
-    static auto create_mapping_view_index_tensor(const std::shared_ptr<ImplT>& parent, const Subs&...subs){
-        using impl_type = mapping_view<typename detail::viewing_engine_traits<typename CfgT::host_engine, CfgT, mapping_view_descriptor_type, ImplT>::type>;
-        return tensor<ValT,CfgT,impl_type>::make_tensor(create_index_mapping_view_descriptor(parent->shape(), parent->strides(), subs...),parent);
+    static auto create_index_mapping_view(const std::shared_ptr<ImplT>& parent, const Subs&...subs){
+        using impl_type = storage_tensor<typename detail::storage_engine_traits<typename CfgT::host_engine,CfgT,typename CfgT::template storage<ValT>>::type>;
+        auto subs_shape = detail::broadcast_shape<shape_type>(subs.descriptor().shape()...);
+        auto subs_size = detail::make_size(subs_shape);
+        auto res = tensor<ValT,CfgT,impl_type>::make_tensor(detail::make_index_mapping_view_shape(parent->shape(), subs_shape, sizeof...(Subs)), ValT{});
+        detail::fill_index_mapping_view(
+            res.begin(),
+            parent->engine().create_indexer(),
+            parent->shape(),
+            parent->strides(),
+            subs_size,
+            walker_bidirectional_adapter<CfgT, decltype(subs.engine().create_walker())>{subs_shape, subs.engine().create_walker()}...
+        );
+        return res;
     }
     template<typename ImplT, typename Subs>
-    static auto create_mapping_view_bool_tensor(const std::shared_ptr<ImplT>& parent, const Subs& subs){
-        using impl_type = mapping_view<typename detail::viewing_engine_traits<typename CfgT::host_engine, CfgT, mapping_view_descriptor_type, ImplT>::type>;
+    static auto create_bool_mapping_view(const std::shared_ptr<ImplT>& parent, const Subs& subs){
+        using impl_type = storage_tensor<typename detail::storage_engine_traits<typename CfgT::host_engine,CfgT,typename CfgT::template storage<ValT>>::type>;
         detail::check_bool_mapping_view_subs(parent->shape(), subs.descriptor().shape());
-        return tensor<ValT,CfgT,impl_type>::make_tensor(create_bool_mapping_view_descriptor(parent->shape(), parent->strides(), subs),parent);
+        auto block_size = detail::bool_mapping_view_block_size(parent->shape(), subs);
+        auto subs_size = subs.size();
+        auto res = tensor<ValT,CfgT,impl_type>::make_tensor(parent->shape(), ValT{});
+        auto view_size = detail::fill_bool_mapping_view(
+            res.begin(),
+            parent->engine().create_indexer(),
+            parent->strides(),
+            block_size,
+            subs_size,
+            walker_bidirectional_adapter<CfgT, decltype(subs.engine().create_walker())>{subs.descriptor().shape(), subs.engine().create_walker()}
+        );
+        res.impl()->resize(detail::make_bool_mapping_view_shape(parent->shape(), subs.descriptor().shape(), block_size, view_size));
+        return res;
+
     }
 };
 

@@ -151,8 +151,8 @@ template<typename CfgT>
 class strides_extension
 {
     using shape_type = typename CfgT::shape_type;
-    const shape_type strides_;
-    const shape_type reset_strides_;
+    shape_type strides_;
+    shape_type reset_strides_;
 protected:
     strides_extension() = default;
     strides_extension(const shape_type& shape__):
@@ -196,6 +196,7 @@ public:
     using shape_type = typename config_type::shape_type;
     using strides_div_type = typename detail::strides_div_traits<config_type>::type;
 
+    virtual ~descriptor_base(){}
     virtual index_type convert(const shape_type& idx)const = 0;
     virtual index_type convert(const index_type& idx)const = 0;
     virtual index_type dim()const = 0;
@@ -231,8 +232,8 @@ public:
         strides_{shape_}
     {}
 private:
-    const shape_type shape_;
-    const detail::descriptor_strides<CfgT> strides_;
+    shape_type shape_;
+    detail::descriptor_strides<CfgT> strides_;
 };
 
 //descriptors implementation
@@ -251,7 +252,6 @@ public:
     explicit basic_descriptor(ShT&& shape__):
         impl_{std::forward<ShT>(shape__)}
     {}
-
     index_type dim()const override{return impl_.dim();}
     index_type size()const override{return impl_.size();}
     const shape_type& shape()const override{return impl_.shape();}

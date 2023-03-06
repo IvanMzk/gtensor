@@ -195,11 +195,11 @@ public:
     //mapping view
     template<typename...Subs, std::enable_if_t<std::conjunction_v<detail::is_index_tensor<Subs,index_type>...>,int> = 0 >
     auto operator()(const Subs&...subs)const{
-        return view_factory<ValT,CfgT>::create_mapping_view_index_tensor(impl(), subs...);
+        return view_factory<ValT,CfgT>::create_index_mapping_view(impl(), subs...);
     }
     template<typename Subs, std::enable_if_t<detail::is_bool_tensor<Subs>::value ,int> = 0 >
     auto operator()(const Subs& subs)const{
-        return view_factory<ValT,CfgT>::create_mapping_view_bool_tensor(impl(), subs);
+        return view_factory<ValT,CfgT>::create_bool_mapping_view(impl(), subs);
     }
 };
 

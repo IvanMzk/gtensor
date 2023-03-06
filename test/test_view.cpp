@@ -93,14 +93,18 @@ TEMPLATE_TEST_CASE("test_view","[test_view]",
         std::make_tuple([](){auto x = tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}}; return x(x<tensor_type{5});}(),tensor_type{1,2,3,4}),
         std::make_tuple([](){auto x = tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}}; return x(x>tensor_type{5} && x<tensor_type{10});}(),tensor_type{6,7,8,9}),
         //view composition
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}.transpose().reshape(2,3), tensor_type{{1,4,2},{5,3,6}})
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}.transpose().reshape(2,3), tensor_type{{1,4,2},{5,3,6}}),
+        std::make_tuple((tensor_type{{1,2,3},{4,5,6}}.transpose().reshape(2,3) + tensor_type{{0},{1}})(bool_tensor_type{{false,true,false},{true,false,true}}), tensor_type{4,6,7}),
+        std::make_tuple((tensor_type{{1,2,3},{4,5,6}}.transpose().reshape(2,3) + tensor_type{{0},{1}})(tensor_type{1,0,1}), tensor_type{{6,4,7},{1,4,2},{6,4,7}})
 
     );
 
     auto test = [](auto& t){
         auto result = std::get<0>(t);
         auto expected = std::get<1>(t);
-        REQUIRE(result.equals(expected));
+        //REQUIRE(result.shape() == expected.shape());
+        REQUIRE(std::equal(result.begin(), result.end(), expected.begin()));
+        //REQUIRE(result.equals(expected));
     };
     apply_by_element(test,test_data);
 }

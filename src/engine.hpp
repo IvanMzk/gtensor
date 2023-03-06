@@ -62,11 +62,6 @@ public:
         holder_accessor{holder},
         elements_{}
     {}
-    template<typename StorT_>
-    storage_engine(holder_type* holder, StorT_&& init_data):
-        holder_accessor{holder},
-        elements_(std::forward<StorT_>(init_data))
-    {}
     template<typename Nested>
     storage_engine(holder_type* holder, const index_type& size, std::initializer_list<Nested> init_data):
         holder_accessor{holder},
@@ -87,6 +82,8 @@ public:
         auto n_to_copy = size > n ? n : size;
         std::copy_n(begin,n_to_copy,elements_.begin());
     }
+
+    void resize(const index_type& size){elements_.resize(size);}
 private:
     template<typename U>
     static auto create_indexer_helper(U& instance){

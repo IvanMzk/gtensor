@@ -31,6 +31,7 @@ public:
     basic_tensor& operator=(basic_tensor&&) = delete;
 
     const descriptor_type& descriptor()const override{return descriptor_;}
+    descriptor_type& descriptor()override{return descriptor_;}
     index_type size()const override{return descriptor_.size();}
     index_type dim()const override{return descriptor_.dim();}
     const shape_type& shape()const override{return descriptor_.shape();}
@@ -81,6 +82,12 @@ public:
     storage_tensor(ShT&& shape, ItT begin, ItT end):
         storage_tensor{detail::make_size<index_type>(shape), std::forward<ShT>(shape), begin, end}
     {}
+
+    template<typename ShT>
+    void resize(ShT&& shape){
+        basic_tensor_base::descriptor() = descriptor_type{std::forward<ShT>(shape)};
+        basic_tensor_base::engine().resize(basic_tensor_base::descriptor().size());
+    }
 };
 
 template<typename EngineT>
