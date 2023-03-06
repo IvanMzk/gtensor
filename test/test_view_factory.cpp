@@ -184,7 +184,7 @@ TEMPLATE_TEST_CASE("test_make_index_mapping_view_shape","[test_view_factory]",
     typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
 ){
     using test_config_type = TestType;
-    using index_type = typename test_config_type::index_type;
+    using size_type = typename test_config_type::size_type;
     using shape_type = typename test_config_type::shape_type;
     using gtensor::subscript_exception;
     using gtensor::detail::make_index_mapping_view_shape;
@@ -208,7 +208,7 @@ TEMPLATE_TEST_CASE("test_make_index_mapping_view_shape_exception","[test_view_fa
     typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
 ){
     using test_config_type = TestType;
-    using index_type = typename test_config_type::index_type;
+    using size_type = typename test_config_type::size_type;
     using shape_type = typename test_config_type::shape_type;
     using gtensor::subscript_exception;
     using gtensor::detail::make_index_mapping_view_shape;

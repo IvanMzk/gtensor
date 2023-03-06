@@ -8,26 +8,27 @@
 
 TEST_CASE("slice_item","[slice_item]"){
     using config_type = gtensor::config::default_config;
+    using index_type = typename config_type::index_type;
     using slice_item_type =  typename gtensor::slice_traits<config_type>::slice_item_type;
     SECTION("use_init_list"){
         using slice_init_type = typename gtensor::slice_traits<config_type>::slice_init_type;
 
         slice_init_type l1 = {1};
-        REQUIRE(l1.begin()[0].i == 1);
+        REQUIRE(l1.begin()[0].i == index_type(1));
         REQUIRE(!l1.begin()[0].nop);
 
         slice_init_type l2 = {0,-1,1};
-        REQUIRE(l2.begin()[0].i == 0);
+        REQUIRE(l2.begin()[0].i == index_type(0));
         REQUIRE(!l2.begin()[0].nop);
-        REQUIRE(l2.begin()[1].i == -1);
+        REQUIRE(l2.begin()[1].i == index_type(-1));
         REQUIRE(!l2.begin()[1].nop);
-        REQUIRE(l2.begin()[2].i == 1);
+        REQUIRE(l2.begin()[2].i == index_type(1));
         REQUIRE(!l2.begin()[2].nop);
 
         slice_init_type l3 = {{},{},-1};
         REQUIRE(l3.begin()[0].nop);
         REQUIRE(l3.begin()[1].nop);
-        REQUIRE(l3.begin()[2].i == -1);
+        REQUIRE(l3.begin()[2].i == index_type(-1));
         REQUIRE(!l3.begin()[2].nop);
     }
     SECTION("use_array"){
@@ -42,23 +43,23 @@ TEST_CASE("slice_item","[slice_item]"){
         REQUIRE(l[2].nop);
 
         slice_init_type l1 = {1};
-        REQUIRE(l1[0].i == 1);
+        REQUIRE(l1[0].i == index_type(1));
         REQUIRE(!l1[0].nop);
         REQUIRE(l1[1].nop);
         REQUIRE(l1[2].nop);
 
         slice_init_type l2 = {0,-1,1};
-        REQUIRE(l2[0].i == 0);
+        REQUIRE(l2[0].i == index_type(0));
         REQUIRE(!l2[0].nop);
-        REQUIRE(l2[1].i == -1);
+        REQUIRE(l2[1].i == index_type(-1));
         REQUIRE(!l2[1].nop);
-        REQUIRE(l2[2].i == 1);
+        REQUIRE(l2[2].i == index_type(1));
         REQUIRE(!l2[2].nop);
 
         slice_init_type l3 = {{},{},-1};
         REQUIRE(l3[0].nop);
         REQUIRE(l3[1].nop);
-        REQUIRE(l3[2].i == -1);
+        REQUIRE(l3[2].i == index_type(-1));
         REQUIRE(!l3[2].nop);
     }
     SECTION("use_std_array"){
@@ -69,24 +70,24 @@ TEST_CASE("slice_item","[slice_item]"){
         REQUIRE(l[2].nop);
 
         slice_init_type l1 = {1};
-        REQUIRE(l1[0].i == 1);
+        REQUIRE(l1[0].i == index_type(1));
         REQUIRE(!l1[0].nop);
         REQUIRE(l1[1].nop);
         REQUIRE(l1[2].nop);
 
         slice_init_type l2 = {0,-1,1};
-        REQUIRE(l2[0].i == 0);
+        REQUIRE(l2[0].i == index_type(0));
         REQUIRE(!l2[0].nop);
-        REQUIRE(l2[1].i == -1);
+        REQUIRE(l2[1].i == index_type(-1));
         REQUIRE(!l2[1].nop);
-        REQUIRE(l2[2].i == 1);
+        REQUIRE(l2[2].i == index_type(1));
         REQUIRE(!l2[2].nop);
 
         /*
         slice_init_type l3 = {{},{},-1};
         REQUIRE(l3[0].nop);
         REQUIRE(l3[1].nop);
-        REQUIRE(l3[2].i == -1);
+        REQUIRE(l3[2].i == index_type(-1));
         REQUIRE(!l3[2].nop);
         */
     }
@@ -103,7 +104,7 @@ TEST_CASE("slice_item","[slice_item]"){
 
         slice_init_type l1 = {1,{},{}};
         REQUIRE(!std::get<0>(l1).nop);
-        REQUIRE(std::get<0>(l1).i == 1);
+        REQUIRE(std::get<0>(l1).i == index_type(1));
         REQUIRE(std::get<1>(l1).nop);
         REQUIRE(std::get<2>(l1).nop);
     }
@@ -111,6 +112,7 @@ TEST_CASE("slice_item","[slice_item]"){
 
 TEST_CASE("test_slice","[test_slice]"){
     using config_type = gtensor::config::default_config;
+    using index_type = typename config_type::index_type;
     using slice_type = typename gtensor::slice_traits<config_type>::slice_type;
     using nop_type = typename gtensor::slice_traits<config_type>::nop_type;
     nop_type nop{};
@@ -122,25 +124,25 @@ TEST_CASE("test_slice","[test_slice]"){
     }
     SECTION("construction_i__"){
         slice_type slice{-3};
-        REQUIRE(slice.start == -3);
+        REQUIRE(slice.start == index_type(-3));
         REQUIRE(slice.is_start());
         REQUIRE(!slice.is_stop());
         REQUIRE(slice.is_step());
         slice_type slice1{0,nop,nop};
-        REQUIRE(slice1.start == 0);
+        REQUIRE(slice1.start == index_type(0));
         REQUIRE(slice1.is_start());
         REQUIRE(!slice1.is_stop());
         REQUIRE(slice1.is_step());
         slice_type slice2 = {3,{},{}};
-        REQUIRE(slice2.start == 3);
+        REQUIRE(slice2.start == index_type(3));
         REQUIRE(slice2.is_start());
         REQUIRE(!slice2.is_stop());
         REQUIRE(slice2.is_step());
     }
     SECTION("construction_ij_"){
         slice_type slice{3,10};
-        REQUIRE(slice.start == 3);
-        REQUIRE(slice.stop == 10);
+        REQUIRE(slice.start == index_type(3));
+        REQUIRE(slice.stop == index_type(10));
         REQUIRE(slice.is_start());
         REQUIRE(slice.is_stop());
         REQUIRE(slice.is_step());
@@ -148,21 +150,21 @@ TEST_CASE("test_slice","[test_slice]"){
         REQUIRE(slice1.is_start());
         REQUIRE(slice1.is_stop());
         REQUIRE(slice1.is_step());
-        REQUIRE(slice1.start == 2);
-        REQUIRE(slice1.stop == 14);
+        REQUIRE(slice1.start == index_type(2));
+        REQUIRE(slice1.stop == index_type(14));
     }
     SECTION("construction_ijk"){
         slice_type slice{3,10,-2};
-        REQUIRE(slice.start == 3);
-        REQUIRE(slice.stop == 10);
-        REQUIRE(slice.step == -2);
+        REQUIRE(slice.start == index_type(3));
+        REQUIRE(slice.stop == index_type(10));
+        REQUIRE(slice.step == index_type(-2));
         REQUIRE(slice.is_start());
         REQUIRE(slice.is_stop());
         REQUIRE(slice.is_step());
     }
     SECTION("construction___k"){
         slice_type slice{{},{nop},-2};
-        REQUIRE(slice.step == -2);
+        REQUIRE(slice.step == index_type(-2));
         REQUIRE(!slice.is_start());
         REQUIRE(!slice.is_stop());
         REQUIRE(slice.is_step());
@@ -312,13 +314,13 @@ TEST_CASE("test_check_subdim_subs","[test_check_subdim_subs]"){
     using shape_type = typename gtensor::config::default_config::shape_type;
     using gtensor::detail::check_subdim_subs;
 
-    REQUIRE_NOTHROW(check_subdim_subs(shape_type{5,4,3},4));
-    REQUIRE_NOTHROW(check_subdim_subs(shape_type{5,4,3},4,3));
-    REQUIRE_THROWS_AS(check_subdim_subs(shape_type{5},0), gtensor::subscript_exception);
-    REQUIRE_THROWS_AS(check_subdim_subs(shape_type{5},0,0), gtensor::subscript_exception);
-    REQUIRE_THROWS_AS(check_subdim_subs(shape_type{5,4,3},1,2,3), gtensor::subscript_exception);
-    REQUIRE_THROWS_AS(check_subdim_subs(shape_type{5,4,3},5), gtensor::subscript_exception);
-    REQUIRE_THROWS_AS(check_subdim_subs(shape_type{5,4,3},0,4), gtensor::subscript_exception);
+    REQUIRE_NOTHROW(check_subdim_subs(shape_type{5,4,3},shape_type{4}));
+    REQUIRE_NOTHROW(check_subdim_subs(shape_type{5,4,3},shape_type{4,3}));
+    REQUIRE_THROWS_AS(check_subdim_subs(shape_type{5},shape_type{0}), gtensor::subscript_exception);
+    REQUIRE_THROWS_AS(check_subdim_subs(shape_type{5},shape_type{0,0}), gtensor::subscript_exception);
+    REQUIRE_THROWS_AS(check_subdim_subs(shape_type{5,4,3},shape_type{1,2,3}), gtensor::subscript_exception);
+    REQUIRE_THROWS_AS(check_subdim_subs(shape_type{5,4,3},shape_type{5}), gtensor::subscript_exception);
+    REQUIRE_THROWS_AS(check_subdim_subs(shape_type{5,4,3},shape_type{0,4}), gtensor::subscript_exception);
 }
 
 TEST_CASE("test_check_reshape_subs","[test_check_reshape_subs]"){

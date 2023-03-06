@@ -247,6 +247,7 @@ auto fill_bool_mapping_view(It it, ParentIndexer pindexer, const ShT& pstrides, 
 template<typename ValT, typename CfgT>
 class view_factory
 {
+    using size_type = typename CfgT::size_type;
     using index_type = typename CfgT::index_type;
     using shape_type = typename CfgT::shape_type;
     using slices_collection_type = typename slice_traits<CfgT>::slices_collection_type;

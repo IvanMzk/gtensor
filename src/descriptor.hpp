@@ -5,6 +5,7 @@
 #include <numeric>
 #include <sstream>
 #include "libdivide_helper.hpp"
+#include "indexable_adapter.hpp"
 
 namespace gtensor{
 namespace detail{
@@ -50,6 +51,7 @@ inline auto make_strides_div(const ShT& shape){
 
 template<typename ShT>
 inline auto make_reset_strides(const ShT& shape, const ShT& strides){
+    using index_type = typename ShT::value_type;
     if (!shape.empty()){
         ShT res(shape.size());
         std::transform(
@@ -57,7 +59,9 @@ inline auto make_reset_strides(const ShT& shape, const ShT& strides){
             shape.end(),
             strides.begin(),
             res.begin(),
-            [](const auto& shape_element, const auto& strides_element){return (shape_element-1)*strides_element;}
+            [](const auto& shape_element, const auto& strides_element){
+                return (shape_element-index_type(1))*strides_element;
+            }
         );
         return res;
     }

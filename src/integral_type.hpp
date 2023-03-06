@@ -8,18 +8,6 @@
 
 namespace gtensor{
 
-template<typename T> class integral;
-class integral_exception : public std::runtime_error
-{
-public:
-    explicit integral_exception(const char* what_):
-        std::runtime_error(what_)
-    {}
-    explicit integral_exception(const std::string& what_):
-        std::runtime_error(what_)
-    {}
-};
-
 #define UNARY_INTEGRAL_OPERATOR(NAME,OP)\
 template<typename U>\
 inline auto NAME(const integral<U>& u){\
@@ -41,6 +29,7 @@ integral& NAME(const integral<U>& u){\
     value_ OP u.value();\
     return *this;\
 }
+
 #define INTEGRAL_UNARY_PREFIX_MEMBER_OPERATOR(NAME,OP)\
 integral& NAME(){\
     OP value_;\
@@ -53,6 +42,18 @@ integral NAME(int){\
     return tmp;\
 }
 
+class integral_exception : public std::runtime_error
+{
+public:
+    explicit integral_exception(const char* what_):
+        std::runtime_error(what_)
+    {}
+    explicit integral_exception(const std::string& what_):
+        std::runtime_error(what_)
+    {}
+};
+
+template<typename T> class integral;
 namespace detail{
     template<typename T>
     struct is_signed : public std::is_signed<T>{
@@ -65,12 +66,6 @@ namespace detail{
         static_assert(std::is_integral_v<T>);
     };
     template<typename T> using make_unsigned_t = typename make_unsigned<T>::type;
-
-    template<typename T>
-    struct make_signed : public std::make_signed<T>{
-        static_assert(std::is_integral_v<T>);
-    };
-    template<typename T> using make_signed_t = typename make_signed<T>::type;
 
     template<typename T>
     inline integral<T> make_integral(const T& value){return integral<T>(value);}
@@ -122,11 +117,11 @@ class integral
 public:
     using value_type = T;
     integral() = default;
-    explicit integral(value_type value__):
+    integral(value_type value__):
         value_{value__}
     {}
     template<typename U>
-    explicit integral(U value__):
+    integral(U value__):
         value_(value__)
     {
         static_assert(std::is_integral_v<U>);
@@ -153,11 +148,11 @@ public:
         }
     }
     template<typename U>
-    explicit integral(const integral<U>& other):
+    integral(const integral<U>& other):
         integral(other.value())
     {}
 
-    explicit operator value_type()const{return value_;}
+    //explicit operator value_type()const{return value_;}
     value_type value()const{return value_;}
 
     INTEGRAL_BINARY_ASSIGNMENT_MEMBER_OPERATOR(operator+=,+=);
@@ -200,6 +195,12 @@ BINARY_INTEGRAL_OPERATOR(operator|,|);
 BINARY_INTEGRAL_OPERATOR(operator^,^);
 BINARY_INTEGRAL_OPERATOR(operator<<,<<);
 BINARY_INTEGRAL_OPERATOR(operator>>,>>);
+
+template<typename T>
+std::ostream& operator<<(std::ostream& os, const integral<T>& t){
+    os<<t.value();
+    return os;
+}
 
 }   //end of namespace gtensor
 #endif

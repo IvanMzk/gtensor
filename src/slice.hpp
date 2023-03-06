@@ -24,7 +24,8 @@ struct slice_item{
     using nop_type = NopT;
     slice_item():nop{1}{}
     slice_item(const nop_type&):nop{1}{}
-    slice_item(const index_type& i_):i{i_}{}
+    template<typename U>
+    slice_item(const U& i_):i{i_}{}
     const index_type i{};
     const char nop{0};
 };
@@ -179,16 +180,17 @@ template<typename T, typename N>
 inline auto fill_slice(const slice<T,N>& slice_, const T& n){
     using slice_type = slice<T,N>;
     using index_type = T;
-    return slice_.step > 0 ?
+    const index_type zero_index(0);
+    return slice_.step > index_type(0) ?
                 slice_.is_start() ?
-                    slice_.is_stop() ? slice_type{slice_.start < 0 ? slice_.start + index_type(n):slice_.start, slice_.stop < 0  ? slice_.stop + index_type(n):slice_.stop, slice_.step} : slice_type{slice_.start < 0  ? slice_.start + index_type(n):slice_.start,index_type(n), slice_.step}
+                    slice_.is_stop() ? slice_type{slice_.start < zero_index ? slice_.start + n:slice_.start, slice_.stop < zero_index  ? slice_.stop + n:slice_.stop, slice_.step} : slice_type{slice_.start < zero_index  ? slice_.start + n:slice_.start,n, slice_.step}
                 :
-                    slice_.is_stop() ? slice_type{index_type(0),slice_.stop < 0  ? slice_.stop + index_type(n):slice_.stop, slice_.step} : slice_type{index_type(0),index_type(n), slice_.step}
+                    slice_.is_stop() ? slice_type{zero_index,slice_.stop < zero_index  ? slice_.stop + n:slice_.stop, slice_.step} : slice_type{zero_index,n, slice_.step}
             :
                 slice_.is_start() ?
-                    slice_.is_stop() ? slice_type{slice_.start < 0 ? slice_.start + index_type(n):slice_.start, slice_.stop < 0  ? slice_.stop + index_type(n):slice_.stop, slice_.step} : slice_type{slice_.start < 0  ? slice_.start + index_type(n):slice_.start,index_type(-1), slice_.step}
+                    slice_.is_stop() ? slice_type{slice_.start < zero_index ? slice_.start + n:slice_.start, slice_.stop < zero_index  ? slice_.stop + n:slice_.stop, slice_.step} : slice_type{slice_.start < zero_index  ? slice_.start + n:slice_.start,index_type(-1), slice_.step}
                 :
-                    slice_.is_stop() ? slice_type{index_type(n-1),slice_.stop < 0  ? slice_.stop + index_type(n):slice_.stop, slice_.step} : slice_type{index_type(n-1),index_type(-1), slice_.step};
+                    slice_.is_stop() ? slice_type{n-index_type(1),slice_.stop < zero_index  ? slice_.stop + n:slice_.stop, slice_.step} : slice_type{n-index_type(1),index_type(-1), slice_.step};
 }
 
 /*
@@ -202,10 +204,11 @@ inline auto fill_slice(const slice<T,N>& slice_, const T& n){
 template<typename T, typename N>
 inline void check_slice(const slice<T,N>& slice_, const T& n){
     using index_type = T;
+    const index_type zero_index(0);
     if (
-        slice_.step > 0 ? slice_.start<slice_.stop && slice_.start>=index_type(0) && slice_.start<n && slice_.stop>index_type(0) && slice_.stop<=n ? true : false
+        slice_.step > zero_index ? slice_.start<slice_.stop && slice_.start>=zero_index && slice_.start<n && slice_.stop>zero_index && slice_.stop<=n ? true : false
         :
-        slice_.start>slice_.stop && slice_.start>=index_type(0) && slice_.start<n && slice_.stop>=index_type(-1) && slice_.stop<n-1 ? true : false
+        slice_.start>slice_.stop && slice_.start>=zero_index && slice_.start<n && slice_.stop>=index_type(-1) && slice_.stop<n-index_type(1) ? true : false
         ){}
         else{throw subscript_exception("invalid slice subscript");}
 }
@@ -259,25 +262,33 @@ template<typename T>
 inline void check_transpose_subs(const T&){}
 template<typename T, typename...Subs>
 inline void check_transpose_subs(const T& dim, const Subs&...subs){
-    if (dim!=sizeof...(Subs)){throw subscript_exception("transpose must have no or dim subscripts");}
+    if (dim!=sizeof...(Subs)){
+        throw subscript_exception("transpose must have no or dim subscripts");
+    }
     std::array<bool, sizeof...(Subs)> check_buffer;
     check_buffer.fill(false);
-    ([&check_buffer](const auto& sub){if (static_cast<std::size_t>(sub)>=sizeof...(Subs) || check_buffer[sub]){throw subscript_exception("invalid transpose subscript");}else{check_buffer[sub]=true;}}(subs),...);
+    ([&check_buffer](const auto& sub){
+        if (static_cast<std::size_t>(sub)>=sizeof...(Subs) || check_buffer[sub]){
+            throw subscript_exception("invalid transpose subscript");
+        }else{
+            check_buffer[sub]=true;
+        }
+    }(subs),...);
 }
 
-template<typename ShT, typename...Subs>
-inline void check_subdim_subs(const ShT& shape, const Subs&...subs){
+template<typename ShT>
+inline void check_subdim_subs(const ShT& shape, const ShT& subs){
     using index_type = typename ShT::value_type;
-    if (sizeof...(subs) >= shape.size()){throw subscript_exception("subdim subscripts number must be less than dim");}
-    auto it = shape.begin();
-    auto checker = [&it](const auto& sub){
-        auto n = *it;
-        if (sub >=index_type(0) && sub < n){}
-        else{throw subscript_exception("invalid subdim subscript");}
-        ++it;
-    };
-    if constexpr (true || std::is_void_v<decltype(checker)>){
-        (checker(subs),...);
+    if (subs.size() >= shape.size()){
+        throw subscript_exception("subdim subscripts number must be less than dim");
+    }
+    const index_type zero_index(0);
+    auto shape_it = shape.begin();
+    for (auto subs_it = subs.begin(), subs_end = subs.end(); subs_it != subs_end; ++subs_it, ++shape_it){
+        auto sub = *subs_it;
+        if (sub < zero_index || sub >= *shape_it){
+            throw subscript_exception("invalid subdim subscript");
+        }
     }
 }
 

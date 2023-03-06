@@ -9,9 +9,11 @@ struct config_tmpl_{
     using host_engine = HEng;
     using div_mode = Div;
     using index_type = typename gtensor::config::default_config::index_type;
-    using meta_index_type = typename gtensor::config::default_config::meta_index_type;
+    using size_type = typename gtensor::config::default_config::size_type;
     template<typename ValT> using storage = typename gtensor::config::default_config::storage<ValT>;
     using shape_type = typename gtensor::config::default_config::shape_type;
+    template<typename T> using indexable_adapter = typename gtensor::config::default_config::indexable_adapter<T>;
+    template<typename T> using indexable_ref_adapter = typename gtensor::config::default_config::indexable_ref_adapter<T>;
 };
 
 template<typename HEng, typename Div>

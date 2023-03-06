@@ -3,11 +3,11 @@
 
 #include <type_traits>
 #include "libdivide.h"
+#include "integral_type.hpp"
 #include "config.hpp"
 
 namespace gtensor{
 namespace detail{
-
 
 template<typename T>
 class libdivide_divider : public libdivide::divider<T>
@@ -22,6 +22,25 @@ public:
     {}
     auto divider()const{return divider_;}
 };
+
+template<typename T>
+class libdivide_divider<integral<T>> : public libdivide::divider<T>
+{
+    using divider_base = libdivide::divider<T>;
+    integral<T> divider_;
+public:
+    libdivide_divider() = default;
+    explicit libdivide_divider(const integral<T>& divider__):
+        divider_base{divider__.value()},
+        divider_{divider__}
+    {}
+    auto divider()const{return divider_;}
+};
+
+template<typename T>
+auto operator/(const integral<T>& n, const libdivide_divider<integral<T>>& divider){
+    return integral<T>(n.value()/divider);
+}
 
 template<typename T> using libdivide_vector = std::vector<libdivide_divider<T>>;
 
@@ -78,7 +97,7 @@ auto flat_to_multi(const StT& strides, const IdxT& idx){
     index_type idx_{idx};
     auto st_it = strides.begin();
     auto res_it = res.begin();
-    while(idx_ != 0){
+    while(idx_ != index_type(0)){
         *res_it = divide(idx_,*st_it);
         ++st_it,++res_it;
     }
@@ -93,7 +112,7 @@ auto flat_to_flat(const StT& strides, const CStT& cstrides, const IdxT& offset, 
     index_type idx_{idx};
     auto st_it = strides.begin();
     auto cst_it = cstrides.begin();
-    while(idx_ != 0){
+    while(idx_ != index_type(0)){
         res += *cst_it*divide(idx_,*st_it);
         ++st_it;
         ++cst_it;
