@@ -7,7 +7,6 @@
 #include "tensor.hpp"
 #include "slice.hpp"
 
-
 namespace gtensor{
 
 namespace detail{
@@ -254,11 +253,9 @@ class view_factory
     using view_reshape_descriptor_type = basic_descriptor<CfgT>;
     using view_subdim_descriptor_type = descriptor_with_offset<CfgT>;
     using view_slice_descriptor_type = converting_descriptor<CfgT>;
-    using mapping_view_descriptor_type = mapping_descriptor<CfgT>;
     template<typename EngineT> using view_reshape = gtensor::viewing_tensor<view_reshape_descriptor_type, EngineT>;
     template<typename EngineT> using view_subdim = gtensor::viewing_tensor<view_subdim_descriptor_type, EngineT>;
     template<typename EngineT> using view_slice = gtensor::viewing_tensor<view_slice_descriptor_type, EngineT>;
-    template<typename EngineT> using mapping_view = gtensor::viewing_tensor<mapping_view_descriptor_type, EngineT>;
 
     static auto create_view_slice_descriptor(const shape_type& shape, const shape_type& strides, const slices_collection_type& subs){
         return view_slice_descriptor_type{

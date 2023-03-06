@@ -186,32 +186,6 @@ TEST_CASE("test_basic_descriptor_convert", "[test_descriptor]"){
     REQUIRE(descriptor.convert(flat_idx) == expected_convert_flat_idx);
 }
 
-TEST_CASE("test_mapping_descriptor_convert", "[test_descriptor]"){
-    using config_type = gtensor::config::default_config;
-    using descriptor_type = gtensor::mapping_descriptor<config_type>;
-    using map_type = typename descriptor_type::map_type;
-    using shape_type = typename config_type::shape_type;
-    using index_type = typename config_type::index_type;
-    using test_type = std::tuple<descriptor_type, shape_type, index_type, index_type, index_type>;
-    //0descriptor,1multi_idx,2flat_idx,3converted_multi_idx,4converted_flat_idx
-    auto test_data = GENERATE(
-        test_type{descriptor_type{shape_type{5}, map_type{5,6,7,8,9}},shape_type{0},0,5,5},
-        test_type{descriptor_type{shape_type{5}, map_type{5,6,7,8,9}},shape_type{3},3,8,8},
-        test_type{descriptor_type{shape_type{1,5}, map_type{5,6,7,8,9}},shape_type{0,3},3,8,8},
-        test_type{descriptor_type{shape_type{5,1}, map_type{5,6,7,8,9}},shape_type{3,0},3,8,8},
-        test_type{descriptor_type{shape_type{2,3,2},map_type{0,1,2,3,4,5,12,13,14,15,16,17}},shape_type{1,1,1},10,15,16},
-        test_type{descriptor_type{shape_type{4,2},map_type{0,1,4,5,16,17,18,19}},shape_type{2,1},3,17,5}
-    );
-    auto descriptor = std::get<0>(test_data);
-    auto multi_idx = std::get<1>(test_data);
-    auto flat_idx = std::get<2>(test_data);
-    auto expected_convert_multi_idx = std::get<3>(test_data);
-    auto expected_convert_flat_idx = std::get<4>(test_data);
-
-    REQUIRE(descriptor.convert(multi_idx) == expected_convert_multi_idx);
-    REQUIRE(descriptor.convert(flat_idx) == expected_convert_flat_idx);
-}
-
 TEST_CASE("test_descriptor_with_offset","[test_descriptor]"){
     using config_type = gtensor::config::default_config;
     using descriptor_type = gtensor::descriptor_with_offset<config_type>;
@@ -321,21 +295,3 @@ TEMPLATE_TEST_CASE("test_converting_descriptor_convert", "[test_descriptor]", gt
     REQUIRE(descriptor.convert(multi_idx) == expected_convert_multi_idx);
     REQUIRE(descriptor.convert(flat_idx) == expected_convert_flat_idx);
 }
-
-TEMPLATE_TEST_CASE("test_descriptor_copy_assignment", "[test_descriptor]",
-    gtensor::config::mode_div_native,
-    gtensor::config::mode_div_libdivide
-)
-{
-    using config_type = typename test_config::config_div_mode_selector<TestType>::config_type;
-    using descriptor_type = gtensor::descriptor_common<config_type>;
-    using shape_type = typename config_type::shape_type;
-    using index_type = typename config_type::index_type;
-
-    descriptor_type desc{shape_type{1,2,3}};
-    descriptor_type desc_copy{shape_type{}};
-
-    desc_copy = desc;
-
-}
-

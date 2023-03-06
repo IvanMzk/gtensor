@@ -311,26 +311,6 @@ private:
     shape_type reset_cstrides_;
 };
 
-template<typename CfgT, typename MapT = typename CfgT::shape_type>
-class mapping_descriptor : public basic_descriptor<CfgT>
-{
-    using basic_descriptor_base = basic_descriptor<CfgT>;
-public:
-    using map_type = MapT;
-    using typename basic_descriptor_base::shape_type;
-    using typename basic_descriptor_base::index_type;
-    mapping_descriptor() = default;
-    template<typename ShT, typename MapT_>
-    mapping_descriptor(ShT&& shape__, MapT_&& index_map__):
-        basic_descriptor_base{std::forward<ShT>(shape__)},
-        index_map_{std::forward<MapT_>(index_map__)}
-    {}
-    index_type convert(const index_type& idx)const override{return index_map_[idx];}
-    index_type convert(const shape_type& idx)const override{return index_map_[detail::convert_index(basic_descriptor_base::cstrides(),basic_descriptor_base::offset(),idx)];}
-private:
-    map_type index_map_;
-};
-
 }   //end of namespace gtensor
 
 #endif
