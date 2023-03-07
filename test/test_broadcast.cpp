@@ -6,7 +6,6 @@
 #include "broadcast.hpp"
 #include "descriptor.hpp"
 #include "indexer.hpp"
-#include "indexable_adapter.hpp"
 #include "helpers_for_testing.hpp"
 
 TEMPLATE_TEST_CASE("test_variadic_broadcast_shape","[test_descriptor]", std::vector<std::int64_t>)

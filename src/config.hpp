@@ -4,7 +4,7 @@
 #include <vector>
 #include "forward_decl.hpp"
 #include "integral_type.hpp"
-#include "indexable_adapter.hpp"
+#include "index_type_adapter.hpp"
 
 namespace gtensor{
 namespace config{
@@ -23,10 +23,6 @@ struct default_config{
     using div_mode = mode_div_libdivide;
     //using div_mode = mode_div_native;
 
-    //data elements storage template
-    //must provide random access interface
-    template<typename ValT> using storage = std::vector<ValT>;
-
     //index_type defines data elements address space
     //used in indexed access to data elements:
     //  index_type must be convertible to storage<value_type>::iterator::difference_type
@@ -35,6 +31,12 @@ struct default_config{
     //must have semantic of signed integral type
     //using index_type = std::int64_t;
     using index_type = integral<std::int64_t>;
+
+    //data elements storage template
+    //must provide random access interface
+    //template<typename ValT> using storage = std::vector<ValT>;
+    template<typename ValT> using storage = storage_adapter<std::vector<ValT>, index_type>;
+
 
     //meta-data elements storage type i.e. shape, strides are of shape_type
     //must provide random access interface

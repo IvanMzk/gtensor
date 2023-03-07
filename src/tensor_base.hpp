@@ -12,6 +12,7 @@ class tensor_base
 protected:
     using value_type = ValT;
     using config_type = CfgT;
+    using size_type = typename config_type::size_type;
     using index_type = typename config_type::index_type;
     using shape_type = typename config_type::shape_type;
 public:

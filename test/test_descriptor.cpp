@@ -133,7 +133,8 @@ TEST_CASE("test_basic_descriptor","[test_descriptor]"){
     using descriptor_type = gtensor::basic_descriptor<config_type>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
-    using test_type = std::tuple<descriptor_type, shape_type, shape_type, shape_type, index_type, index_type>;
+    using size_type = typename config_type::size_type;
+    using test_type = std::tuple<descriptor_type, shape_type, shape_type, shape_type, index_type, size_type>;
     //0descriptor,1expected shape,2expected strides,3expected reset_strides,4expected size,5expected dim
     auto test_data = GENERATE(
         test_type(descriptor_type(),shape_type{},shape_type{},shape_type{},0,0),
@@ -191,7 +192,8 @@ TEST_CASE("test_descriptor_with_offset","[test_descriptor]"){
     using descriptor_type = gtensor::descriptor_with_offset<config_type>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
-    using test_type = std::tuple<descriptor_type, shape_type, shape_type, index_type, index_type, index_type>;
+    using size_type = typename config_type::size_type;
+    using test_type = std::tuple<descriptor_type, shape_type, shape_type, index_type, size_type, index_type>;
     //0descriptor,1expected shape,2expected strides,3expected size,4expected dim,5expected offset
     auto test_data = GENERATE(
         test_type(descriptor_type(),shape_type{},shape_type{},0,0,0),
@@ -246,8 +248,9 @@ TEMPLATE_TEST_CASE("test_converting_descriptor_getters", "[test_descriptor]", gt
     using strides_div_type = typename gtensor::detail::strides_div_traits<config_type>::type;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
+    using size_type = typename config_type::size_type;
     using gtensor::detail::make_dividers;
-    using test_type = std::tuple<descriptor_type, shape_type, shape_type, shape_type, index_type, index_type,index_type,shape_type, strides_div_type>;
+    using test_type = std::tuple<descriptor_type, shape_type, shape_type, shape_type, size_type, index_type,index_type,shape_type, strides_div_type>;
     //0descriptor, 1expected_shape, 2expected_strides, 3expected_cstrides, 4expected_dim, 5expected_size, 6expected_offset 7expected_reset_cstrides 8expected_strides_libdivide
     auto test_data = GENERATE(
         test_type{descriptor_type{shape_type{15},shape_type{-1},14},shape_type{15},shape_type{1},shape_type{-1},1,15,14, shape_type{-14}, make_dividers<config_type>(shape_type{1})},

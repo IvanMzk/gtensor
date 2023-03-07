@@ -93,11 +93,12 @@ inline ShT make_view_reshape_shape(const ShT& pshape, const ShT& subs){
 
 
 //helpers for making index_mapping_view
-template<typename ShT>
-inline auto mapping_view_block_size(const ShT& pshape, const typename ShT::value_type& subs_dim_or_subs_number){
+template<typename ShT, typename SizeT>
+inline auto mapping_view_block_size(const ShT& pshape, const SizeT& subs_dim_or_subs_number){
     using index_type = typename ShT::value_type;
-    auto pdim = pshape.size();
-    if (subs_dim_or_subs_number > index_type{0} && pdim > index_type{0}){
+    using size_type = SizeT;
+    size_type pdim = pshape.size();
+    if (subs_dim_or_subs_number > size_type{0} && pdim > size_type{0}){
         return std::accumulate(pshape.begin()+subs_dim_or_subs_number,pshape.end(),index_type(1),std::multiplies<index_type>{});
     }else{
         return index_type{0};
@@ -187,22 +188,16 @@ auto check_bool_mapping_view_subs(const ShT& pshape, const ShT& subs_shape){
     }
 }
 
-template<typename ShT, typename Subs>
-inline auto bool_mapping_view_block_size(const ShT& pshape, const Subs& subs){
-    return mapping_view_block_size(pshape,subs.dim());
-}
-
-template<typename ShT>
-inline ShT make_bool_mapping_view_shape(const ShT& pshape, const ShT& subs_shape, const typename ShT::value_type& block_size, const typename ShT::value_type& filled_map_size){
+template<typename ShT, typename SizeT>
+inline ShT make_bool_mapping_view_shape(const ShT& pshape, const typename ShT::value_type& subs_trues_number, const SizeT& subs_dim){
     using shape_type = ShT;
     using index_type = typename shape_type::value_type;
-    index_type pdim = pshape.size();
-    index_type subs_dim = subs_shape.size();
-    if (filled_map_size > index_type{0}){
-        index_type trues_number = filled_map_size / block_size;
-        auto res = shape_type(pdim - subs_dim + index_type{1});
+    using size_type = SizeT;
+    size_type pdim = pshape.size();
+    if (subs_trues_number > index_type{0}){
+        auto res = shape_type(pdim - subs_dim + size_type{1});
         auto res_it = res.begin();
-        *res_it = trues_number;
+        *res_it = subs_trues_number;
         ++res_it;
         std::copy(pshape.begin()+subs_dim, pshape.end(), res_it);
         return res;
@@ -211,15 +206,16 @@ inline ShT make_bool_mapping_view_shape(const ShT& pshape, const ShT& subs_shape
     }
 }
 
-template<typename It, typename ParentIndexer, typename ShT, typename WalkerAdapter>
-auto fill_bool_mapping_view(It it, ParentIndexer pindexer, const ShT& pstrides, const typename ShT::value_type& block_size, const typename ShT::value_type& subs_size, WalkerAdapter subs_it){
+template<typename It, typename ParentIndexer, typename ShT, typename SizeT, typename WalkerAdapter>
+auto fill_bool_mapping_view(It it, ParentIndexer pindexer, const ShT& pshape, const ShT& pstrides, const typename ShT::value_type& subs_size, const SizeT& subs_dim, WalkerAdapter subs_it){
     using index_type = typename ShT::value_type;
+    index_type block_size = mapping_view_block_size(pshape, subs_dim);
+    index_type trues_number{0};
     if (subs_size > index_type{0} && block_size > index_type{0}){
-        index_type view_size{0};
         if (block_size == index_type{1}){
             do{
                 if(*subs_it.walker()){
-                    ++view_size;
+                    ++trues_number;
                     index_type pindex = std::inner_product(subs_it.index().begin(), subs_it.index().end(), pstrides.begin(), index_type{0});
                     *it = pindexer[pindex];
                     ++it;
@@ -228,7 +224,7 @@ auto fill_bool_mapping_view(It it, ParentIndexer pindexer, const ShT& pstrides, 
         }else{
             do{
                 if(*subs_it.walker()){
-                    view_size+=block_size;
+                    ++trues_number;
                     auto block_first = std::inner_product(subs_it.index().begin(), subs_it.index().end(), pstrides.begin(), index_type{0});
                     for(index_type i{0}; i!=block_size; ++i){
                         *it = pindexer[block_first+i];
@@ -237,10 +233,8 @@ auto fill_bool_mapping_view(It it, ParentIndexer pindexer, const ShT& pstrides, 
                 }
             }while(subs_it.next());
         }
-        return view_size;
-    }else{
-        return index_type{0};
     }
+    return trues_number;
 }
 
 
@@ -311,7 +305,8 @@ public:
         using impl_type = storage_tensor<typename detail::storage_engine_traits<typename CfgT::host_engine,CfgT,typename CfgT::template storage<ValT>>::type>;
         auto subs_shape = detail::broadcast_shape<shape_type>(subs.descriptor().shape()...);
         auto subs_size = detail::make_size(subs_shape);
-        auto res = tensor<ValT,CfgT,impl_type>::make_tensor(detail::make_index_mapping_view_shape(parent->shape(), subs_shape, sizeof...(Subs)), ValT{});
+        size_type subs_number = sizeof...(Subs);
+        auto res = tensor<ValT,CfgT,impl_type>::make_tensor(detail::make_index_mapping_view_shape(parent->shape(), subs_shape, subs_number), ValT{});
         detail::fill_index_mapping_view(
             res.begin(),
             parent->engine().create_indexer(),
@@ -326,18 +321,18 @@ public:
     static auto create_bool_mapping_view(const std::shared_ptr<ImplT>& parent, const Subs& subs){
         using impl_type = storage_tensor<typename detail::storage_engine_traits<typename CfgT::host_engine,CfgT,typename CfgT::template storage<ValT>>::type>;
         detail::check_bool_mapping_view_subs(parent->shape(), subs.descriptor().shape());
-        auto block_size = detail::bool_mapping_view_block_size(parent->shape(), subs);
-        auto subs_size = subs.size();
+        size_type subs_dim = subs.dim();
         auto res = tensor<ValT,CfgT,impl_type>::make_tensor(parent->shape(), ValT{});
-        auto view_size = detail::fill_bool_mapping_view(
+        auto subs_trues_number = detail::fill_bool_mapping_view(
             res.begin(),
             parent->engine().create_indexer(),
+            parent->shape(),
             parent->strides(),
-            block_size,
-            subs_size,
+            subs.size(),
+            subs_dim,
             walker_bidirectional_adapter<CfgT, decltype(subs.engine().create_walker())>{subs.descriptor().shape(), subs.engine().create_walker()}
         );
-        res.impl()->resize(detail::make_bool_mapping_view_shape(parent->shape(), subs.descriptor().shape(), block_size, view_size));
+        res.impl()->resize(detail::make_bool_mapping_view_shape(parent->shape(), subs_trues_number, subs_dim));
         return res;
 
     }

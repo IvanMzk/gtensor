@@ -1,5 +1,5 @@
-#ifndef INDEXABLE_ADAPTER_HPP_
-#define INDEXABLE_ADAPTER_HPP_
+#ifndef INDEX_TYPE_ADAPTER_HPP_
+#define INDEX_TYPE_ADAPTER_HPP_
 
 #include "integral_type.hpp"
 
@@ -79,14 +79,69 @@ public:
 };
 
 
-template<typename IdxT, typename T>
-auto make_indexable(T&& t){
-    return indexable<std::remove_reference_t<T>,IdxT>{std::forward<T>(t)};
-}
-template<typename IdxT, typename T>
-auto make_indexable_ref(T&& t){
-    return indexable_ref<std::remove_reference_t<T>,IdxT>{std::forward<T>(t)};
-}
+template<typename StorT, typename IdxT> class storage_adapter;
+template<typename StorT, typename InnerIdx>
+class storage_adapter<StorT, integral<InnerIdx>>
+{
+    using storage_type = StorT;
+    using index_type = integral<InnerIdx>;
+    using subscription_result_type = decltype(std::declval<storage_type>()[std::declval<InnerIdx>()]);
+    using const_subscription_result_type = decltype(std::declval<const storage_type>()[std::declval<InnerIdx>()]);
+
+    StorT impl_;
+public:
+    using value_type = typename storage_type::value_type;
+
+    storage_adapter(const index_type& n):
+        impl_(n.value())
+    {}
+    storage_adapter(const index_type& n, const value_type& v):
+        impl_(n.value(), v)
+    {}
+    storage_adapter(std::initializer_list<value_type> init_list):
+        impl_(init_list)
+    {}
+    auto resize(const index_type& n){return impl_.resize(n.value());}
+    auto begin(){return impl_.begin();}
+    auto end(){return impl_.end();}
+    auto begin()const{return impl_.begin();}
+    auto end()const{return impl_.end();}
+    auto rbegin(){return impl_.rbegin();}
+    auto rend(){return impl_.rend();}
+    auto rbegin()const{return impl_.rbegin();}
+    auto rend()const{return impl_.rend();}
+    subscription_result_type operator[](const index_type& i)const{return impl_[i.value()];}
+    const_subscription_result_type operator[](const index_type& i){return impl_[i.value()];}
+};
+
+// template<typename StorT, typename IdxT> class storage_adapter;
+// template<typename StorT, typename IdxT>
+// class storage_adapter<StorT, integral<IdxT>>
+// {
+//     using storage_type = StorT;
+//     using index_type = integral<IdxT>;
+//     using value_type = typename storage_type::value_type;
+//     StorT impl_;
+// public:
+//     storage_adapter(const index_type& n):
+//         impl_(n.value())
+//     {}
+//     storage_adapter(const index_type& n, const value_type& v):
+//         impl_(n.value(), v)
+//     {}
+//     auto resize(const index_type& n){return impl_.resize(n.value());}
+//     auto data()const{return impl_.data();}
+//     auto data(){return impl_.data();}
+
+//     auto begin(){return impl_.begin();}
+//     auto end(){return impl_.end();}
+//     auto begin()const{return impl_.begin();}
+//     auto end()const{return impl_.end();}
+//     auto rbegin(){return impl_.rbegin();}
+//     auto rend(){return impl_.rend();}
+//     auto rbegin()const{return impl_.rbegin();}
+//     auto rend()const{return impl_.rend();}
+// };
 
 
 }   //end of namespace gtensor

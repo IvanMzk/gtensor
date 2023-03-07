@@ -5,7 +5,6 @@
 #include <numeric>
 #include <sstream>
 #include "libdivide_helper.hpp"
-#include "indexable_adapter.hpp"
 
 namespace gtensor{
 namespace detail{
@@ -197,13 +196,14 @@ class descriptor_base{
 public:
     using config_type = CfgT;
     using index_type = typename config_type::index_type;
+    using size_type = typename config_type::size_type;
     using shape_type = typename config_type::shape_type;
     using strides_div_type = typename detail::strides_div_traits<config_type>::type;
 
     virtual ~descriptor_base(){}
     virtual index_type convert(const shape_type& idx)const = 0;
     virtual index_type convert(const index_type& idx)const = 0;
-    virtual index_type dim()const = 0;
+    virtual size_type dim()const = 0;
     virtual index_type size()const = 0;
     virtual index_type offset()const = 0;
     virtual const shape_type& shape()const = 0;
@@ -249,6 +249,7 @@ class basic_descriptor : public descriptor_base<CfgT>
 public:
     using typename descriptor_base_type::config_type;
     using typename descriptor_base_type::index_type;
+    using typename descriptor_base_type::size_type;
     using typename descriptor_base_type::shape_type;
     using typename descriptor_base_type::strides_div_type;
     basic_descriptor() = default;
@@ -256,7 +257,7 @@ public:
     explicit basic_descriptor(ShT&& shape__):
         impl_{std::forward<ShT>(shape__)}
     {}
-    index_type dim()const override{return impl_.dim();}
+    size_type dim()const override{return impl_.dim();}
     index_type size()const override{return impl_.size();}
     const shape_type& shape()const override{return impl_.shape();}
     const strides_div_type& strides_div()const override{return impl_.strides_div();}

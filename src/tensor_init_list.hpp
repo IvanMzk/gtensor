@@ -2,6 +2,7 @@
 #define TENSOR_INIT_LIST_HPP_
 
 #include <initializer_list>
+#include <iostream>
 #include <utility>
 #include <vector>
 #include <numeric>
@@ -77,12 +78,15 @@ inline auto list_size(std::initializer_list<T> list){
 * parse nested list and return its shape
 * exception if list has invalid structure
 */
-template<std::size_t, std::size_t, typename T, typename S>
-inline void list_parse_(const T&, S*){}
-template<std::size_t Dims_number, std::size_t Dim = 0, typename T, typename S>
-inline void list_parse_(std::initializer_list<T> list, S* shape_){
-    if (shape_->size() == Dims_number){
-        if (static_cast<std::size_t>((*shape_)[Dim]) != list.size()){
+template<typename SizeT, std::size_t, std::size_t, typename T, typename ShT>
+inline void list_parse_(const T&, ShT*){}
+template<typename SizeT, std::size_t Dims_number, std::size_t Dim = 0, typename T, typename ShT>
+inline void list_parse_(std::initializer_list<T> list, ShT* shape_){
+    using size_type = SizeT;
+    using index_type = typename ShT::value_type;
+    size_type shape_size = shape_->size();
+    if (shape_size == size_type(Dims_number)){
+        if ( (*shape_)[size_type(Dim)] != index_type(list.size())){
             throw tensor_init_list_exception("list bad shape - different list size for dim");
         }
     }
@@ -90,18 +94,19 @@ inline void list_parse_(std::initializer_list<T> list, S* shape_){
         if (list.size() == 0){
             throw tensor_init_list_exception("list bad shape - zero list size");
         }
-        shape_->push_back(list.size());
+        shape_->push_back(index_type(list.size()));
     }
     for (auto p=list.begin();p!=list.end(); ++p){
-        list_parse_<Dims_number, Dim+1>(*p, shape_);
+        list_parse_<SizeT, Dims_number, Dim+1>(*p, shape_);
     }
 }
-template<typename IdxT = std::size_t, typename S = std::vector<IdxT>, typename T>
+template<typename SizeT = std::size_t, typename ShT = std::vector<std::size_t>, typename T>
 inline auto list_parse(std::initializer_list<T> list){
+    using size_type = SizeT;
     constexpr std::size_t dims_number{nested_initialiser_list_depth<decltype(list)>::value};
-    S shape;
-    shape.reserve(dims_number);
-    list_parse_<dims_number>(list,&shape);
+    ShT shape;
+    shape.reserve(size_type(dims_number));
+    list_parse_<size_type, dims_number>(list,&shape);
     return shape;
 }
 

@@ -18,6 +18,7 @@ protected:
     using engine_type = EngineT;
     using typename tensor_base_type::value_type;
     using typename tensor_base_type::config_type;
+    using typename tensor_base_type::size_type;
     using typename tensor_base_type::index_type;
     using typename tensor_base_type::shape_type;
     basic_tensor(engine_type&& engine__,descriptor_type&& descriptor__):
@@ -55,6 +56,7 @@ public:
     using typename basic_tensor_base::config_type;
 private:
     using typename basic_tensor_base::descriptor_type;
+    using typename basic_tensor_base::size_type;
     using typename basic_tensor_base::index_type;
     using typename basic_tensor_base::shape_type;
 
@@ -72,7 +74,7 @@ public:
     {}
     template<typename Nested>
     storage_tensor(std::initializer_list<Nested> init_data):
-        storage_tensor{detail::list_parse<index_type,shape_type>(init_data), init_data}
+        storage_tensor{detail::list_parse<size_type,shape_type>(init_data), init_data}
     {}
     template<typename ShT>
     storage_tensor(ShT&& shape, const value_type& v):

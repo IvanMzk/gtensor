@@ -6,7 +6,7 @@
 #include "tensor_base.hpp"
 #include "tensor_init_list.hpp"
 #include "indexer.hpp"
-#include "indexable_adapter.hpp"
+#include "index_type_adapter.hpp"
 
 namespace gtensor{
 
@@ -88,8 +88,13 @@ public:
 private:
     template<typename U>
     static auto create_indexer_helper(U& instance){
-        return basic_indexer<index_type, indexable<decltype(instance.elements_.data()),index_type> >{instance.elements_.data()};
+        using indexable_type = indexable_ref<std::remove_reference_t<decltype((instance.elements_))>,index_type>;
+        return basic_indexer<index_type, indexable_type>{indexable_type{instance.elements_}};
     }
+    // template<typename U>
+    // static auto create_indexer_helper(U& instance){
+    //     return basic_indexer<index_type, indexable<decltype(instance.elements_.data()),index_type> >{instance.elements_.data()};
+    // }
     // template<typename U>
     // static auto create_indexer_helper(U& instance){
     //     return basic_indexer<index_type, decltype(instance.begin())>{instance.begin()};
