@@ -6,6 +6,7 @@
 #include "broadcast.hpp"
 #include "descriptor.hpp"
 #include "indexer.hpp"
+#include "indexable_adapter.hpp"
 #include "helpers_for_testing.hpp"
 
 TEMPLATE_TEST_CASE("test_variadic_broadcast_shape","[test_descriptor]", std::vector<std::int64_t>)
@@ -90,7 +91,8 @@ TEST_CASE("test_walker_iterator_adapter", "[test_broadcast]"){
     using index_type = typename config_type::index_type;
     using value_type = int;
     using storage_type = std::vector<value_type>;
-    using indexer_type = gtensor::basic_indexer<index_type, typename storage_type::iterator>;
+    //using indexer_type = gtensor::basic_indexer<index_type, typename storage_type::iterator>;
+    using indexer_type = gtensor::basic_indexer<index_type, gtensor::indexable<decltype(std::declval<storage_type>().data()) ,index_type> >;
     using walker_type = gtensor::walker<config_type,indexer_type>;
     using walker_adapter_type = gtensor::walker_iterator_adapter<config_type,walker_type>;
     using gtensor::detail::make_size;
@@ -140,7 +142,7 @@ TEST_CASE("test_walker_iterator_adapter", "[test_broadcast]"){
         shape_type strides = make_strides(shape);
         shape_type reset_strides = make_reset_strides(shape,strides);
         auto strides_div = make_dividers<config_type>(strides);
-        walker_type walker{shape, strides, reset_strides, index_type{0}, indexer_type{elements.begin()}};
+        walker_type walker{shape, strides, reset_strides, index_type{0}, indexer_type{elements.data()}};
         walker_adapter_type adapter{shape, strides_div, walker};
         action(adapter);
         REQUIRE(adapter.index() == result_index);

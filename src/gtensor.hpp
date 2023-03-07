@@ -183,7 +183,7 @@ public:
         return view_factory<ValT,CfgT>::create_view_subdim(impl(), shape_type{subs...});
     }
     auto operator()()const{
-        detail::check_subdim_subs(descriptor().shape());
+        //detail::check_subdim_subs(descriptor().shape());
         return view_factory<ValT,CfgT>::create_view_subdim(impl(), shape_type{});
     }
     //reshape view

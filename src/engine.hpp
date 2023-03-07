@@ -6,6 +6,7 @@
 #include "tensor_base.hpp"
 #include "tensor_init_list.hpp"
 #include "indexer.hpp"
+#include "indexable_adapter.hpp"
 
 namespace gtensor{
 
@@ -87,8 +88,13 @@ public:
 private:
     template<typename U>
     static auto create_indexer_helper(U& instance){
-        return basic_indexer<index_type, decltype(instance.begin())>{instance.begin()};
+        return basic_indexer<index_type, indexable<decltype(instance.elements_.data()),index_type> >{instance.elements_.data()};
     }
+    // template<typename U>
+    // static auto create_indexer_helper(U& instance){
+    //     return basic_indexer<index_type, decltype(instance.begin())>{instance.begin()};
+    // }
+
     holder_accessor_type holder_accessor;
     storage_type elements_;
 };
