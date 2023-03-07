@@ -159,26 +159,100 @@ TEMPLATE_TEST_CASE("test_make_view_slice_cstrides","[test_view_factory]", std::v
 
 }
 
+// TEMPLATE_TEST_CASE("test_transpose","[test_view_factory]", std::vector<std::int64_t>){
+//     using shape_type = TestType;
+//     using gtensor::detail::transpose;
+//     using test_type = std::tuple<shape_type, shape_type, shape_type>;
+//     //0source,1indeces,2expected_transposed
+//     auto test_data = GENERATE(
+//         test_type{shape_type{3},shape_type{}, shape_type{3}},
+//         test_type{shape_type{3},shape_type{0}, shape_type{3}},
+//         test_type{shape_type{3,2},shape_type{0,1}, shape_type{3,2}},
+//         test_type{shape_type{3,2},shape_type{}, shape_type{2,3}},
+//         test_type{shape_type{3,2},shape_type{1,0}, shape_type{2,3}},
+//         test_type{shape_type{4,3,2,2},shape_type{}, shape_type{2,2,3,4}},
+//         test_type{shape_type{4,3,2,2},shape_type{3,1,0,2}, shape_type{2,3,4,2}}
+//     );
+
+//     auto source = std::get<0>(test_data);
+//     auto indeces = std::get<1>(test_data);
+//     auto expected_transposed = std::get<2>(test_data);
+//     auto result_transposed = transpose(source, indeces);
+//     REQUIRE(result_transposed == expected_transposed);
+// }
+
 TEMPLATE_TEST_CASE("test_transpose","[test_view_factory]", std::vector<std::int64_t>){
     using shape_type = TestType;
     using gtensor::detail::transpose;
-    using test_type = std::tuple<shape_type, shape_type, shape_type>;
-    //0source,1indeces,2expected_transposed
-    auto test_data = GENERATE(
-        test_type{shape_type{3},shape_type{}, shape_type{3}},
-        test_type{shape_type{3},shape_type{0}, shape_type{3}},
-        test_type{shape_type{3,2},shape_type{0,1}, shape_type{3,2}},
-        test_type{shape_type{3,2},shape_type{}, shape_type{2,3}},
-        test_type{shape_type{3,2},shape_type{1,0}, shape_type{2,3}},
-        test_type{shape_type{4,3,2,2},shape_type{}, shape_type{2,2,3,4}},
-        test_type{shape_type{4,3,2,2},shape_type{3,1,0,2}, shape_type{2,3,4,2}}
+    using helpers_for_testing::apply_by_element;
+    //0pshape,1indeces,2expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(shape_type{3}, std::make_tuple(), shape_type{3}),
+        std::make_tuple(shape_type{3}, std::make_tuple(0), shape_type{3}),
+        std::make_tuple(shape_type{3,2}, std::make_tuple(0,1), shape_type{3,2}),
+        std::make_tuple(shape_type{3,2}, std::make_tuple(), shape_type{2,3}),
+        std::make_tuple(shape_type{3,2}, std::make_tuple(1,0), shape_type{2,3}),
+        std::make_tuple(shape_type{4,3,2,2}, std::make_tuple(), shape_type{2,2,3,4}),
+        std::make_tuple(shape_type{4,3,2,2}, std::make_tuple(3,1,0,2), shape_type{2,3,4,2})
     );
 
-    auto source = std::get<0>(test_data);
-    auto indeces = std::get<1>(test_data);
-    auto expected_transposed = std::get<2>(test_data);
-    REQUIRE(transpose(source, indeces) == expected_transposed);
+    auto test = [](const auto& t){
+        auto pshape = std::get<0>(t);
+        auto indeces = std::get<1>(t);
+        auto expected = std::get<2>(t);
+
+        auto apply_indeces = [&pshape](const auto&...indeces){
+            return transpose(pshape, indeces...);
+        };
+        auto result = std::apply(apply_indeces, indeces);
+        REQUIRE(expected == result);
+    };
+
+    apply_by_element(test, test_data);
 }
+
+TEST_CASE("test_check_transpose_subs","[test_check_transpose_subs]"){
+    using gtensor::subscript_exception;
+    using gtensor::detail::check_transpose_subs;
+
+    REQUIRE_NOTHROW(check_transpose_subs(1));
+    REQUIRE_NOTHROW(check_transpose_subs(1,0));
+    REQUIRE_NOTHROW(check_transpose_subs(3,0,1,2));
+    REQUIRE_NOTHROW(check_transpose_subs(3,0,2,1));
+    REQUIRE_NOTHROW(check_transpose_subs(3,2,1,0));
+    REQUIRE_NOTHROW(check_transpose_subs(3,2,0,1));
+    REQUIRE_NOTHROW(check_transpose_subs(3,1,0,2));
+    REQUIRE_NOTHROW(check_transpose_subs(3,1,0,2));
+
+    REQUIRE_THROWS_AS(check_transpose_subs(1,0,0), subscript_exception);
+    REQUIRE_THROWS_AS(check_transpose_subs(2,0,0), subscript_exception);
+    REQUIRE_THROWS_AS(check_transpose_subs(3,0,1,2,3), subscript_exception);
+    REQUIRE_THROWS_AS(check_transpose_subs(3,0,1,1), subscript_exception);
+    REQUIRE_THROWS_AS(check_transpose_subs(3,0,2,2), subscript_exception);
+    REQUIRE_THROWS_AS(check_transpose_subs(3,0,0,1), subscript_exception);
+    REQUIRE_THROWS_AS(check_transpose_subs(3,2,1,1), subscript_exception);
+}
+
+TEST_CASE("test_check_reshape_subs","[test_check_reshape_subs]"){
+    using gtensor::subscript_exception;
+    using gtensor::detail::check_reshape_subs;
+
+    REQUIRE_NOTHROW(check_reshape_subs(5));
+    REQUIRE_NOTHROW(check_reshape_subs(5, 5));
+    REQUIRE_NOTHROW(check_reshape_subs(20, 4,5));
+    REQUIRE_NOTHROW(check_reshape_subs(20, 20));
+    REQUIRE_NOTHROW(check_reshape_subs(20, 1,20,1));
+    REQUIRE_NOTHROW(check_reshape_subs(20, 2,10));
+    REQUIRE_NOTHROW(check_reshape_subs(20, 2,5,2,1));
+    REQUIRE_NOTHROW(check_reshape_subs(20, 4,5));
+
+    REQUIRE_THROWS_AS(check_reshape_subs(5, 0), subscript_exception);
+    REQUIRE_THROWS_AS(check_reshape_subs(5, 5,0), subscript_exception);
+    REQUIRE_THROWS_AS(check_reshape_subs(5, 3,2), subscript_exception);
+    REQUIRE_THROWS_AS(check_reshape_subs(60, 70), subscript_exception);
+    REQUIRE_THROWS_AS(check_reshape_subs(60, 2,3,2,4), subscript_exception);
+}
+
 
 TEMPLATE_TEST_CASE("test_make_index_mapping_view_shape","[test_view_factory]",
     typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type

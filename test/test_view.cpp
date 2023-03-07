@@ -10,8 +10,10 @@ TEMPLATE_TEST_CASE("test_view","[test_view]",
 {
     using value_type = double;
     using config_type = TestType;
+    using index_type = typename config_type::index_type;
     using tensor_type = gtensor::tensor<value_type,config_type>;
-    using bool_tensor_type =  gtensor::tensor<bool,config_type>;
+    using index_tensor_type =  gtensor::tensor<index_type, config_type>;
+    using bool_tensor_type =  gtensor::tensor<bool, config_type>;
     auto nop = typename gtensor::slice_traits<config_type>::nop_type{};
     using helpers_for_testing::apply_by_element;
 
@@ -62,18 +64,18 @@ TEMPLATE_TEST_CASE("test_view","[test_view]",
         std::make_tuple(tensor_type{1,2,3,4,5}.reshape(1,5),tensor_type{{1,2,3,4,5}}),
         std::make_tuple(tensor_type{1,2,3,4,5}.reshape(5,1),tensor_type{{1},{2},{3},{4},{5}}),
         std::make_tuple(tensor_type{{{1,2},{3,4},{5,6}},{{7,8},{9,10},{11,12}}}.reshape(6,2), tensor_type{{1,2},{3,4},{5,6},{7,8},{9,10},{11,12}}),
-        //mapping view index tensor
-        std::make_tuple(tensor_type{1}(tensor_type{0}), tensor_type{1}),
-        std::make_tuple(tensor_type{1}(tensor_type{0,0,0}), tensor_type{1,1,1}),
-        std::make_tuple(tensor_type{1}(tensor_type{0,0,0})(tensor_type{0,0,0,0}), tensor_type{1,1,1,1}),
-        std::make_tuple(tensor_type{1,2,3,4,5}(tensor_type{1,1,0,0}), tensor_type{2,2,1,1}),
-        std::make_tuple(tensor_type{1,2,3,4,5}(tensor_type{1,1,0,0})(tensor_type{0,3,3,0}), tensor_type{2,1,1,2}),
-        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}}(tensor_type{1,3}),tensor_type{{{5,6},{7,8}},{{13,14},{15,16}}}),
-        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}}(tensor_type{1,3}, tensor_type{0,1}),tensor_type{{5,6},{15,16}}),
-        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}}(tensor_type{1,3}, tensor_type{1}),tensor_type{{7,8},{15,16}}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9},{10,11,12}}(tensor_type{{0,0},{3,3}}, tensor_type{{0,2},{0,2}}),tensor_type{{1,3},{10,12}}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9},{10,11,12}}(tensor_type{3,2,1,0})(tensor_type{{0,0},{3,3}}, tensor_type{{0,2},{0,2}}),tensor_type{{10,12},{1,3}}),
-        //mapping view bool tensor
+        //index mapping view
+        std::make_tuple(tensor_type{1}(index_tensor_type{0}), tensor_type{1}),
+        std::make_tuple(tensor_type{1}(index_tensor_type{0,0,0}), tensor_type{1,1,1}),
+        std::make_tuple(tensor_type{1}(index_tensor_type{0,0,0})(index_tensor_type{0,0,0,0}), tensor_type{1,1,1,1}),
+        std::make_tuple(tensor_type{1,2,3,4,5}(index_tensor_type{1,1,0,0}), tensor_type{2,2,1,1}),
+        std::make_tuple(tensor_type{1,2,3,4,5}(index_tensor_type{1,1,0,0})(index_tensor_type{0,3,3,0}), tensor_type{2,1,1,2}),
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}}(index_tensor_type{1,3}), tensor_type{{{5,6},{7,8}},{{13,14},{15,16}}}),
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}}(index_tensor_type{1,3}, index_tensor_type{0,1}), tensor_type{{5,6},{15,16}}),
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}}(index_tensor_type{1,3}, index_tensor_type{1}), tensor_type{{7,8},{15,16}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9},{10,11,12}}(index_tensor_type{{0,0},{3,3}}, index_tensor_type{{0,2},{0,2}}), tensor_type{{1,3},{10,12}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9},{10,11,12}}(index_tensor_type{3,2,1,0})(index_tensor_type{{0,0},{3,3}}, index_tensor_type{{0,2},{0,2}}), tensor_type{{10,12},{1,3}}),
+        //bool mapping view
         std::make_tuple(tensor_type{}(bool_tensor_type{}), tensor_type{}),
         std::make_tuple(tensor_type{}(bool_tensor_type{true}), tensor_type{}),
         std::make_tuple(tensor_type{1}(bool_tensor_type{}), tensor_type{}),
@@ -95,7 +97,7 @@ TEMPLATE_TEST_CASE("test_view","[test_view]",
         //view composition
         std::make_tuple(tensor_type{{1,2,3},{4,5,6}}.transpose().reshape(2,3), tensor_type{{1,4,2},{5,3,6}}),
         std::make_tuple((tensor_type{{1,2,3},{4,5,6}}.transpose().reshape(2,3) + tensor_type{{0},{1}})(bool_tensor_type{{false,true,false},{true,false,true}}), tensor_type{4,6,7}),
-        std::make_tuple((tensor_type{{1,2,3},{4,5,6}}.transpose().reshape(2,3) + tensor_type{{0},{1}})(tensor_type{1,0,1}), tensor_type{{6,4,7},{1,4,2},{6,4,7}})
+        std::make_tuple((tensor_type{{1,2,3},{4,5,6}}.transpose().reshape(2,3) + tensor_type{{0},{1}})(index_tensor_type{1,0,1}), tensor_type{{6,4,7},{1,4,2},{6,4,7}})
 
     );
 

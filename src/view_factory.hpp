@@ -53,16 +53,48 @@ inline ShT make_view_slice_cstrides(const ShT& pstrides, const SubsT& subs){
 * indeces is positions of source shape elements in transposed shape
 * if indeces is empty transposed shape is reverse of source
 */
-template<typename ShT>
-ShT transpose(const ShT& src, const ShT& indeces){
+// template<typename ShT>
+// ShT transpose(const ShT& src, const ShT& indeces){
+//     ShT res{};
+//     res.reserve(src.size());
+//     if (indeces.empty()){
+//         res.assign(src.rbegin(), src.rend());
+//     }else{
+//         std::for_each(indeces.begin(), indeces.end(), [&src, &res](const auto& pos){res.push_back(src[pos]);});
+//     }
+//     return res;
+// }
+
+template<typename ShT, typename...Indeces>
+ShT transpose(const ShT& src, const Indeces&...indeces){
     ShT res{};
     res.reserve(src.size());
-    if (indeces.empty()){
+    if constexpr (sizeof...(Indeces) == 0){
         res.assign(src.rbegin(), src.rend());
     }else{
-        std::for_each(indeces.begin(), indeces.end(), [&src, &res](const auto& pos){res.push_back(src[pos]);});
+        (res.push_back(src[indeces]),...);
     }
     return res;
+}
+
+template<typename T>
+inline void check_transpose_subs(const T&){}
+template<typename SizeT, typename...Subs>
+inline void check_transpose_subs(const SizeT& dim, const Subs&...subs){
+    using size_type = SizeT;
+    size_type subs_number = sizeof...(Subs);
+    if (dim!=subs_number){
+        throw subscript_exception("transpose must have no or dim subscripts");
+    }
+    std::array<bool, sizeof...(Subs)> check_buffer;
+    check_buffer.fill(false);
+    ([&subs_number, &check_buffer](const auto& sub){
+        if (static_cast<size_type>(sub)>=subs_number || check_buffer[static_cast<std::size_t>(sub)]){
+            throw subscript_exception("invalid transpose subscript");
+        }else{
+            check_buffer[static_cast<std::size_t>(sub)]=true;
+        }
+    }(subs),...);
 }
 
 /*make view subdim shape*/
@@ -89,6 +121,16 @@ inline ShT make_view_reshape_shape(const ShT& pshape, const ShT& subs){
     }else{
         return subs;
     }
+}
+
+template<typename IdxT>
+inline void check_reshape_subs(const IdxT&){}
+template<typename IdxT, typename...Subs>
+inline void check_reshape_subs(const IdxT& size, const Subs&...subs){
+    using index_type = IdxT;
+    index_type vsize{1};
+    ([&vsize](const auto& sub){vsize*=sub;}(subs),...);
+    if (size != vsize){throw subscript_exception("invalid new shape; size of reshape view must be equal to size of its parent");}
 }
 
 
@@ -261,10 +303,11 @@ class view_factory
             detail::make_view_slice_offset(strides,subs)
         };
     }
-    static auto create_view_transpose_descriptor(const shape_type& shape, const shape_type& strides, const shape_type& subs){
+    template<typename...Subs>
+    static auto create_view_transpose_descriptor(const shape_type& shape, const shape_type& strides, const Subs&...subs){
         return view_slice_descriptor_type{
-            detail::transpose(shape,subs),
-            detail::transpose(strides,subs),
+            detail::transpose(shape,subs...),
+            detail::transpose(strides,subs...),
             index_type(0)
         };
     }
@@ -285,10 +328,10 @@ public:
         using impl_type = view_slice<typename detail::viewing_engine_traits<typename CfgT::host_engine, CfgT, view_slice_descriptor_type, ImplT>::type>;
         return tensor<ValT,CfgT,impl_type>::make_tensor(create_view_slice_descriptor(parent->shape(), parent->strides(), subs),parent);
     }
-    template<typename ImplT>
-    static auto create_view_transpose(const std::shared_ptr<ImplT>& parent, const shape_type& subs){
+    template<typename ImplT, typename...Subs>
+    static auto create_view_transpose(const std::shared_ptr<ImplT>& parent, const Subs&...subs){
         using impl_type = view_slice<typename detail::viewing_engine_traits<typename CfgT::host_engine, CfgT, view_slice_descriptor_type, ImplT>::type>;
-        return tensor<ValT,CfgT,impl_type>::make_tensor(create_view_transpose_descriptor(parent->shape(), parent->strides(), subs),parent);
+        return tensor<ValT,CfgT,impl_type>::make_tensor(create_view_transpose_descriptor(parent->shape(), parent->strides(), subs...),parent);
     }
     template<typename ImplT>
     static auto create_view_subdim(const std::shared_ptr<ImplT>& parent, const shape_type& subs){

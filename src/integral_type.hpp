@@ -120,7 +120,7 @@ public:
     integral(value_type value__):
         value_{value__}
     {}
-    template<typename U>
+    template<typename U, std::enable_if_t<std::is_convertible_v<U,value_type>,int> =0>
     integral(U value__):
         value_(value__)
     {

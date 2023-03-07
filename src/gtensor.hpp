@@ -75,8 +75,9 @@ protected:
 
 public:
     using config_type = CfgT;
-    using index_type = typename CfgT::index_type;
-    using shape_type = typename CfgT::shape_type;
+    using index_type = typename config_type::index_type;
+    using size_type = typename config_type::size_type;
+    using shape_type = typename config_type::shape_type;
     using value_type = ValT;
     //constructs tensor using default implementation constructor
     tensor():
@@ -171,25 +172,25 @@ public:
         return view_factory<ValT,CfgT>::create_view_slice(impl(), filled_subs);
     }
     //transpose view
-    template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,index_type>...>,int> = 0 >
+    template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,size_type>...>,int> = 0 >
     auto transpose(const Subs&...subs)const{
         detail::check_transpose_subs(dim(),subs...);
-        return view_factory<ValT,CfgT>::create_view_transpose(impl(), shape_type{subs...});
+        return view_factory<ValT,CfgT>::create_view_transpose(impl(), static_cast<size_type>(subs)...);
     }
     //subdimension view
     template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,index_type>...>,int> = 0 >
     auto operator()(const Subs&...subs)const{
-        detail::check_subdim_subs(descriptor().shape(), subs...);
-        return view_factory<ValT,CfgT>::create_view_subdim(impl(), shape_type{subs...});
+        shape_type subs_{subs...};
+        detail::check_subdim_subs(descriptor().shape(), subs_);
+        return view_factory<ValT,CfgT>::create_view_subdim(impl(), std::move(subs_));
     }
     auto operator()()const{
-        //detail::check_subdim_subs(descriptor().shape());
         return view_factory<ValT,CfgT>::create_view_subdim(impl(), shape_type{});
     }
     //reshape view
     template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,index_type>...>,int> = 0 >
     auto reshape(const Subs&...subs)const{
-        detail::check_reshape_subs(size(), subs...);
+        detail::check_reshape_subs(size(), static_cast<index_type>(subs)...);
         return view_factory<ValT,CfgT>::create_view_reshape(impl(), shape_type{subs...});
     }
     //mapping view

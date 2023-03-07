@@ -110,8 +110,8 @@ public:
     auto rend(){return impl_.rend();}
     auto rbegin()const{return impl_.rbegin();}
     auto rend()const{return impl_.rend();}
-    subscription_result_type operator[](const index_type& i)const{return impl_[i.value()];}
-    const_subscription_result_type operator[](const index_type& i){return impl_[i.value()];}
+    const_subscription_result_type operator[](const index_type& i)const{return impl_[i.value()];}
+    subscription_result_type operator[](const index_type& i){return impl_[i.value()];}
 };
 
 // template<typename StorT, typename IdxT> class storage_adapter;
