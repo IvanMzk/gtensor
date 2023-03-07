@@ -104,17 +104,19 @@ inline auto mapping_view_block_size(const ShT& pshape, const typename ShT::value
     }
 }
 
-template<typename ShT>
-inline ShT make_index_mapping_view_shape(const ShT& pshape, const ShT& index_shape, const std::size_t& subs_number){
+template<typename ShT, typename SizeT>
+inline ShT make_index_mapping_view_shape(const ShT& pshape, const ShT& subs_shape, const SizeT& subs_number){
     using shape_type = ShT;
-    auto pdim = static_cast<std::size_t>(pshape.size());
-    if (pdim > 0){
+    using size_type = SizeT;
+    auto pdim = static_cast<size_type>(pshape.size());
+    auto subs_dim = static_cast<size_type>(subs_shape.size());
+    if (pdim > size_type{0}){
         if (subs_number > pdim){
             throw subscript_exception("invalid index tensor subscript");
         }
-        auto res = shape_type(pdim - subs_number + index_shape.size());
-        std::copy(index_shape.begin(), index_shape.end(), res.begin());
-        std::copy(pshape.begin()+subs_number, pshape.end(), res.begin()+index_shape.size());
+        auto res = shape_type(pdim - subs_number + subs_dim);
+        std::copy(subs_shape.begin(), subs_shape.end(), res.begin());
+        std::copy(pshape.begin()+subs_number, pshape.end(), res.begin()+subs_dim);
         return res;
     }else{
         return shape_type{};

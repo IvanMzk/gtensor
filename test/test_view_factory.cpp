@@ -187,17 +187,18 @@ TEMPLATE_TEST_CASE("test_make_index_mapping_view_shape","[test_view_factory]",
     using size_type = typename config_type::size_type;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
+    using size_type = typename config_type::size_type;
     using gtensor::subscript_exception;
     using gtensor::detail::make_index_mapping_view_shape;
     using gtensor::detail::broadcast_shape;
     using test_type = std::tuple<shape_type,shape_type>;
     //0result shape,1expected shape
     auto test_data = GENERATE(
-        test_type{make_index_mapping_view_shape(shape_type{10},broadcast_shape<shape_type>(shape_type{4}),index_type{1}), shape_type{4}},
-        test_type{make_index_mapping_view_shape(shape_type{10},broadcast_shape<shape_type>(shape_type{2,2}),index_type{1}), shape_type{2,2}},
-        test_type{make_index_mapping_view_shape(shape_type{5,4,3,2},broadcast_shape<shape_type>(shape_type{8},shape_type{8}),index_type{2}), shape_type{8,3,2}},
-        test_type{make_index_mapping_view_shape(shape_type{5,4,3,2},broadcast_shape<shape_type>(shape_type{3,4},shape_type{1},shape_type{3,1}),index_type{3}), shape_type{3,4,2}},
-        test_type{make_index_mapping_view_shape(shape_type{5,4,3,2},broadcast_shape<shape_type>(shape_type{3,4},shape_type{1},shape_type{3,1}, shape_type{1,4}),index_type{4}), shape_type{3,4}}
+        test_type{make_index_mapping_view_shape(shape_type{10},broadcast_shape<shape_type>(shape_type{4}),size_type{1}), shape_type{4}},
+        test_type{make_index_mapping_view_shape(shape_type{10},broadcast_shape<shape_type>(shape_type{2,2}),size_type{1}), shape_type{2,2}},
+        test_type{make_index_mapping_view_shape(shape_type{5,4,3,2},broadcast_shape<shape_type>(shape_type{8},shape_type{8}),size_type{2}), shape_type{8,3,2}},
+        test_type{make_index_mapping_view_shape(shape_type{5,4,3,2},broadcast_shape<shape_type>(shape_type{3,4},shape_type{1},shape_type{3,1}),size_type{3}), shape_type{3,4,2}},
+        test_type{make_index_mapping_view_shape(shape_type{5,4,3,2},broadcast_shape<shape_type>(shape_type{3,4},shape_type{1},shape_type{3,1}, shape_type{1,4}),size_type{4}), shape_type{3,4}}
     );
 
     auto result_shape = std::get<0>(test_data);
@@ -208,16 +209,16 @@ TEMPLATE_TEST_CASE("test_make_index_mapping_view_shape","[test_view_factory]",
 TEMPLATE_TEST_CASE("test_make_index_mapping_view_shape_exception","[test_view_factory]",
     typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
 ){
-    using test_config_type = TestType;
-    using size_type = typename test_config_type::size_type;
-    using shape_type = typename test_config_type::shape_type;
-    using index_type = typename test_config_type::index_type;
+    using config_type = TestType;
+    using size_type = typename config_type::size_type;
+    using shape_type = typename config_type::shape_type;
+    using index_type = typename config_type::index_type;
     using gtensor::subscript_exception;
     using gtensor::detail::make_index_mapping_view_shape;
     using gtensor::detail::broadcast_shape;
 
-    REQUIRE_THROWS_AS(make_index_mapping_view_shape(shape_type{10},broadcast_shape<shape_type>(shape_type{4}, shape_type{4}),index_type{2}), subscript_exception);
-    REQUIRE_THROWS_AS(make_index_mapping_view_shape(shape_type{3,4},broadcast_shape<shape_type>(shape_type{4}, shape_type{4}, shape_type{1}),index_type{3}), subscript_exception);
+    REQUIRE_THROWS_AS(make_index_mapping_view_shape(shape_type{10},broadcast_shape<shape_type>(shape_type{4}, shape_type{4}),size_type{2}), subscript_exception);
+    REQUIRE_THROWS_AS(make_index_mapping_view_shape(shape_type{3,4},broadcast_shape<shape_type>(shape_type{4}, shape_type{4}, shape_type{1}),size_type{3}), subscript_exception);
 }
 
 TEMPLATE_TEST_CASE("test_fill_index_mapping_view","[test_view_factory]",
