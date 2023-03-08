@@ -45,11 +45,8 @@ struct default_config{
     //used in indexed access to meta-data elements e.g. index of direction, directions number
     //transpose view subscripts are of size_type, since they are directions indexes
     //must have semantic of integral type, may be unsigned
-    using size_type = std::int64_t;
-
-
-    template<typename T> using indexable_adapter = indexable<T,index_type>;
-    template<typename T> using indexable_ref_adapter = indexable_ref<T,index_type>;
+    //using size_type = std::int64_t;
+    using size_type = std::size_t;
 };
 
 }   //end of namespace config

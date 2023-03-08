@@ -13,16 +13,19 @@ template<typename U>\
 inline auto NAME(const integral<U>& u){\
     return detail::make_integral(OP u.value());\
 }
+
 #define BINARY_INTEGRAL_OPERATOR(NAME,OP)\
 template<typename U, typename V>\
 inline auto NAME(const integral<U>& u, const integral<V>& v){\
     return detail::make_integral(u.value() OP v.value());\
 }
+
 #define BINARY_CMP_INTEGRAL_OPERATOR(NAME,OP)\
 template<typename U, typename V>\
 inline bool NAME(const integral<U>& u, const integral<V>& v){\
     return u.value() OP v.value();\
 }
+
 #define INTEGRAL_BINARY_ASSIGNMENT_MEMBER_OPERATOR(NAME,OP)\
 template<typename U>\
 integral& NAME(const integral<U>& u){\
@@ -35,6 +38,7 @@ integral& NAME(){\
     OP value_;\
     return *this;\
 }
+
 #define INTEGRAL_UNARY_POSTFIX_MEMBER_OPERATOR(NAME,OP)\
 integral NAME(int){\
     integral tmp(*this);\

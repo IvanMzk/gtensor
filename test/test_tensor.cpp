@@ -80,12 +80,13 @@ TEST_CASE("test_tensor_default_constructor","[test_tensor]"){
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
     using shape_type = typename tensor_type::config_type::shape_type;
+    using index_type = typename tensor_type::config_type::index_type;
 
     auto test_data = GENERATE(
         tensor_type(),
         tensor_type{}
     );
-    REQUIRE(test_data.size() == 0);
+    REQUIRE(test_data.size() == index_type{0});
     REQUIRE(test_data.shape() == shape_type{});
 }
 
@@ -95,7 +96,8 @@ TEST_CASE("test_tensor_constructor_from_list","[test_tensor]"){
     using tensor_type = gtensor::tensor<value_type, config_type>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
-    using test_type = std::tuple<tensor_type, shape_type, index_type, index_type>;
+    using size_type = typename config_type::size_type;
+    using test_type = std::tuple<tensor_type, shape_type, index_type, size_type>;
     //tensor,expected_shape,expected size,expected dim
     auto test_data = GENERATE(
         test_type(tensor_type{1}, shape_type{1}, 1 , 1),
@@ -123,7 +125,8 @@ TEST_CASE("test_tensor_constructor_shape_value","[test_tensor]"){
     using tensor_type = gtensor::tensor<value_type, config_type>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
-    using test_type = std::tuple<tensor_type, shape_type, index_type, index_type>;
+    using size_type = typename config_type::size_type;
+    using test_type = std::tuple<tensor_type, shape_type, index_type, size_type>;
     //tensor,expected_shape,expected size,expected dim
     auto test_data = GENERATE(
         test_type(tensor_type(shape_type{},1.0f), shape_type{}, 0 , 0),
@@ -192,6 +195,8 @@ TEST_CASE("test_tensor_construct_using_operator","[test_tensor]"){
     using config_type = gtensor::config::default_config;
     using tensor_type = gtensor::tensor<value_type, config_type>;
     using shape_type = typename config_type::shape_type;
+    using size_type = typename config_type::size_type;
+    using index_type = typename config_type::index_type;
     using helpers_for_testing::apply_by_element;
     //0tensor,1expected_shape,2expected_size,3expected_dim
     auto test_data = std::make_tuple(
@@ -214,8 +219,8 @@ TEST_CASE("test_tensor_construct_using_operator","[test_tensor]"){
         auto expected_size = std::get<2>(t);
         auto expected_dim = std::get<3>(t);
         REQUIRE(ten.shape() == expected_shape);
-        REQUIRE(ten.size() == expected_size);
-        REQUIRE(ten.dim() == expected_dim);
+        REQUIRE(ten.size() == static_cast<index_type>(expected_size));
+        REQUIRE(ten.dim() == static_cast<size_type>(expected_dim));
     };
     apply_by_element(test,test_data);
 }
@@ -228,6 +233,7 @@ TEST_CASE("test_view_making_interface","[test_tensor]"){
     using nop_type = typename gtensor::slice_traits<config_type>::nop_type;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
+    using size_type = typename config_type::size_type;
     using gtensor::subscript_exception;
     using gtensor::broadcast_exception;
     nop_type nop;
@@ -281,19 +287,18 @@ TEST_CASE("test_view_making_interface","[test_tensor]"){
         }
         SECTION("mapping_view_index_tensor"){
             using index_tensor_type = tensor<index_type, config_type>;
-            using index_tensor_type1 = tensor<std::size_t, config_type>;
             REQUIRE_NOTHROW(tensor_type{1}(index_tensor_type{0}));
-            REQUIRE_NOTHROW(tensor_type{1}(index_tensor_type1{0}));
-            REQUIRE_NOTHROW(tensor_type{1}(tensor_type{0}));
+            REQUIRE_NOTHROW(tensor_type{1}(index_tensor_type{0}));
+            REQUIRE_NOTHROW(tensor_type{1}(index_tensor_type{0}));
             REQUIRE_NOTHROW(tensor_type{1}(index_tensor_type{0,0,0}));
             REQUIRE_NOTHROW(tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{0}));
             REQUIRE_NOTHROW(tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{0,1}));
             REQUIRE_NOTHROW(tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{0,0,1}));
             REQUIRE_NOTHROW(tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{0,1}, index_tensor_type{1,2}));
-            REQUIRE_THROWS_AS(tensor_type{1}(tensor_type{0,0,0},tensor_type{0,0}),broadcast_exception);
-            REQUIRE_THROWS_AS(tensor_type{1}(tensor_type{0,1},tensor_type{0,1}),subscript_exception);
-            REQUIRE_THROWS_AS(tensor_type{1}(tensor_type{0,1},tensor_type{1}),subscript_exception);
-            REQUIRE_THROWS_AS(tensor_type{1}(tensor_type{0,4,0}),subscript_exception);
+            REQUIRE_THROWS_AS(tensor_type{1}(index_tensor_type{0,0,0},index_tensor_type{0,0}),broadcast_exception);
+            REQUIRE_THROWS_AS(tensor_type{1}(index_tensor_type{0,1},index_tensor_type{0,1}),subscript_exception);
+            REQUIRE_THROWS_AS(tensor_type{1}(index_tensor_type{0,1},index_tensor_type{1}),subscript_exception);
+            REQUIRE_THROWS_AS(tensor_type{1}(index_tensor_type{0,4,0}),subscript_exception);
             REQUIRE_THROWS_AS((tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{3})),subscript_exception);
             REQUIRE_THROWS_AS((tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{0},index_tensor_type{1,2,3})),subscript_exception);
             REQUIRE_THROWS_AS((tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{0},index_tensor_type{1,2,3},index_tensor_type{0})),subscript_exception);
@@ -332,7 +337,7 @@ TEST_CASE("test_view_making_interface","[test_tensor]"){
             std::make_tuple((tensor_type{1,2,3,4,5}({{nop,nop,-2}})),shape_type{3}, 3, 1),
             std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}({{},{},{0,-1}})),shape_type{1,3,1}, 3, 3),
             std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}({{},{1,-1},{0,-1}})),shape_type{1,1,1}, 1, 3),
-            //view transpo)e
+            //view transpose
             std::make_tuple((tensor_type{1}.transpose()),shape_type{1}, 1, 1),
             std::make_tuple((tensor_type{1}.transpose(0)),shape_type{1}, 1, 1),
             std::make_tuple((tensor_type{1,2,3,4,5}.transpose()),shape_type{5}, 5, 1),
@@ -342,25 +347,25 @@ TEST_CASE("test_view_making_interface","[test_tensor]"){
             std::make_tuple((tensor_type{{1,2,3,4,5}}.transpose(0,1)),shape_type{1,5}, 5, 2),
             std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}.transpose()),shape_type{2,3,1}, 6, 3),
             std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}.transpose(0,2,1)),shape_type{1,2,3}, 6, 3),
-            //view subd)m
+            //view subdim
             std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}()),shape_type{1,3,2}, 6, 3),
             std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}(0)),shape_type{3,2}, 6, 2),
             std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}(0,1)),shape_type{2}, 2, 1),
-            //view resha)e
+            //view reshape
             std::make_tuple((tensor_type{1}.reshape()),shape_type{1}, 1, 1),
             std::make_tuple((tensor_type{1}.reshape(1)),shape_type{1}, 1, 1),
             std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}.reshape()),shape_type{1,3,2}, 6, 3),
             std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}.reshape(6)),shape_type{6}, 6, 1),
             std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}.reshape(2,1,3)),shape_type{2,1,3}, 6, 3),
             std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}.reshape(6,1)),shape_type{6,1}, 6, 2),
-            //mapping view index tens)r
+            //mapping view index tensor
             std::make_tuple((tensor_type{1}(index_tensor_type{0})),shape_type{1}, 1, 1),
             std::make_tuple((tensor_type{1}(index_tensor_type{0,0,0})),shape_type{3}, 3, 1),
             std::make_tuple((tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{0})),shape_type{1,3}, 3, 2),
             std::make_tuple((tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{0,1,1,0})),shape_type{4,3}, 12, 2),
             std::make_tuple((tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{0,1}, index_tensor_type{0})),shape_type{2}, 2, 1),
             std::make_tuple((tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{{0,0},{1,1}}, index_tensor_type{{0,2},{0,2}})),shape_type{2,2}, 4, 2),
-            //mapping view bool tens)r
+            //mapping view bool tensor
             std::make_tuple((tensor_type{1}(bool_tensor_type{false})),shape_type{}, 0, 0),
             std::make_tuple((tensor_type{1}(bool_tensor_type{true})),shape_type{1}, 1, 1),
             std::make_tuple((tensor_type{1,2,3,4,5}(bool_tensor_type{false,true,false,true,false})),shape_type{2}, 2, 1),
@@ -380,8 +385,8 @@ TEST_CASE("test_view_making_interface","[test_tensor]"){
             auto expected_size = std::get<2>(t);
             auto expected_dim = std::get<3>(t);
             REQUIRE(view.shape() == expected_shape);
-            REQUIRE(view.size() == expected_size);
-            REQUIRE(view.dim() == expected_dim);
+            REQUIRE(view.size() == static_cast<index_type>(expected_size));
+            REQUIRE(view.dim() == static_cast<size_type>(expected_dim));
         };
         apply_by_element(test, test_data);
     }

@@ -281,21 +281,26 @@ TEMPLATE_TEST_CASE("test_iterator","[test_expression_template_engine]",
 
         auto test_impl = [&t](auto& begin, auto& end){
             std::vector<value_type> expected{1,2,3,4,5,6};
-            REQUIRE(std::distance(begin(t),begin(t)) == 0);
-            REQUIRE(std::distance(end(t),end(t)) == 0);
+            using difference_type = typename std::iterator_traits<decltype(begin(t))>::difference_type;
+            REQUIRE(std::distance(begin(t),begin(t)) == difference_type{0});
+            REQUIRE(std::distance(end(t),end(t)) == difference_type{0});
             REQUIRE(std::equal(begin(t),end(t),begin(expected)));
             REQUIRE(std::equal(begin(expected),end(expected),begin(t)));
             for (std::size_t i{0}; i!=expected.size(); ++i){
                 REQUIRE(begin(t)[i] == begin(expected)[i]);
             }
-            auto it = std::prev(end(t));
-            auto expected_it = std::prev(end(expected));
-            for (std::size_t i{expected.size()}; i!=0; --it, --expected_it, --i){
+            // auto it = std::prev(end(t));
+            // auto expected_it = std::prev(end(expected));
+            auto it = end(t);
+            auto expected_it = end(expected);
+            for (std::size_t i{expected.size()}; i!=0; --i){
+                --it;
+                --expected_it;
                 REQUIRE(*it == *expected_it);
             }
-            REQUIRE(end(t) - end(t) == 0);
-            REQUIRE(begin(t) - begin(t) == 0);
-            REQUIRE(end(t) - begin(t) > 0);
+            REQUIRE(end(t) - end(t) == difference_type{0});
+            REQUIRE(begin(t) - begin(t) == difference_type{0});
+            REQUIRE(end(t) - begin(t) > difference_type{0});
             REQUIRE(end(t) == end(t));
             REQUIRE(begin(t) == begin(t));
             REQUIRE(end(t) >= begin(t));
@@ -337,7 +342,8 @@ TEMPLATE_TEST_CASE("test_broadcast_iterator","[test_expression_template_engine]"
         auto expected = std::get<2>(t);
         auto begin = ten.begin_broadcast(broadcast_shape);
         auto end = ten.end_broadcast(broadcast_shape);
-        REQUIRE(cmp_equal(std::distance(begin,end), expected.size()));
+        using difference_type = typename std::iterator_traits<decltype(begin)>::difference_type;
+        REQUIRE(std::distance(begin,end) == static_cast<difference_type>(expected.size()));
         REQUIRE(std::equal(expected.begin(),expected.end(), begin));
     };
     auto test_reverse = [](const auto& t){
@@ -346,7 +352,8 @@ TEMPLATE_TEST_CASE("test_broadcast_iterator","[test_expression_template_engine]"
         auto expected = std::get<2>(t);
         auto begin = ten.rbegin_broadcast(broadcast_shape);
         auto end = ten.rend_broadcast(broadcast_shape);
-        REQUIRE(cmp_equal(std::distance(begin,end), expected.size()));
+        using difference_type = typename std::iterator_traits<decltype(begin)>::difference_type;
+        REQUIRE(std::distance(begin,end) == static_cast<difference_type>(expected.size()));
         REQUIRE(std::equal(expected.rbegin(),expected.rend(), begin));
     };
     apply_by_element(test, test_data);

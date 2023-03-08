@@ -79,26 +79,23 @@ public:
         holder_accessor{holder},
         elements_(size)
     {
-        auto n = std::distance(begin,end);
-        auto n_to_copy = size > n ? n : size;
-        std::copy_n(begin,n_to_copy,elements_.begin());
+        index_type n = std::distance(begin,end);
+        if (size < n){
+            for(auto elements_it = elements_.begin(), elements_end = elements_.end(); elements_it!=elements_end; ++elements_it,++begin){
+                *elements_it = *begin;
+            }
+        }else{
+            std::copy(begin, end, elements_.begin());
+        }
     }
 
     void resize(const index_type& size){elements_.resize(size);}
 private:
     template<typename U>
     static auto create_indexer_helper(U& instance){
-        using indexable_type = indexable_ref<std::remove_reference_t<decltype((instance.elements_))>,index_type>;
-        return basic_indexer<index_type, indexable_type>{indexable_type{instance.elements_}};
+        using indexable_type = indexable<decltype(instance.elements_.begin()),index_type>;
+        return basic_indexer<index_type, indexable_type>{indexable_type{instance.elements_.begin()}};
     }
-    // template<typename U>
-    // static auto create_indexer_helper(U& instance){
-    //     return basic_indexer<index_type, indexable<decltype(instance.elements_.data()),index_type> >{instance.elements_.data()};
-    // }
-    // template<typename U>
-    // static auto create_indexer_helper(U& instance){
-    //     return basic_indexer<index_type, decltype(instance.begin())>{instance.begin()};
-    // }
 
     holder_accessor_type holder_accessor;
     storage_type elements_;

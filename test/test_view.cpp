@@ -110,3 +110,17 @@ TEMPLATE_TEST_CASE("test_view","[test_view]",
     };
     apply_by_element(test,test_data);
 }
+
+TEMPLATE_TEST_CASE("test_prev","[test_view]",
+    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
+)
+{
+    using value_type = double;
+    using config_type = TestType;
+    using tensor_type = gtensor::tensor<value_type,config_type>;
+
+    tensor_type t{1,2,3,4,5,6};
+    auto e = t+t;
+    //auto it = e.end();
+    //auto prev_it = std::prev(it);
+}

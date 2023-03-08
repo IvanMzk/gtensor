@@ -78,7 +78,6 @@ public:
     result_type operator[](const index_type& idx)const{return (*this->impl_)[idx.value()];}
 };
 
-
 template<typename StorT, typename IdxT> class storage_adapter;
 template<typename StorT, typename InnerIdx>
 class storage_adapter<StorT, integral<InnerIdx>>
@@ -87,8 +86,9 @@ class storage_adapter<StorT, integral<InnerIdx>>
     using index_type = integral<InnerIdx>;
     using subscription_result_type = decltype(std::declval<storage_type>()[std::declval<InnerIdx>()]);
     using const_subscription_result_type = decltype(std::declval<const storage_type>()[std::declval<InnerIdx>()]);
+    static_assert(std::is_convertible_v<typename std::iterator_traits<typename storage_type::iterator>::iterator_category, std::random_access_iterator_tag>);
 
-    StorT impl_;
+    storage_type impl_;
 public:
     using value_type = typename storage_type::value_type;
 
@@ -110,39 +110,7 @@ public:
     auto rend(){return impl_.rend();}
     auto rbegin()const{return impl_.rbegin();}
     auto rend()const{return impl_.rend();}
-    const_subscription_result_type operator[](const index_type& i)const{return impl_[i.value()];}
-    subscription_result_type operator[](const index_type& i){return impl_[i.value()];}
 };
-
-// template<typename StorT, typename IdxT> class storage_adapter;
-// template<typename StorT, typename IdxT>
-// class storage_adapter<StorT, integral<IdxT>>
-// {
-//     using storage_type = StorT;
-//     using index_type = integral<IdxT>;
-//     using value_type = typename storage_type::value_type;
-//     StorT impl_;
-// public:
-//     storage_adapter(const index_type& n):
-//         impl_(n.value())
-//     {}
-//     storage_adapter(const index_type& n, const value_type& v):
-//         impl_(n.value(), v)
-//     {}
-//     auto resize(const index_type& n){return impl_.resize(n.value());}
-//     auto data()const{return impl_.data();}
-//     auto data(){return impl_.data();}
-
-//     auto begin(){return impl_.begin();}
-//     auto end(){return impl_.end();}
-//     auto begin()const{return impl_.begin();}
-//     auto end()const{return impl_.end();}
-//     auto rbegin(){return impl_.rbegin();}
-//     auto rend(){return impl_.rend();}
-//     auto rbegin()const{return impl_.rbegin();}
-//     auto rend()const{return impl_.rend();}
-// };
-
 
 }   //end of namespace gtensor
 
