@@ -309,16 +309,3 @@ TEST_CASE("test_check_slices_number","[test_check_slices]"){
     REQUIRE_THROWS_AS(check_slices_number(shape_type{5,6},slices_init_type{{},{},{}}), gtensor::subscript_exception);
     REQUIRE_THROWS_AS(check_slices_number(shape_type{5},slices_init_type{{},{}}), gtensor::subscript_exception);
 }
-
-TEST_CASE("test_check_subdim_subs","[test_check_subdim_subs]"){
-    using shape_type = typename gtensor::config::default_config::shape_type;
-    using gtensor::detail::check_subdim_subs;
-
-    REQUIRE_NOTHROW(check_subdim_subs(shape_type{5,4,3},shape_type{4}));
-    REQUIRE_NOTHROW(check_subdim_subs(shape_type{5,4,3},shape_type{4,3}));
-    REQUIRE_THROWS_AS(check_subdim_subs(shape_type{5},shape_type{0}), gtensor::subscript_exception);
-    REQUIRE_THROWS_AS(check_subdim_subs(shape_type{5},shape_type{0,0}), gtensor::subscript_exception);
-    REQUIRE_THROWS_AS(check_subdim_subs(shape_type{5,4,3},shape_type{1,2,3}), gtensor::subscript_exception);
-    REQUIRE_THROWS_AS(check_subdim_subs(shape_type{5,4,3},shape_type{5}), gtensor::subscript_exception);
-    REQUIRE_THROWS_AS(check_subdim_subs(shape_type{5,4,3},shape_type{0,4}), gtensor::subscript_exception);
-}

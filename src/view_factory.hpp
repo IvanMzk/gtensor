@@ -53,18 +53,6 @@ inline ShT make_view_slice_cstrides(const ShT& pstrides, const SubsT& subs){
 * indeces is positions of source shape elements in transposed shape
 * if indeces is empty transposed shape is reverse of source
 */
-// template<typename ShT>
-// ShT transpose(const ShT& src, const ShT& indeces){
-//     ShT res{};
-//     res.reserve(src.size());
-//     if (indeces.empty()){
-//         res.assign(src.rbegin(), src.rend());
-//     }else{
-//         std::for_each(indeces.begin(), indeces.end(), [&src, &res](const auto& pos){res.push_back(src[pos]);});
-//     }
-//     return res;
-// }
-
 template<typename ShT, typename...Indeces>
 ShT transpose(const ShT& src, const Indeces&...indeces){
     ShT res{};
@@ -111,6 +99,22 @@ template<typename ShT>
 inline typename ShT::value_type make_view_subdim_offset(const ShT& pstrides, const ShT& subs){
     using index_type = typename ShT::value_type;
     return std::inner_product(subs.begin(),subs.end(),pstrides.begin(),index_type(0));
+}
+
+template<typename ShT>
+inline void check_subdim_subs(const ShT& shape, const ShT& subs){
+    using index_type = typename ShT::value_type;
+    if (subs.size() >= shape.size()){
+        throw subscript_exception("subdim subscripts number must be less than dim");
+    }
+    const index_type zero_index(0);
+    auto shape_it = shape.begin();
+    for (auto subs_it = subs.begin(), subs_end = subs.end(); subs_it != subs_end; ++subs_it, ++shape_it){
+        auto sub = *subs_it;
+        if (sub < zero_index || sub >= *shape_it){
+            throw subscript_exception("invalid subdim subscript");
+        }
+    }
 }
 
 /*make view reshape shape*/

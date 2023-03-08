@@ -258,21 +258,7 @@ inline void check_slices_number(const ShT& shape, const Subs&...){
     if (sizeof...(Subs)>shape.size()){throw subscript_exception("subscripts number exceeds dim");}
 }
 
-template<typename ShT>
-inline void check_subdim_subs(const ShT& shape, const ShT& subs){
-    using index_type = typename ShT::value_type;
-    if (subs.size() >= shape.size()){
-        throw subscript_exception("subdim subscripts number must be less than dim");
-    }
-    const index_type zero_index(0);
-    auto shape_it = shape.begin();
-    for (auto subs_it = subs.begin(), subs_end = subs.end(); subs_it != subs_end; ++subs_it, ++shape_it){
-        auto sub = *subs_it;
-        if (sub < zero_index || sub >= *shape_it){
-            throw subscript_exception("invalid subdim subscript");
-        }
-    }
-}
+
 
 }   //end of namespace detail
 }   //end of namespace gtensor

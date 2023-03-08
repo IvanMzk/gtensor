@@ -159,28 +159,6 @@ TEMPLATE_TEST_CASE("test_make_view_slice_cstrides","[test_view_factory]", std::v
 
 }
 
-// TEMPLATE_TEST_CASE("test_transpose","[test_view_factory]", std::vector<std::int64_t>){
-//     using shape_type = TestType;
-//     using gtensor::detail::transpose;
-//     using test_type = std::tuple<shape_type, shape_type, shape_type>;
-//     //0source,1indeces,2expected_transposed
-//     auto test_data = GENERATE(
-//         test_type{shape_type{3},shape_type{}, shape_type{3}},
-//         test_type{shape_type{3},shape_type{0}, shape_type{3}},
-//         test_type{shape_type{3,2},shape_type{0,1}, shape_type{3,2}},
-//         test_type{shape_type{3,2},shape_type{}, shape_type{2,3}},
-//         test_type{shape_type{3,2},shape_type{1,0}, shape_type{2,3}},
-//         test_type{shape_type{4,3,2,2},shape_type{}, shape_type{2,2,3,4}},
-//         test_type{shape_type{4,3,2,2},shape_type{3,1,0,2}, shape_type{2,3,4,2}}
-//     );
-
-//     auto source = std::get<0>(test_data);
-//     auto indeces = std::get<1>(test_data);
-//     auto expected_transposed = std::get<2>(test_data);
-//     auto result_transposed = transpose(source, indeces);
-//     REQUIRE(result_transposed == expected_transposed);
-// }
-
 TEMPLATE_TEST_CASE("test_transpose","[test_view_factory]", std::vector<std::int64_t>){
     using shape_type = TestType;
     using gtensor::detail::transpose;
@@ -253,6 +231,18 @@ TEST_CASE("test_check_reshape_subs","[test_check_reshape_subs]"){
     REQUIRE_THROWS_AS(check_reshape_subs(60, 2,3,2,4), subscript_exception);
 }
 
+TEST_CASE("test_check_subdim_subs","[test_check_subdim_subs]"){
+    using shape_type = typename gtensor::config::default_config::shape_type;
+    using gtensor::detail::check_subdim_subs;
+
+    REQUIRE_NOTHROW(check_subdim_subs(shape_type{5,4,3},shape_type{4}));
+    REQUIRE_NOTHROW(check_subdim_subs(shape_type{5,4,3},shape_type{4,3}));
+    REQUIRE_THROWS_AS(check_subdim_subs(shape_type{5},shape_type{0}), gtensor::subscript_exception);
+    REQUIRE_THROWS_AS(check_subdim_subs(shape_type{5},shape_type{0,0}), gtensor::subscript_exception);
+    REQUIRE_THROWS_AS(check_subdim_subs(shape_type{5,4,3},shape_type{1,2,3}), gtensor::subscript_exception);
+    REQUIRE_THROWS_AS(check_subdim_subs(shape_type{5,4,3},shape_type{5}), gtensor::subscript_exception);
+    REQUIRE_THROWS_AS(check_subdim_subs(shape_type{5,4,3},shape_type{0,4}), gtensor::subscript_exception);
+}
 
 TEMPLATE_TEST_CASE("test_make_index_mapping_view_shape","[test_view_factory]",
     typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
