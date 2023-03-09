@@ -222,7 +222,7 @@ void step_new(const size_type& direction, const shape_type& strides){
 */
 
 template<typename CfgT, typename Walker>
-class walker_bidirectional_adapter
+class walker_forward_adapter
 {
 protected:
     using config_type = CfgT;
@@ -235,10 +235,10 @@ protected:
     const detail::shape_inverter<CfgT> shape_;
     walker_type walker_;
     shape_type index_;
-    index_type overflow_{0};
+
 public:
     template<typename Walker_>
-    walker_bidirectional_adapter(const shape_type& shape__, Walker_&& walker__):
+    walker_forward_adapter(const shape_type& shape__, Walker_&& walker__):
         dim_(shape__.size()),
         shape_{shape__},
         walker_{std::forward<Walker_>(walker__)},
@@ -246,6 +246,7 @@ public:
     {}
     const auto& index()const{return index_;}
     const auto& walker()const{return walker_;}
+    auto& walker(){return walker_;}
     bool next(){
         size_type direction{0}; //start from direction with min stride
         auto index_it = index_.end();
@@ -259,12 +260,40 @@ public:
                 return true;
             }
         }
-        if (overflow_ == index_type{-1}){
-            ++overflow_;
+        return false;
+    }
+};
+
+template<typename CfgT, typename Walker>
+class walker_bidirectional_adapter : public walker_forward_adapter<CfgT, Walker>
+{
+protected:
+    using walker_forward_adapter_base = walker_forward_adapter<CfgT, Walker>;
+    using typename walker_forward_adapter_base::config_type;
+    using typename walker_forward_adapter_base::walker_type;
+    using typename walker_forward_adapter_base::shape_type;
+    using typename walker_forward_adapter_base::index_type;
+    using typename walker_forward_adapter_base::size_type;
+    using walker_forward_adapter_base::walker_;
+    using walker_forward_adapter_base::dim_;
+    using walker_forward_adapter_base::index_;
+    using walker_forward_adapter_base::shape_;
+
+    index_type overflow_{0};
+public:
+    using walker_forward_adapter_base::walker_forward_adapter_base;
+
+    bool next(){
+        if (walker_forward_adapter_base::next()){
             return true;
         }else{
-            ++overflow_;
-            return false;
+            if (overflow_ == index_type{-1}){
+                ++overflow_;
+                return true;
+            }else{
+                ++overflow_;
+                return false;
+            }
         }
     }
     bool prev(){
@@ -303,7 +332,6 @@ class walker_iterator_adapter : public walker_bidirectional_adapter<CfgT, Walker
     using walker_bidirectional_adapter_base::walker_;
     using walker_bidirectional_adapter_base::dim_;
     using walker_bidirectional_adapter_base::index_;
-    //using size_type = typename config_type::size_type;
     const strides_div_type* strides_;
 public:
     template<typename Walker_>
