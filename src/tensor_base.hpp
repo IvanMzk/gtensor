@@ -18,7 +18,7 @@ protected:
 public:
     virtual ~tensor_base(){}
     virtual index_type size()const = 0;
-    virtual index_type dim()const = 0;
+    virtual size_type dim()const = 0;
     virtual const shape_type& shape()const = 0;
     virtual const shape_type& strides()const =0;
     virtual descriptor_base<config_type>& descriptor() = 0;

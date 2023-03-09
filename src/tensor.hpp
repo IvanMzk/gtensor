@@ -34,7 +34,7 @@ public:
     const descriptor_type& descriptor()const override{return descriptor_;}
     descriptor_type& descriptor()override{return descriptor_;}
     index_type size()const override{return descriptor_.size();}
-    index_type dim()const override{return descriptor_.dim();}
+    size_type dim()const override{return descriptor_.dim();}
     const shape_type& shape()const override{return descriptor_.shape();}
     const shape_type& strides()const override{return descriptor_.strides();}
 

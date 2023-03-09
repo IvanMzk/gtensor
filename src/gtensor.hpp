@@ -7,6 +7,7 @@
 #include "slice.hpp"
 #include "view_factory.hpp"
 #include "expression_template_engine.hpp"
+#include "reduce.hpp"
 
 
 namespace gtensor{
@@ -201,6 +202,13 @@ public:
     template<typename Subs, std::enable_if_t<detail::is_bool_tensor<Subs>::value ,int> = 0 >
     auto operator()(const Subs& subs)const{
         return view_factory<ValT,CfgT>::create_bool_mapping_view(impl(), subs);
+    }
+
+    //reduce
+    template<typename BinaryOp>
+    auto reduce(BinaryOp op, const size_type& direction)const{
+        detail::check_reduce_direction(dim(), direction);
+        return reducer<ValT,CfgT>::reduce(*impl_, op, direction);
     }
 };
 

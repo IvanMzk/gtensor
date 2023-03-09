@@ -16,7 +16,7 @@ namespace detail{
 enum class mask_type : char {
     nop=0b00000000, __k = 0b00000001, _j_ = 0b00000010, _jk = 0b00000011, i__ = 0b00000100, i_k = 0b00000101, ij_ = 0b00000110, ijk = 0b00000111
 };
-static char operator&(mask_type lhs, mask_type rhs){return static_cast<char>(lhs)&static_cast<char>(rhs);}
+inline static char operator&(mask_type lhs, mask_type rhs){return static_cast<char>(lhs)&static_cast<char>(rhs);}
 
 template<typename IdxT, typename NopT = Nop>
 struct slice_item{
