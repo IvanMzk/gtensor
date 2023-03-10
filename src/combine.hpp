@@ -16,11 +16,37 @@ public:
 
 namespace detail{
 
-template<typename ShT, typename...ShTs>
-void check_stack_shapes(const ShT& shape, const ShTs&...shapes){
+template<typename SizeT, typename ShT, typename...ShTs>
+void check_stack_args(const SizeT& direction, const ShT& shape, const ShTs&...shapes){
+    using size_type = SizeT;
+    size_type dim = shape.size();
+    if (dim > size_type{0} && direction > dim){
+        throw combine_exception{"bad stack direction"};
+    }
     if constexpr (sizeof...(ShTs) > 0){
         if (!((shape==shapes)&&...)){
-            throw combine_exception{"tensors to stack have not equal shapes"};
+            throw combine_exception{"tensors to stack must have equal shapes"};
+        }
+    }
+}
+
+template<typename SizeT, typename ShT, typename...ShTs>
+void check_concatenate_args(const SizeT& direction, const ShT& shape, const ShTs&...shapes){
+    using size_type = SizeT;
+    size_type dim = shape.size();
+    if (dim > size_type{0} && direction >= dim){
+        throw combine_exception{"bad concatenate direction"};
+    }
+    if constexpr (sizeof...(ShTs) > 0){
+        if (!((dim==static_cast<size_type>(shapes.size()))&&...)){
+            throw combine_exception{"tensors to concatenate must have equal shapes"};
+        }
+        for (size_type d{0}; d!=dim; ++d){
+            if (!((shape[d]==shapes[d])&&...)){
+                if (d!=direction){
+                    throw combine_exception{"tensors to concatenate must have equal shapes"};
+                }
+            }
         }
     }
 }
@@ -84,7 +110,7 @@ auto stack(const SizeT& direction, const T& t, const Ts&...ts){
     using res_value_type = std::common_type_t<typename T::value_type, typename Ts::value_type...>;
     using res_impl_type = storage_tensor<typename detail::storage_engine_traits<typename config_type::host_engine,config_type,typename config_type::template storage<res_value_type>>::type>;
     const auto& shape = t.shape();
-    detail::check_stack_shapes(shape, ts.shape()...);
+    detail::check_stack_args(direction, shape, ts.shape()...);
     if constexpr (sizeof...(Ts) == 0){
         return tensor<res_value_type, config_type, res_impl_type>::make_tensor(detail::make_stack_shape(shape,direction,index_type{1}),t.begin(),t.end());
     }else{
@@ -95,6 +121,15 @@ auto stack(const SizeT& direction, const T& t, const Ts&...ts){
     }
 }
 
+//join tensors along existing direction, tensors must have the same shape except concatenate direction
+template<typename SizeT, typename T, typename...Ts>
+auto concatenate(const SizeT& direction, const T& t, const Ts&...ts){
+    using config_type = typename T::config_type;
+    using index_type = typename config_type::index_type;
+    using res_value_type = std::common_type_t<typename T::value_type, typename Ts::value_type...>;
+    using res_impl_type = storage_tensor<typename detail::storage_engine_traits<typename config_type::host_engine,config_type,typename config_type::template storage<res_value_type>>::type>;
+    const auto& shape = t.shape();
+}
 
 }   //end of namespace gtensor
 
