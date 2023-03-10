@@ -201,7 +201,7 @@ auto fill_index_mapping_view(It it, ParentIndexer pindexer, const ShT& pshape, c
             for(index_type i{0}; i!=subs_size; ++i,((subs_it.next()),...)){
                 block_first = index_type{0};
                 auto n = std::size_t{0};
-                ((block_first+=check_index(static_cast<index_type>(*subs_it.walker()),static_cast<index_type>(pshape[n]))*static_cast<index_type>(pstrides[n]),++n),...);
+                ((block_first+=check_index(static_cast<index_type>(*subs_it.walker()),pshape[n])*pstrides[n],++n),...);
                 auto block_index_end = j+block_size;
                 for(; j!=block_index_end; ++j){
                     *it = pindexer[block_first];
