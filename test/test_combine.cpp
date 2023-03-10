@@ -189,8 +189,53 @@ TEMPLATE_TEST_CASE("test_make_stack_shape","[test_combine]",
     auto direction = std::get<1>(test_data);
     auto tensors_number = std::get<2>(test_data);
     auto expected = std::get<3>(test_data);
-    auto result = make_stack_shape(shape,direction,tensors_number);
+    auto result = make_stack_shape(direction,shape,tensors_number);
     REQUIRE(result == expected);
+}
+
+TEMPLATE_TEST_CASE("test_make_concatenate_shape","[test_combine]",
+    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
+)
+{
+    using config_type = TestType;
+    using size_type = typename config_type::size_type;
+    using shape_type = typename config_type::shape_type;
+    using gtensor::detail::make_concatenate_shape;
+    using helpers_for_testing::apply_by_element;
+    //0direction,1shapes,2expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(size_type{0}, std::make_tuple(shape_type{}), shape_type{}),
+        std::make_tuple(size_type{1}, std::make_tuple(shape_type{}), shape_type{}),
+        std::make_tuple(size_type{0}, std::make_tuple(shape_type{}, shape_type{}), shape_type{}),
+        std::make_tuple(size_type{1}, std::make_tuple(shape_type{}, shape_type{}), shape_type{}),
+        std::make_tuple(size_type{0}, std::make_tuple(shape_type{1,2,3}), shape_type{1,2,3}),
+        std::make_tuple(size_type{1}, std::make_tuple(shape_type{1,2,3}), shape_type{1,2,3}),
+        std::make_tuple(size_type{2}, std::make_tuple(shape_type{1,2,3}), shape_type{1,2,3}),
+        std::make_tuple(size_type{0}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2,3}), shape_type{2,2,3}),
+        std::make_tuple(size_type{0}, std::make_tuple(shape_type{10,2,3}, shape_type{5,2,3}), shape_type{15,2,3}),
+        std::make_tuple(size_type{1}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2,3}), shape_type{1,4,3}),
+        std::make_tuple(size_type{1}, std::make_tuple(shape_type{1,20,3}, shape_type{1,10,3}), shape_type{1,30,3}),
+        std::make_tuple(size_type{2}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2,3}), shape_type{1,2,6}),
+        std::make_tuple(size_type{2}, std::make_tuple(shape_type{1,2,30}, shape_type{1,2,3}), shape_type{1,2,33}),
+        std::make_tuple(size_type{0}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2,3}, shape_type{1,2,3}), shape_type{3,2,3}),
+        std::make_tuple(size_type{0}, std::make_tuple(shape_type{10,2,3}, shape_type{1,2,3}, shape_type{5,2,3}), shape_type{16,2,3}),
+        std::make_tuple(size_type{1}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2,3}, shape_type{1,2,3}), shape_type{1,6,3}),
+        std::make_tuple(size_type{1}, std::make_tuple(shape_type{1,2,3}, shape_type{1,22,3}, shape_type{1,12,3}), shape_type{1,36,3}),
+        std::make_tuple(size_type{2}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2,3}, shape_type{1,2,3}), shape_type{1,2,9}),
+        std::make_tuple(size_type{2}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2,13}, shape_type{1,2,33}), shape_type{1,2,49})
+    );
+    auto test = [](const auto& t){
+        auto direction = std::get<0>(t);
+        auto shapes = std::get<1>(t);
+        auto expected = std::get<2>(t);
+
+        auto apply_shapes = [&direction](const auto&...shapes_){
+            return make_concatenate_shape(direction, shapes_...);
+        };
+        auto result = std::apply(apply_shapes, shapes);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test, test_data);
 }
 
 TEMPLATE_TEST_CASE("test_stack","[test_combine]",

@@ -51,8 +51,8 @@ void check_concatenate_args(const SizeT& direction, const ShT& shape, const ShTs
     }
 }
 
-template<typename ShT, typename SizeT>
-auto make_stack_shape(const ShT& shape, const SizeT& direction, const typename ShT::value_type& tensors_number){
+template<typename SizeT, typename ShT>
+auto make_stack_shape(const SizeT& direction, const ShT& shape, const typename ShT::value_type& tensors_number){
     using size_type = SizeT;
     using shape_type = ShT;
     size_type pdim = shape.size();
@@ -63,6 +63,24 @@ auto make_stack_shape(const ShT& shape, const SizeT& direction, const typename S
         std::copy(shape.begin(), shape.begin()+direction, res.begin());
         std::copy(shape.begin()+direction, shape.end(), res.begin()+direction+size_type{1});
         res[direction] = tensors_number;
+        return res;
+    }
+}
+
+template<typename SizeT, typename ShT, typename...ShTs>
+auto make_concatenate_shape(const SizeT& direction, const ShT& shape, const ShTs&...shapes){
+    using shape_type = ShT;
+    using index_type = typename shape_type::value_type;
+    using size_type = SizeT;
+    check_concatenate_args(direction, shape, shapes...);
+    size_type dim = shape.size();
+    if (dim == size_type{0}){
+        return shape_type{};
+    }else{
+        index_type direction_size{shape[direction]};
+        ((direction_size+=shapes[direction]),...);
+        shape_type res{shape};
+        res[direction]=direction_size;
         return res;
     }
 }
@@ -111,11 +129,12 @@ auto stack(const SizeT& direction, const T& t, const Ts&...ts){
     using res_impl_type = storage_tensor<typename detail::storage_engine_traits<typename config_type::host_engine,config_type,typename config_type::template storage<res_value_type>>::type>;
     const auto& shape = t.shape();
     detail::check_stack_args(direction, shape, ts.shape()...);
+    index_type tensors_number = sizeof...(Ts) + 1;
+    auto res_shape = detail::make_stack_shape(direction,shape,tensors_number);
     if constexpr (sizeof...(Ts) == 0){
-        return tensor<res_value_type, config_type, res_impl_type>::make_tensor(detail::make_stack_shape(shape,direction,index_type{1}),t.begin(),t.end());
+        return tensor<res_value_type, config_type, res_impl_type>::make_tensor(std::move(res_shape),t.begin(),t.end());
     }else{
-        index_type tensors_number = sizeof...(Ts) + 1;
-        auto res = tensor<res_value_type, config_type, res_impl_type>::make_tensor(detail::make_stack_shape(shape,direction,tensors_number),res_value_type{});
+        auto res = tensor<res_value_type, config_type, res_impl_type>::make_tensor(std::move(res_shape),res_value_type{});
         detail::fill_stack(direction, shape, t.size(), res.begin(), t.begin(), ts.begin()...);
         return res;
     }
@@ -129,6 +148,15 @@ auto concatenate(const SizeT& direction, const T& t, const Ts&...ts){
     using res_value_type = std::common_type_t<typename T::value_type, typename Ts::value_type...>;
     using res_impl_type = storage_tensor<typename detail::storage_engine_traits<typename config_type::host_engine,config_type,typename config_type::template storage<res_value_type>>::type>;
     const auto& shape = t.shape();
+    detail::check_concatenate_args(direction, shape, ts.shape()...);
+    if constexpr (sizeof...(Ts) == 0){
+        return tensor<res_value_type, config_type, res_impl_type>::make_tensor(shape,t.begin(),t.end());
+    }else{
+        // index_type tensors_number = sizeof...(Ts) + 1;
+        // auto res = tensor<res_value_type, config_type, res_impl_type>::make_tensor(detail::make_stack_shape(shape,direction,tensors_number),res_value_type{});
+        // detail::fill_stack(direction, shape, t.size(), res.begin(), t.begin(), ts.begin()...);
+        // return res;
+    }
 }
 
 }   //end of namespace gtensor
