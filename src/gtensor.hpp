@@ -66,9 +66,12 @@ class tensor{
 
     friend struct tensor_operator_dispatcher;
     template<typename,typename> friend class view_factory;
+    friend class reducer<ValT,CfgT>;
+    friend class combiner;
     std::shared_ptr<impl_type> impl_;
 protected:
     auto impl()const{return impl_;}
+    auto& impl_ref()const{return *impl_;}
     const auto& engine()const{return static_cast<const impl_type*>(impl_.get())->engine();}
     auto& engine(){return impl_->engine();}
     const auto& descriptor()const{return static_cast<const impl_type*>(impl_.get())->descriptor();}
@@ -206,9 +209,9 @@ public:
 
     //reduce
     template<typename BinaryOp>
-    auto reduce(BinaryOp op, const size_type& direction)const{
-        detail::check_reduce_direction(dim(), direction);
-        return reducer<ValT,CfgT>::reduce(*impl_, op, direction);
+    auto reduce(const size_type& direction, BinaryOp op)const{
+        detail::check_reduce_direction(direction, dim());
+        return gtensor::reduce(*this, direction, op);
     }
 };
 

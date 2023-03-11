@@ -15,7 +15,7 @@ public:
 namespace detail{
 
 template<typename SizeT>
-auto check_reduce_direction(const SizeT& pdim, const SizeT& direction){
+auto check_reduce_direction(const SizeT& direction, const SizeT& pdim){
     if (pdim > SizeT{0} && direction >= pdim){
         throw reduce_exception("bad reduce direction");
     }
@@ -122,7 +122,7 @@ struct min
 
 
 template<typename ValT, typename CfgT>
-struct reducer
+class reducer
 {
     using value_type = ValT;
     using config_type = CfgT;
@@ -130,8 +130,8 @@ struct reducer
     using index_type = typename config_type::index_type;
     using shape_type = typename config_type::shape_type;
 
-    template<typename ImplT, typename BinaryOp, typename SizeT>
-    static auto reduce(const ImplT& parent, BinaryOp op, const SizeT& direction){
+    template<typename ImplT, typename SizeT, typename BinaryOp>
+    static auto reduce_(const ImplT& parent, const SizeT& direction, BinaryOp op){
         using size_type = SizeT;
         using detail::reduce_shape;
         using res_value_type = std::decay_t<decltype(op(std::declval<value_type>(),std::declval<value_type>()))>;
@@ -160,8 +160,22 @@ struct reducer
             return res;
         }
     }
+
+    template<typename SizeT, typename BinaryOp, typename...Ts>
+    static auto reduce_(const tensor<Ts...>& t, const SizeT& direction, BinaryOp op){
+        return reduce_(t.impl_ref(), direction, op);
+    }
+
+    template<typename SizeT, typename BinaryOp, typename...Ts>
+    friend auto reduce(const tensor<Ts...>& t, const SizeT& direction, BinaryOp op);
 };
 
+template<typename SizeT, typename BinaryOp, typename...Ts>
+auto reduce(const tensor<Ts...>& t, const SizeT& direction, BinaryOp op){
+    using value_type = typename tensor<Ts...>::value_type;
+    using config_type = typename tensor<Ts...>::config_type;
+    return reducer<value_type,config_type>::reduce_(t, direction, op);
+}
 
 
 

@@ -37,8 +37,10 @@ TEMPLATE_TEST_CASE("test_reduce","[test_reduce]",
         auto direction = std::get<1>(t);
         auto functor = std::get<2>(t);
         auto expected = std::get<3>(t);
-        auto result = tensor.reduce(functor, direction);
+        auto result = tensor.reduce(direction, functor);
         REQUIRE(result.equals(expected));
+        auto result1 = reduce(tensor, direction, functor);
+        REQUIRE(result1.equals(expected));
     };
     apply_by_element(test, test_data);
 }
@@ -66,7 +68,7 @@ TEMPLATE_TEST_CASE("test_reduce_ecxeption","[test_reduce]",
         auto tensor = std::get<0>(t);
         auto direction = std::get<1>(t);
         auto functor = std::get<2>(t);
-        REQUIRE_THROWS_AS(tensor.reduce(functor, direction), reduce_exception);
+        REQUIRE_THROWS_AS(tensor.reduce(direction, functor), reduce_exception);
     };
     apply_by_element(test, test_data);
 }
