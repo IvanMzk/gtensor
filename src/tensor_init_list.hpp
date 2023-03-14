@@ -30,11 +30,17 @@ struct nested_initializer_list_type<T, 0>{
     using type = T;
 };
 
-template<typename T> using nested_init_list1_t = std::initializer_list<T>;
-template<typename T> using nested_init_list2_t = std::initializer_list<nested_init_list1_t<T>>;
-template<typename T> using nested_init_list3_t = std::initializer_list<nested_init_list2_t<T>>;
-template<typename T> using nested_init_list4_t = std::initializer_list<nested_init_list3_t<T>>;
-template<typename T> using nested_init_list5_t = std::initializer_list<nested_init_list4_t<T>>;
+// template<typename T> using nested_init_list1_t = std::initializer_list<T>;
+// template<typename T> using nested_init_list2_t = std::initializer_list<nested_init_list1_t<T>>;
+// template<typename T> using nested_init_list3_t = std::initializer_list<nested_init_list2_t<T>>;
+// template<typename T> using nested_init_list4_t = std::initializer_list<nested_init_list3_t<T>>;
+// template<typename T> using nested_init_list5_t = std::initializer_list<nested_init_list4_t<T>>;
+
+// template<typename T> using nested_init_list1_type = std::initializer_list<T>;
+// template<typename T> using nested_init_list2_type = std::initializer_list<std::initializer_list<T>>;
+// template<typename T> using nested_init_list3_type = std::initializer_list<std::initializer_list<std::initializer_list<T>>>;
+// template<typename T> using nested_init_list4_type = std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<T>>>>;
+// template<typename T> using nested_init_list5_type = std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<T>>>>>;
 
 
 /*
@@ -49,6 +55,17 @@ template<typename T, std::size_t Depth>
 struct nested_initialiser_list_depth<std::initializer_list<T>, Depth>{
     static constexpr std::size_t value = nested_initialiser_list_depth<T, Depth+1>::value;
 };
+
+template<typename T, std::size_t Depth=0>
+struct nested_initialiser_list_value_type{
+    using value_type = T;
+};
+template<typename T, std::size_t Depth>
+struct nested_initialiser_list_value_type<std::initializer_list<T>, Depth>{
+    using value_type = typename nested_initialiser_list_value_type<T, Depth+1>::value_type;
+};
+
+
 
 /*
 * nested list elements number

@@ -13,6 +13,13 @@ TEST_CASE("test_list_depth","[test_tensor_init_list]"){
     REQUIRE(gtensor::detail::nested_initialiser_list_depth<decltype(l4)>::value == 2);
 }
 
+TEST_CASE("test_nested_initialiser_list_value_type","[test_tensor_init_list]"){
+    using gtensor::detail::nested_initialiser_list_value_type;
+    REQUIRE(std::is_same_v<nested_initialiser_list_value_type<std::initializer_list<int>>::value_type, int>);
+    REQUIRE(std::is_same_v<nested_initialiser_list_value_type<std::initializer_list<std::initializer_list<std::tuple<int,float>>>>::value_type, std::tuple<int,float>>);
+    REQUIRE(std::is_same_v<nested_initialiser_list_value_type<std::initializer_list<std::initializer_list<std::initializer_list<std::tuple<int,float>>>>>::value_type, std::tuple<int,float>>);
+}
+
 TEST_CASE("test_list_parser_empty","[test_tensor_init_list]"){
     gtensor::detail::nested_initializer_list_type<int,1>::type l1 = {};
     gtensor::detail::nested_initializer_list_type<int,2>::type l2 = {{2},{2},{}};
