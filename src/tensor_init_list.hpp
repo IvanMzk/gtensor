@@ -36,11 +36,11 @@ struct nested_initializer_list_type<T, 0>{
 // template<typename T> using nested_init_list4_t = std::initializer_list<nested_init_list3_t<T>>;
 // template<typename T> using nested_init_list5_t = std::initializer_list<nested_init_list4_t<T>>;
 
-// template<typename T> using nested_init_list1_type = std::initializer_list<T>;
-// template<typename T> using nested_init_list2_type = std::initializer_list<std::initializer_list<T>>;
-// template<typename T> using nested_init_list3_type = std::initializer_list<std::initializer_list<std::initializer_list<T>>>;
-// template<typename T> using nested_init_list4_type = std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<T>>>>;
-// template<typename T> using nested_init_list5_type = std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<T>>>>>;
+template<typename T> using nested_init_list1_type = std::initializer_list<T>;
+template<typename T> using nested_init_list2_type = std::initializer_list<std::initializer_list<T>>;
+template<typename T> using nested_init_list3_type = std::initializer_list<std::initializer_list<std::initializer_list<T>>>;
+template<typename T> using nested_init_list4_type = std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<T>>>>;
+template<typename T> using nested_init_list5_type = std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<T>>>>>;
 
 
 /*

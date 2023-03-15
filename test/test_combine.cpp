@@ -413,3 +413,80 @@ TEMPLATE_TEST_CASE("test_concatenate_common_type","[test_combine]",
     };
     apply_by_element(test, test_data);
 }
+
+TEST_CASE("test_max_block_dim","test_combine"){
+    using value_type = int;
+    using tensor_type = gtensor::tensor<value_type>;
+    using size_type = typename tensor_type::size_type;
+    using gtensor::detail::max_block_dim;
+    value_type v{};
+
+    REQUIRE(max_block_dim(std::initializer_list<tensor_type>{tensor_type({5},v)}) == size_type{1});
+    REQUIRE(max_block_dim(std::initializer_list<tensor_type>{tensor_type({5},v), tensor_type({5,4},v)}) == size_type{2});
+    REQUIRE(max_block_dim(std::initializer_list<tensor_type>{tensor_type({5,4},v), tensor_type({5},v)}) == size_type{2});
+    REQUIRE(max_block_dim(
+        std::initializer_list<std::initializer_list<tensor_type>>{{tensor_type({5,4},v), tensor_type({5},v)}, {tensor_type({5,4},v), tensor_type({3,3,3},v), tensor_type({5},v)}}
+            ) == size_type{3}
+    );
+}
+
+TEST_CASE("test_make_block_shape","test_combine"){
+    using value_type = int;
+    using tensor_type = gtensor::tensor<value_type>;
+    using size_type = typename tensor_type::size_type;
+    using index_type = typename tensor_type::index_type;
+    using shape_type = typename tensor_type::shape_type;
+    using gtensor::detail::make_block_shape;
+    using gtensor::detail::max_block_dim;
+    using gtensor::combine_exception;
+    using gtensor::detail::nested_initialiser_list_depth;
+    using gtensor::detail::nested_init_list1_type;
+    using gtensor::detail::nested_init_list2_type;
+    using gtensor::detail::nested_init_list3_type;
+    value_type v{};
+
+    auto make_block_shape_caller = [](auto blocks){
+        size_type res_dim = std::max(nested_initialiser_list_depth<decltype(blocks)>::value, max_block_dim(blocks));
+        return make_block_shape(blocks, res_dim);
+    };
+
+    REQUIRE(make_block_shape_caller(nested_init_list1_type<tensor_type>{tensor_type({2},v)}) == shape_type{2});
+    REQUIRE(make_block_shape_caller(nested_init_list2_type<tensor_type>{{tensor_type({2},v)}}) == shape_type{1,2});
+    REQUIRE(make_block_shape_caller(nested_init_list3_type<tensor_type>{{{tensor_type({2},v)}}}) == shape_type{1,1,2});
+    REQUIRE(make_block_shape_caller(nested_init_list1_type<tensor_type>{tensor_type({3,4},v)}) == shape_type{3,4});
+    REQUIRE(make_block_shape_caller(nested_init_list2_type<tensor_type>{{tensor_type({3,4},v)}}) == shape_type{3,4});
+    REQUIRE(make_block_shape_caller(nested_init_list3_type<tensor_type>{{{tensor_type({3,4},v)}}}) == shape_type{1,3,4});
+
+    REQUIRE(make_block_shape_caller(nested_init_list1_type<tensor_type>{tensor_type({2},v), tensor_type({3},v), tensor_type({4},v)}) == shape_type{9});
+    REQUIRE(make_block_shape_caller(nested_init_list2_type<tensor_type>{{tensor_type({2},v), tensor_type({3},v), tensor_type({4},v)}}) == shape_type{1,9});
+    REQUIRE(make_block_shape_caller(nested_init_list2_type<tensor_type>{{tensor_type({2},v)}, {tensor_type({2},v)}, {tensor_type({2},v)}}) == shape_type{3,2});
+    REQUIRE(make_block_shape_caller(nested_init_list2_type<tensor_type>{{tensor_type({1},v), tensor_type({2},v)}, {tensor_type({3},v)}}) == shape_type{2,3});
+    REQUIRE(make_block_shape_caller(nested_init_list3_type<tensor_type>{{{tensor_type({2},v), tensor_type({3},v), tensor_type({4},v)}}}) == shape_type{1,1,9});
+    REQUIRE(make_block_shape_caller(nested_init_list3_type<tensor_type>{{{tensor_type({2},v)}}, {{tensor_type({2},v)}}, {{tensor_type({2},v)}}}) == shape_type{3,1,2});
+    REQUIRE(make_block_shape_caller(nested_init_list3_type<tensor_type>{{{tensor_type({2},v)}, {tensor_type({2},v)}}, {{tensor_type({2},v)}, {tensor_type({2},v)}}}) == shape_type{2,2,2});
+
+    REQUIRE(make_block_shape_caller(nested_init_list1_type<tensor_type>{tensor_type({2},v), tensor_type({1,3},v)}) == shape_type{1,5});
+    REQUIRE(make_block_shape_caller(nested_init_list1_type<tensor_type>{tensor_type({1,3},v), tensor_type({2},v), tensor_type({1,4},v)}) == shape_type{1,9});
+    REQUIRE(make_block_shape_caller(nested_init_list1_type<tensor_type>{tensor_type({2},v), tensor_type({1,1,3},v)}) == shape_type{1,1,5});
+    REQUIRE(make_block_shape_caller(nested_init_list1_type<tensor_type>{tensor_type({1,3},v), tensor_type({2},v), tensor_type({1,1,4},v)}) == shape_type{1,1,9});
+    REQUIRE(make_block_shape_caller(nested_init_list1_type<tensor_type>{tensor_type({2,2},v), tensor_type({2,3},v)}) == shape_type{2,5});
+    REQUIRE(make_block_shape_caller(nested_init_list1_type<tensor_type>{tensor_type({2,2},v), tensor_type({2,3},v), tensor_type({2,4},v)}) == shape_type{2,9});
+
+    REQUIRE(make_block_shape_caller(nested_init_list2_type<tensor_type>{{tensor_type({2},v)}, {tensor_type({2,2},v)}}) == shape_type{3,2});
+    REQUIRE(make_block_shape_caller(nested_init_list2_type<tensor_type>{{tensor_type({2,3},v), tensor_type({2,4},v)}}) == shape_type{2,7});
+    REQUIRE(make_block_shape_caller(nested_init_list2_type<tensor_type>{{tensor_type({3,2},v)}, {tensor_type({4,2},v)}}) == shape_type{7,2});
+    REQUIRE(make_block_shape_caller(nested_init_list2_type<tensor_type>{{tensor_type({2,3},v), tensor_type({2,4},v)},{tensor_type({5,7},v)}}) == shape_type{7,7});
+    REQUIRE(make_block_shape_caller(nested_init_list2_type<tensor_type>{{tensor_type({2,3},v), tensor_type({2,4},v)},{tensor_type({5,2},v), tensor_type({5,5},v)}}) == shape_type{7,7});
+    REQUIRE(make_block_shape_caller(nested_init_list2_type<tensor_type>{{tensor_type({3,5},v)}, {tensor_type({4,5},v)}, {tensor_type({2,1},v), tensor_type({2,4},v)}}) == shape_type{9,5});
+    REQUIRE(make_block_shape_caller(nested_init_list3_type<tensor_type>{
+        {{tensor_type({2,2},v), tensor_type({2,3},v)}, {tensor_type({3,2},v), tensor_type({3,3},v)}},
+        {{tensor_type({3,3,2},v), tensor_type({3,3,3},v)}, {tensor_type({3,2,5},v)}}}) == shape_type{4,5,5});
+
+    REQUIRE_THROWS_AS(make_block_shape_caller(nested_init_list3_type<tensor_type>{{{tensor_type({2},v)}}, {{tensor_type({2},v)}, {tensor_type({2},v)}}}), combine_exception);
+    REQUIRE_THROWS_AS(make_block_shape_caller(nested_init_list2_type<tensor_type>{{tensor_type({2},v)}, {tensor_type({3},v)}}), combine_exception);
+    REQUIRE_THROWS_AS(make_block_shape_caller(nested_init_list1_type<tensor_type>{tensor_type({2},v), tensor_type({2,3},v)}), combine_exception);
+    REQUIRE_THROWS_AS(make_block_shape_caller(nested_init_list1_type<tensor_type>{tensor_type({2,3},v), tensor_type({2},v)}), combine_exception);
+    REQUIRE_THROWS_AS(make_block_shape_caller(nested_init_list2_type<tensor_type>{{tensor_type({2,3},v), tensor_type({2},v)}}), combine_exception);
+    REQUIRE_THROWS_AS(make_block_shape_caller(nested_init_list2_type<tensor_type>{{tensor_type({2},v), tensor_type({2,3},v)}}), combine_exception);
+    REQUIRE_THROWS_AS(make_block_shape_caller(nested_init_list3_type<tensor_type>{{{tensor_type({2},v)}}, {{tensor_type({2,2},v)}}}), combine_exception);
+}

@@ -3,6 +3,9 @@
 
 #include <type_traits>
 #include <stdexcept>
+#include <algorithm>
+#include "forward_decl.hpp"
+#include "tensor_init_list.hpp"
 //#include
 
 namespace gtensor{
@@ -156,6 +159,94 @@ auto fill_concatenate(const SizeT& direction,  ResultIt res_it, std::index_seque
     }
 }
 
+//returns dim of result of block
+template<typename T>
+auto max_block_dim(const T& t){
+    return t.dim();
+}
+template<typename Nested>
+auto max_block_dim(std::initializer_list<Nested> blocks){
+    using tensor_type = typename nested_initialiser_list_value_type<std::initializer_list<Nested>>::value_type;
+    using size_type = typename tensor_type::size_type;
+    size_type dim{0};
+    for(auto it = blocks.begin(); it!=blocks.end(); ++it){
+        dim = std::max(max_block_dim(*it), dim);
+    }
+    return dim;
+}
+
+//add leading ones to shape to make dim new_dim, if dim>= new_dim do nothing
+//returns result shape dim
+template<typename ShT, typename SizeT>
+auto widen_shape(ShT& shape, const SizeT& new_dim){
+    using size_type = SizeT;
+    using shape_type = ShT;
+    using index_type = typename shape_type::value_type;
+    size_type dim = shape.size();
+    if (dim < new_dim){
+        auto ones_number = new_dim - dim;
+        for (size_type i{0}; i!=ones_number; ++i){
+            shape.push_back(index_type{1});
+        }
+        std::rotate(shape.begin(), shape.begin()+dim, shape.end());
+    }
+    return shape.size();
+}
+
+//concatenates shapes and accumulates result in res_shape
+//depth means direction to concatenate, 1 is the last direction with lowest stride, 2 is next to last direction..., so direction is inverted
+//res_shape initialized with first shape for current depth
+template<typename ShT, typename SizeT>
+auto make_block_shape_helper(ShT& res_shape, const ShT& shape, const SizeT& depth){
+    using size_type = SizeT;
+    using shape_type = ShT;
+    using index_type = typename shape_type::value_type;
+    size_type res_dim = res_shape.size();
+    const size_type dim = shape.size();
+    const size_type max_dim = std::max(dim,depth);
+
+    //add leading ones
+    res_dim = widen_shape(res_shape, max_dim);
+
+    const size_type concatenate_direction = res_dim - depth;
+    const size_type offset = res_dim - dim;
+
+    //res_dim >= max_dim
+    for (size_type d{res_dim}; d!=size_type{0};){
+        --d;
+        index_type& res_element = res_shape[d];
+        index_type shape_element = d >= offset ? shape[d-offset] : index_type{1};
+        if (d == concatenate_direction){
+                res_element+=shape_element;
+        }else{
+            if (res_element!=shape_element){
+                throw combine_exception("tensors to concatenate must have equal shapes");
+            }
+        }
+    }
+}
+template<typename T, typename SizeT>
+auto make_block_shape(const T& t, const SizeT&, const SizeT&){
+    return t.shape();
+}
+template<typename Nested, typename SizeT>
+auto make_block_shape(std::initializer_list<Nested> blocks, const SizeT& res_dim, const SizeT& depth = nested_initialiser_list_depth<std::initializer_list<Nested>>::value){
+    using tensor_type = typename nested_initialiser_list_value_type<std::initializer_list<Nested>>::value_type;
+    using shape_type = typename tensor_type::shape_type;
+
+    auto it = blocks.begin();
+    shape_type res{make_block_shape(*it, res_dim, depth-1)};
+    res.reserve(res_dim);
+    widen_shape(res, depth);
+    ++it;
+    for (;it!=blocks.end(); ++it){
+        make_block_shape_helper(res, make_block_shape(*it, res_dim, depth-1), depth);
+    }
+    return res;
+}
+
+
+
 }   //end of namespace detail
 
 class combiner{
@@ -209,6 +300,15 @@ static auto concatenate_(const SizeT& direction, const tensor<Us...>& t, const T
     return concatenate_(direction, t.impl_ref(), ts.impl_ref()...);
 }
 
+//make tensor from blocks
+template<typename Nested>
+static auto block_(std::initializer_list<Nested> blocks){
+    using tensor_type = typename detail::nested_initialiser_list_value_type<std::initializer_list<Nested>>::value_type;
+    using size_type = typename tensor_type::size_type;
+    size_type res_dim = std::max(detail::nested_initialiser_list_depth<decltype(blocks)>::value, detail::max_block_dim(blocks));
+
+}
+
 
 template<typename SizeT, typename...Us, typename...Ts>
 friend auto stack(const SizeT& direction, const tensor<Us...>& t, const Ts&...ts);
@@ -224,6 +324,15 @@ auto stack(const SizeT& direction, const tensor<Us...>& t, const Ts&...ts){
 template<typename SizeT, typename...Us, typename...Ts>
 auto concatenate(const SizeT& direction, const tensor<Us...>& t, const Ts&...ts){
     return combiner::concatenate_(direction, t, ts...);
+}
+
+template<typename...Ts>
+static auto block(std::initializer_list<tensor<Ts...>> blocks){
+    combiner::block_(blocks);
+}
+template<typename...Ts>
+static auto block(std::initializer_list<std::initializer_list<tensor<Ts...>>> blocks){
+    combiner::block_(blocks);
 }
 
 }   //end of namespace gtensor
