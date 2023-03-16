@@ -436,13 +436,13 @@ TEST_CASE("test_make_block_shape","test_combine"){
     using size_type = typename tensor_type::size_type;
     using index_type = typename tensor_type::index_type;
     using shape_type = typename tensor_type::shape_type;
-    using gtensor::detail::make_block_shape;
-    using gtensor::detail::max_block_dim;
-    using gtensor::combine_exception;
     using gtensor::detail::nested_initialiser_list_depth;
     using gtensor::detail::nested_init_list1_type;
     using gtensor::detail::nested_init_list2_type;
     using gtensor::detail::nested_init_list3_type;
+    using gtensor::combine_exception;
+    using gtensor::detail::make_block_shape;
+    using gtensor::detail::max_block_dim;
     value_type v{};
 
     auto make_block_shape_caller = [](auto blocks){
@@ -489,4 +489,77 @@ TEST_CASE("test_make_block_shape","test_combine"){
     REQUIRE_THROWS_AS(make_block_shape_caller(nested_init_list2_type<tensor_type>{{tensor_type({2,3},v), tensor_type({2},v)}}), combine_exception);
     REQUIRE_THROWS_AS(make_block_shape_caller(nested_init_list2_type<tensor_type>{{tensor_type({2},v), tensor_type({2,3},v)}}), combine_exception);
     REQUIRE_THROWS_AS(make_block_shape_caller(nested_init_list3_type<tensor_type>{{{tensor_type({2},v)}}, {{tensor_type({2,2},v)}}}), combine_exception);
+}
+
+TEST_CASE("test_block","test_combine"){
+    using value_type = int;
+    using tensor_type = gtensor::tensor<value_type>;
+    using size_type = typename tensor_type::size_type;
+    using index_type = typename tensor_type::index_type;
+    using shape_type = typename tensor_type::shape_type;
+    using gtensor::combine_exception;
+    using gtensor::detail::nested_init_list1_type;
+    using gtensor::detail::nested_init_list2_type;
+    using gtensor::detail::nested_init_list3_type;
+    using gtensor::block;
+    using helpers_for_testing::apply_by_element;
+
+    //0result,1expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(block(nested_init_list1_type<tensor_type>{tensor_type{1,2,3,4,5}}), tensor_type{1,2,3,4,5}),
+        std::make_tuple(block(nested_init_list1_type<tensor_type>{tensor_type{{1,2,3},{4,5,6}}}), tensor_type{{1,2,3},{4,5,6}}),
+        std::make_tuple(block(nested_init_list1_type<tensor_type>{tensor_type{1,2,3}, tensor_type{4,5}, tensor_type{6}}), tensor_type{1,2,3,4,5,6}),
+        std::make_tuple(block(nested_init_list1_type<tensor_type>{tensor_type{1,2,3}, tensor_type{4,5}, tensor_type{6}}), tensor_type{1,2,3,4,5,6}),
+        std::make_tuple(block(nested_init_list1_type<tensor_type>{tensor_type{{1,2,3},{4,5,6}}, tensor_type{{7,8},{9,10}}}), tensor_type{{1,2,3,7,8},{4,5,6,9,10}}),
+        std::make_tuple(block(nested_init_list2_type<tensor_type>{{tensor_type{1,2,3,4,5}}}), tensor_type{{1,2,3,4,5}}),
+        std::make_tuple(block(nested_init_list3_type<tensor_type>{{{tensor_type{1,2,3,4,5}}}}), tensor_type{{{1,2,3,4,5}}}),
+        std::make_tuple(block(nested_init_list2_type<tensor_type>{{tensor_type{{1,2,3},{4,5,6}}}}), tensor_type{{1,2,3},{4,5,6}}),
+        std::make_tuple(block(nested_init_list3_type<tensor_type>{{{tensor_type{{1,2,3},{4,5,6}}}}}), tensor_type{{{1,2,3},{4,5,6}}}),
+        std::make_tuple(block(nested_init_list2_type<tensor_type>{{tensor_type{1,2,3}, tensor_type{4,5}, tensor_type{6}}}), tensor_type{{1,2,3,4,5,6}}),
+        std::make_tuple(block(nested_init_list2_type<tensor_type>{{tensor_type{1,2}}, {tensor_type{3,4}}, {tensor_type{5,6}}}), tensor_type{{1,2},{3,4},{5,6}}),
+        std::make_tuple(block(nested_init_list2_type<tensor_type>{{tensor_type{1}, tensor_type{2,3}}, {tensor_type{4,5,6}}}), tensor_type{{1,2,3},{4,5,6}}),
+        std::make_tuple(block(nested_init_list3_type<tensor_type>{{{tensor_type{1,2}}},{{tensor_type{3,4}}},{{tensor_type{5,6}}}}), tensor_type{{{1,2}},{{3,4}},{{5,6}}}),
+        std::make_tuple(block(nested_init_list3_type<tensor_type>{{{tensor_type{1,2}},{tensor_type{3,4}}},{{tensor_type{5,6}},{tensor_type{7,8}}}}), tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}),
+        std::make_tuple(block(nested_init_list3_type<tensor_type>{{{tensor_type{1,2}, tensor_type{3,4,5}, tensor_type{6,7,8,9}}}}), tensor_type{{{1,2,3,4,5,6,7,8,9}}}),
+        std::make_tuple(block(nested_init_list1_type<tensor_type>{tensor_type{1,2}, tensor_type{{3,4,5}}}), tensor_type{{1,2,3,4,5}}),
+        std::make_tuple(block(nested_init_list1_type<tensor_type>{tensor_type{{3,4,5}}, tensor_type{1,2}}), tensor_type{{3,4,5,1,2}}),
+        std::make_tuple(block(nested_init_list1_type<tensor_type>{tensor_type{1,2}, tensor_type{{{3,4,5}}}}), tensor_type{{{1,2,3,4,5}}}),
+        std::make_tuple(block(nested_init_list1_type<tensor_type>{tensor_type{{1,2},{3,4}}, tensor_type{{5,6,7},{8,9,10}}, tensor_type{{11},{12}}}), tensor_type{{1,2,5,6,7,11},{3,4,8,9,10,12}}),
+        std::make_tuple(block(nested_init_list2_type<tensor_type>{{tensor_type{1,2}}, {tensor_type{{3,4},{5,6}}}}), tensor_type{{1,2},{3,4},{5,6}}),
+        std::make_tuple(block(nested_init_list2_type<tensor_type>{{tensor_type{{1,2,3},{3,4,5}}, tensor_type{{6,7,8,9},{10,11,12,13}}}}), tensor_type{{1,2,3,6,7,8,9},{3,4,5,10,11,12,13}}),
+        std::make_tuple(block(nested_init_list2_type<tensor_type>{{tensor_type{{1,2},{3,4}}}, {tensor_type{{7,8},{9,10},{11,12}}}}), tensor_type{{1,2},{3,4},{7,8},{9,10},{11,12}}),
+        std::make_tuple(block(nested_init_list2_type<tensor_type>{{tensor_type{{1,2},{3,4}}, tensor_type{{5,6,7},{8,9,10}}}, {tensor_type{{11,12,13,14,15}}}}), tensor_type{{1,2,5,6,7},{3,4,8,9,10},{11,12,13,14,15}}),
+        std::make_tuple(block(nested_init_list2_type<tensor_type>{{tensor_type{{1,2},{3,4}}, tensor_type{{5,6},{7,8}}}, {tensor_type{{9},{10}}, tensor_type{{11,12,13},{14,15,16}}}}), tensor_type{{1,2,5,6},{3,4,7,8},{9,11,12,13},{10,14,15,16}}),
+        std::make_tuple(block(nested_init_list2_type<tensor_type>{{tensor_type{{1,2},{3,4}}}, {tensor_type{{5,6},{7,8}}}, {tensor_type{{9},{10}}, tensor_type{{11},{12}}}}), tensor_type{{1,2},{3,4},{5,6},{7,8},{9,11},{10,12}}),
+        std::make_tuple(block(nested_init_list2_type<tensor_type>{
+            {tensor_type{{{1}},{{2}}}, tensor_type{{{3}},{{4}}}},
+            {tensor_type{{{5,6},{7,8}},{{9,10},{11,12}}}}}),
+            tensor_type{{{1,3},{5,6},{7,8}},{{2,4},{9,10},{11,12}}})
+        // std::make_tuple(block(nested_init_list3_type<tensor_type>{
+        //     {{tensor_type{{{1}},{{2}}}, tensor_type{{{3}},{{4}}}}, {tensor_type{{{5,6},{7,8}},{{9,10},{11,12}}}}},
+        //     {{tensor_type{13,14}}, {tensor_type{15,16}}, {tensor_type{17,18}}}}),
+        //     tensor_type{{{},{},{}},{{},{},{}},{{},{},{}}})
+
+
+    );
+    auto test = [](const auto& t){
+        auto result = std::get<0>(t);
+        auto expected = std::get<1>(t);
+        std::cout<<std::endl<<result;
+        REQUIRE(result.equals(expected));
+    };
+
+    apply_by_element(test, test_data);
+
+    // REQUIRE(make_block_shape_caller(nested_init_list3_type<tensor_type>{
+    //     {{tensor_type({2,2},v), tensor_type({2,3},v)}, {tensor_type({3,2},v), tensor_type({3,3},v)}},
+    //     {{tensor_type({3,3,2},v), tensor_type({3,3,3},v)}, {tensor_type({3,2,5},v)}}}) == shape_type{4,5,5});
+
+    // REQUIRE_THROWS_AS(make_block_shape_caller(nested_init_list3_type<tensor_type>{{{tensor_type({2},v)}}, {{tensor_type({2},v)}, {tensor_type({2},v)}}}), combine_exception);
+    // REQUIRE_THROWS_AS(make_block_shape_caller(nested_init_list2_type<tensor_type>{{tensor_type({2},v)}, {tensor_type({3},v)}}), combine_exception);
+    // REQUIRE_THROWS_AS(make_block_shape_caller(nested_init_list1_type<tensor_type>{tensor_type({2},v), tensor_type({2,3},v)}), combine_exception);
+    // REQUIRE_THROWS_AS(make_block_shape_caller(nested_init_list1_type<tensor_type>{tensor_type({2,3},v), tensor_type({2},v)}), combine_exception);
+    // REQUIRE_THROWS_AS(make_block_shape_caller(nested_init_list2_type<tensor_type>{{tensor_type({2,3},v), tensor_type({2},v)}}), combine_exception);
+    // REQUIRE_THROWS_AS(make_block_shape_caller(nested_init_list2_type<tensor_type>{{tensor_type({2},v), tensor_type({2,3},v)}}), combine_exception);
+    // REQUIRE_THROWS_AS(make_block_shape_caller(nested_init_list3_type<tensor_type>{{{tensor_type({2},v)}}, {{tensor_type({2,2},v)}}}), combine_exception);
 }

@@ -245,7 +245,56 @@ auto make_block_shape(std::initializer_list<Nested> blocks, const SizeT& res_dim
     return res;
 }
 
+template<typename ResultIt, typename T>
+auto fill_block_helper(ResultIt& res_it, std::initializer_list<T> blocks){
+    using tensor_type = T;
+    using size_type = typename tensor_type::size_type;
+    using index_type = typename tensor_type::index_type;
 
+    if (blocks.size() == 1){
+        auto it = (*blocks.begin()).begin();
+        auto it_end = (*blocks.begin()).end();
+        for (;it!=it_end; ++it, ++res_it){
+            *res_it = *it;
+        }
+    }else{
+        //0block_size,1block_iterator
+        using blocks_internals_type = std::tuple<index_type, decltype((*blocks.begin()).begin())>;
+        std::vector<blocks_internals_type> blocks_internals{};
+        blocks_internals.reserve(blocks.size());
+        index_type blocks_size{0};
+        index_type blocks_block_size{0};
+        for (auto blocks_it = blocks.begin(); blocks_it!=blocks.end(); ++blocks_it){
+            size_type dim = (*blocks_it).dim();
+            blocks_size+=(*blocks_it).size();
+            index_type block_size = (*blocks_it).shape()[dim-1];
+            blocks_block_size+=block_size;
+            blocks_internals.emplace_back(block_size, (*blocks_it).begin());
+        }
+        index_type iters_number = blocks_size / blocks_block_size;
+
+        for (index_type j = 0; j!=iters_number; ++j){
+            for (auto blocks_internals_it = blocks_internals.begin(); blocks_internals_it!=blocks_internals.end(); ++blocks_internals_it){
+                auto block_size = std::get<0>(*blocks_internals_it);
+                auto& it = std::get<1>(*blocks_internals_it);
+                for (index_type i{0}; i!=block_size; ++i, ++it, ++res_it){
+                    *res_it = *it;
+                }
+            }
+        }
+    }
+}
+
+template<typename ResultIt, typename Nested>
+auto fill_block_helper(ResultIt& res_it, std::initializer_list<std::initializer_list<Nested>> blocks){
+    for (auto it = blocks.begin(); it!=blocks.end(); ++it){
+        fill_block_helper(res_it, *it);
+    }
+}
+template<typename ResultIt, typename Nested>
+auto fill_block(ResultIt res_it, std::initializer_list<Nested> blocks){
+    fill_block_helper(res_it, blocks);
+}
 
 }   //end of namespace detail
 
@@ -304,9 +353,16 @@ static auto concatenate_(const SizeT& direction, const tensor<Us...>& t, const T
 template<typename Nested>
 static auto block_(std::initializer_list<Nested> blocks){
     using tensor_type = typename detail::nested_initialiser_list_value_type<std::initializer_list<Nested>>::value_type;
+    using config_type = typename tensor_type::config_type;
     using size_type = typename tensor_type::size_type;
-    size_type res_dim = std::max(detail::nested_initialiser_list_depth<decltype(blocks)>::value, detail::max_block_dim(blocks));
-
+    using res_value_type = typename tensor_type::value_type;
+    using res_impl_type = storage_tensor<typename detail::storage_engine_traits<typename config_type::host_engine,config_type,typename config_type::template storage<res_value_type>>::type>;
+    size_type depth = detail::nested_initialiser_list_depth<decltype(blocks)>::value;
+    size_type res_dim = std::max(depth, detail::max_block_dim(blocks));
+    auto res_shape = detail::make_block_shape(blocks, res_dim, depth);
+    auto res = tensor<res_value_type, config_type, res_impl_type>::make_tensor(std::move(res_shape), res_value_type{});
+    detail::fill_block(res.begin(), blocks);
+    return res;
 }
 
 
@@ -314,6 +370,12 @@ template<typename SizeT, typename...Us, typename...Ts>
 friend auto stack(const SizeT& direction, const tensor<Us...>& t, const Ts&...ts);
 template<typename SizeT, typename...Us, typename...Ts>
 friend auto concatenate(const SizeT& direction, const tensor<Us...>& t, const Ts&...ts);
+template<typename...Ts>
+friend auto block(std::initializer_list<tensor<Ts...>> blocks);
+template<typename...Ts>
+friend auto block(std::initializer_list<std::initializer_list<tensor<Ts...>>> blocks);
+template<typename...Ts>
+friend auto block(std::initializer_list<std::initializer_list<std::initializer_list<tensor<Ts...>>>> blocks);
 
 };  //end of class combiner
 
@@ -327,12 +389,16 @@ auto concatenate(const SizeT& direction, const tensor<Us...>& t, const Ts&...ts)
 }
 
 template<typename...Ts>
-static auto block(std::initializer_list<tensor<Ts...>> blocks){
-    combiner::block_(blocks);
+auto block(std::initializer_list<tensor<Ts...>> blocks){
+    return combiner::block_(blocks);
 }
 template<typename...Ts>
-static auto block(std::initializer_list<std::initializer_list<tensor<Ts...>>> blocks){
-    combiner::block_(blocks);
+auto block(std::initializer_list<std::initializer_list<tensor<Ts...>>> blocks){
+    return combiner::block_(blocks);
+}
+template<typename...Ts>
+auto block(std::initializer_list<std::initializer_list<std::initializer_list<tensor<Ts...>>>> blocks){
+    return combiner::block_(blocks);
 }
 
 }   //end of namespace gtensor
