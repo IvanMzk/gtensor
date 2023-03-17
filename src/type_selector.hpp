@@ -45,7 +45,8 @@ public:
 };
 
 //tensor implementation type selector
-template<typename CfgT, typename ValT> class storage_tensor_implementation_selector{
+template<typename CfgT, typename ValT> class storage_tensor_implementation_selector
+{
     using config_type = CfgT;
     using value_type = ValT;
     template<typename...> struct storage_tensor_implementation_selector_;
@@ -58,7 +59,8 @@ public:
 };
 
 //tensor type selector
-template<typename CfgT, typename ValT> class storage_tensor_selector{
+template<typename CfgT, typename ValT> class storage_tensor_selector
+{
     using config_type = CfgT;
     using value_type = ValT;
 public:

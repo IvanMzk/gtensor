@@ -135,11 +135,10 @@ class reducer
         using size_type = SizeT;
         using detail::reduce_shape;
         using res_value_type = std::decay_t<decltype(op(std::declval<value_type>(),std::declval<value_type>()))>;
-        using res_impl_type = storage_tensor<typename detail::storage_engine_traits<typename CfgT::host_engine,CfgT,typename CfgT::template storage<res_value_type>>::type>;
         if (parent.size() == index_type{0}){
-            return tensor<res_value_type,CfgT,res_impl_type>{};
+            return storage_tensor_selector<CfgT,res_value_type>::type::make_tensor();
         }else{
-            auto res = tensor<res_value_type,CfgT,res_impl_type>::make_tensor(reduce_shape(parent.shape(), direction), res_value_type{});
+            auto res = storage_tensor_selector<CfgT,res_value_type>::type::make_tensor(reduce_shape(parent.shape(), direction), res_value_type{});
             auto pdim = parent.dim();
             if (pdim == size_type{1}){
                 auto pit = parent.engine().begin();

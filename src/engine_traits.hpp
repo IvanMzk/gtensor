@@ -25,10 +25,10 @@ template<typename CfgT, typename StorT> struct storage_engine_traits<config::eng
 //     using type = expression_template_evaluating_engine<CfgT,F,Operands...>;
 // };
 
-template<typename...> struct viewing_engine_traits;
-template<typename CfgT, typename DescT, typename ParentT> struct viewing_engine_traits<config::engine_expression_template,CfgT,DescT,ParentT>{
-    using type = expression_template_viewing_engine<CfgT,DescT,ParentT>;
-};
+// template<typename...> struct viewing_engine_traits;
+// template<typename CfgT, typename DescT, typename ParentT> struct viewing_engine_traits<config::engine_expression_template,CfgT,DescT,ParentT>{
+//     using type = expression_template_viewing_engine<CfgT,DescT,ParentT>;
+// };
 
 }   //end of namespace detail
 }   //end of namespace gtensor
