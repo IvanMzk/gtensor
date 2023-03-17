@@ -2,6 +2,7 @@
 #define VIEW_FACTORY_HPP_
 
 #include "engine_traits.hpp"
+#include "type_selector.hpp"
 #include "descriptor.hpp"
 #include "broadcast.hpp"
 #include "tensor.hpp"

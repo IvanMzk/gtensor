@@ -2,7 +2,6 @@
 #define CONFIG_HPP_
 
 #include <vector>
-#include "forward_decl.hpp"
 #include "integral_type.hpp"
 #include "index_type_adapter.hpp"
 

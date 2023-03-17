@@ -2,6 +2,7 @@
 #define GTENSOR_HPP_
 
 #include <memory>
+#include "type_selector.hpp"
 #include "tensor.hpp"
 #include "tensor_operators.hpp"
 #include "slice.hpp"
@@ -49,7 +50,7 @@ template<typename T> struct is_bool_tensor
 template<
     typename ValT,
     typename CfgT = config::default_config,
-    typename ImplT = storage_tensor<typename detail::storage_engine_traits<typename CfgT::host_engine,CfgT,typename CfgT::template storage<ValT>>::type>
+    typename ImplT = typename storage_tensor_implementation_selector<CfgT,ValT>::type
 >
 class tensor{
     using impl_type = ImplT;
@@ -126,8 +127,7 @@ public:
     }
     //makes new storage tensor by copying shape and elements from this tensor
     auto copy()const{
-        using storage_impl_type = storage_tensor<typename detail::storage_engine_traits<typename CfgT::host_engine,CfgT,typename CfgT::template storage<ValT>>::type>;
-        return tensor<value_type,CfgT,storage_impl_type>::make_tensor(descriptor().shape(),begin(),end());
+        return storage_tensor_selector<CfgT,ValT>::type::make_tensor(descriptor().shape(),begin(),end());
     }
     auto begin(){return engine().begin();}
     auto end(){return engine().end();}

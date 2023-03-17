@@ -20,10 +20,10 @@ template<typename CfgT, typename StorT> struct storage_engine_traits<config::eng
     using type = expression_template_storage_engine<CfgT,StorT>;
 };
 
-template<typename...> struct evaluating_engine_traits;
-template<typename CfgT,  typename F, typename...Operands> struct evaluating_engine_traits<config::engine_expression_template,CfgT,F,Operands...>{
-    using type = expression_template_evaluating_engine<CfgT,F,Operands...>;
-};
+// template<typename...> struct evaluating_engine_traits;
+// template<typename CfgT,  typename F, typename...Operands> struct evaluating_engine_traits<config::engine_expression_template,CfgT,F,Operands...>{
+//     using type = expression_template_evaluating_engine<CfgT,F,Operands...>;
+// };
 
 template<typename...> struct viewing_engine_traits;
 template<typename CfgT, typename DescT, typename ParentT> struct viewing_engine_traits<config::engine_expression_template,CfgT,DescT,ParentT>{
