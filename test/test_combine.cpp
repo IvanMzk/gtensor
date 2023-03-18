@@ -530,6 +530,13 @@ TEMPLATE_TEST_CASE("test_block","[test_combine]",
     //0result,1expected
     auto test_data = std::make_tuple(
         std::make_tuple(block(nested_init_list1_type<tensor_type>{tensor_type{}}), tensor_type{}),
+        std::make_tuple(block(nested_init_list1_type<tensor_type>{tensor_type{}, tensor_type{}, tensor_type{}}), tensor_type{}),
+        std::make_tuple(block(nested_init_list1_type<tensor_type>{tensor_type{}, tensor_type{1,2,3}, tensor_type{}, tensor_type{4,5}, tensor_type{}}), tensor_type{1,2,3,4,5}),
+        std::make_tuple(block(nested_init_list1_type<tensor_type>{tensor_type{}, tensor_type{{1,2,3}}, tensor_type{}, tensor_type{{{4,5}}}, tensor_type{}}), tensor_type{{{1,2,3,4,5}}}),
+        std::make_tuple(block(nested_init_list2_type<tensor_type>{{tensor_type{}}}), tensor_type{}),
+        std::make_tuple(block(nested_init_list2_type<tensor_type>{{tensor_type{},tensor_type{}},{tensor_type{},tensor_type{}}}), tensor_type{}),
+        std::make_tuple(block(nested_init_list2_type<tensor_type>{{tensor_type{},tensor_type{1,2,3}},{tensor_type{4,5,6},tensor_type{}}}), tensor_type{{1,2,3},{4,5,6}}),
+        std::make_tuple(block(nested_init_list3_type<tensor_type>{{{tensor_type{},tensor_type{}},{tensor_type{}}}, {{tensor_type{}}}}), tensor_type{}),
         std::make_tuple(block(nested_init_list1_type<tensor_type>{tensor_type{1,2,3,4,5}}), tensor_type{1,2,3,4,5}),
         std::make_tuple(block(nested_init_list1_type<tensor_type>{tensor_type{{1,2,3},{4,5,6}}}), tensor_type{{1,2,3},{4,5,6}}),
         std::make_tuple(block(nested_init_list1_type<tensor_type>{tensor_type{1,2,3}, tensor_type{4,5}, tensor_type{6}}), tensor_type{1,2,3,4,5,6}),
@@ -545,6 +552,7 @@ TEMPLATE_TEST_CASE("test_block","[test_combine]",
         std::make_tuple(block(nested_init_list3_type<tensor_type>{{{tensor_type{1,2}}},{{tensor_type{3,4}}},{{tensor_type{5,6}}}}), tensor_type{{{1,2}},{{3,4}},{{5,6}}}),
         std::make_tuple(block(nested_init_list3_type<tensor_type>{{{tensor_type{1,2}},{tensor_type{3,4}}},{{tensor_type{5,6}},{tensor_type{7,8}}}}), tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}),
         std::make_tuple(block(nested_init_list3_type<tensor_type>{{{tensor_type{1,2}, tensor_type{3,4,5}, tensor_type{6,7,8,9}}}}), tensor_type{{{1,2,3,4,5,6,7,8,9}}}),
+        std::make_tuple(block(nested_init_list1_type<tensor_type>{tensor_type{{{1}},{{2}},{{3}}}, tensor_type{{{4}},{{5}},{{6}}}}), tensor_type{{{1,4}},{{2,5}},{{3,6}}}),
         std::make_tuple(block(nested_init_list1_type<tensor_type>{tensor_type{1,2}, tensor_type{{3,4,5}}}), tensor_type{{1,2,3,4,5}}),
         std::make_tuple(block(nested_init_list1_type<tensor_type>{tensor_type{{3,4,5}}, tensor_type{1,2}}), tensor_type{{3,4,5,1,2}}),
         std::make_tuple(block(nested_init_list1_type<tensor_type>{tensor_type{1,2}, tensor_type{{{3,4,5}}}}), tensor_type{{{1,2,3,4,5}}}),
@@ -571,4 +579,28 @@ TEMPLATE_TEST_CASE("test_block","[test_combine]",
     };
 
     apply_by_element(test, test_data);
+}
+
+TEMPLATE_TEST_CASE("test_block_exception","[test_combine]",
+    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
+)
+{
+    using value_type = double;
+    using config_type = TestType;
+    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using gtensor::combine_exception;
+    using gtensor::detail::nested_init_list1_type;
+    using gtensor::detail::nested_init_list2_type;
+    using gtensor::detail::nested_init_list3_type;
+    using gtensor::block;
+    using helpers_for_testing::apply_by_element;
+
+    REQUIRE_THROWS_AS(block(nested_init_list1_type<tensor_type>{tensor_type{1,2},tensor_type{{3,4},{5,6}}}), combine_exception);
+    REQUIRE_THROWS_AS(block(nested_init_list1_type<tensor_type>{tensor_type{{1},{2},{3}},tensor_type{{3,4},{5,6}}}), combine_exception);
+    REQUIRE_THROWS_AS(block(nested_init_list1_type<tensor_type>{tensor_type{{3,4},{5,6}}, tensor_type{}}), combine_exception);
+    REQUIRE_THROWS_AS(block(nested_init_list1_type<tensor_type>{tensor_type{},tensor_type{{3,4},{5,6}}}), combine_exception);
+    REQUIRE_THROWS_AS(block(nested_init_list1_type<tensor_type>{tensor_type{{{1}},{{2}}}, tensor_type{{{3}},{{4}},{{5}}} }), combine_exception);
+    REQUIRE_THROWS_AS(block(nested_init_list2_type<tensor_type>{{tensor_type{},tensor_type{1,2,3}},{tensor_type{}}}), combine_exception);
+    REQUIRE_THROWS_AS(block(nested_init_list2_type<tensor_type>{{tensor_type{1,2}},{tensor_type{}}}), combine_exception);
+    REQUIRE_THROWS_AS(block(nested_init_list2_type<tensor_type>{{tensor_type{1,2}},{tensor_type{3,4,5}}}), combine_exception);
 }

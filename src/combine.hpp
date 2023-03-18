@@ -322,7 +322,11 @@ static auto concatenate_container(const SizeT& direction, const SizeT& res_dim, 
 
     const auto& first_shape = (*ts.begin()).shape();
     shape_type res_shape(res_dim, index_type{1});
-    std::copy(first_shape.rbegin(), first_shape.rend(), res_shape.rbegin());    //start copying from lowest direction, ones is leading
+    if (first_shape.size() == size_type{0}){
+        *res_shape.rbegin() = index_type{0};
+    }else{
+        std::copy(first_shape.rbegin(), first_shape.rend(), res_shape.rbegin());    //start copying from lowest direction, ones is leading
+    }
     index_type first_chunk_size = std::accumulate(res_shape.begin()+direction, res_shape.end(), index_type{1}, std::multiplies{});
 
     using blocks_internals_type = std::tuple<index_type, decltype((*ts.begin()).begin())>;
@@ -333,12 +337,21 @@ static auto concatenate_container(const SizeT& direction, const SizeT& res_dim, 
 
     for (auto it = ts.begin()+1; it!=ts.end(); ++it){
         const auto& shape = (*it).shape();
-        const size_type offset = res_dim - shape.size();
+        const size_type dim = shape.size();
         index_type chunk_size{1};
+        auto shape_element_ = [&shape, &dim, &res_dim](const auto& d_)
+        {
+            if (dim == size_type{0}){
+                return d_ == res_dim-1 ? index_type{0} : index_type{1};
+            }else{
+                const size_type offset = res_dim - dim;
+                return d_ >= offset ? shape[d_-offset] : index_type{1};
+            }
+        };
         for (size_type d{res_dim}; d!=size_type{0};){
             --d;
             index_type& res_element = res_shape[d];
-            index_type shape_element = d >= offset ? shape[d-offset] : index_type{1};
+            index_type shape_element = shape_element_(d);
             if (d >= direction){
                 chunk_size *= shape_element;
             }
@@ -366,7 +379,6 @@ static auto concatenate_container(const SizeT& direction, const SizeT& res_dim, 
             }
         }
     }
-
     return res;
 }
 template<typename SizeT, typename Container>
@@ -389,13 +401,21 @@ template<typename Container>
 static auto concatenate_blocks(std::size_t depth, const Container& blocks){
     using tensor_type = typename Container::value_type;
     using size_type = typename tensor_type::size_type;
+    using config_type = typename tensor_type::config_type;
+    using res_value_type = typename tensor_type::value_type;
 
-    size_type res_dim{depth};
+    size_type max_dim{0};
     for (auto it = blocks.begin(); it!=blocks.end(); ++it){
-        res_dim = std::max((*it).dim(), res_dim);
+        max_dim = std::max((*it).dim(), max_dim);
     }
-    const size_type direction = res_dim - static_cast<size_type>(depth);
-    return concatenate_container(direction, res_dim, blocks);
+    if (max_dim == size_type{0}){
+        return  storage_tensor_factory<config_type, res_value_type>::make();
+    }else{
+        const auto depth_ = static_cast<size_type>(depth);
+        size_type res_dim = std::max(max_dim, depth_);
+        const size_type direction = res_dim - depth_;
+        return concatenate_container(direction, res_dim, blocks);
+    }
 }
 template<typename T>
 static auto block_(std::initializer_list<T> blocks, std::size_t depth = detail::nested_initialiser_list_depth<decltype(blocks)>::value){
@@ -413,7 +433,7 @@ static auto block_(std::initializer_list<std::initializer_list<Nested>> blocks, 
     return concatenate_blocks(depth, blocks_);
 }
 
-//friend interface
+//interface
 template<typename SizeT, typename...Us, typename...Ts>
 friend auto stack(const SizeT& direction, const tensor<Us...>& t, const Ts&...ts);
 template<typename SizeT, typename...Us, typename...Ts>
