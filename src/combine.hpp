@@ -54,6 +54,22 @@ void check_concatenate_args(const SizeT& direction, const ShT& shape, const ShTs
     }
 }
 
+template<typename SizeT, typename Container>
+void check_concatenate_container_args(const SizeT& direction, const Container& ts){
+    auto it = ts.begin();
+    auto first_dim = (*it).dim();
+    std::for_each(++it, ts.end(),
+        [&first_dim](const auto& t){
+            if (first_dim!=t.dim()){
+                throw combine_exception("tensors to concatenate must have equal shapes");
+            }
+        }
+    );
+    if (first_dim > SizeT{0} && direction > first_dim){
+        throw combine_exception{"bad concatenate direction"};
+    }
+}
+
 template<typename SizeT, typename ShT>
 auto make_stack_shape(const SizeT& direction, const ShT& shape, const typename ShT::value_type& tensors_number){
     using size_type = SizeT;
@@ -245,88 +261,6 @@ auto make_block_shape(std::initializer_list<Nested> blocks, const SizeT& res_dim
     return res;
 }
 
-//concatenate tensors in container, use depth to know direction to concatenate
-template<typename Container>
-auto concatenate_blocks(const Container& blocks, std::size_t depth){
-    using tensor_type = typename Container::value_type;
-    using size_type = typename tensor_type::size_type;
-    using index_type = typename tensor_type::index_type;
-    using shape_type = typename tensor_type::shape_type;
-    using config_type = typename tensor_type::config_type;
-    using res_value_type = typename tensor_type::value_type;
-
-    size_type dim{depth};
-    for (auto it = blocks.begin(); it!=blocks.end(); ++it){
-        dim = std::max((*it).dim(), dim);
-    }
-    const size_type concatenate_direction = dim - static_cast<size_type>(depth);
-
-    const auto& first_shape = (*blocks.begin()).shape();
-    shape_type res_shape(dim, index_type{1});
-    std::copy(first_shape.rbegin(), first_shape.rend(), res_shape.rbegin());    //start copying from lowest direction, ones is leading
-    index_type first_chunk_size = std::accumulate(res_shape.begin()+concatenate_direction, res_shape.end(), index_type{1}, std::multiplies{});
-
-    using blocks_internals_type = std::tuple<index_type, decltype((*blocks.begin()).begin())>;
-    std::vector<blocks_internals_type> blocks_internals{};
-    blocks_internals.reserve(blocks.size());
-    blocks_internals.emplace_back(first_chunk_size, (*blocks.begin()).begin());
-    index_type chunk_size_sum = first_chunk_size;
-
-    for (auto it = blocks.begin()+1; it!=blocks.end(); ++it){
-        const auto& shape = (*it).shape();
-        const size_type offset = dim - shape.size();
-        index_type chunk_size{1};
-        for (size_type d{dim}; d!=size_type{0};){
-            --d;
-            index_type& res_element = res_shape[d];
-            index_type shape_element = d >= offset ? shape[d-offset] : index_type{1};
-            if (d >= concatenate_direction){
-                chunk_size *= shape_element;
-            }
-            if (d == concatenate_direction){
-                    res_element+=shape_element;
-            }else{
-                if (res_element!=shape_element){
-                    throw combine_exception("tensors to concatenate must have equal shapes");
-                }
-            }
-        }
-        chunk_size_sum += chunk_size;
-        blocks_internals.emplace_back(chunk_size, (*it).begin());
-    }
-    auto res = storage_tensor_factory<config_type, res_value_type>::make(std::move(res_shape), res_value_type{});
-    index_type res_size = res.size();
-    index_type iterations_number = res_size / chunk_size_sum;
-    auto res_it = res.begin();
-    for (index_type j = 0; j!=iterations_number; ++j){
-        for (auto blocks_internals_it = blocks_internals.begin(); blocks_internals_it!=blocks_internals.end(); ++blocks_internals_it){
-            auto chunk_size = std::get<0>(*blocks_internals_it);
-            auto& it = std::get<1>(*blocks_internals_it);
-            for (index_type i{0}; i!=chunk_size; ++i, ++it, ++res_it){
-                *res_it = *it;
-            }
-        }
-    }
-
-    return res;
-}
-//returns orinal or concatenated tensor
-template<typename T>
-auto make_block(std::initializer_list<T> blocks, std::size_t depth = nested_initialiser_list_depth<decltype(blocks)>::value){
-    return concatenate_blocks(blocks, depth);
-}
-template<typename Nested>
-auto make_block(std::initializer_list<std::initializer_list<Nested>> blocks, std::size_t depth = nested_initialiser_list_depth<decltype(blocks)>::value){
-    using block_type = decltype(make_block(*blocks.begin(), depth-1));
-
-    std::vector<block_type> blocks_{};
-    blocks_.reserve(blocks.size());
-    for (auto it = blocks.begin(); it!=blocks.end(); ++it){
-        blocks_.push_back(make_block(*it, depth-1));
-    }
-    return concatenate_blocks(blocks_, depth);
-}
-
 }   //end of namespace detail
 
 class combiner{
@@ -357,7 +291,7 @@ static auto stack_(const SizeT& direction, const tensor<Us...>& t, const Ts&...t
 
 //join tensors along existing direction, tensors must have the same shape except concatenate direction
 template<typename SizeT, typename ImplT, typename...ImplTs>
-static auto concatenate_(const SizeT& direction, const ImplT& t, const ImplTs&...ts){
+static auto concatenate_variadic(const SizeT& direction, const ImplT& t, const ImplTs&...ts){
     using config_type = typename ImplT::config_type;
     using index_type = typename config_type::index_type;
     using res_value_type = std::common_type_t<typename ImplT::value_type, typename ImplTs::value_type...>;
@@ -374,19 +308,118 @@ static auto concatenate_(const SizeT& direction, const ImplT& t, const ImplTs&..
     }
 }
 template<typename SizeT, typename...Us, typename...Ts>
-static auto concatenate_(const SizeT& direction, const tensor<Us...>& t, const Ts&...ts){
-    return concatenate_(direction, t.impl_ref(), ts.impl_ref()...);
+static auto concatenate_variadic(const SizeT& direction, const tensor<Us...>& t, const Ts&...ts){
+    return concatenate_variadic(direction, t.impl_ref(), ts.impl_ref()...);
 }
-//make tensor from blocks
-template<typename Nested>
-static auto block_(std::initializer_list<Nested> blocks){
-    return detail::make_block(blocks);
+template<typename SizeT, typename Container>
+static auto concatenate_container(const SizeT& direction, const SizeT& res_dim, const Container& ts){
+    using tensor_type = typename Container::value_type;
+    using size_type = typename tensor_type::size_type;
+    using index_type = typename tensor_type::index_type;
+    using shape_type = typename tensor_type::shape_type;
+    using config_type = typename tensor_type::config_type;
+    using res_value_type = typename tensor_type::value_type;
+
+    const auto& first_shape = (*ts.begin()).shape();
+    shape_type res_shape(res_dim, index_type{1});
+    std::copy(first_shape.rbegin(), first_shape.rend(), res_shape.rbegin());    //start copying from lowest direction, ones is leading
+    index_type first_chunk_size = std::accumulate(res_shape.begin()+direction, res_shape.end(), index_type{1}, std::multiplies{});
+
+    using blocks_internals_type = std::tuple<index_type, decltype((*ts.begin()).begin())>;
+    std::vector<blocks_internals_type> blocks_internals{};
+    blocks_internals.reserve(ts.size());
+    blocks_internals.emplace_back(first_chunk_size, (*ts.begin()).begin());
+    index_type chunk_size_sum = first_chunk_size;
+
+    for (auto it = ts.begin()+1; it!=ts.end(); ++it){
+        const auto& shape = (*it).shape();
+        const size_type offset = res_dim - shape.size();
+        index_type chunk_size{1};
+        for (size_type d{res_dim}; d!=size_type{0};){
+            --d;
+            index_type& res_element = res_shape[d];
+            index_type shape_element = d >= offset ? shape[d-offset] : index_type{1};
+            if (d >= direction){
+                chunk_size *= shape_element;
+            }
+            if (d == direction){
+                    res_element+=shape_element;
+            }else{
+                if (res_element!=shape_element){
+                    throw combine_exception("tensors to concatenate must have equal shapes");
+                }
+            }
+        }
+        chunk_size_sum += chunk_size;
+        blocks_internals.emplace_back(chunk_size, (*it).begin());
+    }
+    auto res = storage_tensor_factory<config_type, res_value_type>::make(std::move(res_shape), res_value_type{});
+    index_type res_size = res.size();
+    index_type iterations_number = res_size / chunk_size_sum;
+    auto res_it = res.begin();
+    for (index_type j = 0; j!=iterations_number; ++j){
+        for (auto blocks_internals_it = blocks_internals.begin(); blocks_internals_it!=blocks_internals.end(); ++blocks_internals_it){
+            auto chunk_size = std::get<0>(*blocks_internals_it);
+            auto& it = std::get<1>(*blocks_internals_it);
+            for (index_type i{0}; i!=chunk_size; ++i, ++it, ++res_it){
+                *res_it = *it;
+            }
+        }
+    }
+
+    return res;
+}
+template<typename SizeT, typename Container>
+static auto concatenate_container(const SizeT& direction, const Container& ts){
+    using tensor_type = typename Container::value_type;
+    using config_type = typename tensor_type::config_type;
+    using size_type = typename tensor_type::size_type;
+    using res_value_type = typename tensor_type::value_type;
+    detail::check_concatenate_container_args(direction, ts);
+    size_type first_dim = (*ts.begin()).dim();
+    if (first_dim == size_type{0}){
+        return storage_tensor_factory<config_type, res_value_type>::make();
+    }else{
+        return combiner::concatenate_container(direction, first_dim, ts);
+    }
 }
 
+//Assemble tensor from nested lists of blocks
+template<typename Container>
+static auto concatenate_blocks(std::size_t depth, const Container& blocks){
+    using tensor_type = typename Container::value_type;
+    using size_type = typename tensor_type::size_type;
+
+    size_type res_dim{depth};
+    for (auto it = blocks.begin(); it!=blocks.end(); ++it){
+        res_dim = std::max((*it).dim(), res_dim);
+    }
+    const size_type direction = res_dim - static_cast<size_type>(depth);
+    return concatenate_container(direction, res_dim, blocks);
+}
+template<typename T>
+static auto block_(std::initializer_list<T> blocks, std::size_t depth = detail::nested_initialiser_list_depth<decltype(blocks)>::value){
+    return concatenate_blocks(depth, blocks);
+}
+template<typename Nested>
+static auto block_(std::initializer_list<std::initializer_list<Nested>> blocks, std::size_t depth = detail::nested_initialiser_list_depth<decltype(blocks)>::value){
+    using block_type = decltype(block_(*blocks.begin(), depth-1));
+
+    std::vector<block_type> blocks_{};
+    blocks_.reserve(blocks.size());
+    for (auto it = blocks.begin(); it!=blocks.end(); ++it){
+        blocks_.push_back(block_(*it, depth-1));
+    }
+    return concatenate_blocks(depth, blocks_);
+}
+
+//friend interface
 template<typename SizeT, typename...Us, typename...Ts>
 friend auto stack(const SizeT& direction, const tensor<Us...>& t, const Ts&...ts);
 template<typename SizeT, typename...Us, typename...Ts>
 friend auto concatenate(const SizeT& direction, const tensor<Us...>& t, const Ts&...ts);
+template<typename SizeT, typename Container>
+friend auto concatenate(const SizeT& direction, const Container& ts);
 template<typename...Ts>
 friend auto block(std::initializer_list<tensor<Ts...>> blocks);
 template<typename...Ts>
@@ -404,7 +437,11 @@ auto stack(const SizeT& direction, const tensor<Us...>& t, const Ts&...ts){
 }
 template<typename SizeT, typename...Us, typename...Ts>
 auto concatenate(const SizeT& direction, const tensor<Us...>& t, const Ts&...ts){
-    return combiner::concatenate_(direction, t, ts...);
+    return combiner::concatenate_variadic(direction, t, ts...);
+}
+template<typename SizeT, typename Container>
+auto concatenate(const SizeT& direction, const Container& ts){
+    return combiner::concatenate_container(direction, ts);
 }
 template<typename...Ts>
 auto block(std::initializer_list<tensor<Ts...>> blocks){

@@ -374,18 +374,36 @@ TEMPLATE_TEST_CASE("test_concatenate","[test_combine]",
             tensor_type{{{1,3},{5,6},{7,8}},{{2,4},{9,10},{11,12}},{{13,14},{15,16},{17,18}}}
         )
     );
-    auto test = [](const auto& t){
-        auto direction = std::get<0>(t);
-        auto tensors = std::get<1>(t);
-        auto expected = std::get<2>(t);
 
-        auto apply_tensors = [&direction](const auto&...tensors_){
-            return concatenate(direction, tensors_...);
+    SECTION("test_concatenate_variadic")
+    {
+        auto test_concatenate_variadic = [](const auto& t){
+            auto direction = std::get<0>(t);
+            auto tensors = std::get<1>(t);
+            auto expected = std::get<2>(t);
+
+            auto apply_tensors = [&direction](const auto&...tensors_){
+                return concatenate(direction, tensors_...);
+            };
+            auto result = std::apply(apply_tensors, tensors);
+            REQUIRE(result.equals(expected));
         };
-        auto result = std::apply(apply_tensors, tensors);
-        REQUIRE(result.equals(expected));
-    };
-    apply_by_element(test, test_data);
+        apply_by_element(test_concatenate_variadic, test_data);
+    }
+
+    SECTION("test_concatenate_container")
+    {
+        using container_type = std::vector<tensor_type>;
+        auto test_concatenate_container = [](const auto& t){
+            auto direction = std::get<0>(t);
+            auto tensors = std::get<1>(t);
+            auto expected = std::get<2>(t);
+            auto container = std::apply([](const auto&...ts){return container_type{ts...};}, tensors);
+            auto result = concatenate(direction, container);
+            REQUIRE(result.equals(expected));
+        };
+        apply_by_element(test_concatenate_container, test_data);
+    }
 }
 
 TEMPLATE_TEST_CASE("test_concatenate_common_type","[test_combine]",
@@ -511,6 +529,7 @@ TEMPLATE_TEST_CASE("test_block","[test_combine]",
 
     //0result,1expected
     auto test_data = std::make_tuple(
+        std::make_tuple(block(nested_init_list1_type<tensor_type>{tensor_type{}}), tensor_type{}),
         std::make_tuple(block(nested_init_list1_type<tensor_type>{tensor_type{1,2,3,4,5}}), tensor_type{1,2,3,4,5}),
         std::make_tuple(block(nested_init_list1_type<tensor_type>{tensor_type{{1,2,3},{4,5,6}}}), tensor_type{{1,2,3},{4,5,6}}),
         std::make_tuple(block(nested_init_list1_type<tensor_type>{tensor_type{1,2,3}, tensor_type{4,5}, tensor_type{6}}), tensor_type{1,2,3,4,5,6}),
