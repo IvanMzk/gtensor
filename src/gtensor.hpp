@@ -98,7 +98,7 @@ public:
     tensor(tensor&&) = default;
     tensor& operator=(tensor&&) = default;
 
-    //storage tensor constructors
+    //all public constructors create tensor with storage implementation
     //nested init_list constructors
     template<typename U, std::enable_if_t<std::is_convertible_v<U,value_type>,int> =0> tensor(std::initializer_list<U> init_data):tensor(forward_tag{}, init_data){}
     template<typename U, std::enable_if_t<std::is_convertible_v<U,value_type>,int> =0> tensor(std::initializer_list<std::initializer_list<U>> init_data):tensor(forward_tag{}, init_data){}

@@ -16,16 +16,17 @@ class basic_tensor : public tensor_base<typename EngineT::value_type, typename E
 protected:
     using descriptor_type = DescT;
     using engine_type = EngineT;
-    using typename tensor_base_type::value_type;
-    using typename tensor_base_type::config_type;
-    using typename tensor_base_type::size_type;
-    using typename tensor_base_type::index_type;
-    using typename tensor_base_type::shape_type;
     basic_tensor(engine_type&& engine__,descriptor_type&& descriptor__):
         engine_{std::move(engine__)},
         descriptor_{std::move(descriptor__)}
     {}
 public:
+    using typename tensor_base_type::value_type;
+    using typename tensor_base_type::config_type;
+    using typename tensor_base_type::size_type;
+    using typename tensor_base_type::index_type;
+    using typename tensor_base_type::shape_type;
+
     basic_tensor(const basic_tensor&) = delete;
     basic_tensor& operator=(const basic_tensor&) = delete;
     basic_tensor(basic_tensor&&) = delete;
@@ -51,14 +52,14 @@ class storage_tensor : public basic_tensor<basic_descriptor<typename EngineT::co
 {
     using basic_tensor_base = basic_tensor<basic_descriptor<typename EngineT::config_type>, EngineT>;
 public:
-    using typename basic_tensor_base::engine_type;
-    using typename basic_tensor_base::value_type;
     using typename basic_tensor_base::config_type;
-private:
-    using typename basic_tensor_base::descriptor_type;
+    using typename basic_tensor_base::value_type;
     using typename basic_tensor_base::size_type;
     using typename basic_tensor_base::index_type;
     using typename basic_tensor_base::shape_type;
+private:
+    using typename basic_tensor_base::engine_type;
+    using typename basic_tensor_base::descriptor_type;
 
     template<typename ShT, typename Nested>
     storage_tensor(ShT&& shape, std::initializer_list<Nested> init_data):
@@ -97,13 +98,14 @@ class evaluating_tensor : public basic_tensor<basic_descriptor<typename EngineT:
 {
     using basic_tensor_base = basic_tensor<basic_descriptor<typename EngineT::config_type>, EngineT>;
 public:
-    using typename basic_tensor_base::engine_type;
-    using typename basic_tensor_base::value_type;
     using typename basic_tensor_base::config_type;
-private:
-    using typename basic_tensor_base::descriptor_type;
+    using typename basic_tensor_base::value_type;
+    using typename basic_tensor_base::size_type;
     using typename basic_tensor_base::index_type;
     using typename basic_tensor_base::shape_type;
+private:
+    using typename basic_tensor_base::engine_type;
+    using typename basic_tensor_base::descriptor_type;
 
     template<typename F, typename...Operands>
     evaluating_tensor(shape_type&& shape, F&& f, Operands&&...operands):
@@ -120,12 +122,12 @@ template<typename DescT, typename EngineT>
 class viewing_tensor : public basic_tensor<DescT, EngineT>
 {
     using basic_tensor_base = basic_tensor<DescT, EngineT>;
-public:
     using typename basic_tensor_base::engine_type;
-    using typename basic_tensor_base::value_type;
-    using typename basic_tensor_base::config_type;
-private:
     using typename basic_tensor_base::descriptor_type;
+public:
+    using typename basic_tensor_base::config_type;
+    using typename basic_tensor_base::value_type;
+    using typename basic_tensor_base::size_type;
     using typename basic_tensor_base::index_type;
     using typename basic_tensor_base::shape_type;
 public:

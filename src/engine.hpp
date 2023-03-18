@@ -40,11 +40,11 @@ template<typename CfgT, typename StorT>
 class storage_engine
 {
 public:
-    using value_type = typename StorT::value_type;
     using config_type = CfgT;
+    using index_type = typename config_type::index_type;
+    using value_type = typename StorT::value_type;
 protected:
     using storage_type = StorT;
-    using index_type = typename config_type::index_type;
     using holder_accessor_type = engine_holder_accessor<value_type, config_type>;
     using holder_type = typename holder_accessor_type::holder_type;
     auto holder()const{return holder_accessor.holder();}
@@ -106,8 +106,8 @@ template<typename CfgT, typename F, typename...Operands>
 class evaluating_engine
 {
 public:
-    using value_type = decltype(std::declval<F>()(std::declval<typename Operands::value_type>()...));
     using config_type = CfgT;
+    using value_type = decltype(std::declval<F>()(std::declval<typename Operands::value_type>()...));
 protected:
     constexpr static std::size_t operands_number = sizeof...(Operands);
     using holder_accessor_type = engine_holder_accessor<value_type, config_type>;
@@ -134,8 +134,8 @@ template<typename CfgT, typename DescT, typename ParentT>
 class viewing_engine
 {
 public:
-    using value_type = typename ParentT::value_type;
     using config_type = CfgT;
+    using value_type = typename ParentT::value_type;
 protected:
     using holder_accessor_type = engine_holder_accessor<value_type, config_type>;
     using holder_type = typename holder_accessor_type::holder_type;
