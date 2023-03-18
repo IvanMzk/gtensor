@@ -50,7 +50,7 @@ template<typename T> struct is_bool_tensor
 template<
     typename ValT,
     typename CfgT = config::default_config,
-    typename ImplT = typename storage_tensor_implementation_selector<CfgT,ValT>::type
+    typename ImplT = typename storage_tensor_implementation_selector<CfgT,ValT>::base_type
 >
 class tensor{
     using impl_type = ImplT;
