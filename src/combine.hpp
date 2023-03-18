@@ -6,6 +6,7 @@
 #include <algorithm>
 #include "forward_decl.hpp"
 #include "tensor_init_list.hpp"
+#include "tensor_factory.hpp"
 
 namespace gtensor{
 
@@ -253,7 +254,6 @@ auto concatenate_blocks(const Container& blocks, std::size_t depth){
     using shape_type = typename tensor_type::shape_type;
     using config_type = typename tensor_type::config_type;
     using res_value_type = typename tensor_type::value_type;
-    using res_impl_type = storage_tensor<typename detail::storage_engine_traits<typename config_type::host_engine,config_type,typename config_type::template storage<res_value_type>>::type>;
 
     size_type dim{depth};
     for (auto it = blocks.begin(); it!=blocks.end(); ++it){
@@ -294,7 +294,7 @@ auto concatenate_blocks(const Container& blocks, std::size_t depth){
         chunk_size_sum += chunk_size;
         blocks_internals.emplace_back(chunk_size, (*it).begin());
     }
-    auto res = tensor<res_value_type, config_type, res_impl_type>::make_tensor(std::move(res_shape), res_value_type{});
+    auto res = storage_tensor_factory<config_type, res_value_type>::make(std::move(res_shape), res_value_type{});
     index_type res_size = res.size();
     index_type iterations_number = res_size / chunk_size_sum;
     auto res_it = res.begin();
@@ -317,7 +317,6 @@ auto make_block(std::initializer_list<T> blocks, std::size_t depth = nested_init
 }
 template<typename Nested>
 auto make_block(std::initializer_list<std::initializer_list<Nested>> blocks, std::size_t depth = nested_initialiser_list_depth<decltype(blocks)>::value){
-    using tensor_type = typename nested_initialiser_list_value_type<decltype(blocks)>::value_type;
     using block_type = decltype(make_block(*blocks.begin(), depth-1));
 
     std::vector<block_type> blocks_{};
@@ -337,15 +336,14 @@ static auto stack_(const SizeT& direction, const ImplT& t, const ImplTs&...ts){
     using config_type = typename ImplT::config_type;
     using index_type = typename config_type::index_type;
     using res_value_type = std::common_type_t<typename ImplT::value_type, typename ImplTs::value_type...>;
-    using res_impl_type = storage_tensor<typename detail::storage_engine_traits<typename config_type::host_engine,config_type,typename config_type::template storage<res_value_type>>::type>;
     const auto& shape = t.shape();
     detail::check_stack_args(direction, shape, ts.shape()...);
     index_type tensors_number = sizeof...(ImplTs) + 1;
     auto res_shape = detail::make_stack_shape(direction,shape,tensors_number);
     if constexpr (sizeof...(ImplTs) == 0){
-        return tensor<res_value_type, config_type, res_impl_type>::make_tensor(std::move(res_shape), t.engine().begin(), t.engine().end());
+        return storage_tensor_factory<config_type, res_value_type>::make(std::move(res_shape), t.engine().begin(), t.engine().end());
     }else{
-        auto res = tensor<res_value_type, config_type, res_impl_type>::make_tensor(std::move(res_shape), res_value_type{});
+        auto res = storage_tensor_factory<config_type, res_value_type>::make(std::move(res_shape), res_value_type{});
         if (res.size() > index_type{0}){
             detail::fill_stack(direction, shape, t.size(), res.begin(), t.engine().begin(), ts.engine().begin()...);
         }
@@ -363,13 +361,12 @@ static auto concatenate_(const SizeT& direction, const ImplT& t, const ImplTs&..
     using config_type = typename ImplT::config_type;
     using index_type = typename config_type::index_type;
     using res_value_type = std::common_type_t<typename ImplT::value_type, typename ImplTs::value_type...>;
-    using res_impl_type = storage_tensor<typename detail::storage_engine_traits<typename config_type::host_engine,config_type,typename config_type::template storage<res_value_type>>::type>;
     detail::check_concatenate_args(direction, t.shape(), ts.shape()...);
     auto res_shape = detail::make_concatenate_shape(direction, t.shape(), ts.shape()...);
     if constexpr (sizeof...(ImplTs) == 0){
-        return tensor<res_value_type, config_type, res_impl_type>::make_tensor(std::move(res_shape),t.engine().begin(),t.engine().end());
+        return storage_tensor_factory<config_type, res_value_type>::make(std::move(res_shape),t.engine().begin(),t.engine().end());
     }else{
-        auto res = tensor<res_value_type, config_type, res_impl_type>::make_tensor(std::move(res_shape), res_value_type{});
+        auto res = storage_tensor_factory<config_type, res_value_type>::make(std::move(res_shape), res_value_type{});
         if (res.size() > index_type{0}){
             detail::fill_concatenate(direction, res.begin(), std::make_index_sequence<sizeof...(ImplTs) + 1>{}, t, ts...);
         }
