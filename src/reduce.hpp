@@ -1,6 +1,7 @@
 #ifndef REDUCE_HPP_
 #define REDUCE_HPP_
 
+#include "tensor_factory.hpp"
 #include "broadcast.hpp"
 
 namespace gtensor{
@@ -136,9 +137,9 @@ class reducer
         using detail::reduce_shape;
         using res_value_type = std::decay_t<decltype(op(std::declval<value_type>(),std::declval<value_type>()))>;
         if (parent.size() == index_type{0}){
-            return storage_tensor_selector<CfgT,res_value_type>::type::make_tensor();
+            return storage_tensor_factory<CfgT,res_value_type>::make();
         }else{
-            auto res = storage_tensor_selector<CfgT,res_value_type>::type::make_tensor(reduce_shape(parent.shape(), direction), res_value_type{});
+            auto res = storage_tensor_factory<CfgT,res_value_type>::make(reduce_shape(parent.shape(), direction), res_value_type{});
             auto pdim = parent.dim();
             if (pdim == size_type{1}){
                 auto pit = parent.engine().begin();

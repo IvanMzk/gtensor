@@ -1,7 +1,7 @@
 #ifndef VIEW_FACTORY_HPP_
 #define VIEW_FACTORY_HPP_
 
-#include "type_selector.hpp"
+#include "tensor_factory.hpp"
 #include "descriptor.hpp"
 #include "broadcast.hpp"
 #include "tensor.hpp"
@@ -329,30 +329,26 @@ class view_factory
 public:
     template<typename ImplT>
     static auto create_view_slice(const std::shared_ptr<ImplT>& parent, const slices_collection_type& subs){
-        using impl_type = view_slice<typename viewing_engine_selector<CfgT, view_slice_descriptor_type, ImplT>::type>;
-        return tensor<ValT,CfgT,impl_type>::make_tensor(create_view_slice_descriptor(parent->shape(), parent->strides(), subs),parent);
+        return viewing_tensor_factory<CfgT,view_slice_descriptor_type,ImplT>::make(create_view_slice_descriptor(parent->shape(), parent->strides(), subs),parent);
     }
     template<typename ImplT, typename...Subs>
     static auto create_view_transpose(const std::shared_ptr<ImplT>& parent, const Subs&...subs){
-        using impl_type = view_slice<typename viewing_engine_selector<CfgT, view_slice_descriptor_type, ImplT>::type>;
-        return tensor<ValT,CfgT,impl_type>::make_tensor(create_view_transpose_descriptor(parent->shape(), parent->strides(), subs...),parent);
+        return viewing_tensor_factory<CfgT,view_slice_descriptor_type,ImplT>::make(create_view_transpose_descriptor(parent->shape(), parent->strides(), subs...),parent);
     }
     template<typename ImplT>
     static auto create_view_subdim(const std::shared_ptr<ImplT>& parent, const shape_type& subs){
-        using impl_type = view_subdim<typename viewing_engine_selector<CfgT, view_subdim_descriptor_type, ImplT>::type>;
-        return tensor<ValT,CfgT,impl_type>::make_tensor(create_view_subdim_descriptor(parent->shape(), parent->strides(), subs),parent);
+        return viewing_tensor_factory<CfgT,view_subdim_descriptor_type,ImplT>::make(create_view_subdim_descriptor(parent->shape(), parent->strides(), subs),parent);
     }
     template<typename ImplT>
     static auto create_view_reshape(const std::shared_ptr<ImplT>& parent, const shape_type& subs){
-        using impl_type = view_reshape<typename viewing_engine_selector<CfgT, view_reshape_descriptor_type, ImplT>::type>;
-        return tensor<ValT,CfgT,impl_type>::make_tensor(create_view_reshape_descriptor(parent->shape(), subs),parent);
+        return viewing_tensor_factory<CfgT,view_reshape_descriptor_type,ImplT>::make(create_view_reshape_descriptor(parent->shape(), subs),parent);
     }
     template<typename ImplT, typename...Subs>
     static auto create_index_mapping_view(const std::shared_ptr<ImplT>& parent, const Subs&...subs){
         auto subs_shape = detail::broadcast_shape<shape_type>(subs.descriptor().shape()...);
         auto subs_size = detail::make_size(subs_shape);
         size_type subs_number = sizeof...(Subs);
-        auto res = storage_tensor_selector<CfgT,ValT>::type::make_tensor(detail::make_index_mapping_view_shape(parent->shape(), subs_shape, subs_number), ValT{});
+        auto res = storage_tensor_factory<CfgT,ValT>::make(detail::make_index_mapping_view_shape(parent->shape(), subs_shape, subs_number), ValT{});
         detail::fill_index_mapping_view(
             res.begin(),
             parent->engine().create_indexer(),
@@ -367,7 +363,7 @@ public:
     static auto create_bool_mapping_view(const std::shared_ptr<ImplT>& parent, const Subs& subs){
         detail::check_bool_mapping_view_subs(parent->shape(), subs.descriptor().shape());
         size_type subs_dim = subs.dim();
-        auto res = storage_tensor_selector<CfgT,ValT>::type::make_tensor(parent->shape(), ValT{});
+        auto res = storage_tensor_factory<CfgT,ValT>::make(parent->shape(), ValT{});
         auto subs_trues_number = detail::fill_bool_mapping_view(
             res.begin(),
             parent->engine().create_indexer(),

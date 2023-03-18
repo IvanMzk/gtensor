@@ -2,7 +2,7 @@
 #define GTENSOR_HPP_
 
 #include <memory>
-#include "type_selector.hpp"
+#include "tensor_factory.hpp"
 #include "tensor.hpp"
 #include "tensor_operators.hpp"
 #include "slice.hpp"
@@ -58,11 +58,15 @@ class tensor{
     using slices_init_type = typename slice_traits<CfgT>::slices_init_type;
     using slices_collection_type = typename slice_traits<CfgT>::slices_collection_type;
 
-    //initialize implementation by forwarding arguments, this constructor should be used by all public constructors
+    //initialize storage implementation by forwarding arguments, this constructor should be used by all public constructors
     class forward_tag{};
     template<typename...Args>
     tensor(forward_tag, Args&&...args):
-        impl_{std::make_shared<impl_type>(std::forward<Args>(args)...)}
+        impl_{std::make_shared<typename storage_tensor_implementation_selector<CfgT,ValT>::type>(std::forward<Args>(args)...)}
+    {}
+    //constructor is used by make_tensor static method to create tensor with explicitly specified implementation
+    tensor(std::shared_ptr<impl_type>&& impl__):
+        impl_{std::move(impl__)}
     {}
 
     friend struct tensor_operator_dispatcher;
@@ -121,13 +125,15 @@ public:
     tensor(U&& shape__, It begin__, It end__):
         tensor(forward_tag{}, std::forward<U>(shape__), begin__, end__)
     {}
-    template<typename...Args>
+    //makes tensor with explicitly specified implementation type
+    //Implementation must be convertible to tensor::impl_type
+    template<typename Implementation, typename...Args>
     static tensor make_tensor(Args&&...args){
-        return tensor(forward_tag{}, std::forward<Args>(args)...);
+        return tensor(std::make_shared<Implementation>(std::forward<Args>(args)...));
     }
     //makes new storage tensor by copying shape and elements from this tensor
     auto copy()const{
-        return storage_tensor_selector<CfgT,ValT>::type::make_tensor(descriptor().shape(),begin(),end());
+        return storage_tensor_factory<CfgT,ValT>::make(descriptor().shape(),begin(),end());
     }
     auto begin(){return engine().begin();}
     auto end(){return engine().end();}

@@ -68,8 +68,8 @@ template<typename CfgT, typename...Ts> class evaluating_tensor_implementation_se
         using base_type = type;
     };
 public:
-    using type = typename evaluating_tensor_implementation_selector_<typename config_type::host_engine, void, Ts...>::type;
-    using base_type = typename evaluating_tensor_implementation_selector_<typename config_type::host_engine, void, Ts...>::base_type;
+    using type = typename evaluating_tensor_implementation_selector_<typename config_type::host_engine, Ts...>::type;
+    using base_type = typename evaluating_tensor_implementation_selector_<typename config_type::host_engine, Ts...>::base_type;
 };
 template<typename CfgT, typename...Ts> class viewing_tensor_implementation_selector
 {
@@ -81,19 +81,24 @@ template<typename CfgT, typename...Ts> class viewing_tensor_implementation_selec
         using base_type = type;
     };
 public:
-    using type = typename viewing_tensor_implementation_selector_<typename config_type::host_engine, void, Ts...>::type;
-    using base_type = typename viewing_tensor_implementation_selector_<typename config_type::host_engine, void, Ts...>::base_type;
+    using type = typename viewing_tensor_implementation_selector_<typename config_type::host_engine, Ts...>::type;
+    using base_type = typename viewing_tensor_implementation_selector_<typename config_type::host_engine, Ts...>::base_type;
 };
 
-
-//tensor type selector
-template<typename CfgT, typename ValT> class storage_tensor_selector
+//tensor factory
+template<typename CfgT, typename Selector> class tensor_factory
 {
-    using config_type = CfgT;
-    using value_type = ValT;
+    using impl_base_type = typename Selector::base_type;
+    using impl_type = typename Selector::type;
 public:
-    using type = tensor<value_type, config_type, typename storage_tensor_implementation_selector<config_type, value_type>::type>;
+    template<typename...Args>
+    static auto make(Args&&...args){
+        return tensor<typename impl_type::value_type, CfgT, impl_base_type>::template make_tensor<impl_type>(std::forward<Args>(args)...);
+    }
 };
+template<typename CfgT, typename...Ts> class storage_tensor_factory : public tensor_factory<CfgT, storage_tensor_implementation_selector<CfgT, Ts...>>{};
+template<typename CfgT, typename...Ts> class evaluating_tensor_factory : public tensor_factory<CfgT, evaluating_tensor_implementation_selector<CfgT, Ts...>>{};
+template<typename CfgT, typename...Ts> class viewing_tensor_factory : public tensor_factory<CfgT, viewing_tensor_implementation_selector<CfgT, Ts...>>{};
 
 }   //end of namespace gtensor
 
