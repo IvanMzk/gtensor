@@ -24,7 +24,7 @@ struct default_config{
 
     //index_type defines data elements address space
     //used in indexed access to data elements:
-    //  index_type must be convertible to storage<value_type>::iterator::difference_type
+    //  ??? index_type must be convertible to storage<value_type>::iterator::difference_type
     //shape and strides elements are of index_type
     //slice, reshape, subdim, mapping view subscripts are of index_type
     //must have semantic of signed integral type
@@ -38,6 +38,7 @@ struct default_config{
 
 
     //meta-data elements storage type i.e. shape, strides are of shape_type
+    //must be indexable by size_type
     //must provide random access interface
     using shape_type = std::vector<index_type>;
 
@@ -46,6 +47,18 @@ struct default_config{
     //must have semantic of integral type, may be unsigned
     //using size_type = std::int64_t;
     using size_type = std::size_t;
+
+    //generally when public interface expected parameter of container semantic it may be any type providig usual container semantic and interface: iterators, aliases...
+    //specialization of config_type::container uses as return type in public interface
+    //it may be used by implementation as general purpose container
+    template<typename T> using container = std::vector<T>;
+
+
+
+    // using direction_type = std::size_t;
+    // using dim_type = std::size_t;
+    // using index_type = std::size_t;
+    // using meta_size_type = std::size_t;
 };
 
 }   //end of namespace config

@@ -187,7 +187,7 @@ auto max_block_dim(const T& t){
 }
 template<typename Nested>
 auto max_block_dim(std::initializer_list<Nested> blocks){
-    using tensor_type = typename nested_initialiser_list_value_type<std::initializer_list<Nested>>::value_type;
+    using tensor_type = typename nested_initialiser_list_value_type<std::initializer_list<Nested>>::type;
     using size_type = typename tensor_type::size_type;
     size_type dim{0};
     for(auto it = blocks.begin(); it!=blocks.end(); ++it){
@@ -252,7 +252,7 @@ auto make_block_shape(const T& t, const SizeT&, const SizeT&){
 }
 template<typename Nested, typename SizeT>
 auto make_block_shape(std::initializer_list<Nested> blocks, const SizeT& res_dim, const SizeT& depth = nested_initialiser_list_depth<std::initializer_list<Nested>>::value){
-    using tensor_type = typename nested_initialiser_list_value_type<std::initializer_list<Nested>>::value_type;
+    using tensor_type = typename nested_initialiser_list_value_type<std::initializer_list<Nested>>::type;
     using shape_type = typename tensor_type::shape_type;
 
     auto it = blocks.begin();
@@ -335,7 +335,7 @@ static auto concatenate_container(const SizeT& direction, const SizeT& res_dim, 
     index_type first_chunk_size = std::accumulate(res_shape.begin()+direction, res_shape.end(), index_type{1}, std::multiplies{});
 
     using blocks_internals_type = std::tuple<index_type, decltype((*ts.begin()).begin())>;
-    std::vector<blocks_internals_type> blocks_internals{};
+    typename config_type::template container<blocks_internals_type> blocks_internals{};
     blocks_internals.reserve(ts.size());
     blocks_internals.emplace_back(first_chunk_size, (*ts.begin()).begin());
     index_type chunk_size_sum = first_chunk_size;
@@ -428,9 +428,11 @@ static auto block_(std::initializer_list<T> blocks, std::size_t depth = detail::
 }
 template<typename Nested>
 static auto block_(std::initializer_list<std::initializer_list<Nested>> blocks, std::size_t depth = detail::nested_initialiser_list_depth<decltype(blocks)>::value){
+    using tensor_type = typename detail::nested_initialiser_list_value_type<Nested>::type;
+    using config_type = typename tensor_type::config_type;
     using block_type = decltype(block_(*blocks.begin(), depth-1));
 
-    std::vector<block_type> blocks_{};
+    typename config_type::template container<block_type> blocks_{};
     blocks_.reserve(blocks.size());
     for (auto it = blocks.begin(); it!=blocks.end(); ++it){
         blocks_.push_back(block_(*it, depth-1));
@@ -438,12 +440,61 @@ static auto block_(std::initializer_list<std::initializer_list<Nested>> blocks, 
     return concatenate_blocks(depth, blocks_);
 }
 
-template<typename...Ts, typename IdxT, typename SizeT>
-static auto split_(const tensor<Ts...>& t, const IdxT& n, const SizeT& direction){
+// template<typename...Ts, typename IdxContainer, typename SizeT>
+// static auto split_container(const tensor<Ts...>& t, const IdxContainer& split_points, const SizeT& direction){
+//     using tensor_type = tensor<Ts...>;
+//     using config_type = typename tensor_type::config_type;
+//     using index_type = typename tensor_type::index_type;
+//     using nop_type = slice_traits<config_type>::nop_type;
+//     using slice_type = slice_traits<config_type>::slice_type;
+//     using slices_container_type = slice_traits<config_type>::slices_container_type;
+//     static_assert(std::is_convertible_v<typename std::iterator_traits<decltype(std::begin(split_points))>::value_type, index_type>);
 
-}
-// template<typename...Ts, typename IdxT, typename SizeT>
-// static auto split_(const tensor<Ts...>& t, const IdxT& n, const SizeT& direction){
+//     if (direction >= t.dim()){
+//         throw combine_exception("invalid split direction");
+//     }
+
+//     if (split_points.size() == 0){
+
+//     }else{
+//         slices_container_type slices{};
+//         auto split_points_it = std::begin(split_points);
+//         do{
+//             slices[direction] = slice_type(0,)
+//         }while(split_points_it != std::end(split_points))
+//     }
+// }
+
+// template<typename...Ts, typename...Us, typename SizeT>
+// static auto split_container(const tensor<Ts...>& t, const tensor<Us...>& split_points, const SizeT& direction){
+//     using tensor_type = tensor<Ts...>;
+//     using config_type = typename tensor_type::config_type;
+//     using index_type = typename tensor_type::index_type;
+//     using nop_type = slice_traits<config_type>::nop_type;
+//     using slice_type = slice_traits<config_type>::slice_type;
+//     using slices_container_type = slice_traits<config_type>::slices_container_type;
+//     static_assert(std::is_convertible_v<typename std::iterator_traits<decltype(std::begin(split_points))>::value_type, index_type>);
+
+//     if (direction >= t.dim()){
+//         throw combine_exception("invalid split direction");
+//     }
+//     if split_points
+
+//     slices_container_type slices{};
+//     auto split_points_it = std::begin(split_points);
+//     do{
+//         slices[direction] = slice_type(0,)
+//     }while(split_points_it != std::end(split_points))
+
+
+// }
+
+// template<typename...Ts, typename SizeT>
+// static auto split_list(const tensor<Ts...>& t, std::initializer_list<typename tensor<Ts...>::index_type> split_points, const SizeT& direction){
+//     return split_container(t, split_points, direction);
+// }
+// template<typename...Ts>
+// static auto split_(const tensor<Ts...>& t, const typename tensor<Ts...>::index_type& n, const typename tensor<Ts...>::size_type& direction){
 
 // }
 

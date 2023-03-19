@@ -156,7 +156,7 @@ struct slice_traits{
     using slice_item_type = detail::slice_item<typename CfgT::index_type, nop_type>;
     using slice_init_type = std::initializer_list<slice_item_type>;
     using slices_init_type = std::initializer_list<slice_init_type>;
-    using slices_container_type = std::vector<slice_type>;
+    using slices_container_type = typename CfgT::template container<slice_type>;
 };
 
 namespace detail{

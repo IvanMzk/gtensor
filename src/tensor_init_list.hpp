@@ -58,11 +58,11 @@ struct nested_initialiser_list_depth<std::initializer_list<T>, Depth>{
 
 template<typename T, std::size_t Depth=0>
 struct nested_initialiser_list_value_type{
-    using value_type = T;
+    using type = T;
 };
 template<typename T, std::size_t Depth>
 struct nested_initialiser_list_value_type<std::initializer_list<T>, Depth>{
-    using value_type = typename nested_initialiser_list_value_type<T, Depth+1>::value_type;
+    using type = typename nested_initialiser_list_value_type<T, Depth+1>::type;
 };
 
 
