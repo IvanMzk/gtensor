@@ -164,6 +164,9 @@ namespace detail{
 template<typename> inline constexpr bool is_slice = false;
 template<typename T, typename N> inline constexpr bool is_slice<gtensor::slice<T,N>> = true;
 template<typename...Ts> inline constexpr bool is_slices = (... && is_slice<Ts>);
+template<typename Slices, typename = void> inline constexpr bool is_slices_container = false;
+template<typename Slices> inline constexpr bool is_slices_container<Slices, std::void_t<decltype(std::begin(std::declval<Slices&>()))> > =
+    is_slice<typename std::iterator_traits<decltype(std::begin(std::declval<Slices&>()))>::value_type>;
 
 /*
 * start,stop,step
@@ -256,6 +259,10 @@ inline void check_slices_number(const ShT& shape, std::initializer_list<std::ini
 template<typename ShT, typename...Subs, std::enable_if_t<is_slices<Subs...>, int> =0 >
 inline void check_slices_number(const ShT& shape, const Subs&...){
     if (sizeof...(Subs)>shape.size()){throw subscript_exception("subscripts number exceeds dim");}
+}
+template<typename ShT, typename Slices, std::enable_if_t<detail::is_slices_container<Slices>,int> =0>
+inline void check_slices_number(const ShT& shape, const Slices& slices){
+    if (slices.size()>shape.size()){throw subscript_exception("subscripts number exceeds dim");}
 }
 
 

@@ -181,6 +181,10 @@ public:
         detail::check_slices(descriptor().shape(), filled_subs);
         return view_factory<ValT,CfgT>::create_view_slice(impl(), filled_subs);
     }
+    // template<typename Slices, std::enable_if_t<std::is_same_v<slice_type, typename std::iterator_traits<decltype(std::declval<Slices>().begin())>::value_type> ,int> =0>
+    // auto operator()(const Slices& slices){
+
+    // }
     //transpose view
     template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,size_type>...>,int> = 0 >
     auto transpose(const Subs&...subs)const{
