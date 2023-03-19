@@ -604,3 +604,16 @@ TEMPLATE_TEST_CASE("test_block_exception","[test_combine]",
     REQUIRE_THROWS_AS(block(nested_init_list2_type<tensor_type>{{tensor_type{1,2}},{tensor_type{}}}), combine_exception);
     REQUIRE_THROWS_AS(block(nested_init_list2_type<tensor_type>{{tensor_type{1,2}},{tensor_type{3,4,5}}}), combine_exception);
 }
+
+TEST_CASE("test_is_indexes_container","[test_combine]"){
+    using gtensor::tensor;
+    using config_type = gtensor::config::default_config;
+    using index_type = typename config_type::index_type;
+    using gtensor::detail::is_indexes_container;
+
+    REQUIRE(is_indexes_container<std::vector<int>,int>);
+    REQUIRE(is_indexes_container<std::vector<index_type>,index_type>);
+    REQUIRE(is_indexes_container<std::array<index_type,3>,index_type>);
+    REQUIRE(is_indexes_container<tensor<index_type>,index_type>);
+    REQUIRE(!is_indexes_container<std::vector<std::string>,int>);
+}

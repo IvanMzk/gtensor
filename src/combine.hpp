@@ -7,6 +7,7 @@
 #include "forward_decl.hpp"
 #include "tensor_init_list.hpp"
 #include "tensor_factory.hpp"
+#include "slice.hpp"
 
 namespace gtensor{
 
@@ -18,6 +19,10 @@ public:
 };
 
 namespace detail{
+
+template<typename T, typename IdxT, typename = void> constexpr inline bool is_indexes_container = false;
+template<typename T, typename IdxT> constexpr inline bool is_indexes_container<T, IdxT, std::void_t<decltype(std::begin(std::declval<T&>()))>> =
+    std::is_convertible_v<typename std::iterator_traits<decltype(std::begin(std::declval<T&>()))>::value_type,IdxT>;
 
 template<typename SizeT, typename ShT, typename...ShTs>
 void check_stack_args(const SizeT& direction, const ShT& shape, const ShTs&...shapes){
@@ -432,6 +437,15 @@ static auto block_(std::initializer_list<std::initializer_list<Nested>> blocks, 
     }
     return concatenate_blocks(depth, blocks_);
 }
+
+template<typename...Ts, typename IdxT, typename SizeT>
+static auto split_(const tensor<Ts...>& t, const IdxT& n, const SizeT& direction){
+
+}
+// template<typename...Ts, typename IdxT, typename SizeT>
+// static auto split_(const tensor<Ts...>& t, const IdxT& n, const SizeT& direction){
+
+// }
 
 //interface
 template<typename SizeT, typename...Us, typename...Ts>

@@ -274,8 +274,6 @@ inline void check_slices_number(const ShT& shape, const SlicesContainer& subs){
     if (subs.size()>shape.size()){throw subscript_exception("subscripts number exceeds dim");}
 }
 
-
-
 }   //end of namespace detail
 }   //end of namespace gtensor
 
