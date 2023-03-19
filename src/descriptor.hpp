@@ -9,6 +9,27 @@
 namespace gtensor{
 namespace detail{
 
+//select type of strides_div
+template<typename CfgT>
+class strides_div_traits
+{
+    using config_type = CfgT;
+    //native division
+    template<typename, typename>
+    struct selector_
+    {
+        using type = typename config_type::shape_type;
+    };
+    //libdivide division
+    template<typename Dummy>
+    struct selector_<config::mode_div_libdivide, Dummy>
+    {
+        using type = typename libdivide_container_selector<config_type>::template container<typename config_type::index_type>;
+    };
+public:
+    using type = typename selector_<typename config_type::div_mode, void>::type;
+};
+
 template<typename ResT, typename ShT>
 inline ResT make_strides(const ShT& shape, typename ShT::value_type min_stride = typename ShT::value_type(1)){
     using result_type = ResT;
@@ -34,18 +55,17 @@ inline ShT make_strides(const ShT& shape, typename ShT::value_type min_stride = 
     return make_strides<ShT,ShT>(shape,min_stride);
 }
 
-template<typename ShT>
-inline auto make_strides_div(const ShT& shape, gtensor::config::mode_div_libdivide){
-    using value_type = typename ShT::value_type;
-    return make_strides<detail::libdivide_vector<value_type>>(shape);
+template<typename ShT, typename CfgT>
+inline auto make_strides_div(const ShT& shape, CfgT, gtensor::config::mode_div_libdivide){
+    return make_strides<typename strides_div_traits<CfgT>::type>(shape);
 }
-template<typename ShT>
-inline auto make_strides_div(const ShT& shape, gtensor::config::mode_div_native){
+template<typename ShT, typename CfgT>
+inline auto make_strides_div(const ShT& shape, CfgT, gtensor::config::mode_div_native){
     return make_strides(shape);
 }
 template<typename CfgT, typename ShT>
 inline auto make_strides_div(const ShT& shape){
-    return make_strides_div(shape, typename CfgT::div_mode{});
+    return make_strides_div(shape, CfgT{}, typename CfgT::div_mode{});
 }
 
 template<typename ShT>
@@ -111,17 +131,43 @@ T make_shape_of_type(std::initializer_list<IdxT> shape){
     return T(shape.begin(),shape.end());
 }
 
+//convert flat index to multi index given strides, ShT result multiindex type, must specialize explicitly
+template<typename ShT, typename StT, typename IdxT>
+auto flat_to_multi(const StT& strides, const IdxT& idx){
+    using shape_type = ShT;
+    using index_type = IdxT;
+    shape_type res(strides.size(), index_type(0));
+    index_type idx_{idx};
+    auto st_it = strides.begin();
+    auto res_it = res.begin();
+    while(idx_ != index_type(0)){
+        *res_it = divide(idx_,*st_it);
+        ++st_it,++res_it;
+    }
+    return res;
+}
+
+//converts flat index to flat index given strides and converting strides
+template<typename StT, typename CStT, typename IdxT>
+auto flat_to_flat(const StT& strides, const CStT& cstrides, const IdxT& offset, const IdxT& idx){
+    using index_type = IdxT;
+    index_type res{offset};
+    index_type idx_{idx};
+    auto st_it = strides.begin();
+    auto cst_it = cstrides.begin();
+    while(idx_ != index_type(0)){
+        res += *cst_it*divide(idx_,*st_it);
+        ++st_it;
+        ++cst_it;
+    }
+    return res;
+}
+
+//converts multi index to flat index given converting strides
 template<typename ShT>
 auto convert_index(const ShT& cstrides, const typename ShT::value_type& offset, const ShT& idx){
     return std::inner_product(idx.begin(), idx.end(), cstrides.begin(), offset);
 }
-
-template<typename CfgT>
-struct strides_div_traits{
-    template<typename, typename> struct selector{using type = typename CfgT::shape_type;};    //native division
-    template<typename Dummy> struct selector<config::mode_div_libdivide, Dummy>{using type = libdivide_vector<typename CfgT::index_type>;};  //libdivide division
-    using type = typename selector<typename CfgT::div_mode, void>::type;
-};
 
 template<typename CfgT, typename Mode> class strides_div_extension;
 
@@ -135,7 +181,7 @@ class strides_div_extension<CfgT,gtensor::config::mode_div_libdivide>
 protected:
     strides_div_extension() = default;
     strides_div_extension(const shape_type& strides__):
-        strides_div_{detail::make_libdivide_vector(strides__)}
+        strides_div_{detail::make_libdivide_container<CfgT>(strides__)}
     {}
     const auto&  strides_div()const{return strides_div_;}
 };
