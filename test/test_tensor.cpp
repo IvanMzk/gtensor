@@ -231,6 +231,8 @@ TEST_CASE("test_view_making_interface","[test_tensor]"){
     using config_type = gtensor::config::default_config;
     using tensor_type = tensor<value_type, config_type>;
     using nop_type = typename gtensor::slice_traits<config_type>::nop_type;
+    using slice_type = typename gtensor::slice_traits<config_type>::slice_type;
+    using slices_container_type = typename gtensor::slice_traits<config_type>::slices_container_type;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     using size_type = typename config_type::size_type;
@@ -238,7 +240,7 @@ TEST_CASE("test_view_making_interface","[test_tensor]"){
     using gtensor::broadcast_exception;
     nop_type nop;
     SECTION("test_subscripts_correctenes_check"){
-        SECTION("view_slice"){
+        SECTION("view_slice_init_list_interface"){
             REQUIRE_NOTHROW(tensor_type{1}({}));
             REQUIRE_THROWS_AS((tensor_type{1}({{},{}})),subscript_exception);
             REQUIRE_NOTHROW(tensor_type{1}({{0,1}}));
@@ -248,6 +250,28 @@ TEST_CASE("test_view_making_interface","[test_tensor]"){
             REQUIRE_THROWS_AS((tensor_type{1,2,3,4,5}({{0,0}})),subscript_exception);
             REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}({{1,-1}}));
             REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4},{5,6}}({{1,-1},{1,-1}})),subscript_exception);
+        }
+        SECTION("view_slice_variadic_interface"){
+            REQUIRE_NOTHROW(tensor_type{1}(slice_type{}));
+            REQUIRE_THROWS_AS((tensor_type{1}(slice_type{},slice_type{})),subscript_exception);
+            REQUIRE_NOTHROW(tensor_type{1}(slice_type{0,1}));
+            REQUIRE_THROWS_AS((tensor_type{1}(slice_type{nop,2})),subscript_exception);
+            REQUIRE_NOTHROW(tensor_type{1,2,3,4,5}(slice_type{}));
+            REQUIRE_THROWS_AS((tensor_type{1,2,3,4,5}(slice_type{0,4,-1})),subscript_exception);
+            REQUIRE_THROWS_AS((tensor_type{1,2,3,4,5}(slice_type{0,0})),subscript_exception);
+            REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}(slice_type{1,-1}));
+            REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4},{5,6}}(slice_type{1,-1},slice_type{1,-1})),subscript_exception);
+        }
+        SECTION("view_slice_container_interface"){
+            REQUIRE_NOTHROW(tensor_type{1}(slices_container_type{slice_type{}}));
+            REQUIRE_THROWS_AS((tensor_type{1}(slices_container_type{slice_type{},slice_type{}})),subscript_exception);
+            REQUIRE_NOTHROW(tensor_type{1}(slices_container_type{slice_type{0,1}}));
+            REQUIRE_THROWS_AS((tensor_type{1}(slices_container_type{slice_type{nop,2}})),subscript_exception);
+            REQUIRE_NOTHROW(tensor_type{1,2,3,4,5}(slices_container_type{slice_type{}}));
+            REQUIRE_THROWS_AS((tensor_type{1,2,3,4,5}(slices_container_type{slice_type{0,4,-1}})),subscript_exception);
+            REQUIRE_THROWS_AS((tensor_type{1,2,3,4,5}(slices_container_type{slice_type{0,0}})),subscript_exception);
+            REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}(slices_container_type{slice_type{1,-1}}));
+            REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4},{5,6}}(slices_container_type{slice_type{1,-1},slice_type{1,-1}})),subscript_exception);
         }
         SECTION("view_transpose"){
             REQUIRE_NOTHROW(tensor_type{1}.transpose());
@@ -329,7 +353,7 @@ TEST_CASE("test_view_making_interface","[test_tensor]"){
         using helpers_for_testing::apply_by_element;
         //0view,1expected_shape,2expected size,3expected dim
         auto test_data = std::make_tuple(
-            //view slice
+            //view slice init_list interface
             std::make_tuple((tensor_type{1}({{}})),shape_type{1}, 1, 1),
             std::make_tuple((tensor_type{1}({{nop,nop,-1}})),shape_type{1}, 1, 1),
             std::make_tuple((tensor_type{1,2,3,4,5}({{}})),shape_type{5}, 5, 1),
@@ -337,6 +361,22 @@ TEST_CASE("test_view_making_interface","[test_tensor]"){
             std::make_tuple((tensor_type{1,2,3,4,5}({{nop,nop,-2}})),shape_type{3}, 3, 1),
             std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}({{},{},{0,-1}})),shape_type{1,3,1}, 3, 3),
             std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}({{},{1,-1},{0,-1}})),shape_type{1,1,1}, 1, 3),
+            //view slice variadic interface
+            std::make_tuple((tensor_type{1}(slice_type{})),shape_type{1}, 1, 1),
+            std::make_tuple((tensor_type{1}(slice_type{nop,nop,-1})),shape_type{1}, 1, 1),
+            std::make_tuple((tensor_type{1,2,3,4,5}(slice_type{})),shape_type{5}, 5, 1),
+            std::make_tuple((tensor_type{1,2,3,4,5}(slice_type{nop,nop,2})),shape_type{3}, 3, 1),
+            std::make_tuple((tensor_type{1,2,3,4,5}(slice_type{nop,nop,-2})),shape_type{3}, 3, 1),
+            std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}(slice_type{},slice_type{},slice_type{0,-1})),shape_type{1,3,1}, 3, 3),
+            std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}(slice_type{},slice_type{1,-1},slice_type{0,-1})),shape_type{1,1,1}, 1, 3),
+            //view slice container interface
+            std::make_tuple((tensor_type{1}(slices_container_type{slice_type{}})),shape_type{1}, 1, 1),
+            std::make_tuple((tensor_type{1}(slices_container_type{slice_type{nop,nop,-1}})),shape_type{1}, 1, 1),
+            std::make_tuple((tensor_type{1,2,3,4,5}(slices_container_type{slice_type{}})),shape_type{5}, 5, 1),
+            std::make_tuple((tensor_type{1,2,3,4,5}(slices_container_type{slice_type{nop,nop,2}})),shape_type{3}, 3, 1),
+            std::make_tuple((tensor_type{1,2,3,4,5}(slices_container_type{slice_type{nop,nop,-2}})),shape_type{3}, 3, 1),
+            std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}(slices_container_type{slice_type{},slice_type{},slice_type{0,-1}})),shape_type{1,3,1}, 3, 3),
+            std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}(slices_container_type{slice_type{},slice_type{1,-1},slice_type{0,-1}})),shape_type{1,1,1}, 1, 3),
             //view transpose
             std::make_tuple((tensor_type{1}.transpose()),shape_type{1}, 1, 1),
             std::make_tuple((tensor_type{1}.transpose(0)),shape_type{1}, 1, 1),

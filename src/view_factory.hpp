@@ -292,7 +292,7 @@ class view_factory
     using size_type = typename CfgT::size_type;
     using index_type = typename CfgT::index_type;
     using shape_type = typename CfgT::shape_type;
-    using slices_collection_type = typename slice_traits<CfgT>::slices_collection_type;
+    using slices_container_type = typename slice_traits<CfgT>::slices_container_type;
     using view_reshape_descriptor_type = basic_descriptor<CfgT>;
     using view_subdim_descriptor_type = descriptor_with_offset<CfgT>;
     using view_slice_descriptor_type = converting_descriptor<CfgT>;
@@ -300,7 +300,7 @@ class view_factory
     template<typename EngineT> using view_subdim = gtensor::viewing_tensor<view_subdim_descriptor_type, EngineT>;
     template<typename EngineT> using view_slice = gtensor::viewing_tensor<view_slice_descriptor_type, EngineT>;
 
-    static auto create_view_slice_descriptor(const shape_type& shape, const shape_type& strides, const slices_collection_type& subs){
+    static auto create_view_slice_descriptor(const shape_type& shape, const shape_type& strides, const slices_container_type& subs){
         return view_slice_descriptor_type{
             detail::make_view_slice_shape(shape,subs),
             detail::make_view_slice_cstrides(strides,subs),
@@ -328,7 +328,7 @@ class view_factory
     }
 public:
     template<typename ImplT>
-    static auto create_view_slice(const std::shared_ptr<ImplT>& parent, const slices_collection_type& subs){
+    static auto create_view_slice(const std::shared_ptr<ImplT>& parent, const slices_container_type& subs){
         return viewing_tensor_factory<CfgT,view_slice_descriptor_type,ImplT>::make(create_view_slice_descriptor(parent->shape(), parent->strides(), subs),parent);
     }
     template<typename ImplT, typename...Subs>

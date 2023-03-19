@@ -196,6 +196,7 @@ TEST_CASE("test_fill_slice","[test_slice]"){
 TEST_CASE("test_fill_slices","[test_slice]"){
     using config_type = gtensor::config::default_config;
     using shape_type = typename config_type::shape_type;
+    using slices_container_type = typename gtensor::slice_traits<config_type>::slices_container_type;
     using slice_type = typename gtensor::slice_traits<config_type>::slice_type;
     using nop_type = typename gtensor::slice_traits<config_type>::nop_type;
     using gtensor::detail::fill_slices;
@@ -203,29 +204,28 @@ TEST_CASE("test_fill_slices","[test_slice]"){
 
     SECTION("test_fill_slices_init_list")
     {
-        REQUIRE(fill_slices<slice_type>(shape_type{2,3,4},{}) == std::vector<slice_type>{} );
-        REQUIRE(fill_slices<slice_type>(shape_type{2,3,4},{{}}) == std::vector<slice_type>{{0,2,1}} );
-        REQUIRE(fill_slices<slice_type>(shape_type{2,3,4},{{},{},{}}) == std::vector<slice_type>{{0,2,1},{0,3,1},{0,4,1}} );
-        REQUIRE(fill_slices<slice_type>(shape_type{4,3,2},{{1,3,{nop}},{},{}}) == std::vector<slice_type>{{1,3,1},{0,3,1},{0,2,1}} );
-        REQUIRE(fill_slices<slice_type>(shape_type{3,4},{{nop,nop,-1},{-4,nop,-1}}) == std::vector<slice_type>{{2,-1,-1},{0,-1,-1}});
-        REQUIRE(fill_slices<slice_type>(shape_type{2,3,4},{{},{1},{1,3}}) == std::vector<slice_type>{{0,2,1},{1,3,1},{1,3,1}});
+        REQUIRE(fill_slices<slices_container_type>(shape_type{2,3,4},{}) == slices_container_type{} );
+        REQUIRE(fill_slices<slices_container_type>(shape_type{2,3,4},{{}}) == slices_container_type{{0,2,1}} );
+        REQUIRE(fill_slices<slices_container_type>(shape_type{2,3,4},{{},{},{}}) == slices_container_type{{0,2,1},{0,3,1},{0,4,1}} );
+        REQUIRE(fill_slices<slices_container_type>(shape_type{4,3,2},{{1,3,{nop}},{},{}}) == slices_container_type{{1,3,1},{0,3,1},{0,2,1}} );
+        REQUIRE(fill_slices<slices_container_type>(shape_type{3,4},{{nop,nop,-1},{-4,nop,-1}}) == slices_container_type{{2,-1,-1},{0,-1,-1}});
+        REQUIRE(fill_slices<slices_container_type>(shape_type{2,3,4},{{},{1},{1,3}}) == slices_container_type{{0,2,1},{1,3,1},{1,3,1}});
     }
     SECTION("test_fill_slices_variadic")
     {
-        REQUIRE(fill_slices<slice_type>(shape_type{2,3,4}) == std::vector<slice_type>{} );
-        REQUIRE(fill_slices<slice_type>(shape_type{4,2,3},slice_type{}) == std::vector<slice_type>{slice_type{0,4,1}} );
-        REQUIRE(fill_slices<slice_type>(shape_type{4,3,2},slice_type{},slice_type{},slice_type{}) == std::vector<slice_type>{slice_type{0,4,1},slice_type{0,3,1},slice_type{0,2,1}} );
-        REQUIRE(fill_slices<slice_type>(shape_type{4,3,2},slice_type{1,3,{nop}},slice_type{},slice_type{}) == std::vector<slice_type>{slice_type{1,3,1},slice_type{0,3,1},slice_type{0,2,1}} );
-        REQUIRE(fill_slices<slice_type>(shape_type{3,4},slice_type{nop,nop,-1},slice_type{-4,nop,-1}) == std::vector<slice_type>{slice_type{2,-1,-1},slice_type{0,-1,-1}});
+        REQUIRE(fill_slices<slices_container_type>(shape_type{2,3,4}) == slices_container_type{} );
+        REQUIRE(fill_slices<slices_container_type>(shape_type{4,2,3},slice_type{}) == slices_container_type{slice_type{0,4,1}} );
+        REQUIRE(fill_slices<slices_container_type>(shape_type{4,3,2},slice_type{},slice_type{},slice_type{}) == slices_container_type{slice_type{0,4,1},slice_type{0,3,1},slice_type{0,2,1}} );
+        REQUIRE(fill_slices<slices_container_type>(shape_type{4,3,2},slice_type{1,3,{nop}},slice_type{},slice_type{}) == slices_container_type{slice_type{1,3,1},slice_type{0,3,1},slice_type{0,2,1}} );
+        REQUIRE(fill_slices<slices_container_type>(shape_type{3,4},slice_type{nop,nop,-1},slice_type{-4,nop,-1}) == slices_container_type{slice_type{2,-1,-1},slice_type{0,-1,-1}});
     }
     SECTION("test_fill_slices_container")
     {
-        using slice_container_type = std::vector<slice_type>;
-        REQUIRE(fill_slices<slice_type>(shape_type{2,3,4}, slice_container_type{}) == std::vector<slice_type>{});
-        REQUIRE(fill_slices<slice_type>(shape_type{4,2,3},slice_container_type{slice_type{}}) == std::vector<slice_type>{slice_type{0,4,1}});
-        REQUIRE(fill_slices<slice_type>(shape_type{4,3,2},slice_container_type{slice_type{},slice_type{},slice_type{}}) == std::vector<slice_type>{slice_type{0,4,1},slice_type{0,3,1},slice_type{0,2,1}} );
-        REQUIRE(fill_slices<slice_type>(shape_type{4,3,2},slice_container_type{slice_type{1,3,{nop}},slice_type{},slice_type{}}) == std::vector<slice_type>{slice_type{1,3,1},slice_type{0,3,1},slice_type{0,2,1}} );
-        REQUIRE(fill_slices<slice_type>(shape_type{3,4},slice_container_type{slice_type{nop,nop,-1},slice_type{-4,nop,-1}}) == std::vector<slice_type>{slice_type{2,-1,-1},slice_type{0,-1,-1}});
+        REQUIRE(fill_slices<slices_container_type>(shape_type{2,3,4}, slices_container_type{}) == slices_container_type{});
+        REQUIRE(fill_slices<slices_container_type>(shape_type{4,2,3},slices_container_type{slice_type{}}) == slices_container_type{slice_type{0,4,1}});
+        REQUIRE(fill_slices<slices_container_type>(shape_type{4,3,2},slices_container_type{slice_type{},slice_type{},slice_type{}}) == slices_container_type{slice_type{0,4,1},slice_type{0,3,1},slice_type{0,2,1}} );
+        REQUIRE(fill_slices<slices_container_type>(shape_type{4,3,2},slices_container_type{slice_type{1,3,{nop}},slice_type{},slice_type{}}) == slices_container_type{slice_type{1,3,1},slice_type{0,3,1},slice_type{0,2,1}} );
+        REQUIRE(fill_slices<slices_container_type>(shape_type{3,4},slices_container_type{slice_type{nop,nop,-1},slice_type{-4,nop,-1}}) == slices_container_type{slice_type{2,-1,-1},slice_type{0,-1,-1}});
     }
 }
 

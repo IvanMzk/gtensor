@@ -56,7 +56,7 @@ class tensor{
     using impl_type = ImplT;
     using slice_type = typename slice_traits<CfgT>::slice_type;
     using slices_init_type = typename slice_traits<CfgT>::slices_init_type;
-    using slices_collection_type = typename slice_traits<CfgT>::slices_collection_type;
+    using slices_container_type = typename slice_traits<CfgT>::slices_container_type;
 
     //initialize storage implementation by forwarding arguments, this constructor should be used by all public constructors
     class forward_tag{};
@@ -169,21 +169,24 @@ public:
     //view construction operators and methods
     //slice view
     auto operator()(slices_init_type subs)const{
-        detail::check_slices_number(subs);
-        slices_collection_type filled_subs = detail::fill_slices<slice_type>(descriptor().shape(),subs);
+        detail::check_slices_number(descriptor().shape(), subs);
+        slices_container_type filled_subs = detail::fill_slices<slices_container_type>(descriptor().shape(),subs);
         detail::check_slices(descriptor().shape(), filled_subs);
         return view_factory<ValT,CfgT>::create_view_slice(impl(), filled_subs);
     }
     template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,slice_type>...>,int> = 0 >
     auto operator()(const Subs&...subs)const{
-        detail::check_slices_number(subs...);
-        slices_collection_type filled_subs = detail::fill_slices<slice_type>(descriptor().shape(),subs...);
+        detail::check_slices_number(descriptor().shape(), subs...);
+        slices_container_type filled_subs = detail::fill_slices<slices_container_type>(descriptor().shape(),subs...);
         detail::check_slices(descriptor().shape(), filled_subs);
         return view_factory<ValT,CfgT>::create_view_slice(impl(), filled_subs);
     }
     template<typename Slices, std::enable_if_t<detail::is_slices_container<Slices> ,int> =0>
     auto operator()(const Slices& subs){
         detail::check_slices_number(descriptor().shape(), subs);
+        slices_container_type filled_subs = detail::fill_slices<slices_container_type>(descriptor().shape(),subs);
+        detail::check_slices(descriptor().shape(), filled_subs);
+        return view_factory<ValT,CfgT>::create_view_slice(impl(), filled_subs);
     }
     //transpose view
     template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,size_type>...>,int> = 0 >

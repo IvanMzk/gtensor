@@ -156,7 +156,7 @@ struct slice_traits{
     using slice_item_type = detail::slice_item<typename CfgT::index_type, nop_type>;
     using slice_init_type = std::initializer_list<slice_item_type>;
     using slices_init_type = std::initializer_list<slice_init_type>;
-    using slices_collection_type = std::vector<slice_type>;
+    using slices_container_type = std::vector<slice_type>;
 };
 
 namespace detail{
@@ -217,27 +217,26 @@ inline void check_slice(const slice<T,N>& slice_, const T& n){
 }
 
 //make collection of filled slices from slices args
-template<std::size_t I, typename R, typename ShT>
-inline void fill_slices_helper(R&, const ShT&){}
-template<std::size_t I, typename R, typename ShT,typename Sub, typename...Subs>
-inline void fill_slices_helper(R& res, const ShT& shape, const Sub& sub, const Subs&...subs){
+template<std::size_t I, typename SlicesContainer, typename ShT>
+inline void fill_slices_helper(SlicesContainer&, const ShT&){}
+template<std::size_t I, typename SlicesContainer, typename ShT,typename Sub, typename...Subs>
+inline void fill_slices_helper(SlicesContainer& res, const ShT& shape, const Sub& sub, const Subs&...subs){
     res.push_back(fill_slice(sub,shape[I]));
     fill_slices_helper<I+1>(res,shape,subs...);
 }
-template<typename SlT, typename ShT, typename...Subs, typename std::enable_if_t<is_slices<Subs...>,int> = 0 >
+template<typename SlicesContainer, typename ShT, typename...Subs, typename std::enable_if_t<is_slices<Subs...>,int> = 0 >
 inline auto fill_slices(const ShT& shape, const Subs&...subs){
-    using slice_type = SlT;
-    std::vector<slice_type> res{};
+    SlicesContainer res{};
     res.reserve(sizeof...(Subs));
     fill_slices_helper<0>(res,shape,subs...);
     return res;
 }
 
 //make collection of filled slices from init_list of intit_list of slice_items
-template<typename SlT, typename ShT>
-inline std::vector<SlT> fill_slices(const ShT& shape, std::initializer_list<std::initializer_list<slice_item<typename SlT::index_type, typename SlT::nop_type>>> subs){
-    using slice_type = SlT;
-    std::vector<slice_type> res{};
+template<typename SlicesContainer, typename ShT>
+inline SlicesContainer fill_slices(const ShT& shape, std::initializer_list<std::initializer_list<slice_item<typename SlicesContainer::value_type::index_type, typename SlicesContainer::value_type::nop_type>>> subs){
+    using slice_type = typename SlicesContainer::value_type;
+    SlicesContainer res{};
     res.reserve(subs.size());
     auto sh_it = shape.begin();
     for_each(subs.begin(), subs.end(), [&sh_it, &res](const auto& sub){res.push_back(fill_slice(slice_type(sub),*sh_it));++sh_it;});
@@ -245,10 +244,9 @@ inline std::vector<SlT> fill_slices(const ShT& shape, std::initializer_list<std:
 }
 
 //make collection of filled slices from slices container
-template<typename SlT, typename ShT, typename Slices, std::enable_if_t<detail::is_slices_container<Slices>,int> =0>
-inline std::vector<SlT> fill_slices(const ShT& shape, const Slices& subs){
-    using slice_type = SlT;
-    std::vector<slice_type> res{};
+template<typename SlicesContainer, typename ShT, typename Slices, std::enable_if_t<detail::is_slices_container<Slices>,int> =0>
+inline SlicesContainer fill_slices(const ShT& shape, const Slices& subs){
+    SlicesContainer res{};
     res.reserve(subs.size());
     auto sh_it = shape.begin();
     for_each(subs.begin(), subs.end(), [&sh_it, &res](const auto& sub){res.push_back(fill_slice(sub,*sh_it));++sh_it;});
@@ -256,11 +254,11 @@ inline std::vector<SlT> fill_slices(const ShT& shape, const Slices& subs){
 }
 
 //check filled slices
-template<typename ShT, typename SsT>
-inline void check_slices(const ShT& shape, const SsT& slices){
+template<typename ShT, typename SlicesContainer>
+inline void check_slices(const ShT& shape, const SlicesContainer& slices){
     if (slices.size()>shape.size()){throw subscript_exception("subscripts number exceeds dim");}
-    auto sh_begin = shape.begin();
-    std::for_each(slices.begin(), slices.end(), [&](const auto& slice){check_slice(slice,*sh_begin);++sh_begin;});
+    auto sh_it = shape.begin();
+    std::for_each(slices.begin(), slices.end(), [&](const auto& slice){check_slice(slice,*sh_it);++sh_it;});
 }
 
 template<typename ShT, typename...T>
@@ -271,8 +269,8 @@ template<typename ShT, typename...Subs, std::enable_if_t<is_slices<Subs...>, int
 inline void check_slices_number(const ShT& shape, const Subs&...){
     if (sizeof...(Subs)>shape.size()){throw subscript_exception("subscripts number exceeds dim");}
 }
-template<typename ShT, typename Slices, std::enable_if_t<detail::is_slices_container<Slices>,int> =0>
-inline void check_slices_number(const ShT& shape, const Slices& subs){
+template<typename ShT, typename SlicesContainer, std::enable_if_t<detail::is_slices_container<SlicesContainer>,int> =0>
+inline void check_slices_number(const ShT& shape, const SlicesContainer& subs){
     if (subs.size()>shape.size()){throw subscript_exception("subscripts number exceeds dim");}
 }
 
