@@ -193,7 +193,7 @@ TEST_CASE("test_fill_slice","[test_slice]"){
     REQUIRE(gtensor::detail::fill_slice(std::get<0>(test_data),std::get<2>(test_data)) == std::get<1>(test_data));
 }
 
-TEST_CASE("test_fill_slices","[test_fill_slices]"){
+TEST_CASE("test_fill_slices","[test_slice]"){
     using config_type = gtensor::config::default_config;
     using shape_type = typename config_type::shape_type;
     using slice_type = typename gtensor::slice_traits<config_type>::slice_type;
@@ -201,7 +201,8 @@ TEST_CASE("test_fill_slices","[test_fill_slices]"){
     using gtensor::detail::fill_slices;
     nop_type nop{};
 
-    SECTION("init_list"){
+    SECTION("test_fill_slices_init_list")
+    {
         REQUIRE(fill_slices<slice_type>(shape_type{2,3,4},{}) == std::vector<slice_type>{} );
         REQUIRE(fill_slices<slice_type>(shape_type{2,3,4},{{}}) == std::vector<slice_type>{{0,2,1}} );
         REQUIRE(fill_slices<slice_type>(shape_type{2,3,4},{{},{},{}}) == std::vector<slice_type>{{0,2,1},{0,3,1},{0,4,1}} );
@@ -209,12 +210,22 @@ TEST_CASE("test_fill_slices","[test_fill_slices]"){
         REQUIRE(fill_slices<slice_type>(shape_type{3,4},{{nop,nop,-1},{-4,nop,-1}}) == std::vector<slice_type>{{2,-1,-1},{0,-1,-1}});
         REQUIRE(fill_slices<slice_type>(shape_type{2,3,4},{{},{1},{1,3}}) == std::vector<slice_type>{{0,2,1},{1,3,1},{1,3,1}});
     }
-    SECTION("variadic"){
+    SECTION("test_fill_slices_variadic")
+    {
         REQUIRE(fill_slices<slice_type>(shape_type{2,3,4}) == std::vector<slice_type>{} );
         REQUIRE(fill_slices<slice_type>(shape_type{4,2,3},slice_type{}) == std::vector<slice_type>{slice_type{0,4,1}} );
         REQUIRE(fill_slices<slice_type>(shape_type{4,3,2},slice_type{},slice_type{},slice_type{}) == std::vector<slice_type>{slice_type{0,4,1},slice_type{0,3,1},slice_type{0,2,1}} );
         REQUIRE(fill_slices<slice_type>(shape_type{4,3,2},slice_type{1,3,{nop}},slice_type{},slice_type{}) == std::vector<slice_type>{slice_type{1,3,1},slice_type{0,3,1},slice_type{0,2,1}} );
         REQUIRE(fill_slices<slice_type>(shape_type{3,4},slice_type{nop,nop,-1},slice_type{-4,nop,-1}) == std::vector<slice_type>{slice_type{2,-1,-1},slice_type{0,-1,-1}});
+    }
+    SECTION("test_fill_slices_container")
+    {
+        using slice_container_type = std::vector<slice_type>;
+        REQUIRE(fill_slices<slice_type>(shape_type{2,3,4}, slice_container_type{}) == std::vector<slice_type>{});
+        REQUIRE(fill_slices<slice_type>(shape_type{4,2,3},slice_container_type{slice_type{}}) == std::vector<slice_type>{slice_type{0,4,1}});
+        REQUIRE(fill_slices<slice_type>(shape_type{4,3,2},slice_container_type{slice_type{},slice_type{},slice_type{}}) == std::vector<slice_type>{slice_type{0,4,1},slice_type{0,3,1},slice_type{0,2,1}} );
+        REQUIRE(fill_slices<slice_type>(shape_type{4,3,2},slice_container_type{slice_type{1,3,{nop}},slice_type{},slice_type{}}) == std::vector<slice_type>{slice_type{1,3,1},slice_type{0,3,1},slice_type{0,2,1}} );
+        REQUIRE(fill_slices<slice_type>(shape_type{3,4},slice_container_type{slice_type{nop,nop,-1},slice_type{-4,nop,-1}}) == std::vector<slice_type>{slice_type{2,-1,-1},slice_type{0,-1,-1}});
     }
 }
 
@@ -331,10 +342,11 @@ TEST_CASE("test_check_slices_number","[test_check_slices]"){
     }
     SECTION("test_check_slices_number_slices_container")
     {
-        REQUIRE_NOTHROW(check_slices_number(shape_type{5},std::vector<slice_type>(1)));
-        REQUIRE_NOTHROW(check_slices_number(shape_type{5,6},std::vector<slice_type>(1)));
-        REQUIRE_NOTHROW(check_slices_number(shape_type{5,6},std::vector<slice_type>(2)));
-        REQUIRE_THROWS_AS(check_slices_number(shape_type{5,6},std::vector<slice_type>(3)), gtensor::subscript_exception);
-        REQUIRE_THROWS_AS(check_slices_number(shape_type{5},std::vector<slice_type>(2)), gtensor::subscript_exception);
+        using slice_container_type = std::vector<slice_type>;
+        REQUIRE_NOTHROW(check_slices_number(shape_type{5},slice_container_type(1)));
+        REQUIRE_NOTHROW(check_slices_number(shape_type{5,6},slice_container_type(1)));
+        REQUIRE_NOTHROW(check_slices_number(shape_type{5,6},slice_container_type(2)));
+        REQUIRE_THROWS_AS(check_slices_number(shape_type{5,6},slice_container_type(3)), gtensor::subscript_exception);
+        REQUIRE_THROWS_AS(check_slices_number(shape_type{5},slice_container_type(2)), gtensor::subscript_exception);
     }
 }
