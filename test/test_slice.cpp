@@ -235,6 +235,7 @@ TEST_CASE("test_check_slice","[test_check_slice]"){
     using slice_type = typename gtensor::slice_traits<config_type>::slice_type;
     using gtensor::detail::check_slice;
 
+    REQUIRE_NOTHROW(check_slice(slice_type{0,1,1}, index_type(1)));
     REQUIRE_NOTHROW(check_slice(slice_type{0,5,1}, index_type(5)));
     REQUIRE_NOTHROW(check_slice(slice_type{0,5,1}, index_type(5)));
     REQUIRE_NOTHROW(check_slice(slice_type{0,5,1}, index_type(5)));

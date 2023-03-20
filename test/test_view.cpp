@@ -19,7 +19,14 @@ TEMPLATE_TEST_CASE("test_view","[test_view]",
 
     //0result,1expected
     auto test_data = std::make_tuple(
-        //slice view
+        //slice view slice-direction interface
+        std::make_tuple(tensor_type{1}({},0),tensor_type{1}),
+        std::make_tuple(tensor_type{1}({0,1},0),tensor_type{1}),
+        std::make_tuple(tensor_type{1,2,3,4,5}({},0),tensor_type{1,2,3,4,5}),
+        std::make_tuple(tensor_type{1,2,3,4,5}({2,nop},0),tensor_type{3,4,5}),
+        std::make_tuple(tensor_type{{1,2},{3,4},{5,6}}({1,-1},0),tensor_type{{3,4}}),
+        std::make_tuple(tensor_type{{1,2},{3,4},{5,6}}({{},{},-1},0),tensor_type{{5,6},{3,4},{1,2}}),
+        //slice view init-list interface
         std::make_tuple(tensor_type{1}({{}}),tensor_type{1}),
         std::make_tuple(tensor_type{1}({{0}}),tensor_type{1}),
         std::make_tuple(tensor_type{1}({{0,1}}),tensor_type{1}),

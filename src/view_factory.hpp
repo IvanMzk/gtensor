@@ -11,34 +11,50 @@ namespace gtensor{
 
 namespace detail{
 
-template<typename T>
-inline auto make_view_shape_element(const T& sub){
-    using index_type = typename T::index_type;
-    index_type step_ = sub.step > index_type(0) ? sub.step : -sub.step;
-    return sub.start == sub.stop ?
+template<typename SliceT>
+inline auto make_view_slice_shape_element(const SliceT& subs){
+    using index_type = typename SliceT::index_type;
+    index_type step_ = subs.step > index_type(0) ? subs.step : -subs.step;
+    return subs.start == subs.stop ?
         index_type(0) :
-        sub.start < sub.stop ?
-            (sub.stop - sub.start-index_type(1))/step_ + index_type(1) :
-            (sub.start - sub.stop-index_type(1))/step_ + index_type(1);
+        subs.start < subs.stop ?
+            (subs.stop - subs.start-index_type(1))/step_ + index_type(1) :
+            (subs.start - subs.stop-index_type(1))/step_ + index_type(1);
 }
 /*make view slice shape*/
+template<typename ShT, typename SliceT, typename SizeT>
+inline ShT make_view_slice_shape(const ShT& pshape, const SliceT& subs, const SizeT& direction){
+    ShT res{pshape};
+    res[direction] = make_view_slice_shape_element(subs);
+    return res;
+}
 template<typename ShT, typename SubsT>
 inline ShT make_view_slice_shape(const ShT& pshape, const SubsT& subs){
     ShT res{};
     res.reserve(pshape.size());
-    std::for_each(subs.begin(), subs.end(), [&res](const auto& sub){res.push_back(make_view_shape_element(sub));});
+    std::for_each(subs.begin(), subs.end(), [&res](const auto& sub){res.push_back(make_view_slice_shape_element(sub));});
     std::for_each(pshape.data()+subs.size(), pshape.data()+pshape.size(), [&res](const auto& elem){res.push_back(elem);});
     return res;
 }
 /*make view slice offset*/
+template<typename ShT, typename SliceT, typename SizeT>
+inline typename ShT::value_type make_view_slice_offset(const ShT& pstrides, const SliceT& subs, const SizeT& direction){
+    return subs.start*pstrides[direction];
+}
 template<typename ShT, typename SubsT>
 inline typename ShT::value_type make_view_slice_offset(const ShT& pstrides, const SubsT& subs){
     using index_type = typename ShT::value_type;
     index_type res{0};
-    std::for_each(subs.begin(), subs.end(), [&res, pstrides_it = pstrides.begin()](const auto& sub)mutable{res+=sub.start*(*pstrides_it); ++pstrides_it;});
+    std::for_each(subs.begin(), subs.end(), [&res, pstrides_it = pstrides.begin()](const auto& subs_)mutable{res+=subs_.start*(*pstrides_it); ++pstrides_it;});
     return res;
 }
 /*make view slice cstrides*/
+template<typename ShT, typename SliceT, typename SizeT>
+inline ShT make_view_slice_cstrides(const ShT& pstrides, const SliceT& subs, const SizeT& direction){
+    ShT res{pstrides};
+    res[direction] = subs.step*pstrides[direction];
+    return res;
+}
 template<typename ShT, typename SubsT>
 inline ShT make_view_slice_cstrides(const ShT& pstrides, const SubsT& subs){
     ShT res{};
@@ -48,7 +64,6 @@ inline ShT make_view_slice_cstrides(const ShT& pstrides, const SubsT& subs){
     std::for_each(pstrides_it, pstrides.end(), [&res](const auto& elem){res.push_back(elem);});
     return res;
 }
-
 /*make transposed
 * indeces is positions of source shape elements in transposed shape
 * if indeces is empty transposed shape is reverse of source
@@ -292,6 +307,7 @@ class view_factory
     using size_type = typename CfgT::size_type;
     using index_type = typename CfgT::index_type;
     using shape_type = typename CfgT::shape_type;
+    using slice_type = typename slice_traits<CfgT>::slice_type;
     using slices_container_type = typename slice_traits<CfgT>::slices_container_type;
     using view_reshape_descriptor_type = basic_descriptor<CfgT>;
     using view_subdim_descriptor_type = descriptor_with_offset<CfgT>;
@@ -300,6 +316,13 @@ class view_factory
     template<typename EngineT> using view_subdim = gtensor::viewing_tensor<view_subdim_descriptor_type, EngineT>;
     template<typename EngineT> using view_slice = gtensor::viewing_tensor<view_slice_descriptor_type, EngineT>;
 
+    static auto create_view_slice_descriptor(const shape_type& shape, const shape_type& strides, const slice_type& subs, const size_type& direction){
+        return view_slice_descriptor_type{
+            detail::make_view_slice_shape(shape,subs,direction),
+            detail::make_view_slice_cstrides(strides,subs,direction),
+            detail::make_view_slice_offset(strides,subs,direction)
+        };
+    }
     static auto create_view_slice_descriptor(const shape_type& shape, const shape_type& strides, const slices_container_type& subs){
         return view_slice_descriptor_type{
             detail::make_view_slice_shape(shape,subs),
@@ -327,6 +350,10 @@ class view_factory
         };
     }
 public:
+    template<typename ImplT>
+    static auto create_view_slice(const std::shared_ptr<ImplT>& parent, const slice_type& subs, const size_type& direction){
+        return viewing_tensor_factory<CfgT,view_slice_descriptor_type,ImplT>::make(create_view_slice_descriptor(parent->shape(), parent->strides(), subs, direction),parent);
+    }
     template<typename ImplT>
     static auto create_view_slice(const std::shared_ptr<ImplT>& parent, const slices_container_type& subs){
         return viewing_tensor_factory<CfgT,view_slice_descriptor_type,ImplT>::make(create_view_slice_descriptor(parent->shape(), parent->strides(), subs),parent);

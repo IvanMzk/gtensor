@@ -212,8 +212,10 @@ inline void check_slice(const slice<T,N>& slice_, const T& n){
         slice_.step > zero_index ? slice_.start<slice_.stop && slice_.start>=zero_index && slice_.start<n && slice_.stop>zero_index && slice_.stop<=n ? true : false
         :
         slice_.start>slice_.stop && slice_.start>=zero_index && slice_.start<n && slice_.stop>=index_type(-1) && slice_.stop<n-index_type(1) ? true : false
-        ){}
-        else{throw subscript_exception("invalid slice subscript");}
+        ){
+        }else{
+            throw subscript_exception("invalid slice subscript");
+        }
 }
 
 //make collection of filled slices from slices args
@@ -272,6 +274,10 @@ inline void check_slices_number(const ShT& shape, const Subs&...){
 template<typename ShT, typename SlicesContainer, std::enable_if_t<detail::is_slices_container<SlicesContainer>,int> =0>
 inline void check_slices_number(const ShT& shape, const SlicesContainer& subs){
     if (subs.size()>shape.size()){throw subscript_exception("subscripts number exceeds dim");}
+}
+template<typename ShT, typename SizeT>
+inline void check_slice_direction(const ShT& shape, const SizeT& direction){
+    if (direction>=shape.size()){throw subscript_exception("subscripts number exceeds dim");}
 }
 
 }   //end of namespace detail

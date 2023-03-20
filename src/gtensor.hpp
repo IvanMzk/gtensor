@@ -55,6 +55,7 @@ template<
 class tensor{
     using impl_type = ImplT;
     using slice_type = typename slice_traits<CfgT>::slice_type;
+    using slice_init_type = typename slice_traits<CfgT>::slice_init_type;
     using slices_init_type = typename slice_traits<CfgT>::slices_init_type;
     using slices_container_type = typename slice_traits<CfgT>::slices_container_type;
 
@@ -168,6 +169,16 @@ public:
 
     //view construction operators and methods
     //slice view
+    auto operator()(const slice_type& subs, const size_type& direction)const{
+        detail::check_slice_direction(descriptor().shape(), direction);
+        index_type direction_size = descriptor().shape()[direction];
+        slice_type filled_subs = detail::fill_slice(subs, direction_size);
+        detail::check_slice(filled_subs, direction_size);
+        return view_factory<ValT,CfgT>::create_view_slice(impl(), filled_subs, direction);
+    }
+    auto operator()(slice_init_type subs, const size_type& direction)const{
+        return operator()(slice_type{subs}, direction);
+    }
     auto operator()(slices_init_type subs)const{
         detail::check_slices_number(descriptor().shape(), subs);
         slices_container_type filled_subs = detail::fill_slices<slices_container_type>(descriptor().shape(),subs);
