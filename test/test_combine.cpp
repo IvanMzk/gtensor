@@ -520,7 +520,6 @@ TEMPLATE_TEST_CASE("test_block","[test_combine]",
     using value_type = double;
     using config_type = TestType;
     using tensor_type = gtensor::tensor<value_type, config_type>;
-    using gtensor::combine_exception;
     using gtensor::detail::nested_init_list1_type;
     using gtensor::detail::nested_init_list2_type;
     using gtensor::detail::nested_init_list3_type;
@@ -616,4 +615,155 @@ TEST_CASE("test_is_indexes_container","[test_combine]"){
     REQUIRE(is_indexes_container<std::array<index_type,3>,index_type>);
     REQUIRE(is_indexes_container<tensor<index_type>,index_type>);
     REQUIRE(!is_indexes_container<std::vector<std::string>,int>);
+}
+
+TEMPLATE_TEST_CASE("test_split_split_points","[test_combine]",
+    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
+)
+{
+    using value_type = double;
+    using config_type = TestType;
+    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using size_type = typename tensor_type::size_type;
+    using index_type = typename tensor_type::index_type;
+    using gtensor::split;
+    using helpers_for_testing::apply_by_element;
+
+    //0ten,1split_points,2direction,3expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(tensor_type{1}, std::vector<int>{}, size_type{0}, std::vector<tensor_type>{tensor_type{1}}),
+        std::make_tuple(tensor_type{1,2,3,4,5}, std::vector<int>{}, size_type{0}, std::vector<tensor_type>{tensor_type{1,2,3,4,5}}),
+        std::make_tuple(tensor_type{1,2,3,4,5}, std::vector<int>{2}, size_type{0}, std::vector<tensor_type>{tensor_type{1,2}, tensor_type{3,4,5}}),
+        std::make_tuple(tensor_type{1,2,3,4,5}, std::vector<int>{2,4}, size_type{0}, std::vector<tensor_type>{tensor_type{1,2}, tensor_type{3,4}, tensor_type{5}}),
+        std::make_tuple(tensor_type{1,2,3,4,5}, std::initializer_list<int>{2,4}, size_type{0}, std::vector<tensor_type>{tensor_type{1,2}, tensor_type{3,4}, tensor_type{5}}),
+        std::make_tuple(tensor_type{1,2,3,4,5}, gtensor::tensor<int>{2,4}, size_type{0}, std::vector<tensor_type>{tensor_type{1,2}, tensor_type{3,4}, tensor_type{5}}),
+        std::make_tuple(
+            tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16}},
+            std::initializer_list<index_type>{1,2},
+            size_type{0},
+            std::vector<tensor_type>{tensor_type{{1,2,3,4}}, tensor_type{{5,6,7,8}}, tensor_type{{9,10,11,12},{13,14,15,16}}}
+        ),
+        std::make_tuple(
+            tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16}},
+            std::initializer_list<int>{1,2},
+            size_type{1},
+            std::vector<tensor_type>{tensor_type{{1},{5},{9},{13}}, tensor_type{{2},{6},{10},{14}}, tensor_type{{3,4},{7,8},{11,12},{15,16}}}
+        ),
+        std::make_tuple(
+            tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}}},
+            std::vector<int>{1,2},
+            size_type{0},
+            std::vector<tensor_type>{tensor_type{{{1,2},{3,4}}},  tensor_type{{{5,6},{7,8}}}, tensor_type{{{9,10},{11,12}}}}
+        ),
+        std::make_tuple(
+            tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}},{{13,14,15},{16,17,18}}},
+            gtensor::tensor<index_type>{1},
+            size_type{1},
+            std::vector<tensor_type>{tensor_type{{{1,2,3}},{{7,8,9}},{{13,14,15}}}, tensor_type{{{4,5,6}},{{10,11,12}},{{16,17,18}}}}
+        ),
+        std::make_tuple(
+            tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}},{{13,14,15},{16,17,18}}},
+            std::initializer_list<std::size_t>{1,2},
+            size_type{2},
+            std::vector<tensor_type>{tensor_type{{{1},{4}},{{7},{10}},{{13},{16}}},  tensor_type{{{2},{5}},{{8},{11}},{{14},{17}}}, tensor_type{{{3},{6}},{{9},{12}},{{15},{18}}}}
+        )
+    );
+    auto test = [](const auto& t){
+        auto ten = std::get<0>(t);
+        auto split_points = std::get<1>(t);
+        auto direction = std::get<2>(t);
+        auto expected = std::get<3>(t);
+        auto result = split(ten, split_points, direction);
+        REQUIRE(expected.size() == result.size());
+        auto result_it = result.begin();
+        for (auto expected_it = expected.begin(); expected_it!=expected.end(); ++expected_it, ++result_it){
+            REQUIRE((*result_it).equals(*expected_it));
+        }
+    };
+    apply_by_element(test, test_data);
+}
+
+TEMPLATE_TEST_CASE("test_split_equal_parts","[test_combine]",
+    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
+)
+{
+    using value_type = double;
+    using config_type = TestType;
+    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using size_type = typename tensor_type::size_type;
+    using index_type = typename tensor_type::index_type;
+    using gtensor::split;
+    using helpers_for_testing::apply_by_element;
+
+    //0ten,1parts_number,2direction,3expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(tensor_type{1}, index_type{1}, size_type{0}, std::vector<tensor_type>{tensor_type{1}}),
+        std::make_tuple(tensor_type{1,2,3,4,5}, index_type{1}, size_type{0}, std::vector<tensor_type>{tensor_type{1,2,3,4,5}}),
+        std::make_tuple(tensor_type{1,2,3,4,5}, int{5}, size_type{0}, std::vector<tensor_type>{tensor_type{1}, tensor_type{2}, tensor_type{3}, tensor_type{4}, tensor_type{5}}),
+        std::make_tuple(tensor_type{1,2,3,4,5,6}, index_type{2}, size_type{0}, std::vector<tensor_type>{tensor_type{1,2,3}, tensor_type{4,5,6}}),
+        std::make_tuple(tensor_type{1,2,3,4,5,6}, std::size_t{3}, size_type{0}, std::vector<tensor_type>{tensor_type{1,2}, tensor_type{3,4}, tensor_type{5,6}}),
+        std::make_tuple(
+            tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16}},
+            index_type{2},
+            size_type{0},
+            std::vector<tensor_type>{tensor_type{{1,2,3,4},{5,6,7,8}}, tensor_type{{9,10,11,12},{13,14,15,16}}}
+        ),
+        std::make_tuple(
+            tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16}},
+            index_type{2},
+            size_type{1},
+            std::vector<tensor_type>{tensor_type{{1,2},{5,6},{9,10},{13,14}}, tensor_type{{3,4},{7,8},{11,12},{15,16}}}
+        ),
+        std::make_tuple(
+            tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}}},
+            index_type{3},
+            size_type{0},
+            std::vector<tensor_type>{tensor_type{{{1,2},{3,4}}},  tensor_type{{{5,6},{7,8}}}, tensor_type{{{9,10},{11,12}}}}
+        ),
+        std::make_tuple(
+            tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}},{{13,14,15},{16,17,18}}},
+            index_type{2},
+            size_type{1},
+            std::vector<tensor_type>{tensor_type{{{1,2,3}},{{7,8,9}},{{13,14,15}}}, tensor_type{{{4,5,6}},{{10,11,12}},{{16,17,18}}}}
+        ),
+        std::make_tuple(
+            tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}},{{13,14,15},{16,17,18}}},
+            index_type{3},
+            size_type{2},
+            std::vector<tensor_type>{tensor_type{{{1},{4}},{{7},{10}},{{13},{16}}},  tensor_type{{{2},{5}},{{8},{11}},{{14},{17}}}, tensor_type{{{3},{6}},{{9},{12}},{{15},{18}}}}
+        )
+    );
+    auto test = [](const auto& t){
+        auto ten = std::get<0>(t);
+        auto parts_number = std::get<1>(t);
+        auto direction = std::get<2>(t);
+        auto expected = std::get<3>(t);
+        auto result = split(ten, parts_number, direction);
+        REQUIRE(expected.size() == result.size());
+        auto result_it = result.begin();
+        for (auto expected_it = expected.begin(); expected_it!=expected.end(); ++expected_it, ++result_it){
+            REQUIRE((*result_it).equals(*expected_it));
+        }
+    };
+    apply_by_element(test, test_data);
+}
+TEMPLATE_TEST_CASE("test_split_exception","[test_combine]",
+    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
+)
+{
+    using value_type = double;
+    using config_type = TestType;
+    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using gtensor::combine_exception;
+    using gtensor::split;
+
+    REQUIRE_THROWS_AS(split(tensor_type{1},{},1), combine_exception);
+    REQUIRE_THROWS_AS(split(tensor_type{1,2,3,4,5},{},1), combine_exception);
+    REQUIRE_THROWS_AS(split(tensor_type{{1,2},{3,4},{5,6}},{},2), combine_exception);
+    REQUIRE_THROWS_AS(split(tensor_type{1,2,3,4,5},0,0), combine_exception);
+    REQUIRE_THROWS_AS(split(tensor_type{1,2,3,4,5},2,0), combine_exception);
+    REQUIRE_THROWS_AS(split(tensor_type{1,2,3,4,5},1,1), combine_exception);
+    REQUIRE_THROWS_AS(split(tensor_type{{1,2},{3,4},{5,6}},0,0), combine_exception);
+    REQUIRE_THROWS_AS(split(tensor_type{{1,2},{3,4},{5,6}},4,0), combine_exception);
+    REQUIRE_THROWS_AS(split(tensor_type{{1,2},{3,4},{5,6}},2,2), combine_exception);
 }

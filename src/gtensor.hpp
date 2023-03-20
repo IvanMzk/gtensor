@@ -156,6 +156,7 @@ public:
     auto size()const{return descriptor().size();}
     auto dim()const{return descriptor().dim();}
     auto shape()const{return descriptor().shape();}
+    auto empty()const{return size() == index_type{0};}
     //compare content of this tensor and other
     template<typename RImpl>
     auto equals(const tensor<value_type,CfgT,RImpl>& other)const{return gtensor::equals(*this, other);}

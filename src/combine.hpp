@@ -440,63 +440,77 @@ static auto block_(std::initializer_list<std::initializer_list<Nested>> blocks, 
     return concatenate_blocks(depth, blocks_);
 }
 
-// template<typename...Ts, typename IdxContainer, typename SizeT>
-// static auto split_container(const tensor<Ts...>& t, const IdxContainer& split_points, const SizeT& direction){
-//     using tensor_type = tensor<Ts...>;
-//     using config_type = typename tensor_type::config_type;
-//     using index_type = typename tensor_type::index_type;
-//     using nop_type = slice_traits<config_type>::nop_type;
-//     using slice_type = slice_traits<config_type>::slice_type;
-//     using slices_container_type = slice_traits<config_type>::slices_container_type;
-//     static_assert(std::is_convertible_v<typename std::iterator_traits<decltype(std::begin(split_points))>::value_type, index_type>);
+//Split tensor and return container of slice views
+template<typename...Ts, typename IdxContainer>
+static auto split_by_points(const tensor<Ts...>& t, const IdxContainer& split_points, const typename tensor<Ts...>::size_type& direction){
+    using tensor_type = tensor<Ts...>;
+    using config_type = typename tensor_type::config_type;
+    using size_type = typename tensor_type::size_type;
+    using index_type = typename tensor_type::index_type;
+    using nop_type = typename slice_traits<config_type>::nop_type;
+    using slice_type = typename slice_traits<config_type>::slice_type;
+    using view_type = decltype(t(slice_type{},size_type{0}));
+    using res_type = typename config_type::template container<view_type>;
+    using res_size_type = typename res_type::size_type;
+    static_assert(detail::is_indexes_container<IdxContainer,index_type>);
 
-//     if (direction >= t.dim()){
-//         throw combine_exception("invalid split direction");
-//     }
+    const res_size_type parts_number = static_cast<res_size_type>(split_points.size()) + res_size_type{1};
+    if (direction >= t.dim()){
+        throw combine_exception("invalid split direction");
+    }
 
-//     if (split_points.size() == 0){
+    if (parts_number == res_size_type{1}){
+        return res_type(parts_number, t({},size_type{0}));
+    }else{
+        res_type res{};
+        res.reserve(parts_number);
+        auto split_points_it = std::begin(split_points);
+        index_type point{0};
+        do{
+            index_type next_point = *split_points_it;
+            res.push_back(t(slice_type{point, next_point},direction));
+            point = next_point;
+            ++split_points_it;
+        }while(split_points_it != std::end(split_points));
+        res.push_back(t(slice_type{point, nop_type{}},direction));
+        return res;
+    }
+}
+template<typename...Ts>
+static auto split_equal_parts(const tensor<Ts...>& t, const typename tensor<Ts...>::index_type& parts_number, const typename tensor<Ts...>::size_type& direction){
+    using tensor_type = tensor<Ts...>;
+    using config_type = typename tensor_type::config_type;
+    using size_type = typename tensor_type::size_type;
+    using index_type = typename tensor_type::index_type;
+    using slice_type = typename slice_traits<config_type>::slice_type;
+    using view_type = decltype(t(slice_type{},size_type{0}));
+    using res_type = typename config_type::template container<view_type>;
+    using res_size_type = typename res_type::size_type;
 
-//     }else{
-//         slices_container_type slices{};
-//         auto split_points_it = std::begin(split_points);
-//         do{
-//             slices[direction] = slice_type(0,)
-//         }while(split_points_it != std::end(split_points))
-//     }
-// }
+    const res_size_type parts_number_ = static_cast<res_size_type>(parts_number);
+    if (direction >= t.dim()){
+        throw combine_exception("invalid split direction");
+    }
+    const index_type direction_size = t.descriptor().shape()[direction];
+    if (parts_number == index_type{0} || direction_size % parts_number != index_type{0}){
+        throw combine_exception("can't split in equal parts");
+    }
 
-// template<typename...Ts, typename...Us, typename SizeT>
-// static auto split_container(const tensor<Ts...>& t, const tensor<Us...>& split_points, const SizeT& direction){
-//     using tensor_type = tensor<Ts...>;
-//     using config_type = typename tensor_type::config_type;
-//     using index_type = typename tensor_type::index_type;
-//     using nop_type = slice_traits<config_type>::nop_type;
-//     using slice_type = slice_traits<config_type>::slice_type;
-//     using slices_container_type = slice_traits<config_type>::slices_container_type;
-//     static_assert(std::is_convertible_v<typename std::iterator_traits<decltype(std::begin(split_points))>::value_type, index_type>);
-
-//     if (direction >= t.dim()){
-//         throw combine_exception("invalid split direction");
-//     }
-//     if split_points
-
-//     slices_container_type slices{};
-//     auto split_points_it = std::begin(split_points);
-//     do{
-//         slices[direction] = slice_type(0,)
-//     }while(split_points_it != std::end(split_points))
-
-
-// }
-
-// template<typename...Ts, typename SizeT>
-// static auto split_list(const tensor<Ts...>& t, std::initializer_list<typename tensor<Ts...>::index_type> split_points, const SizeT& direction){
-//     return split_container(t, split_points, direction);
-// }
-// template<typename...Ts>
-// static auto split_(const tensor<Ts...>& t, const typename tensor<Ts...>::index_type& n, const typename tensor<Ts...>::size_type& direction){
-
-// }
+    if (parts_number == index_type{1}){
+        return res_type(parts_number_, t({},size_type{0}));
+    }else{
+        res_type res{};
+        res.reserve(parts_number_);
+        index_type point{0};
+        const index_type part_size = direction_size/parts_number;
+        do{
+            index_type next_point = point+part_size;
+            res.push_back(t(slice_type{point,next_point},direction));
+            point = next_point;
+        }while(point!=direction_size);
+        return res;
+    }
+}
 
 //interface
 template<typename SizeT, typename...Us, typename...Ts>
@@ -513,6 +527,12 @@ template<typename...Ts>
 friend auto block(std::initializer_list<std::initializer_list<std::initializer_list<tensor<Ts...>>>> blocks);
 template<typename...Ts>
 friend auto block(std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<tensor<Ts...>>>>> blocks);
+template<typename...Ts, typename IdxContainer, typename SizeT, std::enable_if_t<detail::is_indexes_container<IdxContainer, typename tensor<Ts...>::index_type>,int>>
+friend auto split(const tensor<Ts...>& t, const IdxContainer& split_points, const SizeT& direction);
+template<typename...Ts, typename SizeT>
+friend auto split(const tensor<Ts...>& t, std::initializer_list<typename tensor<Ts...>::index_type> split_points, const SizeT& direction);
+template<typename...Ts>
+friend auto split(const tensor<Ts...>& t, const typename tensor<Ts...>::index_type& parts_number, const typename tensor<Ts...>::size_type& direction);
 
 };  //end of class combiner
 
@@ -543,6 +563,18 @@ auto block(std::initializer_list<std::initializer_list<std::initializer_list<ten
 template<typename...Ts>
 auto block(std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<tensor<Ts...>>>>> blocks){
     return combiner::block_(blocks);
+}
+template<typename...Ts, typename IdxContainer, typename SizeT, std::enable_if_t<detail::is_indexes_container<IdxContainer, typename tensor<Ts...>::index_type>,int> =0>
+auto split(const tensor<Ts...>& t, const IdxContainer& split_points, const SizeT& direction){
+    return combiner::split_by_points(t, split_points, direction);
+}
+template<typename...Ts, typename SizeT>
+auto split(const tensor<Ts...>& t, std::initializer_list<typename tensor<Ts...>::index_type> split_points, const SizeT& direction){
+    return combiner::split_by_points(t, split_points, direction);
+}
+template<typename...Ts>
+auto split(const tensor<Ts...>& t, const typename tensor<Ts...>::index_type& parts_number, const typename tensor<Ts...>::size_type& direction){
+    return combiner::split_equal_parts(t, parts_number, direction);
 }
 
 }   //end of namespace gtensor

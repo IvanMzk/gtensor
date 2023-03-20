@@ -48,7 +48,7 @@ struct default_config{
     //using size_type = std::int64_t;
     using size_type = std::size_t;
 
-    //generally when public interface expected parameter of container semantic it may be any type providig usual container semantic and interface: iterators, aliases...
+    //generally when public interface expected container parameter it may be any type providig usual container semantic and interface: iterators, aliases...
     //specialization of config_type::container uses as return type in public interface
     //it may be used by implementation as general purpose container
     template<typename T> using container = std::vector<T>;

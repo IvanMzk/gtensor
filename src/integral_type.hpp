@@ -156,7 +156,11 @@ public:
         integral(other.value())
     {}
 
-    //explicit operator value_type()const{return value_;}
+    template<typename U>
+    explicit operator U()const{
+        //check is safe conversion
+        return static_cast<U>(value_);
+    }
     value_type value()const{return value_;}
 
     INTEGRAL_BINARY_ASSIGNMENT_MEMBER_OPERATOR(operator+=,+=);
