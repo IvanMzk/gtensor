@@ -227,7 +227,7 @@ inline void fill_slices_helper(SlicesContainer& res, const ShT& shape, const Sub
     fill_slices_helper<I+1>(res,shape,subs...);
 }
 template<typename SlicesContainer, typename ShT, typename...Subs, typename std::enable_if_t<is_slices<Subs...>,int> = 0 >
-inline auto fill_slices(const ShT& shape, const Subs&...subs){
+inline SlicesContainer fill_slices(const ShT& shape, const Subs&...subs){
     SlicesContainer res{};
     res.reserve(sizeof...(Subs));
     fill_slices_helper<0>(res,shape,subs...);

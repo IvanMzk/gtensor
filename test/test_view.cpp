@@ -26,6 +26,9 @@ TEMPLATE_TEST_CASE("test_view","[test_view]",
         std::make_tuple(tensor_type{1,2,3,4,5}({2,nop},0),tensor_type{3,4,5}),
         std::make_tuple(tensor_type{{1,2},{3,4},{5,6}}({1,-1},0),tensor_type{{3,4}}),
         std::make_tuple(tensor_type{{1,2},{3,4},{5,6}}({{},{},-1},0),tensor_type{{5,6},{3,4},{1,2}}),
+        std::make_tuple(tensor_type{{{1,2},{3,4},{5,6}},{{7,8},{9,10},{11,12}}}({{-1},{}},0),tensor_type{{{7,8},{9,10},{11,12}}}),
+        std::make_tuple(tensor_type{{{1,2},{3,4},{5,6}},{{7,8},{9,10},{11,12}}}({{},{},2},1),tensor_type{{{1,2},{5,6}},{{7,8},{11,12}}}),
+        std::make_tuple(tensor_type{{{1,2},{3,4},{5,6}},{{7,8},{9,10},{11,12}}}({{},{1}},2),tensor_type{{{1},{3},{5}},{{7},{9},{11}}}),
         //slice view init-list interface
         std::make_tuple(tensor_type{1}({{}}),tensor_type{1}),
         std::make_tuple(tensor_type{1}({{0}}),tensor_type{1}),
@@ -111,23 +114,7 @@ TEMPLATE_TEST_CASE("test_view","[test_view]",
     auto test = [](auto& t){
         auto result = std::get<0>(t);
         auto expected = std::get<1>(t);
-        //REQUIRE(result.shape() == expected.shape());
-        REQUIRE(std::equal(result.begin(), result.end(), expected.begin()));
-        //REQUIRE(result.equals(expected));
+        REQUIRE(result.equals(expected));
     };
     apply_by_element(test,test_data);
-}
-
-TEMPLATE_TEST_CASE("test_prev","[test_view]",
-    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-)
-{
-    using value_type = double;
-    using config_type = TestType;
-    using tensor_type = gtensor::tensor<value_type,config_type>;
-
-    tensor_type t{1,2,3,4,5,6};
-    auto e = t+t;
-    //auto it = e.end();
-    //auto prev_it = std::prev(it);
 }
