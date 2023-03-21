@@ -16,6 +16,7 @@ template<typename DescT, typename EngineT> class viewing_tensor;
 template<typename ValT, typename CfgT> class tensor_base;
 template<typename ValT, typename CfgT, typename ImplT> class tensor;
 
+class combiner;
 
 }   //end of namespace gtensor
 

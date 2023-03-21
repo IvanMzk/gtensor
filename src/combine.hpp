@@ -6,6 +6,7 @@
 #include <algorithm>
 #include "forward_decl.hpp"
 #include "tensor_init_list.hpp"
+#include "type_selector.hpp"
 #include "tensor_factory.hpp"
 #include "slice.hpp"
 
@@ -512,69 +513,101 @@ static auto split_equal_parts(const tensor<Ts...>& t, const typename tensor<Ts..
     }
 }
 
-//interface
-template<typename SizeT, typename...Us, typename...Ts>
-friend auto stack(const SizeT& direction, const tensor<Us...>& t, const Ts&...ts);
-template<typename SizeT, typename...Us, typename...Ts>
-friend auto concatenate(const SizeT& direction, const tensor<Us...>& t, const Ts&...ts);
+public:
+//combiner interface
+template<typename SizeT, typename...Ts, typename...Tensors>
+static auto stack(const SizeT& direction, const tensor<Ts...>& t, const Tensors&...ts){
+    return stack_(direction, t, ts...);
+}
+template<typename SizeT, typename...Ts, typename...Tensors>
+static auto concatenate(const SizeT& direction, const tensor<Ts...>& t, const Tensors&...ts){
+    return concatenate_variadic(direction, t, ts...);
+}
 template<typename SizeT, typename Container>
-friend auto concatenate(const SizeT& direction, const Container& ts);
+static auto concatenate(const SizeT& direction, const Container& ts){
+    return concatenate_container(direction, ts);
+}
 template<typename...Ts>
-friend auto block(std::initializer_list<tensor<Ts...>> blocks);
+static auto block(std::initializer_list<tensor<Ts...>> blocks){
+    return block_(blocks);
+}
 template<typename...Ts>
-friend auto block(std::initializer_list<std::initializer_list<tensor<Ts...>>> blocks);
+static auto block(std::initializer_list<std::initializer_list<tensor<Ts...>>> blocks){
+    return block_(blocks);
+}
 template<typename...Ts>
-friend auto block(std::initializer_list<std::initializer_list<std::initializer_list<tensor<Ts...>>>> blocks);
+static auto block(std::initializer_list<std::initializer_list<std::initializer_list<tensor<Ts...>>>> blocks){
+    return block_(blocks);
+}
 template<typename...Ts>
-friend auto block(std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<tensor<Ts...>>>>> blocks);
-template<typename...Ts, typename IdxContainer, typename SizeT, std::enable_if_t<detail::is_indexes_container<IdxContainer, typename tensor<Ts...>::index_type>,int>>
-friend auto split(const tensor<Ts...>& t, const IdxContainer& split_points, const SizeT& direction);
+static auto block(std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<tensor<Ts...>>>>> blocks){
+    return block_(blocks);
+}
+template<typename...Ts, typename IdxContainer, typename SizeT, std::enable_if_t<detail::is_indexes_container<IdxContainer, typename tensor<Ts...>::index_type>,int> =0>
+static auto split(const tensor<Ts...>& t, const IdxContainer& split_points, const SizeT& direction){
+    return split_by_points(t, split_points, direction);
+}
 template<typename...Ts, typename SizeT>
-friend auto split(const tensor<Ts...>& t, std::initializer_list<typename tensor<Ts...>::index_type> split_points, const SizeT& direction);
+static auto split(const tensor<Ts...>& t, std::initializer_list<typename tensor<Ts...>::index_type> split_points, const SizeT& direction){
+    return split_by_points(t, split_points, direction);
+}
 template<typename...Ts>
-friend auto split(const tensor<Ts...>& t, const typename tensor<Ts...>::index_type& parts_number, const typename tensor<Ts...>::size_type& direction);
+static auto split(const tensor<Ts...>& t, const typename tensor<Ts...>::index_type& parts_number, const typename tensor<Ts...>::size_type& direction){
+    return split_equal_parts(t, parts_number, direction);
+}
 
 };  //end of class combiner
 
-template<typename SizeT, typename...Us, typename...Ts>
-auto stack(const SizeT& direction, const tensor<Us...>& t, const Ts&...ts){
-    return combiner::stack_(direction, t, ts...);
+//combine module free functions
+template<typename SizeT, typename...Ts, typename...Tensors>
+auto stack(const SizeT& direction, const tensor<Ts...>& t, const Tensors&...ts){
+    using config_type = typename tensor<Ts...>::config_type;
+    return combiner_selector<config_type>::type::stack(direction, t, ts...);
 }
-template<typename SizeT, typename...Us, typename...Ts>
-auto concatenate(const SizeT& direction, const tensor<Us...>& t, const Ts&...ts){
-    return combiner::concatenate_variadic(direction, t, ts...);
+template<typename SizeT, typename...Ts, typename...Tensors>
+auto concatenate(const SizeT& direction, const tensor<Ts...>& t, const Tensors&...ts){
+    using config_type = typename tensor<Ts...>::config_type;
+    return combiner_selector<config_type>::type::concatenate(direction, t, ts...);
 }
 template<typename SizeT, typename Container>
 auto concatenate(const SizeT& direction, const Container& ts){
-    return combiner::concatenate_container(direction, ts);
+    using config_type = typename Container::value_type::config_type;
+    return combiner_selector<config_type>::type::concatenate(direction, ts);
 }
 template<typename...Ts>
 auto block(std::initializer_list<tensor<Ts...>> blocks){
-    return combiner::block_(blocks);
+    using config_type = typename tensor<Ts...>::config_type;
+    return combiner_selector<config_type>::type::block(blocks);
 }
 template<typename...Ts>
 auto block(std::initializer_list<std::initializer_list<tensor<Ts...>>> blocks){
-    return combiner::block_(blocks);
+    using config_type = typename tensor<Ts...>::config_type;
+    return combiner_selector<config_type>::type::block(blocks);
 }
 template<typename...Ts>
 auto block(std::initializer_list<std::initializer_list<std::initializer_list<tensor<Ts...>>>> blocks){
-    return combiner::block_(blocks);
+    using config_type = typename tensor<Ts...>::config_type;
+    return combiner_selector<config_type>::type::block(blocks);
 }
 template<typename...Ts>
 auto block(std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<tensor<Ts...>>>>> blocks){
-    return combiner::block_(blocks);
+    using config_type = typename tensor<Ts...>::config_type;
+    return combiner_selector<config_type>::type::block(blocks);
 }
 template<typename...Ts, typename IdxContainer, typename SizeT, std::enable_if_t<detail::is_indexes_container<IdxContainer, typename tensor<Ts...>::index_type>,int> =0>
 auto split(const tensor<Ts...>& t, const IdxContainer& split_points, const SizeT& direction){
-    return combiner::split_by_points(t, split_points, direction);
+    using config_type = typename tensor<Ts...>::config_type;
+    return combiner_selector<config_type>::type::split(t, split_points, direction);
 }
 template<typename...Ts, typename SizeT>
 auto split(const tensor<Ts...>& t, std::initializer_list<typename tensor<Ts...>::index_type> split_points, const SizeT& direction){
-    return combiner::split_by_points(t, split_points, direction);
+    using config_type = typename tensor<Ts...>::config_type;
+    return combiner_selector<config_type>::type::split(t, split_points, direction);
 }
 template<typename...Ts>
 auto split(const tensor<Ts...>& t, const typename tensor<Ts...>::index_type& parts_number, const typename tensor<Ts...>::size_type& direction){
-    return combiner::split_equal_parts(t, parts_number, direction);
+    using config_type = typename tensor<Ts...>::config_type;
+    return combiner_selector<config_type>::type::split(t, parts_number, direction);
 }
 
 }   //end of namespace gtensor
