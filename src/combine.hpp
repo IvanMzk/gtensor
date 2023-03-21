@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <algorithm>
 #include "forward_decl.hpp"
+#include "common.hpp"
 #include "tensor_init_list.hpp"
 #include "type_selector.hpp"
 #include "tensor_factory.hpp"
@@ -21,9 +22,12 @@ public:
 
 namespace detail{
 
-template<typename T, typename IdxT, typename = void> constexpr inline bool is_indexes_container = false;
-template<typename T, typename IdxT> constexpr inline bool is_indexes_container<T, IdxT, std::void_t<decltype(std::begin(std::declval<T&>()))>> =
-    std::is_convertible_v<typename std::iterator_traits<decltype(std::begin(std::declval<T&>()))>::value_type,IdxT>;
+template<typename T, typename IdxT, typename = void> constexpr inline bool is_index_container_v = false;
+template<typename T, typename IdxT> constexpr inline bool is_index_container_v<T, IdxT, std::void_t<std::enable_if_t<is_container_v<T>>>> = std::is_convertible_v<typename T::value_type,IdxT>;
+
+template<typename T, typename = void> constexpr inline bool is_tensor_container_v = false;
+template<typename T> constexpr inline bool is_tensor_container_v<T, std::void_t<std::enable_if_t<is_container_v<T>>>> = is_tensor_v<typename T::value_type>;
+
 
 template<typename SizeT, typename ShT, typename...ShTs>
 void check_stack_args(const SizeT& direction, const ShT& shape, const ShTs&...shapes){
@@ -319,6 +323,7 @@ static auto concatenate_variadic(const SizeT& direction, const tensor<Us...>& t,
 }
 template<typename SizeT, typename Container>
 static auto concatenate_container(const SizeT& direction, const SizeT& res_dim, const Container& ts){
+    static_assert(detail::is_tensor_container_v<Container>);
     using tensor_type = typename Container::value_type;
     using size_type = typename tensor_type::size_type;
     using index_type = typename tensor_type::index_type;
@@ -389,6 +394,7 @@ static auto concatenate_container(const SizeT& direction, const SizeT& res_dim, 
 }
 template<typename SizeT, typename Container>
 static auto concatenate_container(const SizeT& direction, const Container& ts){
+    static_assert(detail::is_tensor_container_v<Container>);
     using tensor_type = typename Container::value_type;
     using config_type = typename tensor_type::config_type;
     using size_type = typename tensor_type::size_type;
@@ -405,6 +411,7 @@ static auto concatenate_container(const SizeT& direction, const Container& ts){
 //Assemble tensor from nested lists of blocks
 template<typename Container>
 static auto concatenate_blocks(std::size_t depth, const Container& blocks){
+    static_assert(detail::is_tensor_container_v<Container>);
     using tensor_type = typename Container::value_type;
     using size_type = typename tensor_type::size_type;
     using config_type = typename tensor_type::config_type;
@@ -423,13 +430,14 @@ static auto concatenate_blocks(std::size_t depth, const Container& blocks){
         return concatenate_container(direction, res_dim, blocks);
     }
 }
-template<typename T>
-static auto block_(std::initializer_list<T> blocks, std::size_t depth = detail::nested_initialiser_list_depth<decltype(blocks)>::value){
+template<typename...Ts>
+static auto block_(std::initializer_list<tensor<Ts...>> blocks, std::size_t depth = detail::nested_initialiser_list_depth<decltype(blocks)>::value){
     return concatenate_blocks(depth, blocks);
 }
 template<typename Nested>
 static auto block_(std::initializer_list<std::initializer_list<Nested>> blocks, std::size_t depth = detail::nested_initialiser_list_depth<decltype(blocks)>::value){
     using tensor_type = typename detail::nested_initialiser_list_value_type<Nested>::type;
+    static_assert(detail::is_tensor_v<tensor_type>);
     using config_type = typename tensor_type::config_type;
     using block_type = decltype(block_(*blocks.begin(), depth-1));
 
@@ -453,7 +461,7 @@ static auto split_by_points(const tensor<Ts...>& t, const IdxContainer& split_po
     using view_type = decltype(t(slice_type{},size_type{0}));
     using res_type = typename config_type::template container<view_type>;
     using res_size_type = typename res_type::size_type;
-    static_assert(detail::is_indexes_container<IdxContainer,index_type>);
+    static_assert(detail::is_index_container_v<IdxContainer, index_type>);
 
     const res_size_type parts_number = static_cast<res_size_type>(split_points.size()) + res_size_type{1};
     if (direction >= t.dim()){
@@ -525,6 +533,7 @@ static auto concatenate(const SizeT& direction, const tensor<Ts...>& t, const Te
 }
 template<typename SizeT, typename Container>
 static auto concatenate(const SizeT& direction, const Container& ts){
+    static_assert(detail::is_tensor_container_v<Container>);
     return concatenate_container(direction, ts);
 }
 template<typename...Ts>
@@ -543,7 +552,7 @@ template<typename...Ts>
 static auto block(std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<tensor<Ts...>>>>> blocks){
     return block_(blocks);
 }
-template<typename...Ts, typename IdxContainer, typename SizeT, std::enable_if_t<detail::is_indexes_container<IdxContainer, typename tensor<Ts...>::index_type>,int> =0>
+template<typename...Ts, typename IdxContainer, typename SizeT, std::enable_if_t<detail::is_index_container_v<IdxContainer, typename tensor<Ts...>::index_type>,int> =0>
 static auto split(const tensor<Ts...>& t, const IdxContainer& split_points, const SizeT& direction){
     return split_by_points(t, split_points, direction);
 }
@@ -571,6 +580,7 @@ auto concatenate(const SizeT& direction, const tensor<Ts...>& t, const Tensors&.
 }
 template<typename SizeT, typename Container>
 auto concatenate(const SizeT& direction, const Container& ts){
+    static_assert(detail::is_tensor_container_v<Container>);
     using config_type = typename Container::value_type::config_type;
     return combiner_selector<config_type>::type::concatenate(direction, ts);
 }
@@ -594,7 +604,7 @@ auto block(std::initializer_list<std::initializer_list<std::initializer_list<std
     using config_type = typename tensor<Ts...>::config_type;
     return combiner_selector<config_type>::type::block(blocks);
 }
-template<typename...Ts, typename IdxContainer, typename SizeT, std::enable_if_t<detail::is_indexes_container<IdxContainer, typename tensor<Ts...>::index_type>,int> =0>
+template<typename...Ts, typename IdxContainer, typename SizeT, std::enable_if_t<detail::is_index_container_v<IdxContainer, typename tensor<Ts...>::index_type>,int> =0>
 auto split(const tensor<Ts...>& t, const IdxContainer& split_points, const SizeT& direction){
     using config_type = typename tensor<Ts...>::config_type;
     return combiner_selector<config_type>::type::split(t, split_points, direction);

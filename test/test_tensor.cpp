@@ -3,18 +3,7 @@
 #include "catch.hpp"
 #include "gtensor.hpp"
 #include "helpers_for_testing.hpp"
-
-namespace test_tensor_{
-
-    class C{};
-
-    template<typename ValT, typename CfgT>
-    class test_tensor : public gtensor::tensor<ValT, CfgT>
-    {
-        using base_tensor = gtensor::tensor<ValT, CfgT>;
-        using base_tensor::base_tensor;
-    };
-}
+#include "integral_type.hpp"
 
 TEST_CASE("test_is_iterator","[test_tensor]"){
     using gtensor::detail::is_iterator;
@@ -24,56 +13,31 @@ TEST_CASE("test_is_iterator","[test_tensor]"){
 }
 
 TEST_CASE("test_is_tensor","[test_tensor]"){
-    using value_type = double;
-    using config_type = gtensor::config::default_config;
-    using tensor_type = gtensor::tensor<value_type, config_type>;
-    using test_tensor_type = test_tensor_::test_tensor<value_type,config_type>;
-    using gtensor::detail::is_index;
-    using gtensor::detail::is_bool;
-    using gtensor::detail::is_index_tensor;
-    using gtensor::detail::is_bool_tensor;
-    using gtensor::detail::is_tensor;
+    using gtensor::tensor;
+    using gtensor::integral;
+    using gtensor::detail::is_index_tensor_v;
+    using gtensor::detail::is_bool_tensor_v;
 
-    REQUIRE(is_tensor<tensor_type>::value);
-    REQUIRE(is_tensor<decltype(tensor_type{1,2,3} + tensor_type{1,2,3})>::value);
-    REQUIRE(is_tensor<test_tensor_type>::value);
-    REQUIRE(is_tensor<decltype(test_tensor_type{1,2,3} + test_tensor_type{1,2,3})>::value);
-    REQUIRE(!is_tensor<std::string>::value);
-    REQUIRE(!is_tensor<std::vector<int>>::value);
+    REQUIRE(is_index_tensor_v<tensor<int>,int>);
+    REQUIRE(is_index_tensor_v<tensor<integral<std::int64_t>>,integral<std::int64_t>>);
+    REQUIRE(is_index_tensor_v<tensor<int>,integral<std::int64_t>>);
+    REQUIRE(is_index_tensor_v<tensor<std::size_t>,std::int64_t>);
+    REQUIRE(is_index_tensor_v<tensor<bool>,std::int64_t>);
+    REQUIRE(is_index_tensor_v<tensor<bool>,int>);
 
-    REQUIRE(is_index<int,int>::value);
-    REQUIRE(is_index<std::size_t,int>::value);
-    REQUIRE(is_index<float,int>::value);
-    REQUIRE(!is_index<bool,int>::value);
-    REQUIRE(!is_index<bool,std::int64_t>::value);
-    REQUIRE(is_bool<bool>::value);
-    REQUIRE(!is_bool<int>::value);
-    REQUIRE(!is_bool<std::vector<bool>>::value);
+    REQUIRE(!is_index_tensor_v<tensor<float>,integral<std::int64_t>>);
 
-    REQUIRE(is_index_tensor<gtensor::tensor<int, config_type>,int>::value);
-    REQUIRE(is_index_tensor<gtensor::tensor<std::size_t, config_type>,std::int64_t>::value);
-    REQUIRE(is_index_tensor<gtensor::tensor<float, config_type>,std::int64_t>::value);
-    REQUIRE(is_index_tensor<test_tensor_::test_tensor<int, config_type>,int>::value);
-    REQUIRE(is_index_tensor<test_tensor_::test_tensor<std::size_t, config_type>,std::int64_t>::value);
-    REQUIRE(is_index_tensor<test_tensor_::test_tensor<float, config_type>,std::int64_t>::value);
-    REQUIRE(!is_index_tensor<test_tensor_::test_tensor<bool, config_type>,std::int64_t>::value);
-    REQUIRE(!is_index_tensor<test_tensor_::C,std::int64_t>::value);
-    REQUIRE(!is_index_tensor<gtensor::tensor<bool, config_type>,std::int64_t>::value);
-    REQUIRE(!is_index_tensor<gtensor::tensor<bool, config_type>,int>::value);
-    REQUIRE(!is_index_tensor<std::vector<int>,int>::value);
-    REQUIRE(!is_index_tensor<std::string,int>::value);
-    REQUIRE(!is_index_tensor<std::vector<bool>,int>::value);
+    REQUIRE(!is_index_tensor_v<tensor<integral<std::int64_t>>,std::int64_t>);
+    REQUIRE(!is_index_tensor_v<std::vector<int>,int>);
+    REQUIRE(!is_index_tensor_v<std::string,int>);
+    REQUIRE(!is_index_tensor_v<std::vector<bool>,int>);
 
-    REQUIRE(is_bool_tensor<gtensor::tensor<bool, config_type>>::value);
-    REQUIRE(is_bool_tensor<test_tensor_::test_tensor<bool, config_type>>::value);
-    REQUIRE(!is_bool_tensor<gtensor::tensor<int, config_type>>::value);
-    REQUIRE(!is_bool_tensor<gtensor::tensor<float, config_type>>::value);
-    REQUIRE(!is_bool_tensor<test_tensor_::test_tensor<int, config_type>>::value);
-    REQUIRE(!is_bool_tensor<test_tensor_::test_tensor<float, config_type>>::value);
-    REQUIRE(!is_bool_tensor<test_tensor_::C>::value);
-    REQUIRE(!is_bool_tensor<std::vector<int>>::value);
-    REQUIRE(!is_bool_tensor<std::string>::value);
-    REQUIRE(!is_bool_tensor<std::vector<bool>>::value);
+    REQUIRE(is_bool_tensor_v<tensor<bool>>);
+    REQUIRE(!is_bool_tensor_v<tensor<int>>);
+    REQUIRE(!is_bool_tensor_v<tensor<float>>);
+    REQUIRE(!is_bool_tensor_v<std::vector<int>>);
+    REQUIRE(!is_bool_tensor_v<std::string>);
+    REQUIRE(!is_bool_tensor_v<std::vector<bool>>);
 }
 
 TEST_CASE("test_tensor_default_constructor","[test_tensor]"){

@@ -11,6 +11,7 @@ TEMPLATE_TEST_CASE("test_view","[test_view]",
     using value_type = double;
     using config_type = TestType;
     using index_type = typename config_type::index_type;
+    using gtensor::tensor;
     using tensor_type = gtensor::tensor<value_type,config_type>;
     using index_tensor_type =  gtensor::tensor<index_type, config_type>;
     using bool_tensor_type =  gtensor::tensor<bool, config_type>;

@@ -604,17 +604,17 @@ TEMPLATE_TEST_CASE("test_block_exception","[test_combine]",
     REQUIRE_THROWS_AS(block(nested_init_list2_type<tensor_type>{{tensor_type{1,2}},{tensor_type{3,4,5}}}), combine_exception);
 }
 
-TEST_CASE("test_is_indexes_container","[test_combine]"){
+TEST_CASE("test_is_index_container","[test_combine]"){
     using gtensor::tensor;
     using config_type = gtensor::config::default_config;
     using index_type = typename config_type::index_type;
-    using gtensor::detail::is_indexes_container;
+    using gtensor::detail::is_index_container_v;
 
-    REQUIRE(is_indexes_container<std::vector<int>,int>);
-    REQUIRE(is_indexes_container<std::vector<index_type>,index_type>);
-    REQUIRE(is_indexes_container<std::array<index_type,3>,index_type>);
-    REQUIRE(is_indexes_container<tensor<index_type>,index_type>);
-    REQUIRE(!is_indexes_container<std::vector<std::string>,int>);
+    REQUIRE(is_index_container_v<std::vector<int>,int>);
+    REQUIRE(is_index_container_v<std::vector<index_type>,index_type>);
+    REQUIRE(is_index_container_v<std::array<index_type,3>,index_type>);
+    REQUIRE(is_index_container_v<tensor<index_type>,index_type>);
+    REQUIRE(!is_index_container_v<std::vector<std::string>,int>);
 }
 
 TEMPLATE_TEST_CASE("test_split_split_points","[test_combine]",

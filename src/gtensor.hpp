@@ -2,6 +2,7 @@
 #define GTENSOR_HPP_
 
 #include <memory>
+#include "common.hpp"
 #include "tensor_factory.hpp"
 #include "tensor.hpp"
 #include "tensor_operators.hpp"
@@ -15,31 +16,11 @@ namespace gtensor{
 
 namespace detail{
 
-template<typename> struct true_type : std::true_type{};
-template<typename T, template<typename...> typename C = true_type> struct is_tensor{
-private:
-    template<typename...Ts> static C<typename tensor<Ts...>::value_type> selector(const tensor<Ts...>&);
-    static std::false_type selector(...);
-public:
-    using type = typename decltype(selector(std::declval<T>()))::type;
-    static constexpr bool value = type::value;
-};
-template<typename ValT, typename IdxT> struct is_index : std::is_convertible<ValT,IdxT>::type{};
-template<typename IdxT> struct is_index<bool,IdxT> : std::false_type{};
-template<typename ValT> struct is_bool : std::false_type{};
-template<> struct is_bool<bool> : std::true_type{};
+template<typename T, typename IdxT, typename=void> constexpr inline bool is_index_tensor_v = false;
+template<typename T, typename IdxT> constexpr inline bool is_index_tensor_v<T,IdxT,std::void_t<std::enable_if_t<is_tensor_v<T>>>> = std::is_convertible_v<typename T::value_type, IdxT>;
 
-template<typename T, typename IdxT> struct is_index_tensor
-{
-    template<typename V> using checker = is_index<V,IdxT>;
-    using type = typename is_tensor<T, checker>::type;
-    static constexpr bool value = type::value;
-};
-template<typename T> struct is_bool_tensor
-{
-    using type = typename is_tensor<T, is_bool>::type;
-    static constexpr bool value = type::value;
-};
+template<typename T, typename=void> constexpr inline bool is_bool_tensor_v = false;
+template<typename T> constexpr inline bool is_bool_tensor_v<T,std::void_t<std::enable_if_t<is_tensor_v<T>>>> = std::is_same_v<typename T::value_type, bool>;
 
 }   //end of namespace detail
 
@@ -186,7 +167,7 @@ public:
         detail::check_slices(descriptor().shape(), filled_subs);
         return view_factory<ValT,CfgT>::create_view_slice(impl(), filled_subs);
     }
-    template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,slice_type>...>,int> = 0 >
+    template<typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs,slice_type>&&...),int> = 0 >
     auto operator()(const Subs&...subs)const{
         detail::check_slices_number(descriptor().shape(), subs...);
         slices_container_type filled_subs = detail::fill_slices<slices_container_type>(descriptor().shape(),subs...);
@@ -201,13 +182,13 @@ public:
         return view_factory<ValT,CfgT>::create_view_slice(impl(), filled_subs);
     }
     //transpose view
-    template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,size_type>...>,int> = 0 >
+    template<typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs,size_type>&&...),int> = 0 >
     auto transpose(const Subs&...subs)const{
         detail::check_transpose_subs(dim(),subs...);
         return view_factory<ValT,CfgT>::create_view_transpose(impl(), static_cast<size_type>(subs)...);
     }
     //subdimension view
-    template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,index_type>...>,int> = 0 >
+    template<typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs,index_type>&&...),int> = 0 >
     auto operator()(const Subs&...subs)const{
         shape_type subs_{subs...};
         detail::check_subdim_subs(descriptor().shape(), subs_);
@@ -217,17 +198,17 @@ public:
         return view_factory<ValT,CfgT>::create_view_subdim(impl(), shape_type{});
     }
     //reshape view
-    template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,index_type>...>,int> = 0 >
+    template<typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs,index_type>&&...),int> = 0 >
     auto reshape(const Subs&...subs)const{
         detail::check_reshape_subs(size(), static_cast<index_type>(subs)...);
         return view_factory<ValT,CfgT>::create_view_reshape(impl(), shape_type{subs...});
     }
     //mapping view
-    template<typename...Subs, std::enable_if_t<std::conjunction_v<detail::is_index_tensor<Subs,index_type>...>,int> = 0 >
+    template<typename...Subs, std::enable_if_t<(detail::is_index_tensor_v<Subs,index_type>&&...),int> = 0 >
     auto operator()(const Subs&...subs)const{
         return view_factory<ValT,CfgT>::create_index_mapping_view(impl(), subs...);
     }
-    template<typename Subs, std::enable_if_t<detail::is_bool_tensor<Subs>::value ,int> = 0 >
+    template<typename Subs, std::enable_if_t<detail::is_bool_tensor_v<Subs> ,int> = 0 >
     auto operator()(const Subs& subs)const{
         return view_factory<ValT,CfgT>::create_bool_mapping_view(impl(), subs);
     }

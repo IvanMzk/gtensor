@@ -121,14 +121,10 @@ class integral
 public:
     using value_type = T;
     integral() = default;
-    integral(value_type value__):
-        value_{value__}
-    {}
-    template<typename U, std::enable_if_t<std::is_convertible_v<U,value_type>,int> =0>
+    template<typename U, std::enable_if_t<std::is_integral_v<U> && std::is_convertible_v<U,value_type>,int> =0>
     integral(U value__):
         value_(value__)
     {
-        static_assert(std::is_integral_v<U>);
         if constexpr (std::is_unsigned_v<U>){
             if constexpr (cmp_less(std::numeric_limits<value_type>::max(), std::numeric_limits<U>::max())){
                 if (cmp_less(std::numeric_limits<value_type>::max(), value__)){ //max < value_
