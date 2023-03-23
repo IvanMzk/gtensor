@@ -36,8 +36,10 @@ TEMPLATE_TEST_CASE("test_list_parser","[test_tensor_init_list]",std::vector<std:
 
     REQUIRE(list_parse<value_type, container_type>(nested_init_list1<int>{}) == container_type{0});
     REQUIRE(list_parse<value_type, container_type>(nested_init_list1<int>{1,2,3}) == container_type{3});
+    REQUIRE(list_parse<value_type, container_type>(nested_init_list2<int>{{}}) == container_type{1,0});
     REQUIRE(list_parse<value_type, container_type>(nested_init_list2<int>{{},{},{}}) == container_type{3,0});
     REQUIRE(list_parse<value_type, container_type>(nested_init_list2<int>{{1,2},{3,4},{5,6}}) == container_type{3,2});
+    REQUIRE(list_parse<value_type, container_type>(nested_init_list3<int>{{{}}}) == container_type{1,1,0});
     REQUIRE(list_parse<value_type, container_type>(nested_init_list3<int>{{{},{}},{{},{}},{{},{}}}) == container_type{3,2,0});
     REQUIRE(list_parse<value_type, container_type>(nested_init_list3<int>{{{1},{2}},{{3},{4}},{{5},{6}}}) == container_type{3,2,1});
 }

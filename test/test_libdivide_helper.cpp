@@ -16,6 +16,7 @@ TEMPLATE_TEST_CASE("test_make_dividers", "[test_libdivide_helper]", std::int64_t
     REQUIRE(make_dividers<native_config_type>(std::vector<value_type>{3,4,5}) == std::vector<value_type>{3,4,5});
 
     REQUIRE(make_dividers<libdivide_config_type>(std::vector<value_type>{}) == std::vector<libdivide_divider_type>{});
+    //REQUIRE(make_dividers<libdivide_config_type>(std::vector<value_type>{0}) == std::vector<libdivide_divider_type>{0});
     REQUIRE(make_dividers<libdivide_config_type>(std::vector<value_type>{1}) == std::vector<libdivide_divider_type>{libdivide_divider_type{1}});
     REQUIRE(make_dividers<libdivide_config_type>(std::vector<value_type>{3,4,5}) == std::vector<libdivide_divider_type>{libdivide_divider_type{3},libdivide_divider_type{4},libdivide_divider_type{5}});
 }

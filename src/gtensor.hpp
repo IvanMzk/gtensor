@@ -70,10 +70,7 @@ public:
     using size_type = typename config_type::size_type;
     using shape_type = typename config_type::shape_type;
     using value_type = ValT;
-    //constructs tensor using default implementation constructor
-    tensor():
-        tensor(forward_tag{})
-    {}
+
     //copy operartions has reference semantic, to copy by value should use copy method
     tensor(const tensor&) = default;
     tensor& operator=(const tensor&) = default;
@@ -87,6 +84,10 @@ public:
     template<typename U, std::enable_if_t<std::is_convertible_v<U,value_type>,int> =0> tensor(std::initializer_list<std::initializer_list<std::initializer_list<U>>> init_data):tensor(forward_tag{}, init_data){}
     template<typename U, std::enable_if_t<std::is_convertible_v<U,value_type>,int> =0> tensor(std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<U>>>> init_data):tensor(forward_tag{}, init_data){}
     template<typename U, std::enable_if_t<std::is_convertible_v<U,value_type>,int> =0> tensor(std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<U>>>>> init_data):tensor(forward_tag{}, init_data){}
+    //default constructor makes empty 1-d tensor
+    tensor():
+        tensor(std::initializer_list<value_type>{})
+    {}
     //init list shape and value
     template<typename U>
     tensor(std::initializer_list<U> shape__, const value_type& value__):

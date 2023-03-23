@@ -40,7 +40,7 @@ template<typename ResT, typename ShT>
 inline ResT make_strides(const ShT& shape, typename ShT::value_type min_stride = typename ShT::value_type(1)){
     using result_type = ResT;
     using result_value_type = typename result_type::value_type;
-    if (!shape.empty()){
+    if (!std::empty(shape)){
         result_type res(shape.size(), result_value_type());
         auto shape_begin = shape.begin();
         auto shape_it = shape.end();
@@ -77,7 +77,7 @@ inline auto make_strides_div(const ShT& shape){
 template<typename ShT>
 inline auto make_reset_strides(const ShT& shape, const ShT& strides){
     using index_type = typename ShT::value_type;
-    if (!shape.empty()){
+    if (!std::empty(shape)){
         ShT res(shape.size());
         std::transform(
             shape.begin(),
@@ -98,13 +98,13 @@ inline auto make_reset_strides(const ShT& shape, const ShT& strides){
 template<typename ShT>
 inline auto make_size(const ShT& shape, const ShT& strides){
     using index_type = typename ShT::value_type;
-    return shape.empty() ? index_type(0) : shape.front()*strides.front();
+    return std::empty(shape) ? index_type(0) : shape.front()*strides.front();
 }
 
 template<typename IdxT, typename ShT>
 inline auto make_size(const ShT& shape){
     using index_type = IdxT;
-    if (shape.empty()){
+    if (std::empty(shape)){
         return index_type(0);
     }else{
         return std::accumulate(shape.begin(),shape.end(),index_type(1),std::multiplies<index_type>{});

@@ -70,9 +70,6 @@ private:
         basic_tensor_base{engine_type{this, size, init_data...}, descriptor_type{std::forward<ShT>(shape)}}
     {}
 public:
-    storage_tensor():
-        basic_tensor_base{engine_type{this}, descriptor_type{}}
-    {}
     template<typename Nested>
     storage_tensor(std::initializer_list<Nested> init_data):
         storage_tensor{detail::list_parse<size_type,shape_type>(init_data), init_data}
@@ -85,6 +82,10 @@ public:
     storage_tensor(ShT&& shape, ItT begin, ItT end):
         storage_tensor{detail::make_size<index_type>(shape), std::forward<ShT>(shape), begin, end}
     {}
+    //default constructor makes empty 1-d tensor
+    // storage_tensor():
+    //     storage_tensor({})
+    // {}
 
     //inplace
     template<typename ShT>
