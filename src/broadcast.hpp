@@ -31,7 +31,7 @@ inline void broadcast_shape_helper(ShT& res, const T& shape, const Ts&...shapes)
     while(shape_it!=shape_begin){
         const index_type& r{*--res_it};
         const index_type& s{*--shape_it};
-        if (r==index_type(0) || r==index_type(1)){
+        if (r==index_type(-1) || r==index_type(1)){
             *res_it = s;
         }
         else if (s!=index_type(1) && s!=r){
@@ -47,7 +47,7 @@ inline auto broadcast_shape(const Ts&...shapes){
     if (std::min({shapes.size()...}) == 0){
         throw broadcast_exception("shapes are not broadcastable");
     }else{
-        auto res = shape_type(std::max({shapes.size()...}),index_type(0));
+        auto res = shape_type(std::max({shapes.size()...}),index_type(-1));
         broadcast_shape_helper(res, shapes...);
         return res;
     }
