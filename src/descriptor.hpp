@@ -274,7 +274,7 @@ public:
     using config_type = CfgT;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
-    auto size()const{return detail::make_size(shape(),strides());}
+    auto size()const{return size_;}
     auto dim()const{return shape_.size();}
     const auto& shape()const{return shape_;}
     const auto& strides_div()const{return strides_.strides_div();}
@@ -284,12 +284,12 @@ public:
     descriptor_common() = delete;
     template<typename ShT, std::enable_if_t<!std::is_convertible_v<std::decay_t<ShT>, descriptor_common>,int> =0 >
     explicit descriptor_common(ShT&& shape__):
-        shape_{detail::make_shape_of_type<shape_type>(std::forward<ShT>(shape__))},
-        strides_{shape_}
+        shape_{detail::make_shape_of_type<shape_type>(std::forward<ShT>(shape__))}
     {}
 private:
     shape_type shape_;
-    detail::descriptor_strides<CfgT> strides_;
+    index_type size_{detail::make_size(shape_)};
+    detail::descriptor_strides<CfgT> strides_{shape_};
 };
 
 //descriptors implementation
