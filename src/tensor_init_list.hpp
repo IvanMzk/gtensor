@@ -108,9 +108,6 @@ inline void list_parse_(std::initializer_list<T> list, ShT* shape_){
         }
     }
     else{
-        if (list.size() == 0){
-            throw tensor_init_list_exception("list bad shape - zero list size");
-        }
         shape_->push_back(index_type(list.size()));
     }
     for (auto p=list.begin();p!=list.end(); ++p){
