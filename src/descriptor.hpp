@@ -30,6 +30,12 @@ public:
     using type = typename selector_<typename config_type::div_mode, void>::type;
 };
 
+template<typename T>
+inline T make_shape_element(const T& shape_element){
+    using shape_element_type = T;
+    return shape_element==shape_element_type{0} ? shape_element_type{1}:shape_element;
+}
+
 template<typename ResT, typename ShT>
 inline ResT make_strides(const ShT& shape, typename ShT::value_type min_stride = typename ShT::value_type(1)){
     using result_type = ResT;
@@ -41,7 +47,7 @@ inline ResT make_strides(const ShT& shape, typename ShT::value_type min_stride =
         auto res_end{res.end()};
         *--res_end = result_value_type(min_stride);
         while (--shape_it!=shape_begin){
-            min_stride*=*shape_it;
+            min_stride *= make_shape_element(*shape_it);
             *--res_end = result_value_type(min_stride);
         }
         return res;
@@ -79,7 +85,7 @@ inline auto make_reset_strides(const ShT& shape, const ShT& strides){
             strides.begin(),
             res.begin(),
             [](const auto& shape_element, const auto& strides_element){
-                return (shape_element-index_type(1))*strides_element;
+                return (make_shape_element(shape_element)-index_type(1))*strides_element;
             }
         );
         return res;
@@ -98,7 +104,7 @@ inline auto make_size(const ShT& shape, const ShT& strides){
 template<typename IdxT, typename ShT>
 inline auto make_size(const ShT& shape){
     using index_type = IdxT;
-    if (shape.size() == 0){
+    if (shape.empty()){
         return index_type(0);
     }else{
         return std::accumulate(shape.begin(),shape.end(),index_type(1),std::multiplies<index_type>{});
@@ -275,7 +281,7 @@ public:
     const auto& strides()const{return strides_.strides();}
     const auto& reset_strides()const{return strides_.reset_strides();}
 
-    descriptor_common() = default;
+    descriptor_common() = delete;
     template<typename ShT, std::enable_if_t<!std::is_convertible_v<std::decay_t<ShT>, descriptor_common>,int> =0 >
     explicit descriptor_common(ShT&& shape__):
         shape_{detail::make_shape_of_type<shape_type>(std::forward<ShT>(shape__))},
@@ -298,7 +304,7 @@ public:
     using typename descriptor_base_type::size_type;
     using typename descriptor_base_type::shape_type;
     using typename descriptor_base_type::strides_div_type;
-    basic_descriptor() = default;
+    basic_descriptor() = delete;
     template<typename ShT, std::enable_if_t<!std::is_convertible_v<std::decay_t<ShT>, basic_descriptor>,int> =0 >
     explicit basic_descriptor(ShT&& shape__):
         impl_{std::forward<ShT>(shape__)}
@@ -323,7 +329,8 @@ class descriptor_with_offset : public basic_descriptor<CfgT>
 public:
     using typename basic_descriptor_base::index_type;
     using typename basic_descriptor_base::shape_type;
-    descriptor_with_offset() = default;
+
+    descriptor_with_offset() = delete;
     template<typename ShT>
     descriptor_with_offset(ShT&& shape__, index_type offset__):
         basic_descriptor_base{std::forward<ShT>(shape__)},
@@ -346,7 +353,8 @@ public:
     using descriptor_with_offset_base::shape;
     using descriptor_with_offset_base::offset;
     using descriptor_with_offset_base::strides_div;
-    converting_descriptor() = default;
+
+    converting_descriptor() = delete;
     template<typename ShT, typename StT>
     converting_descriptor(ShT&& shape__, StT&& cstrides__,  const index_type& offset__):
         descriptor_with_offset_base{std::forward<ShT>(shape__), offset__},
