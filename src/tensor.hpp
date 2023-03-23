@@ -86,6 +86,7 @@ public:
         storage_tensor{detail::make_size<index_type>(shape), std::forward<ShT>(shape), begin, end}
     {}
 
+    //inplace
     template<typename ShT>
     void resize(ShT&& shape){
         basic_tensor_base::descriptor() = descriptor_type{std::forward<ShT>(shape)};
