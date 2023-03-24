@@ -166,6 +166,8 @@ inline auto mapping_view_block_size(const ShT& pshape, const SizeT& subs_dim_or_
     }
 }
 
+//check subscripts number and directions sizes to be valid
+//check of subscripts indeces defered to place where subscripts should be iterated (result fill or mapping descriptor making)
 template<typename ShT, typename...ShTs>
 inline void check_index_mapping_view_subs(const ShT& pshape, const ShTs&...subs_shapes){
     using size_type = typename ShT::size_type;
@@ -190,23 +192,10 @@ inline ShT make_index_mapping_view_shape(const ShT& pshape, const ShT& subs_shap
     using size_type = SizeT;
     auto pdim = static_cast<size_type>(pshape.size());
     auto subs_dim = static_cast<size_type>(subs_shape.size());
-    if (pdim > size_type{0}){
-        if (subs_number > pdim){
-            throw subscript_exception("invalid index tensor subscript");
-        }
-        auto res = shape_type(pdim - subs_number + subs_dim);
-        std::copy(subs_shape.begin(), subs_shape.end(), res.begin());
-        // for (auto subs_shape_it = subs_shape.begin(), pshape_it = pshape.begin(), res_it = res.begin(); subs_shape_it!=subs_shape.end(); ++subs_shape_it, ++pshape_it, ++res_it){
-        //     const index_type& subs_shape_element = *subs_shape_it;
-        //     const index_type& pshape_element = *pshape_it;
-        //     if (subs)
-        // }
-        //std::transform(subs_shape.begin(), subs_shape.end(), pshape.begin(), res.begin(), [](const auto& subs_shape_element, const auto& pshape_element){return });
-        std::copy(pshape.begin()+subs_number, pshape.end(), res.begin()+subs_dim);
-        return res;
-    }else{
-        return shape_type{};
-    }
+    auto res = shape_type(pdim - subs_number + subs_dim);
+    std::copy(subs_shape.begin(), subs_shape.end(), res.begin());
+    std::copy(pshape.begin()+subs_number, pshape.end(), res.begin()+subs_dim);
+    return res;
 }
 
 // template<typename ShT, typename SizeT>
@@ -416,6 +405,7 @@ public:
     }
     template<typename ImplT, typename...Subs>
     static auto create_index_mapping_view(const std::shared_ptr<ImplT>& parent, const Subs&...subs){
+        detail::check_index_mapping_view_subs(parent->shape(), subs.descriptor().shape()...);
         auto subs_shape = detail::broadcast_shape<shape_type>(subs.descriptor().shape()...);
         auto subs_size = detail::make_size(subs_shape);
         size_type subs_number = sizeof...(Subs);

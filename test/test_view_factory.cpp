@@ -332,13 +332,16 @@ TEMPLATE_TEST_CASE("test_make_index_mapping_view_shape","[test_view_factory]",
     //0parent_shape,1subs_shapes,2expected
     auto test_data = std::make_tuple(
         std::make_tuple(shape_type{0}, std::make_tuple(shape_type{0}), shape_type{0}),
-        std::make_tuple(shape_type{4,0}, std::make_tuple(shape_type{3}), shape_type{3,0}),
-        std::make_tuple(shape_type{4,0}, std::make_tuple(shape_type{3,3}), shape_type{3,3,0}),
-        //std::make_tuple(shape_type{0,4}, std::make_tuple(shape_type{3,3}), shape_type{3,3,4}),
-        //std::make_tuple(shape_type{4,0}, std::make_tuple(shape_type{3,3}, shape_type{1}), shape_type{3,3}),
-        //std::make_tuple(shape_type{0}, std::make_tuple(shape_type{1}), shape_type{0}),
+        std::make_tuple(shape_type{0}, std::make_tuple(shape_type{1,2,3,0}), shape_type{1,2,3,0}),
+        std::make_tuple(shape_type{1}, std::make_tuple(shape_type{0}), shape_type{0}),
+        std::make_tuple(shape_type{1}, std::make_tuple(shape_type{1,2,3,0}), shape_type{1,2,3,0}),
         std::make_tuple(shape_type{10}, std::make_tuple(shape_type{4}), shape_type{4}),
         std::make_tuple(shape_type{10}, std::make_tuple(shape_type{2,2}), shape_type{2,2}),
+        std::make_tuple(shape_type{4,0}, std::make_tuple(shape_type{3}), shape_type{3,0}),
+        std::make_tuple(shape_type{4,0}, std::make_tuple(shape_type{3,3}), shape_type{3,3,0}),
+        std::make_tuple(shape_type{0,4}, std::make_tuple(shape_type{0}), shape_type{0,4}),
+        std::make_tuple(shape_type{0,4}, std::make_tuple(shape_type{1,2,3,0}), shape_type{1,2,3,0,4}),
+        std::make_tuple(shape_type{4,0}, std::make_tuple(shape_type{3,1}, shape_type{1,0}), shape_type{3,0}),
         std::make_tuple(shape_type{5,4,3,2}, std::make_tuple(shape_type{8},shape_type{8}), shape_type{8,3,2}),
         std::make_tuple(shape_type{5,4,3,2}, std::make_tuple(shape_type{3,4},shape_type{1},shape_type{3,1}), shape_type{3,4,2}),
         std::make_tuple(shape_type{5,4,3,2}, std::make_tuple(shape_type{3,4},shape_type{1},shape_type{3,1}, shape_type{1,4}), shape_type{3,4})
@@ -356,20 +359,6 @@ TEMPLATE_TEST_CASE("test_make_index_mapping_view_shape","[test_view_factory]",
         REQUIRE(result == expected);
     };
     apply_by_element(test, test_data);
-}
-
-TEMPLATE_TEST_CASE("test_make_index_mapping_view_shape_exception","[test_view_factory]",
-    typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-){
-    using config_type = TestType;
-    using size_type = typename config_type::size_type;
-    using shape_type = typename config_type::shape_type;
-    using gtensor::subscript_exception;
-    using gtensor::detail::make_index_mapping_view_shape;
-    using gtensor::detail::broadcast_shape;
-
-    REQUIRE_THROWS_AS(make_index_mapping_view_shape(shape_type{10},broadcast_shape<shape_type>(shape_type{4}, shape_type{4}),size_type{2}), subscript_exception);
-    REQUIRE_THROWS_AS(make_index_mapping_view_shape(shape_type{3,4},broadcast_shape<shape_type>(shape_type{4}, shape_type{4}, shape_type{1}),size_type{3}), subscript_exception);
 }
 
 // TEMPLATE_TEST_CASE("test_fill_index_mapping_view","[test_view_factory]",
