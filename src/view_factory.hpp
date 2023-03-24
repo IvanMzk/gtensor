@@ -157,13 +157,7 @@ inline void check_reshape_subs(const IdxT& size, const Subs&...subs){
 template<typename ShT, typename SizeT>
 inline auto mapping_view_block_size(const ShT& pshape, const SizeT& subs_dim_or_subs_number){
     using index_type = typename ShT::value_type;
-    using size_type = SizeT;
-    size_type pdim = pshape.size();
-    if (subs_dim_or_subs_number > size_type{0} && pdim > size_type{0}){
-        return std::accumulate(pshape.begin()+subs_dim_or_subs_number,pshape.end(),index_type(1),std::multiplies<index_type>{});
-    }else{
-        return index_type{0};
-    }
+    return std::accumulate(pshape.begin()+subs_dim_or_subs_number,pshape.end(),index_type(1),std::multiplies<index_type>{});
 }
 
 //check subscripts number and directions sizes to be valid
@@ -198,26 +192,6 @@ inline ShT make_index_mapping_view_shape(const ShT& pshape, const ShT& subs_shap
     return res;
 }
 
-// template<typename ShT, typename SizeT>
-// inline ShT make_index_mapping_view_shape(const ShT& pshape, const ShT& subs_shape, const SizeT& subs_number){
-//     using shape_type = ShT;
-//     using size_type = SizeT;
-//     using index_type = typename shape_type::value_type;
-//     auto pdim = static_cast<size_type>(pshape.size());
-//     auto subs_dim = static_cast<size_type>(subs_shape.size());
-//     if (pdim > size_type{0}){
-//         if (subs_number > pdim){
-//             throw subscript_exception("invalid index tensor subscript");
-//         }
-//         auto res = shape_type(pdim - subs_number + subs_dim);
-//         std::copy(subs_shape.begin(), subs_shape.end(), res.begin());
-//         std::copy(pshape.begin()+subs_number, pshape.end(), res.begin()+subs_dim);
-//         return res;
-//     }else{
-//         return shape_type{};
-//     }
-// }
-
 template<typename IdxT>
 inline auto check_index(const IdxT& idx, const IdxT& shape_element){
     if (idx < shape_element){
@@ -227,39 +201,37 @@ inline auto check_index(const IdxT& idx, const IdxT& shape_element){
     }
 }
 
-template<typename It, typename ParentIndexer, typename ShT, typename...WalkerAdapter>
-auto fill_index_mapping_view(It it, ParentIndexer pindexer, const ShT& pshape, const ShT& pstrides, const typename ShT::value_type& subs_size, WalkerAdapter...subs_it){
+template<typename ShT, typename ParentIndexer, typename ResIt,  typename...WalkerAdapter>
+auto fill_index_mapping_view(const ShT& pshape, const ShT& pstrides, ParentIndexer pindexer, ResIt res_it, const ShT& subs_shape, WalkerAdapter...subs_it){
+    using size_type = typename ShT::size_type;
     using index_type = typename ShT::value_type;
-    constexpr std::size_t subs_number = sizeof...(WalkerAdapter);
 
-    const auto block_size = mapping_view_block_size(pshape, subs_number);
-    const auto view_size = block_size*subs_size;
-    if (view_size > index_type{0}){
-        auto block_first = index_type{0};
-        if (block_size == index_type{1}){
-            for(index_type i{0}; i!=subs_size; ++i,((subs_it.next()),...)){
-                block_first = index_type{0};
-                auto n = std::size_t{0};
-                ((block_first+=check_index(static_cast<index_type>(*subs_it.walker()),pshape[n])*pstrides[n],++n),...);
-                *it = pindexer[block_first];
-                ++it;
-            }
-        }else{
-            index_type j{0};
-            for(index_type i{0}; i!=subs_size; ++i,((subs_it.next()),...)){
-                block_first = index_type{0};
-                auto n = std::size_t{0};
-                ((block_first+=check_index(static_cast<index_type>(*subs_it.walker()),pshape[n])*pstrides[n],++n),...);
-                auto block_index_end = j+block_size;
-                for(; j!=block_index_end; ++j){
-                    *it = pindexer[block_first];
-                    ++block_first;
-                    ++it;
-                }
+    const size_type subs_number = sizeof...(WalkerAdapter);
+    const index_type subs_size = detail::make_size(subs_shape);
+    const index_type block_size = mapping_view_block_size(pshape, subs_number);
+    auto block_first = index_type{0};
+    if (block_size == index_type{1}){
+        for(index_type i{0}; i!=subs_size; ++i,((subs_it.next()),...)){
+            block_first = index_type{0};
+            size_type n{0};
+            ((block_first+=check_index(static_cast<index_type>(*subs_it.walker()),pshape[n])*pstrides[n],++n),...);
+            *res_it = pindexer[block_first];
+            ++res_it;
+        }
+    }else{
+        index_type j{0};
+        for(index_type i{0}; i!=subs_size; ++i,((subs_it.next()),...)){
+            block_first = index_type{0};
+            size_type n{0};
+            ((block_first+=check_index(static_cast<index_type>(*subs_it.walker()),pshape[n])*pstrides[n],++n),...);
+            auto block_index_end = j+block_size;
+            for(; j!=block_index_end; ++j){
+                *res_it = pindexer[block_first];
+                ++block_first;
+                ++res_it;
             }
         }
     }
-    return view_size;
 }
 
 //helpers for making bool_mapping_view
@@ -407,16 +379,15 @@ public:
     static auto create_index_mapping_view(const std::shared_ptr<ImplT>& parent, const Subs&...subs){
         detail::check_index_mapping_view_subs(parent->shape(), subs.descriptor().shape()...);
         auto subs_shape = detail::broadcast_shape<shape_type>(subs.descriptor().shape()...);
-        auto subs_size = detail::make_size(subs_shape);
         size_type subs_number = sizeof...(Subs);
         auto res = storage_tensor_factory<CfgT,ValT>::make(detail::make_index_mapping_view_shape(parent->shape(), subs_shape, subs_number), ValT{});
         detail::fill_index_mapping_view(
-            res.begin(),
-            parent->engine().create_indexer(),
             parent->shape(),
             parent->strides(),
-            subs_size,
-            walker_bidirectional_adapter<CfgT, decltype(subs.engine().create_walker())>{subs_shape, subs.engine().create_walker()}...
+            parent->engine().create_indexer(),
+            res.begin(),
+            subs_shape,
+            walker_forward_adapter<CfgT, decltype(subs.engine().create_walker())>{subs_shape, subs.engine().create_walker()}...
         );
         return res;
     }
