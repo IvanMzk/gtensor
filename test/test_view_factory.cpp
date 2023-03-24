@@ -502,29 +502,56 @@ TEMPLATE_TEST_CASE("test_fill_index_mapping_view_exception","[test_view_factory]
     apply_by_element(test, test_data);
 }
 
-// TEMPLATE_TEST_CASE("test_check_bool_mapping_view_subs","[test_view_factory]",
-//     typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-// ){
-//     using config_type = TestType;
-//     using shape_type = typename config_type::shape_type;
-//     using gtensor::subscript_exception;
-//     using gtensor::detail::check_bool_mapping_view_subs;
-
-//     REQUIRE_NOTHROW(check_bool_mapping_view_subs(shape_type{1}, shape_type{1}));
-//     REQUIRE_NOTHROW(check_bool_mapping_view_subs(shape_type{10}, shape_type{10}));
-//     REQUIRE_NOTHROW(check_bool_mapping_view_subs(shape_type{10}, shape_type{5}));
-//     REQUIRE_NOTHROW(check_bool_mapping_view_subs(shape_type{4,3,2}, shape_type{4,3,2}));
-//     REQUIRE_NOTHROW(check_bool_mapping_view_subs(shape_type{4,3,2}, shape_type{2,2,2}));
-//     REQUIRE_NOTHROW(check_bool_mapping_view_subs(shape_type{4,3,2}, shape_type{2,1}));
-//     REQUIRE_NOTHROW(check_bool_mapping_view_subs(shape_type{4,3,2}, shape_type{2}));
-
-//     //subs dim > parent dim
-//     REQUIRE_THROWS_AS(check_bool_mapping_view_subs(shape_type{10}, shape_type{10,10}) ,subscript_exception);
-//     REQUIRE_THROWS_AS(check_bool_mapping_view_subs(shape_type{3,2,4}, shape_type{2,2,2,2}) ,subscript_exception);
-//     //subs direction size > parent direction size
-//     REQUIRE_THROWS_AS(check_bool_mapping_view_subs(shape_type{10}, shape_type{20}) ,subscript_exception);
-//     REQUIRE_THROWS_AS(check_bool_mapping_view_subs(shape_type{3,2,4}, shape_type{3,3}) ,subscript_exception);
-// }
+TEMPLATE_TEST_CASE("test_check_bool_mapping_view_subs","[test_view_factory]",
+    typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
+){
+    using config_type = TestType;
+    using shape_type = typename config_type::shape_type;
+    using gtensor::subscript_exception;
+    using gtensor::detail::check_bool_mapping_view_subs;
+    //0pshape,1subs_shape
+    using test_type = std::tuple<shape_type,shape_type>;
+    SECTION("test_check_bool_mapping_view_subs_nothrow"){
+        auto test_data = GENERATE(
+            test_type(shape_type{1}, shape_type{0}),
+            test_type(shape_type{1}, shape_type{1}),
+            test_type(shape_type{10}, shape_type{0}),
+            test_type(shape_type{10}, shape_type{5}),
+            test_type(shape_type{10}, shape_type{10}),
+            test_type(shape_type{4,3,2}, shape_type{0}),
+            test_type(shape_type{4,3,2}, shape_type{0,3}),
+            test_type(shape_type{4,3,0}, shape_type{4,3,0}),
+            test_type(shape_type{4,0,2}, shape_type{4,0,2}),
+            test_type(shape_type{4,0,2}, shape_type{3,0,2}),
+            test_type(shape_type{4,3,2}, shape_type{4,3,2}),
+            test_type(shape_type{4,3,2}, shape_type{2,2,2}),
+            test_type(shape_type{4,3,2}, shape_type{2,1}),
+            test_type(shape_type{4,3,2}, shape_type{2})
+        );
+        auto pshape = std::get<0>(test_data);
+        auto subs_shape = std::get<1>(test_data);
+        REQUIRE_NOTHROW(check_bool_mapping_view_subs(pshape,subs_shape));
+    }
+    SECTION("test_check_bool_mapping_view_subs_exception"){
+        auto test_data = GENERATE(
+            //subs dim > parent dim
+            test_type(shape_type{10}, shape_type{10,10}),
+            test_type(shape_type{3,2,4}, shape_type{2,2,2,2}),
+            //subs direction size > parent direction size
+            test_type(shape_type{0}, shape_type{1}),
+            test_type(shape_type{10}, shape_type{20}),
+            test_type(shape_type{3,2,4}, shape_type{4}),
+            test_type(shape_type{3,2,4}, shape_type{0,4}),
+            test_type(shape_type{3,2,4}, shape_type{4,0}),
+            test_type(shape_type{3,2,4}, shape_type{3,3}),
+            test_type(shape_type{3,0,4}, shape_type{1,4}),
+            test_type(shape_type{3,0,4}, shape_type{1,4})
+        );
+        auto pshape = std::get<0>(test_data);
+        auto subs_shape = std::get<1>(test_data);
+        REQUIRE_THROWS_AS(check_bool_mapping_view_subs(pshape,subs_shape), subscript_exception);
+    }
+}
 
 // TEMPLATE_TEST_CASE("test_make_bool_mapping_view_shape","[test_view_factory]",
 //     typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type

@@ -237,19 +237,15 @@ auto fill_index_mapping_view(const ShT& pshape, const ShT& pstrides, ParentIndex
 //helpers for making bool_mapping_view
 template<typename ShT>
 auto check_bool_mapping_view_subs(const ShT& pshape, const ShT& subs_shape){
-    using index_type = typename ShT::value_type;
-    index_type pdim = pshape.size();
-    index_type subs_dim = subs_shape.size();
-    if (pdim > index_type{0})
-    {
-        if (subs_dim > pdim){
+    using size_type = typename ShT::size_type;
+    size_type pdim = pshape.size();
+    size_type subs_dim = subs_shape.size();
+    if (subs_dim > pdim){
+        throw subscript_exception("invalid bool tensor subscript");
+    }
+    for (auto subs_shape_it = subs_shape.begin(), pshape_it = pshape.begin(); subs_shape_it!=subs_shape.end(); ++subs_shape_it, ++pshape_it){
+        if (*subs_shape_it > *pshape_it){
             throw subscript_exception("invalid bool tensor subscript");
-        }
-        auto pshape_it = pshape.begin();
-        for (auto subs_shape_it = subs_shape.begin(), subs_shape_end = subs_shape.end(); subs_shape_it!=subs_shape_end; ++subs_shape_it, ++pshape_it){
-            if (*subs_shape_it > *pshape_it){
-                throw subscript_exception("invalid bool tensor subscript");
-            }
         }
     }
 }
