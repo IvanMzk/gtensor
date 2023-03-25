@@ -553,51 +553,51 @@ TEMPLATE_TEST_CASE("test_check_bool_mapping_view_subs","[test_view_factory]",
     }
 }
 
-// TEMPLATE_TEST_CASE("test_make_bool_mapping_view_shape","[test_view_factory]",
-//     typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-// ){
-//     using config_type = TestType;
-//     using shape_type = typename config_type::shape_type;
-//     using index_type = typename config_type::index_type;
-//     using size_type = typename config_type::size_type;
-//     using gtensor::detail::make_bool_mapping_view_shape;
-//     using test_type = std::tuple<shape_type,shape_type,index_type,index_type,shape_type>;
-//     //0pshape,1subs_shape,2block_size,3filled_map_size,4expected_shape
-//     auto test_data = GENERATE(
-//         test_type{shape_type{10},shape_type{10},index_type{1},index_type{10},shape_type{10}},
-//         test_type{shape_type{10},shape_type{10},index_type{1},index_type{3},shape_type{3}},
-//         test_type{shape_type{10},shape_type{10},index_type{1},index_type{0},shape_type{}},
-//         test_type{shape_type{10},shape_type{5},index_type{1},index_type{5},shape_type{5}},
-//         test_type{shape_type{10},shape_type{5},index_type{1},index_type{2},shape_type{2}},
-//         test_type{shape_type{10},shape_type{5},index_type{1},index_type{0},shape_type{}},
-//         test_type{shape_type{3,4,5},shape_type{3,4,5},index_type{1},index_type{60},shape_type{60}},
-//         test_type{shape_type{3,4,5},shape_type{3,4,5},index_type{1},index_type{10},shape_type{10}},
-//         test_type{shape_type{3,4,5},shape_type{3,4,5},index_type{1},index_type{0},shape_type{}},
-//         test_type{shape_type{3,4,5},shape_type{3,2,1},index_type{1},index_type{6},shape_type{6}},
-//         test_type{shape_type{3,4,5},shape_type{3,2,1},index_type{1},index_type{2},shape_type{2}},
-//         test_type{shape_type{3,4,5},shape_type{3,4},index_type{5},index_type{60},shape_type{12,5}},
-//         test_type{shape_type{3,4,5},shape_type{3,4},index_type{5},index_type{50},shape_type{10,5}},
-//         test_type{shape_type{3,4,5},shape_type{3,4},index_type{5},index_type{0},shape_type{}},
-//         test_type{shape_type{3,4,5},shape_type{3,4},index_type{5},index_type{0},shape_type{}},
-//         test_type{shape_type{3,4,5},shape_type{2,2},index_type{5},index_type{20},shape_type{4,5}},
-//         test_type{shape_type{3,4,5},shape_type{2,2},index_type{5},index_type{10},shape_type{2,5}},
-//         test_type{shape_type{3,4,5},shape_type{2,2},index_type{5},index_type{0},shape_type{}},
-//         test_type{shape_type{3,4,5},shape_type{3},index_type{20},index_type{60},shape_type{3,4,5}},
-//         test_type{shape_type{3,4,5},shape_type{3},index_type{20},index_type{20},shape_type{1,4,5}},
-//         test_type{shape_type{3,4,5},shape_type{1},index_type{20},index_type{20},shape_type{1,4,5}},
-//         test_type{shape_type{3,4,5},shape_type{1},index_type{20},index_type{0},shape_type{}}
-//     );
+TEMPLATE_TEST_CASE("test_make_bool_mapping_view_shape","[test_view_factory]",
+    typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
+){
+    using config_type = TestType;
+    using shape_type = typename config_type::shape_type;
+    using index_type = typename config_type::index_type;
+    using size_type = typename config_type::size_type;
+    using gtensor::detail::make_bool_mapping_view_shape;
+    using test_type = std::tuple<shape_type,shape_type,index_type,index_type,shape_type>;
+    //0pshape,1subs_shape,2block_size,3filled_map_size,4expected_shape
+    auto test_data = GENERATE(
+        test_type{shape_type{10},shape_type{10},index_type{1},index_type{10},shape_type{10}},
+        test_type{shape_type{10},shape_type{10},index_type{1},index_type{3},shape_type{3}},
+        test_type{shape_type{10},shape_type{10},index_type{1},index_type{0},shape_type{}},
+        test_type{shape_type{10},shape_type{5},index_type{1},index_type{5},shape_type{5}},
+        test_type{shape_type{10},shape_type{5},index_type{1},index_type{2},shape_type{2}},
+        test_type{shape_type{10},shape_type{5},index_type{1},index_type{0},shape_type{}},
+        test_type{shape_type{3,4,5},shape_type{3,4,5},index_type{1},index_type{60},shape_type{60}},
+        test_type{shape_type{3,4,5},shape_type{3,4,5},index_type{1},index_type{10},shape_type{10}},
+        test_type{shape_type{3,4,5},shape_type{3,4,5},index_type{1},index_type{0},shape_type{}},
+        test_type{shape_type{3,4,5},shape_type{3,2,1},index_type{1},index_type{6},shape_type{6}},
+        test_type{shape_type{3,4,5},shape_type{3,2,1},index_type{1},index_type{2},shape_type{2}},
+        test_type{shape_type{3,4,5},shape_type{3,4},index_type{5},index_type{60},shape_type{12,5}},
+        test_type{shape_type{3,4,5},shape_type{3,4},index_type{5},index_type{50},shape_type{10,5}},
+        test_type{shape_type{3,4,5},shape_type{3,4},index_type{5},index_type{0},shape_type{}},
+        test_type{shape_type{3,4,5},shape_type{3,4},index_type{5},index_type{0},shape_type{}},
+        test_type{shape_type{3,4,5},shape_type{2,2},index_type{5},index_type{20},shape_type{4,5}},
+        test_type{shape_type{3,4,5},shape_type{2,2},index_type{5},index_type{10},shape_type{2,5}},
+        test_type{shape_type{3,4,5},shape_type{2,2},index_type{5},index_type{0},shape_type{}},
+        test_type{shape_type{3,4,5},shape_type{3},index_type{20},index_type{60},shape_type{3,4,5}},
+        test_type{shape_type{3,4,5},shape_type{3},index_type{20},index_type{20},shape_type{1,4,5}},
+        test_type{shape_type{3,4,5},shape_type{1},index_type{20},index_type{20},shape_type{1,4,5}},
+        test_type{shape_type{3,4,5},shape_type{1},index_type{20},index_type{0},shape_type{}}
+    );
 
-//     auto pshape = std::get<0>(test_data);
-//     auto subs_shape = std::get<1>(test_data);
-//     auto block_size = std::get<2>(test_data);
-//     auto filled_map_size = std::get<3>(test_data);
-//     auto expected_shape = std::get<4>(test_data);
-//     auto trues_number = filled_map_size / block_size;
-//     size_type subs_dim = subs_shape.size();
-//     auto result_shape = make_bool_mapping_view_shape(pshape,trues_number,subs_dim);
-//     REQUIRE(result_shape == expected_shape);
-// }
+    auto pshape = std::get<0>(test_data);
+    auto subs_shape = std::get<1>(test_data);
+    auto block_size = std::get<2>(test_data);
+    auto filled_map_size = std::get<3>(test_data);
+    auto expected_shape = std::get<4>(test_data);
+    auto trues_number = filled_map_size / block_size;
+    size_type subs_dim = subs_shape.size();
+    auto result_shape = make_bool_mapping_view_shape(pshape,trues_number,subs_dim);
+    REQUIRE(result_shape == expected_shape);
+}
 
 // TEMPLATE_TEST_CASE("test_fill_bool_mapping_view","[test_view_factory]",
 //     typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type

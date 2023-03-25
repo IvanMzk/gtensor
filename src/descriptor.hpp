@@ -281,7 +281,6 @@ public:
     const auto& strides()const{return strides_.strides();}
     const auto& reset_strides()const{return strides_.reset_strides();}
 
-    descriptor_common() = delete;
     template<typename ShT, std::enable_if_t<!std::is_convertible_v<std::decay_t<ShT>, descriptor_common>,int> =0 >
     explicit descriptor_common(ShT&& shape__):
         shape_{detail::make_shape_of_type<shape_type>(std::forward<ShT>(shape__))}
@@ -304,7 +303,7 @@ public:
     using typename descriptor_base_type::size_type;
     using typename descriptor_base_type::shape_type;
     using typename descriptor_base_type::strides_div_type;
-    basic_descriptor() = delete;
+
     template<typename ShT, std::enable_if_t<!std::is_convertible_v<std::decay_t<ShT>, basic_descriptor>,int> =0 >
     explicit basic_descriptor(ShT&& shape__):
         impl_{std::forward<ShT>(shape__)}
@@ -330,7 +329,6 @@ public:
     using typename basic_descriptor_base::index_type;
     using typename basic_descriptor_base::shape_type;
 
-    descriptor_with_offset() = delete;
     template<typename ShT>
     descriptor_with_offset(ShT&& shape__, index_type offset__):
         basic_descriptor_base{std::forward<ShT>(shape__)},
@@ -354,7 +352,6 @@ public:
     using descriptor_with_offset_base::offset;
     using descriptor_with_offset_base::strides_div;
 
-    converting_descriptor() = delete;
     template<typename ShT, typename StT>
     converting_descriptor(ShT&& shape__, StT&& cstrides__,  const index_type& offset__):
         descriptor_with_offset_base{std::forward<ShT>(shape__), offset__},

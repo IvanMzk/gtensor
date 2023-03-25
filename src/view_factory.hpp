@@ -253,19 +253,14 @@ auto check_bool_mapping_view_subs(const ShT& pshape, const ShT& subs_shape){
 template<typename ShT, typename SizeT>
 inline ShT make_bool_mapping_view_shape(const ShT& pshape, const typename ShT::value_type& subs_trues_number, const SizeT& subs_dim){
     using shape_type = ShT;
-    using index_type = typename shape_type::value_type;
     using size_type = SizeT;
     size_type pdim = pshape.size();
-    if (subs_trues_number > index_type{0}){
-        auto res = shape_type(pdim - subs_dim + size_type{1});
-        auto res_it = res.begin();
-        *res_it = subs_trues_number;
-        ++res_it;
-        std::copy(pshape.begin()+subs_dim, pshape.end(), res_it);
-        return res;
-    }else{
-        return shape_type{};
-    }
+    auto res = shape_type(pdim - subs_dim + size_type{1});
+    auto res_it = res.begin();
+    *res_it = subs_trues_number;
+    ++res_it;
+    std::copy(pshape.begin()+subs_dim, pshape.end(), res_it);
+    return res;
 }
 
 template<typename It, typename ParentIndexer, typename ShT, typename SizeT, typename WalkerAdapter>

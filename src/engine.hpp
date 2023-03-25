@@ -89,7 +89,10 @@ public:
         }
     }
 
-    void resize(const index_type& size){elements_.resize(size);}
+    void resize(const index_type& size){
+        elements_.resize(size);
+        elements_.shrink_to_fit();
+    }
 private:
     template<typename U>
     static auto create_indexer_helper(U& instance){

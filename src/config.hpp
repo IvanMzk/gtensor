@@ -46,7 +46,9 @@ struct default_config{
     //transpose view subscripts are of size_type, since they are directions indexes
     //must have semantic of integral type, may be unsigned
     //using size_type = std::int64_t;
-    using size_type = std::size_t;
+    using size_type = typename shape_type::size_type;
+    //using size_type = typename shape_type::difference_type
+    //using size_type = std::size_t;
 
     //generally when public interface expected container parameter it may be any type providig usual container semantic and interface: iterators, aliases...
     //specialization of config_type::container uses as return type in public interface

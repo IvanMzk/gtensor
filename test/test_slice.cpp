@@ -233,34 +233,54 @@ TEST_CASE("test_check_slice","[test_check_slice]"){
     using config_type = gtensor::config::default_config;
     using index_type = typename config_type::index_type;
     using slice_type = typename gtensor::slice_traits<config_type>::slice_type;
+    using gtensor::subscript_exception;
     using gtensor::detail::check_slice;
+    //0slice,1shape_element
+    using test_type = std::tuple<slice_type, index_type>;
 
-    REQUIRE_NOTHROW(check_slice(slice_type{0,1,1}, index_type(1)));
-    REQUIRE_NOTHROW(check_slice(slice_type{0,5,1}, index_type(5)));
-    REQUIRE_NOTHROW(check_slice(slice_type{0,5,1}, index_type(5)));
-    REQUIRE_NOTHROW(check_slice(slice_type{0,5,1}, index_type(5)));
-    REQUIRE_NOTHROW(check_slice(slice_type{0,5,1}, index_type(5)));
-    REQUIRE_NOTHROW(check_slice(slice_type{4,-1,-1}, index_type(5)));
-    REQUIRE_NOTHROW(check_slice(slice_type{0,-1,-1}, index_type(5)));
-    REQUIRE_NOTHROW(check_slice(slice_type{0,3,1}, index_type(5)));
-    REQUIRE_NOTHROW(check_slice(slice_type{2,5,1}, index_type(5)));
-    REQUIRE_NOTHROW(check_slice(slice_type{1,4,1}, index_type(5)));
-    REQUIRE_NOTHROW(check_slice(slice_type{1,4,1}, index_type(5)));
-    REQUIRE_NOTHROW(check_slice(slice_type{3,4,1}, index_type(5)));
-    REQUIRE_NOTHROW(check_slice(slice_type{0,-1,-1}, index_type(5)));
-
-    REQUIRE_THROWS_AS(check_slice(slice_type{5,5,1},index_type(5)), gtensor::subscript_exception);
-    REQUIRE_THROWS_AS(check_slice(slice_type{6,5,1},index_type(5)), gtensor::subscript_exception);
-    REQUIRE_THROWS_AS(check_slice(slice_type{-1,5,1},index_type(5)), gtensor::subscript_exception);
-    REQUIRE_THROWS_AS(check_slice(slice_type{1,-1,1},index_type(5)), gtensor::subscript_exception);
-    REQUIRE_THROWS_AS(check_slice(slice_type{0,0,1},index_type(5)), gtensor::subscript_exception);
-    REQUIRE_THROWS_AS(check_slice(slice_type{0,6,1},index_type(5)), gtensor::subscript_exception);
-    REQUIRE_THROWS_AS(check_slice(slice_type{2,0,1},index_type(5)), gtensor::subscript_exception);
-    REQUIRE_THROWS_AS(check_slice(slice_type{5,5,-1},index_type(5)), gtensor::subscript_exception);
-    REQUIRE_THROWS_AS(check_slice(slice_type{-1,5,-1},index_type(5)), gtensor::subscript_exception);
-    REQUIRE_THROWS_AS(check_slice(slice_type{0,4,-1},index_type(5)), gtensor::subscript_exception);
-    REQUIRE_THROWS_AS(check_slice(slice_type{0,5,-1},index_type(5)), gtensor::subscript_exception);
-    REQUIRE_THROWS_AS(check_slice(slice_type{1,4,-1},index_type(5)), gtensor::subscript_exception);
+    SECTION("test_check_slice_nothrow")
+    {
+        auto test_data = GENERATE(
+            test_type(slice_type{0,1,1}, index_type(1)),
+            test_type(slice_type{0,5,1}, index_type(5)),
+            test_type(slice_type{0,5,1}, index_type(5)),
+            test_type(slice_type{0,5,1}, index_type(5)),
+            test_type(slice_type{0,5,1}, index_type(5)),
+            test_type(slice_type{4,-1,-1}, index_type(5)),
+            test_type(slice_type{0,-1,-1}, index_type(5)),
+            test_type(slice_type{0,3,1}, index_type(5)),
+            test_type(slice_type{2,5,1}, index_type(5)),
+            test_type(slice_type{1,4,1}, index_type(5)),
+            test_type(slice_type{1,4,1}, index_type(5)),
+            test_type(slice_type{3,4,1}, index_type(5)),
+            test_type(slice_type{0,-1,-1}, index_type(5))
+        );
+        auto slice = std::get<0>(test_data);
+        auto shape_element = std::get<1>(test_data);
+        REQUIRE_NOTHROW(check_slice(slice,shape_element));
+    }
+    SECTION("test_check_slice_exception")
+    {
+        auto test_data = GENERATE(
+            test_type(slice_type{0,1,1},index_type(0)),
+            test_type(slice_type{1,0,-1},index_type(0)),
+            test_type(slice_type{5,5,1},index_type(5)),
+            test_type(slice_type{6,5,1},index_type(5)),
+            test_type(slice_type{-1,5,1},index_type(5)),
+            test_type(slice_type{1,-1,1},index_type(5)),
+            test_type(slice_type{0,0,1},index_type(5)),
+            test_type(slice_type{0,6,1},index_type(5)),
+            test_type(slice_type{2,0,1},index_type(5)),
+            test_type(slice_type{5,5,-1},index_type(5)),
+            test_type(slice_type{-1,5,-1},index_type(5)),
+            test_type(slice_type{0,4,-1},index_type(5)),
+            test_type(slice_type{0,5,-1},index_type(5)),
+            test_type(slice_type{1,4,-1},index_type(5))
+        );
+        auto slice = std::get<0>(test_data);
+        auto shape_element = std::get<1>(test_data);
+        REQUIRE_THROWS_AS(check_slice(slice,shape_element), subscript_exception);
+    }
 }
 
 TEST_CASE("test_is_slices", "[test_is_slices]"){

@@ -202,7 +202,7 @@ inline auto fill_slice(const slice<T,N>& slice_, const T& n){
 * k !=0 - garantes by slice type
 * if k>0:  i < j  and i,j in range [0,n)
 * if k<0:  i > j  and i,j in range [0,n)
-* if slice is ok return true
+* if slice is ok do nothing, throw subscript_exception otherwise
 */
 template<typename T, typename N>
 inline void check_slice(const slice<T,N>& slice_, const T& n){

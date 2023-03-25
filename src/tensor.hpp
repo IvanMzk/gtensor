@@ -82,10 +82,6 @@ public:
     storage_tensor(ShT&& shape, ItT begin, ItT end):
         storage_tensor{detail::make_size<index_type>(shape), std::forward<ShT>(shape), begin, end}
     {}
-    //default constructor makes empty 1-d tensor
-    // storage_tensor():
-    //     storage_tensor({})
-    // {}
 
     //inplace
     template<typename ShT>

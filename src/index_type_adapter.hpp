@@ -102,6 +102,7 @@ public:
         impl_(init_list)
     {}
     auto resize(const index_type& n){return impl_.resize(n.value());}
+    auto shrink_to_fit(){impl_.shrink_to_fit();};
     auto begin(){return impl_.begin();}
     auto end(){return impl_.end();}
     auto begin()const{return impl_.begin();}
