@@ -595,6 +595,7 @@ TEMPLATE_TEST_CASE("test_fill_bool_mapping_view","[test_view_factory]",
     using value_type = float;
     using index_tensor_type = gtensor::tensor<bool, config_type>;
     using tensor_type = gtensor::tensor<value_type, config_type>;
+    using gtensor::walker_forward_adapter;
     using test_view_factory::make_test_tensor;
     using gtensor::detail::fill_bool_mapping_view;
     using gtensor::detail::make_bool_mapping_view_shape;
@@ -661,7 +662,8 @@ TEMPLATE_TEST_CASE("test_fill_bool_mapping_view","[test_view_factory]",
             parent.descriptor().strides(),
             parent.engine().create_indexer(),
             result.begin(),
-            subs
+            subs,
+            walker_forward_adapter<config_type, decltype(subs.engine().create_walker())>{subs.descriptor().shape(), subs.engine().create_walker()}
         );
         auto result_shape = make_bool_mapping_view_shape(parent.shape(), trues_number, subs.dim());
         result.impl()->resize(result_shape);

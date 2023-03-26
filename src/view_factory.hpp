@@ -201,12 +201,12 @@ inline auto check_index(const IdxT& idx, const IdxT& shape_element){
     }
 }
 
-template<typename ShT, typename ParentIndexer, typename ResIt,  typename...WalkerAdapter>
-auto fill_index_mapping_view(const ShT& pshape, const ShT& pstrides, ParentIndexer pindexer, ResIt res_it, const ShT& subs_shape, WalkerAdapter...subs_it){
+template<typename ShT, typename ParentIndexer, typename ResIt,  typename...SubsIt>
+auto fill_index_mapping_view(const ShT& pshape, const ShT& pstrides, ParentIndexer pindexer, ResIt res_it, const ShT& subs_shape, SubsIt...subs_it){
     using size_type = typename ShT::size_type;
     using index_type = typename ShT::value_type;
 
-    const size_type subs_number = sizeof...(WalkerAdapter);
+    const size_type subs_number = sizeof...(SubsIt);
     const index_type subs_size = detail::make_size(subs_shape);
     const index_type block_size = mapping_view_block_size(pshape, subs_number);
     auto block_first = index_type{0};
@@ -263,9 +263,8 @@ inline ShT make_bool_mapping_view_shape(const ShT& pshape, const typename ShT::v
     return res;
 }
 
-template<typename ShT, typename ParentIndexer, typename ResIt, typename Subs>
-auto fill_bool_mapping_view(const ShT& pshape, const ShT& pstrides, ParentIndexer pindexer, ResIt res_it, const Subs& subs){
-    using config_type = typename Subs::config_type;
+template<typename ShT, typename ParentIndexer, typename ResIt, typename Subs, typename SubsIt>
+auto fill_bool_mapping_view(const ShT& pshape, const ShT& pstrides, ParentIndexer pindexer, ResIt res_it, const Subs& subs, SubsIt subs_it){
     using index_type = typename ShT::value_type;
     using size_type = typename ShT::size_type;
 
@@ -273,7 +272,7 @@ auto fill_bool_mapping_view(const ShT& pshape, const ShT& pstrides, ParentIndexe
     if (!subs.empty()){
         size_type subs_dim = subs.dim();
         index_type block_size = mapping_view_block_size(pshape, subs_dim);
-        walker_forward_adapter<config_type, decltype(subs.engine().create_walker())> subs_it{subs.descriptor().shape(), subs.engine().create_walker()};
+
         if (block_size == index_type{1}){
             do{
                 if(*subs_it.walker()){
@@ -372,12 +371,13 @@ public:
     }
     template<typename ImplT, typename...Subs>
     static auto create_index_mapping_view(const std::shared_ptr<ImplT>& parent, const Subs&...subs){
-        detail::check_index_mapping_view_subs(parent->shape(), subs.descriptor().shape()...);
+        const auto& pshape = parent->shape();
+        detail::check_index_mapping_view_subs(pshape, subs.descriptor().shape()...);
         auto subs_shape = detail::broadcast_shape<shape_type>(subs.descriptor().shape()...);
         size_type subs_number = sizeof...(Subs);
-        auto res = storage_tensor_factory<CfgT,ValT>::make(detail::make_index_mapping_view_shape(parent->shape(), subs_shape, subs_number), ValT{});
+        auto res = storage_tensor_factory<CfgT,ValT>::make(detail::make_index_mapping_view_shape(pshape, subs_shape, subs_number), ValT{});
         detail::fill_index_mapping_view(
-            parent->shape(),
+            pshape,
             parent->strides(),
             parent->engine().create_indexer(),
             res.begin(),
@@ -388,37 +388,21 @@ public:
     }
     template<typename ImplT, typename Subs>
     static auto create_bool_mapping_view(const std::shared_ptr<ImplT>& parent, const Subs& subs){
-        const auto& pshape = parent.shape();
+        const auto& pshape = parent->shape();
         const auto& subs_shape = subs.shape();
-        check_bool_mapping_view_subs(pshape, subs_shape);
+        detail::check_bool_mapping_view_subs(pshape, subs_shape);
         auto res = gtensor::storage_tensor_factory<CfgT,ValT>::make(pshape, ValT{});
-        auto subs_trues_number = fill_bool_mapping_view(
+        auto subs_trues_number = detail::fill_bool_mapping_view(
             pshape,
-            parent.descriptor().strides(),
-            parent.engine().create_indexer(),
+            parent->descriptor().strides(),
+            parent->engine().create_indexer(),
             res.begin(),
-            subs
+            subs,
+            walker_forward_adapter<CfgT, decltype(subs.engine().create_walker())>{subs_shape, subs.engine().create_walker()}
         );
-        res.impl()->resize(make_bool_mapping_view_shape(pshape, subs_trues_number, subs.dim()));
+        res.impl()->resize(detail::make_bool_mapping_view_shape(pshape, subs_trues_number, subs.dim()));
         return res;
     }
-    // template<typename ImplT, typename Subs>
-    // static auto create_bool_mapping_view(const std::shared_ptr<ImplT>& parent, const Subs& subs){
-    //     detail::check_bool_mapping_view_subs(parent->shape(), subs.descriptor().shape());
-    //     size_type subs_dim = subs.dim();
-    //     auto res = storage_tensor_factory<CfgT,ValT>::make(parent->shape(), ValT{});
-    //     auto subs_trues_number = detail::fill_bool_mapping_view(
-    //         res.begin(),
-    //         parent->engine().create_indexer(),
-    //         parent->shape(),
-    //         parent->strides(),
-    //         subs.size(),
-    //         subs_dim,
-    //         walker_bidirectional_adapter<CfgT, decltype(subs.engine().create_walker())>{subs.descriptor().shape(), subs.engine().create_walker()}
-    //     );
-    //     res.impl()->resize(detail::make_bool_mapping_view_shape(parent->shape(), subs_trues_number, subs_dim));
-    //     return res;
-    // }
 };
 
 }   //end of namespace gtensor

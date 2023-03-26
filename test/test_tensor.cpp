@@ -43,15 +43,18 @@ TEST_CASE("test_is_tensor","[test_tensor]"){
 TEST_CASE("test_tensor_default_constructor","[test_tensor]"){
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
-    using shape_type = typename tensor_type::config_type::shape_type;
-    using index_type = typename tensor_type::config_type::index_type;
+    using config_type = tensor_type::config_type;
+    using size_type = config_type::size_type;
+    using index_type = config_type::index_type;
+    using shape_type = config_type::shape_type;
 
     auto test_data = GENERATE(
         tensor_type(),
         tensor_type{}
     );
     REQUIRE(test_data.size() == index_type{0});
-    REQUIRE(test_data.shape() == shape_type{});
+    REQUIRE(test_data.dim() == size_type{1});
+    REQUIRE(test_data.shape() == shape_type{0,});
 }
 
 TEST_CASE("test_tensor_constructor_from_list","[test_tensor]"){
@@ -295,10 +298,11 @@ TEST_CASE("test_view_making_interface","[test_tensor]"){
             REQUIRE_NOTHROW(tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{0,1}));
             REQUIRE_NOTHROW(tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{0,0,1}));
             REQUIRE_NOTHROW(tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{0,1}, index_tensor_type{1,2}));
-            REQUIRE_THROWS_AS(tensor_type{1}(index_tensor_type{0,0,0},index_tensor_type{0,0}),broadcast_exception);
+            REQUIRE_THROWS_AS(tensor_type{1}(index_tensor_type{0,0,0},index_tensor_type{0,0}),subscript_exception);
             REQUIRE_THROWS_AS(tensor_type{1}(index_tensor_type{0,1},index_tensor_type{0,1}),subscript_exception);
             REQUIRE_THROWS_AS(tensor_type{1}(index_tensor_type{0,1},index_tensor_type{1}),subscript_exception);
             REQUIRE_THROWS_AS(tensor_type{1}(index_tensor_type{0,4,0}),subscript_exception);
+            REQUIRE_THROWS_AS((tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{0,0},index_tensor_type{0,0,0})),broadcast_exception);
             REQUIRE_THROWS_AS((tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{3})),subscript_exception);
             REQUIRE_THROWS_AS((tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{0},index_tensor_type{1,2,3})),subscript_exception);
             REQUIRE_THROWS_AS((tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{0},index_tensor_type{1,2,3},index_tensor_type{0})),subscript_exception);
@@ -388,7 +392,7 @@ TEST_CASE("test_view_making_interface","[test_tensor]"){
             std::make_tuple((tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{0,1}, index_tensor_type{0})),shape_type{2}, 2, 1),
             std::make_tuple((tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{{0,0},{1,1}}, index_tensor_type{{0,2},{0,2}})),shape_type{2,2}, 4, 2),
             //mapping view bool tensor
-            std::make_tuple((tensor_type{1}(bool_tensor_type{false})),shape_type{}, 0, 0),
+            std::make_tuple((tensor_type{1}(bool_tensor_type{false})),shape_type{0}, 0, 1),
             std::make_tuple((tensor_type{1}(bool_tensor_type{true})),shape_type{1}, 1, 1),
             std::make_tuple((tensor_type{1,2,3,4,5}(bool_tensor_type{false,true,false,true,false})),shape_type{2}, 2, 1),
             std::make_tuple((tensor_type{1,2,3,4,5}(bool_tensor_type{true,true,true,true})),shape_type{4}, 4, 1),
