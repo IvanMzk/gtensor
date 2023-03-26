@@ -217,7 +217,7 @@ public:
     //reduce
     template<typename BinaryOp>
     auto reduce(const size_type& direction, BinaryOp op)const{
-        detail::check_reduce_direction(direction, dim());
+        detail::check_reduce_args(descriptor().shape(), direction);
         return gtensor::reduce(*this, direction, op);
     }
 };

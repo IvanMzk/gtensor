@@ -27,9 +27,9 @@ target_sources(Test PRIVATE
 
     ${CMAKE_CURRENT_SOURCE_DIR}/test_tensor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_view.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_expression_template_engine.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_expression_template_engine.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_reduce.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_combine.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_reduce.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/test.cpp
 )

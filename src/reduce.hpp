@@ -15,21 +15,25 @@ public:
 
 namespace detail{
 
-template<typename SizeT>
-auto check_reduce_direction(const SizeT& direction, const SizeT& pdim){
-    if (pdim > SizeT{0} && direction >= pdim){
+template<typename ShT, typename SizeT>
+auto check_reduce_args(const ShT& pshape, const SizeT& direction){
+    using size_type = SizeT;
+    using index_type = typename ShT::value_type;
+    const size_type pdim = pshape.size();
+    if (direction >= pdim){
         throw reduce_exception("bad reduce direction");
+    }
+    if (pshape[direction] == index_type{0}){
+        throw reduce_exception("reduce on zero size direction");
     }
 }
 template<typename ShT, typename SizeT>
-auto reduce_shape(const ShT& shape, const SizeT& direction){
+auto make_reduce_shape(const ShT& shape, const SizeT& direction){
     using size_type = SizeT;
     using shape_type = ShT;
     using index_type = typename shape_type::value_type;
     size_type dim = shape.size();
-    if (dim == size_type{0}){
-        return shape_type{};
-    }else if (dim == size_type{1}){
+    if (dim == size_type{1}){
         return shape_type{index_type{1}};
     }else{
         shape_type res(--dim);
@@ -134,31 +138,28 @@ class reducer
     template<typename ImplT, typename SizeT, typename BinaryOp>
     static auto reduce_(const ImplT& parent, const SizeT& direction, BinaryOp op){
         using size_type = SizeT;
-        using detail::reduce_shape;
         using res_value_type = std::decay_t<decltype(op(std::declval<value_type>(),std::declval<value_type>()))>;
-        if (parent.size() == index_type{0}){
-            return storage_tensor_factory<CfgT,res_value_type>::make();
+
+        auto res = storage_tensor_factory<CfgT,res_value_type>::make(detail::make_reduce_shape(parent.shape(), direction), res_value_type{});
+        auto pdim = parent.dim();
+        if (pdim == size_type{1}){
+            auto pit = parent.engine().begin();
+            auto init = *pit;
+            *res.begin() = std::accumulate(++pit, parent.engine().end(), init, op);
         }else{
-            auto res = storage_tensor_factory<CfgT,res_value_type>::make(reduce_shape(parent.shape(), direction), res_value_type{});
-            auto pdim = parent.dim();
-            if (pdim == size_type{1}){
-                auto pit = parent.engine().begin();
-                auto init = *pit;
-                *res.begin() = std::accumulate(++pit, parent.engine().end(), init, op);
-            }else{
-                auto it = detail::walker_reducer_adapter<CfgT, decltype(parent.engine().create_walker())>{parent.shape(), parent.engine().create_walker(), direction};
-                auto res_it = res.begin();
-                do{
-                    auto init = *it.walker();
-                    while(it.next_reduce()){
-                        init = op(init, *it.walker());
-                    }
-                    *res_it = init;
-                    ++res_it;
-                }while(it.next());
-            }
-            return res;
+            auto it = detail::walker_reducer_adapter<CfgT, decltype(parent.engine().create_walker())>{parent.shape(), parent.engine().create_walker(), direction};
+            auto res_it = res.begin();
+            do{
+                auto init = *it.walker();
+                while(it.next_reduce()){
+                    init = op(init, *it.walker());
+                }
+                *res_it = init;
+                ++res_it;
+            }while(it.next());
         }
+        return res;
+
     }
 
     template<typename SizeT, typename BinaryOp, typename...Ts>
