@@ -53,7 +53,7 @@ class tensor{
 
     friend struct tensor_operator_dispatcher;
     template<typename,typename> friend class view_factory;
-    friend class reducer<ValT,CfgT>;
+    friend class reducer;
     friend class combiner;
     std::shared_ptr<impl_type> impl_;
 protected:

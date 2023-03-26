@@ -149,7 +149,9 @@ inline void check_reshape_subs(const IdxT& size, const Subs&...subs){
     using index_type = IdxT;
     index_type vsize{1};
     ([&vsize](const auto& sub){vsize*=sub;}(subs),...);
-    if (size != vsize){throw subscript_exception("invalid new shape; size of reshape view must be equal to size of its parent");}
+    if (size != vsize){
+        throw subscript_exception("invalid new shape; size of reshape view must be equal to size of its parent");
+    }
 }
 
 

@@ -1,6 +1,7 @@
 #ifndef REDUCE_HPP_
 #define REDUCE_HPP_
 
+#include "type_selector.hpp"
 #include "tensor_factory.hpp"
 #include "broadcast.hpp"
 
@@ -114,7 +115,6 @@ struct max
         return std::max(u,v);
     }
 };
-
 struct min
 {
     template<typename T>
@@ -125,57 +125,54 @@ struct min
 
 }   //end of namespace reduce_operations
 
-
-template<typename ValT, typename CfgT>
 class reducer
 {
-    using value_type = ValT;
-    using config_type = CfgT;
-    using size_type = typename config_type::size_type;
-    using index_type = typename config_type::index_type;
-    using shape_type = typename config_type::shape_type;
-
-    template<typename ImplT, typename SizeT, typename BinaryOp>
-    static auto reduce_(const ImplT& parent, const SizeT& direction, BinaryOp op){
-        using size_type = SizeT;
+    template<typename ImplT, typename BinaryOp>
+    static auto reduce_(const ImplT& parent, const typename ImplT::size_type& direction, BinaryOp op){
+        using value_type = typename ImplT::value_type;
+        using config_type = typename ImplT::config_type;
+        using size_type = typename config_type::size_type;
         using res_value_type = std::decay_t<decltype(op(std::declval<value_type>(),std::declval<value_type>()))>;
 
-        auto res = storage_tensor_factory<CfgT,res_value_type>::make(detail::make_reduce_shape(parent.shape(), direction), res_value_type{});
-        auto pdim = parent.dim();
-        if (pdim == size_type{1}){
-            auto pit = parent.engine().begin();
-            auto init = *pit;
-            *res.begin() = std::accumulate(++pit, parent.engine().end(), init, op);
-        }else{
-            auto it = detail::walker_reducer_adapter<CfgT, decltype(parent.engine().create_walker())>{parent.shape(), parent.engine().create_walker(), direction};
-            auto res_it = res.begin();
-            do{
-                auto init = *it.walker();
-                while(it.next_reduce()){
-                    init = op(init, *it.walker());
-                }
-                *res_it = init;
-                ++res_it;
-            }while(it.next());
+        auto res = storage_tensor_factory<config_type,res_value_type>::make(detail::make_reduce_shape(parent.shape(), direction), res_value_type{});
+        if (!res.empty()){
+            auto pdim = parent.dim();
+            if (pdim == size_type{1}){
+                auto pit = parent.engine().begin();
+                auto init = *pit;
+                *res.begin() = std::accumulate(++pit, parent.engine().end(), init, op);
+            }else{
+                auto it = detail::walker_reducer_adapter<config_type, decltype(parent.engine().create_walker())>{parent.shape(), parent.engine().create_walker(), direction};
+                auto res_it = res.begin();
+                do{
+                    auto init = *it.walker();
+                    while(it.next_reduce()){
+                        init = op(init, *it.walker());
+                    }
+                    *res_it = init;
+                    ++res_it;
+                }while(it.next());
+            }
         }
         return res;
-
     }
 
-    template<typename SizeT, typename BinaryOp, typename...Ts>
-    static auto reduce_(const tensor<Ts...>& t, const SizeT& direction, BinaryOp op){
+    template<typename BinaryOp, typename...Ts>
+    static auto reduce_(const tensor<Ts...>& t, const typename tensor<Ts...>::size_type& direction, BinaryOp op){
         return reduce_(t.impl_ref(), direction, op);
     }
-
-    template<typename SizeT, typename BinaryOp, typename...Ts>
-    friend auto reduce(const tensor<Ts...>& t, const SizeT& direction, BinaryOp op);
+public:
+    //interface
+    template<typename BinaryOp, typename...Ts>
+    static auto reduce(const tensor<Ts...>& t, const typename tensor<Ts...>::size_type& direction, BinaryOp op){
+        return reduce_(t,direction,op);
+    }
 };
 
-template<typename SizeT, typename BinaryOp, typename...Ts>
-auto reduce(const tensor<Ts...>& t, const SizeT& direction, BinaryOp op){
-    using value_type = typename tensor<Ts...>::value_type;
+template<typename BinaryOp, typename...Ts>
+auto reduce(const tensor<Ts...>& t, const typename tensor<Ts...>::size_type& direction, BinaryOp op){
     using config_type = typename tensor<Ts...>::config_type;
-    return reducer<value_type,config_type>::reduce_(t, direction, op);
+    return reducer_selector<config_type>::type::reduce(t, direction, op);
 }
 
 

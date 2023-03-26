@@ -102,6 +102,19 @@ public:
     using type = typename selector_<typename config_type::host_engine, void, Ts...>::type;
 };
 
+template<typename CfgT, typename...Ts>
+class reducer_selector
+{
+    using config_type = CfgT;
+    template<typename...> struct selector_;
+    template<typename Dummy> struct selector_<config::engine_expression_template,Dummy>
+    {
+        using type = reducer;
+    };
+public:
+    using type = typename selector_<typename config_type::host_engine, void, Ts...>::type;
+};
+
 }   //end of namespace gtensor
 
 

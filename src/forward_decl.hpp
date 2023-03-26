@@ -17,6 +17,7 @@ template<typename ValT, typename CfgT> class tensor_base;
 template<typename ValT, typename CfgT, typename ImplT> class tensor;
 
 class combiner;
+class reducer;
 
 }   //end of namespace gtensor
 
