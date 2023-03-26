@@ -513,6 +513,7 @@ TEMPLATE_TEST_CASE("test_check_bool_mapping_view_subs","[test_view_factory]",
     using test_type = std::tuple<shape_type,shape_type>;
     SECTION("test_check_bool_mapping_view_subs_nothrow"){
         auto test_data = GENERATE(
+            test_type(shape_type{0}, shape_type{0}),
             test_type(shape_type{1}, shape_type{0}),
             test_type(shape_type{1}, shape_type{1}),
             test_type(shape_type{10}, shape_type{0}),
@@ -535,6 +536,7 @@ TEMPLATE_TEST_CASE("test_check_bool_mapping_view_subs","[test_view_factory]",
     SECTION("test_check_bool_mapping_view_subs_exception"){
         auto test_data = GENERATE(
             //subs dim > parent dim
+            test_type(shape_type{0}, shape_type{0,0}),
             test_type(shape_type{10}, shape_type{10,10}),
             test_type(shape_type{3,2,4}, shape_type{2,2,2,2}),
             //subs direction size > parent direction size
@@ -578,7 +580,8 @@ TEMPLATE_TEST_CASE("test_make_bool_mapping_view_shape","[test_view_factory]",
         test_type{shape_type{2,3,4},index_type{6},size_type{2},shape_type{6,4}},
         test_type{shape_type{2,3,4},index_type{0},size_type{3},shape_type{0}},
         test_type{shape_type{2,3,4},index_type{1},size_type{3},shape_type{1}},
-        test_type{shape_type{2,3,4},index_type{5},size_type{3},shape_type{5}}
+        test_type{shape_type{2,3,4},index_type{5},size_type{3},shape_type{5}},
+        test_type{shape_type{0,2,3,4},index_type{0},size_type{2},shape_type{0,3,4}}
     );
     auto pshape = std::get<0>(test_data);
     auto trues_number = std::get<1>(test_data);
@@ -607,8 +610,8 @@ TEMPLATE_TEST_CASE("test_fill_bool_mapping_view","[test_view_factory]",
         std::make_tuple(tensor_type{0}, index_tensor_type{false}, tensor_type{}),
         std::make_tuple(tensor_type{0}, index_tensor_type{true}, tensor_type{0}),
         std::make_tuple(tensor_type{{0}}, index_tensor_type{}, tensor_type{}.reshape(0,1)),
-        std::make_tuple(tensor_type{{0}}, index_tensor_type{}.reshape(1,0), tensor_type{}.reshape(0)),
-        std::make_tuple(tensor_type{{0}}, index_tensor_type{}.reshape(0,1), tensor_type{}.reshape(0)),
+        std::make_tuple(tensor_type{{0}}, index_tensor_type{}.reshape(1,0), tensor_type{}),
+        std::make_tuple(tensor_type{{0}}, index_tensor_type{}.reshape(0,1), tensor_type{}),
         std::make_tuple(tensor_type{{0}}, index_tensor_type{false}, tensor_type{}.reshape(0,1)),
         std::make_tuple(tensor_type{{0}}, index_tensor_type{{false}}, tensor_type{}),
         std::make_tuple(tensor_type{0,1,2,3,4,5}, index_tensor_type{}, tensor_type{}),

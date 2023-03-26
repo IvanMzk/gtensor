@@ -309,6 +309,11 @@ TEST_CASE("test_view_making_interface","[test_tensor]"){
         }
         SECTION("mapping_view_bool_tensor"){
             using index_tensor_type = tensor<bool,config_type>;
+            REQUIRE_NOTHROW(tensor_type{}(index_tensor_type{}));
+            REQUIRE_NOTHROW(tensor_type{}.reshape(2,3,0)(index_tensor_type{}));
+            REQUIRE_NOTHROW(tensor_type{}.reshape(2,3,0)(index_tensor_type{true,true}));
+            REQUIRE_NOTHROW(tensor_type{}.reshape(2,3,0)(index_tensor_type{{true,true,true},{false,false,false}}));
+            REQUIRE_NOTHROW(tensor_type{}.reshape(2,3,0)(index_tensor_type{}.reshape(2,3,0)));
             REQUIRE_NOTHROW(tensor_type{1}(index_tensor_type{true}));
             REQUIRE_NOTHROW(tensor_type{1}(index_tensor_type{false}));
             REQUIRE_NOTHROW(tensor_type{1,2,3,4,5}(index_tensor_type{false,false,true,true,false}));
@@ -319,6 +324,11 @@ TEST_CASE("test_view_making_interface","[test_tensor]"){
             REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}(index_tensor_type{{true}}));
             REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}(index_tensor_type{{true,false},{false,true}}));
             REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}(index_tensor_type{{true,false}}));
+            REQUIRE_THROWS_AS(tensor_type{}(index_tensor_type{}.reshape(0,0)),subscript_exception);
+            REQUIRE_THROWS_AS(tensor_type{}(index_tensor_type{true}),subscript_exception);
+            REQUIRE_THROWS_AS(tensor_type{}.reshape(1,0)(index_tensor_type{{true}}),subscript_exception);
+            REQUIRE_THROWS_AS(tensor_type{}.reshape(2,3,0)(index_tensor_type{}.reshape(3,3,0)),subscript_exception);
+            REQUIRE_THROWS_AS(tensor_type{}.reshape(2,3,0)(index_tensor_type{}.reshape(1,2,3,0)),subscript_exception);
             REQUIRE_THROWS_AS(tensor_type{1}(index_tensor_type{{true}}),subscript_exception);
             REQUIRE_THROWS_AS(tensor_type{1}(index_tensor_type{{false}}),subscript_exception);
             REQUIRE_THROWS_AS(tensor_type{1}(index_tensor_type{true,true}),subscript_exception);
@@ -392,6 +402,12 @@ TEST_CASE("test_view_making_interface","[test_tensor]"){
             std::make_tuple((tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{0,1}, index_tensor_type{0})),shape_type{2}, 2, 1),
             std::make_tuple((tensor_type{{1,2,3},{4,5,6}}(index_tensor_type{{0,0},{1,1}}, index_tensor_type{{0,2},{0,2}})),shape_type{2,2}, 4, 2),
             //mapping view bool tensor
+            std::make_tuple((tensor_type{}(bool_tensor_type{})),shape_type{0}, 0, 1),
+            std::make_tuple((tensor_type{}.reshape(2,3,0)(bool_tensor_type{false,false})),shape_type{0,3,0}, 0, 3),
+            std::make_tuple((tensor_type{}.reshape(2,3,0)(bool_tensor_type{true,false})),shape_type{1,3,0}, 0, 3),
+            std::make_tuple((tensor_type{}.reshape(2,3,0)(bool_tensor_type{true,true})),shape_type{2,3,0}, 0, 3),
+            std::make_tuple((tensor_type{}.reshape(2,3,0)(bool_tensor_type{{true,true,false},{false,true,true}})),shape_type{4,0}, 0, 2),
+            std::make_tuple((tensor_type{}.reshape(2,3,0)(bool_tensor_type{}.reshape(2,3,0))),shape_type{0}, 0, 1),
             std::make_tuple((tensor_type{1}(bool_tensor_type{false})),shape_type{0}, 0, 1),
             std::make_tuple((tensor_type{1}(bool_tensor_type{true})),shape_type{1}, 1, 1),
             std::make_tuple((tensor_type{1,2,3,4,5}(bool_tensor_type{false,true,false,true,false})),shape_type{2}, 2, 1),

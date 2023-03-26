@@ -155,7 +155,7 @@ inline void check_reshape_subs(const IdxT& size, const Subs&...subs){
 
 //helpers for making index_mapping_view
 template<typename ShT, typename SizeT>
-inline auto mapping_view_block_size(const ShT& pshape, const SizeT& subs_dim_or_subs_number){
+inline auto mapping_view_chunk_size(const ShT& pshape, const SizeT& subs_dim_or_subs_number){
     using index_type = typename ShT::value_type;
     return std::accumulate(pshape.begin()+subs_dim_or_subs_number,pshape.end(),index_type(1),std::multiplies<index_type>{});
 }
@@ -206,30 +206,28 @@ auto fill_index_mapping_view(const ShT& pshape, const ShT& pstrides, ParentIndex
     using size_type = typename ShT::size_type;
     using index_type = typename ShT::value_type;
 
-    const size_type subs_number = sizeof...(SubsIt);
     const index_type subs_size = detail::make_size(subs_shape);
-    const index_type block_size = mapping_view_block_size(pshape, subs_number);
-    auto block_first = index_type{0};
-    if (block_size == index_type{1}){
-        for(index_type i{0}; i!=subs_size; ++i,((subs_it.next()),...)){
-            block_first = index_type{0};
-            size_type n{0};
-            ((block_first+=check_index(static_cast<index_type>(*subs_it.walker()),pshape[n])*pstrides[n],++n),...);
-            *res_it = pindexer[block_first];
-            ++res_it;
-        }
-    }else{
-        index_type j{0};
-        for(index_type i{0}; i!=subs_size; ++i,((subs_it.next()),...)){
-            block_first = index_type{0};
-            size_type n{0};
-            ((block_first+=check_index(static_cast<index_type>(*subs_it.walker()),pshape[n])*pstrides[n],++n),...);
-            auto block_index_end = j+block_size;
-            for(; j!=block_index_end; ++j){
+    if (subs_size != index_type{0}){
+        const size_type subs_number = sizeof...(SubsIt);
+        const index_type chunk_size = mapping_view_chunk_size(pshape, subs_number);
+        if (chunk_size == index_type{1}){
+            do{
+                index_type block_first{0};
+                size_type n{0};
+                ((block_first+=check_index(static_cast<index_type>(*subs_it.walker()),pshape[n])*pstrides[n],++n),...);
                 *res_it = pindexer[block_first];
-                ++block_first;
                 ++res_it;
-            }
+            }while(((subs_it.next()),...));
+        }else{
+            do{
+                index_type block_first{0};
+                size_type n{0};
+                ((block_first+=check_index(static_cast<index_type>(*subs_it.walker()),pshape[n])*pstrides[n],++n),...);
+                for(index_type i{0}; i!=chunk_size; ++i){
+                    *res_it = pindexer[block_first+i];
+                    ++res_it;
+                }
+            }while(((subs_it.next()),...));
         }
     }
 }
@@ -271,9 +269,9 @@ auto fill_bool_mapping_view(const ShT& pshape, const ShT& pstrides, ParentIndexe
     index_type trues_number{0};
     if (!subs.empty()){
         size_type subs_dim = subs.dim();
-        index_type block_size = mapping_view_block_size(pshape, subs_dim);
+        index_type chunk_size = mapping_view_chunk_size(pshape, subs_dim);
 
-        if (block_size == index_type{1}){
+        if (chunk_size == index_type{1}){
             do{
                 if(*subs_it.walker()){
                     ++trues_number;
@@ -287,7 +285,7 @@ auto fill_bool_mapping_view(const ShT& pshape, const ShT& pstrides, ParentIndexe
                 if(*subs_it.walker()){
                     ++trues_number;
                     auto block_first = std::inner_product(subs_it.index().begin(), subs_it.index().end(), pstrides.begin(), index_type{0});
-                    for(index_type i{0}; i!=block_size; ++i){
+                    for(index_type i{0}; i!=chunk_size; ++i){
                         *res_it = pindexer[block_first+i];
                         ++res_it;
                     }
@@ -376,14 +374,16 @@ public:
         auto subs_shape = detail::broadcast_shape<shape_type>(subs.descriptor().shape()...);
         size_type subs_number = sizeof...(Subs);
         auto res = storage_tensor_factory<CfgT,ValT>::make(detail::make_index_mapping_view_shape(pshape, subs_shape, subs_number), ValT{});
-        detail::fill_index_mapping_view(
-            pshape,
-            parent->strides(),
-            parent->engine().create_indexer(),
-            res.begin(),
-            subs_shape,
-            walker_forward_adapter<CfgT, decltype(subs.engine().create_walker())>{subs_shape, subs.engine().create_walker()}...
-        );
+        if (!res.empty()){
+            detail::fill_index_mapping_view(
+                pshape,
+                parent->strides(),
+                parent->engine().create_indexer(),
+                res.begin(),
+                subs_shape,
+                walker_forward_adapter<CfgT, decltype(subs.engine().create_walker())>{subs_shape, subs.engine().create_walker()}...
+            );
+        }
         return res;
     }
     template<typename ImplT, typename Subs>
@@ -392,14 +392,19 @@ public:
         const auto& subs_shape = subs.shape();
         detail::check_bool_mapping_view_subs(pshape, subs_shape);
         auto res = gtensor::storage_tensor_factory<CfgT,ValT>::make(pshape, ValT{});
-        auto subs_trues_number = detail::fill_bool_mapping_view(
-            pshape,
-            parent->descriptor().strides(),
-            parent->engine().create_indexer(),
-            res.begin(),
-            subs,
-            walker_forward_adapter<CfgT, decltype(subs.engine().create_walker())>{subs_shape, subs.engine().create_walker()}
-        );
+        index_type subs_trues_number{0};
+        if (!res.empty()){
+            subs_trues_number = detail::fill_bool_mapping_view(
+                pshape,
+                parent->descriptor().strides(),
+                parent->engine().create_indexer(),
+                res.begin(),
+                subs,
+                walker_forward_adapter<CfgT, decltype(subs.engine().create_walker())>{subs_shape, subs.engine().create_walker()}
+            );
+        }else{
+            subs_trues_number = static_cast<index_type>(std::count(subs.begin(),subs.end(),true));
+        }
         res.impl()->resize(detail::make_bool_mapping_view_shape(pshape, subs_trues_number, subs.dim()));
         return res;
     }
