@@ -4,7 +4,7 @@
 #include "helpers_for_testing.hpp"
 #include "test_config.hpp"
 
-TEMPLATE_TEST_CASE("test_check_stack_args","[test_combine]",
+TEMPLATE_TEST_CASE("test_check_stack_variadic_args","[test_combine]",
     test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
 )
 {
@@ -12,10 +12,10 @@ TEMPLATE_TEST_CASE("test_check_stack_args","[test_combine]",
     using size_type = typename config_type::size_type;
     using shape_type = typename config_type::shape_type;
     using gtensor::combine_exception;
-    using gtensor::detail::check_stack_args;
+    using gtensor::detail::check_stack_variadic_args;
     using helpers_for_testing::apply_by_element;
 
-    SECTION("test_check_stack_args_nothrow")
+    SECTION("test_check_stack_variadic_args_nothrow")
     {
         //0direction,1shapes
         auto test_data = std::make_tuple(
@@ -42,13 +42,13 @@ TEMPLATE_TEST_CASE("test_check_stack_args","[test_combine]",
             auto direction = std::get<0>(t);
             auto shapes = std::get<1>(t);
             auto apply_shapes = [&direction](const auto&...shapes_){
-                check_stack_args(direction, shapes_...);
+                check_stack_variadic_args(direction, shapes_...);
             };
             REQUIRE_NOTHROW(std::apply(apply_shapes, shapes));
         };
         apply_by_element(test, test_data);
     }
-    SECTION("test_check_stack_args_exception")
+    SECTION("test_check_stack_variadic_args_exception")
     {
         //0direction,1shapes
         auto test_data = std::make_tuple(
@@ -68,7 +68,7 @@ TEMPLATE_TEST_CASE("test_check_stack_args","[test_combine]",
             auto direction = std::get<0>(t);
             auto shapes = std::get<1>(t);
             auto apply_shapes = [&direction](const auto&...shapes_){
-                check_stack_args(direction, shapes_...);
+                check_stack_variadic_args(direction, shapes_...);
             };
             REQUIRE_THROWS_AS(std::apply(apply_shapes, shapes), combine_exception);
         };
@@ -76,25 +76,29 @@ TEMPLATE_TEST_CASE("test_check_stack_args","[test_combine]",
     }
 }
 
-TEMPLATE_TEST_CASE("test_check_concatenate_args","[test_combine]",
+TEMPLATE_TEST_CASE("test_check_concatenate_args_nothrow","[test_combine]",
     test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
 )
 {
     using config_type = TestType;
     using size_type = typename config_type::size_type;
     using shape_type = typename config_type::shape_type;
+    using gtensor::combine_exception;
     using gtensor::detail::check_concatenate_variadic_args;
+    using gtensor::detail::check_concatenate_container_args;
     using helpers_for_testing::apply_by_element;
+
     //0direction,1shapes
     auto test_data = std::make_tuple(
-        std::make_tuple(size_type{0}, std::make_tuple(shape_type{})),
-        std::make_tuple(size_type{1}, std::make_tuple(shape_type{})),
+        std::make_tuple(size_type{0}, std::make_tuple(shape_type{0})),
         std::make_tuple(size_type{0}, std::make_tuple(shape_type{1})),
         std::make_tuple(size_type{0}, std::make_tuple(shape_type{1,2,3})),
         std::make_tuple(size_type{1}, std::make_tuple(shape_type{1,2,3})),
         std::make_tuple(size_type{2}, std::make_tuple(shape_type{1,2,3})),
-        std::make_tuple(size_type{0}, std::make_tuple(shape_type{}, shape_type{})),
-        std::make_tuple(size_type{1}, std::make_tuple(shape_type{}, shape_type{})),
+        std::make_tuple(size_type{0}, std::make_tuple(shape_type{0}, shape_type{0})),
+        std::make_tuple(size_type{0}, std::make_tuple(shape_type{1}, shape_type{1})),
+        std::make_tuple(size_type{0}, std::make_tuple(shape_type{2,0}, shape_type{3,0})),
+        std::make_tuple(size_type{1}, std::make_tuple(shape_type{2,0}, shape_type{2,0})),
         std::make_tuple(size_type{0}, std::make_tuple(shape_type{2,2}, shape_type{1,2})),
         std::make_tuple(size_type{1}, std::make_tuple(shape_type{2,2}, shape_type{2,1})),
         std::make_tuple(size_type{0}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2,3})),
@@ -109,18 +113,98 @@ TEMPLATE_TEST_CASE("test_check_concatenate_args","[test_combine]",
         std::make_tuple(size_type{1}, std::make_tuple(shape_type{1,2,3}, shape_type{1,22,3}, shape_type{1,12,3})),
         std::make_tuple(size_type{2}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2,3}, shape_type{1,2,3})),
         std::make_tuple(size_type{2}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2,13}, shape_type{1,2,33}))
-
     );
-    auto test = [](const auto& t){
-        auto direction = std::get<0>(t);
-        auto shapes = std::get<1>(t);
-        auto apply_shapes = [&direction](const auto&...shapes_){
-            check_concatenate_variadic_args(direction, shapes_...);
+    SECTION("test_check_concatenate_variadic_args_nothrow")
+    {
+        auto test = [](const auto& t){
+            auto direction = std::get<0>(t);
+            auto shapes = std::get<1>(t);
+            auto apply_shapes = [&direction](const auto&...shapes_){
+                check_concatenate_variadic_args(direction, shapes_...);
+            };
+            REQUIRE_NOTHROW(std::apply(apply_shapes, shapes));
         };
-        REQUIRE_NOTHROW(std::apply(apply_shapes, shapes));
-    };
-    apply_by_element(test, test_data);
+        apply_by_element(test, test_data);
+    }
+    SECTION("test_check_concatenate_container_args_nothrow")
+    {
+        using value_type = int;
+        using tensor_type = gtensor::tensor<value_type>;
+        using container_type = std::vector<tensor_type>;
+        auto test = [](const auto& t){
+            auto direction = std::get<0>(t);
+            auto shapes = std::get<1>(t);
+            auto make_tensor_container = [](const auto&...shapes_){
+                return container_type{tensor_type(shapes_,value_type{})...};
+            };
+            auto container = std::apply(make_tensor_container, shapes);
+            REQUIRE_NOTHROW(check_concatenate_container_args(direction,container));
+        };
+        apply_by_element(test, test_data);
+    }
 }
+
+TEMPLATE_TEST_CASE("test_check_concatenate_args_exception","[test_combine]",
+    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
+)
+{
+    using config_type = TestType;
+    using size_type = typename config_type::size_type;
+    using shape_type = typename config_type::shape_type;
+    using gtensor::combine_exception;
+    using gtensor::detail::check_concatenate_variadic_args;
+    using gtensor::detail::check_concatenate_container_args;
+    using helpers_for_testing::apply_by_element;
+
+    //0direction,1shapes
+    auto test_data = std::make_tuple(
+        std::make_tuple(size_type{1}, std::make_tuple(shape_type{0})),
+        std::make_tuple(size_type{1}, std::make_tuple(shape_type{1})),
+        std::make_tuple(size_type{3}, std::make_tuple(shape_type{1,2,3})),
+        std::make_tuple(size_type{1}, std::make_tuple(shape_type{0}, shape_type{0})),
+        std::make_tuple(size_type{1}, std::make_tuple(shape_type{1}, shape_type{1})),
+        std::make_tuple(size_type{3}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2,3})),
+        std::make_tuple(size_type{0}, std::make_tuple(shape_type{0,1}, shape_type{1,0})),
+        std::make_tuple(size_type{1}, std::make_tuple(shape_type{1,0}, shape_type{0,1})),
+        std::make_tuple(size_type{0}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2})),
+        std::make_tuple(size_type{0}, std::make_tuple(shape_type{1,2}, shape_type{1,2,3})),
+        std::make_tuple(size_type{0}, std::make_tuple(shape_type{1,20,3}, shape_type{1,20,3}, shape_type{1,2,3})),
+        std::make_tuple(size_type{0}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2,30}, shape_type{1,2,3})),
+        std::make_tuple(size_type{1}, std::make_tuple(shape_type{1,2,3}, shape_type{10,2,3}, shape_type{1,2,3})),
+        std::make_tuple(size_type{1}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2,30}, shape_type{1,2,3})),
+        std::make_tuple(size_type{2}, std::make_tuple(shape_type{1,2,3}, shape_type{10,2,3}, shape_type{1,2,3})),
+        std::make_tuple(size_type{2}, std::make_tuple(shape_type{1,2,3}, shape_type{1,12,3}, shape_type{1,2,3}))
+    );
+    SECTION("test_check_concatenate_variadic_args_exception")
+    {
+        auto test = [](const auto& t){
+            auto direction = std::get<0>(t);
+            auto shapes = std::get<1>(t);
+            auto apply_shapes = [&direction](const auto&...shapes_){
+                check_concatenate_variadic_args(direction, shapes_...);
+            };
+            REQUIRE_THROWS_AS(std::apply(apply_shapes, shapes), combine_exception);
+        };
+        apply_by_element(test, test_data);
+    }
+    SECTION("test_check_concatenate_container_args_exception")
+    {
+        using value_type = int;
+        using tensor_type = gtensor::tensor<value_type>;
+        using container_type = std::vector<tensor_type>;
+        auto test = [](const auto& t){
+            auto direction = std::get<0>(t);
+            auto shapes = std::get<1>(t);
+            auto make_tensor_container = [](const auto&...shapes_){
+                return container_type{tensor_type(shapes_,value_type{})...};
+            };
+            auto container = std::apply(make_tensor_container, shapes);
+            REQUIRE_THROWS_AS(check_concatenate_container_args(direction,container), combine_exception);
+        };
+        apply_by_element(test, test_data);
+    }
+}
+
 
 // TEMPLATE_TEST_CASE("test_check_vstack_args","[test_combine]",
 //     test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
@@ -176,44 +260,6 @@ TEMPLATE_TEST_CASE("test_check_concatenate_args","[test_combine]",
 // }
 
 
-// TEMPLATE_TEST_CASE("test_check_concatenate_args_exception","[test_combine]",
-//     test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-// )
-// {
-//     using config_type = TestType;
-//     using size_type = typename config_type::size_type;
-//     using shape_type = typename config_type::shape_type;
-//     using gtensor::combine_exception;
-//     using gtensor::detail::check_concatenate_variadic_args;
-//     using helpers_for_testing::apply_by_element;
-//     //0direction,1shapes
-//     auto test_data = std::make_tuple(
-//         std::make_tuple(size_type{1}, std::make_tuple(shape_type{1})),
-//         std::make_tuple(size_type{3}, std::make_tuple(shape_type{1,2,3})),
-//         std::make_tuple(size_type{1}, std::make_tuple(shape_type{1}, shape_type{1})),
-//         std::make_tuple(size_type{3}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2,3})),
-//         std::make_tuple(size_type{0}, std::make_tuple(shape_type{}, shape_type{1})),
-//         std::make_tuple(size_type{0}, std::make_tuple(shape_type{1}, shape_type{})),
-//         std::make_tuple(size_type{0}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2})),
-//         std::make_tuple(size_type{0}, std::make_tuple(shape_type{1,2}, shape_type{1,2,3})),
-//         std::make_tuple(size_type{0}, std::make_tuple(shape_type{1,20,3}, shape_type{1,20,3}, shape_type{1,2,3})),
-//         std::make_tuple(size_type{0}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2,30}, shape_type{1,2,3})),
-//         std::make_tuple(size_type{1}, std::make_tuple(shape_type{1,2,3}, shape_type{10,2,3}, shape_type{1,2,3})),
-//         std::make_tuple(size_type{1}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2,30}, shape_type{1,2,3})),
-//         std::make_tuple(size_type{2}, std::make_tuple(shape_type{1,2,3}, shape_type{10,2,3}, shape_type{1,2,3})),
-//         std::make_tuple(size_type{2}, std::make_tuple(shape_type{1,2,3}, shape_type{1,12,3}, shape_type{1,2,3}))
-
-//     );
-//     auto test = [](const auto& t){
-//         auto direction = std::get<0>(t);
-//         auto shapes = std::get<1>(t);
-//         auto apply_shapes = [&direction](const auto&...shapes_){
-//             check_concatenate_variadic_args(direction, shapes_...);
-//         };
-//         REQUIRE_THROWS_AS(std::apply(apply_shapes, shapes), combine_exception);
-//     };
-//     apply_by_element(test, test_data);
-// }
 
 // TEMPLATE_TEST_CASE("test_check_vstack_args_exception","[test_combine]",
 //     test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type

@@ -27,7 +27,7 @@ template<typename T> constexpr inline bool is_tensor_container_v<T, std::void_t<
 
 
 template<typename SizeT, typename ShT, typename...ShTs>
-void check_stack_args(const SizeT& direction, const ShT& shape, const ShTs&...shapes){
+void check_stack_variadic_args(const SizeT& direction, const ShT& shape, const ShTs&...shapes){
     using size_type = SizeT;
     size_type dim = shape.size();
     if (direction > dim){
@@ -44,12 +44,12 @@ template<typename SizeT, typename ShT, typename...ShTs>
 void check_concatenate_variadic_args(const SizeT& direction, const ShT& shape, const ShTs&...shapes){
     using size_type = SizeT;
     size_type dim = shape.size();
-    if (dim > size_type{0} && direction >= dim){
+    if (direction >= dim){
         throw combine_exception{"bad concatenate direction"};
     }
     if constexpr (sizeof...(ShTs) > 0){
         if (!((dim==static_cast<size_type>(shapes.size()))&&...)){
-            throw combine_exception{"tensors to concatenate must have equal shapes"};
+            throw combine_exception{"tensors to concatenate must have equal dimentions number"};
         }
         for (size_type d{0}; d!=dim; ++d){
             if (!((shape[d]==shapes[d])&&...)){
@@ -63,17 +63,26 @@ void check_concatenate_variadic_args(const SizeT& direction, const ShT& shape, c
 
 template<typename SizeT, typename Container>
 void check_concatenate_container_args(const SizeT& direction, const Container& ts){
+    static_assert(is_tensor_container_v<Container>);
+    using size_type = SizeT;
     auto it = ts.begin();
-    auto first_dim = (*it).dim();
-    std::for_each(++it, ts.end(),
-        [&first_dim](const auto& t){
-            if (first_dim!=t.dim()){
-                throw combine_exception("tensors to concatenate must have equal shapes");
+    const auto& first_dim = (*it).dim();
+    if (direction >= first_dim){
+        throw combine_exception{"bad concatenate direction"};
+    }
+    const auto& first_shape = (*it).shape();
+    for(++it; it!=ts.end(); ++it){
+        if (first_dim!=(*it).dim()){
+            throw combine_exception("tensors to concatenate must have equal dimensions number");
+        }
+        const auto& shape = (*it).shape();
+        for (size_type d{0}; d!=first_dim; ++d){
+            if (first_shape[d]!=shape[d]){
+                if (d!=direction){
+                    throw combine_exception{"tensors to concatenate must have equal shapes"};
+                }
             }
         }
-    );
-    if (first_dim > SizeT{0} && direction > first_dim){
-        throw combine_exception{"bad concatenate direction"};
     }
 }
 
