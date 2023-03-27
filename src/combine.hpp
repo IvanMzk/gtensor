@@ -98,22 +98,16 @@ auto make_stack_shape(const SizeT& direction, const ShT& shape, const typename S
     return res;
 }
 
-// template<typename SizeT, typename ShT, typename...ShTs>
-// auto make_concatenate_shape(const SizeT& direction, const ShT& shape, const ShTs&...shapes){
-//     using shape_type = ShT;
-//     using index_type = typename shape_type::value_type;
-//     using size_type = SizeT;
-//     size_type dim = shape.size();
-//     if (dim == size_type{0}){
-//         return shape_type{};
-//     }else{
-//         index_type direction_size{shape[direction]};
-//         ((direction_size+=shapes[direction]),...);
-//         shape_type res{shape};
-//         res[direction]=direction_size;
-//         return res;
-//     }
-// }
+template<typename SizeT, typename ShT, typename...ShTs>
+auto make_concatenate_shape(const SizeT& direction, const ShT& shape, const ShTs&...shapes){
+    using shape_type = ShT;
+    using index_type = typename shape_type::value_type;
+    index_type direction_size{shape[direction]};
+    ((direction_size+=shapes[direction]),...);
+    shape_type res{shape};
+    res[direction]=direction_size;
+    return res;
+}
 
 
 
