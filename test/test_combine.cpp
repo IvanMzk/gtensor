@@ -290,6 +290,91 @@ TEMPLATE_TEST_CASE("test_make_concatenate_shape","[test_combine]",
     apply_by_element(test, test_data);
 }
 
+TEMPLATE_TEST_CASE("test_stack","[test_combine]",
+    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
+)
+{
+    using value_type = double;
+    using config_type = TestType;
+    using size_type = typename config_type::size_type;
+    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using helpers_for_testing::apply_by_element;
+    using gtensor::stack;
+    //0direction,1tensors,2expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(size_type{0}, std::make_tuple(tensor_type{}), tensor_type{}.reshape(1,0)),
+        std::make_tuple(size_type{1}, std::make_tuple(tensor_type{}), tensor_type{}.reshape(0,1)),
+        std::make_tuple(size_type{0}, std::make_tuple(tensor_type{}, tensor_type{}, tensor_type{}), tensor_type{}.reshape(3,0)),
+        std::make_tuple(size_type{1}, std::make_tuple(tensor_type{}, tensor_type{}, tensor_type{}), tensor_type{}.reshape(0,3)),
+        std::make_tuple(size_type{0}, std::make_tuple(tensor_type{}.reshape(1,0), tensor_type{}.reshape(1,0), tensor_type{}.reshape(1,0)), tensor_type{}.reshape(3,1,0)),
+        std::make_tuple(size_type{1}, std::make_tuple(tensor_type{}.reshape(1,0), tensor_type{}.reshape(1,0), tensor_type{}.reshape(1,0)), tensor_type{}.reshape(1,3,0)),
+        std::make_tuple(size_type{2}, std::make_tuple(tensor_type{}.reshape(1,0), tensor_type{}.reshape(1,0), tensor_type{}.reshape(1,0)), tensor_type{}.reshape(1,0,3)),
+        std::make_tuple(size_type{0}, std::make_tuple(tensor_type{1}), tensor_type{{1}}),
+        std::make_tuple(size_type{1}, std::make_tuple(tensor_type{1}), tensor_type{{1}}),
+        std::make_tuple(size_type{0}, std::make_tuple(tensor_type{1},tensor_type{2},tensor_type{3}), tensor_type{{1},{2},{3}}),
+        std::make_tuple(size_type{1}, std::make_tuple(tensor_type{1},tensor_type{2},tensor_type{3}), tensor_type{{1,2,3}}),
+        std::make_tuple(size_type{0}, std::make_tuple(tensor_type{1,2,3,4},tensor_type{5,6,7,8},tensor_type{9,10,11,12}), tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12}}),
+        std::make_tuple(size_type{1}, std::make_tuple(tensor_type{1,2,3,4},tensor_type{5,6,7,8},tensor_type{9,10,11,12}), tensor_type{{1,5,9},{2,6,10},{3,7,11},{4,8,12}}),
+        std::make_tuple(
+            size_type{0},
+            std::make_tuple(tensor_type{{1,2,3},{4,5,6}},tensor_type{{7,8,9},{10,11,12}},tensor_type{{13,14,15},{16,17,18}},tensor_type{{19,20,21},{22,23,24}}),
+            tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}},{{13,14,15},{16,17,18}},{{19,20,21},{22,23,24}}}
+        ),
+        std::make_tuple(
+            size_type{1},
+            std::make_tuple(tensor_type{{1,2,3},{4,5,6}},tensor_type{{7,8,9},{10,11,12}},tensor_type{{13,14,15},{16,17,18}},tensor_type{{19,20,21},{22,23,24}}),
+            tensor_type{{{1,2,3},{7,8,9},{13,14,15},{19,20,21}},{{4,5,6},{10,11,12},{16,17,18},{22,23,24}}}
+        ),
+        std::make_tuple(
+            size_type{2},
+            std::make_tuple(tensor_type{{1,2,3},{4,5,6}},tensor_type{{7,8,9},{10,11,12}},tensor_type{{13,14,15},{16,17,18}},tensor_type{{19,20,21},{22,23,24}}),
+            tensor_type{{{1,7,13,19},{2,8,14,20},{3,9,15,21}},{{4,10,16,22},{5,11,17,23},{6,12,18,24}}}
+        )
+    );
+    auto test = [](const auto& t){
+        auto direction = std::get<0>(t);
+        auto tensors = std::get<1>(t);
+        auto expected = std::get<2>(t);
+
+        auto apply_tensors = [&direction](const auto&...tensors_){
+            return stack(direction, tensors_...);
+        };
+        auto result = std::apply(apply_tensors, tensors);
+        REQUIRE(result.equals(expected));
+    };
+    apply_by_element(test, test_data);
+}
+
+TEMPLATE_TEST_CASE("test_stack_common_type","[test_combine]",
+    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
+)
+{
+    using config_type = TestType;
+    using size_type = typename config_type::size_type;
+    using tensor_int32_type = gtensor::tensor<int, config_type>;
+    using tensor_int64_type = gtensor::tensor<std::int64_t, config_type>;
+    using tensor_double_type = gtensor::tensor<double, config_type>;
+    using helpers_for_testing::apply_by_element;
+    using gtensor::stack;
+    //0direction,1tensors,2expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(size_type{0}, std::make_tuple(tensor_int32_type{1},tensor_int32_type{2},tensor_int64_type{3}), tensor_int64_type{{1},{2},{3}}),
+        std::make_tuple(size_type{1}, std::make_tuple(tensor_int32_type{1},tensor_double_type{2},tensor_int64_type{3}), tensor_double_type{{1,2,3}})
+    );
+    auto test = [](const auto& t){
+        auto direction = std::get<0>(t);
+        auto tensors = std::get<1>(t);
+        auto expected = std::get<2>(t);
+
+        auto apply_tensors = [&direction](const auto&...tensors_){
+            return stack(direction, tensors_...);
+        };
+        auto result = std::apply(apply_tensors, tensors);
+        REQUIRE(std::is_same_v<typename decltype(result)::value_type, typename decltype(expected)::value_type>);
+        REQUIRE(result.equals(expected));
+    };
+    apply_by_element(test, test_data);
+}
 
 // TEMPLATE_TEST_CASE("test_check_vstack_args","[test_combine]",
 //     test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
@@ -437,86 +522,7 @@ TEMPLATE_TEST_CASE("test_make_concatenate_shape","[test_combine]",
 //     apply_by_element(test, test_data);
 // }
 
-// TEMPLATE_TEST_CASE("test_stack","[test_combine]",
-//     test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-// )
-// {
-//     using value_type = double;
-//     using config_type = TestType;
-//     using size_type = typename config_type::size_type;
-//     using tensor_type = gtensor::tensor<value_type, config_type>;
-//     using helpers_for_testing::apply_by_element;
-//     using gtensor::stack;
-//     //0direction,1tensors,2expected
-//     auto test_data = std::make_tuple(
-//         std::make_tuple(size_type{0}, std::make_tuple(tensor_type{}), tensor_type{}),
-//         std::make_tuple(size_type{0}, std::make_tuple(tensor_type{}, tensor_type{}, tensor_type{}), tensor_type{}),
-//         std::make_tuple(size_type{0}, std::make_tuple(tensor_type{1}), tensor_type{{1}}),
-//         std::make_tuple(size_type{1}, std::make_tuple(tensor_type{1}), tensor_type{{1}}),
-//         std::make_tuple(size_type{0}, std::make_tuple(tensor_type{1},tensor_type{2},tensor_type{3}), tensor_type{{1},{2},{3}}),
-//         std::make_tuple(size_type{1}, std::make_tuple(tensor_type{1},tensor_type{2},tensor_type{3}), tensor_type{{1,2,3}}),
-//         std::make_tuple(size_type{0}, std::make_tuple(tensor_type{1,2,3,4},tensor_type{5,6,7,8},tensor_type{9,10,11,12}), tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12}}),
-//         std::make_tuple(size_type{1}, std::make_tuple(tensor_type{1,2,3,4},tensor_type{5,6,7,8},tensor_type{9,10,11,12}), tensor_type{{1,5,9},{2,6,10},{3,7,11},{4,8,12}}),
-//         std::make_tuple(
-//             size_type{0},
-//             std::make_tuple(tensor_type{{1,2,3},{4,5,6}},tensor_type{{7,8,9},{10,11,12}},tensor_type{{13,14,15},{16,17,18}},tensor_type{{19,20,21},{22,23,24}}),
-//             tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}},{{13,14,15},{16,17,18}},{{19,20,21},{22,23,24}}}
-//         ),
-//         std::make_tuple(
-//             size_type{1},
-//             std::make_tuple(tensor_type{{1,2,3},{4,5,6}},tensor_type{{7,8,9},{10,11,12}},tensor_type{{13,14,15},{16,17,18}},tensor_type{{19,20,21},{22,23,24}}),
-//             tensor_type{{{1,2,3},{7,8,9},{13,14,15},{19,20,21}},{{4,5,6},{10,11,12},{16,17,18},{22,23,24}}}
-//         ),
-//         std::make_tuple(
-//             size_type{2},
-//             std::make_tuple(tensor_type{{1,2,3},{4,5,6}},tensor_type{{7,8,9},{10,11,12}},tensor_type{{13,14,15},{16,17,18}},tensor_type{{19,20,21},{22,23,24}}),
-//             tensor_type{{{1,7,13,19},{2,8,14,20},{3,9,15,21}},{{4,10,16,22},{5,11,17,23},{6,12,18,24}}}
-//         )
-//     );
-//     auto test = [](const auto& t){
-//         auto direction = std::get<0>(t);
-//         auto tensors = std::get<1>(t);
-//         auto expected = std::get<2>(t);
 
-//         auto apply_tensors = [&direction](const auto&...tensors_){
-//             return stack(direction, tensors_...);
-//         };
-//         auto result = std::apply(apply_tensors, tensors);
-//         REQUIRE(result.equals(expected));
-//     };
-//     apply_by_element(test, test_data);
-// }
-
-// TEMPLATE_TEST_CASE("test_stack_common_type","[test_combine]",
-//     test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-// )
-// {
-//     using config_type = TestType;
-//     using size_type = typename config_type::size_type;
-//     using tensor_int32_type = gtensor::tensor<int, config_type>;
-//     using tensor_int64_type = gtensor::tensor<std::int64_t, config_type>;
-//     using tensor_double_type = gtensor::tensor<double, config_type>;
-//     using helpers_for_testing::apply_by_element;
-//     using gtensor::stack;
-//     //0direction,1tensors,2expected
-//     auto test_data = std::make_tuple(
-//         std::make_tuple(size_type{0}, std::make_tuple(tensor_int32_type{1},tensor_int32_type{2},tensor_int64_type{3}), tensor_int64_type{{1},{2},{3}}),
-//         std::make_tuple(size_type{1}, std::make_tuple(tensor_int32_type{1},tensor_double_type{2},tensor_int64_type{3}), tensor_double_type{{1,2,3}})
-//     );
-//     auto test = [](const auto& t){
-//         auto direction = std::get<0>(t);
-//         auto tensors = std::get<1>(t);
-//         auto expected = std::get<2>(t);
-
-//         auto apply_tensors = [&direction](const auto&...tensors_){
-//             return stack(direction, tensors_...);
-//         };
-//         auto result = std::apply(apply_tensors, tensors);
-//         REQUIRE(std::is_same_v<typename decltype(result)::value_type, typename decltype(expected)::value_type>);
-//         REQUIRE(result.equals(expected));
-//     };
-//     apply_by_element(test, test_data);
-// }
 
 // TEMPLATE_TEST_CASE("test_concatenate","[test_combine]",
 //     test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type

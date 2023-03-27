@@ -109,6 +109,31 @@ auto make_concatenate_shape(const SizeT& direction, const ShT& shape, const ShTs
     return res;
 }
 
+template<typename SizeT, typename ShT>
+auto make_stack_chunk_size(const SizeT& direction, const ShT& shape){
+    using index_type = typename ShT::value_type;
+    return std::accumulate(shape.begin()+direction, shape.end(), index_type{1}, std::multiplies{});
+}
+
+template<typename SizeT, typename ShT, typename ResultIt, typename...It>
+auto fill_stack(const SizeT& direction, const ShT& shape, const typename ShT::value_type& size, ResultIt res_it, It...it){
+    using index_type = typename ShT::value_type;
+    index_type chunk_size = make_stack_chunk_size(direction, shape);
+    index_type i{0};
+    auto filler = [i, chunk_size, res_it](auto& it) mutable {
+        auto i_ = i;
+        i += chunk_size;
+        for (;i_!=i; ++i_, ++res_it, ++it){
+            *res_it = *it;
+        }
+    };
+    index_type iterations_number = size/chunk_size;
+    for (;i!=iterations_number; ++i){
+        (filler(it),...);
+    }
+}
+
+
 
 
 // template<typename SizeT, typename ShT, typename...ShTs>
@@ -276,36 +301,6 @@ auto make_concatenate_shape(const SizeT& direction, const ShT& shape, const ShTs
 //     }
 // }
 
-// template<typename SizeT, typename ShT>
-// auto make_stack_block_size(const SizeT& direction, const ShT& shape){
-//     using size_type = SizeT;
-//     using index_type = typename ShT::value_type;
-//     size_type pdim = shape.size();
-//     if (pdim == size_type{0}){
-//         return index_type{0};
-//     }else{
-//         return std::accumulate(shape.begin()+direction, shape.end(), index_type{1}, std::multiplies{});
-//     }
-// }
-
-// template<typename SizeT, typename ShT, typename ResultIt, typename...It>
-// auto fill_stack(const SizeT& direction, const ShT& shape, const typename ShT::value_type& size, ResultIt res_it, It...it){
-//     using index_type = typename ShT::value_type;
-//     index_type block_size = make_stack_block_size(direction, shape);
-//     index_type i{0};
-//     auto filler = [i, block_size, res_it](auto& it) mutable {
-//         auto i_ = i;
-//         i += block_size;
-//         for (;i_!=i; ++i_, ++res_it, ++it){
-//             *res_it = *it;
-//         }
-//     };
-//     index_type iterations_number = size/block_size;
-//     for (;i!=iterations_number; ++i){
-//         (filler(it),...);
-//     }
-// }
-
 // template<typename SizeT, typename ShT, typename...ShTs>
 // auto make_concatenate_chunk_size(const SizeT& direction, const ShT& shape, const ShTs&...shapes){
 //     using size_type = SizeT;
@@ -436,31 +431,30 @@ auto make_concatenate_shape(const SizeT& direction, const ShT& shape, const ShTs
 
 }   //end of namespace detail
 
-// class combiner{
-// //join tensors along new direction, tensors must have the same shape
-// template<typename SizeT, typename ImplT, typename...ImplTs>
-// static auto stack_(const SizeT& direction, const ImplT& t, const ImplTs&...ts){
-//     using config_type = typename ImplT::config_type;
-//     using index_type = typename config_type::index_type;
-//     using res_value_type = std::common_type_t<typename ImplT::value_type, typename ImplTs::value_type...>;
-//     const auto& shape = t.shape();
-//     detail::check_stack_args(direction, shape, ts.shape()...);
-//     index_type tensors_number = sizeof...(ImplTs) + 1;
-//     auto res_shape = detail::make_stack_shape(direction,shape,tensors_number);
-//     if constexpr (sizeof...(ImplTs) == 0){
-//         return storage_tensor_factory<config_type, res_value_type>::make(std::move(res_shape), t.engine().begin(), t.engine().end());
-//     }else{
-//         auto res = storage_tensor_factory<config_type, res_value_type>::make(std::move(res_shape), res_value_type{});
-//         if (res.size() > index_type{0}){
-//             detail::fill_stack(direction, shape, t.size(), res.begin(), t.engine().begin(), ts.engine().begin()...);
-//         }
-//         return res;
-//     }
-// }
-// template<typename SizeT, typename...Us, typename...Ts>
-// static auto stack_(const SizeT& direction, const tensor<Us...>& t, const Ts&...ts){
-//     return stack_(direction, t.impl_ref(), ts.impl_ref()...);
-// }
+class combiner{
+//join tensors along new direction, tensors must have the same shape
+template<typename SizeT, typename...Us, typename...Ts>
+static auto stack_(const SizeT& direction, const tensor<Us...>& t, const Ts&...ts){
+    static_assert((detail::is_tensor_v<Ts>&&...));
+    using tensor_type = tensor<Us...>;
+    using config_type = typename tensor_type::config_type;
+    using index_type = typename config_type::index_type;
+    using res_value_type = std::common_type_t<typename tensor_type::value_type, typename Ts::value_type...>;
+
+    const auto& shape = t.shape();
+    detail::check_stack_variadic_args(direction, shape, ts.shape()...);
+    index_type tensors_number = sizeof...(Ts) + 1;
+    auto res_shape = detail::make_stack_shape(direction,shape,tensors_number);
+    if constexpr (sizeof...(Ts) == 0){
+        return storage_tensor_factory<config_type, res_value_type>::make(std::move(res_shape), t.begin(), t.end());
+    }else{
+        auto res = storage_tensor_factory<config_type, res_value_type>::make(std::move(res_shape), res_value_type{});
+        if (!res.empty()){
+            detail::fill_stack(direction, shape, t.size(), res.begin(), t.begin(), ts.begin()...);
+        }
+        return res;
+    }
+}
 
 // //join tensors along existing direction, tensors must have the same shape except concatenate direction
 // template<typename SizeT, typename ImplT, typename...ImplTs>
@@ -752,12 +746,12 @@ auto make_concatenate_shape(const SizeT& direction, const ShT& shape, const ShTs
 //     }
 // }
 
-// public:
-// //combiner interface
-// template<typename SizeT, typename...Ts, typename...Tensors>
-// static auto stack(const SizeT& direction, const tensor<Ts...>& t, const Tensors&...ts){
-//     return stack_(direction, t, ts...);
-// }
+public:
+//combiner interface
+template<typename SizeT, typename...Ts, typename...Tensors>
+static auto stack(const SizeT& direction, const tensor<Ts...>& t, const Tensors&...ts){
+    return stack_(direction, t, ts...);
+}
 // template<typename SizeT, typename...Ts, typename...Tensors>
 // static auto concatenate(const SizeT& direction, const tensor<Ts...>& t, const Tensors&...ts){
 //     return concatenate_variadic(direction, t, ts...);
@@ -805,15 +799,15 @@ auto make_concatenate_shape(const SizeT& direction, const ShT& shape, const ShTs
 //     return vstack_variadic(t, ts...);
 // }
 
-// };  //end of class combiner
+};  //end of class combiner
 
-// //combine module free functions
-// //call to combiner interface
-// template<typename SizeT, typename...Ts, typename...Tensors>
-// auto stack(const SizeT& direction, const tensor<Ts...>& t, const Tensors&...ts){
-//     using config_type = typename tensor<Ts...>::config_type;
-//     return combiner_selector<config_type>::type::stack(direction, t, ts...);
-// }
+//combine module free functions
+//call to combiner interface
+template<typename SizeT, typename...Ts, typename...Tensors>
+auto stack(const SizeT& direction, const tensor<Ts...>& t, const Tensors&...ts){
+    using config_type = typename tensor<Ts...>::config_type;
+    return combiner_selector<config_type>::type::stack(direction, t, ts...);
+}
 // template<typename SizeT, typename...Ts, typename...Tensors>
 // auto concatenate(const SizeT& direction, const tensor<Ts...>& t, const Tensors&...ts){
 //     using config_type = typename tensor<Ts...>::config_type;
