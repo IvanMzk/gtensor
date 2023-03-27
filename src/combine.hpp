@@ -86,6 +86,36 @@ void check_concatenate_container_args(const SizeT& direction, const Container& t
     }
 }
 
+template<typename SizeT, typename ShT>
+auto make_stack_shape(const SizeT& direction, const ShT& shape, const typename ShT::value_type& tensors_number){
+    using size_type = SizeT;
+    using shape_type = ShT;
+    size_type dim = shape.size();
+    shape_type res(dim+size_type{1});
+    std::copy(shape.begin(), shape.begin()+direction, res.begin());
+    std::copy(shape.begin()+direction, shape.end(), res.begin()+direction+size_type{1});
+    res[direction] = tensors_number;
+    return res;
+}
+
+// template<typename SizeT, typename ShT, typename...ShTs>
+// auto make_concatenate_shape(const SizeT& direction, const ShT& shape, const ShTs&...shapes){
+//     using shape_type = ShT;
+//     using index_type = typename shape_type::value_type;
+//     using size_type = SizeT;
+//     size_type dim = shape.size();
+//     if (dim == size_type{0}){
+//         return shape_type{};
+//     }else{
+//         index_type direction_size{shape[direction]};
+//         ((direction_size+=shapes[direction]),...);
+//         shape_type res{shape};
+//         res[direction]=direction_size;
+//         return res;
+//     }
+// }
+
+
 
 // template<typename SizeT, typename ShT, typename...ShTs>
 // void check_vstack_variadic_args(const SizeT& direction, const ShT& shape, const ShTs&...shapes){
@@ -221,40 +251,6 @@ void check_concatenate_container_args(const SizeT& direction, const Container& t
 // //             }
 // //             return t_.reshape();
 // //         };
-
-
-// template<typename SizeT, typename ShT>
-// auto make_stack_shape(const SizeT& direction, const ShT& shape, const typename ShT::value_type& tensors_number){
-//     using size_type = SizeT;
-//     using shape_type = ShT;
-//     size_type pdim = shape.size();
-//     if (pdim == size_type{0}){
-//         return shape_type{};
-//     }else{
-//         shape_type res(pdim+size_type{1});
-//         std::copy(shape.begin(), shape.begin()+direction, res.begin());
-//         std::copy(shape.begin()+direction, shape.end(), res.begin()+direction+size_type{1});
-//         res[direction] = tensors_number;
-//         return res;
-//     }
-// }
-
-// template<typename SizeT, typename ShT, typename...ShTs>
-// auto make_concatenate_shape(const SizeT& direction, const ShT& shape, const ShTs&...shapes){
-//     using shape_type = ShT;
-//     using index_type = typename shape_type::value_type;
-//     using size_type = SizeT;
-//     size_type dim = shape.size();
-//     if (dim == size_type{0}){
-//         return shape_type{};
-//     }else{
-//         index_type direction_size{shape[direction]};
-//         ((direction_size+=shapes[direction]),...);
-//         shape_type res{shape};
-//         res[direction]=direction_size;
-//         return res;
-//     }
-// }
 
 // template<typename SizeT, typename ShT, typename...ShTs>
 // auto make_vstack_shape(const SizeT& direction, const ShT& shape, const ShTs&...shapes){
