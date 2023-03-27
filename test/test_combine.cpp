@@ -4,6 +4,7 @@
 #include "helpers_for_testing.hpp"
 #include "test_config.hpp"
 
+//test helpers
 TEMPLATE_TEST_CASE("test_check_stack_variadic_args","[test_combine]",
     test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
 )
@@ -280,6 +281,41 @@ TEMPLATE_TEST_CASE("test_make_concatenate_shape","[test_combine]",
     apply_by_element(test, test_data);
 }
 
+TEST_CASE("test_nested_tuple_depth", "[test_nested_tuple_depth]"){
+    using gtensor::detail::nested_tuple_depth_v;
+    REQUIRE(nested_tuple_depth_v<std::tuple<int>> == 1);
+    REQUIRE(nested_tuple_depth_v<std::tuple<int,int>> == 1);
+    REQUIRE(nested_tuple_depth_v<std::tuple<int,int,int>> == 1);
+    REQUIRE(nested_tuple_depth_v<std::tuple<std::tuple<int>,std::tuple<int>,std::tuple<int>>> == 2);
+    REQUIRE(nested_tuple_depth_v<std::tuple<std::tuple<int,int>,std::tuple<int>,std::tuple<int,int,int>>> == 2);
+    REQUIRE(nested_tuple_depth_v<std::tuple<std::tuple<std::tuple<int>, std::tuple<int>>,std::tuple<std::tuple<int>>,std::tuple<std::tuple<int>>>> == 3);
+}
+
+TEST_CASE("test_is_tensor_nested_tuple", "[test_nested_tuple_depth]"){
+    using tensor_int_type = gtensor::tensor<int>;
+    using tensor_double_type = gtensor::tensor<double>;
+    using gtensor::detail::is_tensor_nested_tuple_v;
+    REQUIRE(!is_tensor_nested_tuple_v<int>);
+    REQUIRE(!is_tensor_nested_tuple_v<std::tuple<std::tuple<tensor_int_type>, int>>);
+    REQUIRE(!is_tensor_nested_tuple_v<std::tuple<std::tuple<tensor_int_type>, tensor_int_type>>);
+    REQUIRE(!is_tensor_nested_tuple_v<std::tuple<std::tuple<tensor_int_type>, std::tuple<tensor_int_type,int>>>);
+    REQUIRE(!is_tensor_nested_tuple_v<std::tuple<std::tuple<std::tuple<tensor_int_type>>, std::tuple<tensor_int_type>>>);
+    REQUIRE(!is_tensor_nested_tuple_v<std::tuple<std::tuple<tensor_int_type>,std::tuple<tensor_int_type,std::tuple<tensor_double_type>>,std::tuple<tensor_int_type,tensor_double_type>>>);
+    REQUIRE(!is_tensor_nested_tuple_v<std::tuple<std::tuple<std::tuple<tensor_int_type>,std::tuple<tensor_int_type,tensor_int_type>>,std::tuple<tensor_int_type>>>);
+
+    REQUIRE(is_tensor_nested_tuple_v<std::tuple<tensor_int_type>>);
+    REQUIRE(is_tensor_nested_tuple_v<std::tuple<tensor_int_type,tensor_double_type>>);
+    REQUIRE(is_tensor_nested_tuple_v<std::tuple<tensor_int_type,tensor_int_type,tensor_double_type>>);
+    REQUIRE(is_tensor_nested_tuple_v<std::tuple<std::tuple<tensor_int_type>>>);
+    REQUIRE(is_tensor_nested_tuple_v<std::tuple<std::tuple<tensor_int_type>,std::tuple<tensor_int_type,tensor_double_type>,std::tuple<tensor_double_type,tensor_int_type>>>);
+    REQUIRE(is_tensor_nested_tuple_v<std::tuple<
+        std::tuple<std::tuple<tensor_int_type>,std::tuple<tensor_int_type,tensor_int_type>>,
+        std::tuple<std::tuple<tensor_int_type>,std::tuple<tensor_double_type>>,
+        std::tuple<std::tuple<tensor_double_type,tensor_int_type,tensor_int_type>>>>
+    );
+}
+
+//test interface
 TEMPLATE_TEST_CASE("test_stack","[test_combine]",
     test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
 )

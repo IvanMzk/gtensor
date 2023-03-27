@@ -25,6 +25,18 @@ namespace detail{
 template<typename T, typename = void> constexpr inline bool is_tensor_container_v = false;
 template<typename T> constexpr inline bool is_tensor_container_v<T, std::void_t<std::enable_if_t<is_container_v<T>>>> = is_tensor_v<typename T::value_type>;
 
+template<typename> constexpr inline std::size_t nested_tuple_depth_v = 0;
+template<typename T, typename...Ts> constexpr inline std::size_t nested_tuple_depth_v<std::tuple<T,Ts...>> = nested_tuple_depth_v<T>+1;
+
+template<typename T> constexpr inline bool is_tensor_nested_tuple_helper_v = is_tensor_v<T>;
+template<typename T> constexpr inline bool is_tensor_nested_tuple_helper_v<std::tuple<T>> = is_tensor_nested_tuple_helper_v<T>;
+template<typename T, typename...Ts> constexpr inline bool is_tensor_nested_tuple_helper_v<std::tuple<T, Ts...>> =
+    ((nested_tuple_depth_v<T> == nested_tuple_depth_v<Ts>)&&...) && is_tensor_nested_tuple_helper_v<T> && (is_tensor_nested_tuple_helper_v<Ts>&&...);
+
+template<typename T> constexpr inline bool is_tensor_nested_tuple_v = false;
+template<typename...Ts> constexpr inline bool is_tensor_nested_tuple_v<std::tuple<Ts...>> = is_tensor_nested_tuple_helper_v<std::tuple<Ts...>>;
+
+
 
 template<typename SizeT, typename ShT, typename...ShTs>
 void check_stack_variadic_args(const SizeT& direction, const ShT& shape, const ShTs&...shapes){
@@ -170,6 +182,7 @@ auto fill_concatenate(const SizeT& direction, const std::tuple<ShT, ShTs...>& sh
         (filler(std::get<I>(chunk_size),it),...);
     }
 }
+
 
 
 // template<typename SizeT, typename ShT, typename...ShTs>
@@ -452,6 +465,7 @@ static auto stack_variadic(const SizeT& direction, const tensor<Us...>& t, const
     }
 }
 
+//join tensors along existing direction, tensors must have the same shape except concatenate direction
 template<typename SizeT, typename...Us, typename...Ts>
 static auto concatenate_variadic(const SizeT& direction, const tensor<Us...>& t, const Ts&...ts){
     static_assert((detail::is_tensor_v<Ts>&&...));
@@ -471,6 +485,12 @@ static auto concatenate_variadic(const SizeT& direction, const tensor<Us...>& t,
         }
         return res;
     }
+}
+
+//Assemble tensor from nested tuples of blocks
+template<typename...Ts>
+static auto block_tuple(const std::tuple<Ts...>& blocks){
+    static_assert(detail::is_tensor_nested_tuple_v<std::tuple<Ts...>>);
 }
 
 // template<typename SizeT, typename Container>
