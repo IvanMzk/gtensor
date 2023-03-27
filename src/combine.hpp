@@ -61,6 +61,11 @@ void check_concatenate_variadic_args(const SizeT& direction, const ShT& shape, c
     }
 }
 
+template<typename SizeT, typename ShT, typename...ShTs>
+void check_concatenate_variadic_args(const SizeT& direction, const std::tuple<ShT, ShTs...>& shapes){
+    std::apply([&direction](const auto&...shapes_){check_concatenate_variadic_args(direction,shapes_...);},shapes);
+}
+
 template<typename SizeT, typename Container>
 void check_concatenate_container_args(const SizeT& direction, const Container& ts){
     static_assert(is_tensor_container_v<Container>);
@@ -109,6 +114,11 @@ auto make_concatenate_shape(const SizeT& direction, const ShT& shape, const ShTs
     return res;
 }
 
+template<typename SizeT, typename ShT, typename...ShTs>
+auto make_concatenate_shape(const SizeT& direction, const std::tuple<ShT, ShTs...>& shapes){
+    return std::apply([&direction](const auto&...shapes_){return make_concatenate_shape(direction,shapes_...);},shapes);
+}
+
 template<typename SizeT, typename ShT>
 auto make_stack_chunk_size(const SizeT& direction, const ShT& shape){
     using index_type = typename ShT::value_type;
@@ -119,21 +129,47 @@ template<typename SizeT, typename ShT, typename ResultIt, typename...It>
 auto fill_stack(const SizeT& direction, const ShT& shape, const typename ShT::value_type& size, ResultIt res_it, It...it){
     using index_type = typename ShT::value_type;
     index_type chunk_size = make_stack_chunk_size(direction, shape);
-    index_type i{0};
-    auto filler = [i, chunk_size, res_it](auto& it) mutable {
-        auto i_ = i;
-        i += chunk_size;
-        for (;i_!=i; ++i_, ++res_it, ++it){
+    auto filler = [chunk_size, res_it](auto& it) mutable {
+        for (index_type i{0}; i!=chunk_size; ++i, ++res_it, ++it){
             *res_it = *it;
         }
     };
     index_type iterations_number = size/chunk_size;
-    for (;i!=iterations_number; ++i){
+    for (index_type i{0}; i!=iterations_number; ++i){
         (filler(it),...);
     }
 }
 
+template<typename SizeT, typename ShT, typename...ShTs>
+auto make_concatenate_chunk_size(const SizeT& direction, const ShT& shape, const ShTs&...shapes){
+    using size_type = SizeT;
+    using index_type = typename ShT::value_type;
+    index_type chunk_size_ = std::accumulate(shape.begin()+direction+size_type{1}, shape.end(), index_type{1}, std::multiplies{});
+    return std::make_tuple(shape[direction]*chunk_size_, shapes[direction]*chunk_size_...);
+}
 
+template<typename SizeT, typename ShT, typename...ShTs>
+auto make_concatenate_chunk_size(const SizeT& direction, const std::tuple<ShT, ShTs...>& shapes){
+    return std::apply([&direction](const auto&...shapes_){return make_concatenate_chunk_size(direction,shapes_...);},shapes);
+}
+
+template<typename SizeT, typename ShT, typename...ShTs, typename ResultIt, std::size_t...I, typename...It>
+auto fill_concatenate(const SizeT& direction, const std::tuple<ShT, ShTs...>& shapes, ResultIt res_it, std::index_sequence<I...>, It...it){
+    using shape_type = ShT;
+    using index_type = typename shape_type::value_type;
+
+    const auto chunk_size = make_concatenate_chunk_size(direction, shapes);
+    const auto first_shape = std::get<0>(shapes);
+    auto filler = [res_it](const auto& chunk_size_, auto& it)mutable{
+        for (index_type i{0}; i!=chunk_size_; ++i,++it,++res_it){
+            *res_it = *it;
+        }
+    };
+    index_type iterations_number = std::accumulate(first_shape.begin(), first_shape.begin()+direction, index_type{1}, std::multiplies{});
+    for (index_type i{0}; i!=iterations_number; ++i){
+        (filler(std::get<I>(chunk_size),it),...);
+    }
+}
 
 
 // template<typename SizeT, typename ShT, typename...ShTs>
@@ -301,47 +337,7 @@ auto fill_stack(const SizeT& direction, const ShT& shape, const typename ShT::va
 //     }
 // }
 
-// template<typename SizeT, typename ShT, typename...ShTs>
-// auto make_concatenate_chunk_size(const SizeT& direction, const ShT& shape, const ShTs&...shapes){
-//     using size_type = SizeT;
-//     using index_type = typename ShT::value_type;
-//     index_type chunk_size_ = std::accumulate(shape.begin()+direction+size_type{1}, shape.end(), index_type{1}, std::multiplies{});
-//     return std::make_tuple(shape[direction]*chunk_size_, shapes[direction]*chunk_size_...);
-// }
 
-// template<typename SizeT, typename IdxT, typename ResultIt, typename ImplT, typename...ImplTs>
-// class concatenate_filler
-// {
-//     using index_type = IdxT;
-//     using chunk_size_type = decltype(make_concatenate_chunk_size(std::declval<SizeT>(), std::declval<ImplT>().shape(), std::declval<ImplTs>().shape()...));
-//     chunk_size_type chunk_sizes_;
-//     ResultIt res_it_;
-// public:
-//     concatenate_filler(const SizeT& direction__, ResultIt res_it__, const ImplT& t__, const ImplTs&...ts__):
-//         chunk_sizes_{make_concatenate_chunk_size(direction__, t__.shape(), ts__.shape()...)},
-//         res_it_{res_it__}
-//     {}
-//     template<std::size_t I, typename It>
-//     void fill(It& it){
-//         index_type chunk_size = std::get<I>(chunk_sizes_);
-//         for (index_type i{0}; i!=chunk_size; ++i, ++it, ++res_it_){
-//             *res_it_ = *it;
-//         }
-//     }
-// };
-
-// template<typename SizeT, typename ResultIt, std::size_t...I, typename ImplT, typename...ImplTs>
-// auto fill_concatenate(const SizeT& direction,  ResultIt res_it, std::index_sequence<I...>, const ImplT& t, const ImplTs&...ts){
-//     using shape_type = std::decay_t<decltype(t.shape())>;
-//     using index_type = typename shape_type::value_type;
-//     using filler_type = concatenate_filler<SizeT, index_type, ResultIt, ImplT, ImplTs...>;
-//     auto iters = std::make_tuple(t.engine().begin(), ts.engine().begin()...);
-//     filler_type filler{direction, res_it, t, ts...};
-//     index_type iterations_number = std::accumulate(t.shape().begin(), t.shape().begin()+direction, index_type{1}, std::multiplies{});
-//     for (index_type i{0}; i!=iterations_number; ++i){
-//         ((filler.template fill<I>(std::get<I>(iters))),...);
-//     }
-// }
 
 // //returns dim of result of block
 // template<typename T>
@@ -434,7 +430,7 @@ auto fill_stack(const SizeT& direction, const ShT& shape, const typename ShT::va
 class combiner{
 //join tensors along new direction, tensors must have the same shape
 template<typename SizeT, typename...Us, typename...Ts>
-static auto stack_(const SizeT& direction, const tensor<Us...>& t, const Ts&...ts){
+static auto stack_variadic(const SizeT& direction, const tensor<Us...>& t, const Ts&...ts){
     static_assert((detail::is_tensor_v<Ts>&&...));
     using tensor_type = tensor<Us...>;
     using config_type = typename tensor_type::config_type;
@@ -456,28 +452,27 @@ static auto stack_(const SizeT& direction, const tensor<Us...>& t, const Ts&...t
     }
 }
 
-// //join tensors along existing direction, tensors must have the same shape except concatenate direction
-// template<typename SizeT, typename ImplT, typename...ImplTs>
-// static auto concatenate_variadic(const SizeT& direction, const ImplT& t, const ImplTs&...ts){
-//     using config_type = typename ImplT::config_type;
-//     using index_type = typename config_type::index_type;
-//     using res_value_type = std::common_type_t<typename ImplT::value_type, typename ImplTs::value_type...>;
-//     detail::check_concatenate_variadic_args(direction, t.shape(), ts.shape()...);
-//     auto res_shape = detail::make_concatenate_shape(direction, t.shape(), ts.shape()...);
-//     if constexpr (sizeof...(ImplTs) == 0){
-//         return storage_tensor_factory<config_type, res_value_type>::make(std::move(res_shape),t.engine().begin(),t.engine().end());
-//     }else{
-//         auto res = storage_tensor_factory<config_type, res_value_type>::make(std::move(res_shape), res_value_type{});
-//         if (res.size() > index_type{0}){
-//             detail::fill_concatenate(direction, res.begin(), std::make_index_sequence<sizeof...(ImplTs) + 1>{}, t, ts...);
-//         }
-//         return res;
-//     }
-// }
-// template<typename SizeT, typename...Us, typename...Ts>
-// static auto concatenate_variadic(const SizeT& direction, const tensor<Us...>& t, const Ts&...ts){
-//     return concatenate_variadic(direction, t.impl_ref(), ts.impl_ref()...);
-// }
+template<typename SizeT, typename...Us, typename...Ts>
+static auto concatenate_variadic(const SizeT& direction, const tensor<Us...>& t, const Ts&...ts){
+    static_assert((detail::is_tensor_v<Ts>&&...));
+    using tensor_type = tensor<Us...>;
+    using config_type = typename tensor_type::config_type;
+    using res_value_type = std::common_type_t<typename tensor_type::value_type, typename Ts::value_type...>;
+
+    auto shapes = std::make_tuple(t.shape(), ts.shape()...);
+    detail::check_concatenate_variadic_args(direction, shapes);
+    auto res_shape = detail::make_concatenate_shape(direction, shapes);
+    if constexpr (sizeof...(Ts) == 0){
+        return storage_tensor_factory<config_type, res_value_type>::make(std::move(res_shape),t.begin(),t.end());
+    }else{
+        auto res = storage_tensor_factory<config_type, res_value_type>::make(std::move(res_shape), res_value_type{});
+        if (!res.empty()){
+            detail::fill_concatenate(direction, shapes, res.begin(), std::make_index_sequence<sizeof...(Ts) + 1>{}, t.begin(), ts.begin()...);
+        }
+        return res;
+    }
+}
+
 // template<typename SizeT, typename Container>
 // static auto concatenate_container(const SizeT& direction, const SizeT& res_dim, const Container& ts){
 //     static_assert(detail::is_tensor_container_v<Container>);
@@ -750,12 +745,12 @@ public:
 //combiner interface
 template<typename SizeT, typename...Ts, typename...Tensors>
 static auto stack(const SizeT& direction, const tensor<Ts...>& t, const Tensors&...ts){
-    return stack_(direction, t, ts...);
+    return stack_variadic(direction, t, ts...);
 }
-// template<typename SizeT, typename...Ts, typename...Tensors>
-// static auto concatenate(const SizeT& direction, const tensor<Ts...>& t, const Tensors&...ts){
-//     return concatenate_variadic(direction, t, ts...);
-// }
+template<typename SizeT, typename...Ts, typename...Tensors>
+static auto concatenate(const SizeT& direction, const tensor<Ts...>& t, const Tensors&...ts){
+    return concatenate_variadic(direction, t, ts...);
+}
 // template<typename SizeT, typename Container>
 // static auto concatenate(const SizeT& direction, const Container& ts){
 //     static_assert(detail::is_tensor_container_v<Container>);
@@ -808,11 +803,11 @@ auto stack(const SizeT& direction, const tensor<Ts...>& t, const Tensors&...ts){
     using config_type = typename tensor<Ts...>::config_type;
     return combiner_selector<config_type>::type::stack(direction, t, ts...);
 }
-// template<typename SizeT, typename...Ts, typename...Tensors>
-// auto concatenate(const SizeT& direction, const tensor<Ts...>& t, const Tensors&...ts){
-//     using config_type = typename tensor<Ts...>::config_type;
-//     return combiner_selector<config_type>::type::concatenate(direction, t, ts...);
-// }
+template<typename SizeT, typename...Ts, typename...Tensors>
+auto concatenate(const SizeT& direction, const tensor<Ts...>& t, const Tensors&...ts){
+    using config_type = typename tensor<Ts...>::config_type;
+    return combiner_selector<config_type>::type::concatenate(direction, t, ts...);
+}
 // template<typename SizeT, typename Container>
 // auto concatenate(const SizeT& direction, const Container& ts){
 //     static_assert(detail::is_tensor_container_v<Container>);
