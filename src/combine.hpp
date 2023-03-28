@@ -501,6 +501,7 @@ auto widen_shape(const ShT& shape, const SizeT& new_dim){
 
 class combiner{
 //join tensors along new direction, tensors must have the same shape
+//variadic
 template<typename SizeT, typename...Us, typename...Ts>
 static auto stack_variadic(const SizeT& direction, const tensor<Us...>& t, const Ts&...ts){
     static_assert((detail::is_tensor_v<Ts>&&...));
@@ -525,6 +526,7 @@ static auto stack_variadic(const SizeT& direction, const tensor<Us...>& t, const
 }
 
 //join tensors along existing direction, tensors must have the same shape except concatenate direction
+//variadic
 template<typename SizeT, typename...Us, typename...Ts>
 static auto concatenate_variadic(const SizeT& direction, const tensor<Us...>& t, const Ts&...ts){
     using tensor_type = tensor<Us...>;
@@ -544,6 +546,7 @@ static auto concatenate_variadic(const SizeT& direction, const tensor<Us...>& t,
         return res;
     }
 }
+//container
 template<typename SizeT, typename Container>
 static auto concatenate_container(const SizeT& direction, const Container& ts){
     using tensor_type = typename Container::value_type;
@@ -563,8 +566,9 @@ static auto concatenate_container(const SizeT& direction, const Container& ts){
 }
 
 //Assemble tensor from nested tuples of blocks
+//nested tuples
 template<typename...Us, typename...Ts>
-static auto block_variadic(std::size_t depth, const tensor<Us...>& t, const Ts&...ts){
+static auto block_tuple_helper(std::size_t depth, const tensor<Us...>& t, const Ts&...ts){
     using tensor_type = tensor<Us...>;
     using size_type = typename tensor_type::size_type;
     const size_type depth_ = static_cast<size_type>(depth);
@@ -577,7 +581,7 @@ template<typename...Us, typename...Ts>
 static auto block_tuple(const std::tuple<tensor<Us...>, Ts...>& blocks){
     //depth is 1
     auto apply_blocks = [](const auto&...ts){
-        return block_variadic(1, ts...);
+        return block_tuple_helper(1, ts...);
     };
     return std::apply(apply_blocks, blocks);
 }
@@ -585,97 +589,52 @@ template<typename...Us, typename...Ts>
 static auto block_tuple(const std::tuple<std::tuple<Us...>, Ts...>& blocks){
     std::size_t depth = detail::nested_tuple_depth_v<std::tuple<std::tuple<Us...>, Ts...>>;
     auto apply_blocks = [&depth](const auto&...blocks_){
-        return block_variadic(depth, block_tuple(blocks_)...);
+        return block_tuple_helper(depth, block_tuple(blocks_)...);
     };
     return std::apply(apply_blocks, blocks);
 }
+//nested initializer list
+template<typename Container>
+static auto block_init_list_helper(std::size_t depth, const Container& ts){
+    using tensor_type = typename Container::value_type;
+    using config_type = typename tensor_type::config_type;
+    using size_type = typename tensor_type::size_type;
 
-// template<typename SizeT, typename Container>
-// static auto concatenate_container(const SizeT& direction, const SizeT& res_dim, const Container& ts){
-//     static_assert(detail::is_tensor_container_v<Container>);
-//     using tensor_type = typename Container::value_type;
-//     using size_type = typename tensor_type::size_type;
-//     using index_type = typename tensor_type::index_type;
-//     using shape_type = typename tensor_type::shape_type;
-//     using config_type = typename tensor_type::config_type;
-//     using res_value_type = typename tensor_type::value_type;
+    const size_type depth_ = static_cast<size_type>(depth);
+    size_type max_dim{0};
+    for(auto it=ts.begin(); it!=ts.end(); ++it){
+        max_dim = std::max(max_dim,(*it).dim());
+    }
+    const size_type res_dim = std::max(depth_,max_dim);
+    const size_type direction = res_dim - depth_;
+    using block_type = decltype((*ts.begin()).reshape(detail::widen_shape((*ts.begin()).shape(),res_dim)));
+    typename config_type::template container<block_type> blocks_{};
+    blocks_.reserve(ts.size());
+    for(auto it = ts.begin(); it!=ts.end(); ++it){
+        const auto& t = *it;
+        blocks_.push_back(t.reshape(detail::widen_shape(t.shape(),res_dim)));
+    }
+    return concatenate_container(direction, blocks_);
+}
+template<typename...Ts>
+static auto block_init_list(std::initializer_list<tensor<Ts...>> blocks){
+    return block_init_list_helper(1, blocks);
+}
+template<typename Nested>
+static auto block_init_list(std::initializer_list<std::initializer_list<Nested>> blocks){
+    using tensor_type = typename detail::nested_initialiser_list_value_type<Nested>::type;
+    using config_type = typename tensor_type::config_type;
+    using block_type = decltype(block_init_list(*blocks.begin()));
 
-//     const auto& first_shape = (*ts.begin()).shape();
-//     shape_type res_shape(res_dim, index_type{1});
-//     if (first_shape.size() == size_type{0}){
-//         *res_shape.rbegin() = index_type{0};
-//     }else{
-//         std::copy(first_shape.rbegin(), first_shape.rend(), res_shape.rbegin());    //start copying from lowest direction, ones is leading
-//     }
-//     index_type first_chunk_size = std::accumulate(res_shape.begin()+direction, res_shape.end(), index_type{1}, std::multiplies{});
+    std::size_t depth = detail::nested_initialiser_list_depth<decltype(blocks)>::value;
+    typename config_type::template container<block_type> blocks_{};
+    blocks_.reserve(blocks.size());
+    for (auto it = blocks.begin(); it!=blocks.end(); ++it){
+        blocks_.push_back(block_init_list(*it));
+    }
+    return block_init_list_helper(depth, blocks_);
+}
 
-//     using blocks_internals_type = std::tuple<index_type, decltype((*ts.begin()).begin())>;
-//     typename config_type::template container<blocks_internals_type> blocks_internals{};
-//     blocks_internals.reserve(ts.size());
-//     blocks_internals.emplace_back(first_chunk_size, (*ts.begin()).begin());
-//     index_type chunk_size_sum = first_chunk_size;
-
-//     for (auto it = ts.begin()+1; it!=ts.end(); ++it){
-//         const auto& shape = (*it).shape();
-//         const size_type dim = shape.size();
-//         index_type chunk_size{1};
-//         auto shape_element_ = [&shape, &dim, &res_dim](const auto& d_)
-//         {
-//             if (dim == size_type{0}){
-//                 return d_ == res_dim-1 ? index_type{0} : index_type{1};
-//             }else{
-//                 const size_type offset = res_dim - dim;
-//                 return d_ >= offset ? shape[d_-offset] : index_type{1};
-//             }
-//         };
-//         for (size_type d{res_dim}; d!=size_type{0};){
-//             --d;
-//             index_type& res_element = res_shape[d];
-//             index_type shape_element = shape_element_(d);
-//             if (d >= direction){
-//                 chunk_size *= shape_element;
-//             }
-//             if (d == direction){
-//                     res_element+=shape_element;
-//             }else{
-//                 if (res_element!=shape_element){
-//                     throw combine_exception("tensors to concatenate must have equal shapes");
-//                 }
-//             }
-//         }
-//         chunk_size_sum += chunk_size;
-//         blocks_internals.emplace_back(chunk_size, (*it).begin());
-//     }
-//     auto res = storage_tensor_factory<config_type, res_value_type>::make(std::move(res_shape), res_value_type{});
-//     index_type res_size = res.size();
-//     index_type iterations_number = res_size / chunk_size_sum;
-//     auto res_it = res.begin();
-//     for (index_type j = 0; j!=iterations_number; ++j){
-//         for (auto blocks_internals_it = blocks_internals.begin(); blocks_internals_it!=blocks_internals.end(); ++blocks_internals_it){
-//             auto chunk_size = std::get<0>(*blocks_internals_it);
-//             auto& it = std::get<1>(*blocks_internals_it);
-//             for (index_type i{0}; i!=chunk_size; ++i, ++it, ++res_it){
-//                 *res_it = *it;
-//             }
-//         }
-//     }
-//     return res;
-// }
-// template<typename SizeT, typename Container>
-// static auto concatenate_container(const SizeT& direction, const Container& ts){
-//     static_assert(detail::is_tensor_container_v<Container>);
-//     using tensor_type = typename Container::value_type;
-//     using config_type = typename tensor_type::config_type;
-//     using size_type = typename tensor_type::size_type;
-//     using res_value_type = typename tensor_type::value_type;
-//     detail::check_concatenate_container_args(direction, ts);
-//     size_type first_dim = (*ts.begin()).dim();
-//     if (first_dim == size_type{0}){
-//         return storage_tensor_factory<config_type, res_value_type>::make();
-//     }else{
-//         return combiner::concatenate_container(direction, first_dim, ts);
-//     }
-// }
 // template<typename...Ts, typename...Tensors>
 // static auto vstack_variadic(const tensor<Ts...>& t, const Tensors&...ts){
 //     using tensor_type = tensor<Ts...>;
@@ -876,22 +835,22 @@ template<typename...Ts>
 static auto block(const std::tuple<Ts...>& blocks){
     return block_tuple(blocks);
 }
-// template<typename...Ts>
-// static auto block(std::initializer_list<tensor<Ts...>> blocks){
-//     return block_(blocks);
-// }
-// template<typename...Ts>
-// static auto block(std::initializer_list<std::initializer_list<tensor<Ts...>>> blocks){
-//     return block_(blocks);
-// }
-// template<typename...Ts>
-// static auto block(std::initializer_list<std::initializer_list<std::initializer_list<tensor<Ts...>>>> blocks){
-//     return block_(blocks);
-// }
-// template<typename...Ts>
-// static auto block(std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<tensor<Ts...>>>>> blocks){
-//     return block_(blocks);
-// }
+template<typename...Ts>
+static auto block(std::initializer_list<tensor<Ts...>> blocks){
+    return block_init_list(blocks);
+}
+template<typename...Ts>
+static auto block(std::initializer_list<std::initializer_list<tensor<Ts...>>> blocks){
+    return block_init_list(blocks);
+}
+template<typename...Ts>
+static auto block(std::initializer_list<std::initializer_list<std::initializer_list<tensor<Ts...>>>> blocks){
+    return block_init_list(blocks);
+}
+template<typename...Ts>
+static auto block(std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<tensor<Ts...>>>>> blocks){
+    return block_init_list(blocks);
+}
 // template<typename...Ts, typename IdxContainer, typename SizeT, std::enable_if_t<detail::is_index_container_v<IdxContainer, typename tensor<Ts...>::index_type>,int> =0>
 // static auto split(const tensor<Ts...>& t, const IdxContainer& split_points, const SizeT& direction){
 //     return split_by_points(t, split_points, direction);
@@ -937,31 +896,31 @@ auto concatenate(const SizeT& direction, const Container& ts){
     return combiner_selector<config_type>::type::concatenate(direction, ts);
 }
 template<typename...Ts>
-static auto block(const std::tuple<Ts...>& blocks){
+auto block(const std::tuple<Ts...>& blocks){
     static_assert(detail::is_tensor_nested_tuple_v<std::tuple<Ts...>>);
     using config_type = detail::tensor_nested_tuple_config_type_t<std::tuple<Ts...>>;
     return combiner_selector<config_type>::type::block(blocks);
 }
-// template<typename...Ts>
-// auto block(std::initializer_list<tensor<Ts...>> blocks){
-//     using config_type = typename tensor<Ts...>::config_type;
-//     return combiner_selector<config_type>::type::block(blocks);
-// }
-// template<typename...Ts>
-// auto block(std::initializer_list<std::initializer_list<tensor<Ts...>>> blocks){
-//     using config_type = typename tensor<Ts...>::config_type;
-//     return combiner_selector<config_type>::type::block(blocks);
-// }
-// template<typename...Ts>
-// auto block(std::initializer_list<std::initializer_list<std::initializer_list<tensor<Ts...>>>> blocks){
-//     using config_type = typename tensor<Ts...>::config_type;
-//     return combiner_selector<config_type>::type::block(blocks);
-// }
-// template<typename...Ts>
-// auto block(std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<tensor<Ts...>>>>> blocks){
-//     using config_type = typename tensor<Ts...>::config_type;
-//     return combiner_selector<config_type>::type::block(blocks);
-// }
+template<typename...Ts>
+auto block(std::initializer_list<tensor<Ts...>> blocks){
+    using config_type = typename tensor<Ts...>::config_type;
+    return combiner_selector<config_type>::type::block(blocks);
+}
+template<typename...Ts>
+auto block(std::initializer_list<std::initializer_list<tensor<Ts...>>> blocks){
+    using config_type = typename tensor<Ts...>::config_type;
+    return combiner_selector<config_type>::type::block(blocks);
+}
+template<typename...Ts>
+auto block(std::initializer_list<std::initializer_list<std::initializer_list<tensor<Ts...>>>> blocks){
+    using config_type = typename tensor<Ts...>::config_type;
+    return combiner_selector<config_type>::type::block(blocks);
+}
+template<typename...Ts>
+auto block(std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<tensor<Ts...>>>>> blocks){
+    using config_type = typename tensor<Ts...>::config_type;
+    return combiner_selector<config_type>::type::block(blocks);
+}
 // template<typename...Ts, typename IdxContainer, typename SizeT, std::enable_if_t<detail::is_index_container_v<IdxContainer, typename tensor<Ts...>::index_type>,int> =0>
 // auto split(const tensor<Ts...>& t, const IdxContainer& split_points, const SizeT& direction){
 //     using config_type = typename tensor<Ts...>::config_type;
