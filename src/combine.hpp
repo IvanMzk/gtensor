@@ -213,6 +213,37 @@ auto fill_concatenate(const SizeT& direction, const std::tuple<ShT, ShTs...>& sh
     }
 }
 
+template<typename SizeT, typename ShapeContainer, typename ResIt, typename TensorContainer>
+auto fill_concatenate_container(const SizeT& direction, const ShapeContainer& shapes, ResIt res_it, const TensorContainer& ts){
+    using tensor_type = typename TensorContainer::value_type;
+    using size_type = typename tensor_type::size_type;
+    using index_type = typename tensor_type::index_type;
+    using config_type = typename tensor_type::config_type;
+    //0chunk_size,1iterator
+    using ts_internals_type = std::tuple<index_type, decltype((*ts.begin()).begin())>;
+
+    typename config_type::template container<ts_internals_type> ts_internals{};
+    ts_internals.reserve(ts.size());
+    auto shapes_it = shapes.begin();
+    const auto& first_shape = *shapes_it;
+    //the same part for all shapes
+    const index_type chunk_size_ = std::accumulate(first_shape.begin()+direction+size_type{1}, first_shape.end(), index_type{1}, std::multiplies{});
+    for (auto ts_it = ts.begin(); ts_it!=ts.end(); ++ts_it,++shapes_it){
+        index_type chunk_size = chunk_size_*(*shapes_it)[direction];
+        ts_internals.emplace_back(chunk_size, (*ts_it).begin());
+    }
+    index_type iterations_number = std::accumulate(first_shape.begin(), first_shape.begin()+direction, index_type{1}, std::multiplies{});
+    for (index_type j = 0; j!=iterations_number; ++j){
+        for (auto ts_internals_it = ts_internals.begin(); ts_internals_it!=ts_internals.end(); ++ts_internals_it){
+            auto chunk_size = std::get<0>(*ts_internals_it);
+            auto& it = std::get<1>(*ts_internals_it);
+            for (index_type i{0}; i!=chunk_size; ++i, ++it, ++res_it){
+                *res_it = *it;
+            }
+        }
+    }
+}
+
 //add leading ones to shape to make dim new_dim, if dim>= new_dim do nothing
 //returns new shape
 template<typename ShT, typename SizeT>
@@ -517,15 +548,18 @@ template<typename SizeT, typename Container>
 static auto concatenate_container(const SizeT& direction, const Container& ts){
     using tensor_type = typename Container::value_type;
     using config_type = typename tensor_type::config_type;
-    using size_type = typename tensor_type::size_type;
     using shape_type = typename tensor_type::shape_type;
     using res_value_type = typename tensor_type::value_type;
 
     typename config_type::template container<shape_type> shapes{};
     shapes.reserve(ts.size());
     std::for_each(ts.begin(), ts.end(), [&shapes](const auto& t)mutable{shapes.push_back(t.shape());});
-    detail::check_concatenate_container_args(direction, ts);
-
+    detail::check_concatenate_container_args(direction, shapes);
+    auto res = storage_tensor_factory<config_type, res_value_type>::make(detail::make_concatenate_container_shape(direction, shapes), res_value_type{});
+    if (!res.empty()){
+        detail::fill_concatenate_container(direction,shapes,res.begin(),ts);
+    }
+    return res;
 }
 
 //Assemble tensor from nested tuples of blocks
@@ -834,15 +868,14 @@ template<typename SizeT, typename...Us, typename...Ts>
 static auto concatenate(const SizeT& direction, const tensor<Us...>& t, const Ts&...ts){
     return concatenate_variadic(direction, t, ts...);
 }
+template<typename SizeT, typename Container>
+static auto concatenate(const SizeT& direction, const Container& ts){
+    return concatenate_container(direction, ts);
+}
 template<typename...Ts>
 static auto block(const std::tuple<Ts...>& blocks){
     return block_tuple(blocks);
 }
-// template<typename SizeT, typename Container>
-// static auto concatenate(const SizeT& direction, const Container& ts){
-//     static_assert(detail::is_tensor_container_v<Container>);
-//     return concatenate_container(direction, ts);
-// }
 // template<typename...Ts>
 // static auto block(std::initializer_list<tensor<Ts...>> blocks){
 //     return block_(blocks);
@@ -897,18 +930,18 @@ auto concatenate(const SizeT& direction, const tensor<Us...>& t, const Ts&...ts)
     using config_type = typename tensor<Us...>::config_type;
     return combiner_selector<config_type>::type::concatenate(direction, t, ts...);
 }
+template<typename SizeT, typename Container>
+auto concatenate(const SizeT& direction, const Container& ts){
+    static_assert(detail::is_tensor_container_v<Container>);
+    using config_type = typename Container::value_type::config_type;
+    return combiner_selector<config_type>::type::concatenate(direction, ts);
+}
 template<typename...Ts>
 static auto block(const std::tuple<Ts...>& blocks){
     static_assert(detail::is_tensor_nested_tuple_v<std::tuple<Ts...>>);
     using config_type = detail::tensor_nested_tuple_config_type_t<std::tuple<Ts...>>;
     return combiner_selector<config_type>::type::block(blocks);
 }
-// template<typename SizeT, typename Container>
-// auto concatenate(const SizeT& direction, const Container& ts){
-//     static_assert(detail::is_tensor_container_v<Container>);
-//     using config_type = typename Container::value_type::config_type;
-//     return combiner_selector<config_type>::type::concatenate(direction, ts);
-// }
 // template<typename...Ts>
 // auto block(std::initializer_list<tensor<Ts...>> blocks){
 //     using config_type = typename tensor<Ts...>::config_type;

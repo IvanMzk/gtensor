@@ -519,7 +519,6 @@ TEMPLATE_TEST_CASE("test_concatenate","[test_combine]",
             tensor_type{{{1,2},{3,4},{5,6}},{{7,8},{9,10},{11,12}},{{13,14},{15,16},{17,18}}}
         )
     );
-
     SECTION("test_concatenate_variadic")
     {
         auto test_concatenate_variadic = [](const auto& t){
@@ -535,19 +534,69 @@ TEMPLATE_TEST_CASE("test_concatenate","[test_combine]",
         };
         apply_by_element(test_concatenate_variadic, test_data);
     }
-    // SECTION("test_concatenate_container")
-    // {
-    //     using container_type = std::vector<tensor_type>;
-    //     auto test_concatenate_container = [](const auto& t){
-    //         auto direction = std::get<0>(t);
-    //         auto tensors = std::get<1>(t);
-    //         auto expected = std::get<2>(t);
-    //         auto container = std::apply([](const auto&...ts){return container_type{ts...};}, tensors);
-    //         auto result = concatenate(direction, container);
-    //         REQUIRE(result.equals(expected));
-    //     };
-    //     apply_by_element(test_concatenate_container, test_data);
-    // }
+    SECTION("test_concatenate_container")
+    {
+        using container_type = std::vector<tensor_type>;
+        auto test_concatenate_container = [](const auto& t){
+            auto direction = std::get<0>(t);
+            auto tensors = std::get<1>(t);
+            auto expected = std::get<2>(t);
+            auto container = std::apply([](const auto&...ts){return container_type{ts.copy()...};}, tensors);
+            auto result = concatenate(direction, container);
+            REQUIRE(result.equals(expected));
+        };
+        apply_by_element(test_concatenate_container, test_data);
+    }
+}
+
+TEMPLATE_TEST_CASE("test_concatenate_exception","[test_combine]",
+    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
+)
+{
+    using value_type = double;
+    using config_type = TestType;
+    using size_type = typename config_type::size_type;
+    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using gtensor::combine_exception;
+    using helpers_for_testing::apply_by_element;
+    using gtensor::concatenate;
+    //0direction,1tensors
+    auto test_data = std::make_tuple(
+        std::make_tuple(size_type{1}, std::make_tuple(tensor_type{})),
+        std::make_tuple(size_type{1}, std::make_tuple(tensor_type{1})),
+        std::make_tuple(size_type{2}, std::make_tuple(tensor_type{{1,2,3},{4,5,6}})),
+        std::make_tuple(size_type{1}, std::make_tuple(tensor_type{0}, tensor_type{0})),
+        std::make_tuple(size_type{1}, std::make_tuple(tensor_type{1}, tensor_type{1})),
+        std::make_tuple(size_type{2}, std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, tensor_type{{1,2,3},{4,5,6}})),
+        std::make_tuple(size_type{0}, std::make_tuple(tensor_type{}.reshape(0,1), tensor_type{}.reshape(1,0))),
+        std::make_tuple(size_type{1}, std::make_tuple(tensor_type{}.reshape(1,0), tensor_type{}.reshape(0,1))),
+        std::make_tuple(size_type{0}, std::make_tuple(tensor_type{{2,3,4},value_type{}}, tensor_type{{2,4,4},value_type{}}, tensor_type{{2,3,4},value_type{}})),
+        std::make_tuple(size_type{1}, std::make_tuple(tensor_type{{2,3,5},value_type{}}, tensor_type{{2,4,4},value_type{}}, tensor_type{{2,3,4},value_type{}})),
+        std::make_tuple(size_type{2}, std::make_tuple(tensor_type{{2,3,4},value_type{}}, tensor_type{{2,3,4},value_type{}}, tensor_type{{3,3,4},value_type{}}))
+    );
+    SECTION("test_concatenate_variadic_exception")
+    {
+        auto test_concatenate_variadic = [](const auto& t){
+            auto direction = std::get<0>(t);
+            auto tensors = std::get<1>(t);
+            auto apply_tensors = [&direction](const auto&...tensors_){
+                return concatenate(direction, tensors_...);
+            };
+            REQUIRE_THROWS_AS(std::apply(apply_tensors, tensors), combine_exception);
+        };
+        apply_by_element(test_concatenate_variadic, test_data);
+    }
+    SECTION("test_concatenate_container")
+    {
+        using container_type = std::vector<tensor_type>;
+        auto test_concatenate_container = [](const auto& t){
+            auto direction = std::get<0>(t);
+            auto tensors = std::get<1>(t);
+            auto container = std::apply([](const auto&...ts){return container_type{ts.copy()...};}, tensors);
+            REQUIRE_THROWS_AS(concatenate(direction, container), combine_exception);
+        };
+        apply_by_element(test_concatenate_container, test_data);
+    }
 }
 
 TEMPLATE_TEST_CASE("test_concatenate_common_type","[test_combine]",
@@ -580,6 +629,8 @@ TEMPLATE_TEST_CASE("test_concatenate_common_type","[test_combine]",
     };
     apply_by_element(test, test_data);
 }
+
+
 
 TEMPLATE_TEST_CASE("test_block_tuple","[test_combine]",
     test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
