@@ -36,6 +36,19 @@ template<typename T, typename...Ts> constexpr inline bool is_tensor_nested_tuple
 template<typename T> constexpr inline bool is_tensor_nested_tuple_v = false;
 template<typename...Ts> constexpr inline bool is_tensor_nested_tuple_v<std::tuple<Ts...>> = is_tensor_nested_tuple_helper_v<std::tuple<Ts...>>;
 
+template<typename T>
+struct tensor_nested_tuple_config_type
+{
+    using type = typename T::config_type;
+};
+template<typename T, typename...Ts>
+struct tensor_nested_tuple_config_type<std::tuple<T, Ts...>>
+{
+    using type = typename tensor_nested_tuple_config_type<T>::type;
+};
+template<typename T> using tensor_nested_tuple_config_type_t = typename tensor_nested_tuple_config_type<T>::type;
+
+
 
 
 template<typename SizeT, typename ShT, typename...ShTs>
@@ -183,6 +196,22 @@ auto fill_concatenate(const SizeT& direction, const std::tuple<ShT, ShTs...>& sh
     }
 }
 
+//add leading ones to shape to make dim new_dim, if dim>= new_dim do nothing
+//returns new shape
+template<typename ShT, typename SizeT>
+auto widen_shape(const ShT& shape, const SizeT& new_dim){
+    using size_type = SizeT;
+    using shape_type = ShT;
+    using index_type = typename shape_type::value_type;
+    size_type dim = shape.size();
+    if (dim < new_dim){
+        shape_type res(new_dim, index_type{1});
+        std::copy(shape.rbegin(),shape.rend(),res.rbegin());
+        return res;
+    }else{
+        return shape;
+    }
+}
 
 
 // template<typename SizeT, typename ShT, typename...ShTs>
@@ -368,24 +397,6 @@ auto fill_concatenate(const SizeT& direction, const std::tuple<ShT, ShTs...>& sh
 //     return dim;
 // }
 
-// //add leading ones to shape to make dim new_dim, if dim>= new_dim do nothing
-// //returns result shape dim
-// template<typename ShT, typename SizeT>
-// auto widen_shape(ShT& shape, const SizeT& new_dim){
-//     using size_type = SizeT;
-//     using shape_type = ShT;
-//     using index_type = typename shape_type::value_type;
-//     size_type dim = shape.size();
-//     if (dim < new_dim){
-//         auto ones_number = new_dim - dim;
-//         for (size_type i{0}; i!=ones_number; ++i){
-//             shape.push_back(index_type{1});
-//         }
-//         std::rotate(shape.begin(), shape.begin()+dim, shape.end());
-//     }
-//     return shape.size();
-// }
-
 // //concatenates shapes and accumulates result in res_shape
 // //depth means direction to concatenate, 1 is the last direction with lowest stride, 2 is next to last direction..., so direction is inverted
 // //res_shape initialized with first shape for current depth
@@ -468,7 +479,6 @@ static auto stack_variadic(const SizeT& direction, const tensor<Us...>& t, const
 //join tensors along existing direction, tensors must have the same shape except concatenate direction
 template<typename SizeT, typename...Us, typename...Ts>
 static auto concatenate_variadic(const SizeT& direction, const tensor<Us...>& t, const Ts&...ts){
-    static_assert((detail::is_tensor_v<Ts>&&...));
     using tensor_type = tensor<Us...>;
     using config_type = typename tensor_type::config_type;
     using res_value_type = std::common_type_t<typename tensor_type::value_type, typename Ts::value_type...>;
@@ -488,9 +498,31 @@ static auto concatenate_variadic(const SizeT& direction, const tensor<Us...>& t,
 }
 
 //Assemble tensor from nested tuples of blocks
-template<typename...Ts>
-static auto block_tuple(const std::tuple<Ts...>& blocks){
-    static_assert(detail::is_tensor_nested_tuple_v<std::tuple<Ts...>>);
+template<typename...Us, typename...Ts>
+static auto block_variadic(std::size_t depth, const tensor<Us...>& t, const Ts&...ts){
+    using tensor_type = tensor<Us...>;
+    using size_type = typename tensor_type::size_type;
+    const size_type depth_ = static_cast<size_type>(depth);
+    const size_type max_dim = std::max({t.dim(),ts.dim()...});
+    const size_type res_dim = std::max(depth_,max_dim);
+    const size_type direction = res_dim - depth_;
+    return concatenate_variadic(direction, t.reshape(detail::widen_shape(t.shape(),res_dim)), ts.reshape(detail::widen_shape(ts.shape(),res_dim))...);
+}
+template<typename...Us, typename...Ts>
+static auto block_tuple(const std::tuple<tensor<Us...>, Ts...>& blocks){
+    //depth is 1
+    auto apply_blocks = [](const auto&...ts){
+        return block_variadic(1, ts...);
+    };
+    return std::apply(apply_blocks, blocks);
+}
+template<typename...Us, typename...Ts>
+static auto block_tuple(const std::tuple<std::tuple<Us...>, Ts...>& blocks){
+    std::size_t depth = detail::nested_tuple_depth_v<std::tuple<std::tuple<Us...>, Ts...>>;
+    auto apply_blocks = [&depth](const auto&...blocks_){
+        return block_variadic(depth, block_tuple(blocks_)...);
+    };
+    return std::apply(apply_blocks, blocks);
 }
 
 // template<typename SizeT, typename Container>
@@ -763,13 +795,17 @@ static auto block_tuple(const std::tuple<Ts...>& blocks){
 
 public:
 //combiner interface
-template<typename SizeT, typename...Ts, typename...Tensors>
-static auto stack(const SizeT& direction, const tensor<Ts...>& t, const Tensors&...ts){
+template<typename SizeT, typename...Ts, typename...Ts>
+static auto stack(const SizeT& direction, const tensor<Ts...>& t, const Ts&...ts){
     return stack_variadic(direction, t, ts...);
 }
-template<typename SizeT, typename...Ts, typename...Tensors>
-static auto concatenate(const SizeT& direction, const tensor<Ts...>& t, const Tensors&...ts){
+template<typename SizeT, typename...Ts, typename...Ts>
+static auto concatenate(const SizeT& direction, const tensor<Ts...>& t, const Ts&...ts){
     return concatenate_variadic(direction, t, ts...);
+}
+template<typename...Ts>
+static auto block(const std::tuple<Ts...>& blocks){
+    return block_tuple(blocks);
 }
 // template<typename SizeT, typename Container>
 // static auto concatenate(const SizeT& direction, const Container& ts){
@@ -818,15 +854,23 @@ static auto concatenate(const SizeT& direction, const tensor<Ts...>& t, const Te
 
 //combine module free functions
 //call to combiner interface
-template<typename SizeT, typename...Ts, typename...Tensors>
-auto stack(const SizeT& direction, const tensor<Ts...>& t, const Tensors&...ts){
+template<typename SizeT, typename...Ts, typename...Ts>
+auto stack(const SizeT& direction, const tensor<Ts...>& t, const Ts&...ts){
+    static_assert((detail::is_tensor_v<Ts>&&...));
     using config_type = typename tensor<Ts...>::config_type;
     return combiner_selector<config_type>::type::stack(direction, t, ts...);
 }
-template<typename SizeT, typename...Ts, typename...Tensors>
-auto concatenate(const SizeT& direction, const tensor<Ts...>& t, const Tensors&...ts){
+template<typename SizeT, typename...Ts, typename...Ts>
+auto concatenate(const SizeT& direction, const tensor<Ts...>& t, const Ts&...ts){
+    static_assert((detail::is_tensor_v<Ts>&&...));
     using config_type = typename tensor<Ts...>::config_type;
     return combiner_selector<config_type>::type::concatenate(direction, t, ts...);
+}
+template<typename...Ts>
+static auto block(const std::tuple<Ts...>& blocks){
+    static_assert(detail::is_tensor_nested_tuple_v<std::tuple<Ts...>>);
+    using config_type = detail::tensor_nested_tuple_config_type_t<std::tuple<Ts...>>;
+    return combiner_selector<config_type>::type::block(blocks);
 }
 // template<typename SizeT, typename Container>
 // auto concatenate(const SizeT& direction, const Container& ts){
