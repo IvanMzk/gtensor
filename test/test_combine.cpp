@@ -236,7 +236,7 @@ TEMPLATE_TEST_CASE("test_make_concatenate_shape","[test_combine]",
     using size_type = typename config_type::size_type;
     using shape_type = typename config_type::shape_type;
     using gtensor::detail::make_concatenate_variadic_shape;
-    //using gtensor::detail::make_concatenate_container_shape;
+    using gtensor::detail::make_concatenate_container_shape;
     using helpers_for_testing::apply_by_element;
     //0direction,1shapes,2expected
     auto test_data = std::make_tuple(
@@ -282,19 +282,17 @@ TEMPLATE_TEST_CASE("test_make_concatenate_shape","[test_combine]",
     }
     SECTION("test_make_concatenate_container_shape")
     {
-        using value_type = int;
-        using tensor_type = gtensor::tensor<value_type>;
-        using container_type = std::vector<tensor_type>;
+        using container_type = typename config_type::template container<shape_type>;
         auto test = [](const auto& t){
             auto direction = std::get<0>(t);
             auto shapes = std::get<1>(t);
             auto expected = std::get<2>(t);
-            auto make_tensor_container = [](const auto&...shapes_){
-                return container_type{tensor_type(shapes_,value_type{})...};
+            auto make_shapes_container = [](const auto&...shapes_){
+                return container_type{shapes_...};
             };
-            auto container = std::apply(make_tensor_container, shapes);
-            //auto result = make_concatenate_container_shape(direction, container);
-            //REQUIRE(result == expected);
+            auto container = std::apply(make_shapes_container, shapes);
+            auto result = make_concatenate_container_shape(direction,container);
+            REQUIRE(result == expected);
         };
         apply_by_element(test, test_data);
     }

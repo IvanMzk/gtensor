@@ -146,21 +146,20 @@ auto make_concatenate_variadic_shape(const SizeT& direction, const std::tuple<Sh
     return std::apply([&direction](const auto&...shapes_){return make_concatenate_variadic_shape(direction,shapes_...);},shapes);
 }
 
-// template<typename SizeT, typename Container>
-// auto make_concatenate_container_shape(const SizeT& direction, const Container& ts){
-//     using tensor_type = typename Container::value_type;
-//     using shape_type = typename tensor_type::shape_type;
-//     using index_type = typename tensor_type::index_type;
-//     auto it = ts.begin();
-//     const auto& first_shape = (*it).shape();
-//     shape_type res{first_shape};
-//     index_type direction_size{first_shape[direction]};
-//     for(;it!=ts.end(); ++it){
-//         direction_size+=*it
-//     }
-//     res[direction] = std::accumulate(++it, ts.end(), );
-//     return res;
-// }
+template<typename SizeT, typename Container>
+auto make_concatenate_container_shape(const SizeT& direction, const Container& shapes){
+    using shape_type = typename Container::value_type;
+    using index_type = typename shape_type::value_type;
+    auto it = shapes.begin();
+    const auto& first_shape = *it;
+    shape_type res{first_shape};
+    index_type direction_size{first_shape[direction]};
+    for(++it; it!=shapes.end(); ++it){
+        direction_size+=(*it)[direction];
+    }
+    res[direction] = direction_size;
+    return res;
+}
 
 template<typename SizeT, typename ShT>
 auto make_stack_chunk_size(const SizeT& direction, const ShT& shape){
