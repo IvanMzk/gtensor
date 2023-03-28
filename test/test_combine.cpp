@@ -126,16 +126,14 @@ TEMPLATE_TEST_CASE("test_check_concatenate_args_nothrow","[test_combine]",
     }
     SECTION("test_check_concatenate_container_args_nothrow")
     {
-        using value_type = int;
-        using tensor_type = gtensor::tensor<value_type>;
-        using container_type = std::vector<tensor_type>;
+        using container_type = typename config_type::template container<shape_type>;
         auto test = [](const auto& t){
             auto direction = std::get<0>(t);
             auto shapes = std::get<1>(t);
-            auto make_tensor_container = [](const auto&...shapes_){
-                return container_type{tensor_type(shapes_,value_type{})...};
+            auto make_shapes_container = [](const auto&...shapes_){
+                return container_type{shapes_...};
             };
-            auto container = std::apply(make_tensor_container, shapes);
+            auto container = std::apply(make_shapes_container, shapes);
             REQUIRE_NOTHROW(check_concatenate_container_args(direction,container));
         };
         apply_by_element(test, test_data);
@@ -184,16 +182,14 @@ TEMPLATE_TEST_CASE("test_check_concatenate_args_exception","[test_combine]",
     }
     SECTION("test_check_concatenate_container_args_exception")
     {
-        using value_type = int;
-        using tensor_type = gtensor::tensor<value_type>;
-        using container_type = std::vector<tensor_type>;
+        using container_type = typename config_type::template container<shape_type>;
         auto test = [](const auto& t){
             auto direction = std::get<0>(t);
             auto shapes = std::get<1>(t);
-            auto make_tensor_container = [](const auto&...shapes_){
-                return container_type{tensor_type(shapes_,value_type{})...};
+            auto make_shapes_container = [](const auto&...shapes_){
+                return container_type{shapes_...};
             };
-            auto container = std::apply(make_tensor_container, shapes);
+            auto container = std::apply(make_shapes_container, shapes);
             REQUIRE_THROWS_AS(check_concatenate_container_args(direction,container), combine_exception);
         };
         apply_by_element(test, test_data);
@@ -239,7 +235,8 @@ TEMPLATE_TEST_CASE("test_make_concatenate_shape","[test_combine]",
     using config_type = TestType;
     using size_type = typename config_type::size_type;
     using shape_type = typename config_type::shape_type;
-    using gtensor::detail::make_concatenate_shape;
+    using gtensor::detail::make_concatenate_variadic_shape;
+    //using gtensor::detail::make_concatenate_container_shape;
     using helpers_for_testing::apply_by_element;
     //0direction,1shapes,2expected
     auto test_data = std::make_tuple(
@@ -271,14 +268,36 @@ TEMPLATE_TEST_CASE("test_make_concatenate_shape","[test_combine]",
         std::make_tuple(size_type{2}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2,3}, shape_type{1,2,3}), shape_type{1,2,9}),
         std::make_tuple(size_type{2}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2,13}, shape_type{1,2,33}), shape_type{1,2,49})
     );
-    auto test = [](const auto& t){
-        auto direction = std::get<0>(t);
-        auto shapes = std::get<1>(t);
-        auto expected = std::get<2>(t);
-        auto result = make_concatenate_shape(direction, shapes);
-        REQUIRE(result == expected);
-    };
-    apply_by_element(test, test_data);
+
+    SECTION("test_make_concatenate_variadic_shape")
+    {
+        auto test = [](const auto& t){
+            auto direction = std::get<0>(t);
+            auto shapes = std::get<1>(t);
+            auto expected = std::get<2>(t);
+            auto result = make_concatenate_variadic_shape(direction, shapes);
+            REQUIRE(result == expected);
+        };
+        apply_by_element(test, test_data);
+    }
+    SECTION("test_make_concatenate_container_shape")
+    {
+        using value_type = int;
+        using tensor_type = gtensor::tensor<value_type>;
+        using container_type = std::vector<tensor_type>;
+        auto test = [](const auto& t){
+            auto direction = std::get<0>(t);
+            auto shapes = std::get<1>(t);
+            auto expected = std::get<2>(t);
+            auto make_tensor_container = [](const auto&...shapes_){
+                return container_type{tensor_type(shapes_,value_type{})...};
+            };
+            auto container = std::apply(make_tensor_container, shapes);
+            //auto result = make_concatenate_container_shape(direction, container);
+            //REQUIRE(result == expected);
+        };
+        apply_by_element(test, test_data);
+    }
 }
 
 TEST_CASE("test_nested_tuple_depth", "[test_combine]"){
