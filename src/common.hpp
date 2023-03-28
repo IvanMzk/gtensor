@@ -14,6 +14,10 @@ template<typename T> constexpr inline bool is_container_v<T, std::void_t<decltyp
 template<typename T> constexpr inline bool is_tensor_v = false;
 template<typename...Ts> constexpr inline bool is_tensor_v<gtensor::tensor<Ts...>> = true;
 
+template<typename T, typename IdxT, typename = void> constexpr inline bool is_container_of_type_v = false;
+template<typename T, typename IdxT> constexpr inline bool is_container_of_type_v<T, IdxT, std::void_t<std::enable_if_t<is_container_v<T>>>> = std::is_convertible_v<typename T::value_type,IdxT>;
+
+
 }   //end of namespace detail
 }   //end of namespace gtensor
 

@@ -70,11 +70,16 @@ TEMPLATE_TEST_CASE("test_view","[test_view]",
         std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}}(1),tensor_type{{5,6},{7,8}}),
         std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}}(2,0),tensor_type{9,10}),
         std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}}(2)(0),tensor_type{9,10}),
-        //reshape view
+        //reshape view variadic
         std::make_tuple(tensor_type{1}.reshape(),tensor_type{1}),
         std::make_tuple(tensor_type{1,2,3,4,5}.reshape(1,5),tensor_type{{1,2,3,4,5}}),
         std::make_tuple(tensor_type{1,2,3,4,5}.reshape(5,1),tensor_type{{1},{2},{3},{4},{5}}),
         std::make_tuple(tensor_type{{{1,2},{3,4},{5,6}},{{7,8},{9,10},{11,12}}}.reshape(6,2), tensor_type{{1,2},{3,4},{5,6},{7,8},{9,10},{11,12}}),
+        //reshape view container
+        std::make_tuple(tensor_type{1}.reshape({}),tensor_type{1}),
+        std::make_tuple(tensor_type{1,2,3,4,5}.reshape(std::vector<int>{1,5}),tensor_type{{1,2,3,4,5}}),
+        std::make_tuple(tensor_type{1,2,3,4,5}.reshape({5,1}),tensor_type{{1},{2},{3},{4},{5}}),
+        std::make_tuple(tensor_type{{{1,2},{3,4},{5,6}},{{7,8},{9,10},{11,12}}}.reshape(std::vector<int>{6,2}), tensor_type{{1,2},{3,4},{5,6},{7,8},{9,10},{11,12}}),
         //index mapping view
         std::make_tuple((tensor_type{}(index_tensor_type{})),tensor_type{}),
         std::make_tuple((tensor_type{}(index_tensor_type{}.reshape(2,3,0))),tensor_type{}.reshape(2,3,0)),

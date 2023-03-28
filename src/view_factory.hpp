@@ -143,14 +143,24 @@ inline ShT make_view_reshape_shape(const ShT& pshape, const ShT& subs){
 }
 
 template<typename IdxT>
-inline void check_reshape_subs(const IdxT&){}
+inline void check_reshape_subs_variadic(const IdxT&){}
 template<typename IdxT, typename...Subs>
-inline void check_reshape_subs(const IdxT& size, const Subs&...subs){
+inline void check_reshape_subs_variadic(const IdxT& size, const Subs&...subs){
     using index_type = IdxT;
     index_type vsize{1};
     ([&vsize](const auto& sub){vsize*=sub;}(subs),...);
     if (size != vsize){
         throw subscript_exception("invalid new shape; size of reshape view must be equal to size of its parent");
+    }
+}
+template<typename IdxT, typename Container>
+inline void check_reshape_subs_container(const IdxT& size, const Container& subs){
+    using index_type = IdxT;
+    if (!std::empty(subs)){
+        index_type vsize = detail::make_size(subs);
+        if (size != vsize){
+            throw subscript_exception("invalid new shape; size of reshape view must be equal to size of its parent");
+        }
     }
 }
 

@@ -213,23 +213,92 @@ TEST_CASE("test_check_transpose_subs","[test_check_transpose_subs]"){
 }
 
 TEST_CASE("test_check_reshape_subs","[test_check_reshape_subs]"){
+    using index_type = gtensor::config::default_config::index_type;
     using gtensor::subscript_exception;
-    using gtensor::detail::check_reshape_subs;
+    using gtensor::detail::check_reshape_subs_variadic;
+    using gtensor::detail::check_reshape_subs_container;
+    using helpers_for_testing::apply_by_element;
 
-    REQUIRE_NOTHROW(check_reshape_subs(5));
-    REQUIRE_NOTHROW(check_reshape_subs(5, 5));
-    REQUIRE_NOTHROW(check_reshape_subs(20, 4,5));
-    REQUIRE_NOTHROW(check_reshape_subs(20, 20));
-    REQUIRE_NOTHROW(check_reshape_subs(20, 1,20,1));
-    REQUIRE_NOTHROW(check_reshape_subs(20, 2,10));
-    REQUIRE_NOTHROW(check_reshape_subs(20, 2,5,2,1));
-    REQUIRE_NOTHROW(check_reshape_subs(20, 4,5));
-
-    REQUIRE_THROWS_AS(check_reshape_subs(5, 0), subscript_exception);
-    REQUIRE_THROWS_AS(check_reshape_subs(5, 5,0), subscript_exception);
-    REQUIRE_THROWS_AS(check_reshape_subs(5, 3,2), subscript_exception);
-    REQUIRE_THROWS_AS(check_reshape_subs(60, 70), subscript_exception);
-    REQUIRE_THROWS_AS(check_reshape_subs(60, 2,3,2,4), subscript_exception);
+    SECTION("test_check_reshape_subs_nothrow")
+    {
+        //0psize,1subs
+        auto test_data = std::make_tuple(
+            std::make_tuple(index_type{5}, std::make_tuple()),
+            std::make_tuple(index_type{0}, std::make_tuple(index_type{1},index_type{0})),
+            std::make_tuple(index_type{0}, std::make_tuple(index_type{5},index_type{0})),
+            std::make_tuple(index_type{5}, std::make_tuple(index_type{5})),
+            std::make_tuple(index_type{20}, std::make_tuple(index_type{4},index_type{5})),
+            std::make_tuple(index_type{20}, std::make_tuple(index_type{20})),
+            std::make_tuple(index_type{20}, std::make_tuple(index_type{1},index_type{20},index_type{1})),
+            std::make_tuple(index_type{20}, std::make_tuple(index_type{2},index_type{10})),
+            std::make_tuple(index_type{20}, std::make_tuple(index_type{2},index_type{5},index_type{2},index_type{1})),
+            std::make_tuple(index_type{20}, std::make_tuple(index_type{4},index_type{5}))
+        );
+        SECTION("variadic")
+        {
+            auto test = [](const auto& t){
+                auto psize = std::get<0>(t);
+                auto subs = std::get<1>(t);
+                auto apply_subs = [&psize](const auto&...subs_){
+                    check_reshape_subs_variadic(psize, subs_...);
+                };
+                REQUIRE_NOTHROW(std::apply(apply_subs,subs));
+            };
+            apply_by_element(test,test_data);
+        }
+        SECTION("container")
+        {
+            using container_type = std::vector<index_type>;
+            auto test = [](const auto& t){
+                auto psize = std::get<0>(t);
+                auto subs = std::get<1>(t);
+                auto make_container = [](const auto&...subs_){
+                    return container_type{subs_...};
+                };
+                auto container = std::apply(make_container, subs);
+                REQUIRE_NOTHROW(check_reshape_subs_container(psize,container));
+            };
+            apply_by_element(test,test_data);
+        }
+    }
+    SECTION("test_check_reshape_subs_exception")
+    {
+        //0psize,1subs
+        auto test_data = std::make_tuple(
+            std::make_tuple(index_type{0}, std::make_tuple(index_type{5})),
+            std::make_tuple(index_type{5}, std::make_tuple(index_type{0})),
+            std::make_tuple(index_type{5}, std::make_tuple(index_type{5},index_type{0})),
+            std::make_tuple(index_type{5}, std::make_tuple(index_type{3},index_type{2})),
+            std::make_tuple(index_type{60}, std::make_tuple(index_type{70})),
+            std::make_tuple(index_type{60}, std::make_tuple(index_type{2},index_type{3},index_type{2},index_type{4}))
+        );
+        SECTION("variadic")
+        {
+            auto test = [](const auto& t){
+                auto psize = std::get<0>(t);
+                auto subs = std::get<1>(t);
+                auto apply_subs = [&psize](const auto&...subs_){
+                    check_reshape_subs_variadic(psize, subs_...);
+                };
+                REQUIRE_THROWS_AS(std::apply(apply_subs,subs), subscript_exception);
+            };
+            apply_by_element(test,test_data);
+        }
+        SECTION("container")
+        {
+            using container_type = std::vector<index_type>;
+            auto test = [](const auto& t){
+                auto psize = std::get<0>(t);
+                auto subs = std::get<1>(t);
+                auto make_container = [](const auto&...subs_){
+                    return container_type{subs_...};
+                };
+                auto container = std::apply(make_container, subs);
+                REQUIRE_THROWS_AS(check_reshape_subs_container(psize,container), subscript_exception);
+            };
+            apply_by_element(test,test_data);
+        }
+    }
 }
 
 TEST_CASE("test_check_subdim_subs","[test_check_subdim_subs]"){

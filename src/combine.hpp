@@ -22,9 +22,6 @@ public:
 
 namespace detail{
 
-template<typename T, typename IdxT, typename = void> constexpr inline bool is_index_container_v = false;
-template<typename T, typename IdxT> constexpr inline bool is_index_container_v<T, IdxT, std::void_t<std::enable_if_t<is_container_v<T>>>> = std::is_convertible_v<typename T::value_type,IdxT>;
-
 template<typename T, typename = void> constexpr inline bool is_tensor_container_v = false;
 template<typename T> constexpr inline bool is_tensor_container_v<T, std::void_t<std::enable_if_t<is_container_v<T>>>> = is_tensor_v<typename T::value_type>;
 
