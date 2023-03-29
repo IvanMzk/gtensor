@@ -1322,3 +1322,136 @@ TEMPLATE_TEST_CASE("test_hsplit","[test_combine]",
     }
 }
 
+TEMPLATE_TEST_CASE("test_hsplit_hstack","[test_combine]",
+    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
+)
+{
+    using value_type = double;
+    using config_type = TestType;
+    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using result_type = typename config_type::template container<tensor_type>;
+    using gtensor::hsplit;
+    using gtensor::hstack;
+    using helpers_for_testing::apply_by_element;
+
+    SECTION("test_hsplit_hstack")
+    {
+        //0tensor,1split_arg
+        auto test_data = std::make_tuple(
+            //split by points
+            std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{2}),
+            std::make_tuple(tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12}},std::vector<int>{1}),
+            std::make_tuple(tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12}},std::vector<int>{1,3}),
+            std::make_tuple(tensor_type{{{1},{2},{3},{4}},{{5},{6},{7},{8}},{{9},{10},{11},{12}}},gtensor::tensor<std::size_t>{1,3}),
+            //split by equal parts
+            std::make_tuple(tensor_type{}.reshape(0,3),3),
+            std::make_tuple(tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12}},1),
+            std::make_tuple(tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12}},2),
+            std::make_tuple(tensor_type{{{1},{2},{3},{4}},{{5},{6},{7},{8}},{{9},{10},{11},{12}}},2)
+        );
+        auto test = [](const auto& t){
+            auto ten = std::get<0>(t);
+            auto split_arg = std::get<1>(t);
+            auto expected = ten;
+            auto result = hstack(hsplit(ten, split_arg));
+            REQUIRE(result.equals(expected));
+        };
+        apply_by_element(test, test_data);
+    }
+    SECTION("test_hstack_hsplit")
+    {
+        //0split_arg,1parts
+        auto test_data = std::make_tuple(
+            //split by points
+            std::make_tuple(std::vector<int>{2},result_type{tensor_type{1,2},tensor_type{3,4,5}}),
+            std::make_tuple(std::vector<int>{1},result_type{tensor_type{{1},{5},{9}},tensor_type{{2,3,4},{6,7,8},{10,11,12}}}),
+            std::make_tuple(std::vector<int>{1,3},result_type{tensor_type{{1},{5},{9}},tensor_type{{2,3},{6,7},{10,11}},tensor_type{{4},{8},{12}}}),
+            std::make_tuple(gtensor::tensor<std::size_t>{1,3},result_type{tensor_type{{{1}},{{5}},{{9}}},tensor_type{{{2},{3}},{{6},{7}},{{10},{11}}},tensor_type{{{4}},{{8}},{{12}}}}),
+            //split by equal parts
+            std::make_tuple(3,result_type{tensor_type{}.reshape(0,1).copy(),tensor_type{}.reshape(0,1).copy(),tensor_type{}.reshape(0,1).copy()}),
+            std::make_tuple(1,result_type{tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12}}}),
+            std::make_tuple(2,result_type{tensor_type{{1,2},{5,6},{9,10}},tensor_type{{3,4},{7,8},{11,12}}}),
+            std::make_tuple(2,result_type{tensor_type{{{1},{2}},{{5},{6}},{{9},{10}}},tensor_type{{{3},{4}},{{7},{8}},{{11},{12}}}})
+        );
+        auto test = [](const auto& t){
+            auto split_arg = std::get<0>(t);
+            auto parts = std::get<1>(t);
+            auto expected = parts;
+            auto result = hsplit(hstack(parts), split_arg);
+            REQUIRE(expected.size() == result.size());
+            auto result_it = result.begin();
+            for (auto expected_it = expected.begin(); expected_it!=expected.end(); ++expected_it, ++result_it){
+                REQUIRE((*result_it).equals(*expected_it));
+            }
+        };
+        apply_by_element(test, test_data);
+    }
+}
+
+TEMPLATE_TEST_CASE("test_vsplit_vstack","[test_combine]",
+    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
+)
+{
+    using value_type = double;
+    using config_type = TestType;
+    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using result_type = typename config_type::template container<tensor_type>;
+    using gtensor::vstack;
+    using gtensor::vsplit;
+    using helpers_for_testing::apply_by_element;
+
+    SECTION("test_vsplit_vstack")
+    {
+        //0tensor,1split_arg
+        auto test_data = std::make_tuple(
+            //split by points
+            std::make_tuple(tensor_type{{1,2},{3,4},{5,6},{7,8},{9,10}},std::vector<int>{2}),
+            std::make_tuple(tensor_type{{1,2},{3,4},{5,6},{7,8},{9,10}},std::vector<int>{1,3}),
+            std::make_tuple(tensor_type{{1,2},{3,4},{5,6},{7,8},{9,10}},std::initializer_list<int>{1,2,3,4}),
+            std::make_tuple(tensor_type{{{1},{2}},{{3},{4}},{{5},{6}},{{7},{8}},{{9},{10}}},gtensor::tensor<std::size_t>{1,3}),
+            //split by equal parts
+            std::make_tuple(tensor_type{}.reshape(1,0),1),
+            std::make_tuple(tensor_type{}.reshape(3,0),3),
+            std::make_tuple(tensor_type{{1,2},{3,4},{5,6},{7,8},{9,10}},1),
+            std::make_tuple(tensor_type{{1,2},{3,4},{5,6},{7,8},{9,10}},5),
+            std::make_tuple(tensor_type{{{1},{2}},{{3},{4}},{{5},{6}},{{7},{8}}},2)
+        );
+        auto test = [](const auto& t){
+            auto ten = std::get<0>(t);
+            auto split_arg = std::get<1>(t);
+            auto expected = ten;
+            auto result = vstack(vsplit(ten, split_arg));
+            REQUIRE(result.equals(expected));
+        };
+        apply_by_element(test, test_data);
+    }
+    SECTION("test_vstack_vsplit")
+    {
+        //0split_arg,1parts
+        auto test_data = std::make_tuple(
+            //split by points
+            std::make_tuple(std::vector<int>{2},result_type{tensor_type{{1,2},{3,4}},tensor_type{{5,6},{7,8},{9,10}}}),
+            std::make_tuple(std::vector<int>{1,3},result_type{tensor_type{{1,2}},tensor_type{{3,4},{5,6}},tensor_type{{7,8},{9,10}}}),
+            std::make_tuple(std::initializer_list<int>{1,2,3,4},result_type{tensor_type{{1,2}},tensor_type{{3,4}},tensor_type{{5,6}},tensor_type{{7,8}},tensor_type{{9,10}}}),
+            std::make_tuple(gtensor::tensor<std::size_t>{1,3},result_type{tensor_type{{{1},{2}}},tensor_type{{{3},{4}},{{5},{6}}},tensor_type{{{7},{8}},{{9},{10}}}}),
+            //split by equal parts
+            std::make_tuple(1,result_type{tensor_type{}.reshape(1,0).copy()}),
+            std::make_tuple(3,result_type{tensor_type{}.reshape(1,0).copy(),tensor_type{}.reshape(1,0).copy(),tensor_type{}.reshape(1,0).copy()}),
+            std::make_tuple(1,result_type{tensor_type{{1,2},{3,4},{5,6},{7,8},{9,10}}}),
+            std::make_tuple(5,result_type{tensor_type{{1,2}},tensor_type{{3,4}},tensor_type{{5,6}},tensor_type{{7,8}},tensor_type{{9,10}}}),
+            std::make_tuple(2,result_type{tensor_type{{{1},{2}},{{3},{4}}},tensor_type{{{5},{6}},{{7},{8}}}})
+        );
+        auto test = [](const auto& t){
+            auto split_arg = std::get<0>(t);
+            auto parts = std::get<1>(t);
+            auto expected = parts;
+            auto result = vsplit(vstack(parts), split_arg);
+            REQUIRE(expected.size() == result.size());
+            auto result_it = result.begin();
+            for (auto expected_it = expected.begin(); expected_it!=expected.end(); ++expected_it, ++result_it){
+                REQUIRE((*result_it).equals(*expected_it));
+            }
+        };
+        apply_by_element(test, test_data);
+    }
+}
