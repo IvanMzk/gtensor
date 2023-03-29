@@ -630,6 +630,106 @@ TEMPLATE_TEST_CASE("test_concatenate_common_type","[test_combine]",
     apply_by_element(test, test_data);
 }
 
+TEMPLATE_TEST_CASE("test_vstack","[test_combine]",
+    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
+)
+{
+    using value_type = double;
+    using config_type = TestType;
+    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using helpers_for_testing::apply_by_element;
+    using gtensor::vstack;
+    //0tensors,1expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(std::make_tuple(tensor_type{}), tensor_type{}.reshape(1,0)),
+        std::make_tuple(std::make_tuple(tensor_type{}, tensor_type{}, tensor_type{}), tensor_type{}.reshape(3,0)),
+        std::make_tuple(std::make_tuple(tensor_type{1}), tensor_type{{1}}),
+        std::make_tuple(std::make_tuple(tensor_type{1},tensor_type{2},tensor_type{3}), tensor_type{{1},{2},{3}}),
+        std::make_tuple(std::make_tuple(tensor_type{1,2,3},tensor_type{4,5,6},tensor_type{7,8,9}), tensor_type{{1,2,3},{4,5,6},{7,8,9}}),
+        std::make_tuple(std::make_tuple(tensor_type{{1,2},{3,4}}), tensor_type{{1,2},{3,4}}),
+        std::make_tuple(std::make_tuple(tensor_type{{1,2},{3,4}},tensor_type{5,6}), tensor_type{{1,2},{3,4},{5,6}}),
+        std::make_tuple(std::make_tuple(tensor_type{{1,2},{3,4}},tensor_type{{5,6}}), tensor_type{{1,2},{3,4},{5,6}}),
+        std::make_tuple(std::make_tuple(tensor_type{{{1}},{{2}}}, tensor_type{{{3}},{{4}},{{5}}}, tensor_type{{{6}}}), tensor_type{{{1}},{{2}},{{3}},{{4}},{{5}},{{6}}}),
+        std::make_tuple(std::make_tuple(tensor_type{{{1,2}},{{3,4}}}, tensor_type{{{5,6}},{{7,8}}}, tensor_type{{{9,10}}}), tensor_type{{{1,2}},{{3,4}},{{5,6}},{{7,8}},{{9,10}}}),
+        std::make_tuple(
+            std::make_tuple(tensor_type{{1,2,3},{4,5,6}},tensor_type{{7,8,9},{10,11,12},{13,14,15}},tensor_type{{16,17,18}},tensor_type{19,20,21}),
+            tensor_type{{1,2,3},{4,5,6},{7,8,9},{10,11,12},{13,14,15},{16,17,18},{19,20,21}}
+        ),
+        std::make_tuple(
+            std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},tensor_type{{{9,10},{11,12}}},tensor_type{{{13,14},{15,16}},{{17,18},{19,20}},{{21,22},{23,24}}}),
+            tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}},{{17,18},{19,20}},{{21,22},{23,24}}}
+        ),
+        std::make_tuple(std::make_tuple(tensor_type{{{1,3},{5,6},{7,8}},{{2,4},{9,10},{11,12}}}, tensor_type{{{13,14},{15,16},{17,18}}}),
+            tensor_type{{{1,3},{5,6},{7,8}},{{2,4},{9,10},{11,12}},{{13,14},{15,16},{17,18}}}
+        )
+    );
+    SECTION("test_vstack_variadic")
+    {
+        auto test_vstack_variadic = [](const auto& t){
+            auto tensors = std::get<0>(t);
+            auto expected = std::get<1>(t);
+            auto apply_tensors = [](const auto&...tensors_){
+                return vstack(tensors_...);
+            };
+            auto result = std::apply(apply_tensors, tensors);
+            REQUIRE(result.equals(expected));
+        };
+        apply_by_element(test_vstack_variadic, test_data);
+    }
+    SECTION("test_vstack_container")
+    {
+        using container_type = std::vector<tensor_type>;
+        auto test_vstack_container = [](const auto& t){
+            auto tensors = std::get<0>(t);
+            auto expected = std::get<1>(t);
+            auto container = std::apply([](const auto&...ts){return container_type{ts...};}, tensors);
+            auto result = vstack(container);
+            REQUIRE(result.equals(expected));
+        };
+        apply_by_element(test_vstack_container, test_data);
+    }
+}
+
+TEMPLATE_TEST_CASE("test_vstack_exception","[test_combine]",
+    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
+)
+{
+    using value_type = double;
+    using config_type = TestType;
+    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using helpers_for_testing::apply_by_element;
+    using gtensor::combine_exception;
+    using gtensor::vstack;
+    //0tensors
+    auto test_data = std::make_tuple(
+        std::make_tuple(std::make_tuple(tensor_type{1}, tensor_type{1,1})),
+        std::make_tuple(std::make_tuple(tensor_type{{1,2},{3,4}}, tensor_type{5,6,7})),
+        std::make_tuple(std::make_tuple(tensor_type{{{1}}}, tensor_type{1})),
+        std::make_tuple(std::make_tuple(tensor_type{{{1}}}, tensor_type{{1}})),
+        std::make_tuple(std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}, tensor_type{{1,2},{3,4}}))
+    );
+    SECTION("test_vstack_variadic_exception")
+    {
+        auto test_vstack_variadic_exception = [](const auto& t){
+            auto tensors = std::get<0>(t);
+            auto apply_tensors = [](const auto&...tensors_){
+                return vstack(tensors_...);
+            };
+            REQUIRE_THROWS_AS(std::apply(apply_tensors, tensors), combine_exception);
+        };
+        apply_by_element(test_vstack_variadic_exception, test_data);
+    }
+    SECTION("test_vstack_container_exception")
+    {
+        using container_type = std::vector<tensor_type>;
+        auto test_vstack_container_exception = [](const auto& t){
+            auto tensors = std::get<0>(t);
+            auto container = std::apply([](const auto&...ts){return container_type{ts...};}, tensors);
+            REQUIRE_THROWS_AS(vstack(container), combine_exception);
+        };
+        apply_by_element(test_vstack_container_exception, test_data);
+    }
+}
 
 
 TEMPLATE_TEST_CASE("test_block_tuple","[test_combine]",
@@ -940,6 +1040,18 @@ TEMPLATE_TEST_CASE("test_block_exception","[test_combine]",
 //     }
 // }
 
+// TEST_CASE("test_is_index_container","[test_combine]"){
+//     using gtensor::tensor;
+//     using config_type = gtensor::config::default_config;
+//     using index_type = typename config_type::index_type;
+//     using gtensor::detail::is_index_container_v;
+
+//     REQUIRE(is_index_container_v<std::vector<int>,int>);
+//     REQUIRE(is_index_container_v<std::vector<index_type>,index_type>);
+//     REQUIRE(is_index_container_v<std::array<index_type,3>,index_type>);
+//     REQUIRE(is_index_container_v<tensor<index_type>,index_type>);
+//     REQUIRE(!is_index_container_v<std::vector<std::string>,int>);
+// }
 
 
 // TEMPLATE_TEST_CASE("test_make_vstack_shape","[test_combine]",
@@ -1060,20 +1172,6 @@ TEMPLATE_TEST_CASE("test_block_exception","[test_combine]",
 //     REQUIRE_THROWS_AS(make_block_shape_caller(nested_init_list3<tensor_type>{{{tensor_type({2},v)}}, {{tensor_type({2,2},v)}}}), combine_exception);
 // }
 
-
-
-// TEST_CASE("test_is_index_container","[test_combine]"){
-//     using gtensor::tensor;
-//     using config_type = gtensor::config::default_config;
-//     using index_type = typename config_type::index_type;
-//     using gtensor::detail::is_index_container_v;
-
-//     REQUIRE(is_index_container_v<std::vector<int>,int>);
-//     REQUIRE(is_index_container_v<std::vector<index_type>,index_type>);
-//     REQUIRE(is_index_container_v<std::array<index_type,3>,index_type>);
-//     REQUIRE(is_index_container_v<tensor<index_type>,index_type>);
-//     REQUIRE(!is_index_container_v<std::vector<std::string>,int>);
-// }
 
 // TEMPLATE_TEST_CASE("test_split_split_points","[test_combine]",
 //     test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
@@ -1226,104 +1324,4 @@ TEMPLATE_TEST_CASE("test_block_exception","[test_combine]",
 //     REQUIRE_THROWS_AS(split(tensor_type{{1,2},{3,4},{5,6}},2,2), combine_exception);
 // }
 
-// TEMPLATE_TEST_CASE("test_vstack","[test_combine]",
-//     test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-// )
-// {
-//     using value_type = double;
-//     using config_type = TestType;
-//     using tensor_type = gtensor::tensor<value_type, config_type>;
-//     using helpers_for_testing::apply_by_element;
-//     using gtensor::vstack;
-//     //0tensors,1expected
-//     auto test_data = std::make_tuple(
-//         std::make_tuple(std::make_tuple(tensor_type{}), tensor_type{}),
-//         std::make_tuple(std::make_tuple(tensor_type{}, tensor_type{}, tensor_type{}), tensor_type{}),
-//         std::make_tuple(std::make_tuple(tensor_type{1}), tensor_type{{1}}),
-//         std::make_tuple(std::make_tuple(tensor_type{1},tensor_type{2},tensor_type{3}), tensor_type{{1},{2},{3}}),
-//         std::make_tuple(std::make_tuple(tensor_type{1,2,3},tensor_type{4,5,6},tensor_type{7,8,9}), tensor_type{{1,2,3},{4,5,6},{7,8,9}}),
-//         std::make_tuple(std::make_tuple(tensor_type{{1,2},{3,4}}), tensor_type{{1,2},{3,4}}),
-//         std::make_tuple(std::make_tuple(tensor_type{{1,2},{3,4}},tensor_type{5,6}), tensor_type{{1,2},{3,4},{5,6}}),
-//         std::make_tuple(std::make_tuple(tensor_type{{1,2},{3,4}},tensor_type{{5,6}}), tensor_type{{1,2},{3,4},{5,6}}),
-//         std::make_tuple(std::make_tuple(tensor_type{{{1}},{{2}}}, tensor_type{{{3}},{{4}},{{5}}}, tensor_type{{{6}}}), tensor_type{{{1}},{{2}},{{3}},{{4}},{{5}},{{6}}}),
-//         std::make_tuple(std::make_tuple(tensor_type{{{1,2}},{{3,4}}}, tensor_type{{{5,6}},{{7,8}}}, tensor_type{{{9,10}}}), tensor_type{{{1,2}},{{3,4}},{{5,6}},{{7,8}},{{9,10}}}),
-//         std::make_tuple(
-//             std::make_tuple(tensor_type{{1,2,3},{4,5,6}},tensor_type{{7,8,9},{10,11,12},{13,14,15}},tensor_type{{16,17,18}},tensor_type{19,20,21}),
-//             tensor_type{{1,2,3},{4,5,6},{7,8,9},{10,11,12},{13,14,15},{16,17,18},{19,20,21}}
-//         ),
-//         std::make_tuple(
-//             std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},tensor_type{{{9,10},{11,12}}},tensor_type{{{13,14},{15,16}},{{17,18},{19,20}},{{21,22},{23,24}}}),
-//             tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}},{{17,18},{19,20}},{{21,22},{23,24}}}
-//         ),
-//         std::make_tuple(std::make_tuple(tensor_type{{{1,3},{5,6},{7,8}},{{2,4},{9,10},{11,12}}}, tensor_type{{{13,14},{15,16},{17,18}}}),
-//             tensor_type{{{1,3},{5,6},{7,8}},{{2,4},{9,10},{11,12}},{{13,14},{15,16},{17,18}}}
-//         )
-//     );
-//     SECTION("test_vstack_variadic")
-//     {
-//         auto test_vstack_variadic = [](const auto& t){
-//             auto tensors = std::get<0>(t);
-//             auto expected = std::get<1>(t);
-//             auto apply_tensors = [](const auto&...tensors_){
-//                 return vstack(tensors_...);
-//             };
-//             auto result = std::apply(apply_tensors, tensors);
-//             REQUIRE(result.equals(expected));
-//         };
-//         apply_by_element(test_vstack_variadic, test_data);
-//     }
-//     SECTION("test_vstack_container")
-//     {
-//         using container_type = std::vector<tensor_type>;
-//         auto test_vstack_container = [](const auto& t){
-//             auto tensors = std::get<0>(t);
-//             auto expected = std::get<1>(t);
-//             auto container = std::apply([](const auto&...ts){return container_type{ts...};}, tensors);
-//             auto result = vstack(container);
-//             REQUIRE(result.equals(expected));
-//         };
-//         apply_by_element(test_vstack_container, test_data);
-//     }
-// }
-
-// TEMPLATE_TEST_CASE("test_vstack_exception","[test_combine]",
-//     test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-// )
-// {
-//     using value_type = double;
-//     using config_type = TestType;
-//     using tensor_type = gtensor::tensor<value_type, config_type>;
-//     using helpers_for_testing::apply_by_element;
-//     using gtensor::combine_exception;
-//     using gtensor::vstack;
-//     //0tensors
-//     auto test_data = std::make_tuple(
-//         std::make_tuple(std::make_tuple(tensor_type{1}, tensor_type{1,1})),
-//         std::make_tuple(std::make_tuple(tensor_type{{1,2},{3,4}}, tensor_type{5,6,7})),
-//         std::make_tuple(std::make_tuple(tensor_type{{{1}}}, tensor_type{1})),
-//         std::make_tuple(std::make_tuple(tensor_type{{{1}}}, tensor_type{{1}})),
-//         std::make_tuple(std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}, tensor_type{{1,2},{3,4}}))
-//     );
-//     SECTION("test_vstack_variadic_exception")
-//     {
-//         auto test_vstack_variadic_exception = [](const auto& t){
-//             auto tensors = std::get<0>(t);
-//             auto apply_tensors = [](const auto&...tensors_){
-//                 return vstack(tensors_...);
-//             };
-//             REQUIRE_THROWS_AS(std::apply(apply_tensors, tensors), combine_exception);
-//         };
-//         apply_by_element(test_vstack_variadic_exception, test_data);
-//     }
-//     SECTION("test_vstack_container_exception")
-//     {
-//         using container_type = std::vector<tensor_type>;
-//         auto test_vstack_container_exception = [](const auto& t){
-//             auto tensors = std::get<0>(t);
-//             auto container = std::apply([](const auto&...ts){return container_type{ts...};}, tensors);
-//             REQUIRE_THROWS_AS(vstack(container), combine_exception);
-//         };
-//         apply_by_element(test_vstack_container_exception, test_data);
-//     }
-// }
 
