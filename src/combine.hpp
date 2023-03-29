@@ -609,8 +609,8 @@ static auto vstack_container(const Container& ts){
 }
 
 
-//Assemble tensor from nested tuples of blocks
-//nested tuples
+//Assemble tensor from blocks
+//blocks in nested tuples
 template<typename...Us, typename...Ts>
 static auto block_tuple_helper(std::size_t depth, const tensor<Us...>& t, const Ts&...ts){
     using tensor_type = tensor<Us...>;
@@ -619,7 +619,11 @@ static auto block_tuple_helper(std::size_t depth, const tensor<Us...>& t, const 
     const size_type max_dim = std::max({t.dim(),ts.dim()...});
     const size_type res_dim = std::max(depth_,max_dim);
     const size_type direction = res_dim - depth_;
-    return concatenate_variadic(direction, detail::widen_tensor(t,res_dim), detail::widen_tensor(ts,res_dim)...);
+    if (t.dim()!=res_dim || ((ts.dim()!=res_dim)||...)){
+        return concatenate_variadic(direction, detail::widen_tensor(t,res_dim), detail::widen_tensor(ts,res_dim)...);
+    }else{
+        return concatenate_variadic(direction,t,ts...);
+    }
 }
 template<typename...Us, typename...Ts>
 static auto block_tuple(const std::tuple<tensor<Us...>, Ts...>& blocks){
@@ -637,7 +641,7 @@ static auto block_tuple(const std::tuple<std::tuple<Us...>, Ts...>& blocks){
     };
     return std::apply(apply_blocks, blocks);
 }
-//nested initializer list
+//blocks in nested initializer list
 template<typename Container>
 static auto block_init_list_helper(std::size_t depth, const Container& ts){
     using tensor_type = typename Container::value_type;
@@ -651,13 +655,24 @@ static auto block_init_list_helper(std::size_t depth, const Container& ts){
     }
     const size_type res_dim = std::max(depth_,max_dim);
     const size_type direction = res_dim - depth_;
-    using block_type = decltype(detail::widen_tensor(*ts.begin(),res_dim));
-    typename config_type::template container<block_type> blocks_{};
-    blocks_.reserve(ts.size());
-    for(auto it = ts.begin(); it!=ts.end(); ++it){
-        blocks_.push_back(detail::widen_tensor(*it,res_dim));
+    bool need_reshape{false};
+    for (auto it = ts.begin(); it!=ts.end(); ++it){
+        if ((*it).dim() != res_dim){
+            need_reshape = true;
+            break;
+        }
     }
-    return concatenate_container(direction, blocks_);
+    if (need_reshape){
+        using view_type = decltype(detail::widen_tensor(*ts.begin(),res_dim));
+        typename config_type::template container<view_type> ts_{};
+        ts_.reserve(ts.size());
+        for(auto it = ts.begin(); it!=ts.end(); ++it){
+            ts_.push_back(detail::widen_tensor(*it,res_dim));
+        }
+        return concatenate_container(direction, ts_);
+    }else{
+        return concatenate_container(direction, ts);
+    }
 }
 template<typename...Ts>
 static auto block_init_list(std::initializer_list<tensor<Ts...>> blocks){
