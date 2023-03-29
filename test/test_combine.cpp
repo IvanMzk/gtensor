@@ -403,7 +403,7 @@ TEST_CASE("test_widen_shape", "[test_combine]"){
 }
 
 //test interface
-TEMPLATE_TEST_CASE("test_stack","[test_combine]",
+TEMPLATE_TEST_CASE("test_stack_nothrow","[test_combine]",
     test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
 )
 {
@@ -444,7 +444,7 @@ TEMPLATE_TEST_CASE("test_stack","[test_combine]",
             tensor_type{{{1,7,13,19},{2,8,14,20},{3,9,15,21}},{{4,10,16,22},{5,11,17,23},{6,12,18,24}}}
         )
     );
-    SECTION("test_stack_variadic")
+    SECTION("test_stack_variadic_nothrow")
     {
         auto test = [](const auto& t){
             auto direction = std::get<0>(t);
@@ -459,7 +459,7 @@ TEMPLATE_TEST_CASE("test_stack","[test_combine]",
         };
         apply_by_element(test, test_data);
     }
-    SECTION("test_stack_container")
+    SECTION("test_stack_container_nothrow")
     {
         using container_type = std::vector<tensor_type>;
         auto test_concatenate_container = [](const auto& t){
@@ -469,6 +469,56 @@ TEMPLATE_TEST_CASE("test_stack","[test_combine]",
             auto container = std::apply([](const auto&...ts){return container_type{ts.copy()...};}, tensors);
             auto result = stack(direction, container);
             REQUIRE(result.equals(expected));
+        };
+        apply_by_element(test_concatenate_container, test_data);
+    }
+}
+
+TEMPLATE_TEST_CASE("test_stack_exception","[test_combine]",
+    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
+)
+{
+    using value_type = double;
+    using config_type = TestType;
+    using size_type = typename config_type::size_type;
+    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using gtensor::combine_exception;
+    using helpers_for_testing::apply_by_element;
+    using gtensor::stack;
+    //0direction,1tensors
+    auto test_data = std::make_tuple(
+        std::make_tuple(size_type{2}, std::make_tuple(tensor_type{})),
+        std::make_tuple(size_type{2}, std::make_tuple(tensor_type{1})),
+        std::make_tuple(size_type{4}, std::make_tuple(tensor_type({1,2,3},value_type{}))),
+        std::make_tuple(size_type{2}, std::make_tuple(tensor_type{1}, tensor_type{1})),
+        std::make_tuple(size_type{4}, std::make_tuple(tensor_type({1,2,3},value_type{}), tensor_type({1,2,3},value_type{}))),
+        std::make_tuple(size_type{0}, std::make_tuple(tensor_type{}, tensor_type{1})),
+        std::make_tuple(size_type{0}, std::make_tuple(tensor_type{1}, tensor_type{})),
+        std::make_tuple(size_type{0}, std::make_tuple(tensor_type({1,2,3},value_type{}), tensor_type{})),
+        std::make_tuple(size_type{0}, std::make_tuple(tensor_type{}, tensor_type({1,2,3},value_type{}))),
+        std::make_tuple(size_type{0}, std::make_tuple(tensor_type({1,2,3},value_type{}), tensor_type({1,2,3},value_type{}), tensor_type({1,1,2,3},value_type{}))),
+        std::make_tuple(size_type{0}, std::make_tuple(tensor_type({1,2,3},value_type{}), tensor_type({2,2,3},value_type{}), tensor_type({1,2,3},value_type{})))
+    );
+    SECTION("test_stack_variadic_exception")
+    {
+        auto test = [](const auto& t){
+            auto direction = std::get<0>(t);
+            auto tensors = std::get<1>(t);
+            auto apply_tensors = [&direction](const auto&...tensors_){
+                return stack(direction, tensors_...);
+            };
+            REQUIRE_THROWS_AS(std::apply(apply_tensors, tensors), combine_exception);
+        };
+        apply_by_element(test, test_data);
+    }
+    SECTION("test_stack_container_exception")
+    {
+        using container_type = std::vector<tensor_type>;
+        auto test_concatenate_container = [](const auto& t){
+            auto direction = std::get<0>(t);
+            auto tensors = std::get<1>(t);
+            auto container = std::apply([](const auto&...ts){return container_type{ts.copy()...};}, tensors);
+            REQUIRE_THROWS_AS(stack(direction, container), combine_exception);
         };
         apply_by_element(test_concatenate_container, test_data);
     }

@@ -235,13 +235,13 @@ auto make_stack_chunk_size(const SizeT& direction, const ShT& shape){
 template<typename SizeT, typename ShT, typename ResultIt, typename...It>
 auto fill_stack(const SizeT& direction, const ShT& shape, const typename ShT::value_type& size, ResultIt res_it, It...it){
     using index_type = typename ShT::value_type;
-    index_type chunk_size = make_stack_chunk_size(direction, shape);
+    const index_type chunk_size = make_stack_chunk_size(direction, shape);
     auto filler = [chunk_size, res_it](auto& it) mutable {
         for (index_type i{0}; i!=chunk_size; ++i, ++res_it, ++it){
             *res_it = *it;
         }
     };
-    index_type iterations_number = size/chunk_size;
+    const index_type iterations_number = size/chunk_size;
     for (index_type i{0}; i!=iterations_number; ++i){
         (filler(it),...);
     }
@@ -250,13 +250,24 @@ auto fill_stack(const SizeT& direction, const ShT& shape, const typename ShT::va
 template<typename SizeT, typename ShT, typename ResultIt, typename ItContainer>
 auto fill_stack_container(const SizeT& direction, const ShT& shape, ResultIt res_it, ItContainer& iterators){
     using index_type = typename ShT::value_type;
-    index_type chunk_size = make_stack_chunk_size(direction, shape);
-    index_type iterations_number = std::accumulate(shape.begin(), shape.begin()+direction, index_type{1}, std::multiplies{});
-    for (index_type i{0}; i!=iterations_number; ++i){
-        for (auto it=iterators.begin(); it!=iterators.end(); ++it){
-            auto& iterator = *it;
-            for (index_type j{0}; j!=chunk_size; ++j,++iterator,++res_it){
+    const index_type chunk_size = make_stack_chunk_size(direction, shape);
+    const index_type iterations_number = std::accumulate(shape.begin(), shape.begin()+direction, index_type{1}, std::multiplies{});
+    if (chunk_size == index_type{1}){
+        for (index_type i{0}; i!=iterations_number; ++i){
+            for (auto it=iterators.begin(); it!=iterators.end(); ++it){
+                auto& iterator = *it;
                 *res_it = *iterator;
+                ++iterator;
+                ++res_it;
+            }
+        }
+    }else{
+        for (index_type i{0}; i!=iterations_number; ++i){
+            for (auto it=iterators.begin(); it!=iterators.end(); ++it){
+                auto& iterator = *it;
+                for (index_type j{0}; j!=chunk_size; ++j,++iterator,++res_it){
+                    *res_it = *iterator;
+                }
             }
         }
     }
