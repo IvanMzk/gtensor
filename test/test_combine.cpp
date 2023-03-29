@@ -5,7 +5,7 @@
 #include "test_config.hpp"
 
 //test helpers
-TEMPLATE_TEST_CASE("test_check_stack_variadic_args","[test_combine]",
+TEMPLATE_TEST_CASE("test_check_stack_args_nothrow","[test_combine]",
     test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
 )
 {
@@ -14,31 +14,31 @@ TEMPLATE_TEST_CASE("test_check_stack_variadic_args","[test_combine]",
     using shape_type = typename config_type::shape_type;
     using gtensor::combine_exception;
     using gtensor::detail::check_stack_variadic_args;
+    using gtensor::detail::check_stack_container_args;
     using helpers_for_testing::apply_by_element;
-
+    //0direction,1shapes
+    auto test_data = std::make_tuple(
+        std::make_tuple(size_type{0}, std::make_tuple(shape_type{0})),
+        std::make_tuple(size_type{1}, std::make_tuple(shape_type{0})),
+        std::make_tuple(size_type{0}, std::make_tuple(shape_type{1})),
+        std::make_tuple(size_type{1}, std::make_tuple(shape_type{1})),
+        std::make_tuple(size_type{0}, std::make_tuple(shape_type{1,2,3})),
+        std::make_tuple(size_type{1}, std::make_tuple(shape_type{1,2,3})),
+        std::make_tuple(size_type{2}, std::make_tuple(shape_type{1,2,3})),
+        std::make_tuple(size_type{3}, std::make_tuple(shape_type{1,2,3})),
+        std::make_tuple(size_type{0}, std::make_tuple(shape_type{0}, shape_type{0})),
+        std::make_tuple(size_type{1}, std::make_tuple(shape_type{0}, shape_type{0})),
+        std::make_tuple(size_type{0}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2,3})),
+        std::make_tuple(size_type{1}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2,3})),
+        std::make_tuple(size_type{2}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2,3})),
+        std::make_tuple(size_type{3}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2,3})),
+        std::make_tuple(size_type{0}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2,3}, shape_type{1,2,3})),
+        std::make_tuple(size_type{1}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2,3}, shape_type{1,2,3})),
+        std::make_tuple(size_type{2}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2,3}, shape_type{1,2,3})),
+        std::make_tuple(size_type{3}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2,3}, shape_type{1,2,3}))
+    );
     SECTION("test_check_stack_variadic_args_nothrow")
     {
-        //0direction,1shapes
-        auto test_data = std::make_tuple(
-            std::make_tuple(size_type{0}, std::make_tuple(shape_type{0})),
-            std::make_tuple(size_type{1}, std::make_tuple(shape_type{0})),
-            std::make_tuple(size_type{0}, std::make_tuple(shape_type{1})),
-            std::make_tuple(size_type{1}, std::make_tuple(shape_type{1})),
-            std::make_tuple(size_type{0}, std::make_tuple(shape_type{1,2,3})),
-            std::make_tuple(size_type{1}, std::make_tuple(shape_type{1,2,3})),
-            std::make_tuple(size_type{2}, std::make_tuple(shape_type{1,2,3})),
-            std::make_tuple(size_type{3}, std::make_tuple(shape_type{1,2,3})),
-            std::make_tuple(size_type{0}, std::make_tuple(shape_type{0}, shape_type{0})),
-            std::make_tuple(size_type{1}, std::make_tuple(shape_type{0}, shape_type{0})),
-            std::make_tuple(size_type{0}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2,3})),
-            std::make_tuple(size_type{1}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2,3})),
-            std::make_tuple(size_type{2}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2,3})),
-            std::make_tuple(size_type{3}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2,3})),
-            std::make_tuple(size_type{0}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2,3}, shape_type{1,2,3})),
-            std::make_tuple(size_type{1}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2,3}, shape_type{1,2,3})),
-            std::make_tuple(size_type{2}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2,3}, shape_type{1,2,3})),
-            std::make_tuple(size_type{3}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2,3}, shape_type{1,2,3}))
-        );
         auto test = [](const auto& t){
             auto direction = std::get<0>(t);
             auto shapes = std::get<1>(t);
@@ -49,22 +49,49 @@ TEMPLATE_TEST_CASE("test_check_stack_variadic_args","[test_combine]",
         };
         apply_by_element(test, test_data);
     }
+    SECTION("test_check_stack_container_args_nothrow")
+    {
+        using container_type = typename config_type::template container<shape_type>;
+        auto test = [](const auto& t){
+            auto direction = std::get<0>(t);
+            auto shapes = std::get<1>(t);
+            auto make_shapes_container = [](const auto&...shapes_){
+                return container_type{shapes_...};
+            };
+            auto container = std::apply(make_shapes_container, shapes);
+            REQUIRE_NOTHROW(check_stack_container_args(direction,container));
+        };
+        apply_by_element(test, test_data);
+    }
+}
+
+TEMPLATE_TEST_CASE("test_check_stack_args_exception","[test_combine]",
+    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
+)
+{
+    using config_type = TestType;
+    using size_type = typename config_type::size_type;
+    using shape_type = typename config_type::shape_type;
+    using gtensor::combine_exception;
+    using gtensor::detail::check_stack_container_args;
+    using gtensor::detail::check_stack_variadic_args;
+    using helpers_for_testing::apply_by_element;
+    //0direction,1shapes
+    auto test_data = std::make_tuple(
+        std::make_tuple(size_type{2}, std::make_tuple(shape_type{0})),
+        std::make_tuple(size_type{2}, std::make_tuple(shape_type{1})),
+        std::make_tuple(size_type{4}, std::make_tuple(shape_type{1,2,3})),
+        std::make_tuple(size_type{2}, std::make_tuple(shape_type{1}, shape_type{1})),
+        std::make_tuple(size_type{4}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2,3})),
+        std::make_tuple(size_type{0}, std::make_tuple(shape_type{0}, shape_type{1})),
+        std::make_tuple(size_type{0}, std::make_tuple(shape_type{1}, shape_type{0})),
+        std::make_tuple(size_type{0}, std::make_tuple(shape_type{1,2,3}, shape_type{0})),
+        std::make_tuple(size_type{0}, std::make_tuple(shape_type{0}, shape_type{1,2,3})),
+        std::make_tuple(size_type{0}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2,3}, shape_type{1,1,2,3})),
+        std::make_tuple(size_type{0}, std::make_tuple(shape_type{1,2,3}, shape_type{2,2,3}, shape_type{1,2,3}))
+    );
     SECTION("test_check_stack_variadic_args_exception")
     {
-        //0direction,1shapes
-        auto test_data = std::make_tuple(
-            std::make_tuple(size_type{2}, std::make_tuple(shape_type{0})),
-            std::make_tuple(size_type{2}, std::make_tuple(shape_type{1})),
-            std::make_tuple(size_type{4}, std::make_tuple(shape_type{1,2,3})),
-            std::make_tuple(size_type{2}, std::make_tuple(shape_type{1}, shape_type{1})),
-            std::make_tuple(size_type{4}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2,3})),
-            std::make_tuple(size_type{0}, std::make_tuple(shape_type{0}, shape_type{1})),
-            std::make_tuple(size_type{0}, std::make_tuple(shape_type{1}, shape_type{0})),
-            std::make_tuple(size_type{0}, std::make_tuple(shape_type{1,2,3}, shape_type{0})),
-            std::make_tuple(size_type{0}, std::make_tuple(shape_type{0}, shape_type{1,2,3})),
-            std::make_tuple(size_type{0}, std::make_tuple(shape_type{1,2,3}, shape_type{1,2,3}, shape_type{1,1,2,3})),
-            std::make_tuple(size_type{0}, std::make_tuple(shape_type{1,2,3}, shape_type{2,2,3}, shape_type{1,2,3}))
-        );
         auto test = [](const auto& t){
             auto direction = std::get<0>(t);
             auto shapes = std::get<1>(t);
@@ -72,6 +99,20 @@ TEMPLATE_TEST_CASE("test_check_stack_variadic_args","[test_combine]",
                 check_stack_variadic_args(direction, shapes_...);
             };
             REQUIRE_THROWS_AS(std::apply(apply_shapes, shapes), combine_exception);
+        };
+        apply_by_element(test, test_data);
+    }
+    SECTION("test_check_stack_container_args_exception")
+    {
+        using container_type = typename config_type::template container<shape_type>;
+        auto test = [](const auto& t){
+            auto direction = std::get<0>(t);
+            auto shapes = std::get<1>(t);
+            auto make_shapes_container = [](const auto&...shapes_){
+                return container_type{shapes_...};
+            };
+            auto container = std::apply(make_shapes_container, shapes);
+            REQUIRE_THROWS_AS(check_stack_container_args(direction,container), combine_exception);
         };
         apply_by_element(test, test_data);
     }

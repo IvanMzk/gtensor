@@ -63,6 +63,25 @@ void check_stack_variadic_args(const SizeT& direction, const ShT& shape, const S
     }
 }
 
+template<typename SizeT, typename Container>
+void check_stack_container_args(const SizeT& direction, const Container& shapes){
+    using size_type = SizeT;
+    if (std::empty(shapes)){
+        throw combine_exception("stack empty container");
+    }
+    auto it = shapes.begin();
+    const auto& first_shape = *it;
+    size_type first_dim = first_shape.size();
+    if (direction > first_dim){
+        throw combine_exception{"bad stack direction"};
+    }
+    for(++it; it!=shapes.end(); ++it){
+        if (first_shape != *it){
+            throw combine_exception{"tensors to stack must have equal shapes"};
+        }
+    }
+}
+
 template<typename SizeT, typename ShT, typename...ShTs>
 void check_concatenate_variadic_args(const SizeT& direction, const ShT& shape, const ShTs&...shapes){
     using size_type = SizeT;
@@ -291,12 +310,12 @@ auto widen_tensor(const tensor<Ts...>& t, const typename tensor<Ts...>::size_typ
 
 }   //end of namespace detail
 
-class combiner{
+class combiner
+{
 //join tensors along new direction, tensors must have the same shape
 //variadic
 template<typename SizeT, typename...Us, typename...Ts>
 static auto stack_variadic(const SizeT& direction, const tensor<Us...>& t, const Ts&...ts){
-    static_assert((detail::is_tensor_v<Ts>&&...));
     using tensor_type = tensor<Us...>;
     using config_type = typename tensor_type::config_type;
     using index_type = typename config_type::index_type;
@@ -315,6 +334,28 @@ static auto stack_variadic(const SizeT& direction, const tensor<Us...>& t, const
         }
         return res;
     }
+}
+
+template<typename SizeT, typename Container>
+static auto stack_container(const SizeT& direction, const const Container& ts){
+    using tensor_type = typename Container::value_type;
+    using config_type = typename tensor_type::config_type;
+    using index_type = typename config_type::index_type;
+    using res_value_type = typename tensor_type::value_type;
+
+    // const auto& shape = t.shape();
+    // detail::check_stack_container_args(direction, shape, ts.shape()...);
+    // index_type tensors_number = sizeof...(Ts) + 1;
+    // auto res_shape = detail::make_stack_shape(direction,shape,tensors_number);
+    // if constexpr (sizeof...(Ts) == 0){
+    //     return storage_tensor_factory<config_type, res_value_type>::make(std::move(res_shape), t.begin(), t.end());
+    // }else{
+    //     auto res = storage_tensor_factory<config_type, res_value_type>::make(std::move(res_shape), res_value_type{});
+    //     if (!res.empty()){
+    //         detail::fill_stack(direction, shape, t.size(), res.begin(), t.begin(), ts.begin()...);
+    //     }
+    //     return res;
+    // }
 }
 
 //join tensors along existing direction, tensors must have the same shape except concatenate direction
