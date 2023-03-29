@@ -134,6 +134,14 @@ void check_split_by_equal_parts_args(const tensor<Ts...>& t, const typename tens
     }
 }
 
+template<typename...Ts>
+void check_vsplit_args(const tensor<Ts...>& t){
+    using size_type = typename tensor<Ts...>::size_type;
+    if (t.dim() < size_type{2}){
+        throw combine_exception("vsplit works only for 2 or more dimensions");
+    }
+}
+
 template<typename SizeT, typename ShT>
 auto make_stack_shape(const SizeT& direction, const ShT& shape, const typename ShT::value_type& tensors_number){
     using size_type = SizeT;
@@ -548,6 +556,34 @@ static auto split_equal_parts(const tensor<Ts...>& t, const typename tensor<Ts..
         return res;
     }
 }
+//split in direction 0
+template<typename...Ts, typename IdxContainer>
+static auto vsplit_by_points(const tensor<Ts...>& t, const IdxContainer& split_points){
+    using size_type = typename tensor<Ts...>::size_type;
+    detail::check_vsplit_args(t);
+    const size_type direction{0};
+    return split_by_points(t,split_points,direction);
+}
+template<typename...Ts>
+static auto vsplit_equal_parts(const tensor<Ts...>& t, const typename tensor<Ts...>::index_type& parts_number){
+    using size_type = typename tensor<Ts...>::size_type;
+    detail::check_vsplit_args(t);
+    const size_type direction{0};
+    return split_equal_parts(t,parts_number,direction);
+}
+//split in direction 1, for 1-d split in direction 0
+template<typename...Ts, typename IdxContainer>
+static auto hsplit_by_points(const tensor<Ts...>& t, const IdxContainer& split_points){
+    using size_type = typename tensor<Ts...>::size_type;
+    const size_type direction = t.dim() == size_type{1} ? size_type{0} : size_type{1};
+    return split_by_points(t,split_points,direction);
+}
+template<typename...Ts>
+static auto hsplit_equal_parts(const tensor<Ts...>& t, const typename tensor<Ts...>::index_type& parts_number){
+    using size_type = typename tensor<Ts...>::size_type;
+    const size_type direction = t.dim() == size_type{1} ? size_type{0} : size_type{1};
+    return split_equal_parts(t,parts_number,direction);
+}
 
 public:
 //combiner interface
@@ -611,7 +647,22 @@ template<typename...Ts>
 static auto split(const tensor<Ts...>& t, const typename tensor<Ts...>::index_type& parts_number, const typename tensor<Ts...>::size_type& direction){
     return split_equal_parts(t, parts_number, direction);
 }
-
+template<typename...Ts, typename IdxContainer, std::enable_if_t<detail::is_container_of_type_v<IdxContainer,typename tensor<Ts...>::index_type>,int> =0>
+static auto vsplit(const tensor<Ts...>& t, const IdxContainer& split_points){
+    return vsplit_by_points(t, split_points);
+}
+template<typename...Ts>
+static auto vsplit(const tensor<Ts...>& t, const typename tensor<Ts...>::index_type& parts_number){
+    return vsplit_equal_parts(t, parts_number);
+}
+template<typename...Ts, typename IdxContainer, std::enable_if_t<detail::is_container_of_type_v<IdxContainer,typename tensor<Ts...>::index_type>,int> =0>
+static auto hsplit(const tensor<Ts...>& t, const IdxContainer& split_points){
+    return hsplit_by_points(t, split_points);
+}
+template<typename...Ts>
+static auto hsplit(const tensor<Ts...>& t, const typename tensor<Ts...>::index_type& parts_number){
+    return hsplit_equal_parts(t, parts_number);
+}
 
 };  //end of class combiner
 
@@ -703,51 +754,26 @@ auto split(const tensor<Ts...>& t, const typename tensor<Ts...>::index_type& par
     using config_type = typename tensor<Ts...>::config_type;
     return combiner_selector<config_type>::type::split(t, parts_number, direction);
 }
-
-
-// //call to free functions
-// template<typename...Ts, typename IdxContainer_PartsNumber>
-// auto hsplit(const tensor<Ts...>& t, const IdxContainer_PartsNumber& split_arg){
-//     using size_type = typename tensor<Ts...>::size_type;
-//     size_type direction = t.dim() == size_type{1} ? size_type{0} : size_type{1};
-//     return split(t, split_arg, direction);
-// }
-// template<typename...Ts, typename IdxContainer_PartsNumber>
-// auto vsplit(const tensor<Ts...>& t, const IdxContainer_PartsNumber& split_arg){
-//     using size_type = typename tensor<Ts...>::size_type;
-//     return split(t, split_arg, size_type{0});
-// }
-
-
-// //container is homogeneous, types of tensors must be the same
-// //add variadic, init list overloads
-// // template<typename Container>
-// // auto hstack(const Container& ts){
-// //     static_assert(detail::is_tensor_container_v<Container>);
-// //     using size_type = typename Container::value_type::size_type;
-// //     size_type direction = t.dim() == size_type{1} ? size_type{0} : size_type{1};
-// //     return concatenate(direction, ts);
-// // }
-
-// //add vstack to combiner interface and add implementation not to repack if there are 1-d tensors in ts???
-// // template<typename Container>
-// // auto vstack(const Container& ts){
-// //     static_assert(detail::is_tensor_container_v<Container>);
-// //     return
-// //     // using tensor_type = typename Container::value_type;
-// //     // using config_type = typename tensor_type::config_type;
-// //     // using size_type = typename tensor_type::size_type;
-// //     //typename config_type::template container<>
-// //     //if at least one 1-d tensor in ts, than need reshape all tensors, type to be the same and utilize concatenate(dir, new_container), or need separate implementation
-// //     //or parameterize existing impl
-// //     //if dim == 1 reshape to (1,shape[0])
-// //     //if dim > 1 trivial reshape()
-// //     //
-
-
-// //     //return concatenate(size_type{0}, ts);
-// // }
-
+template<typename...Ts, typename IdxContainer, std::enable_if_t<detail::is_container_of_type_v<IdxContainer,typename tensor<Ts...>::index_type>,int> =0>
+auto vsplit(const tensor<Ts...>& t, const IdxContainer& split_points){
+    using config_type = typename tensor<Ts...>::config_type;
+    return combiner_selector<config_type>::type::vsplit(t, split_points);
+}
+template<typename...Ts>
+auto vsplit(const tensor<Ts...>& t, const typename tensor<Ts...>::index_type& parts_number){
+    using config_type = typename tensor<Ts...>::config_type;
+    return combiner_selector<config_type>::type::vsplit(t, parts_number);
+}
+template<typename...Ts, typename IdxContainer, std::enable_if_t<detail::is_container_of_type_v<IdxContainer,typename tensor<Ts...>::index_type>,int> =0>
+auto hsplit(const tensor<Ts...>& t, const IdxContainer& split_points){
+    using config_type = typename tensor<Ts...>::config_type;
+    return combiner_selector<config_type>::type::hsplit(t, split_points);
+}
+template<typename...Ts>
+auto hsplit(const tensor<Ts...>& t, const typename tensor<Ts...>::index_type& parts_number){
+    using config_type = typename tensor<Ts...>::config_type;
+    return combiner_selector<config_type>::type::hsplit(t, parts_number);
+}
 
 }   //end of namespace gtensor
 

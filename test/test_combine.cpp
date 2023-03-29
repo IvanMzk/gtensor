@@ -1150,267 +1150,175 @@ TEMPLATE_TEST_CASE("test_split_equal_parts","[test_combine]",
     apply_by_element(test, test_data);
 }
 
-// TEMPLATE_TEST_CASE("test_check_vstack_args","[test_combine]",
-//     test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-// )
-// {
-//     using config_type = TestType;
-//     using size_type = typename config_type::size_type;
-//     using shape_type = typename config_type::shape_type;
-//     using gtensor::detail::check_vstack_variadic_args;
-//     using gtensor::detail::check_vstack_container_args;
-//     using helpers_for_testing::apply_by_element;
-//     //0shapes
-//     auto test_data = std::make_tuple(
-//         std::make_tuple(std::make_tuple(shape_type{})),
-//         std::make_tuple(std::make_tuple(shape_type{}, shape_type{})),
-//         std::make_tuple(std::make_tuple(shape_type{}, shape_type{}, shape_type{})),
-//         std::make_tuple(std::make_tuple(shape_type{1})),
-//         std::make_tuple(std::make_tuple(shape_type{5}, shape_type{5}, shape_type{5})),
-//         std::make_tuple(std::make_tuple(shape_type{1,2,3})),
-//         std::make_tuple(std::make_tuple(shape_type{2,3}, shape_type{3})),
-//         std::make_tuple(std::make_tuple(shape_type{2,3}, shape_type{3}, shape_type{3}, shape_type{1,3})),
-//         std::make_tuple(std::make_tuple(shape_type{3}, shape_type{2,3}, shape_type{3}, shape_type{1,3})),
-//         std::make_tuple(std::make_tuple(shape_type{1,2,3}, shape_type{1,2,3})),
-//         std::make_tuple(std::make_tuple(shape_type{10,2,3}, shape_type{5,2,3})),
-//         std::make_tuple(std::make_tuple(shape_type{1,2,3}, shape_type{1,2,3}, shape_type{1,2,3})),
-//         std::make_tuple(std::make_tuple(shape_type{10,2,3}, shape_type{1,2,3}, shape_type{5,2,3}))
-//     );
+TEMPLATE_TEST_CASE("test_split_exception","[test_combine]",
+    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
+)
+{
+    using value_type = double;
+    using config_type = TestType;
+    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using gtensor::combine_exception;
+    using gtensor::split;
+    using helpers_for_testing::apply_by_element;
 
-//     SECTION("test_check_vstack_variadic_args"){
-//         auto test = [](const auto& t){
-//             auto shapes = std::get<0>(t);
-//             auto apply_shapes = [](const auto&...shapes_){
-//                 check_vstack_variadic_args(size_type{0}, shapes_...);
-//             };
-//             REQUIRE_NOTHROW(std::apply(apply_shapes, shapes));
-//         };
-//         apply_by_element(test, test_data);
-//     }
-//     SECTION("test_check_vstack_container_args"){
-//         using value_type = double;
-//         using tensor_type = gtensor::tensor<value_type, config_type>;
-//         using container_type = std::vector<tensor_type>;
-//         auto test = [](const auto& t){
-//             auto shapes = std::get<0>(t);
-//             auto apply_shapes = [](const auto&...shapes_){
-//                 return container_type{tensor_type(shapes_, value_type{})...};
-//             };
-//             auto container = std::apply(apply_shapes, shapes);
-//             REQUIRE_NOTHROW(check_vstack_container_args(size_type{0}, container));
-//         };
-//         apply_by_element(test, test_data);
-//     }
-// }
+    //0tensor,1split_arg,2direction
+    auto test_data = std::make_tuple(
+        //split by points
+        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{1},1),
+        std::make_tuple(tensor_type{{1,2},{3,4},{5,6}},std::vector<int>{1},2),
+        //split by equal parts
+        std::make_tuple(tensor_type{1,2,3,4,5},1,1),
+        std::make_tuple(tensor_type{1,2,3,4,5},0,0),
+        std::make_tuple(tensor_type{1,2,3,4,5},2,0),
+        std::make_tuple(tensor_type{{1,2},{3,4},{5,6}},1,2),
+        std::make_tuple(tensor_type{{1,2},{3,4},{5,6}},0,0),
+        std::make_tuple(tensor_type{{1,2},{3,4},{5,6}},4,0)
+    );
+    auto test = [](const auto& t){
+        auto ten = std::get<0>(t);
+        auto split_arg = std::get<1>(t);
+        auto direction = std::get<2>(t);
+        REQUIRE_THROWS_AS(split(ten,split_arg,direction), combine_exception);
+    };
+    apply_by_element(test, test_data);
+}
 
+TEMPLATE_TEST_CASE("test_vsplit","[test_combine]",
+    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
+)
+{
+    using value_type = double;
+    using config_type = TestType;
+    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using result_type = typename config_type::template container<tensor_type>;
+    using gtensor::vsplit;
+    using helpers_for_testing::apply_by_element;
 
+    SECTION("test_vsplit_nothrow")
+    {
+        //0tensor,1split_arg,2expected
+        auto test_data = std::make_tuple(
+            //split by points
+            std::make_tuple(tensor_type{{1,2},{3,4},{5,6},{7,8},{9,10}},std::vector<int>{2},result_type{tensor_type{{1,2},{3,4}},tensor_type{{5,6},{7,8},{9,10}}}),
+            std::make_tuple(tensor_type{{1,2},{3,4},{5,6},{7,8},{9,10}},std::vector<int>{1,3},result_type{tensor_type{{1,2}},tensor_type{{3,4},{5,6}},tensor_type{{7,8},{9,10}}}),
+            std::make_tuple(
+                tensor_type{{1,2},{3,4},{5,6},{7,8},{9,10}},
+                std::initializer_list<int>{1,2,3,4},
+                result_type{tensor_type{{1,2}},tensor_type{{3,4}},tensor_type{{5,6}},tensor_type{{7,8}},tensor_type{{9,10}}}
+            ),
+            std::make_tuple(
+                tensor_type{{{1},{2}},{{3},{4}},{{5},{6}},{{7},{8}},{{9},{10}}},
+                gtensor::tensor<std::size_t>{1,3},
+                result_type{tensor_type{{{1},{2}}},tensor_type{{{3},{4}},{{5},{6}}},tensor_type{{{7},{8}},{{9},{10}}}}
+            ),
+            //split by equal parts
+            std::make_tuple(tensor_type{}.reshape(1,0),1,result_type{tensor_type{}.reshape(1,0).copy()}),
+            std::make_tuple(tensor_type{}.reshape(3,0),3,result_type{tensor_type{}.reshape(1,0).copy(),tensor_type{}.reshape(1,0).copy(),tensor_type{}.reshape(1,0).copy()}),
+            std::make_tuple(tensor_type{{1,2},{3,4},{5,6},{7,8},{9,10}},1,result_type{tensor_type{{1,2},{3,4},{5,6},{7,8},{9,10}}}),
+            std::make_tuple(tensor_type{{1,2},{3,4},{5,6},{7,8},{9,10}},5,result_type{tensor_type{{1,2}},tensor_type{{3,4}},tensor_type{{5,6}},tensor_type{{7,8}},tensor_type{{9,10}}}),
+            std::make_tuple(
+                tensor_type{{{1},{2}},{{3},{4}},{{5},{6}},{{7},{8}}},
+                2,
+                result_type{tensor_type{{{1},{2}},{{3},{4}}},tensor_type{{{5},{6}},{{7},{8}}}}
+            )
+        );
+        auto test = [](const auto& t){
+            auto ten = std::get<0>(t);
+            auto split_arg = std::get<1>(t);
+            auto expected = std::get<2>(t);
+            auto result = vsplit(ten, split_arg);
+            REQUIRE(expected.size() == result.size());
+            auto result_it = result.begin();
+            for (auto expected_it = expected.begin(); expected_it!=expected.end(); ++expected_it, ++result_it){
+                REQUIRE((*result_it).equals(*expected_it));
+            }
+        };
+        apply_by_element(test, test_data);
+    }
+    SECTION("test_vsplit_exception")
+    {
+        using gtensor::combine_exception;
+        //0tensor,1split_arg
+        auto test_data = std::make_tuple(
+            std::make_tuple(tensor_type{1,2,3},std::vector<int>{1}),
+            std::make_tuple(tensor_type{1,2,3},3),
+            std::make_tuple(tensor_type{{1,2},{3,4},{5,6},{7,8},{9,10}},2)
+        );
+        auto test = [](const auto& t){
+            auto ten = std::get<0>(t);
+            auto split_arg = std::get<1>(t);
+            REQUIRE_THROWS_AS(vsplit(ten, split_arg), combine_exception);
+        };
+        apply_by_element(test, test_data);
+    }
+}
 
-// TEMPLATE_TEST_CASE("test_check_vstack_args_exception","[test_combine]",
-//     test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-// )
-// {
-//     using config_type = TestType;
-//     using size_type = typename config_type::size_type;
-//     using shape_type = typename config_type::shape_type;
-//     using gtensor::combine_exception;
-//     using gtensor::detail::check_vstack_variadic_args;
-//     using gtensor::detail::check_vstack_container_args;
-//     using helpers_for_testing::apply_by_element;
-//     //0shapes
-//     auto test_data = std::make_tuple(
-//         std::make_tuple(std::make_tuple(shape_type{}, shape_type{1})),
-//         std::make_tuple(std::make_tuple(shape_type{1}, shape_type{})),
-//         std::make_tuple(std::make_tuple(shape_type{1}, shape_type{2})),
-//         std::make_tuple(std::make_tuple(shape_type{2,3}, shape_type{4})),
-//         std::make_tuple(std::make_tuple(shape_type{2,3}, shape_type{3}, shape_type{3}, shape_type{1,2})),
-//         std::make_tuple(std::make_tuple(shape_type{1,1,3}, shape_type{3})),
-//         std::make_tuple(std::make_tuple(shape_type{1,1,3}, shape_type{1,3})),
-//         std::make_tuple(std::make_tuple(shape_type{2,3,4}, shape_type{3,4})),
-//         std::make_tuple(std::make_tuple(shape_type{1,3,3}, shape_type{1,2,3})),
-//         std::make_tuple(std::make_tuple(shape_type{10,2,4}, shape_type{5,2,3})),
-//         std::make_tuple(std::make_tuple(shape_type{1,2,3}, shape_type{1,3,3}, shape_type{1,2,3}))
-//     );
+TEMPLATE_TEST_CASE("test_hsplit","[test_combine]",
+    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
+)
+{
+    using value_type = double;
+    using config_type = TestType;
+    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using result_type = typename config_type::template container<tensor_type>;
+    using gtensor::hsplit;
+    using helpers_for_testing::apply_by_element;
 
-//     SECTION("test_check_vstack_variadic_args_exception"){
-//         auto test = [](const auto& t){
-//             auto shapes = std::get<0>(t);
-//             auto apply_shapes = [](const auto&...shapes_){
-//                 check_vstack_variadic_args(size_type{0}, shapes_...);
-//             };
-//             REQUIRE_THROWS_AS(std::apply(apply_shapes, shapes), combine_exception);
-//         };
-//         apply_by_element(test, test_data);
-//     }
-//     SECTION("test_check_vstack_container_args_exception"){
-//         using value_type = double;
-//         using tensor_type = gtensor::tensor<value_type, config_type>;
-//         using container_type = std::vector<tensor_type>;
-//         auto test = [](const auto& t){
-//             auto shapes = std::get<0>(t);
-//             auto apply_shapes = [](const auto&...shapes_){
-//                 return container_type{tensor_type(shapes_, value_type{})...};
-//             };
-//             auto container = std::apply(apply_shapes, shapes);
-//             REQUIRE_THROWS_AS(check_vstack_container_args(size_type{0}, container), combine_exception);
-//         };
-//         apply_by_element(test, test_data);
-//     }
-// }
-
-// TEST_CASE("test_is_index_container","[test_combine]"){
-//     using gtensor::tensor;
-//     using config_type = gtensor::config::default_config;
-//     using index_type = typename config_type::index_type;
-//     using gtensor::detail::is_index_container_v;
-
-//     REQUIRE(is_index_container_v<std::vector<int>,int>);
-//     REQUIRE(is_index_container_v<std::vector<index_type>,index_type>);
-//     REQUIRE(is_index_container_v<std::array<index_type,3>,index_type>);
-//     REQUIRE(is_index_container_v<tensor<index_type>,index_type>);
-//     REQUIRE(!is_index_container_v<std::vector<std::string>,int>);
-// }
-
-
-// TEMPLATE_TEST_CASE("test_make_vstack_shape","[test_combine]",
-//     test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-// )
-// {
-//     using config_type = TestType;
-//     using size_type = typename config_type::size_type;
-//     using shape_type = typename config_type::shape_type;
-//     using gtensor::detail::make_vstack_shape;
-//     using helpers_for_testing::apply_by_element;
-//     //0shapes,1expected
-//     auto test_data = std::make_tuple(
-//         std::make_tuple(std::make_tuple(shape_type{}), shape_type{}),
-//         std::make_tuple(std::make_tuple(shape_type{}, shape_type{}), shape_type{}),
-//         std::make_tuple(std::make_tuple(shape_type{}, shape_type{}, shape_type{}), shape_type{}),
-//         std::make_tuple(std::make_tuple(shape_type{1}), shape_type{1,1}),
-//         std::make_tuple(std::make_tuple(shape_type{5}, shape_type{5}, shape_type{5}), shape_type{3,5}),
-//         std::make_tuple(std::make_tuple(shape_type{1,2,3}), shape_type{1,2,3}),
-//         std::make_tuple(std::make_tuple(shape_type{2,3}, shape_type{3}), shape_type{3,3}),
-//         std::make_tuple(std::make_tuple(shape_type{2,3}, shape_type{3}, shape_type{3}, shape_type{1,3}), shape_type{5,3}),
-//         std::make_tuple(std::make_tuple(shape_type{3}, shape_type{2,3}, shape_type{3}, shape_type{1,3}), shape_type{5,3}),
-//         std::make_tuple(std::make_tuple(shape_type{1,2,3}, shape_type{1,2,3}), shape_type{2,2,3}),
-//         std::make_tuple(std::make_tuple(shape_type{10,2,3}, shape_type{5,2,3}), shape_type{15,2,3}),
-//         std::make_tuple(std::make_tuple(shape_type{1,2,3}, shape_type{1,2,3}, shape_type{1,2,3}), shape_type{3,2,3}),
-//         std::make_tuple(std::make_tuple(shape_type{10,2,3}, shape_type{1,2,3}, shape_type{5,2,3}), shape_type{16,2,3})
-//     );
-//     auto test = [](const auto& t){
-//         auto shapes = std::get<0>(t);
-//         auto expected = std::get<1>(t);
-//         auto apply_shapes = [](const auto&...shapes_){
-//             return make_vstack_shape(size_type{0}, shapes_...);
-//         };
-//         auto result = std::apply(apply_shapes, shapes);
-//         REQUIRE(result == expected);
-//     };
-//     apply_by_element(test, test_data);
-// }
-
-
-
-
-
-
-// TEST_CASE("test_max_block_dim","test_combine"){
-//     using value_type = int;
-//     using tensor_type = gtensor::tensor<value_type>;
-//     using size_type = typename tensor_type::size_type;
-//     using gtensor::detail::max_block_dim;
-//     value_type v{};
-
-//     REQUIRE(max_block_dim(std::initializer_list<tensor_type>{tensor_type({5},v)}) == size_type{1});
-//     REQUIRE(max_block_dim(std::initializer_list<tensor_type>{tensor_type({5},v), tensor_type({5,4},v)}) == size_type{2});
-//     REQUIRE(max_block_dim(std::initializer_list<tensor_type>{tensor_type({5,4},v), tensor_type({5},v)}) == size_type{2});
-//     REQUIRE(max_block_dim(
-//         std::initializer_list<std::initializer_list<tensor_type>>{{tensor_type({5,4},v), tensor_type({5},v)}, {tensor_type({5,4},v), tensor_type({3,3,3},v), tensor_type({5},v)}}
-//             ) == size_type{3}
-//     );
-// }
-
-// TEST_CASE("test_make_block_shape","test_combine"){
-//     using value_type = int;
-//     using tensor_type = gtensor::tensor<value_type>;
-//     using size_type = typename tensor_type::size_type;
-//     using shape_type = typename tensor_type::shape_type;
-//     using gtensor::detail::nested_initialiser_list_depth;
-//     using gtensor::detail::nested_init_list1;
-//     using gtensor::detail::nested_init_list2;
-//     using gtensor::detail::nested_init_list3;
-//     using gtensor::combine_exception;
-//     using gtensor::detail::make_block_shape;
-//     using gtensor::detail::max_block_dim;
-//     value_type v{};
-
-//     auto make_block_shape_caller = [](auto blocks){
-//         size_type res_dim = std::max(nested_initialiser_list_depth<decltype(blocks)>::value, max_block_dim(blocks));
-//         return make_block_shape(blocks, res_dim);
-//     };
-
-//     REQUIRE(make_block_shape_caller(nested_init_list1<tensor_type>{tensor_type({2},v)}) == shape_type{2});
-//     REQUIRE(make_block_shape_caller(nested_init_list2<tensor_type>{{tensor_type({2},v)}}) == shape_type{1,2});
-//     REQUIRE(make_block_shape_caller(nested_init_list3<tensor_type>{{{tensor_type({2},v)}}}) == shape_type{1,1,2});
-//     REQUIRE(make_block_shape_caller(nested_init_list1<tensor_type>{tensor_type({3,4},v)}) == shape_type{3,4});
-//     REQUIRE(make_block_shape_caller(nested_init_list2<tensor_type>{{tensor_type({3,4},v)}}) == shape_type{3,4});
-//     REQUIRE(make_block_shape_caller(nested_init_list3<tensor_type>{{{tensor_type({3,4},v)}}}) == shape_type{1,3,4});
-
-//     REQUIRE(make_block_shape_caller(nested_init_list1<tensor_type>{tensor_type({2},v), tensor_type({3},v), tensor_type({4},v)}) == shape_type{9});
-//     REQUIRE(make_block_shape_caller(nested_init_list2<tensor_type>{{tensor_type({2},v), tensor_type({3},v), tensor_type({4},v)}}) == shape_type{1,9});
-//     REQUIRE(make_block_shape_caller(nested_init_list2<tensor_type>{{tensor_type({2},v)}, {tensor_type({2},v)}, {tensor_type({2},v)}}) == shape_type{3,2});
-//     REQUIRE(make_block_shape_caller(nested_init_list2<tensor_type>{{tensor_type({1},v), tensor_type({2},v)}, {tensor_type({3},v)}}) == shape_type{2,3});
-//     REQUIRE(make_block_shape_caller(nested_init_list3<tensor_type>{{{tensor_type({2},v), tensor_type({3},v), tensor_type({4},v)}}}) == shape_type{1,1,9});
-//     REQUIRE(make_block_shape_caller(nested_init_list3<tensor_type>{{{tensor_type({2},v)}}, {{tensor_type({2},v)}}, {{tensor_type({2},v)}}}) == shape_type{3,1,2});
-//     REQUIRE(make_block_shape_caller(nested_init_list3<tensor_type>{{{tensor_type({2},v)}, {tensor_type({2},v)}}, {{tensor_type({2},v)}, {tensor_type({2},v)}}}) == shape_type{2,2,2});
-
-//     REQUIRE(make_block_shape_caller(nested_init_list1<tensor_type>{tensor_type({2},v), tensor_type({1,3},v)}) == shape_type{1,5});
-//     REQUIRE(make_block_shape_caller(nested_init_list1<tensor_type>{tensor_type({1,3},v), tensor_type({2},v), tensor_type({1,4},v)}) == shape_type{1,9});
-//     REQUIRE(make_block_shape_caller(nested_init_list1<tensor_type>{tensor_type({2},v), tensor_type({1,1,3},v)}) == shape_type{1,1,5});
-//     REQUIRE(make_block_shape_caller(nested_init_list1<tensor_type>{tensor_type({1,3},v), tensor_type({2},v), tensor_type({1,1,4},v)}) == shape_type{1,1,9});
-//     REQUIRE(make_block_shape_caller(nested_init_list1<tensor_type>{tensor_type({2,2},v), tensor_type({2,3},v)}) == shape_type{2,5});
-//     REQUIRE(make_block_shape_caller(nested_init_list1<tensor_type>{tensor_type({2,2},v), tensor_type({2,3},v), tensor_type({2,4},v)}) == shape_type{2,9});
-
-//     REQUIRE(make_block_shape_caller(nested_init_list2<tensor_type>{{tensor_type({2},v)}, {tensor_type({2,2},v)}}) == shape_type{3,2});
-//     REQUIRE(make_block_shape_caller(nested_init_list2<tensor_type>{{tensor_type({2,3},v), tensor_type({2,4},v)}}) == shape_type{2,7});
-//     REQUIRE(make_block_shape_caller(nested_init_list2<tensor_type>{{tensor_type({3,2},v)}, {tensor_type({4,2},v)}}) == shape_type{7,2});
-//     REQUIRE(make_block_shape_caller(nested_init_list2<tensor_type>{{tensor_type({2,3},v), tensor_type({2,4},v)},{tensor_type({5,7},v)}}) == shape_type{7,7});
-//     REQUIRE(make_block_shape_caller(nested_init_list2<tensor_type>{{tensor_type({2,3},v), tensor_type({2,4},v)},{tensor_type({5,2},v), tensor_type({5,5},v)}}) == shape_type{7,7});
-//     REQUIRE(make_block_shape_caller(nested_init_list2<tensor_type>{{tensor_type({3,5},v)}, {tensor_type({4,5},v)}, {tensor_type({2,1},v), tensor_type({2,4},v)}}) == shape_type{9,5});
-//     REQUIRE(make_block_shape_caller(nested_init_list3<tensor_type>{
-//         {{tensor_type({2,2},v), tensor_type({2,3},v)}, {tensor_type({3,2},v), tensor_type({3,3},v)}},
-//         {{tensor_type({3,3,2},v), tensor_type({3,3,3},v)}, {tensor_type({3,2,5},v)}}}) == shape_type{4,5,5});
-
-//     REQUIRE_THROWS_AS(make_block_shape_caller(nested_init_list3<tensor_type>{{{tensor_type({2},v)}}, {{tensor_type({2},v)}, {tensor_type({2},v)}}}), combine_exception);
-//     REQUIRE_THROWS_AS(make_block_shape_caller(nested_init_list2<tensor_type>{{tensor_type({2},v)}, {tensor_type({3},v)}}), combine_exception);
-//     REQUIRE_THROWS_AS(make_block_shape_caller(nested_init_list1<tensor_type>{tensor_type({2},v), tensor_type({2,3},v)}), combine_exception);
-//     REQUIRE_THROWS_AS(make_block_shape_caller(nested_init_list1<tensor_type>{tensor_type({2,3},v), tensor_type({2},v)}), combine_exception);
-//     REQUIRE_THROWS_AS(make_block_shape_caller(nested_init_list2<tensor_type>{{tensor_type({2,3},v), tensor_type({2},v)}}), combine_exception);
-//     REQUIRE_THROWS_AS(make_block_shape_caller(nested_init_list2<tensor_type>{{tensor_type({2},v), tensor_type({2,3},v)}}), combine_exception);
-//     REQUIRE_THROWS_AS(make_block_shape_caller(nested_init_list3<tensor_type>{{{tensor_type({2},v)}}, {{tensor_type({2,2},v)}}}), combine_exception);
-// }
-
-
-
-
-// TEMPLATE_TEST_CASE("test_split_exception","[test_combine]",
-//     test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-// )
-// {
-//     using value_type = double;
-//     using config_type = TestType;
-//     using tensor_type = gtensor::tensor<value_type, config_type>;
-//     using gtensor::combine_exception;
-//     using gtensor::split;
-
-//     REQUIRE_THROWS_AS(split(tensor_type{1},{},1), combine_exception);
-//     REQUIRE_THROWS_AS(split(tensor_type{1,2,3,4,5},{},1), combine_exception);
-//     REQUIRE_THROWS_AS(split(tensor_type{{1,2},{3,4},{5,6}},{},2), combine_exception);
-//     REQUIRE_THROWS_AS(split(tensor_type{1,2,3,4,5},0,0), combine_exception);
-//     REQUIRE_THROWS_AS(split(tensor_type{1,2,3,4,5},2,0), combine_exception);
-//     REQUIRE_THROWS_AS(split(tensor_type{1,2,3,4,5},1,1), combine_exception);
-//     REQUIRE_THROWS_AS(split(tensor_type{{1,2},{3,4},{5,6}},0,0), combine_exception);
-//     REQUIRE_THROWS_AS(split(tensor_type{{1,2},{3,4},{5,6}},4,0), combine_exception);
-//     REQUIRE_THROWS_AS(split(tensor_type{{1,2},{3,4},{5,6}},2,2), combine_exception);
-// }
-
+    SECTION("test_hsplit_nothrow")
+    {
+        //0tensor,1split_arg,2expected
+        auto test_data = std::make_tuple(
+            //split by points
+            std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{2},result_type{tensor_type{1,2},tensor_type{3,4,5}}),
+            std::make_tuple(tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12}},std::vector<int>{1},result_type{tensor_type{{1},{5},{9}},tensor_type{{2,3,4},{6,7,8},{10,11,12}}}),
+            std::make_tuple(
+                tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12}},
+                std::vector<int>{1,3},
+                result_type{tensor_type{{1},{5},{9}},tensor_type{{2,3},{6,7},{10,11}},tensor_type{{4},{8},{12}}}
+            ),
+            std::make_tuple(
+                tensor_type{{{1},{2},{3},{4}},{{5},{6},{7},{8}},{{9},{10},{11},{12}}},
+                gtensor::tensor<std::size_t>{1,3},
+                result_type{tensor_type{{{1}},{{5}},{{9}}},tensor_type{{{2},{3}},{{6},{7}},{{10},{11}}},tensor_type{{{4}},{{8}},{{12}}}}
+            ),
+            //split by equal parts
+            std::make_tuple(tensor_type{}.reshape(0,3),3,result_type{tensor_type{}.reshape(0,1).copy(),tensor_type{}.reshape(0,1).copy(),tensor_type{}.reshape(0,1).copy()}),
+            std::make_tuple(tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12}},1,result_type{tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12}}}),
+            std::make_tuple(tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12}},2,result_type{tensor_type{{1,2},{5,6},{9,10}},tensor_type{{3,4},{7,8},{11,12}}}),
+            std::make_tuple(
+                tensor_type{{{1},{2},{3},{4}},{{5},{6},{7},{8}},{{9},{10},{11},{12}}},
+                2,
+                result_type{tensor_type{{{1},{2}},{{5},{6}},{{9},{10}}},tensor_type{{{3},{4}},{{7},{8}},{{11},{12}}}}
+            )
+        );
+        auto test = [](const auto& t){
+            auto ten = std::get<0>(t);
+            auto split_arg = std::get<1>(t);
+            auto expected = std::get<2>(t);
+            auto result = hsplit(ten, split_arg);
+            REQUIRE(expected.size() == result.size());
+            auto result_it = result.begin();
+            for (auto expected_it = expected.begin(); expected_it!=expected.end(); ++expected_it, ++result_it){
+                REQUIRE((*result_it).equals(*expected_it));
+            }
+        };
+        apply_by_element(test, test_data);
+    }
+    SECTION("test_hsplit_exception")
+    {
+        using gtensor::combine_exception;
+        //0tensor,1split_arg
+        auto test_data = std::make_tuple(
+            std::make_tuple(tensor_type{1},2),
+            std::make_tuple(tensor_type{1,2,3},2),
+            std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9}},2)
+        );
+        auto test = [](const auto& t){
+            auto ten = std::get<0>(t);
+            auto split_arg = std::get<1>(t);
+            REQUIRE_THROWS_AS(hsplit(ten, split_arg), combine_exception);
+        };
+        apply_by_element(test, test_data);
+    }
+}
 
