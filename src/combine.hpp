@@ -551,16 +551,16 @@ static auto split_equal_parts(const tensor<Ts...>& t, const typename tensor<Ts..
 
 public:
 //combiner interface
-template<typename SizeT, typename...Us, typename...Ts>
-static auto stack(const SizeT& direction, const tensor<Us...>& t, const Ts&...ts){
+template<typename...Us, typename...Ts>
+static auto stack(const typename tensor<Us...>::size_type& direction, const tensor<Us...>& t, const Ts&...ts){
     return stack_variadic(direction, t, ts...);
 }
-template<typename SizeT, typename...Us, typename...Ts>
-static auto concatenate(const SizeT& direction, const tensor<Us...>& t, const Ts&...ts){
+template<typename...Us, typename...Ts>
+static auto concatenate(const typename tensor<Us...>::size_type& direction, const tensor<Us...>& t, const Ts&...ts){
     return concatenate_variadic(direction, t, ts...);
 }
-template<typename SizeT, typename Container>
-static auto concatenate(const SizeT& direction, const Container& ts){
+template<typename Container>
+static auto concatenate(const typename Container::value_type::size_type& direction, const Container& ts){
     return concatenate_container(direction, ts);
 }
 template<typename...Us, typename...Ts>
@@ -603,8 +603,8 @@ template<typename...Ts, typename IdxContainer, std::enable_if_t<detail::is_conta
 static auto split(const tensor<Ts...>& t, const IdxContainer& split_points, const typename tensor<Ts...>::size_type& direction){
     return split_by_points(t, split_points, direction);
 }
-template<typename...Ts, typename SizeT>
-static auto split(const tensor<Ts...>& t, std::initializer_list<typename tensor<Ts...>::index_type> split_points, const SizeT& direction){
+template<typename...Ts>
+static auto split(const tensor<Ts...>& t, std::initializer_list<typename tensor<Ts...>::index_type> split_points, const typename tensor<Ts...>::size_type& direction){
     return split_by_points(t, split_points, direction);
 }
 template<typename...Ts>
@@ -615,22 +615,21 @@ static auto split(const tensor<Ts...>& t, const typename tensor<Ts...>::index_ty
 
 };  //end of class combiner
 
-//combine module free functions
-//call to combiner interface
-template<typename SizeT, typename...Us, typename...Ts>
-auto stack(const SizeT& direction, const tensor<Us...>& t, const Ts&...ts){
+//combine module interface
+template<typename...Us, typename...Ts>
+auto stack(const typename tensor<Us...>::size_type& direction, const tensor<Us...>& t, const Ts&...ts){
     static_assert((detail::is_tensor_v<Ts>&&...));
     using config_type = typename tensor<Us...>::config_type;
     return combiner_selector<config_type>::type::stack(direction, t, ts...);
 }
-template<typename SizeT, typename...Us, typename...Ts>
-auto concatenate(const SizeT& direction, const tensor<Us...>& t, const Ts&...ts){
+template<typename...Us, typename...Ts>
+auto concatenate(const typename tensor<Us...>::size_type& direction, const tensor<Us...>& t, const Ts&...ts){
     static_assert((detail::is_tensor_v<Ts>&&...));
     using config_type = typename tensor<Us...>::config_type;
     return combiner_selector<config_type>::type::concatenate(direction, t, ts...);
 }
-template<typename SizeT, typename Container>
-auto concatenate(const SizeT& direction, const Container& ts){
+template<typename Container>
+auto concatenate(const typename Container::value_type::size_type& direction, const Container& ts){
     static_assert(detail::is_tensor_container_v<Container>);
     using config_type = typename Container::value_type::config_type;
     return combiner_selector<config_type>::type::concatenate(direction, ts);
