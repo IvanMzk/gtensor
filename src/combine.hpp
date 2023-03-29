@@ -568,7 +568,7 @@ static auto concatenate_container(const SizeT& direction, const Container& ts){
     }
     return res;
 }
-//vstack - concatenate along zero direction, reshapes 1-d tensors by adding leading 1 (n) -> (1,n)
+//vstack - concatenate along 0 direction, reshapes 1-d tensors by adding leading 1 (n) -> (1,n)
 template<typename...Us, typename...Ts>
 static auto vstack_variadic(const tensor<Us...>& t, const Ts&...ts){
     using tensor_type = tensor<Us...>;
@@ -607,7 +607,21 @@ static auto vstack_container(const Container& ts){
         return concatenate_container(direction, ts);
     }
 }
-
+//hstack - concatenate along 1 direction, 1-d tensors along 0 direction
+template<typename...Us, typename...Ts>
+static auto hstack_variadic(const tensor<Us...>& t, const Ts&...ts){
+    using tensor_type = tensor<Us...>;
+    using size_type = typename tensor_type::size_type;
+    const size_type direction = t.dim()==size_type{1} ? size_type{0}:size_type{1};
+    return concatenate_variadic(direction, t, ts...);
+}
+template<typename Container>
+static auto hstack_container(const Container& ts){
+    using tensor_type = typename Container::value_type;
+    using size_type = typename tensor_type::size_type;
+    const size_type direction = (*ts.begin()).dim()==size_type{1} ? size_type{0}:size_type{1};
+    return concatenate_container(direction, ts);
+}
 
 //Assemble tensor from blocks
 //blocks in nested tuples
@@ -789,6 +803,14 @@ template<typename Container>
 static auto vstack(const Container& ts){
     return vstack_container(ts);
 }
+template<typename...Us, typename...Ts>
+static auto hstack(const tensor<Us...>& t, const Ts&...ts){
+    return hstack_variadic(t, ts...);
+}
+template<typename Container>
+static auto hstack(const Container& ts){
+    return hstack_container(ts);
+}
 template<typename...Ts>
 static auto block(const std::tuple<Ts...>& blocks){
     return block_tuple(blocks);
@@ -858,6 +880,20 @@ auto vstack(const Container& ts){
     using tensor_type = typename Container::value_type;
     using config_type = typename tensor_type::config_type;
     return combiner_selector<config_type>::type::vstack(ts);
+}
+template<typename...Us, typename...Ts>
+auto hstack(const tensor<Us...>& t, const Ts&...ts){
+    static_assert((detail::is_tensor_v<Ts>&&...));
+    using tensor_type = tensor<Us...>;
+    using config_type = typename tensor_type::config_type;
+    return combiner_selector<config_type>::type::hstack(t, ts...);
+}
+template<typename Container>
+auto hstack(const Container& ts){
+    static_assert(detail::is_tensor_container_v<Container>);
+    using tensor_type = typename Container::value_type;
+    using config_type = typename tensor_type::config_type;
+    return combiner_selector<config_type>::type::hstack(ts);
 }
 template<typename...Ts>
 auto block(const std::tuple<Ts...>& blocks){
