@@ -161,6 +161,28 @@ void check_vsplit_args(const tensor<Ts...>& t){
     }
 }
 
+template<typename Container>
+auto make_shapes_container(const Container& ts){
+    using tensor_type = typename Container::value_type;
+    using config_type = typename tensor_type::config_type;
+    using shape_type = typename tensor_type::shape_type;
+    typename config_type::template container<shape_type> shapes{};
+    shapes.reserve(ts.size());
+    std::for_each(ts.begin(), ts.end(), [&shapes](const auto& t)mutable{shapes.push_back(t.shape());});
+    return shapes;
+}
+
+template<typename Container>
+auto make_iterators_container(const Container& ts){
+    using tensor_type = typename Container::value_type;
+    using config_type = typename tensor_type::config_type;
+    using iterator_type = decltype(std::declval<const tensor_type>().begin());
+    typename config_type::template container<iterator_type> iterators{};
+    iterators.reserve(ts.size());
+    std::for_each(ts.begin(), ts.end(), [&iterators](const auto& t)mutable{iterators.push_back(t.begin());});
+    return iterators;
+}
+
 template<typename SizeT, typename ShT>
 auto make_stack_shape(const SizeT& direction, const ShT& shape, const typename ShT::value_type& tensors_number){
     using size_type = SizeT;
@@ -222,6 +244,21 @@ auto fill_stack(const SizeT& direction, const ShT& shape, const typename ShT::va
     index_type iterations_number = size/chunk_size;
     for (index_type i{0}; i!=iterations_number; ++i){
         (filler(it),...);
+    }
+}
+
+template<typename SizeT, typename ShT, typename ResultIt, typename ItContainer>
+auto fill_stack_container(const SizeT& direction, const ShT& shape, ResultIt res_it, ItContainer& iterators){
+    using index_type = typename ShT::value_type;
+    index_type chunk_size = make_stack_chunk_size(direction, shape);
+    index_type iterations_number = std::accumulate(shape.begin(), shape.begin()+direction, index_type{1}, std::multiplies{});
+    for (index_type i{0}; i!=iterations_number; ++i){
+        for (auto it=iterators.begin(); it!=iterators.end(); ++it){
+            auto& iterator = *it;
+            for (index_type j{0}; j!=chunk_size; ++j,++iterator,++res_it){
+                *res_it = *iterator;
+            }
+        }
     }
 }
 
@@ -323,9 +360,9 @@ static auto stack_variadic(const SizeT& direction, const tensor<Us...>& t, const
 
     const auto& shape = t.shape();
     detail::check_stack_variadic_args(direction, shape, ts.shape()...);
-    index_type tensors_number = sizeof...(Ts) + 1;
-    auto res_shape = detail::make_stack_shape(direction,shape,tensors_number);
-    if constexpr (sizeof...(Ts) == 0){
+    constexpr auto tensors_number = sizeof...(Ts) + 1;
+    auto res_shape = detail::make_stack_shape(direction, shape, index_type{tensors_number});
+    if constexpr (tensors_number == 1){
         return storage_tensor_factory<config_type, res_value_type>::make(std::move(res_shape), t.begin(), t.end());
     }else{
         auto res = storage_tensor_factory<config_type, res_value_type>::make(std::move(res_shape), res_value_type{});
@@ -337,25 +374,28 @@ static auto stack_variadic(const SizeT& direction, const tensor<Us...>& t, const
 }
 
 template<typename SizeT, typename Container>
-static auto stack_container(const SizeT& direction, const const Container& ts){
+static auto stack_container(const SizeT& direction, const Container& ts){
     using tensor_type = typename Container::value_type;
     using config_type = typename tensor_type::config_type;
     using index_type = typename config_type::index_type;
     using res_value_type = typename tensor_type::value_type;
 
-    // const auto& shape = t.shape();
-    // detail::check_stack_container_args(direction, shape, ts.shape()...);
-    // index_type tensors_number = sizeof...(Ts) + 1;
-    // auto res_shape = detail::make_stack_shape(direction,shape,tensors_number);
-    // if constexpr (sizeof...(Ts) == 0){
-    //     return storage_tensor_factory<config_type, res_value_type>::make(std::move(res_shape), t.begin(), t.end());
-    // }else{
-    //     auto res = storage_tensor_factory<config_type, res_value_type>::make(std::move(res_shape), res_value_type{});
-    //     if (!res.empty()){
-    //         detail::fill_stack(direction, shape, t.size(), res.begin(), t.begin(), ts.begin()...);
-    //     }
-    //     return res;
-    // }
+    const auto shapes = detail::make_shapes_container(ts);
+    detail::check_stack_container_args(direction, shapes);
+    index_type tensors_number{ts.size()};
+    const auto& shape = *shapes.begin();
+    auto res_shape = detail::make_stack_shape(direction, shape, tensors_number);
+    if (tensors_number == index_type{1}){
+        const auto& t = *ts.begin();
+        return storage_tensor_factory<config_type, res_value_type>::make(std::move(res_shape), t.begin(), t.end());
+    }else{
+        auto res = storage_tensor_factory<config_type, res_value_type>::make(std::move(res_shape), res_value_type{});
+        if (!res.empty()){
+            auto iterators = detail::make_iterators_container(ts);
+            detail::fill_stack_container(direction, shape, res.begin(), iterators);
+        }
+        return res;
+    }
 }
 
 //join tensors along existing direction, tensors must have the same shape except concatenate direction
@@ -384,12 +424,9 @@ template<typename SizeT, typename Container>
 static auto concatenate_container(const SizeT& direction, const Container& ts){
     using tensor_type = typename Container::value_type;
     using config_type = typename tensor_type::config_type;
-    using shape_type = typename tensor_type::shape_type;
     using res_value_type = typename tensor_type::value_type;
 
-    typename config_type::template container<shape_type> shapes{};
-    shapes.reserve(ts.size());
-    std::for_each(ts.begin(), ts.end(), [&shapes](const auto& t)mutable{shapes.push_back(t.shape());});
+    const auto shapes = detail::make_shapes_container(ts);
     detail::check_concatenate_container_args(direction, shapes);
     auto res = storage_tensor_factory<config_type, res_value_type>::make(detail::make_concatenate_container_shape(direction, shapes), res_value_type{});
     if (!res.empty()){
@@ -632,6 +669,10 @@ template<typename...Us, typename...Ts>
 static auto stack(const typename tensor<Us...>::size_type& direction, const tensor<Us...>& t, const Ts&...ts){
     return stack_variadic(direction, t, ts...);
 }
+template<typename Container>
+static auto stack(const typename Container::value_type::size_type& direction, const Container& ts){
+    return stack_container(direction, ts);
+}
 template<typename...Us, typename...Ts>
 static auto concatenate(const typename tensor<Us...>::size_type& direction, const tensor<Us...>& t, const Ts&...ts){
     return concatenate_variadic(direction, t, ts...);
@@ -713,6 +754,12 @@ auto stack(const typename tensor<Us...>::size_type& direction, const tensor<Us..
     static_assert((detail::is_tensor_v<Ts>&&...));
     using config_type = typename tensor<Us...>::config_type;
     return combiner_selector<config_type>::type::stack(direction, t, ts...);
+}
+template<typename Container>
+auto stack(const typename Container::value_type::size_type& direction, const Container& ts){
+    static_assert(detail::is_tensor_container_v<Container>);
+    using config_type = typename Container::value_type::config_type;
+    return combiner_selector<config_type>::type::stack(direction, ts);
 }
 template<typename...Us, typename...Ts>
 auto concatenate(const typename tensor<Us...>::size_type& direction, const tensor<Us...>& t, const Ts&...ts){

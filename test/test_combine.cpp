@@ -444,18 +444,34 @@ TEMPLATE_TEST_CASE("test_stack","[test_combine]",
             tensor_type{{{1,7,13,19},{2,8,14,20},{3,9,15,21}},{{4,10,16,22},{5,11,17,23},{6,12,18,24}}}
         )
     );
-    auto test = [](const auto& t){
-        auto direction = std::get<0>(t);
-        auto tensors = std::get<1>(t);
-        auto expected = std::get<2>(t);
+    SECTION("test_stack_variadic")
+    {
+        auto test = [](const auto& t){
+            auto direction = std::get<0>(t);
+            auto tensors = std::get<1>(t);
+            auto expected = std::get<2>(t);
 
-        auto apply_tensors = [&direction](const auto&...tensors_){
-            return stack(direction, tensors_...);
+            auto apply_tensors = [&direction](const auto&...tensors_){
+                return stack(direction, tensors_...);
+            };
+            auto result = std::apply(apply_tensors, tensors);
+            REQUIRE(result.equals(expected));
         };
-        auto result = std::apply(apply_tensors, tensors);
-        REQUIRE(result.equals(expected));
-    };
-    apply_by_element(test, test_data);
+        apply_by_element(test, test_data);
+    }
+    SECTION("test_stack_container")
+    {
+        using container_type = std::vector<tensor_type>;
+        auto test_concatenate_container = [](const auto& t){
+            auto direction = std::get<0>(t);
+            auto tensors = std::get<1>(t);
+            auto expected = std::get<2>(t);
+            auto container = std::apply([](const auto&...ts){return container_type{ts.copy()...};}, tensors);
+            auto result = stack(direction, container);
+            REQUIRE(result.equals(expected));
+        };
+        apply_by_element(test_concatenate_container, test_data);
+    }
 }
 
 TEMPLATE_TEST_CASE("test_stack_common_type","[test_combine]",
