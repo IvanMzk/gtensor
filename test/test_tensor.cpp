@@ -263,16 +263,27 @@ TEST_CASE("test_view_making_interface","[test_tensor]"){
             REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4}}.transpose(0)),subscript_exception);
             REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4}}.transpose(1,1)),subscript_exception);
         }
-        SECTION("view_subdim"){
-            REQUIRE_NOTHROW(tensor_type{1}());
-            REQUIRE_THROWS_AS((tensor_type{1}(0)),subscript_exception);
-            REQUIRE_THROWS_AS((tensor_type{1,2,3,4,5}(0)),subscript_exception);
-            REQUIRE_NOTHROW((tensor_type{{{1,2},{3,4},{5,6}}}(0)));
-            REQUIRE_NOTHROW((tensor_type{{{1,2},{3,4},{5,6}}}(0,0)));
-            REQUIRE_NOTHROW((tensor_type{{{1,2},{3,4},{5,6}}}(0,2)));
-            REQUIRE_THROWS_AS((tensor_type{{{1,2},{3,4},{5,6}}}(1)),subscript_exception);
-            REQUIRE_THROWS_AS((tensor_type{{{1,2},{3,4},{5,6}}}(0,3)),subscript_exception);
-            REQUIRE_THROWS_AS((tensor_type{{{1,2},{3,4},{5,6}}}(0,2,0)),subscript_exception);
+        SECTION("view_subdim_variadic"){
+            REQUIRE_NOTHROW(tensor_type{1}.subdim());
+            REQUIRE_THROWS_AS((tensor_type{1}.subdim(0)),subscript_exception);
+            REQUIRE_THROWS_AS((tensor_type{1,2,3,4,5}.subdim(0)),subscript_exception);
+            REQUIRE_NOTHROW((tensor_type{{{1,2},{3,4},{5,6}}}.subdim(0)));
+            REQUIRE_NOTHROW((tensor_type{{{1,2},{3,4},{5,6}}}.subdim(0,0)));
+            REQUIRE_NOTHROW((tensor_type{{{1,2},{3,4},{5,6}}}.subdim(0,2)));
+            REQUIRE_THROWS_AS((tensor_type{{{1,2},{3,4},{5,6}}}.subdim(1)),subscript_exception);
+            REQUIRE_THROWS_AS((tensor_type{{{1,2},{3,4},{5,6}}}.subdim(0,3)),subscript_exception);
+            REQUIRE_THROWS_AS((tensor_type{{{1,2},{3,4},{5,6}}}.subdim(0,2,0)),subscript_exception);
+        }
+        SECTION("view_subdim_container"){
+            REQUIRE_NOTHROW(tensor_type{1}.subdim(std::vector<int>{}));
+            REQUIRE_THROWS_AS((tensor_type{1}.subdim(std::vector<int>{0})),subscript_exception);
+            REQUIRE_THROWS_AS((tensor_type{1,2,3,4,5}.subdim(std::vector<int>{0})),subscript_exception);
+            REQUIRE_NOTHROW((tensor_type{{{1,2},{3,4},{5,6}}}.subdim(std::vector<int>{0})));
+            REQUIRE_NOTHROW((tensor_type{{{1,2},{3,4},{5,6}}}.subdim(std::vector<std::size_t>{0,0})));
+            REQUIRE_NOTHROW((tensor_type{{{1,2},{3,4},{5,6}}}.subdim(std::vector<int>{0,2})));
+            REQUIRE_THROWS_AS((tensor_type{{{1,2},{3,4},{5,6}}}.subdim(std::vector<int>{1})),subscript_exception);
+            REQUIRE_THROWS_AS((tensor_type{{{1,2},{3,4},{5,6}}}.subdim(std::vector<int>{0,3})),subscript_exception);
+            REQUIRE_THROWS_AS((tensor_type{{{1,2},{3,4},{5,6}}}.subdim(std::vector<int>{0,0,0})),subscript_exception);
         }
         SECTION("view_reshape_variadic"){
             REQUIRE_NOTHROW(tensor_type{1}.reshape());
@@ -427,10 +438,14 @@ TEST_CASE("test_view_making_interface","[test_tensor]"){
             std::make_tuple((tensor_type{{1,2,3,4,5}}.transpose(0,1)),shape_type{1,5}, 5, 2),
             std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}.transpose()),shape_type{2,3,1}, 6, 3),
             std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}.transpose(0,2,1)),shape_type{1,2,3}, 6, 3),
-            //view subdim
-            std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}()),shape_type{1,3,2}, 6, 3),
-            std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}(0)),shape_type{3,2}, 6, 2),
-            std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}(0,1)),shape_type{2}, 2, 1),
+            //view subdim variadic
+            std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}.subdim()),shape_type{1,3,2}, 6, 3),
+            std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}.subdim(0)),shape_type{3,2}, 6, 2),
+            std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}.subdim(0,1)),shape_type{2}, 2, 1),
+            //view subdim container
+            std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}.subdim(std::vector<int>{})),shape_type{1,3,2}, 6, 3),
+            std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}.subdim(std::vector<int>{0})),shape_type{3,2}, 6, 2),
+            std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}.subdim(std::vector<int>{0,1})),shape_type{2}, 2, 1),
             //view reshape variadic
             std::make_tuple((tensor_type{1}.reshape()),shape_type{1}, 1, 1),
             std::make_tuple((tensor_type{1}.reshape(1)),shape_type{1}, 1, 1),
@@ -504,29 +519,60 @@ TEST_CASE("test_tensor_equals","[test_tensor]"){
     using value_type = double;
     using config_type = gtensor::config::default_config;
     using tensor_type = gtensor::tensor<value_type, config_type>;
-    using test_type = std::tuple<bool,bool,bool>;
     using gtensor::equals;
-    auto t = tensor_type{{1,2,3},{4,5,6}};
-    auto v = t(1);
-    //0result equals,1result equals, 2expected equals
-    auto test_data = GENERATE_COPY(
-        test_type{equals(tensor_type{1,2,3},tensor_type{1,2,3}),tensor_type{1,2,3}.equals(tensor_type{1,2,3}),true},
-        test_type{equals(t,t),t.equals(t),true},
-        test_type{equals(v,v),v.equals(v),true},
-        test_type{equals(v,t),v.equals(t),false},
-        test_type{equals(tensor_type{{1,2,3}},tensor_type{1,2,3}),tensor_type{{1,2,3}}.equals(tensor_type{1,2,3}),false},
-        test_type{equals(tensor_type{1,2,3},tensor_type{{1,2,3}}),tensor_type{1,2,3}.equals(tensor_type{{1,2,3}}),false},
-        test_type{equals(tensor_type{1,2,3},tensor_type{0,1,2}),tensor_type{1,2,3}.equals(tensor_type{0,1,2}),false},
-        test_type{equals(tensor_type{1,2,3}({{}}),tensor_type{1,2,3}),tensor_type{1,2,3}({{}}).equals(tensor_type{1,2,3}),true},
-        test_type{equals(tensor_type{1,2,3}({{{},{},-1}}),tensor_type{1,2,3}),tensor_type{1,2,3}({{{},{},-1}}).equals(tensor_type{1,2,3}),false},
-        test_type{equals(tensor_type{1,2,3}({{{},{},2}}).reshape(1,2).transpose(),tensor_type{{1},{3}}),tensor_type{1,2,3}({{{},{},2}}).reshape(1,2).transpose().equals(tensor_type{{1},{3}}),true}
+    using helpers_for_testing::apply_by_element;
+    //0tensor0,1tensor1,2expected
+    auto test_data = std::make_tuple(
+        //equal
+        std::make_tuple(tensor_type{},tensor_type{},true),
+        std::make_tuple(tensor_type{1},tensor_type{1},true),
+        std::make_tuple(tensor_type{1,2,3},tensor_type{1,2,3},true),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},tensor_type{{1,2,3},{4,5,6}},true),
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},true),
+        std::make_tuple(tensor_type{1}.reshape(1,1),tensor_type{{1}},true),
+        std::make_tuple(tensor_type{}.reshape(1,0),tensor_type{}.reshape(1,0),true),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}({{},{1,-1}}),tensor_type{{2},{5}},true),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}.transpose(),tensor_type{1,4,2,5,3,6}.reshape(3,2),true),
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reshape(1,4,2),tensor_type{{{1,2},{3,4},{5,6},{7,8}}},true),
+        //not equal
+        std::make_tuple(tensor_type{},tensor_type{}.reshape(1,0),false),
+        std::make_tuple(tensor_type{1},tensor_type{2},false),
+        std::make_tuple(tensor_type{1,2,3},tensor_type{{1,2,3}},false),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},tensor_type{{1,2,2},{4,5,6}},false)
     );
-
-    auto result_equals = std::get<0>(test_data);
-    auto result_equals_member = std::get<1>(test_data);
-    auto expected_equals = std::get<2>(test_data);
-    REQUIRE(result_equals == expected_equals);
-    REQUIRE(result_equals_member == expected_equals);
+    SECTION("ten0_equals_ten0")
+    {
+        auto test = [](const auto& t){
+            auto ten0 = std::get<0>(t);
+            auto ten1 = std::get<1>(t);
+            auto expected = true;
+            auto result = ten0.equals(ten0);
+            REQUIRE(result == expected);
+        };
+        apply_by_element(test, test_data);
+    }
+    SECTION("ten0_equals_ten1")
+    {
+        auto test = [](const auto& t){
+            auto ten0 = std::get<0>(t);
+            auto ten1 = std::get<1>(t);
+            auto expected = std::get<2>(t);
+            auto result = ten0.equals(ten1);
+            REQUIRE(result == expected);
+        };
+        apply_by_element(test, test_data);
+    }
+    SECTION("ten1_equals_ten0")
+    {
+        auto test = [](const auto& t){
+            auto ten0 = std::get<0>(t);
+            auto ten1 = std::get<1>(t);
+            auto expected = std::get<2>(t);
+            auto result = ten1.equals(ten0);
+            REQUIRE(result == expected);
+        };
+        apply_by_element(test, test_data);
+    }
 }
 
 TEST_CASE("test_tensor_copy","[test_tensor]"){

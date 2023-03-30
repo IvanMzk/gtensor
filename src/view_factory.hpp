@@ -6,6 +6,7 @@
 #include "broadcast.hpp"
 #include "tensor.hpp"
 #include "slice.hpp"
+#include "common.hpp"
 
 namespace gtensor{
 
@@ -100,35 +101,51 @@ inline void check_transpose_subs(const SizeT& dim, const Subs&...subs){
     }(subs),...);
 }
 
-/*make view subdim shape*/
-template<typename ShT>
-inline ShT make_view_subdim_shape(const ShT& pshape, const ShT& subs){
-    if (subs.empty()){
-        return pshape;
-    }else{
-        return ShT(pshape.data()+subs.size(), pshape.data()+pshape.size());
-    }
+//make subdim view helpers
+template<typename ShT, typename SizeT>
+inline ShT make_view_subdim_shape(const ShT& pshape, const SizeT& subs_number){
+    return ShT(pshape.begin()+subs_number, pshape.end());
 }
-/*make view subdim offset*/
-template<typename ShT>
-inline typename ShT::value_type make_view_subdim_offset(const ShT& pstrides, const ShT& subs){
+template<typename ShT, typename...Subs>
+inline typename ShT::value_type make_view_subdim_offset_variadic(const ShT& pstrides, const Subs&...subs){
+    using index_type = typename ShT::value_type;
+    index_type res{0};
+    auto it = pstrides.begin();
+    ((res+=subs*(*it),++it),...);
+    return res;
+}
+template<typename ShT, typename Container>
+inline typename ShT::value_type make_view_subdim_offset_container(const ShT& pstrides, const Container& subs){
     using index_type = typename ShT::value_type;
     return std::inner_product(subs.begin(),subs.end(),pstrides.begin(),index_type(0));
 }
-
-template<typename ShT>
-inline void check_subdim_subs(const ShT& shape, const ShT& subs){
+template<typename ShT, typename Container>
+inline void check_subdim_subs_container(const ShT& shape, const Container& subs){
     using index_type = typename ShT::value_type;
     if (subs.size() >= shape.size()){
         throw subscript_exception("subdim subscripts number must be less than dim");
     }
-    const index_type zero_index(0);
     auto shape_it = shape.begin();
     for (auto subs_it = subs.begin(), subs_end = subs.end(); subs_it != subs_end; ++subs_it, ++shape_it){
         auto sub = *subs_it;
-        if (sub < zero_index || sub >= *shape_it){
+        if (sub < index_type{0} || sub >= *shape_it){
             throw subscript_exception("invalid subdim subscript");
         }
+    }
+}
+template<typename ShT, typename...Subs>
+inline void check_subdim_subs_variadic(const ShT& pshape, const Subs&...subs){
+    using index_type = typename ShT::value_type;
+    using size_type = typename ShT::size_type;
+    const size_type subs_number = sizeof...(Subs);
+    const size_type pdim = pshape.size();
+    if (subs_number >= pdim){
+        throw subscript_exception("subdim subscripts number must be less than dim");
+    }
+    auto pshape_it = pshape.begin();
+    bool is_bad_subscript{false};
+    if ((((is_bad_subscript=is_bad_subscript||(subs < index_type{0} || subs >= *pshape_it)),++pshape_it,is_bad_subscript)||...)){
+        throw subscript_exception("invalid subdim subscript");
     }
 }
 
@@ -347,10 +364,13 @@ class view_factory
             index_type(0)
         };
     }
-    static auto create_view_subdim_descriptor(const shape_type& shape, const shape_type& strides, const shape_type& subs){
+    template<typename ShT, typename Container>
+    static auto create_view_subdim_descriptor(const ShT& shape, const ShT& strides, const Container& subs){
+        using size_type = typename ShT::size_type;
+        const size_type subs_number = subs.size();
         return view_subdim_descriptor_type{
-            detail::make_view_subdim_shape(shape,subs),
-            detail::make_view_subdim_offset(strides,subs)
+            detail::make_view_subdim_shape(shape,subs_number),
+            detail::make_view_subdim_offset_container(strides,subs)
         };
     }
     static auto create_view_reshape_descriptor(const shape_type& shape, const shape_type& subs){
@@ -371,9 +391,13 @@ public:
     static auto create_view_transpose(const std::shared_ptr<ImplT>& parent, const Subs&...subs){
         return viewing_tensor_factory<CfgT,view_slice_descriptor_type,ImplT>::make(create_view_transpose_descriptor(parent->shape(), parent->strides(), subs...),parent);
     }
-    template<typename ImplT>
-    static auto create_view_subdim(const std::shared_ptr<ImplT>& parent, const shape_type& subs){
-        return viewing_tensor_factory<CfgT,view_subdim_descriptor_type,ImplT>::make(create_view_subdim_descriptor(parent->shape(), parent->strides(), subs),parent);
+    template<typename...Ts, typename Container>
+    static auto create_view_subdim(const tensor<Ts...>& parent, const Container& subs){
+        using impl_type = typename tensor<Ts...>::impl_type;
+        auto parent_impl = parent.impl();
+        const auto& pshape = parent_impl->shape();
+        detail::check_subdim_subs_container(pshape,subs);
+        return viewing_tensor_factory<CfgT,view_subdim_descriptor_type,impl_type>::make(create_view_subdim_descriptor(pshape, parent_impl->strides(), subs), parent_impl);
     }
     template<typename ImplT>
     static auto create_view_reshape(const std::shared_ptr<ImplT>& parent, const shape_type& subs){
@@ -421,6 +445,21 @@ public:
         return res;
     }
 };
+
+
+template<typename...Ts, typename Container>
+inline auto create_view_subdim(const tensor<Ts...>& parent, const Container& subs){
+    using tensor_type = tensor<Ts...>;
+    using config_type = typename tensor_type::config_type;
+    using value_type = typename tensor_type::value_type;
+    using index_type = typename tensor_type::index_type;
+    static_assert(detail::is_container_of_type_v<Container,index_type>);
+    if constexpr (std::is_same_v<typename Container::value_type,index_type>){
+        return view_factory<value_type,config_type>::create_view_subdim(parent, subs);
+    }else{
+        return view_factory<value_type,config_type>::create_view_subdim(parent, typename config_type::template container<index_type>(subs.begin(),subs.end()));
+    }
+}
 
 }   //end of namespace gtensor
 

@@ -136,9 +136,9 @@ public:
     auto rend_broadcast(const shape_type& shape)const{return engine().rend_broadcast(shape);}
 
     auto size()const{return descriptor().size();}
+    auto empty()const{return size() == index_type{0};}
     auto dim()const{return descriptor().dim();}
     auto shape()const{return descriptor().shape();}
-    auto empty()const{return size() == index_type{0};}
     //compare content of this tensor and other
     template<typename RImpl>
     auto equals(const tensor<value_type,CfgT,RImpl>& other)const{return gtensor::equals(*this, other);}
@@ -189,14 +189,13 @@ public:
         return view_factory<ValT,CfgT>::create_view_transpose(impl(), static_cast<size_type>(subs)...);
     }
     //subdimension view
-    template<typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs,index_type>&&...),int> = 0 >
-    auto operator()(const Subs&...subs)const{
-        shape_type subs_{subs...};
-        detail::check_subdim_subs(descriptor().shape(), subs_);
-        return view_factory<ValT,CfgT>::create_view_subdim(impl(), std::move(subs_));
+    template<typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs,index_type>&&...),int> = 0>
+    auto subdim(const Subs&...subs)const{
+        return create_view_subdim(*this, typename config_type::template container<index_type>{subs...});
     }
-    auto operator()()const{
-        return view_factory<ValT,CfgT>::create_view_subdim(impl(), shape_type{});
+    template<typename Container, std::enable_if_t<detail::is_container_of_type_v<Container,index_type>,int> = 0>
+    auto subdim(const Container& subs)const{
+        return create_view_subdim(*this, subs);
     }
     //reshape view
     template<typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs,index_type>&&...),int> = 0 >
