@@ -54,7 +54,6 @@ class tensor{
     friend struct tensor_operator_dispatcher;
     template<typename,typename> friend class view_factory;
     friend class reducer;
-    friend class combiner;
     std::shared_ptr<impl_type> impl_;
 protected:
     auto impl()const{return impl_;}
@@ -185,13 +184,16 @@ public:
     //transpose view
     template<typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs,size_type>&&...),int> = 0 >
     auto transpose(const Subs&...subs)const{
-        detail::check_transpose_subs(dim(),subs...);
-        return view_factory<ValT,CfgT>::create_view_transpose(impl(), static_cast<size_type>(subs)...);
+        return create_view_transpose(*this, subs...);
+    }
+    template<typename Container, std::enable_if_t<detail::is_container_of_type_v<Container,size_type>,int> = 0>
+    auto transpose(const Container& subs)const{
+        return create_view_transpose(*this, subs);
     }
     //subdimension view
     template<typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs,index_type>&&...),int> = 0>
     auto subdim(const Subs&...subs)const{
-        return create_view_subdim(*this, typename config_type::template container<index_type>{subs...});
+        return create_view_subdim(*this, subs...);
     }
     template<typename Container, std::enable_if_t<detail::is_container_of_type_v<Container,index_type>,int> = 0>
     auto subdim(const Container& subs)const{
@@ -200,7 +202,7 @@ public:
     //reshape view
     template<typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs,index_type>&&...),int> = 0 >
     auto reshape(const Subs&...subs)const{
-        return create_view_reshape(*this, typename config_type::template container<index_type>{subs...});
+        return create_view_reshape(*this, subs...);
     }
     template<typename Container, std::enable_if_t<detail::is_container_of_type_v<Container,index_type>,int> = 0 >
     auto reshape(const Container& subs)const{

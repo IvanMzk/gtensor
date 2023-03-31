@@ -220,56 +220,92 @@ TEMPLATE_TEST_CASE("test_make_view_slice_cstrides","[test_view_factory]", std::v
 
 }
 
-TEMPLATE_TEST_CASE("test_transpose","[test_view_factory]", std::vector<std::int64_t>){
+TEMPLATE_TEST_CASE("test_make_view_transpose_shape","[test_view_factory]", std::vector<std::int64_t>){
     using shape_type = TestType;
-    using gtensor::detail::transpose;
+    using gtensor::detail::make_view_transpose_shape;
     using helpers_for_testing::apply_by_element;
-    //0pshape,1indeces,2expected
+    //0pshape,1subs,2expected
     auto test_data = std::make_tuple(
-        std::make_tuple(shape_type{3}, std::make_tuple(), shape_type{3}),
-        std::make_tuple(shape_type{3}, std::make_tuple(0), shape_type{3}),
-        std::make_tuple(shape_type{3,2}, std::make_tuple(0,1), shape_type{3,2}),
-        std::make_tuple(shape_type{3,2}, std::make_tuple(), shape_type{2,3}),
-        std::make_tuple(shape_type{3,2}, std::make_tuple(1,0), shape_type{2,3}),
-        std::make_tuple(shape_type{4,3,2,2}, std::make_tuple(), shape_type{2,2,3,4}),
-        std::make_tuple(shape_type{4,3,2,2}, std::make_tuple(3,1,0,2), shape_type{2,3,4,2})
+        std::make_tuple(shape_type{3}, std::vector<int>{}, shape_type{3}),
+        std::make_tuple(shape_type{3}, std::vector<int>{0}, shape_type{3}),
+        std::make_tuple(shape_type{3,2}, std::vector<int>{}, shape_type{2,3}),
+        std::make_tuple(shape_type{3,2}, std::array<int,2>{0,1}, shape_type{3,2}),
+        std::make_tuple(shape_type{3,2}, std::vector<std::size_t>{1,0}, shape_type{2,3}),
+        std::make_tuple(shape_type{4,3,2,2}, std::vector<int>{}, shape_type{2,2,3,4}),
+        std::make_tuple(shape_type{4,3,2,2}, std::vector<int>{3,1,0,2}, shape_type{2,3,4,2}),
+        std::make_tuple(shape_type{4,3,2,2}, std::vector<int>{3,1,2,0}, shape_type{2,3,2,4})
     );
-
     auto test = [](const auto& t){
         auto pshape = std::get<0>(t);
-        auto indeces = std::get<1>(t);
+        auto subs = std::get<1>(t);
         auto expected = std::get<2>(t);
-
-        auto apply_indeces = [&pshape](const auto&...indeces){
-            return transpose(pshape, indeces...);
-        };
-        auto result = std::apply(apply_indeces, indeces);
+        auto result = make_view_transpose_shape(pshape, subs);
         REQUIRE(expected == result);
     };
-
     apply_by_element(test, test_data);
 }
 
-TEST_CASE("test_check_transpose_subs","[test_check_transpose_subs]"){
+TEST_CASE("test_check_transpose_subs","[test_view_factory]"){
+    using config_type = gtensor::config::default_config;
+    using size_type = config_type::size_type;
+    using gtensor::subscript_exception;
     using gtensor::subscript_exception;
     using gtensor::detail::check_transpose_subs;
+    using gtensor::detail::check_transpose_subs_variadic;
+    using helpers_for_testing::apply_by_element;
 
-    REQUIRE_NOTHROW(check_transpose_subs(1));
-    REQUIRE_NOTHROW(check_transpose_subs(1,0));
-    REQUIRE_NOTHROW(check_transpose_subs(3,0,1,2));
-    REQUIRE_NOTHROW(check_transpose_subs(3,0,2,1));
-    REQUIRE_NOTHROW(check_transpose_subs(3,2,1,0));
-    REQUIRE_NOTHROW(check_transpose_subs(3,2,0,1));
-    REQUIRE_NOTHROW(check_transpose_subs(3,1,0,2));
-    REQUIRE_NOTHROW(check_transpose_subs(3,1,0,2));
-
-    REQUIRE_THROWS_AS(check_transpose_subs(1,0,0), subscript_exception);
-    REQUIRE_THROWS_AS(check_transpose_subs(2,0,0), subscript_exception);
-    REQUIRE_THROWS_AS(check_transpose_subs(3,0,1,2,3), subscript_exception);
-    REQUIRE_THROWS_AS(check_transpose_subs(3,0,1,1), subscript_exception);
-    REQUIRE_THROWS_AS(check_transpose_subs(3,0,2,2), subscript_exception);
-    REQUIRE_THROWS_AS(check_transpose_subs(3,0,0,1), subscript_exception);
-    REQUIRE_THROWS_AS(check_transpose_subs(3,2,1,1), subscript_exception);
+    SECTION("test_check_transpose_subs_nothrow")
+    {
+        //0pdim,1subs
+        auto test_data = std::make_tuple(
+            std::make_tuple(size_type{1},std::vector<int>{}),
+            std::make_tuple(size_type{1},std::vector<int>{0}),
+            std::make_tuple(size_type{3},std::vector<int>{0,1,2}),
+            std::make_tuple(size_type{3},std::vector<int>{0,2,1}),
+            std::make_tuple(size_type{3},std::vector<int>{2,1,0}),
+            std::make_tuple(size_type{3},std::vector<int>{2,0,1}),
+            std::make_tuple(size_type{3},std::vector<int>{1,0,2}),
+            std::make_tuple(size_type{3},std::vector<int>{1,0,2})
+        );
+        auto test = [](const auto& t){
+            auto pdim = std::get<0>(t);
+            auto subs = std::get<1>(t);
+            REQUIRE_NOTHROW(check_transpose_subs(pdim,subs));
+        };
+        apply_by_element(test, test_data);
+    }
+    SECTION("test_check_transpose_subs_exception")
+    {
+        //0pdim,1subs
+        auto test_data = std::make_tuple(
+            std::make_tuple(size_type{1},std::vector<int>{-1}),
+            std::make_tuple(size_type{1},std::vector<int>{1,1,-1}),
+            std::make_tuple(size_type{1},std::vector<int>{0,1}),
+            std::make_tuple(size_type{2},std::vector<int>{0,0}),
+            std::make_tuple(size_type{3},std::vector<int>{0,1,2,3}),
+            std::make_tuple(size_type{3},std::vector<int>{0,1,1}),
+            std::make_tuple(size_type{3},std::vector<int>{0,2,2}),
+            std::make_tuple(size_type{3},std::vector<int>{0,0,1}),
+            std::make_tuple(size_type{3},std::vector<int>{2,1,1})
+        );
+        auto test = [](const auto& t){
+            auto pdim = std::get<0>(t);
+            auto subs = std::get<1>(t);
+            REQUIRE_THROWS_AS(check_transpose_subs(pdim,subs), subscript_exception);
+        };
+        apply_by_element(test, test_data);
+    }
+    SECTION("test_check_transpose_subs_variadic"){
+        REQUIRE_NOTHROW(check_transpose_subs_variadic());
+        REQUIRE_NOTHROW(check_transpose_subs_variadic(0));
+        REQUIRE_NOTHROW(check_transpose_subs_variadic(0,0));
+        REQUIRE_NOTHROW(check_transpose_subs_variadic(0,1));
+        REQUIRE_NOTHROW(check_transpose_subs_variadic(1,2,3));
+        REQUIRE_THROWS_AS(check_transpose_subs_variadic(-1), subscript_exception);
+        REQUIRE_THROWS_AS(check_transpose_subs_variadic(0,-1), subscript_exception);
+        REQUIRE_THROWS_AS(check_transpose_subs_variadic(2,-1,3), subscript_exception);
+        REQUIRE_THROWS_AS(check_transpose_subs_variadic(-2,-1,3), subscript_exception);
+    }
 }
 
 TEST_CASE("test_check_reshape_subs","[test_check_reshape_subs]"){
