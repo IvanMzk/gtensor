@@ -76,20 +76,46 @@ TEMPLATE_TEST_CASE("test_make_view_subdim_shape","[test_view_factory]", std::vec
 
 TEMPLATE_TEST_CASE("test_make_view_reshape_shape","[test_view_factory]", std::vector<std::int64_t>){
     using shape_type = TestType;
+    using index_type = typename shape_type::value_type;
     using gtensor::detail::make_view_reshape_shape;
-    using test_type = std::tuple<shape_type, shape_type, shape_type>;
-    //0parent_shape,1subs,2expected_shape
-    auto test_data = GENERATE(
-        test_type{shape_type{11,1},shape_type{}, shape_type{11,1}},
-        test_type{shape_type{11,1},shape_type{11}, shape_type{11}},
-        test_type{shape_type{1,11},shape_type{11,1}, shape_type{11,1}},
-        test_type{shape_type{3,4,10,2},shape_type{}, shape_type{3,4,10,2}},
-        test_type{shape_type{3,4,10,2},shape_type{20,12}, shape_type{20,12}}
+    using helpers_for_testing::apply_by_element;
+    //0pshape,1psize,2subs,3expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(shape_type{0},index_type{0}, shape_type{}, shape_type{0}),
+        std::make_tuple(shape_type{0},index_type{0}, shape_type{0}, shape_type{0}),
+        std::make_tuple(shape_type{0},index_type{0}, shape_type{-1}, shape_type{0}),
+        std::make_tuple(shape_type{0},index_type{0}, shape_type{1,0}, shape_type{1,0}),
+        std::make_tuple(shape_type{0},index_type{0}, shape_type{1,-1}, shape_type{1,0}),
+        std::make_tuple(shape_type{0},index_type{0}, shape_type{-1,1}, shape_type{0,1}),
+        std::make_tuple(shape_type{0},index_type{0}, std::vector<int>{1,2,3,-1}, shape_type{1,2,3,0}),
+        std::make_tuple(shape_type{0},index_type{0}, std::array<int,4>{1,-1,2,3}, shape_type{1,0,2,3}),
+        std::make_tuple(shape_type{1,2,3,0},index_type{0}, shape_type{}, shape_type{1,2,3,0}),
+        std::make_tuple(shape_type{1,2,3,0},index_type{0}, std::initializer_list<std::size_t>{2,0}, shape_type{2,0}),
+        std::make_tuple(shape_type{1,2,3,0},index_type{0}, shape_type{2,-1}, shape_type{2,0}),
+        std::make_tuple(shape_type{1,2,3,0},index_type{0}, shape_type{4,-1,2,8}, shape_type{4,0,2,8}),
+        std::make_tuple(shape_type{11},index_type{11}, shape_type{}, shape_type{11}),
+        std::make_tuple(shape_type{11},index_type{11}, shape_type{-1}, shape_type{11}),
+        std::make_tuple(shape_type{11},index_type{11}, shape_type{1,-1}, shape_type{1,11}),
+        std::make_tuple(shape_type{11},index_type{11}, shape_type{-1,1}, shape_type{11,1}),
+        std::make_tuple(shape_type{11,1},index_type{11}, shape_type{}, shape_type{11,1}),
+        std::make_tuple(shape_type{11,1},index_type{11}, shape_type{11}, shape_type{11}),
+        std::make_tuple(shape_type{1,11},index_type{11}, shape_type{11,1}, shape_type{11,1}),
+        std::make_tuple(shape_type{3,4,10,2},index_type{240}, shape_type{}, shape_type{3,4,10,2}),
+        std::make_tuple(shape_type{3,4,10,2},index_type{240}, shape_type{-1}, shape_type{240}),
+        std::make_tuple(shape_type{3,4,10,2},index_type{240}, shape_type{20,12}, shape_type{20,12}),
+        std::make_tuple(shape_type{3,4,10,2},index_type{240}, shape_type{20,-1}, shape_type{20,12}),
+        std::make_tuple(shape_type{3,4,10,2},index_type{240}, shape_type{-1,12}, shape_type{20,12}),
+        std::make_tuple(shape_type{3,4,10,2},index_type{240}, shape_type{5,-1,2}, shape_type{5,24,2})
     );
-    auto parent_shape = std::get<0>(test_data);
-    auto subs = std::get<1>(test_data);
-    auto expected_shape = std::get<2>(test_data);
-    REQUIRE(make_view_reshape_shape(parent_shape, subs) == expected_shape);
+    auto test = [](const auto& t){
+        auto pshape = std::get<0>(t);
+        auto psize = std::get<1>(t);
+        auto subs = std::get<2>(t);
+        auto expected = std::get<3>(t);
+        auto result = make_view_reshape_shape(pshape, psize, subs);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test,test_data);
 }
 
 TEMPLATE_TEST_CASE("test_make_view_slice_offset","[test_view_factory]", std::vector<std::int64_t>){
@@ -247,91 +273,70 @@ TEST_CASE("test_check_transpose_subs","[test_check_transpose_subs]"){
 }
 
 TEST_CASE("test_check_reshape_subs","[test_check_reshape_subs]"){
-    using index_type = gtensor::config::default_config::index_type;
+    using config_type = gtensor::config::default_config;
+    using shape_type = config_type::shape_type;
+    using index_type = config_type::index_type;
     using gtensor::subscript_exception;
-    using gtensor::detail::check_reshape_subs_variadic;
-    using gtensor::detail::check_reshape_subs_container;
+    using gtensor::detail::check_reshape_subs;
     using helpers_for_testing::apply_by_element;
 
     SECTION("test_check_reshape_subs_nothrow")
     {
         //0psize,1subs
         auto test_data = std::make_tuple(
-            std::make_tuple(index_type{5}, std::make_tuple()),
-            std::make_tuple(index_type{0}, std::make_tuple(index_type{1},index_type{0})),
-            std::make_tuple(index_type{0}, std::make_tuple(index_type{5},index_type{0})),
-            std::make_tuple(index_type{5}, std::make_tuple(index_type{5})),
-            std::make_tuple(index_type{20}, std::make_tuple(index_type{4},index_type{5})),
-            std::make_tuple(index_type{20}, std::make_tuple(index_type{20})),
-            std::make_tuple(index_type{20}, std::make_tuple(index_type{1},index_type{20},index_type{1})),
-            std::make_tuple(index_type{20}, std::make_tuple(index_type{2},index_type{10})),
-            std::make_tuple(index_type{20}, std::make_tuple(index_type{2},index_type{5},index_type{2},index_type{1})),
-            std::make_tuple(index_type{20}, std::make_tuple(index_type{4},index_type{5}))
+            std::make_tuple(index_type{0}, shape_type{}),
+            std::make_tuple(index_type{0}, shape_type{0}),
+            std::make_tuple(index_type{0}, shape_type{1,0}),
+            std::make_tuple(index_type{0}, shape_type{5,0}),
+            std::make_tuple(index_type{0}, shape_type{2,3,0}),
+            std::make_tuple(index_type{0}, shape_type{-1}),
+            std::make_tuple(index_type{0}, shape_type{1,-1}),
+            std::make_tuple(index_type{0}, shape_type{2,-1,3}),
+            std::make_tuple(index_type{5}, shape_type{}),
+            std::make_tuple(index_type{5}, shape_type{5}),
+            std::make_tuple(index_type{5}, shape_type{-1}),
+            std::make_tuple(index_type{5}, shape_type{5,-1}),
+            std::make_tuple(index_type{5}, shape_type{-1,5}),
+            std::make_tuple(index_type{20}, shape_type{4,5}),
+            std::make_tuple(index_type{20}, shape_type{-1,5}),
+            std::make_tuple(index_type{20}, shape_type{4,-1}),
+            std::make_tuple(index_type{20}, shape_type{1,20,-1}),
+            std::make_tuple(index_type{20}, shape_type{2,10}),
+            std::make_tuple(index_type{20}, shape_type{2,5,2,1}),
+            std::make_tuple(index_type{20}, shape_type{2,-1,2,1})
         );
-        SECTION("variadic")
-        {
-            auto test = [](const auto& t){
-                auto psize = std::get<0>(t);
-                auto subs = std::get<1>(t);
-                auto apply_subs = [&psize](const auto&...subs_){
-                    check_reshape_subs_variadic(psize, subs_...);
-                };
-                REQUIRE_NOTHROW(std::apply(apply_subs,subs));
-            };
-            apply_by_element(test,test_data);
-        }
-        SECTION("container")
-        {
-            using container_type = std::vector<index_type>;
-            auto test = [](const auto& t){
-                auto psize = std::get<0>(t);
-                auto subs = std::get<1>(t);
-                auto make_container = [](const auto&...subs_){
-                    return container_type{subs_...};
-                };
-                auto container = std::apply(make_container, subs);
-                REQUIRE_NOTHROW(check_reshape_subs_container(psize,container));
-            };
-            apply_by_element(test,test_data);
-        }
+        auto test = [](const auto& t){
+            auto psize = std::get<0>(t);
+            auto subs = std::get<1>(t);
+            REQUIRE_NOTHROW(check_reshape_subs(psize,subs));
+        };
+        apply_by_element(test,test_data);
     }
     SECTION("test_check_reshape_subs_exception")
     {
         //0psize,1subs
         auto test_data = std::make_tuple(
-            std::make_tuple(index_type{0}, std::make_tuple(index_type{5})),
-            std::make_tuple(index_type{5}, std::make_tuple(index_type{0})),
-            std::make_tuple(index_type{5}, std::make_tuple(index_type{5},index_type{0})),
-            std::make_tuple(index_type{5}, std::make_tuple(index_type{3},index_type{2})),
-            std::make_tuple(index_type{60}, std::make_tuple(index_type{70})),
-            std::make_tuple(index_type{60}, std::make_tuple(index_type{2},index_type{3},index_type{2},index_type{4}))
+            std::make_tuple(index_type{0}, shape_type{5}),
+            std::make_tuple(index_type{0}, shape_type{0,-1}),
+            std::make_tuple(index_type{0}, shape_type{2,3,0,-1}),
+            std::make_tuple(index_type{0}, shape_type{-1,0}),
+            std::make_tuple(index_type{0}, shape_type{-1,0,2,3}),
+            std::make_tuple(index_type{0}, shape_type{-1,3,2,-1}),
+            std::make_tuple(index_type{5}, shape_type{0}),
+            std::make_tuple(index_type{5}, shape_type{1,-1,5,-1}),
+            std::make_tuple(index_type{5}, shape_type{5,0}),
+            std::make_tuple(index_type{5}, shape_type{3,2}),
+            std::make_tuple(index_type{5}, shape_type{3,-1}),
+            std::make_tuple(index_type{60}, shape_type{70}),
+            std::make_tuple(index_type{60}, shape_type{2,3,2,4}),
+            std::make_tuple(index_type{60}, shape_type{2,-1,2,4})
         );
-        SECTION("variadic")
-        {
-            auto test = [](const auto& t){
-                auto psize = std::get<0>(t);
-                auto subs = std::get<1>(t);
-                auto apply_subs = [&psize](const auto&...subs_){
-                    check_reshape_subs_variadic(psize, subs_...);
-                };
-                REQUIRE_THROWS_AS(std::apply(apply_subs,subs), subscript_exception);
-            };
-            apply_by_element(test,test_data);
-        }
-        SECTION("container")
-        {
-            using container_type = std::vector<index_type>;
-            auto test = [](const auto& t){
-                auto psize = std::get<0>(t);
-                auto subs = std::get<1>(t);
-                auto make_container = [](const auto&...subs_){
-                    return container_type{subs_...};
-                };
-                auto container = std::apply(make_container, subs);
-                REQUIRE_THROWS_AS(check_reshape_subs_container(psize,container), subscript_exception);
-            };
-            apply_by_element(test,test_data);
-        }
+        auto test = [](const auto& t){
+            auto psize = std::get<0>(t);
+            auto subs = std::get<1>(t);
+            REQUIRE_THROWS_AS(check_reshape_subs(psize,subs), subscript_exception);
+        };
+        apply_by_element(test,test_data);
     }
 }
 

@@ -286,32 +286,66 @@ TEST_CASE("test_view_making_interface","[test_tensor]"){
             REQUIRE_THROWS_AS((tensor_type{{{1,2},{3,4},{5,6}}}.subdim(std::vector<int>{0,0,0})),subscript_exception);
         }
         SECTION("view_reshape_variadic"){
+            REQUIRE_NOTHROW(tensor_type{}.reshape());
+            REQUIRE_NOTHROW(tensor_type{}.reshape(-1));
+            REQUIRE_NOTHROW(tensor_type{}.reshape(1,0));
+            REQUIRE_NOTHROW(tensor_type{}.reshape(2,3,0));
+            REQUIRE_NOTHROW(tensor_type{}.reshape(2,-1,1));
+            REQUIRE_THROWS_AS((tensor_type{}.reshape(-1,-1)),subscript_exception);
+            REQUIRE_THROWS_AS((tensor_type{}.reshape(-1,0)),subscript_exception);
+            REQUIRE_THROWS_AS((tensor_type{}.reshape(0,-1)),subscript_exception);
             REQUIRE_NOTHROW(tensor_type{1}.reshape());
             REQUIRE_NOTHROW(tensor_type{1}.reshape(1));
+            REQUIRE_NOTHROW(tensor_type{1}.reshape(-1));
             REQUIRE_THROWS_AS((tensor_type{1}.reshape(0)),subscript_exception);
             REQUIRE_THROWS_AS((tensor_type{1}.reshape(2)),subscript_exception);
+            REQUIRE_THROWS_AS((tensor_type{1}.reshape(-1,0)),subscript_exception);
             REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}.reshape());
+            REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}.reshape(-1));
             REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}.reshape(6));
             REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}.reshape(6,1));
             REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}.reshape(1,6,1));
             REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}.reshape(2,3));
             REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}.reshape(3,2));
+            REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}.reshape(-1,2));
+            REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}.reshape(1,-1,3));
             REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4},{5,6}}.reshape(10)),subscript_exception);
             REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4},{5,6}}.reshape(3,3)),subscript_exception);
+            REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4},{5,6}}.reshape(-1,-1)),subscript_exception);
+            REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4},{5,6}}.reshape(-1,4)),subscript_exception);
+            REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4},{5,6}}.reshape(4,-1)),subscript_exception);
+            REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4},{5,6}}.reshape(0,2)),subscript_exception);
         }
         SECTION("view_reshape_container"){
+            REQUIRE_NOTHROW(tensor_type{}.reshape());
+            REQUIRE_NOTHROW(tensor_type{}.reshape(std::vector<int>{-1}));
+            REQUIRE_NOTHROW(tensor_type{}.reshape(std::vector<std::size_t>{1,0}));
+            REQUIRE_NOTHROW(tensor_type{}.reshape(std::array<std::size_t,3>{2,3,0}));
+            REQUIRE_NOTHROW(tensor_type{}.reshape(std::vector<int>{2,-1,1}));
+            REQUIRE_THROWS_AS((tensor_type{}.reshape(std::vector<int>{-1,-1})),subscript_exception);
+            REQUIRE_THROWS_AS((tensor_type{}.reshape(std::vector<int>{-1,0})),subscript_exception);
+            REQUIRE_THROWS_AS((tensor_type{}.reshape(std::vector<int>{0,-1})),subscript_exception);
             REQUIRE_NOTHROW(tensor_type{1}.reshape(std::vector<int>{}));
             REQUIRE_NOTHROW(tensor_type{1}.reshape(std::vector<int>{1}));
+            REQUIRE_NOTHROW(tensor_type{1}.reshape(std::vector<int>{-1}));
             REQUIRE_THROWS_AS((tensor_type{1}.reshape(std::vector<int>{0})),subscript_exception);
             REQUIRE_THROWS_AS((tensor_type{1}.reshape(std::vector<std::size_t>{2})),subscript_exception);
+            REQUIRE_THROWS_AS((tensor_type{1}.reshape(std::vector<int>{-1,0})),subscript_exception);
             REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}.reshape({}));
+            REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}.reshape({-1}));
             REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}.reshape({6}));
             REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}.reshape({6,1}));
             REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}.reshape(std::vector<int>{1,6,1}));
             REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}.reshape(std::vector<int>{2,3}));
             REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}.reshape(std::vector<int>{3,2}));
+            REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}.reshape(std::vector<int>{-1,2}));
+            REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}.reshape(std::vector<int>{1,-1,3}));
             REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4},{5,6}}.reshape(std::vector<int>{10})),subscript_exception);
             REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4},{5,6}}.reshape(std::vector<int>{3,3})),subscript_exception);
+            REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4},{5,6}}.reshape(std::vector<int>{-1,-1})),subscript_exception);
+            REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4},{5,6}}.reshape(std::vector<int>{-1,4})),subscript_exception);
+            REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4},{5,6}}.reshape(std::vector<int>{4,-1})),subscript_exception);
+            REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4},{5,6}}.reshape(std::vector<int>{0,2})),subscript_exception);
         }
         SECTION("mapping_view_index_tensor"){
             using index_tensor_type = tensor<index_type, config_type>;
@@ -447,19 +481,38 @@ TEST_CASE("test_view_making_interface","[test_tensor]"){
             std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}.subdim(std::vector<int>{0})),shape_type{3,2}, 6, 2),
             std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}.subdim(std::vector<int>{0,1})),shape_type{2}, 2, 1),
             //view reshape variadic
+            std::make_tuple((tensor_type{}.reshape()),shape_type{0}, 0, 1),
+            std::make_tuple((tensor_type{}.reshape(2,3,0)),shape_type{2,3,0}, 0, 3),
+            std::make_tuple((tensor_type{}.reshape(2,3,-1)),shape_type{2,3,0}, 0, 3),
+            std::make_tuple((tensor_type{}.reshape(-1,2,3)),shape_type{0,2,3}, 0, 3),
             std::make_tuple((tensor_type{1}.reshape()),shape_type{1}, 1, 1),
             std::make_tuple((tensor_type{1}.reshape(1)),shape_type{1}, 1, 1),
+            std::make_tuple((tensor_type{1}.reshape(-1)),shape_type{1}, 1, 1),
             std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}.reshape()),shape_type{1,3,2}, 6, 3),
+            std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}.reshape(-1)),shape_type{6}, 6, 1),
             std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}.reshape(6)),shape_type{6}, 6, 1),
             std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}.reshape(2,1,3)),shape_type{2,1,3}, 6, 3),
             std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}.reshape(6,1)),shape_type{6,1}, 6, 2),
+            std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}.reshape(6,-1)),shape_type{6,1}, 6, 2),
+            std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}.reshape(-1,6)),shape_type{1,6}, 6, 2),
+            std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}.reshape(3,-1,2)),shape_type{3,1,2}, 6, 3),
+            std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}.reshape(-1,2,1)),shape_type{3,2,1}, 6, 3),
             //view reshape container
+            std::make_tuple((tensor_type{}.reshape()),shape_type{0}, 0, 1),
+            std::make_tuple((tensor_type{}.reshape(std::vector<int>{2,3,0})),shape_type{2,3,0}, 0, 3),
+            std::make_tuple((tensor_type{}.reshape(std::vector<int>{2,3,-1})),shape_type{2,3,0}, 0, 3),
+            std::make_tuple((tensor_type{}.reshape(std::array<int,3>{-1,2,3})),shape_type{0,2,3}, 0, 3),
             std::make_tuple((tensor_type{1}.reshape(std::vector<int>{})),shape_type{1}, 1, 1),
             std::make_tuple((tensor_type{1}.reshape({1})),shape_type{1}, 1, 1),
             std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}.reshape({})),shape_type{1,3,2}, 6, 3),
+            std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}.reshape(std::initializer_list<int>{-1})),shape_type{6}, 6, 1),
             std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}.reshape(std::vector<int>{6})),shape_type{6}, 6, 1),
             std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}.reshape({2,1,3})),shape_type{2,1,3}, 6, 3),
             std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}.reshape(std::vector<size_t>{6,1})),shape_type{6,1}, 6, 2),
+            std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}.reshape(std::vector<int>{6,-1})),shape_type{6,1}, 6, 2),
+            std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}.reshape(std::vector<int>{-1,6})),shape_type{1,6}, 6, 2),
+            std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}.reshape(std::vector<int>{3,-1,2})),shape_type{3,1,2}, 6, 3),
+            std::make_tuple((tensor_type{{{1,2},{3,4},{5,6}}}.reshape(std::vector<int>{-1,2,1})),shape_type{3,2,1}, 6, 3),
             //mapping view index tensor
             std::make_tuple((tensor_type{}(index_tensor_type{})),shape_type{0}, 0, 1),
             std::make_tuple((tensor_type{}(index_tensor_type{}.reshape(2,3,0))),shape_type{2,3,0}, 0, 3),

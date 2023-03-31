@@ -200,17 +200,14 @@ public:
     //reshape view
     template<typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs,index_type>&&...),int> = 0 >
     auto reshape(const Subs&...subs)const{
-        detail::check_reshape_subs_variadic(size(), static_cast<index_type>(subs)...);
-        return view_factory<ValT,CfgT>::create_view_reshape(impl(), shape_type{subs...});
+        return create_view_reshape(*this, typename config_type::template container<index_type>{subs...});
     }
     template<typename Container, std::enable_if_t<detail::is_container_of_type_v<Container,index_type>,int> = 0 >
-    auto reshape(Container&& subs)const{
-        detail::check_reshape_subs_container(size(), subs);
-        return view_factory<ValT,CfgT>::create_view_reshape(impl(), detail::make_shape_of_type<shape_type>(std::forward<Container>(subs)));
+    auto reshape(const Container& subs)const{
+        return create_view_reshape(*this, subs);
     }
     auto reshape(std::initializer_list<index_type> subs)const{
-        detail::check_reshape_subs_container(size(), subs);
-        return view_factory<ValT,CfgT>::create_view_reshape(impl(), detail::make_shape_of_type<shape_type>(subs));
+        return create_view_reshape(*this, subs);
     }
     //mapping view
     template<typename...Subs, std::enable_if_t<(detail::is_index_tensor_v<Subs,index_type>&&...),int> = 0 >
