@@ -16,7 +16,11 @@ namespace detail{
 enum class mask_type : char {
     nop=0b00000000, __k = 0b00000001, _j_ = 0b00000010, _jk = 0b00000011, i__ = 0b00000100, i_k = 0b00000101, ij_ = 0b00000110, ijk = 0b00000111
 };
-inline static char operator&(mask_type lhs, mask_type rhs){return static_cast<char>(lhs)&static_cast<char>(rhs);}
+inline constexpr mask_type operator&(mask_type lhs, mask_type rhs){return static_cast<mask_type>(static_cast<char>(lhs)&static_cast<char>(rhs));}
+inline constexpr mask_type operator|(mask_type lhs, mask_type rhs){return static_cast<mask_type>(static_cast<char>(lhs)|static_cast<char>(rhs));}
+inline constexpr bool is_i(mask_type mask){return static_cast<bool>(mask&mask_type::i__);}
+inline constexpr bool is_j(mask_type mask){return static_cast<bool>(mask&mask_type::_j_);}
+inline constexpr bool is_k(mask_type mask){return static_cast<bool>(mask&mask_type::__k);}
 
 template<typename IdxT, typename NopT = Nop>
 struct slice_item{
@@ -31,35 +35,33 @@ struct slice_item{
 };
 
 template<typename T, typename N>
-inline mask_type mask(const slice_item<T,N>& i){
+inline mask_type make_mask(const slice_item<T,N>& i){
     return i.nop ?  mask_type::__k : mask_type::i_k;
 }
 template<typename T, typename N>
-inline mask_type mask(const slice_item<T,N>& i, const slice_item<T,N>& j){
+inline mask_type make_mask(const slice_item<T,N>& i, const slice_item<T,N>& j){
     return i.nop ?
                 j.nop ? mask_type::__k : mask_type::_jk:    //i.nop
                 j.nop ? mask_type::i_k : mask_type::ijk;    //!i.nop
 }
 template<typename T, typename N>
-inline mask_type mask(std::initializer_list<slice_item<T,N>> l){
+inline mask_type make_mask(std::initializer_list<slice_item<T,N>> l){
     auto it = l.begin();
     switch (l.size()){
         case 0:
             return mask_type::__k;
         case 1:
-            return detail::mask(it[0]);
+            return make_mask(it[0]);
         case 2:
-            return detail::mask(it[0],it[1]);
+            return make_mask(it[0],it[1]);
         default:
-            return detail::mask(it[0],it[1]);
+            return make_mask(it[0],it[1]);
     }
 }
 
 }   //end of namespace detail
 
-/*
-* k is always set
-*/
+
 template<typename IdxT, typename NopT = Nop>
 struct slice{
     using index_type = IdxT;
@@ -67,86 +69,83 @@ struct slice{
     using mask_type = typename detail::mask_type;
     using slice_item_type = typename detail::slice_item<index_type, nop_type>;
 
+    slice():
+        mask{make_mask(nop_type{})},
+        start{make_start_stop(nop_type{})},
+        stop{make_start_stop(nop_type{})},
+        step{make_step(nop_type{})}
+    {}
     slice(std::initializer_list<slice_item_type> l):
-        mask{detail::mask(l)},
+        mask{detail::make_mask(l)},
         start{is_start() ? l.begin()[0].i : index_type{}},
         stop{is_stop() ? l.begin()[1].i : index_type{}},
         step{l.size()>2 ? l.begin()[2].nop ? index_type{1} : l.begin()[2].i : index_type{1} }
     {}
+    template<typename Start, typename Stop, typename Step>
+    slice(const Start& start__, const Stop& stop__, const Step& step__):
+        mask{make_mask(start__,stop__)},
+        start{make_start_stop(start__)},
+        stop{make_start_stop(stop__)},
+        step{make_step(step__)}
+    {
+        static_assert(std::is_convertible_v<Start,index_type>||std::is_same_v<Start,nop_type>);
+        static_assert(std::is_convertible_v<Stop,index_type>||std::is_same_v<Stop,nop_type>);
+        static_assert(std::is_convertible_v<Step,index_type>||std::is_same_v<Step,nop_type>);
+    }
+    template<typename Start, typename Stop>
+    slice(const Start& start__, const Stop& stop__):
+        mask{make_mask(start__,stop__)},
+        start{make_start_stop(start__)},
+        stop{make_start_stop(stop__)},
+        step{make_step(nop_type{})}
+    {
+        static_assert(std::is_convertible_v<Start,index_type>||std::is_same_v<Start,nop_type>);
+        static_assert(std::is_convertible_v<Stop,index_type>||std::is_same_v<Stop,nop_type>);
+    }
+    template<typename Start>
+    explicit slice(const Start& start__):
+        mask{make_mask(start__)},
+        start{make_start_stop(start__)},
+        stop{make_start_stop(nop_type{})},
+        step{make_step(nop_type{})}
+    {
+        static_assert(std::is_convertible_v<Start,index_type>||std::is_same_v<Start,nop_type>);
+    }
 
-    slice() = default;
-    slice(const nop_type&, const nop_type&, const nop_type&):
-        slice()
-    {}
-    slice(const nop_type&, const nop_type&, const index_type& step_):
-        mask{mask_type::__k},
-        step{step_}
-    {}
-    slice(const nop_type&, const index_type& stop_, const nop_type&):
-        mask{mask_type::_jk},
-        stop{stop_}
-    {}
-    slice(const index_type& start_, const nop_type&, const nop_type&):
-        mask{mask_type::i_k},
-        start{start_}
-    {}
-    slice(const nop_type&, const index_type& stop_, const index_type& step_):
-        mask{mask_type::_jk},
-        stop{stop_},
-        step{step_}
-    {}
-    slice(const index_type& start_, const nop_type&, const index_type& step_):
-        mask{mask_type::i_k},
-        start{start_},
-        step{step_}
-    {}
-    slice(const index_type& start_, const index_type& stop_, const nop_type&):
-        mask{mask_type::ijk},
-        start{start_},
-        stop{stop_}
-    {}
-    slice(const index_type& start_, const index_type& stop_, const index_type& step_):
-        mask{mask_type::ijk},
-        start{start_},
-        stop{stop_},
-        step{step_}
-    {}
-    slice(const nop_type&, const index_type& stop_):
-        mask{mask_type::_jk},
-        stop{stop_}
-    {}
-    slice(const index_type& start_, const nop_type&):
-        mask{mask_type::i_k},
-        start{start_}
-    {}
-    slice(const nop_type&, const nop_type&):
-        slice()
-    {}
-    slice(const index_type& start_, const index_type& stop_):
-        mask{mask_type::ijk},
-        start{start_},
-        stop{stop_}
-    {}
-    explicit slice(const index_type& start_):
-        mask{mask_type::i_k},
-        start{start_}
-    {}
-    explicit slice(const nop_type& ):
-        slice()
-    {}
-
-    bool is_start()const{return mask & mask_type::i__;}
-    bool is_stop()const{return mask & mask_type::_j_;}
-    bool is_step()const{return mask& mask_type::__k;}
+    bool is_start()const{return detail::is_i(mask);}
+    bool is_stop()const{return detail::is_j(mask);}
+    bool is_step()const{return detail::is_k(mask);}
     friend bool operator==(const slice& lhs, const slice& rhs){return lhs.mask==rhs.mask && lhs.start==rhs.start && lhs.stop==rhs.stop && lhs.step==rhs.step;}
     friend std::ostream& operator<<(std::ostream& os, const slice& lhs){
         os <<"("<<lhs.start<<" "<<lhs.stop<<" "<<lhs.step<<")";
         return os;
     }
-    const mask_type mask{mask_type::__k};
-    const index_type start{};
-    const index_type stop{};
-    const index_type step{1};
+
+    template<typename Start>
+    constexpr mask_type make_mask(Start){
+        if constexpr (std::is_convertible_v<Start,index_type>){
+            return mask_type::i_k;
+        }else{
+            return mask_type::__k;
+        }
+    }
+    template<typename Start, typename Stop>
+    mask_type make_mask(Start start__,Stop){
+        mask_type mask{make_mask(start__)};
+        if constexpr (std::is_convertible_v<Stop,index_type>){
+            mask = mask|mask_type::_j_;
+        }
+        return mask;
+    }
+    auto make_start_stop(const index_type& item_){return item_;}
+    auto make_start_stop(nop_type){return index_type{};}
+    auto make_step(const index_type& item_){return item_;}
+    auto make_step(nop_type){return index_type{1};}
+
+    const mask_type mask;
+    const index_type start;
+    const index_type stop;
+    const index_type step;
 };
 
 template<typename CfgT>

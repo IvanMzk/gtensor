@@ -1,10 +1,10 @@
 #include "catch.hpp"
-#include "./catch2/trompeloeil.hpp"
 #include <iostream>
 #include <initializer_list>
 #include <array>
 #include <tuple>
 #include "slice.hpp"
+#include "helpers_for_testing.hpp"
 
 TEST_CASE("slice_item","[slice_item]"){
     using config_type = gtensor::config::default_config;
@@ -115,59 +115,70 @@ TEST_CASE("test_slice","[test_slice]"){
     using index_type = typename config_type::index_type;
     using slice_type = typename gtensor::slice_traits<config_type>::slice_type;
     using nop_type = typename gtensor::slice_traits<config_type>::nop_type;
-    nop_type nop{};
-    SECTION("default_construction"){
-        slice_type slice{};
-        REQUIRE(!slice.is_start());
-        REQUIRE(!slice.is_stop());
-        REQUIRE(slice.is_step());
+    using helpers_for_testing::apply_by_element;
+    //nop_type nop{};
+
+    //0items,1expected_is_start,2expected_is_stop,3expected_is_step,4expected_start,5expected_stop,6expected_step
+    auto test_data = std::make_tuple(
+        std::make_tuple(std::make_tuple(), false,false,true,index_type{},index_type{},index_type{1}),
+        std::make_tuple(std::make_tuple(nop_type{}), false,false,true,index_type{},index_type{},index_type{1}),
+        std::make_tuple(std::make_tuple(nop_type{},nop_type{}), false,false,true,index_type{},index_type{},index_type{1}),
+        std::make_tuple(std::make_tuple(nop_type{},nop_type{},nop_type{}), false,false,true,index_type{},index_type{},index_type{1}),
+        std::make_tuple(std::make_tuple(0), true,false,true,index_type{0},index_type{},index_type{1}),
+        std::make_tuple(std::make_tuple(0,nop_type{}), true,false,true,index_type{0},index_type{},index_type{1}),
+        std::make_tuple(std::make_tuple(0,nop_type{},nop_type{}), true,false,true,index_type{0},index_type{},index_type{1}),
+        std::make_tuple(std::make_tuple(1), true,false,true,index_type{1},index_type{},index_type{1}),
+        std::make_tuple(std::make_tuple(1,nop_type{}), true,false,true,index_type{1},index_type{},index_type{1}),
+        std::make_tuple(std::make_tuple(1,nop_type{},nop_type{}), true,false,true,index_type{1},index_type{},index_type{1}),
+        std::make_tuple(std::make_tuple(1,2), true,true,true,index_type{1},index_type{2},index_type{1}),
+        std::make_tuple(std::make_tuple(1,2,nop_type{}), true,true,true,index_type{1},index_type{2},index_type{1}),
+        std::make_tuple(std::make_tuple(1,2,3), true,true,true,index_type{1},index_type{2},index_type{3})
+    );
+    auto test_slice = [](const auto& slice_, const auto& t)
+    {
+        auto expected_is_start = std::get<1>(t);
+        auto expected_is_stop = std::get<2>(t);
+        auto expected_is_step = std::get<3>(t);
+        auto expected_start = std::get<4>(t);
+        auto expected_stop = std::get<5>(t);
+        auto expected_step = std::get<6>(t);
+
+        auto result_is_start = slice_.is_start();
+        auto result_is_stop = slice_.is_stop();
+        auto result_is_step = slice_.is_step();
+        auto result_start = slice_.start;
+        auto result_stop = slice_.stop;
+        auto result_step = slice_.step;
+        REQUIRE(result_is_start == expected_is_start);
+        REQUIRE(result_is_stop == expected_is_stop);
+        REQUIRE(result_is_step == expected_is_step);
+        REQUIRE(result_start == expected_start);
+        REQUIRE(result_stop == expected_stop);
+        REQUIRE(result_step == expected_step);
+    };
+    SECTION("test_slice_slice_constructor")
+    {
+        auto test = [test_slice](const auto& t){
+            auto items = std::get<0>(t);
+            auto make_slice = [](const auto&...items_){
+                return slice_type(items_...);
+            };
+            auto slice_ = std::apply(make_slice, items);
+            test_slice(slice_, t);
+        };
+        apply_by_element(test, test_data);
     }
-    SECTION("construction_i__"){
-        slice_type slice{-3};
-        REQUIRE(slice.start == index_type(-3));
-        REQUIRE(slice.is_start());
-        REQUIRE(!slice.is_stop());
-        REQUIRE(slice.is_step());
-        slice_type slice1{0,nop,nop};
-        REQUIRE(slice1.start == index_type(0));
-        REQUIRE(slice1.is_start());
-        REQUIRE(!slice1.is_stop());
-        REQUIRE(slice1.is_step());
-        slice_type slice2 = {3,{},{}};
-        REQUIRE(slice2.start == index_type(3));
-        REQUIRE(slice2.is_start());
-        REQUIRE(!slice2.is_stop());
-        REQUIRE(slice2.is_step());
-    }
-    SECTION("construction_ij_"){
-        slice_type slice{3,10};
-        REQUIRE(slice.start == index_type(3));
-        REQUIRE(slice.stop == index_type(10));
-        REQUIRE(slice.is_start());
-        REQUIRE(slice.is_stop());
-        REQUIRE(slice.is_step());
-        slice_type slice1{2,14,nop};
-        REQUIRE(slice1.is_start());
-        REQUIRE(slice1.is_stop());
-        REQUIRE(slice1.is_step());
-        REQUIRE(slice1.start == index_type(2));
-        REQUIRE(slice1.stop == index_type(14));
-    }
-    SECTION("construction_ijk"){
-        slice_type slice{3,10,-2};
-        REQUIRE(slice.start == index_type(3));
-        REQUIRE(slice.stop == index_type(10));
-        REQUIRE(slice.step == index_type(-2));
-        REQUIRE(slice.is_start());
-        REQUIRE(slice.is_stop());
-        REQUIRE(slice.is_step());
-    }
-    SECTION("construction___k"){
-        slice_type slice{{},{nop},-2};
-        REQUIRE(slice.step == index_type(-2));
-        REQUIRE(!slice.is_start());
-        REQUIRE(!slice.is_stop());
-        REQUIRE(slice.is_step());
+    SECTION("test_slice_init_list_constructor")
+    {
+        auto test = [test_slice](const auto& t){
+            auto items = std::get<0>(t);
+            auto make_slice = [](const auto&...items_){
+                return slice_type{items_...};
+            };
+            auto slice_ = std::apply(make_slice, items);
+            test_slice(slice_, t);
+        };
+        apply_by_element(test, test_data);
     }
 }
 
@@ -176,6 +187,8 @@ TEST_CASE("test_fill_slice","[test_slice]"){
     using index_type = typename gtensor::config::default_config::index_type;
     using slice_type = typename gtensor::slice_traits<config_type>::slice_type;
     using nop_type = typename gtensor::slice_traits<config_type>::nop_type;
+    using gtensor::detail::fill_slice;
+    //0slice,1expected,2shape_element
     using test_type = std::tuple<slice_type,slice_type,index_type>;
     auto test_data = GENERATE(
         test_type{slice_type(),slice_type(0,11,1),11},
@@ -190,7 +203,11 @@ TEST_CASE("test_fill_slice","[test_slice]"){
         test_type{slice_type(4,0,-1),slice_type(4,0,-1),11},
         test_type{slice_type(4,0,-1),slice_type(4,0,-1),11}
         );
-    REQUIRE(gtensor::detail::fill_slice(std::get<0>(test_data),std::get<2>(test_data)) == std::get<1>(test_data));
+    auto sl = std::get<0>(test_data);
+    auto expected = std::get<1>(test_data);
+    auto shape_element = std::get<2>(test_data);
+    auto result = fill_slice(sl, shape_element);
+    REQUIRE(result == expected);
 }
 
 TEST_CASE("test_fill_slices","[test_slice]"){
@@ -371,3 +388,4 @@ TEST_CASE("test_check_slices_number","[test_check_slices]"){
         REQUIRE_THROWS_AS(check_slices_number(shape_type{5},slice_container_type(2)), gtensor::subscript_exception);
     }
 }
+
