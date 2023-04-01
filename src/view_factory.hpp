@@ -12,6 +12,11 @@ namespace gtensor{
 
 namespace detail{
 
+//slice view helpers
+//new
+
+
+//old
 template<typename SliceT>
 inline auto make_view_slice_shape_element(const SliceT& subs){
     using index_type = typename SliceT::index_type;
@@ -22,7 +27,6 @@ inline auto make_view_slice_shape_element(const SliceT& subs){
             (subs.stop - subs.start-index_type(1))/step_ + index_type(1) :
             (subs.start - subs.stop-index_type(1))/step_ + index_type(1);
 }
-/*make view slice shape*/
 template<typename ShT, typename SliceT, typename SizeT>
 inline ShT make_view_slice_shape(const ShT& pshape, const SliceT& subs, const SizeT& direction){
     ShT res{pshape};
@@ -37,7 +41,6 @@ inline ShT make_view_slice_shape(const ShT& pshape, const SubsT& subs){
     std::for_each(pshape.data()+subs.size(), pshape.data()+pshape.size(), [&res](const auto& elem){res.push_back(elem);});
     return res;
 }
-/*make view slice offset*/
 template<typename ShT, typename SliceT, typename SizeT>
 inline typename ShT::value_type make_view_slice_offset(const ShT& pstrides, const SliceT& subs, const SizeT& direction){
     return subs.start*pstrides[direction];
@@ -49,7 +52,6 @@ inline typename ShT::value_type make_view_slice_offset(const ShT& pstrides, cons
     std::for_each(subs.begin(), subs.end(), [&res, pstrides_it = pstrides.begin()](const auto& subs_)mutable{res+=subs_.start*(*pstrides_it); ++pstrides_it;});
     return res;
 }
-/*make view slice cstrides*/
 template<typename ShT, typename SliceT, typename SizeT>
 inline ShT make_view_slice_cstrides(const ShT& pstrides, const SliceT& subs, const SizeT& direction){
     ShT res{pstrides};
@@ -66,19 +68,7 @@ inline ShT make_view_slice_cstrides(const ShT& pstrides, const SubsT& subs){
     return res;
 }
 
-//make transpose view helpers
-// template<typename ShT, typename...Indeces>
-// ShT transpose(const ShT& src, const Indeces&...indeces){
-//     ShT res{};
-//     res.reserve(src.size());
-//     if constexpr (sizeof...(Indeces) == 0){
-//         res.assign(src.rbegin(), src.rend());
-//     }else{
-//         (res.push_back(src[indeces]),...);
-//     }
-//     return res;
-// }
-
+//transpose view helpers
 template<typename ShT, typename Container>
 ShT make_view_transpose_shape(const ShT& pshape, const Container& subs){
     using shape_type = ShT;
@@ -135,25 +125,7 @@ inline void check_transpose_subs_variadic(const Subs&...subs){
     }
 }
 
-// template<typename SizeT, typename...Subs>
-// inline void check_transpose_subs(const SizeT& dim, const Subs&...subs){
-//     using size_type = SizeT;
-//     size_type subs_number = sizeof...(Subs);
-//     if (dim!=subs_number){
-//         throw subscript_exception("transpose must have no or dim subscripts");
-//     }
-//     std::array<bool, sizeof...(Subs)> check_buffer;
-//     check_buffer.fill(false);
-//     ([&subs_number, &check_buffer](const auto& sub){
-//         if (static_cast<size_type>(sub)>=subs_number || check_buffer[static_cast<std::size_t>(sub)]){
-//             throw subscript_exception("invalid transpose subscript");
-//         }else{
-//             check_buffer[static_cast<std::size_t>(sub)]=true;
-//         }
-//     }(subs),...);
-// }
-
-//make subdim view helpers
+//subdim view helpers
 template<typename ShT, typename SizeT>
 inline ShT make_view_subdim_shape(const ShT& pshape, const SizeT& subs_number){
     return ShT(pshape.begin()+subs_number, pshape.end());
@@ -210,7 +182,7 @@ inline void check_subdim_subs_variadic(const ShT& pshape, const Subs&...subs){
     }
 }
 
-//make reshape view helpers
+//reshape view helpers
 template<typename ShT, typename Container>
 inline ShT make_view_reshape_shape(const ShT& pshape, const typename ShT::value_type& psize, const Container& subs){
     using shape_type = ShT;
@@ -267,7 +239,7 @@ inline auto check_reshape_subs(const IdxT& psize, const Container& subs){
 }
 
 
-//helpers for making index_mapping_view
+//index_mapping_view helpers
 template<typename ShT, typename SizeT>
 inline auto mapping_view_chunk_size(const ShT& pshape, const SizeT& subs_dim_or_subs_number){
     using index_type = typename ShT::value_type;
@@ -546,6 +518,18 @@ class view_factory
         return create_view_transpose_container(parent, typename config_type::template container<size_type>{static_cast<size_type>(subs)...});
     }
 
+    template<typename...Ts, typename Subs, typename SizeT>
+    static auto create_view_slice_direction(const tensor<Ts...>& parent, const Subs& subs, const SizeT& direction){
+    }
+    template<typename...Ts, typename Container>
+    static auto create_view_slice_container(const tensor<Ts...>& parent, const Container& subs){
+    }
+    //if only index_type subscripts then make subdim view
+    //if there are one or more slice_type subscripts make slice view
+    //compile time decision
+    template<typename...Ts,typename...Subs>
+    static auto create_view_slice_variadic(const tensor<Ts...>& parent, const Subs&...subs){
+    }
 
 
 public:
@@ -587,6 +571,25 @@ public:
     }
 
 
+    template<typename...Ts>
+    static auto create_view_slice(const tensor<Ts...>& parent, const typename tensor<Ts...>::slice_type& subs, const typename tensor<Ts...>::size_type& direction){
+        return create_view_slice_direction(parent, subs, direction);
+    }
+    template<typename...Ts, typename Container, std::enable_if_t<detail::is_container_of_type_v<Container, typename tensor<Ts...>::slice_type>,int> = 0>
+    static auto create_view_slice(const tensor<Ts...>& parent, const Container& subs){
+        return create_view_slice_container(parent, subs);
+    }
+    //if only index_type subscripts then make subdim view
+    //if there are one or more slice_type subscripts make slice view
+    //compile time decision
+    template<
+        typename...Ts,
+        typename...Subs,
+        std::enable_if_t<((std::is_convertible_v<Subs, typename tensor<Ts...>::index_type> || std::is_convertible_v<Subs, typename tensor<Ts...>::slice_type>)&&...),int> = 0
+    >
+    static auto create_view_slice(const tensor<Ts...>& parent, const Subs&...subs){
+        create_view_slice_variadic(parent, subs...);
+    }
 
     template<typename ImplT, typename...Subs>
     static auto create_index_mapping_view(const std::shared_ptr<ImplT>& parent, const Subs&...subs){
@@ -629,10 +632,41 @@ public:
         res.impl()->resize(detail::make_bool_mapping_view_shape(pshape, subs_trues_number, subs.dim()));
         return res;
     }
-};
+
+};  //end of class view_factory
 
 
 //view_factory module interface
+template<typename...Ts>
+inline auto create_view_slice(const tensor<Ts...>& parent, const typename tensor<Ts...>::slice_type& subs, const typename tensor<Ts...>::size_type& direction){
+    using tensor_type = tensor<Ts...>;
+    using config_type = typename tensor_type::config_type;
+    using value_type = typename tensor_type::value_type;
+    return view_factory<value_type,config_type>::create_view_slice(parent, subs, direction);
+}
+template<typename...Ts, typename Container, std::enable_if_t<detail::is_container_of_type_v<Container, typename tensor<Ts...>::slice_type>,int> = 0>
+inline auto create_view_slice(const tensor<Ts...>& parent, const Container& subs){
+    using tensor_type = tensor<Ts...>;
+    using config_type = typename tensor_type::config_type;
+    using value_type = typename tensor_type::value_type;
+    return view_factory<value_type,config_type>::create_view_slice(parent, subs);
+}
+//if only index_type subscripts then make subdim view
+//if there are one or more slice_type subscripts make slice view
+//compile time decision
+template<
+    typename...Ts,
+    typename...Subs,
+    std::enable_if_t<((std::is_convertible_v<Subs, typename tensor<Ts...>::index_type> || std::is_convertible_v<Subs, typename tensor<Ts...>::slice_type>)&&...),int> = 0
+>
+inline auto create_view_slice(const tensor<Ts...>& parent, const Subs&...subs){
+    using tensor_type = tensor<Ts...>;
+    using config_type = typename tensor_type::config_type;
+    using value_type = typename tensor_type::value_type;
+    return view_factory<value_type,config_type>::create_view_slice(parent, subs...);
+}
+
+
 template<typename...Ts, typename Container, std::enable_if_t<detail::is_container_of_type_v<Container, typename tensor<Ts...>::index_type>,int> = 0>
 inline auto create_view_subdim(const tensor<Ts...>& parent, const Container& subs){
     using tensor_type = tensor<Ts...>;
