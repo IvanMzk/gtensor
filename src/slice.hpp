@@ -111,7 +111,6 @@ inline void check_slice_item_list(std::initializer_list<slice_item<T,N,R>> l){
 
 }   //end of namespace detail
 
-
 template<typename IdxT, typename NopT = Nop, typename RtagT = Rtag>
 class slice{
 public:
@@ -268,8 +267,8 @@ inline auto fill_slice(const slice<T,N,R>& slice_, const T& n){
 * check filled slice for valid values given shape element n
 * slice{i,j,k}
 * k !=0 - garantes by slice type
-* if k>0:  i < j  and i,j in range [0,n)
-* if k<0:  i > j  and i,j in range [0,n)
+* if k>0:  i < j  and i in range [0,n) and j in range [0,n+1)
+* if k<0:  i > j  and i in range [0,n) and j in range [-1,n)
 * if slice is ok do nothing, throw subscript_exception otherwise
 */
 template<typename T, typename N, typename R>
