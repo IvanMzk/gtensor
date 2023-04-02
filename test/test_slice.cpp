@@ -121,21 +121,46 @@ TEST_CASE("test_slice","[test_slice]"){
 
     //0items,1expected_is_start,2expected_is_stop,3expected_is_step,4expected_is_reduce,5expected_start,6expected_stop,7expected_step
     auto test_data = std::make_tuple(
+        //nop,nop,nop
         std::make_tuple(std::make_tuple(), false,false,true,false, index_type{},index_type{},index_type{1}),
         std::make_tuple(std::make_tuple(nop_type{}), false,false,true,false, index_type{},index_type{},index_type{1}),
         std::make_tuple(std::make_tuple(nop_type{},nop_type{}), false,false,true,false, index_type{},index_type{},index_type{1}),
         std::make_tuple(std::make_tuple(nop_type{},nop_type{},nop_type{}), false,false,true,false, index_type{},index_type{},index_type{1}),
+        //nop,nop,step
+        std::make_tuple(std::make_tuple(nop_type{},nop_type{},3), false,false,true,false, index_type{},index_type{},index_type{3}),
+        std::make_tuple(std::make_tuple(nop_type{},nop_type{},-3), false,false,true,false, index_type{},index_type{},index_type{-3}),
+        //nop,stop,step
+        std::make_tuple(std::make_tuple(nop_type{},1,3), false,true,true,false, index_type{},index_type{1},index_type{3}),
+        std::make_tuple(std::make_tuple(nop_type{},2,-3), false,true,true,false, index_type{},index_type{2},index_type{-3}),
+        //start,nop,nop
         std::make_tuple(std::make_tuple(0), true,false,true,false, index_type{0},index_type{},index_type{1}),
+        std::make_tuple(std::make_tuple(3), true,false,true,false, index_type{3},index_type{},index_type{1}),
+        std::make_tuple(std::make_tuple(-3), true,false,true,false, index_type{-3},index_type{},index_type{1}),
         std::make_tuple(std::make_tuple(0,nop_type{}), true,false,true,false, index_type{0},index_type{},index_type{1}),
+        std::make_tuple(std::make_tuple(3,nop_type{}), true,false,true,false, index_type{3},index_type{},index_type{1}),
+        std::make_tuple(std::make_tuple(-3,nop_type{}), true,false,true,false, index_type{-3},index_type{},index_type{1}),
         std::make_tuple(std::make_tuple(0,nop_type{},nop_type{}), true,false,true,false, index_type{0},index_type{},index_type{1}),
-        std::make_tuple(std::make_tuple(1), true,false,true,false, index_type{1},index_type{},index_type{1}),
-        std::make_tuple(std::make_tuple(1,nop_type{}), true,false,true,false, index_type{1},index_type{},index_type{1}),
-        std::make_tuple(std::make_tuple(1,nop_type{},nop_type{}), true,false,true,false, index_type{1},index_type{},index_type{1}),
-        std::make_tuple(std::make_tuple(1,2), true,true,true,false, index_type{1},index_type{2},index_type{1}),
-        std::make_tuple(std::make_tuple(1,2,nop_type{}), true,true,true,false, index_type{1},index_type{2},index_type{1}),
+        std::make_tuple(std::make_tuple(3,nop_type{},nop_type{}), true,false,true,false, index_type{3},index_type{},index_type{1}),
+        std::make_tuple(std::make_tuple(-3,nop_type{},nop_type{}), true,false,true,false, index_type{-3},index_type{},index_type{1}),
+        //nop,stop,nop
+        std::make_tuple(std::make_tuple(nop_type{},0), false,true,true,false, index_type{},index_type{0},index_type{1}),
+        std::make_tuple(std::make_tuple(nop_type{},3), false,true,true,false, index_type{},index_type{3},index_type{1}),
+        std::make_tuple(std::make_tuple(nop_type{},-3), false,true,true,false, index_type{},index_type{-3},index_type{1}),
+        std::make_tuple(std::make_tuple(nop_type{},0,nop_type{}), false,true,true,false, index_type{},index_type{0},index_type{1}),
+        std::make_tuple(std::make_tuple(nop_type{},3,nop_type{}), false,true,true,false, index_type{},index_type{3},index_type{1}),
+        std::make_tuple(std::make_tuple(nop_type{},-3,nop_type{}), false,true,true,false, index_type{},index_type{-3},index_type{1}),
+        //start,stop,nop
+        std::make_tuple(std::make_tuple(-3,3), true,true,true,false, index_type{-3},index_type{3},index_type{1}),
+        std::make_tuple(std::make_tuple(3,-3,nop_type{}), true,true,true,false, index_type{3},index_type{-3},index_type{1}),
+        //start,nop,step
+        std::make_tuple(std::make_tuple(-3,nop_type{},3), true,false,true,false, index_type{-3},index_type{},index_type{3}),
+        std::make_tuple(std::make_tuple(3,nop_type{},-3), true,false,true,false, index_type{3},index_type{},index_type{-3}),
+        //start,stop,step
         std::make_tuple(std::make_tuple(1,2,3), true,true,true,false, index_type{1},index_type{2},index_type{3}),
+        //reduce
         std::make_tuple(std::make_tuple(0,rtag_type{}), true,true,true,true, index_type{0},index_type{1},index_type{1}),
-        std::make_tuple(std::make_tuple(1,rtag_type{}), true,true,true,true, index_type{1},index_type{2},index_type{1})
+        std::make_tuple(std::make_tuple(3,rtag_type{}), true,true,true,true, index_type{3},index_type{4},index_type{1}),
+        std::make_tuple(std::make_tuple(-3,rtag_type{}), true,true,true,true, index_type{-3},index_type{-2},index_type{1})
     );
     auto test_slice = [](const auto& slice_, const auto& t)
     {

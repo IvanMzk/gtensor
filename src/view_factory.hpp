@@ -15,43 +15,48 @@ namespace detail{
 //slice view helpers
 //new
 template<typename SliceT, typename IdxT>
-inline auto make_slice_view_shape_element(const IdxT& pshape_element, const SliceT& subs){
+inline IdxT make_slice_start(const IdxT& pshape_element, const SliceT& subs){
     using index_type = IdxT;
     const index_type zero_index{0};
-
-    index_type step = subs.step();
-    if (step > zero_index){
-        index_type start = subs.is_start() ? subs.start():zero_index;   //defaults if nop
-        start = start < zero_index ? pshape_element+start:start;    //negative interpretation
-
-        index_type stop = subs.is_stop() ? subs.stop():pshape_element;
-        stop = stop < zero_index ? pshape_element+stop:stop;
-
-        index_type d = stop - start;    //distance
-        // std::cout<<std::endl<<d;
-        d = d<zero_index ? zero_index:(d>pshape_element ? pshape_element:d);   //check ranges, d>=0
-        d = d==zero_index ? zero_index:(d-index_type{1})/step+index_type{1};  //step
-        // std::cout<<std::endl<<start;
-        // std::cout<<std::endl<<stop;
-        // std::cout<<std::endl<<d;
-        return start >= pshape_element || stop<=zero_index ? zero_index : d;
-
-    }else{
-        index_type start = subs.is_start() ? subs.start():pshape_element-index_type{1};   //defaults if nop
-        start = start < zero_index ? pshape_element+start:start;    //negative interpretation
-
-        index_type stop = subs.is_stop() ? subs.stop():-pshape_element-index_type{1};
-        stop = stop < zero_index ? pshape_element+stop:stop;
-
-        index_type d = start - stop;
-        // std::cout<<std::endl<<d;
-        d = d<zero_index ? zero_index:(d>pshape_element ? pshape_element:d);   //check ranges, d>=0
-        d = d==zero_index ? zero_index:(d-index_type{1})/-step+index_type{1};  //step
-        // std::cout<<std::endl<<start;
-        // std::cout<<std::endl<<stop;
-        // std::cout<<std::endl<<d;
-        return start < zero_index || stop>=pshape_element-index_type{1} ? zero_index : d;
+    index_type start = subs.start();
+    if (!subs.is_start()){
+        return subs.step()>zero_index ? zero_index:pshape_element-index_type{1};  //negative corrected defaults
     }
+    return start<zero_index ? pshape_element+start:start;   //negative correction
+}
+template<typename SliceT, typename IdxT>
+inline IdxT make_slice_stop(const IdxT& pshape_element, const SliceT& subs){
+    using index_type = IdxT;
+    const index_type zero_index{0};
+    index_type stop = subs.stop();
+    if (!subs.is_stop()){
+        return subs.step()>zero_index ? pshape_element:-index_type{1};  //negative corrected defaults
+    }
+    return stop<zero_index ? pshape_element+stop:stop;   //negative correction
+}
+template<typename SliceT, typename IdxT>
+inline IdxT make_slice_view_shape_element(const IdxT& pshape_element, const SliceT& subs){
+    using index_type = IdxT;
+    const index_type zero_index{0};
+    const index_type start = make_slice_start(pshape_element, subs);
+    const index_type stop = make_slice_stop(pshape_element, subs);
+    index_type step = subs.step();
+    index_type d{0};
+    if (step > zero_index){
+        if (start >= pshape_element || stop<=zero_index){
+            return zero_index;
+        }else{
+            d = std::min(stop-start, pshape_element);
+        }
+    }else{
+        if (start < zero_index || stop>=pshape_element-index_type{1}){
+            return zero_index;
+        }else{
+            d = std::min(start-stop, pshape_element);
+        }
+        step = -step;
+    }
+    return d<=zero_index ? zero_index:(d-index_type{1})/step+index_type{1};
 }
 
 template<typename ShT, typename SizeT, typename SubsT>

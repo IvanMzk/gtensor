@@ -30,6 +30,7 @@ TEST_CASE("test_make_slice_view_shape_element","[test_view_factory]"){
     using index_type = config_type::index_type;
     using slice_type = gtensor::slice_traits<config_type>::slice_type;
     using nop_type = gtensor::slice_traits<config_type>::nop_type;
+    using rtag_type = gtensor::slice_traits<config_type>::rtag_type;
     using gtensor::detail::make_slice_view_shape_element;
     //0slice,1pshape_element,2expected
     using test_type = std::tuple<index_type, slice_type, index_type>;
@@ -99,6 +100,10 @@ TEST_CASE("test_make_slice_view_shape_element","[test_view_factory]"){
         test_type{index_type{0},slice_type{-3,0,-2},index_type{0}},
         test_type{index_type{0},slice_type{-3,3,-2},index_type{0}},
         test_type{index_type{0},slice_type{3,-3,-2},index_type{0}},
+        //reduce slice
+        test_type{index_type{0},slice_type{0,rtag_type{}},index_type{0}},
+        test_type{index_type{0},slice_type{3,rtag_type{}},index_type{0}},
+        test_type{index_type{0},slice_type{-3,rtag_type{}},index_type{0}},
         //pshape_element>0
         //nop,nop,nop
         test_type{index_type{10},slice_type{},index_type{10}},
@@ -188,7 +193,11 @@ TEST_CASE("test_make_slice_view_shape_element","[test_view_factory]"){
         test_type{index_type{10},slice_type{0,-3,-3},index_type{0}},
         test_type{index_type{10},slice_type{-3,0,-3},index_type{3}},
         test_type{index_type{10},slice_type{-3,3,-3},index_type{2}},
-        test_type{index_type{10},slice_type{3,-3,-3},index_type{0}}
+        test_type{index_type{10},slice_type{3,-3,-3},index_type{0}},
+        //reduce slice
+        test_type{index_type{10},slice_type{0,rtag_type{}},index_type{1}},
+        test_type{index_type{10},slice_type{3,rtag_type{}},index_type{1}},
+        test_type{index_type{10},slice_type{-3,rtag_type{}},index_type{1}}
     );
     auto pshape_element = std::get<0>(test_data);
     auto slice = std::get<1>(test_data);
