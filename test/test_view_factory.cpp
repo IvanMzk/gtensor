@@ -197,7 +197,10 @@ TEST_CASE("test_make_slice_view_shape_element","[test_view_factory]"){
         //reduce slice
         test_type{index_type{10},slice_type{0,rtag_type{}},index_type{1}},
         test_type{index_type{10},slice_type{3,rtag_type{}},index_type{1}},
-        test_type{index_type{10},slice_type{-3,rtag_type{}},index_type{1}}
+        test_type{index_type{10},slice_type{-3,rtag_type{}},index_type{1}},
+        test_type{index_type{10},slice_type{10,rtag_type{}},index_type{0}},
+        test_type{index_type{10},slice_type{-10,rtag_type{}},index_type{1}},
+        test_type{index_type{10},slice_type{-11,rtag_type{}},index_type{0}}
     );
     auto pshape_element = std::get<0>(test_data);
     auto slice = std::get<1>(test_data);
@@ -206,35 +209,132 @@ TEST_CASE("test_make_slice_view_shape_element","[test_view_factory]"){
     REQUIRE(result == expected);
 }
 
-// TEMPLATE_TEST_CASE("test_make_view_slice_shape","[test_view_factory]", std::vector<std::int64_t>){
-//     using index_type = typename TestType::value_type;
-//     using shape_type = TestType;
-//     using slice_type = gtensor::slice<index_type>;
-//     using slices_collection_type = std::vector<slice_type>;
-//     using gtensor::detail::make_view_slice_shape;
-//     using test_type = std::tuple<shape_type, slices_collection_type, shape_type>;
-//     //0parent_shape,1slices_collection,2expected_shape
-//     auto test_data = GENERATE(
-//         test_type{shape_type{11},{}, shape_type{11}},
-//         test_type{shape_type{11},{slice_type{0,11,1}}, shape_type{11}},
-//         test_type{shape_type{11},{slice_type{0,11,2}}, shape_type{6}},
-//         test_type{shape_type{11},{slice_type{3,11,1}}, shape_type{8}},
-//         test_type{shape_type{11},{slice_type{3,9,3}}, shape_type{2}},
-//         test_type{shape_type{11},{slice_type{3,11,2}}, shape_type{4}},
-//         test_type{shape_type{11},{slice_type{5,5,1}}, shape_type{0}},
-//         test_type{shape_type{11},{slice_type{5,5,2}}, shape_type{0}},
-//         test_type{shape_type{2,4,3},{}, shape_type{2,4,3}},
-//         test_type{shape_type{2,4,3},{slice_type{0,2},slice_type{0,4}}, shape_type{2,4,3}},
-//         test_type{shape_type{2,4,3},{slice_type{1},slice_type{2}}, shape_type{1,2,3}},
-//         test_type{shape_type{2,4,3},{slice_type{0,2},slice_type{0,4},slice_type{0,3}}, shape_type{2,4,3}},
-//         test_type{shape_type{1,10,10},{slice_type{0,1,1},slice_type{9,-1,-1}}, shape_type{1,10,10}},
-//         test_type{shape_type{10,1,10},{slice_type{9,3,-2}}, shape_type{3,1,10}}
-//     );
-//     auto parent_shape = std::get<0>(test_data);
-//     auto slices_collection = std::get<1>(test_data);
-//     auto expected_shape = std::get<2>(test_data);
-//     REQUIRE(make_view_slice_shape(parent_shape, slices_collection) == expected_shape);
-// }
+TEST_CASE("test_make_slice_view_shape","[test_view_factory]"){
+    using config_type = gtensor::config::default_config;
+    using shape_type = config_type::shape_type;
+    using size_type = config_type::size_type;
+    using slice_type = gtensor::slice_traits<config_type>::slice_type;
+    using nop_type = gtensor::slice_traits<config_type>::nop_type;
+    using rtag_type = gtensor::slice_traits<config_type>::rtag_type;
+    using gtensor::detail::make_slice_view_shape;
+    using helpers_for_testing::apply_by_element;
+    //0pshape,1reduce_slices_number,2subs,3expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(shape_type{11},size_type{0},std::vector<slice_type>{}, shape_type{11}),
+        std::make_tuple(shape_type{11},size_type{0},std::vector<slice_type>{slice_type{0,11,1}}, shape_type{11}),
+        std::make_tuple(shape_type{11},size_type{0},std::vector<slice_type>{slice_type{0,11,2}}, shape_type{6}),
+        std::make_tuple(shape_type{11},size_type{0},std::vector<slice_type>{slice_type{3,11,1}}, shape_type{8}),
+        std::make_tuple(shape_type{11},size_type{0},std::vector<slice_type>{slice_type{3,9,3}}, shape_type{2}),
+        std::make_tuple(shape_type{11},size_type{0},std::vector<slice_type>{slice_type{3,11,2}}, shape_type{4}),
+        std::make_tuple(shape_type{11},size_type{0},std::vector<slice_type>{slice_type{5,5,1}}, shape_type{0}),
+        std::make_tuple(shape_type{11},size_type{0},std::vector<slice_type>{slice_type{5,5,2}}, shape_type{0}),
+        std::make_tuple(shape_type{2,4,3},size_type{0},std::vector<slice_type>{}, shape_type{2,4,3}),
+        std::make_tuple(shape_type{2,4,3},size_type{0},std::array<slice_type,2>{slice_type{0,2},slice_type{0,4}}, shape_type{2,4,3}),
+        std::make_tuple(shape_type{2,4,3},size_type{0},std::initializer_list<slice_type>{slice_type{1},slice_type{2}}, shape_type{1,2,3}),
+        std::make_tuple(shape_type{2,4,3},size_type{0},std::vector<slice_type>{slice_type{0,2},slice_type{0,4},slice_type{0,3}}, shape_type{2,4,3}),
+        std::make_tuple(shape_type{1,10,10},size_type{0},std::vector<slice_type>{slice_type{0,1,1},slice_type{9,-1,-1}}, shape_type{1,0,10}),
+        std::make_tuple(shape_type{1,10,10},size_type{0},std::vector<slice_type>{slice_type{0,1,1},slice_type{9,-11,-1}}, shape_type{1,10,10}),
+        std::make_tuple(shape_type{1,10,10},size_type{0},std::vector<slice_type>{slice_type{0,1,1},slice_type{9,nop_type{},-1}}, shape_type{1,10,10}),
+        std::make_tuple(shape_type{10,1,10},size_type{0},std::vector<slice_type>{slice_type{9,3,-2}}, shape_type{3,1,10}),
+        //reduce
+        std::make_tuple(shape_type{3,4},size_type{1},std::vector<slice_type>{slice_type{0,rtag_type{}},slice_type{}}, shape_type{4}),
+        std::make_tuple(shape_type{3,4},size_type{1},std::vector<slice_type>{slice_type{1,rtag_type{}},slice_type{}}, shape_type{4}),
+        std::make_tuple(shape_type{3,4},size_type{1},std::vector<slice_type>{slice_type{2,rtag_type{}},slice_type{}}, shape_type{4}),
+        std::make_tuple(shape_type{3,4},size_type{1},std::vector<slice_type>{slice_type{0,rtag_type{}},slice_type{nop_type{},nop_type{},-1}}, shape_type{4}),
+        std::make_tuple(shape_type{3,4},size_type{1},std::vector<slice_type>{slice_type{1,rtag_type{}},slice_type{1,3}}, shape_type{2}),
+        std::make_tuple(shape_type{3,4},size_type{1},std::vector<slice_type>{slice_type{2,rtag_type{}},slice_type{nop_type{},nop_type{},3}}, shape_type{2}),
+        std::make_tuple(shape_type{3,4},size_type{1},std::vector<slice_type>{slice_type{},slice_type{0,rtag_type{}}}, shape_type{3}),
+        std::make_tuple(shape_type{3,4},size_type{1},std::vector<slice_type>{slice_type{},slice_type{1,rtag_type{}}}, shape_type{3}),
+        std::make_tuple(shape_type{3,4},size_type{1},std::vector<slice_type>{slice_type{},slice_type{2,rtag_type{}}}, shape_type{3}),
+        std::make_tuple(shape_type{3,4},size_type{1},std::vector<slice_type>{slice_type{},slice_type{3,rtag_type{}}}, shape_type{3}),
+        std::make_tuple(shape_type{3,4},size_type{1},std::vector<slice_type>{slice_type{1},slice_type{0,rtag_type{}}}, shape_type{2}),
+        std::make_tuple(shape_type{3,4},size_type{1},std::vector<slice_type>{slice_type{0,1},slice_type{1,rtag_type{}}}, shape_type{1}),
+        std::make_tuple(shape_type{3,4},size_type{1},std::vector<slice_type>{slice_type{nop_type{},nop_type{},-2},slice_type{2,rtag_type{}}}, shape_type{2}),
+        std::make_tuple(shape_type{2,4,3},size_type{2},std::vector<slice_type>{slice_type{1,rtag_type{}},slice_type{2,rtag_type{}}}, shape_type{3}),
+        std::make_tuple(shape_type{2,4,3},size_type{2},std::vector<slice_type>{slice_type{1,rtag_type{}},slice_type{},slice_type{2,rtag_type{}}}, shape_type{4}),
+        std::make_tuple(shape_type{2,4,3},size_type{2},std::vector<slice_type>{slice_type{1,rtag_type{}},slice_type{nop_type{},nop_type{},3},slice_type{2,rtag_type{}}}, shape_type{2})
+    );
+    auto test = [](const auto& t){
+        auto pshape = std::get<0>(t);
+        auto reduce_slices_number = std::get<1>(t);
+        auto subs = std::get<2>(t);
+        auto expected = std::get<3>(t);
+        auto result = make_slice_view_shape(pshape,reduce_slices_number,subs);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test, test_data);
+}
+
+TEST_CASE("test_make_slice_view_shape_direction","[test_view_factory]"){
+    using config_type = gtensor::config::default_config;
+    using shape_type = config_type::shape_type;
+    using size_type = config_type::size_type;
+    using slice_type = gtensor::slice_traits<config_type>::slice_type;
+    using nop_type = gtensor::slice_traits<config_type>::nop_type;
+    using rtag_type = gtensor::slice_traits<config_type>::rtag_type;
+    using gtensor::detail::make_slice_view_shape_direction;
+    using helpers_for_testing::apply_by_element;
+    //0pshape,1direction,2subs,3expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(shape_type{11},size_type{0},slice_type{},shape_type{11}),
+        std::make_tuple(shape_type{11},size_type{0},slice_type{-1,-5,-1},shape_type{4}),
+        std::make_tuple(shape_type{4,3},size_type{0},slice_type{},shape_type{4,3}),
+        std::make_tuple(shape_type{4,3},size_type{0},slice_type{1,3},shape_type{2,3}),
+        std::make_tuple(shape_type{4,3},size_type{1},slice_type{},shape_type{4,3}),
+        std::make_tuple(shape_type{4,3},size_type{1},slice_type{1,3},shape_type{4,2}),
+        std::make_tuple(shape_type{4,3},size_type{0},slice_type{0,rtag_type{}},shape_type{3}),
+        std::make_tuple(shape_type{4,3},size_type{0},slice_type{1,rtag_type{}},shape_type{3}),
+        std::make_tuple(shape_type{4,3},size_type{1},slice_type{0,rtag_type{}},shape_type{4}),
+        std::make_tuple(shape_type{4,3},size_type{1},slice_type{1,rtag_type{}},shape_type{4}),
+        std::make_tuple(shape_type{4,3,5},size_type{0},slice_type{1,rtag_type{}},shape_type{3,5}),
+        std::make_tuple(shape_type{4,3,5},size_type{1},slice_type{1,rtag_type{}},shape_type{4,5}),
+        std::make_tuple(shape_type{4,3,5},size_type{2},slice_type{1,rtag_type{}},shape_type{4,3})
+    );
+    auto test = [](const auto& t){
+        auto pshape = std::get<0>(t);
+        auto direction = std::get<1>(t);
+        auto subs = std::get<2>(t);
+        auto expected = std::get<3>(t);
+        auto result = make_slice_view_shape_direction(pshape,direction,subs);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test, test_data);
+}
+
+
+
+
+
+
+TEMPLATE_TEST_CASE("test_make_view_slice_shape","[test_view_factory]", std::vector<std::int64_t>){
+    using index_type = typename TestType::value_type;
+    using shape_type = TestType;
+    using slice_type = gtensor::slice<index_type>;
+    using slices_collection_type = std::vector<slice_type>;
+    using gtensor::detail::make_view_slice_shape;
+    using test_type = std::tuple<shape_type, slices_collection_type, shape_type>;
+    //0parent_shape,1slices_collection,2expected_shape
+    auto test_data = GENERATE(
+        test_type{shape_type{11},{}, shape_type{11}},
+        test_type{shape_type{11},{slice_type{0,11,1}}, shape_type{11}},
+        test_type{shape_type{11},{slice_type{0,11,2}}, shape_type{6}},
+        test_type{shape_type{11},{slice_type{3,11,1}}, shape_type{8}},
+        test_type{shape_type{11},{slice_type{3,9,3}}, shape_type{2}},
+        test_type{shape_type{11},{slice_type{3,11,2}}, shape_type{4}},
+        test_type{shape_type{11},{slice_type{5,5,1}}, shape_type{0}},
+        test_type{shape_type{11},{slice_type{5,5,2}}, shape_type{0}},
+        test_type{shape_type{2,4,3},{}, shape_type{2,4,3}},
+        test_type{shape_type{2,4,3},{slice_type{0,2},slice_type{0,4}}, shape_type{2,4,3}},
+        test_type{shape_type{2,4,3},{slice_type{1},slice_type{2}}, shape_type{1,2,3}},
+        test_type{shape_type{2,4,3},{slice_type{0,2},slice_type{0,4},slice_type{0,3}}, shape_type{2,4,3}},
+        test_type{shape_type{1,10,10},{slice_type{0,1,1},slice_type{9,-1,-1}}, shape_type{1,10,10}},
+        test_type{shape_type{10,1,10},{slice_type{9,3,-2}}, shape_type{3,1,10}}
+    );
+    auto parent_shape = std::get<0>(test_data);
+    auto slices_collection = std::get<1>(test_data);
+    auto expected_shape = std::get<2>(test_data);
+    REQUIRE(make_view_slice_shape(parent_shape, slices_collection) == expected_shape);
+}
 
 // TEMPLATE_TEST_CASE("test_make_view_slice_offset","[test_view_factory]", std::vector<std::int64_t>){
 //     using index_type = typename TestType::value_type;

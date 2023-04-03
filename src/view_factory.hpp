@@ -59,18 +59,18 @@ inline IdxT make_slice_view_shape_element(const IdxT& pshape_element, const Slic
     return d<=zero_index ? zero_index:(d-index_type{1})/step+index_type{1};
 }
 
-template<typename ShT, typename SizeT, typename SubsT>
-inline ShT make_slice_view_shape(const ShT& pshape, const SizeT& reduce_number, const SubsT& subs){
+template<typename ShT, typename SizeT, typename Container>
+inline ShT make_slice_view_shape(const ShT& pshape, const SizeT& reduce_slices_number, const Container& subs){
     using size_type = SizeT;
     size_type pdim = pshape.size();
-    size_type res_dim = pdim-reduce_number;
+    size_type res_dim = pdim-reduce_slices_number;
     ShT res{};
     res.reserve(res_dim);
     auto pshape_it = pshape.begin();
     for(auto subs_it = subs.begin(); subs_it!=subs.end(); ++subs_it,++pshape_it){
         const auto& subs_ = *subs_it;
         if (!subs_.is_reduce()){
-            res.push_back(make_slice_view_shape_element(subs_,*pshape_it));
+            res.push_back(make_slice_view_shape_element(*pshape_it, subs_));
         }
     }
     for(;pshape_it!=pshape.end(); ++pshape_it){
@@ -78,18 +78,40 @@ inline ShT make_slice_view_shape(const ShT& pshape, const SizeT& reduce_number, 
     }
     return res;
 }
-
+template<typename ShT, typename SizeT, typename SliceT>
+inline ShT make_slice_view_shape_direction(const ShT& pshape, const SizeT& direction, const SliceT& subs){
+    using size_type = SizeT;
+    using index_type = typename ShT::value_type;
+    if (subs.is_reduce()){
+        size_type pdim = pshape.size();
+        ShT res(--pdim,index_type{0});
+        auto pshape_it = pshape.begin();
+        const auto pshape_direction_it = pshape_it+direction;
+        auto res_it = res.begin();
+        for(;pshape_it!=pshape_direction_it;++pshape_it,++res_it){
+            *res_it=*pshape_it;
+        }
+        for(++pshape_it;pshape_it!=pshape.end();++pshape_it,++res_it){
+            *res_it=*pshape_it;
+        }
+        return res;
+    }else{
+        ShT res{pshape};
+        res[direction] = make_slice_view_shape_element(pshape[direction],subs);
+        return res;
+    }
+}
 
 //old
 template<typename SliceT>
 inline auto make_view_slice_shape_element(const SliceT& subs){
     using index_type = typename SliceT::index_type;
-    index_type step_ = subs.step > index_type(0) ? subs.step : -subs.step;
-    return subs.start == subs.stop ?
+    index_type step_ = subs.step() > index_type(0) ? subs.step() : -subs.step();
+    return subs.start() == subs.stop() ?
         index_type(0) :
-        subs.start < subs.stop ?
-            (subs.stop - subs.start-index_type(1))/step_ + index_type(1) :
-            (subs.start - subs.stop-index_type(1))/step_ + index_type(1);
+        subs.start() < subs.stop() ?
+            (subs.stop() - subs.start()-index_type(1))/step_ + index_type(1) :
+            (subs.start() - subs.stop()-index_type(1))/step_ + index_type(1);
 }
 template<typename ShT, typename SliceT, typename SizeT>
 inline ShT make_view_slice_shape(const ShT& pshape, const SliceT& subs, const SizeT& direction){
