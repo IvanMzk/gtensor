@@ -141,6 +141,30 @@ inline ShT make_slice_view_cstrides(const ShT& pstrides, const SizeT& res_dim, c
     }
     return res;
 }
+template<typename ShT, typename SizeT, typename SliceT>
+inline ShT make_slice_view_cstrides_direction(const ShT& pstrides, const SizeT& direction, const SliceT& subs){
+    using size_type = SizeT;
+    using index_type = typename ShT::value_type;
+    if (subs.is_reduce()){
+        const size_type pdim = pstrides.size();
+        const size_type res_dim = pdim-1;
+        ShT res(res_dim,index_type{});
+        auto pstrides_it = pstrides.begin();
+        const auto pstrides_direction_it = pstrides_it+direction;
+        auto res_it = res.begin();
+        for(;pstrides_it!=pstrides_direction_it;++pstrides_it,++res_it){
+            *res_it=*pstrides_it;
+        }
+        for(++pstrides_it;pstrides_it!=pstrides.end();++pstrides_it,++res_it){
+            *res_it=*pstrides_it;
+        }
+        return res;
+    }else{
+        ShT res{pstrides};
+        res[direction] = pstrides[direction]*subs.step();
+        return res;
+    }
+}
 
 //old
 template<typename SliceT>
