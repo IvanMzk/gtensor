@@ -350,6 +350,43 @@ TEST_CASE("test_make_slice_view_offset","[test_view_factory]"){
     apply_by_element(test, test_data);
 }
 
+TEST_CASE("test_make_slice_view_offset_direction","[test_view_factory]"){
+    using config_type = gtensor::config::default_config;
+    using shape_type = config_type::shape_type;
+    using size_type = config_type::size_type;
+    using index_type = config_type::index_type;
+    using slice_type = gtensor::slice_traits<config_type>::slice_type;
+    using nop_type = gtensor::slice_traits<config_type>::nop_type;
+    using rtag_type = gtensor::slice_traits<config_type>::rtag_type;
+    using gtensor::detail::make_slice_view_offset_direction;
+    using helpers_for_testing::apply_by_element;
+    //0pshape,1pstrides,2direction,3subs,4expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(shape_type{11},shape_type{1},size_type{0},slice_type{},index_type{0}),
+        std::make_tuple(shape_type{11},shape_type{1},size_type{0},slice_type{3},index_type{3}),
+        std::make_tuple(shape_type{11},shape_type{1},size_type{0},slice_type{-3},index_type{8}),
+        std::make_tuple(shape_type{11},shape_type{1},size_type{0},slice_type{0,rtag_type{}},index_type{0}),
+        std::make_tuple(shape_type{11},shape_type{1},size_type{0},slice_type{3,rtag_type{}},index_type{3}),
+        std::make_tuple(shape_type{2,3,4},shape_type{12,4,1},size_type{0},slice_type{},index_type{0}),
+        std::make_tuple(shape_type{2,3,4},shape_type{12,4,1},size_type{0},slice_type{1},index_type{12}),
+        std::make_tuple(shape_type{2,3,4},shape_type{12,4,1},size_type{1},slice_type{},index_type{0}),
+        std::make_tuple(shape_type{2,3,4},shape_type{12,4,1},size_type{1},slice_type{1},index_type{4}),
+        std::make_tuple(shape_type{2,3,4},shape_type{12,4,1},size_type{2},slice_type{},index_type{0}),
+        std::make_tuple(shape_type{2,3,4},shape_type{12,4,1},size_type{2},slice_type{1},index_type{1}),
+        std::make_tuple(shape_type{2,3,4},shape_type{12,4,1},size_type{1},slice_type{2,rtag_type{}},index_type{8})
+    );
+    auto test = [](const auto& t){
+        auto pshape = std::get<0>(t);
+        auto pstrides = std::get<1>(t);
+        auto direction = std::get<2>(t);
+        auto subs = std::get<3>(t);
+        auto expected = std::get<4>(t);
+        auto result = make_slice_view_offset_direction(pshape,pstrides,direction,subs);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test, test_data);
+}
+
 
 
 

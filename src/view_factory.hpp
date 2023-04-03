@@ -117,6 +117,10 @@ inline typename ShT::value_type make_slice_view_offset(const ShT& pshape, const 
     }
     return res;
 }
+template<typename ShT, typename SizeT, typename SliceT>
+inline typename ShT::value_type make_slice_view_offset_direction(const ShT& pshape, const ShT& pstrides, const SizeT& direction, const SliceT& subs){
+    return pstrides[direction]*make_slice_start(pshape[direction],subs);
+}
 
 //old
 template<typename SliceT>
