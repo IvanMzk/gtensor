@@ -58,12 +58,16 @@ inline IdxT make_slice_view_shape_element(const IdxT& pshape_element, const Slic
     }
     return d<=zero_index ? zero_index:(d-index_type{1})/step+index_type{1};
 }
+template<typename ShT, typename Container>
+inline ShT make_slice_view_dim(const ShT& pshape, const Container& subs){
+    using size_type = typename ShT::size_type;
+    size_type pdim = pshape.size();
+    size_type reduce_number = std::count_if(subs.begin(),subs.end(),[](const auto& subs_){subs_.is_reduce();});
+    return pdim - reduce_number;
+}
 
 template<typename ShT, typename SizeT, typename Container>
-inline ShT make_slice_view_shape(const ShT& pshape, const SizeT& reduce_slices_number, const Container& subs){
-    using size_type = SizeT;
-    size_type pdim = pshape.size();
-    size_type res_dim = pdim-reduce_slices_number;
+inline ShT make_slice_view_shape(const ShT& pshape, const SizeT& res_dim, const Container& subs){
     ShT res{};
     res.reserve(res_dim);
     auto pshape_it = pshape.begin();
@@ -100,6 +104,18 @@ inline ShT make_slice_view_shape_direction(const ShT& pshape, const SizeT& direc
         res[direction] = make_slice_view_shape_element(pshape[direction],subs);
         return res;
     }
+}
+
+template<typename ShT, typename Container>
+inline typename ShT::value_type make_slice_view_offset(const ShT& pshape, const ShT& pstrides, const Container& subs){
+    using index_type = typename ShT::value_type;
+    index_type res{0};
+    auto pshape_it = pshape.begin();
+    auto pstrides_it = pstrides.begin();
+    for (auto subs_it = subs.begin(); subs_it!=subs.end(); ++subs_it,++pshape_it,++pstrides_it){
+        res+=*pstrides_it*make_slice_start(*pshape_it, *subs_it);
+    }
+    return res;
 }
 
 //old
