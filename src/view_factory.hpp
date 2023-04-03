@@ -65,7 +65,7 @@ inline ShT make_slice_view_dim(const ShT& pshape, const Container& subs){
     size_type reduce_number = std::count_if(subs.begin(),subs.end(),[](const auto& subs_){subs_.is_reduce();});
     return pdim - reduce_number;
 }
-
+//slice view shape
 template<typename ShT, typename SizeT, typename Container>
 inline ShT make_slice_view_shape(const ShT& pshape, const SizeT& res_dim, const Container& subs){
     ShT res{};
@@ -87,8 +87,9 @@ inline ShT make_slice_view_shape_direction(const ShT& pshape, const SizeT& direc
     using size_type = SizeT;
     using index_type = typename ShT::value_type;
     if (subs.is_reduce()){
-        size_type pdim = pshape.size();
-        ShT res(--pdim,index_type{0});
+        const size_type pdim = pshape.size();
+        const size_type res_dim = pdim-1;
+        ShT res(res_dim,index_type{});
         auto pshape_it = pshape.begin();
         const auto pshape_direction_it = pshape_it+direction;
         auto res_it = res.begin();
@@ -105,7 +106,7 @@ inline ShT make_slice_view_shape_direction(const ShT& pshape, const SizeT& direc
         return res;
     }
 }
-
+//slice view offset
 template<typename ShT, typename Container>
 inline typename ShT::value_type make_slice_view_offset(const ShT& pshape, const ShT& pstrides, const Container& subs){
     using index_type = typename ShT::value_type;
@@ -120,6 +121,25 @@ inline typename ShT::value_type make_slice_view_offset(const ShT& pshape, const 
 template<typename ShT, typename SizeT, typename SliceT>
 inline typename ShT::value_type make_slice_view_offset_direction(const ShT& pshape, const ShT& pstrides, const SizeT& direction, const SliceT& subs){
     return pstrides[direction]*make_slice_start(pshape[direction],subs);
+}
+//slice view cstrides
+template<typename ShT, typename SizeT, typename Container>
+inline ShT make_slice_view_cstrides(const ShT& pstrides, const SizeT& res_dim, const Container& subs){
+    using index_type = typename ShT::value_type;
+    ShT res(res_dim, index_type{});
+    auto pstrides_it = pstrides.begin();
+    auto res_it = res.begin();
+    for (auto subs_it = subs.begin(); subs_it!=subs.end(); ++subs_it,++pstrides_it){
+        const auto& subs_ = *subs_it;
+        if (!subs_.is_reduce()){
+            *res_it = subs_.step()**pstrides_it;
+            ++res_it;
+        }
+    }
+    for(;pstrides_it!=pstrides.end();++pstrides_it,++res_it){
+        *res_it = *pstrides_it;
+    }
+    return res;
 }
 
 //old

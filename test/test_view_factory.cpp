@@ -387,6 +387,61 @@ TEST_CASE("test_make_slice_view_offset_direction","[test_view_factory]"){
     apply_by_element(test, test_data);
 }
 
+TEST_CASE("test_make_slice_view_cstrides","[test_view_factory]"){
+    using config_type = gtensor::config::default_config;
+    using shape_type = config_type::shape_type;
+    using size_type = config_type::size_type;
+    using slice_type = gtensor::slice_traits<config_type>::slice_type;
+    using nop_type = gtensor::slice_traits<config_type>::nop_type;
+    using rtag_type = gtensor::slice_traits<config_type>::rtag_type;
+    using gtensor::detail::make_slice_view_cstrides;
+    using helpers_for_testing::apply_by_element;
+    //0pstrides,1res_dim,2subs,3expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(shape_type{1},size_type{1},std::vector<slice_type>{}, shape_type{1}),
+        std::make_tuple(shape_type{1},size_type{1},std::vector<slice_type>{slice_type{nop_type{},nop_type{},2}}, shape_type{2}),
+        std::make_tuple(shape_type{1},size_type{1},std::vector<slice_type>{slice_type{nop_type{},nop_type{},-2}}, shape_type{-2}),
+        std::make_tuple(shape_type{12,4,1},size_type{3},std::vector<slice_type>{}, shape_type{12,4,1}),
+        std::make_tuple(shape_type{12,4,1},size_type{3},std::vector<slice_type>{slice_type{nop_type{},nop_type{},-1}}, shape_type{-12,4,1}),
+        std::make_tuple(shape_type{12,4,1},size_type{3},std::vector<slice_type>{slice_type{nop_type{},nop_type{},2}}, shape_type{24,4,1}),
+        std::make_tuple(shape_type{12,4,1},size_type{3},std::vector<slice_type>{slice_type{nop_type{},nop_type{},-2}}, shape_type{-24,4,1}),
+        std::make_tuple(shape_type{12,4,1},size_type{3},std::vector<slice_type>{slice_type{nop_type{},nop_type{},2},slice_type{nop_type{},nop_type{},2}}, shape_type{24,8,1}),
+        std::make_tuple(
+            shape_type{12,4,1},
+            size_type{3},
+            std::vector<slice_type>{slice_type{nop_type{},nop_type{},2},slice_type{nop_type{},nop_type{},2},slice_type{nop_type{},nop_type{},2}},
+            shape_type{24,8,2}
+        ),
+        std::make_tuple(
+            shape_type{12,4,1},
+            size_type{3},
+            std::vector<slice_type>{slice_type{nop_type{},nop_type{},-2},slice_type{nop_type{},nop_type{},-2},slice_type{nop_type{},nop_type{},-2}},
+            shape_type{-24,-8,-2}
+        ),
+        std::make_tuple(
+            shape_type{12,4,1},
+            size_type{2},
+            std::vector<slice_type>{slice_type{1,rtag_type{}},slice_type{nop_type{},nop_type{},2},slice_type{nop_type{},nop_type{},2}},
+            shape_type{8,2}
+        ),
+        std::make_tuple(
+            shape_type{12,4,1},
+            size_type{1},
+            std::vector<slice_type>{slice_type{0,rtag_type{}},slice_type{nop_type{},nop_type{},2},slice_type{0,rtag_type{}}},
+            shape_type{8}
+        )
+    );
+    auto test = [](const auto& t){
+        auto pstrides = std::get<0>(t);
+        auto res_dim = std::get<1>(t);
+        auto subs = std::get<2>(t);
+        auto expected = std::get<3>(t);
+        auto result = make_slice_view_cstrides(pstrides,res_dim,subs);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test, test_data);
+}
+
 
 
 
