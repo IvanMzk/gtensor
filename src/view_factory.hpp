@@ -12,8 +12,8 @@ namespace gtensor{
 
 namespace detail{
 
-//slice view helpers
 //new
+//slice view helpers
 template<typename SliceT, typename IdxT>
 inline IdxT make_slice_start(const IdxT& pshape_element, const SliceT& subs){
     using index_type = IdxT;
@@ -58,6 +58,10 @@ inline IdxT make_slice_view_shape_element(const IdxT& pshape_element, const Slic
     }
     return d<=zero_index ? zero_index:(d-index_type{1})/step+index_type{1};
 }
+template<typename SliceT, typename IdxT>
+inline IdxT make_slice_view_cstride_element(const IdxT& pstride_element, const SliceT& subs){
+    return pstride_element*subs.step();
+}
 template<typename ShT, typename Container>
 inline ShT make_slice_view_dim(const ShT& pshape, const Container& subs){
     using size_type = typename ShT::size_type;
@@ -65,46 +69,65 @@ inline ShT make_slice_view_dim(const ShT& pshape, const Container& subs){
     size_type reduce_number = std::count_if(subs.begin(),subs.end(),[](const auto& subs_){subs_.is_reduce();});
     return pdim - reduce_number;
 }
-//slice view shape
-template<typename ShT, typename SizeT, typename Container>
-inline ShT make_slice_view_shape(const ShT& pshape, const SizeT& res_dim, const Container& subs){
-    ShT res{};
-    res.reserve(res_dim);
-    auto pshape_it = pshape.begin();
-    for(auto subs_it = subs.begin(); subs_it!=subs.end(); ++subs_it,++pshape_it){
+template<typename ShT, typename SizeT, typename Container, typename ElementMaker>
+inline ShT make_slice_view_shape_cstrides(const ShT& pshape_or_pstrides, const SizeT& res_dim, const Container& subs, ElementMaker element_maker){
+    using index_type = typename ShT::value_type;
+    ShT res(res_dim, index_type{});
+    auto it = pshape_or_pstrides.begin();
+    auto res_it = res.begin();
+    for (auto subs_it = subs.begin(); subs_it!=subs.end(); ++subs_it,++it){
         const auto& subs_ = *subs_it;
         if (!subs_.is_reduce()){
-            res.push_back(make_slice_view_shape_element(*pshape_it, subs_));
+            *res_it = element_maker(*it, subs_);
+            ++res_it;
         }
     }
-    for(;pshape_it!=pshape.end(); ++pshape_it){
-        res.push_back(*pshape_it);
+    for(;it!=pshape_or_pstrides.end();++it,++res_it){
+        *res_it = *it;
     }
     return res;
 }
-template<typename ShT, typename SizeT, typename SliceT>
-inline ShT make_slice_view_shape_direction(const ShT& pshape, const SizeT& direction, const SliceT& subs){
+template<typename ShT, typename SizeT, typename SliceT, typename ElementMaker>
+inline ShT make_slice_view_shape_cstrides_direction(const ShT& pshape_pstrides, const SizeT& direction, const SliceT& subs, ElementMaker element_maker){
     using size_type = SizeT;
     using index_type = typename ShT::value_type;
     if (subs.is_reduce()){
-        const size_type pdim = pshape.size();
+        const size_type pdim = pshape_pstrides.size();
         const size_type res_dim = pdim-1;
         ShT res(res_dim,index_type{});
-        auto pshape_it = pshape.begin();
-        const auto pshape_direction_it = pshape_it+direction;
+        auto pshape_pstrides_it = pshape_pstrides.begin();
+        const auto pshape_pstrides_direction_it = pshape_pstrides_it+direction;
         auto res_it = res.begin();
-        for(;pshape_it!=pshape_direction_it;++pshape_it,++res_it){
-            *res_it=*pshape_it;
+        for(;pshape_pstrides_it!=pshape_pstrides_direction_it;++pshape_pstrides_it,++res_it){
+            *res_it=*pshape_pstrides_it;
         }
-        for(++pshape_it;pshape_it!=pshape.end();++pshape_it,++res_it){
-            *res_it=*pshape_it;
+        for(++pshape_pstrides_it;pshape_pstrides_it!=pshape_pstrides.end();++pshape_pstrides_it,++res_it){
+            *res_it=*pshape_pstrides_it;
         }
         return res;
     }else{
-        ShT res{pshape};
-        res[direction] = make_slice_view_shape_element(pshape[direction],subs);
+        ShT res{pshape_pstrides};
+        res[direction] = element_maker(pshape_pstrides[direction], subs);
         return res;
     }
+}
+//slice view shape
+template<typename ShT, typename SizeT, typename Container>
+inline ShT make_slice_view_shape(const ShT& pshape, const SizeT& res_dim, const Container& subs){
+    return make_slice_view_shape_cstrides(pshape, res_dim, subs, [](const auto& pelement, const auto& subs_){return make_slice_view_shape_element(pelement,subs_);});
+}
+template<typename ShT, typename SizeT, typename SliceT>
+inline ShT make_slice_view_shape_direction(const ShT& pshape, const SizeT& direction, const SliceT& subs){
+    return make_slice_view_shape_cstrides_direction(pshape, direction, subs, [](const auto& pelement, const auto& subs_){return make_slice_view_shape_element(pelement,subs_);});
+}
+//slice view cstrides
+template<typename ShT, typename SizeT, typename Container>
+inline ShT make_slice_view_cstrides(const ShT& pstrides, const SizeT& res_dim, const Container& subs){
+    return make_slice_view_shape_cstrides(pstrides, res_dim, subs, [](const auto& pelement, const auto& subs_){return make_slice_view_cstride_element(pelement,subs_);});
+}
+template<typename ShT, typename SizeT, typename SliceT>
+inline ShT make_slice_view_cstrides_direction(const ShT& pstrides, const SizeT& direction, const SliceT& subs){
+    return make_slice_view_shape_cstrides_direction(pstrides, direction, subs, [](const auto& pelement, const auto& subs_){return make_slice_view_cstride_element(pelement,subs_);});
 }
 //slice view offset
 template<typename ShT, typename Container>
@@ -121,49 +144,6 @@ inline typename ShT::value_type make_slice_view_offset(const ShT& pshape, const 
 template<typename ShT, typename SizeT, typename SliceT>
 inline typename ShT::value_type make_slice_view_offset_direction(const ShT& pshape, const ShT& pstrides, const SizeT& direction, const SliceT& subs){
     return pstrides[direction]*make_slice_start(pshape[direction],subs);
-}
-//slice view cstrides
-template<typename ShT, typename SizeT, typename Container>
-inline ShT make_slice_view_cstrides(const ShT& pstrides, const SizeT& res_dim, const Container& subs){
-    using index_type = typename ShT::value_type;
-    ShT res(res_dim, index_type{});
-    auto pstrides_it = pstrides.begin();
-    auto res_it = res.begin();
-    for (auto subs_it = subs.begin(); subs_it!=subs.end(); ++subs_it,++pstrides_it){
-        const auto& subs_ = *subs_it;
-        if (!subs_.is_reduce()){
-            *res_it = subs_.step()**pstrides_it;
-            ++res_it;
-        }
-    }
-    for(;pstrides_it!=pstrides.end();++pstrides_it,++res_it){
-        *res_it = *pstrides_it;
-    }
-    return res;
-}
-template<typename ShT, typename SizeT, typename SliceT>
-inline ShT make_slice_view_cstrides_direction(const ShT& pstrides, const SizeT& direction, const SliceT& subs){
-    using size_type = SizeT;
-    using index_type = typename ShT::value_type;
-    if (subs.is_reduce()){
-        const size_type pdim = pstrides.size();
-        const size_type res_dim = pdim-1;
-        ShT res(res_dim,index_type{});
-        auto pstrides_it = pstrides.begin();
-        const auto pstrides_direction_it = pstrides_it+direction;
-        auto res_it = res.begin();
-        for(;pstrides_it!=pstrides_direction_it;++pstrides_it,++res_it){
-            *res_it=*pstrides_it;
-        }
-        for(++pstrides_it;pstrides_it!=pstrides.end();++pstrides_it,++res_it){
-            *res_it=*pstrides_it;
-        }
-        return res;
-    }else{
-        ShT res{pstrides};
-        res[direction] = pstrides[direction]*subs.step();
-        return res;
-    }
 }
 
 //old
