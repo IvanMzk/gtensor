@@ -484,6 +484,39 @@ TEST_CASE("test_make_slice_view_cstrides_direction","[test_view_factory]"){
     apply_by_element(test, test_data);
 }
 
+TEST_CASE("test_check_slice_view_args","[test_view_factory]"){
+    using config_type = gtensor::config::default_config;
+    using shape_type = config_type::shape_type;
+    using slice_type = gtensor::slice_traits<config_type>::slice_type;
+    using rtag_type = gtensor::slice_traits<config_type>::rtag_type;
+    using gtensor::subscript_exception;
+    using gtensor::detail::check_slice_view_args;
+    using helpers_for_testing::apply_by_element;
+
+    SECTION("test_check_slice_view_args_exception")
+    {
+        //0pshape,2subs
+        auto test_data = std::make_tuple(
+            std::make_tuple(shape_type{0}, std::vector<slice_type>{slice_type{},slice_type{}}),
+            std::make_tuple(shape_type{3}, std::vector<slice_type>{slice_type{},slice_type{}}),
+            std::make_tuple(shape_type{3,4}, std::vector<slice_type>{slice_type{},slice_type{},slice_type{}}),
+            std::make_tuple(shape_type{3,4}, std::vector<slice_type>{slice_type{4,rtag_type{}}}),
+            std::make_tuple(shape_type{3,4}, std::vector<slice_type>{slice_type{-4,rtag_type{}}}),
+            std::make_tuple(shape_type{3,4}, std::vector<slice_type>{slice_type{}, slice_type{5,rtag_type{}}}),
+            std::make_tuple(shape_type{3,4}, std::vector<slice_type>{slice_type{}, slice_type{-5,rtag_type{}}}),
+            std::make_tuple(shape_type{2,3,4}, std::vector<slice_type>{slice_type{3,rtag_type{}},slice_type{}, slice_type{0,rtag_type{}}}),
+            std::make_tuple(shape_type{2,3,4}, std::vector<slice_type>{slice_type{0,rtag_type{}},slice_type{}, slice_type{5,rtag_type{}}}),
+            std::make_tuple(shape_type{2,3,4}, std::vector<slice_type>{slice_type{},slice_type{4,rtag_type{}}, slice_type{}})
+        );
+        auto test = [](const auto& t){
+            auto pshape = std::get<0>(t);
+            auto subs = std::get<1>(t);
+            REQUIRE_THROWS_AS(check_slice_view_args(pshape,subs),subscript_exception);
+        };
+        apply_by_element(test, test_data);
+    }
+}
+
 //test subdim view helpers
 TEST_CASE("test_make_subdim_view_shape","[test_view_factory]"){
     using config_type = gtensor::config::default_config;
