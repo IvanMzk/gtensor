@@ -112,13 +112,11 @@ TEST_CASE("slice_item","[test_slice]"){
 
 TEST_CASE("test_slice","[test_slice]"){
     using config_type = gtensor::config::default_config;
-    using index_type = typename config_type::index_type;
-    using slice_type = typename gtensor::slice_traits<config_type>::slice_type;
-    using rtag_type = typename gtensor::slice_traits<config_type>::rtag_type;
-    using nop_type = typename gtensor::slice_traits<config_type>::nop_type;
+    using index_type = config_type::index_type;
+    using slice_type = gtensor::slice_traits<config_type>::slice_type;
+    using rtag_type = gtensor::slice_traits<config_type>::rtag_type;
+    using nop_type = gtensor::slice_traits<config_type>::nop_type;
     using helpers_for_testing::apply_by_element;
-    //nop_type nop{};
-
     //0items,1expected_is_start,2expected_is_stop,3expected_is_step,4expected_is_reduce,5expected_start,6expected_stop,7expected_step
     auto test_data = std::make_tuple(
         //nop,nop,nop
@@ -210,6 +208,19 @@ TEST_CASE("test_slice","[test_slice]"){
             test_slice(slice_, t);
         };
         apply_by_element(test, test_data);
+    }
+    SECTION("test_slice_init_list_constructor_exception")
+    {
+        using gtensor::slice_exception;
+        using slice_item_type = slice_type::slice_item_type;
+        REQUIRE_THROWS_AS(slice_type(std::initializer_list<slice_item_type>{1,1,1,1}),slice_exception);
+        REQUIRE_THROWS_AS(slice_type(std::initializer_list<slice_item_type>{rtag_type{}}),slice_exception);
+        REQUIRE_THROWS_AS(slice_type(std::initializer_list<slice_item_type>{rtag_type{},1}),slice_exception);
+        REQUIRE_THROWS_AS(slice_type(std::initializer_list<slice_item_type>{rtag_type{},1,1}),slice_exception);
+        REQUIRE_THROWS_AS(slice_type(std::initializer_list<slice_item_type>{nop_type{},rtag_type{}}),slice_exception);
+        REQUIRE_THROWS_AS(slice_type(std::initializer_list<slice_item_type>{1,rtag_type{},1}),slice_exception);
+        REQUIRE_THROWS_AS(slice_type(std::initializer_list<slice_item_type>{1,1,rtag_type{}}),slice_exception);
+        REQUIRE_THROWS_AS(slice_type(std::initializer_list<slice_item_type>{1,1,1,rtag_type{}}),slice_exception);
     }
 }
 
