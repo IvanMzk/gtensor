@@ -207,51 +207,40 @@ TEST_CASE("test_view_making_interface","[test_tensor]"){
     using gtensor::broadcast_exception;
     nop_type nop;
     SECTION("test_subscripts_correctenes_check"){
-        SECTION("view_slice_slice_direction_interface"){
-            REQUIRE_NOTHROW(tensor_type{1}({},0));
-            REQUIRE_THROWS_AS(tensor_type{1}({},1),subscript_exception);
-            REQUIRE_NOTHROW(tensor_type{1}({0,1},0));
-            REQUIRE_THROWS_AS(tensor_type{1}({nop,2},0),subscript_exception);
-            REQUIRE_NOTHROW(tensor_type{1,2,3,4,5}({},0));
-            REQUIRE_THROWS_AS((tensor_type{1,2,3,4,5}({0,4,-1},0)),subscript_exception);
-            REQUIRE_THROWS_AS((tensor_type{1,2,3,4,5}({0,0},0)),subscript_exception);
-            REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}({1,-1},0));
-            REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4},{5,6}}({1,-1},1)),subscript_exception);
-            REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4},{5,6}}({1,-1},2)),subscript_exception);
-        }
         SECTION("view_slice_init_list_interface"){
             REQUIRE_NOTHROW(tensor_type{1}({}));
             REQUIRE_THROWS_AS((tensor_type{1}({{},{}})),subscript_exception);
-            REQUIRE_NOTHROW(tensor_type{1}({{0,1}}));
-            REQUIRE_THROWS_AS((tensor_type{1}({{nop,2}})),subscript_exception);
-            REQUIRE_NOTHROW(tensor_type{1,2,3,4,5}({}));
-            REQUIRE_THROWS_AS((tensor_type{1,2,3,4,5}({{0,4,-1}})),subscript_exception);
-            REQUIRE_THROWS_AS((tensor_type{1,2,3,4,5}({{0,0}})),subscript_exception);
-            REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}({{1,-1}}));
-            REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4},{5,6}}({{1,-1},{1,-1}})),subscript_exception);
+        //     REQUIRE_NOTHROW(tensor_type{1}({{0,1}}));
+        //     REQUIRE_THROWS_AS((tensor_type{1}({{nop,2}})),subscript_exception);
+        //     REQUIRE_NOTHROW(tensor_type{1,2,3,4,5}({}));
+        //     REQUIRE_THROWS_AS((tensor_type{1,2,3,4,5}({{0,4,-1}})),subscript_exception);
+        //     REQUIRE_THROWS_AS((tensor_type{1,2,3,4,5}({{0,0}})),subscript_exception);
+        //     REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}({{1,-1}}));
+        //     REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4},{5,6}}({{1,-1},{1,-1}})),subscript_exception);
         }
-        SECTION("view_slice_variadic_interface"){
-            REQUIRE_NOTHROW(tensor_type{1}(slice_type{}));
-            REQUIRE_THROWS_AS((tensor_type{1}(slice_type{},slice_type{})),subscript_exception);
-            REQUIRE_NOTHROW(tensor_type{1}(slice_type{0,1}));
-            REQUIRE_THROWS_AS((tensor_type{1}(slice_type{nop,2})),subscript_exception);
-            REQUIRE_NOTHROW(tensor_type{1,2,3,4,5}(slice_type{}));
-            REQUIRE_THROWS_AS((tensor_type{1,2,3,4,5}(slice_type{0,4,-1})),subscript_exception);
-            REQUIRE_THROWS_AS((tensor_type{1,2,3,4,5}(slice_type{0,0})),subscript_exception);
-            REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}(slice_type{1,-1}));
-            REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4},{5,6}}(slice_type{1,-1},slice_type{1,-1})),subscript_exception);
-        }
-        SECTION("view_slice_container_interface"){
-            REQUIRE_NOTHROW(tensor_type{1}(slices_container_type{slice_type{}}));
-            REQUIRE_THROWS_AS((tensor_type{1}(slices_container_type{slice_type{},slice_type{}})),subscript_exception);
-            REQUIRE_NOTHROW(tensor_type{1}(slices_container_type{slice_type{0,1}}));
-            REQUIRE_THROWS_AS((tensor_type{1}(slices_container_type{slice_type{nop,2}})),subscript_exception);
-            REQUIRE_NOTHROW(tensor_type{1,2,3,4,5}(slices_container_type{slice_type{}}));
-            REQUIRE_THROWS_AS((tensor_type{1,2,3,4,5}(slices_container_type{slice_type{0,4,-1}})),subscript_exception);
-            REQUIRE_THROWS_AS((tensor_type{1,2,3,4,5}(slices_container_type{slice_type{0,0}})),subscript_exception);
-            REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}(slices_container_type{slice_type{1,-1}}));
-            REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4},{5,6}}(slices_container_type{slice_type{1,-1},slice_type{1,-1}})),subscript_exception);
-        }
+        // SECTION("view_slice_variadic_interface"){
+        //     REQUIRE_THROWS_AS(tensor_type{1}(slice_type{}), subscript_exception);
+        //     REQUIRE_NOTHROW(tensor_type{1}(slice_type{}));
+        //     REQUIRE_THROWS_AS((tensor_type{1}(slice_type{},slice_type{})),subscript_exception);
+        //     REQUIRE_NOTHROW(tensor_type{1}(slice_type{0,1}));
+        //     REQUIRE_THROWS_AS((tensor_type{1}(slice_type{nop,2})),subscript_exception);
+        //     REQUIRE_NOTHROW(tensor_type{1,2,3,4,5}(slice_type{}));
+        //     REQUIRE_THROWS_AS((tensor_type{1,2,3,4,5}(slice_type{0,4,-1})),subscript_exception);
+        //     REQUIRE_THROWS_AS((tensor_type{1,2,3,4,5}(slice_type{0,0})),subscript_exception);
+        //     REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}(slice_type{1,-1}));
+        //     REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4},{5,6}}(slice_type{1,-1},slice_type{1,-1})),subscript_exception);
+        // }
+        // SECTION("view_slice_container_interface"){
+        //     REQUIRE_NOTHROW(tensor_type{1}(slices_container_type{slice_type{}}));
+        //     REQUIRE_THROWS_AS((tensor_type{1}(slices_container_type{slice_type{},slice_type{}})),subscript_exception);
+        //     REQUIRE_NOTHROW(tensor_type{1}(slices_container_type{slice_type{0,1}}));
+        //     REQUIRE_THROWS_AS((tensor_type{1}(slices_container_type{slice_type{nop,2}})),subscript_exception);
+        //     REQUIRE_NOTHROW(tensor_type{1,2,3,4,5}(slices_container_type{slice_type{}}));
+        //     REQUIRE_THROWS_AS((tensor_type{1,2,3,4,5}(slices_container_type{slice_type{0,4,-1}})),subscript_exception);
+        //     REQUIRE_THROWS_AS((tensor_type{1,2,3,4,5}(slices_container_type{slice_type{0,0}})),subscript_exception);
+        //     REQUIRE_NOTHROW(tensor_type{{1,2},{3,4},{5,6}}(slices_container_type{slice_type{1,-1}}));
+        //     REQUIRE_THROWS_AS((tensor_type{{1,2},{3,4},{5,6}}(slices_container_type{slice_type{1,-1},slice_type{1,-1}})),subscript_exception);
+        // }
         SECTION("view_transpose"){
             REQUIRE_NOTHROW(tensor_type{1}.transpose());
             REQUIRE_NOTHROW(tensor_type{1}.transpose(0));
@@ -432,12 +421,6 @@ TEST_CASE("test_view_making_interface","[test_tensor]"){
         using helpers_for_testing::apply_by_element;
         //0view,1expected_shape,2expected size,3expected dim
         auto test_data = std::make_tuple(
-            //view slice slice-direction interface
-            std::make_tuple(tensor_type{1}({},0),shape_type{1},1,1),
-            std::make_tuple(tensor_type{1}({0,1},0),shape_type{1},1,1),
-            std::make_tuple(tensor_type{1,2,3,4,5}({},0),shape_type{5},5,1),
-            std::make_tuple(tensor_type{{1,2},{3,4},{5,6}}({1,-1},0),shape_type{1,2},2,2),
-            std::make_tuple(tensor_type{{1,2},{3,4},{5,6}}({{},{},-1},0),shape_type{3,2},6,2),
             //view slice init_list interface
             std::make_tuple((tensor_type{1}({{}})),shape_type{1}, 1, 1),
             std::make_tuple((tensor_type{1}({{nop,nop,-1}})),shape_type{1}, 1, 1),

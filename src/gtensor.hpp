@@ -35,10 +35,6 @@ template<
 >
 class tensor{
     using impl_type = ImplT;
-    using slice_type = typename slice_traits<CfgT>::slice_type;
-    using slice_init_type = typename slice_traits<CfgT>::slice_init_type;
-    using slices_init_type = typename slice_traits<CfgT>::slices_init_type;
-    using slices_container_type = typename slice_traits<CfgT>::slices_container_type;
 
     //initialize storage implementation by forwarding arguments, this constructor should be used by all public constructors
     class forward_tag{};
@@ -65,10 +61,12 @@ protected:
 
 public:
     using config_type = CfgT;
+    using value_type = ValT;
     using index_type = typename config_type::index_type;
     using size_type = typename config_type::size_type;
     using shape_type = typename config_type::shape_type;
-    using value_type = ValT;
+    using slice_type = slice<index_type>;
+    using slice_item_type = typename slice_type::slice_item_type;
 
     //copy operartions has reference semantic, to copy by value should use copy method
     tensor(const tensor&) = default;
@@ -151,65 +149,46 @@ public:
 
     //view construction operators and methods
     //slice view
-    auto operator()(const slice_type& subs, const size_type& direction)const{
-        detail::check_slice_direction(descriptor().shape(), direction);
-        index_type direction_size = descriptor().shape()[direction];
-        slice_type filled_subs = detail::fill_slice(subs, direction_size);
-        detail::check_slice(filled_subs, direction_size);
-        return view_factory<ValT,CfgT>::create_view_slice(impl(), filled_subs, direction);
+    auto operator()(std::initializer_list<std::initializer_list<slice_item_type>> subs)const{
+        return create_slice_view(*this, subs);
     }
-    auto operator()(slice_init_type subs, const size_type& direction)const{
-        return operator()(slice_type{subs}, direction);
-    }
-    auto operator()(slices_init_type subs)const{
-        detail::check_slices_number(descriptor().shape(), subs);
-        slices_container_type filled_subs = detail::fill_slices<slices_container_type>(descriptor().shape(),subs);
-        detail::check_slices(descriptor().shape(), filled_subs);
-        return view_factory<ValT,CfgT>::create_view_slice(impl(), filled_subs);
-    }
-    template<typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs,slice_type>&&...),int> = 0 >
+    template<typename...Subs, std::enable_if_t<((std::is_convertible_v<Subs,slice_type>||std::is_convertible_v<Subs,index_type>)&&...),int> = 0 >
     auto operator()(const Subs&...subs)const{
-        detail::check_slices_number(descriptor().shape(), subs...);
-        slices_container_type filled_subs = detail::fill_slices<slices_container_type>(descriptor().shape(),subs...);
-        detail::check_slices(descriptor().shape(), filled_subs);
-        return view_factory<ValT,CfgT>::create_view_slice(impl(), filled_subs);
+        return create_slice_view(*this, subs...);
     }
-    template<typename Slices, std::enable_if_t<detail::is_slices_container<Slices> ,int> =0>
-    auto operator()(const Slices& subs){
-        detail::check_slices_number(descriptor().shape(), subs);
-        slices_container_type filled_subs = detail::fill_slices<slices_container_type>(descriptor().shape(),subs);
-        detail::check_slices(descriptor().shape(), filled_subs);
-        return view_factory<ValT,CfgT>::create_view_slice(impl(), filled_subs);
+    template<typename Container, std::enable_if_t<detail::is_container_of_type_v<Container,slice_type>,int> = 0>
+    auto operator()(const Container& subs){
+        return create_slice_view(*this, subs);
     }
     //transpose view
     template<typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs,size_type>&&...),int> = 0 >
     auto transpose(const Subs&...subs)const{
-        return create_view_transpose(*this, subs...);
+        return create_transpose_view(*this, subs...);
     }
     template<typename Container, std::enable_if_t<detail::is_container_of_type_v<Container,size_type>,int> = 0>
     auto transpose(const Container& subs)const{
-        return create_view_transpose(*this, subs);
+        return create_transpose_view(*this, subs);
     }
     //subdimension view
     template<typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs,index_type>&&...),int> = 0>
     auto subdim(const Subs&...subs)const{
-        return create_view_subdim(*this, subs...);
+        return create_subdim_view(*this, subs...);
     }
     template<typename Container, std::enable_if_t<detail::is_container_of_type_v<Container,index_type>,int> = 0>
     auto subdim(const Container& subs)const{
-        return create_view_subdim(*this, subs);
+        return create_subdim_view(*this, subs);
     }
     //reshape view
     template<typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs,index_type>&&...),int> = 0 >
     auto reshape(const Subs&...subs)const{
-        return create_view_reshape(*this, subs...);
+        return create_reshape_view(*this, subs...);
     }
     template<typename Container, std::enable_if_t<detail::is_container_of_type_v<Container,index_type>,int> = 0 >
     auto reshape(const Container& subs)const{
-        return create_view_reshape(*this, subs);
+        return create_reshape_view(*this, subs);
     }
     auto reshape(std::initializer_list<index_type> subs)const{
-        return create_view_reshape(*this, subs);
+        return create_reshape_view(*this, subs);
     }
     //mapping view
     template<typename...Subs, std::enable_if_t<(detail::is_index_tensor_v<Subs,index_type>&&...),int> = 0 >

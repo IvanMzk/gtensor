@@ -20,16 +20,6 @@ TEMPLATE_TEST_CASE("test_view","[test_view]",
 
     //0result,1expected
     auto test_data = std::make_tuple(
-        //slice view slice-direction interface
-        std::make_tuple(tensor_type{1}({},0),tensor_type{1}),
-        std::make_tuple(tensor_type{1}({0,1},0),tensor_type{1}),
-        std::make_tuple(tensor_type{1,2,3,4,5}({},0),tensor_type{1,2,3,4,5}),
-        std::make_tuple(tensor_type{1,2,3,4,5}({2,nop},0),tensor_type{3,4,5}),
-        std::make_tuple(tensor_type{{1,2},{3,4},{5,6}}({1,-1},0),tensor_type{{3,4}}),
-        std::make_tuple(tensor_type{{1,2},{3,4},{5,6}}({{},{},-1},0),tensor_type{{5,6},{3,4},{1,2}}),
-        std::make_tuple(tensor_type{{{1,2},{3,4},{5,6}},{{7,8},{9,10},{11,12}}}({{-1},{}},0),tensor_type{{{7,8},{9,10},{11,12}}}),
-        std::make_tuple(tensor_type{{{1,2},{3,4},{5,6}},{{7,8},{9,10},{11,12}}}({{},{},2},1),tensor_type{{{1,2},{5,6}},{{7,8},{11,12}}}),
-        std::make_tuple(tensor_type{{{1,2},{3,4},{5,6}},{{7,8},{9,10},{11,12}}}({{},{1}},2),tensor_type{{{1},{3},{5}},{{7},{9},{11}}}),
         //slice view init-list interface
         std::make_tuple(tensor_type{1}({{}}),tensor_type{1}),
         std::make_tuple(tensor_type{1}({{0}}),tensor_type{1}),

@@ -113,11 +113,11 @@ inline void check_slice_item_list(std::initializer_list<slice_item<T,N,R>> l){
 
 template<typename IdxT, typename NopT = Nop, typename RtagT = Rtag>
 class slice{
+    using mask_type = typename detail::mask_type;
 public:
     using index_type = IdxT;
     using nop_type = NopT;
     using reduce_tag_type = RtagT;
-    using mask_type = typename detail::mask_type;
     using slice_item_type = typename detail::slice_item<index_type, nop_type, reduce_tag_type>;
 
     slice():

@@ -63,10 +63,10 @@ inline IdxT make_slice_view_cstride_element(const IdxT& pstride_element, const S
     return pstride_element*subs.step();
 }
 template<typename ShT, typename Container>
-inline ShT make_slice_view_dim(const ShT& pshape, const Container& subs){
+inline typename ShT::size_type make_slice_view_dim(const ShT& pshape, const Container& subs){
     using size_type = typename ShT::size_type;
     size_type pdim = pshape.size();
-    size_type reduce_number = std::count_if(subs.begin(),subs.end(),[](const auto& subs_){subs_.is_reduce();});
+    size_type reduce_number = std::count_if(subs.begin(),subs.end(),[](const auto& subs_){return subs_.is_reduce();});
     return pdim - reduce_number;
 }
 template<typename ShT, typename SizeT, typename Container, typename ElementMaker>
@@ -109,6 +109,24 @@ inline ShT make_slice_view_shape_cstrides_direction(const ShT& pshape_pstrides, 
         ShT res{pshape_pstrides};
         res[direction] = element_maker(pshape_pstrides[direction], subs);
         return res;
+    }
+}
+//check args
+template<typename ShT, typename Container>
+inline void check_slice_view_args(const ShT& pshape, const Container& subs){
+    using size_type = typename ShT::size_type;
+    using index_type = typename ShT::value_type;
+    const size_type pdim = pshape.size();
+    const size_type subs_number = subs.size();
+    if (subs_number > pdim){
+        throw subscript_exception("invalid subscripts number");
+    }
+    auto pshape_it = pshape.begin();
+    for (auto subs_it = subs.begin(); subs_it!=subs.end(); ++subs_it,++pshape_it){
+        const auto subs_ = *subs_it;
+        if (subs_.is_reduce() && make_slice_view_shape_element(*pshape_it, subs_) == index_type{0}){
+            throw subscript_exception("invalid subscripts");
+        }
     }
 }
 //slice view shape
@@ -522,61 +540,14 @@ class view_factory
     using shape_type = typename CfgT::shape_type;
     using slice_type = typename slice_traits<CfgT>::slice_type;
     using slices_container_type = typename slice_traits<CfgT>::slices_container_type;
-    using view_reshape_descriptor_type = basic_descriptor<CfgT>;
-    using view_subdim_descriptor_type = descriptor_with_offset<CfgT>;
-    using view_slice_descriptor_type = converting_descriptor<CfgT>;
 
     template<typename CfgT_> using view_reshape_descriptor = basic_descriptor<CfgT_>;
     template<typename CfgT_> using view_subdim_descriptor = descriptor_with_offset<CfgT_>;
-    template<typename CfgT_> using view_slice_descriptor = converting_descriptor<CfgT_>;
+    template<typename CfgT_> using slice_view_descriptor = converting_descriptor<CfgT_>;
     template<typename CfgT_> using view_transpose_descriptor = converting_descriptor<CfgT_>;
-
-    template<typename EngineT> using view_reshape = gtensor::viewing_tensor<view_reshape_descriptor_type, EngineT>;
-    template<typename EngineT> using view_subdim = gtensor::viewing_tensor<view_subdim_descriptor_type, EngineT>;
-    template<typename EngineT> using view_slice = gtensor::viewing_tensor<view_slice_descriptor_type, EngineT>;
-
-    static auto create_view_slice_descriptor(const shape_type& shape, const shape_type& strides, const slice_type& subs, const size_type& direction){
-        return view_slice_descriptor_type{
-            detail::make_view_slice_shape(shape,subs,direction),
-            detail::make_view_slice_cstrides(strides,subs,direction),
-            detail::make_view_slice_offset(strides,subs,direction)
-        };
-    }
-    static auto create_view_slice_descriptor(const shape_type& shape, const shape_type& strides, const slices_container_type& subs){
-        return view_slice_descriptor_type{
-            detail::make_view_slice_shape(shape,subs),
-            detail::make_view_slice_cstrides(strides,subs),
-            detail::make_view_slice_offset(strides,subs)
-        };
-    }
-    // template<typename...Subs>
-    // static auto create_view_transpose_descriptor(const shape_type& shape, const shape_type& strides, const Subs&...subs){
-    //     return view_slice_descriptor_type{
-    //         detail::transpose(shape,subs...),
-    //         detail::transpose(strides,subs...),
-    //         index_type(0)
-    //     };
-    // }
-
-    // template<typename ShT, typename Container>
-    // static auto create_view_subdim_descriptor(const ShT& shape, const ShT& strides, const Container& subs){
-    //     using size_type = typename ShT::size_type;
-    //     const size_type subs_number = subs.size();
-    //     return view_subdim_descriptor_type{
-    //         detail::make_view_subdim_shape(shape,subs_number),
-    //         detail::make_view_subdim_offset_container(strides,subs)
-    //     };
-    // }
-
-    // template<typename ShT, typename IdxT, typename Container>
-    // static auto create_view_reshape_descriptor(const ShT& shape, const IdxT& size, const Container& subs){
-    //     return view_reshape_descriptor_type{
-    //         detail::make_view_reshape_shape(shape,size,subs)
-    //     };
-    // }
-
+    //subdim view
     template<typename...Ts, typename Container>
-    static auto create_view_subdim_container(const tensor<Ts...>& parent, const Container& subs){
+    static auto create_subdim_view_container(const tensor<Ts...>& parent, const Container& subs){
         using tensor_type = tensor<Ts...>;
         using impl_type = typename tensor_type::impl_type;
         using config_type = typename tensor_type::config_type;
@@ -595,14 +566,14 @@ class view_factory
         );
     }
     template<typename...Ts, typename...Subs>
-    static auto create_view_subdim_variadic(const tensor<Ts...>& parent, const Subs&...subs){
+    static auto create_subdim_view_variadic(const tensor<Ts...>& parent, const Subs&...subs){
         using config_type = typename tensor<Ts...>::config_type;
         using index_type = typename config_type::index_type;
-        return create_view_subdim_container(parent, typename config_type::template container<index_type>{subs...});
+        return create_subdim_view_container(parent, typename config_type::template container<index_type>{subs...});
     }
-
+    //reshape view
     template<typename...Ts, typename Container>
-    static auto create_view_reshape_container(const tensor<Ts...>& parent, const Container& subs){
+    static auto create_reshape_view_container(const tensor<Ts...>& parent, const Container& subs){
         using tensor_type = tensor<Ts...>;
         using impl_type = typename tensor_type::impl_type;
         using config_type = typename tensor_type::config_type;
@@ -616,14 +587,14 @@ class view_factory
         );
     }
     template<typename...Ts, typename...Subs>
-    static auto create_view_reshape_variadic(const tensor<Ts...>& parent, const Subs&...subs){
+    static auto create_reshape_view_variadic(const tensor<Ts...>& parent, const Subs&...subs){
         using config_type = typename tensor<Ts...>::config_type;
         using index_type = typename config_type::index_type;
-        return create_view_reshape_container(parent, typename config_type::template container<index_type>{subs...});
+        return create_reshape_view_container(parent, typename config_type::template container<index_type>{subs...});
     }
-
+    //transpose view
     template<typename...Ts, typename Container>
-    static auto create_view_transpose_container(const tensor<Ts...>& parent, const Container& subs){
+    static auto create_transpose_view_container(const tensor<Ts...>& parent, const Container& subs){
         using tensor_type = tensor<Ts...>;
         using impl_type = typename tensor_type::impl_type;
         using config_type = typename tensor_type::config_type;
@@ -641,73 +612,97 @@ class view_factory
         );
     }
     template<typename...Ts, typename...Subs>
-    static auto create_view_transpose_variadic(const tensor<Ts...>& parent, const Subs&...subs){
+    static auto create_transpose_view_variadic(const tensor<Ts...>& parent, const Subs&...subs){
         using config_type = typename tensor<Ts...>::config_type;
         using size_type = typename config_type::size_type;
         detail::check_transpose_subs_variadic(subs...);
-        return create_view_transpose_container(parent, typename config_type::template container<size_type>{static_cast<size_type>(subs)...});
+        return create_transpose_view_container(parent, typename config_type::template container<size_type>{static_cast<size_type>(subs)...});
     }
-
-    template<typename...Ts, typename Subs, typename SizeT>
-    static auto create_view_slice_direction(const tensor<Ts...>& parent, const Subs& subs, const SizeT& direction){
-    }
+    //slice view
     template<typename...Ts, typename Container>
-    static auto create_view_slice_container(const tensor<Ts...>& parent, const Container& subs){
+    static auto create_slice_view_container(const tensor<Ts...>& parent, const Container& subs){
+        using tensor_type = tensor<Ts...>;
+        using impl_type = typename tensor_type::impl_type;
+        using config_type = typename tensor_type::config_type;
+        using size_type = typename tensor_type::size_type;
+        using slice_type = typename tensor_type::slice_type;
+        using descriptor_type = slice_view_descriptor<config_type>;
+        static_assert(std::is_same_v<typename Container::value_type,slice_type>);
+        auto parent_impl = parent.impl();
+        const auto& pshape = parent_impl->shape();
+        detail::check_slice_view_args(pshape,subs);
+        const auto& pstrides = parent_impl->strides();
+        size_type res_dim = detail::make_slice_view_dim(pshape, subs);
+        return viewing_tensor_factory<config_type,descriptor_type,impl_type>::make(
+            descriptor_type{
+                detail::make_slice_view_shape(pshape,res_dim,subs),
+                detail::make_slice_view_cstrides(pstrides,res_dim,subs),
+                detail::make_slice_view_offset(pshape,pstrides,subs)
+            },
+            parent_impl
+        );
     }
-    //if only index_type subscripts then make subdim view
-    //if there are one or more slice_type subscripts make slice view
-    //compile time decision
+    template<typename...Ts>
+    static auto create_slice_view_container(const tensor<Ts...>& parent, std::initializer_list<std::initializer_list<typename tensor<Ts...>::slice_item_type>> subs){
+        using config_type = typename tensor<Ts...>::config_type;
+        using slice_type = typename tensor<Ts...>::slice_type;
+        return create_slice_view_container(parent, typename config_type::template container<slice_type>(subs.begin(),subs.end()));
+    }
     template<typename...Ts,typename...Subs>
-    static auto create_view_slice_variadic(const tensor<Ts...>& parent, const Subs&...subs){
+    static auto create_slice_view_variadic(const tensor<Ts...>& parent, const Subs&...subs){
+        using tensor_type = tensor<Ts...>;
+        using config_type = typename tensor_type::config_type;
+        using slice_type = typename tensor_type::slice_type;
+        using slice_item_type = typename slice_type::slice_item_type;
+        using reduce_tag_type = typename slice_type::reduce_tag_type;
+        using index_type = typename tensor_type::index_type;
+        struct slice_maker{
+            auto operator()(const index_type& start){return slice_type{start,reduce_tag_type{}};}
+            auto operator()(std::initializer_list<slice_item_type> slice_init_list){return slice_type{slice_init_list};}
+            const auto& operator()(const slice_type& slice){return slice;}
+        };
+        if constexpr((std::is_convertible_v<Subs,index_type>&&...)){    //can make subdim view
+            return create_subdim_view_variadic(parent, subs...);
+        }else{
+            slice_maker maker{};
+            return create_slice_view_container(parent, typename config_type::template container<slice_type>{maker(subs)...});
+        }
     }
 
 
 public:
-    template<typename ImplT>
-    static auto create_view_slice(const std::shared_ptr<ImplT>& parent, const slice_type& subs, const size_type& direction){
-        return viewing_tensor_factory<CfgT,view_slice_descriptor_type,ImplT>::make(create_view_slice_descriptor(parent->shape(), parent->strides(), subs, direction),parent);
-    }
-    template<typename ImplT>
-    static auto create_view_slice(const std::shared_ptr<ImplT>& parent, const slices_container_type& subs){
-        return viewing_tensor_factory<CfgT,view_slice_descriptor_type,ImplT>::make(create_view_slice_descriptor(parent->shape(), parent->strides(), subs),parent);
-    }
-
     //view_factory interface
     template<typename...Ts, typename Container, std::enable_if_t<detail::is_container_of_type_v<Container, typename tensor<Ts...>::index_type>,int> = 0>
-    static auto create_view_subdim(const tensor<Ts...>& parent, const Container& subs){
-        return create_view_subdim_container(parent, subs);
+    static auto create_subdim_view(const tensor<Ts...>& parent, const Container& subs){
+        return create_subdim_view_container(parent, subs);
     }
     template<typename...Ts, typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs, typename tensor<Ts...>::index_type>&&...),int> = 0>
-    static auto create_view_subdim(const tensor<Ts...>& parent, const Subs&...subs){
-        return create_view_subdim_variadic(parent, subs...);
+    static auto create_subdim_view(const tensor<Ts...>& parent, const Subs&...subs){
+        return create_subdim_view_variadic(parent, subs...);
     }
 
     template<typename...Ts, typename Container, std::enable_if_t<detail::is_container_of_type_v<Container, typename tensor<Ts...>::index_type>,int> = 0>
-    static auto create_view_reshape(const tensor<Ts...>& parent, const Container& subs){
-        return create_view_reshape_container(parent, subs);
+    static auto create_reshape_view(const tensor<Ts...>& parent, const Container& subs){
+        return create_reshape_view_container(parent, subs);
     }
     template<typename...Ts, typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs, typename tensor<Ts...>::index_type>&&...),int> = 0>
-    static auto create_view_reshape(const tensor<Ts...>& parent, const Subs&...subs){
-        return create_view_reshape_variadic(parent, subs...);
+    static auto create_reshape_view(const tensor<Ts...>& parent, const Subs&...subs){
+        return create_reshape_view_variadic(parent, subs...);
     }
 
     template<typename...Ts, typename Container, std::enable_if_t<detail::is_container_of_type_v<Container, typename tensor<Ts...>::size_type>,int> = 0>
-    static auto create_view_transpose(const tensor<Ts...>& parent, const Container& subs){
-        return create_view_transpose_continer(parent, subs);
+    static auto create_transpose_view(const tensor<Ts...>& parent, const Container& subs){
+        return create_transpose_view_continer(parent, subs);
     }
     template<typename...Ts, typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs, typename tensor<Ts...>::size_type>&&...),int> = 0>
-    static auto create_view_transpose(const tensor<Ts...>& parent, const Subs&...subs){
-        return create_view_transpose_variadic(parent, subs...);
+    static auto create_transpose_view(const tensor<Ts...>& parent, const Subs&...subs){
+        return create_transpose_view_variadic(parent, subs...);
     }
 
 
-    template<typename...Ts>
-    static auto create_view_slice(const tensor<Ts...>& parent, const typename tensor<Ts...>::slice_type& subs, const typename tensor<Ts...>::size_type& direction){
-        return create_view_slice_direction(parent, subs, direction);
-    }
     template<typename...Ts, typename Container, std::enable_if_t<detail::is_container_of_type_v<Container, typename tensor<Ts...>::slice_type>,int> = 0>
-    static auto create_view_slice(const tensor<Ts...>& parent, const Container& subs){
-        return create_view_slice_container(parent, subs);
+    static auto create_slice_view(const tensor<Ts...>& parent, const Container& subs){
+        return create_slice_view_container(parent, subs);
     }
     //if only index_type subscripts then make subdim view
     //if there are one or more slice_type subscripts make slice view
@@ -717,8 +712,8 @@ public:
         typename...Subs,
         std::enable_if_t<((std::is_convertible_v<Subs, typename tensor<Ts...>::index_type> || std::is_convertible_v<Subs, typename tensor<Ts...>::slice_type>)&&...),int> = 0
     >
-    static auto create_view_slice(const tensor<Ts...>& parent, const Subs&...subs){
-        create_view_slice_variadic(parent, subs...);
+    static auto create_slice_view(const tensor<Ts...>& parent, const Subs&...subs){
+        return create_slice_view_variadic(parent, subs...);
     }
 
     template<typename ImplT, typename...Subs>
@@ -767,19 +762,12 @@ public:
 
 
 //view_factory module interface
-template<typename...Ts>
-inline auto create_view_slice(const tensor<Ts...>& parent, const typename tensor<Ts...>::slice_type& subs, const typename tensor<Ts...>::size_type& direction){
-    using tensor_type = tensor<Ts...>;
-    using config_type = typename tensor_type::config_type;
-    using value_type = typename tensor_type::value_type;
-    return view_factory<value_type,config_type>::create_view_slice(parent, subs, direction);
-}
 template<typename...Ts, typename Container, std::enable_if_t<detail::is_container_of_type_v<Container, typename tensor<Ts...>::slice_type>,int> = 0>
-inline auto create_view_slice(const tensor<Ts...>& parent, const Container& subs){
+inline auto create_slice_view(const tensor<Ts...>& parent, const Container& subs){
     using tensor_type = tensor<Ts...>;
     using config_type = typename tensor_type::config_type;
     using value_type = typename tensor_type::value_type;
-    return view_factory<value_type,config_type>::create_view_slice(parent, subs);
+    return view_factory<value_type,config_type>::create_slice_view(parent, subs);
 }
 //if only index_type subscripts then make subdim view
 //if there are one or more slice_type subscripts make slice view
@@ -789,57 +777,57 @@ template<
     typename...Subs,
     std::enable_if_t<((std::is_convertible_v<Subs, typename tensor<Ts...>::index_type> || std::is_convertible_v<Subs, typename tensor<Ts...>::slice_type>)&&...),int> = 0
 >
-inline auto create_view_slice(const tensor<Ts...>& parent, const Subs&...subs){
+inline auto create_slice_view(const tensor<Ts...>& parent, const Subs&...subs){
     using tensor_type = tensor<Ts...>;
     using config_type = typename tensor_type::config_type;
     using value_type = typename tensor_type::value_type;
-    return view_factory<value_type,config_type>::create_view_slice(parent, subs...);
+    return view_factory<value_type,config_type>::create_slice_view(parent, subs...);
 }
 
 
 template<typename...Ts, typename Container, std::enable_if_t<detail::is_container_of_type_v<Container, typename tensor<Ts...>::index_type>,int> = 0>
-inline auto create_view_subdim(const tensor<Ts...>& parent, const Container& subs){
+inline auto create_subdim_view(const tensor<Ts...>& parent, const Container& subs){
     using tensor_type = tensor<Ts...>;
     using config_type = typename tensor_type::config_type;
     using value_type = typename tensor_type::value_type;
-    return view_factory<value_type,config_type>::create_view_subdim(parent, subs);
+    return view_factory<value_type,config_type>::create_subdim_view(parent, subs);
 }
 template<typename...Ts, typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs, typename tensor<Ts...>::index_type>&&...),int> = 0>
-inline auto create_view_subdim(const tensor<Ts...>& parent, const Subs&...subs){
+inline auto create_subdim_view(const tensor<Ts...>& parent, const Subs&...subs){
     using tensor_type = tensor<Ts...>;
     using config_type = typename tensor_type::config_type;
     using value_type = typename tensor_type::value_type;
-    return view_factory<value_type,config_type>::create_view_subdim(parent, subs...);
+    return view_factory<value_type,config_type>::create_subdim_view(parent, subs...);
 }
 
 template<typename...Ts, typename Container, std::enable_if_t<detail::is_container_of_type_v<Container, typename tensor<Ts...>::index_type>,int> = 0>
-inline auto create_view_reshape(const tensor<Ts...>& parent, const Container& subs){
+inline auto create_reshape_view(const tensor<Ts...>& parent, const Container& subs){
     using tensor_type = tensor<Ts...>;
     using config_type = typename tensor_type::config_type;
     using value_type = typename tensor_type::value_type;
-    return view_factory<value_type,config_type>::create_view_reshape(parent, subs);
+    return view_factory<value_type,config_type>::create_reshape_view(parent, subs);
 }
 template<typename...Ts, typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs, typename tensor<Ts...>::index_type>&&...),int> = 0>
-inline auto create_view_reshape(const tensor<Ts...>& parent, const Subs&...subs){
+inline auto create_reshape_view(const tensor<Ts...>& parent, const Subs&...subs){
     using tensor_type = tensor<Ts...>;
     using config_type = typename tensor_type::config_type;
     using value_type = typename tensor_type::value_type;
-    return view_factory<value_type,config_type>::create_view_reshape(parent, subs...);
+    return view_factory<value_type,config_type>::create_reshape_view(parent, subs...);
 }
 
 template<typename...Ts, typename Container, std::enable_if_t<detail::is_container_of_type_v<Container, typename tensor<Ts...>::size_type>,int> = 0>
-inline auto create_view_transpose(const tensor<Ts...>& parent, const Container& subs){
+inline auto create_transpose_view(const tensor<Ts...>& parent, const Container& subs){
     using tensor_type = tensor<Ts...>;
     using config_type = typename tensor_type::config_type;
     using value_type = typename tensor_type::value_type;
-    return view_factory<value_type,config_type>::create_view_transpose(parent, subs);
+    return view_factory<value_type,config_type>::create_transpose_view(parent, subs);
 }
 template<typename...Ts, typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs, typename tensor<Ts...>::size_type>&&...),int> = 0>
-inline auto create_view_transpose(const tensor<Ts...>& parent, const Subs&...subs){
+inline auto create_transpose_view(const tensor<Ts...>& parent, const Subs&...subs){
     using tensor_type = tensor<Ts...>;
     using config_type = typename tensor_type::config_type;
     using value_type = typename tensor_type::value_type;
-    return view_factory<value_type,config_type>::create_view_transpose(parent, subs...);
+    return view_factory<value_type,config_type>::create_transpose_view(parent, subs...);
 }
 
 
