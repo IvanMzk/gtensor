@@ -5,10 +5,6 @@
 
 namespace gtensor{
 
-class subscript_exception : public std::runtime_error{
-    public: subscript_exception(const char* what):runtime_error(what){}
-};
-
 class slice_exception : public std::runtime_error{
     public: slice_exception(const char* what):runtime_error(what){}
 };
@@ -226,128 +222,129 @@ struct slice_traits{
     using slices_container_type = typename CfgT::template container<slice_type>;
 };
 
-namespace detail{
+// namespace detail{
 
-template<typename> inline constexpr bool is_slice = false;
-template<typename T, typename N> inline constexpr bool is_slice<gtensor::slice<T,N>> = true;
-template<typename...Ts> inline constexpr bool is_slices = (... && is_slice<Ts>);
-template<typename Slices, typename = void> inline constexpr bool is_slices_container = false;
-template<typename Slices> inline constexpr bool is_slices_container<Slices, std::void_t<decltype(std::begin(std::declval<Slices&>()))> > =
-    is_slice<typename std::iterator_traits<decltype(std::begin(std::declval<Slices&>()))>::value_type>;
+// template<typename> inline constexpr bool is_slice = false;
+// template<typename T, typename N> inline constexpr bool is_slice<gtensor::slice<T,N>> = true;
+// template<typename...Ts> inline constexpr bool is_slices = (... && is_slice<Ts>);
+// template<typename Slices, typename = void> inline constexpr bool is_slices_container = false;
+// template<typename Slices> inline constexpr bool is_slices_container<Slices, std::void_t<decltype(std::begin(std::declval<Slices&>()))> > =
+//     is_slice<typename std::iterator_traits<decltype(std::begin(std::declval<Slices&>()))>::value_type>;
 
-/*
-* start,stop,step
-* slice{i,j,k}
-* if i is not given it defaults to 0 for k > 0 and n-1 for k < 0 .
-* If j is not given it defaults to n for k > 0 and -n-1 for k < 0 .
-* If k is not given it defaults to 1.
-*
-* Negative i and j are interpreted as n + i and n + j where n is the number of elements in the corresponding dimension.
-* Negative k makes stepping go towards smaller indices.
-*/
-/*n is corresponding shape element, may be unsigned*/
-template<typename T, typename N, typename R>
-inline auto fill_slice(const slice<T,N,R>& slice_, const T& n){
-    using slice_type = slice<T,N>;
-    using index_type = T;
-    const index_type zero_index(0);
-    return slice_.step() > zero_index ?
-                slice_.is_start() ?
-                    slice_.is_stop() ? slice_type{slice_.start() < zero_index ? slice_.start() + n:slice_.start(), slice_.stop() < zero_index  ? slice_.stop() + n:slice_.stop(), slice_.step()} : slice_type{slice_.start() < zero_index  ? slice_.start() + n:slice_.start(),n, slice_.step()}
-                :
-                    slice_.is_stop() ? slice_type{zero_index,slice_.stop() < zero_index  ? slice_.stop() + n:slice_.stop(), slice_.step()} : slice_type{zero_index,n, slice_.step()}
-            :
-                slice_.is_start() ?
-                    slice_.is_stop() ? slice_type{slice_.start() < zero_index ? slice_.start() + n:slice_.start(), slice_.stop() < zero_index  ? slice_.stop() + n:slice_.stop(), slice_.step()} : slice_type{slice_.start() < zero_index  ? slice_.start() + n:slice_.start(),index_type(-1), slice_.step()}
-                :
-                    slice_.is_stop() ? slice_type{n-index_type(1),slice_.stop() < zero_index  ? slice_.stop() + n:slice_.stop(), slice_.step()} : slice_type{n-index_type(1),index_type(-1), slice_.step()};
-}
+// /*
+// * start,stop,step
+// * slice{i,j,k}
+// * if i is not given it defaults to 0 for k > 0 and n-1 for k < 0 .
+// * If j is not given it defaults to n for k > 0 and -n-1 for k < 0 .
+// * If k is not given it defaults to 1.
+// *
+// * Negative i and j are interpreted as n + i and n + j where n is the number of elements in the corresponding dimension.
+// * Negative k makes stepping go towards smaller indices.
+// */
+// /*n is corresponding shape element, may be unsigned*/
+// template<typename T, typename N, typename R>
+// inline auto fill_slice(const slice<T,N,R>& slice_, const T& n){
+//     using slice_type = slice<T,N>;
+//     using index_type = T;
+//     const index_type zero_index(0);
+//     return slice_.step() > zero_index ?
+//                 slice_.is_start() ?
+//                     slice_.is_stop() ? slice_type{slice_.start() < zero_index ? slice_.start() + n:slice_.start(), slice_.stop() < zero_index  ? slice_.stop() + n:slice_.stop(), slice_.step()} : slice_type{slice_.start() < zero_index  ? slice_.start() + n:slice_.start(),n, slice_.step()}
+//                 :
+//                     slice_.is_stop() ? slice_type{zero_index,slice_.stop() < zero_index  ? slice_.stop() + n:slice_.stop(), slice_.step()} : slice_type{zero_index,n, slice_.step()}
+//             :
+//                 slice_.is_start() ?
+//                     slice_.is_stop() ? slice_type{slice_.start() < zero_index ? slice_.start() + n:slice_.start(), slice_.stop() < zero_index  ? slice_.stop() + n:slice_.stop(), slice_.step()} : slice_type{slice_.start() < zero_index  ? slice_.start() + n:slice_.start(),index_type(-1), slice_.step()}
+//                 :
+//                     slice_.is_stop() ? slice_type{n-index_type(1),slice_.stop() < zero_index  ? slice_.stop() + n:slice_.stop(), slice_.step()} : slice_type{n-index_type(1),index_type(-1), slice_.step()};
+// }
 
-/*
-* check filled slice for valid values given shape element n
-* slice{i,j,k}
-* k !=0 - garantes by slice type
-* if k>0:  i < j  and i in range [0,n) and j in range [0,n+1)
-* if k<0:  i > j  and i in range [0,n) and j in range [-1,n)
-* if slice is ok do nothing, throw subscript_exception otherwise
-*/
-template<typename T, typename N, typename R>
-inline void check_slice(const slice<T,N,R>& slice_, const T& n){
-    using index_type = T;
-    const index_type zero_index(0);
-    if (
-        slice_.step() > zero_index ? slice_.start()<slice_.stop() && slice_.start()>=zero_index && slice_.start()<n && slice_.stop()>zero_index && slice_.stop()<=n ? true : false
-        :
-        slice_.start()>slice_.stop() && slice_.start()>=zero_index && slice_.start()<n && slice_.stop()>=index_type(-1) && slice_.stop()<n-index_type(1) ? true : false
-        ){
-        }else{
-            throw subscript_exception("invalid slice subscript");
-        }
-}
+// /*
+// * check filled slice for valid values given shape element n
+// * slice{i,j,k}
+// * k !=0 - garantes by slice type
+// * if k>0:  i < j  and i in range [0,n) and j in range [0,n+1)
+// * if k<0:  i > j  and i in range [0,n) and j in range [-1,n)
+// * if slice is ok do nothing, throw subscript_exception otherwise
+// */
+// template<typename T, typename N, typename R>
+// inline void check_slice(const slice<T,N,R>& slice_, const T& n){
+//     using index_type = T;
+//     const index_type zero_index(0);
+//     if (
+//         slice_.step() > zero_index ? slice_.start()<slice_.stop() && slice_.start()>=zero_index && slice_.start()<n && slice_.stop()>zero_index && slice_.stop()<=n ? true : false
+//         :
+//         slice_.start()>slice_.stop() && slice_.start()>=zero_index && slice_.start()<n && slice_.stop()>=index_type(-1) && slice_.stop()<n-index_type(1) ? true : false
+//         ){
+//         }else{
+//             throw subscript_exception("invalid slice subscript");
+//         }
+// }
 
-//make collection of filled slices from slices args
-template<std::size_t I, typename SlicesContainer, typename ShT>
-inline void fill_slices_helper(SlicesContainer&, const ShT&){}
-template<std::size_t I, typename SlicesContainer, typename ShT,typename Sub, typename...Subs>
-inline void fill_slices_helper(SlicesContainer& res, const ShT& shape, const Sub& sub, const Subs&...subs){
-    res.push_back(fill_slice(sub,shape[I]));
-    fill_slices_helper<I+1>(res,shape,subs...);
-}
-template<typename SlicesContainer, typename ShT, typename...Subs, typename std::enable_if_t<is_slices<Subs...>,int> = 0 >
-inline SlicesContainer fill_slices(const ShT& shape, const Subs&...subs){
-    SlicesContainer res{};
-    res.reserve(sizeof...(Subs));
-    fill_slices_helper<0>(res,shape,subs...);
-    return res;
-}
+// //make collection of filled slices from slices args
+// template<std::size_t I, typename SlicesContainer, typename ShT>
+// inline void fill_slices_helper(SlicesContainer&, const ShT&){}
+// template<std::size_t I, typename SlicesContainer, typename ShT,typename Sub, typename...Subs>
+// inline void fill_slices_helper(SlicesContainer& res, const ShT& shape, const Sub& sub, const Subs&...subs){
+//     res.push_back(fill_slice(sub,shape[I]));
+//     fill_slices_helper<I+1>(res,shape,subs...);
+// }
+// template<typename SlicesContainer, typename ShT, typename...Subs, typename std::enable_if_t<is_slices<Subs...>,int> = 0 >
+// inline SlicesContainer fill_slices(const ShT& shape, const Subs&...subs){
+//     SlicesContainer res{};
+//     res.reserve(sizeof...(Subs));
+//     fill_slices_helper<0>(res,shape,subs...);
+//     return res;
+// }
 
-//make collection of filled slices from init_list of intit_list of slice_items
-template<typename SlicesContainer, typename ShT>
-inline SlicesContainer fill_slices(const ShT& shape, std::initializer_list<std::initializer_list<slice_item<typename SlicesContainer::value_type::index_type, typename SlicesContainer::value_type::nop_type>>> subs){
-    using slice_type = typename SlicesContainer::value_type;
-    SlicesContainer res{};
-    res.reserve(subs.size());
-    auto sh_it = shape.begin();
-    for_each(subs.begin(), subs.end(), [&sh_it, &res](const auto& sub){res.push_back(fill_slice(slice_type(sub),*sh_it));++sh_it;});
-    return res;
-}
+// //make collection of filled slices from init_list of intit_list of slice_items
+// template<typename SlicesContainer, typename ShT>
+// inline SlicesContainer fill_slices(const ShT& shape, std::initializer_list<std::initializer_list<slice_item<typename SlicesContainer::value_type::index_type, typename SlicesContainer::value_type::nop_type>>> subs){
+//     using slice_type = typename SlicesContainer::value_type;
+//     SlicesContainer res{};
+//     res.reserve(subs.size());
+//     auto sh_it = shape.begin();
+//     for_each(subs.begin(), subs.end(), [&sh_it, &res](const auto& sub){res.push_back(fill_slice(slice_type(sub),*sh_it));++sh_it;});
+//     return res;
+// }
 
-//make collection of filled slices from slices container
-template<typename SlicesContainer, typename ShT, typename Slices, std::enable_if_t<detail::is_slices_container<Slices>,int> =0>
-inline SlicesContainer fill_slices(const ShT& shape, const Slices& subs){
-    SlicesContainer res{};
-    res.reserve(subs.size());
-    auto sh_it = shape.begin();
-    for_each(subs.begin(), subs.end(), [&sh_it, &res](const auto& sub){res.push_back(fill_slice(sub,*sh_it));++sh_it;});
-    return res;
-}
+// //make collection of filled slices from slices container
+// template<typename SlicesContainer, typename ShT, typename Slices, std::enable_if_t<detail::is_slices_container<Slices>,int> =0>
+// inline SlicesContainer fill_slices(const ShT& shape, const Slices& subs){
+//     SlicesContainer res{};
+//     res.reserve(subs.size());
+//     auto sh_it = shape.begin();
+//     for_each(subs.begin(), subs.end(), [&sh_it, &res](const auto& sub){res.push_back(fill_slice(sub,*sh_it));++sh_it;});
+//     return res;
+// }
 
-//check filled slices
-template<typename ShT, typename SlicesContainer>
-inline void check_slices(const ShT& shape, const SlicesContainer& slices){
-    if (slices.size()>shape.size()){throw subscript_exception("subscripts number exceeds dim");}
-    auto sh_it = shape.begin();
-    std::for_each(slices.begin(), slices.end(), [&](const auto& slice){check_slice(slice,*sh_it);++sh_it;});
-}
+// //check filled slices
+// template<typename ShT, typename SlicesContainer>
+// inline void check_slices(const ShT& shape, const SlicesContainer& slices){
+//     if (slices.size()>shape.size()){throw subscript_exception("subscripts number exceeds dim");}
+//     auto sh_it = shape.begin();
+//     std::for_each(slices.begin(), slices.end(), [&](const auto& slice){check_slice(slice,*sh_it);++sh_it;});
+// }
 
-template<typename ShT, typename...T>
-inline void check_slices_number(const ShT& shape, std::initializer_list<std::initializer_list<slice_item<T...>>> subs){
-    if (subs.size()>shape.size()){throw subscript_exception("subscripts number exceeds dim");}
-}
-template<typename ShT, typename...Subs, std::enable_if_t<is_slices<Subs...>, int> =0 >
-inline void check_slices_number(const ShT& shape, const Subs&...){
-    if (sizeof...(Subs)>shape.size()){throw subscript_exception("subscripts number exceeds dim");}
-}
-template<typename ShT, typename SlicesContainer, std::enable_if_t<detail::is_slices_container<SlicesContainer>,int> =0>
-inline void check_slices_number(const ShT& shape, const SlicesContainer& subs){
-    if (subs.size()>shape.size()){throw subscript_exception("subscripts number exceeds dim");}
-}
-template<typename ShT, typename SizeT>
-inline void check_slice_direction(const ShT& shape, const SizeT& direction){
-    if (direction>=shape.size()){throw subscript_exception("subscripts number exceeds dim");}
-}
+// template<typename ShT, typename...T>
+// inline void check_slices_number(const ShT& shape, std::initializer_list<std::initializer_list<slice_item<T...>>> subs){
+//     if (subs.size()>shape.size()){throw subscript_exception("subscripts number exceeds dim");}
+// }
+// template<typename ShT, typename...Subs, std::enable_if_t<is_slices<Subs...>, int> =0 >
+// inline void check_slices_number(const ShT& shape, const Subs&...){
+//     if (sizeof...(Subs)>shape.size()){throw subscript_exception("subscripts number exceeds dim");}
+// }
+// template<typename ShT, typename SlicesContainer, std::enable_if_t<detail::is_slices_container<SlicesContainer>,int> =0>
+// inline void check_slices_number(const ShT& shape, const SlicesContainer& subs){
+//     if (subs.size()>shape.size()){throw subscript_exception("subscripts number exceeds dim");}
+// }
+// template<typename ShT, typename SizeT>
+// inline void check_slice_direction(const ShT& shape, const SizeT& direction){
+//     if (direction>=shape.size()){throw subscript_exception("subscripts number exceeds dim");}
+// }
 
-}   //end of namespace detail
+// }   //end of namespace detail
+
 }   //end of namespace gtensor
 
 

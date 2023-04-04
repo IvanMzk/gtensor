@@ -24,7 +24,8 @@ auto make_test_tensor(T&& t){return TestT<std::decay_t<T>>{t};}
 
 }   //end of namespace test_view_factory
 
-
+//test helpers
+//test slice view helpers
 TEST_CASE("test_make_slice_view_shape_element","[test_view_factory]"){
     using config_type = gtensor::config::default_config;
     using index_type = config_type::index_type;
@@ -483,91 +484,12 @@ TEST_CASE("test_make_slice_view_cstrides_direction","[test_view_factory]"){
     apply_by_element(test, test_data);
 }
 
-
-// TEMPLATE_TEST_CASE("test_make_view_slice_shape","[test_view_factory]", std::vector<std::int64_t>){
-//     using index_type = typename TestType::value_type;
-//     using shape_type = TestType;
-//     using slice_type = gtensor::slice<index_type>;
-//     using slices_collection_type = std::vector<slice_type>;
-//     using gtensor::detail::make_view_slice_shape;
-//     using test_type = std::tuple<shape_type, slices_collection_type, shape_type>;
-//     //0parent_shape,1slices_collection,2expected_shape
-//     auto test_data = GENERATE(
-//         test_type{shape_type{11},{}, shape_type{11}},
-//         test_type{shape_type{11},{slice_type{0,11,1}}, shape_type{11}},
-//         test_type{shape_type{11},{slice_type{0,11,2}}, shape_type{6}},
-//         test_type{shape_type{11},{slice_type{3,11,1}}, shape_type{8}},
-//         test_type{shape_type{11},{slice_type{3,9,3}}, shape_type{2}},
-//         test_type{shape_type{11},{slice_type{3,11,2}}, shape_type{4}},
-//         test_type{shape_type{11},{slice_type{5,5,1}}, shape_type{0}},
-//         test_type{shape_type{11},{slice_type{5,5,2}}, shape_type{0}},
-//         test_type{shape_type{2,4,3},{}, shape_type{2,4,3}},
-//         test_type{shape_type{2,4,3},{slice_type{0,2},slice_type{0,4}}, shape_type{2,4,3}},
-//         test_type{shape_type{2,4,3},{slice_type{1},slice_type{2}}, shape_type{1,2,3}},
-//         test_type{shape_type{2,4,3},{slice_type{0,2},slice_type{0,4},slice_type{0,3}}, shape_type{2,4,3}},
-//         test_type{shape_type{1,10,10},{slice_type{0,1,1},slice_type{9,-1,-1}}, shape_type{1,10,10}},
-//         test_type{shape_type{10,1,10},{slice_type{9,3,-2}}, shape_type{3,1,10}}
-//     );
-//     auto parent_shape = std::get<0>(test_data);
-//     auto slices_collection = std::get<1>(test_data);
-//     auto expected_shape = std::get<2>(test_data);
-//     REQUIRE(make_view_slice_shape(parent_shape, slices_collection) == expected_shape);
-// }
-
-// TEMPLATE_TEST_CASE("test_make_view_slice_offset","[test_view_factory]", std::vector<std::int64_t>){
-//     using index_type = typename TestType::value_type;
-//     using shape_type = TestType;
-//     using slice_type = gtensor::slice<index_type>;
-//     using slices_collection_type = std::vector<slice_type>;
-//     using gtensor::detail::make_view_slice_offset;
-//     using test_type = std::tuple<shape_type, slices_collection_type, index_type>;
-//     //0parent_strides,1slices_collection,2expected_offset
-//     auto test_data = GENERATE(
-//         test_type{shape_type{1}, {}, 0},
-//         test_type{shape_type{1}, {slice_type{0,10,2}}, 0},
-//         test_type{shape_type{1}, {slice_type{4,10,2}}, 4},
-//         test_type{shape_type{1,5}, {}, 0},
-//         test_type{shape_type{1,5}, {slice_type{1,5,1}, slice_type{3,5,1}}, 16},
-//         test_type{shape_type{1,5,20}, {slice_type{2,4,1}, slice_type{1,3,1}}, 7}
-//     );
-
-//     auto parent_strides = std::get<0>(test_data);
-//     auto slices_collection = std::get<1>(test_data);
-//     auto expected_offset = std::get<2>(test_data);
-//     REQUIRE(make_view_slice_offset(parent_strides, slices_collection) == expected_offset);
-// }
-
-// TEMPLATE_TEST_CASE("test_make_view_slice_cstrides","[test_view_factory]", std::vector<std::int64_t>){
-//     using index_type = typename TestType::value_type;
-//     using shape_type = TestType;
-//     using slice_type = gtensor::slice<index_type>;
-//     using gtensor::detail::make_view_slice_cstrides;
-//     using slices_collection_type = std::vector<slice_type>;
-//     using test_type = std::tuple<shape_type, slices_collection_type, shape_type>;
-//     //0parent_strides,1slices_collection,2expected_cstrides
-//     auto test_data = GENERATE(
-//         test_type{shape_type{1},{slice_type{0,10,1}}, shape_type{1}},
-//         test_type{shape_type{1},{slice_type{2,8,3}}, shape_type{3}},
-//         test_type{shape_type{1},{slice_type{10,-1,-1}}, shape_type{-1}},
-//         test_type{shape_type{1,5},{slice_type{0,5,1}}, shape_type{1,5}},
-//         test_type{shape_type{1,5},{slice_type{0,5,-1}}, shape_type{-1,5}},
-//         test_type{shape_type{1,5},{slice_type{0,5,2}}, shape_type{2,5}},
-//         test_type{shape_type{1,5,20},{slice_type{0,10,2}, slice_type{0,5,2},slice_type{4,-1,-1}}, shape_type{2,10,-20}},
-//         test_type{shape_type{1,5,20},{slice_type{0,5,2},slice_type{3,-1,-1}}, shape_type{2,-5,20}}
-//     );
-
-//     auto parent_strides = std::get<0>(test_data);
-//     auto slices_collection = std::get<1>(test_data);
-//     auto expected_cstrides = std::get<2>(test_data);
-//     REQUIRE(make_view_slice_cstrides(parent_strides, slices_collection) == expected_cstrides);
-
-// }
-
-
-TEMPLATE_TEST_CASE("test_make_view_subdim_shape","[test_view_factory]", std::vector<std::int64_t>){
-    using shape_type = TestType;
-    using size_type = typename shape_type::size_type;
-    using gtensor::detail::make_view_subdim_shape;
+//test subdim view helpers
+TEST_CASE("test_make_subdim_view_shape","[test_view_factory]"){
+    using config_type = gtensor::config::default_config;
+    using shape_type = config_type::shape_type;
+    using size_type = config_type::size_type;
+    using gtensor::detail::make_subdim_view_shape;
     using test_type = std::tuple<shape_type, size_type, shape_type>;
     //0pshape,1subs_number,2expected
     auto test_data = GENERATE(
@@ -579,14 +501,115 @@ TEMPLATE_TEST_CASE("test_make_view_subdim_shape","[test_view_factory]", std::vec
     auto pshape = std::get<0>(test_data);
     auto subs_number = std::get<1>(test_data);
     auto expected = std::get<2>(test_data);
-    auto result = make_view_subdim_shape(pshape, subs_number);
+    auto result = make_subdim_view_shape(pshape, subs_number);
     REQUIRE(result == expected);
 }
 
-TEMPLATE_TEST_CASE("test_make_view_reshape_shape","[test_view_factory]", std::vector<std::int64_t>){
-    using shape_type = TestType;
-    using index_type = typename shape_type::value_type;
-    using gtensor::detail::make_view_reshape_shape;
+TEST_CASE("test_make_subdim_view_offset","[test_view_factory]"){
+    using config_type = gtensor::config::default_config;
+    using shape_type = config_type::shape_type;
+    using index_type = config_type::index_type;
+    using gtensor::detail::make_subdim_view_offset;
+    using helpers_for_testing::apply_by_element;
+    //0pstrides,1subs,2expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(shape_type{0},std::make_tuple(),index_type{0}),
+        std::make_tuple(shape_type{1},std::make_tuple(),index_type{0}),
+        std::make_tuple(shape_type{4,1},std::make_tuple(),index_type{0}),
+        std::make_tuple(shape_type{4,1},std::make_tuple(index_type{0}),index_type{0}),
+        std::make_tuple(shape_type{4,1},std::make_tuple(index_type{1}),index_type{4}),
+        std::make_tuple(shape_type{4,1},std::make_tuple(index_type{2}),index_type{8}),
+        std::make_tuple(shape_type{8,4,1},std::make_tuple(index_type{0}),index_type{0}),
+        std::make_tuple(shape_type{8,4,1},std::make_tuple(index_type{1}),index_type{8}),
+        std::make_tuple(shape_type{8,4,1},std::make_tuple(index_type{0},index_type{0}),index_type{0}),
+        std::make_tuple(shape_type{8,4,1},std::make_tuple(index_type{0},index_type{1}),index_type{4}),
+        std::make_tuple(shape_type{8,4,1},std::make_tuple(index_type{1},index_type{0}),index_type{8}),
+        std::make_tuple(shape_type{8,4,1},std::make_tuple(index_type{1},index_type{1}),index_type{12})
+    );
+    using container_type = std::vector<index_type>;
+    auto test = [](const auto& t){
+        auto pstrides = std::get<0>(t);
+        auto subs = std::get<1>(t);
+        auto expected = std::get<2>(t);
+        auto make_container = [](const auto&...subs_){
+            return container_type{subs_...};
+        };
+        auto subs_container = std::apply(make_container, subs);
+        auto result = make_subdim_view_offset(pstrides, subs_container);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test, test_data);
+}
+
+TEST_CASE("test_check_subdim_args","[test_check_subdim_subs]"){
+    using config_type = gtensor::config::default_config;
+    using shape_type = config_type::shape_type;
+    using index_type = config_type::index_type;
+    using gtensor::subscript_exception;
+    using gtensor::detail::check_subdim_args;
+    using helpers_for_testing::apply_by_element;
+    SECTION("test_check_subdim_args_nothrow")
+    {
+        //0pshape,1subs
+        auto test_data = std::make_tuple(
+            std::make_tuple(shape_type{0}, std::make_tuple()),
+            std::make_tuple(shape_type{1}, std::make_tuple()),
+            std::make_tuple(shape_type{1,1}, std::make_tuple()),
+            std::make_tuple(shape_type{1,1}, std::make_tuple(index_type{0})),
+            std::make_tuple(shape_type{1,1,1}, std::make_tuple(index_type{0})),
+            std::make_tuple(shape_type{1,1,1}, std::make_tuple(index_type{0},index_type{0})),
+            std::make_tuple(shape_type{1,2,3}, std::make_tuple(index_type{0})),
+            std::make_tuple(shape_type{1,2,3}, std::make_tuple(index_type{0},index_type{0})),
+            std::make_tuple(shape_type{1,2,3}, std::make_tuple(index_type{0},index_type{1}))
+        );
+        using container_type = shape_type;
+        auto test = [](const auto& t){
+            auto pshape = std::get<0>(t);
+            auto subs = std::get<1>(t);
+            auto make_container = [](const auto&...subs_){
+                return container_type{subs_...};
+            };
+            auto subs_container = std::apply(make_container, subs);
+            REQUIRE_NOTHROW(check_subdim_args(pshape,subs_container));
+        };
+        apply_by_element(test, test_data);
+    }
+    SECTION("test_check_subdim_args_exception")
+    {
+        //0pshape,1subs
+        auto test_data = std::make_tuple(
+            std::make_tuple(shape_type{0}, std::make_tuple(index_type{0})),
+            std::make_tuple(shape_type{1}, std::make_tuple(index_type{0})),
+            std::make_tuple(shape_type{2}, std::make_tuple(index_type{0})),
+            std::make_tuple(shape_type{2}, std::make_tuple(index_type{1})),
+            std::make_tuple(shape_type{1,2}, std::make_tuple(index_type{0},index_type{0})),
+            std::make_tuple(shape_type{1,2}, std::make_tuple(index_type{0},index_type{0})),
+            std::make_tuple(shape_type{1,2}, std::make_tuple(index_type{1})),
+            std::make_tuple(shape_type{3,4}, std::make_tuple(index_type{3})),
+            std::make_tuple(shape_type{1,1,1}, std::make_tuple(index_type{0},index_type{0},index_type{0})),
+            std::make_tuple(shape_type{1,1,1}, std::make_tuple(index_type{1})),
+            std::make_tuple(shape_type{1,2,3}, std::make_tuple(index_type{0},index_type{2}))
+        );
+        using container_type = shape_type;
+        auto test = [](const auto& t){
+            auto pshape = std::get<0>(t);
+            auto subs = std::get<1>(t);
+            auto make_container = [](const auto&...subs_){
+                return container_type{subs_...};
+            };
+            auto subs_container = std::apply(make_container, subs);
+            REQUIRE_THROWS_AS(check_subdim_args(pshape,subs_container), subscript_exception);
+        };
+        apply_by_element(test, test_data);
+    }
+}
+
+//test reshape view helpers
+TEST_CASE("test_make_reshape_view_shape","[test_view_factory]"){
+    using config_type = gtensor::config::default_config;
+    using shape_type = config_type::shape_type;
+    using index_type = config_type::index_type;
+    using gtensor::detail::make_reshape_view_shape;
     using helpers_for_testing::apply_by_element;
     //0pshape,1psize,2subs,3expected
     auto test_data = std::make_tuple(
@@ -621,162 +644,21 @@ TEMPLATE_TEST_CASE("test_make_view_reshape_shape","[test_view_factory]", std::ve
         auto psize = std::get<1>(t);
         auto subs = std::get<2>(t);
         auto expected = std::get<3>(t);
-        auto result = make_view_reshape_shape(pshape, psize, subs);
+        auto result = make_reshape_view_shape(pshape, psize, subs);
         REQUIRE(result == expected);
     };
     apply_by_element(test,test_data);
 }
 
-TEMPLATE_TEST_CASE("test_make_view_subdim_offset","[test_view_factory]", std::vector<std::int64_t>){
-    using index_type = typename TestType::value_type;
-    using shape_type = TestType;
-    using gtensor::detail::make_view_subdim_offset_variadic;
-    using gtensor::detail::make_view_subdim_offset_container;
-    using helpers_for_testing::apply_by_element;
-    //0pstrides,1subs,2expected
-    auto test_data = std::make_tuple(
-        std::make_tuple(shape_type{0},std::make_tuple(),0),
-        std::make_tuple(shape_type{1},std::make_tuple(),0),
-        std::make_tuple(shape_type{4,1},std::make_tuple(),0),
-        std::make_tuple(shape_type{4,1},std::make_tuple(0),0),
-        std::make_tuple(shape_type{4,1},std::make_tuple(1),4),
-        std::make_tuple(shape_type{4,1},std::make_tuple(2),8),
-        std::make_tuple(shape_type{8,4,1},std::make_tuple(0),0),
-        std::make_tuple(shape_type{8,4,1},std::make_tuple(1),8),
-        std::make_tuple(shape_type{8,4,1},std::make_tuple(0,0),0),
-        std::make_tuple(shape_type{8,4,1},std::make_tuple(0,1),4),
-        std::make_tuple(shape_type{8,4,1},std::make_tuple(1,0),8),
-        std::make_tuple(shape_type{8,4,1},std::make_tuple(1,1),12)
-    );
-    SECTION("test_make_view_subdim_offset_variadic")
-    {
-        auto test = [](const auto& t){
-            auto pstrides = std::get<0>(t);
-            auto subs = std::get<1>(t);
-            auto expected = std::get<2>(t);
-            auto apply_subs = [&pstrides](const auto&...subs_){
-                return make_view_subdim_offset_variadic(pstrides, subs_...);
-            };
-            auto result = std::apply(apply_subs, subs);
-            REQUIRE(result == expected);
-        };
-        apply_by_element(test, test_data);
-    }
-    SECTION("test_make_view_subdim_offset_container")
-    {
-        using container_type = std::vector<index_type>;
-        auto test = [](const auto& t){
-            auto pstrides = std::get<0>(t);
-            auto subs = std::get<1>(t);
-            auto expected = std::get<2>(t);
-            auto make_container = [](const auto&...subs_){
-                return container_type{subs_...};
-            };
-            auto subs_container = std::apply(make_container, subs);
-            auto result = make_view_subdim_offset_container(pstrides, subs_container);
-            REQUIRE(result == expected);
-        };
-        apply_by_element(test, test_data);
-    }
-}
-
-TEMPLATE_TEST_CASE("test_make_view_transpose_shape","[test_view_factory]", std::vector<std::int64_t>){
-    using shape_type = TestType;
-    using gtensor::detail::make_view_transpose_shape;
-    using helpers_for_testing::apply_by_element;
-    //0pshape,1subs,2expected
-    auto test_data = std::make_tuple(
-        std::make_tuple(shape_type{3}, std::vector<int>{}, shape_type{3}),
-        std::make_tuple(shape_type{3}, std::vector<int>{0}, shape_type{3}),
-        std::make_tuple(shape_type{3,2}, std::vector<int>{}, shape_type{2,3}),
-        std::make_tuple(shape_type{3,2}, std::array<int,2>{0,1}, shape_type{3,2}),
-        std::make_tuple(shape_type{3,2}, std::vector<std::size_t>{1,0}, shape_type{2,3}),
-        std::make_tuple(shape_type{4,3,2,2}, std::vector<int>{}, shape_type{2,2,3,4}),
-        std::make_tuple(shape_type{4,3,2,2}, std::vector<int>{3,1,0,2}, shape_type{2,3,4,2}),
-        std::make_tuple(shape_type{4,3,2,2}, std::vector<int>{3,1,2,0}, shape_type{2,3,2,4})
-    );
-    auto test = [](const auto& t){
-        auto pshape = std::get<0>(t);
-        auto subs = std::get<1>(t);
-        auto expected = std::get<2>(t);
-        auto result = make_view_transpose_shape(pshape, subs);
-        REQUIRE(expected == result);
-    };
-    apply_by_element(test, test_data);
-}
-
-TEST_CASE("test_check_transpose_subs","[test_view_factory]"){
-    using config_type = gtensor::config::default_config;
-    using size_type = config_type::size_type;
-    using gtensor::subscript_exception;
-    using gtensor::subscript_exception;
-    using gtensor::detail::check_transpose_subs;
-    using gtensor::detail::check_transpose_subs_variadic;
-    using helpers_for_testing::apply_by_element;
-
-    SECTION("test_check_transpose_subs_nothrow")
-    {
-        //0pdim,1subs
-        auto test_data = std::make_tuple(
-            std::make_tuple(size_type{1},std::vector<int>{}),
-            std::make_tuple(size_type{1},std::vector<int>{0}),
-            std::make_tuple(size_type{3},std::vector<int>{0,1,2}),
-            std::make_tuple(size_type{3},std::vector<int>{0,2,1}),
-            std::make_tuple(size_type{3},std::vector<int>{2,1,0}),
-            std::make_tuple(size_type{3},std::vector<int>{2,0,1}),
-            std::make_tuple(size_type{3},std::vector<int>{1,0,2}),
-            std::make_tuple(size_type{3},std::vector<int>{1,0,2})
-        );
-        auto test = [](const auto& t){
-            auto pdim = std::get<0>(t);
-            auto subs = std::get<1>(t);
-            REQUIRE_NOTHROW(check_transpose_subs(pdim,subs));
-        };
-        apply_by_element(test, test_data);
-    }
-    SECTION("test_check_transpose_subs_exception")
-    {
-        //0pdim,1subs
-        auto test_data = std::make_tuple(
-            std::make_tuple(size_type{1},std::vector<int>{-1}),
-            std::make_tuple(size_type{1},std::vector<int>{1,1,-1}),
-            std::make_tuple(size_type{1},std::vector<int>{0,1}),
-            std::make_tuple(size_type{2},std::vector<int>{0,0}),
-            std::make_tuple(size_type{3},std::vector<int>{0,1,2,3}),
-            std::make_tuple(size_type{3},std::vector<int>{0,1,1}),
-            std::make_tuple(size_type{3},std::vector<int>{0,2,2}),
-            std::make_tuple(size_type{3},std::vector<int>{0,0,1}),
-            std::make_tuple(size_type{3},std::vector<int>{2,1,1})
-        );
-        auto test = [](const auto& t){
-            auto pdim = std::get<0>(t);
-            auto subs = std::get<1>(t);
-            REQUIRE_THROWS_AS(check_transpose_subs(pdim,subs), subscript_exception);
-        };
-        apply_by_element(test, test_data);
-    }
-    SECTION("test_check_transpose_subs_variadic"){
-        REQUIRE_NOTHROW(check_transpose_subs_variadic());
-        REQUIRE_NOTHROW(check_transpose_subs_variadic(0));
-        REQUIRE_NOTHROW(check_transpose_subs_variadic(0,0));
-        REQUIRE_NOTHROW(check_transpose_subs_variadic(0,1));
-        REQUIRE_NOTHROW(check_transpose_subs_variadic(1,2,3));
-        REQUIRE_THROWS_AS(check_transpose_subs_variadic(-1), subscript_exception);
-        REQUIRE_THROWS_AS(check_transpose_subs_variadic(0,-1), subscript_exception);
-        REQUIRE_THROWS_AS(check_transpose_subs_variadic(2,-1,3), subscript_exception);
-        REQUIRE_THROWS_AS(check_transpose_subs_variadic(-2,-1,3), subscript_exception);
-    }
-}
-
-TEST_CASE("test_check_reshape_subs","[test_check_reshape_subs]"){
+TEST_CASE("test_check_reshape_args","[test_view_factory]"){
     using config_type = gtensor::config::default_config;
     using shape_type = config_type::shape_type;
     using index_type = config_type::index_type;
     using gtensor::subscript_exception;
-    using gtensor::detail::check_reshape_subs;
+    using gtensor::detail::check_reshape_args;
     using helpers_for_testing::apply_by_element;
 
-    SECTION("test_check_reshape_subs_nothrow")
+    SECTION("test_check_reshape_args_nothrow")
     {
         //0psize,1subs
         auto test_data = std::make_tuple(
@@ -804,11 +686,11 @@ TEST_CASE("test_check_reshape_subs","[test_check_reshape_subs]"){
         auto test = [](const auto& t){
             auto psize = std::get<0>(t);
             auto subs = std::get<1>(t);
-            REQUIRE_NOTHROW(check_reshape_subs(psize,subs));
+            REQUIRE_NOTHROW(check_reshape_args(psize,subs));
         };
         apply_by_element(test,test_data);
     }
-    SECTION("test_check_reshape_subs_exception")
+    SECTION("test_check_reshape_args_exception")
     {
         //0psize,1subs
         auto test_data = std::make_tuple(
@@ -830,108 +712,102 @@ TEST_CASE("test_check_reshape_subs","[test_check_reshape_subs]"){
         auto test = [](const auto& t){
             auto psize = std::get<0>(t);
             auto subs = std::get<1>(t);
-            REQUIRE_THROWS_AS(check_reshape_subs(psize,subs), subscript_exception);
+            REQUIRE_THROWS_AS(check_reshape_args(psize,subs), subscript_exception);
         };
         apply_by_element(test,test_data);
     }
 }
 
-TEST_CASE("test_check_subdim_subs_nothrow","[test_check_subdim_subs]"){
-    using shape_type = typename gtensor::config::default_config::shape_type;
-    using index_type = typename shape_type::value_type;
-    using gtensor::detail::check_subdim_subs_variadic;
-    using gtensor::detail::check_subdim_subs_container;
+//test transpose view helpers
+TEMPLATE_TEST_CASE("test_make_transpose_view_shape","[test_view_factory]", std::vector<std::int64_t>){
+    using shape_type = TestType;
+    using gtensor::detail::make_transpose_view_shape;
     using helpers_for_testing::apply_by_element;
-    //0pshape,1subs
+    //0pshape,1subs,2expected
     auto test_data = std::make_tuple(
-        std::make_tuple(shape_type{0}, std::make_tuple()),
-        std::make_tuple(shape_type{1}, std::make_tuple()),
-        std::make_tuple(shape_type{1,1}, std::make_tuple()),
-        std::make_tuple(shape_type{1,1}, std::make_tuple(index_type{0})),
-        std::make_tuple(shape_type{1,1,1}, std::make_tuple(index_type{0})),
-        std::make_tuple(shape_type{1,1,1}, std::make_tuple(index_type{0},index_type{0})),
-        std::make_tuple(shape_type{1,2,3}, std::make_tuple(index_type{0})),
-        std::make_tuple(shape_type{1,2,3}, std::make_tuple(index_type{0},index_type{0})),
-        std::make_tuple(shape_type{1,2,3}, std::make_tuple(index_type{0},index_type{1}))
+        std::make_tuple(shape_type{3}, std::vector<int>{}, shape_type{3}),
+        std::make_tuple(shape_type{3}, std::vector<int>{0}, shape_type{3}),
+        std::make_tuple(shape_type{3,2}, std::vector<int>{}, shape_type{2,3}),
+        std::make_tuple(shape_type{3,2}, std::array<int,2>{0,1}, shape_type{3,2}),
+        std::make_tuple(shape_type{3,2}, std::vector<std::size_t>{1,0}, shape_type{2,3}),
+        std::make_tuple(shape_type{4,3,2,2}, std::vector<int>{}, shape_type{2,2,3,4}),
+        std::make_tuple(shape_type{4,3,2,2}, std::vector<int>{3,1,0,2}, shape_type{2,3,4,2}),
+        std::make_tuple(shape_type{4,3,2,2}, std::vector<int>{3,1,2,0}, shape_type{2,3,2,4})
     );
-    SECTION("test_check_subdim_subs_variadic_nothrow")
-    {
-        auto test = [](const auto& t){
-            auto pshape = std::get<0>(t);
-            auto subs = std::get<1>(t);
-            auto apply_subs = [&pshape](const auto&...subs_){
-                check_subdim_subs_variadic(pshape, subs_...);
-            };
-            REQUIRE_NOTHROW(std::apply(apply_subs,subs));
-        };
-        apply_by_element(test, test_data);
-    }
-    SECTION("test_check_subdim_subs_container_nothrow")
-    {
-        using container_type = shape_type;
-        auto test = [](const auto& t){
-            auto pshape = std::get<0>(t);
-            auto subs = std::get<1>(t);
-            auto make_container = [](const auto&...subs_){
-                return container_type{subs_...};
-            };
-            auto subs_container = std::apply(make_container, subs);
-            REQUIRE_NOTHROW(check_subdim_subs_container(pshape,subs_container));
-        };
-        apply_by_element(test, test_data);
-    }
+    auto test = [](const auto& t){
+        auto pshape = std::get<0>(t);
+        auto subs = std::get<1>(t);
+        auto expected = std::get<2>(t);
+        auto result = make_transpose_view_shape(pshape, subs);
+        REQUIRE(expected == result);
+    };
+    apply_by_element(test, test_data);
 }
 
-TEST_CASE("test_check_subdim_subs_exception","[test_check_subdim_subs]"){
-    using shape_type = typename gtensor::config::default_config::shape_type;
-    using index_type = typename shape_type::value_type;
+TEST_CASE("test_check_transpose_args","[test_view_factory]"){
+    using config_type = gtensor::config::default_config;
+    using size_type = config_type::size_type;
     using gtensor::subscript_exception;
-    using gtensor::detail::check_subdim_subs_variadic;
-    using gtensor::detail::check_subdim_subs_container;
+    using gtensor::subscript_exception;
+    using gtensor::detail::check_transpose_args;
+    using gtensor::detail::check_transpose_args_variadic;
     using helpers_for_testing::apply_by_element;
-    //0pshape,1subs
-    auto test_data = std::make_tuple(
-        std::make_tuple(shape_type{0}, std::make_tuple(index_type{0})),
-        std::make_tuple(shape_type{1}, std::make_tuple(index_type{0})),
-        std::make_tuple(shape_type{2}, std::make_tuple(index_type{0})),
-        std::make_tuple(shape_type{2}, std::make_tuple(index_type{1})),
-        std::make_tuple(shape_type{1,2}, std::make_tuple(index_type{0},index_type{0})),
-        std::make_tuple(shape_type{1,2}, std::make_tuple(index_type{0},index_type{0})),
-        std::make_tuple(shape_type{1,2}, std::make_tuple(index_type{1})),
-        std::make_tuple(shape_type{3,4}, std::make_tuple(index_type{3})),
-        std::make_tuple(shape_type{1,1,1}, std::make_tuple(index_type{0},index_type{0},index_type{0})),
-        std::make_tuple(shape_type{1,1,1}, std::make_tuple(index_type{1})),
-        std::make_tuple(shape_type{1,2,3}, std::make_tuple(index_type{0},index_type{2}))
-    );
 
-    SECTION("test_check_subdim_subs_variadic_exception")
+    SECTION("test_check_transpose_args_nothrow")
     {
+        //0pdim,1subs
+        auto test_data = std::make_tuple(
+            std::make_tuple(size_type{1},std::vector<int>{}),
+            std::make_tuple(size_type{1},std::vector<int>{0}),
+            std::make_tuple(size_type{3},std::vector<int>{0,1,2}),
+            std::make_tuple(size_type{3},std::vector<int>{0,2,1}),
+            std::make_tuple(size_type{3},std::vector<int>{2,1,0}),
+            std::make_tuple(size_type{3},std::vector<int>{2,0,1}),
+            std::make_tuple(size_type{3},std::vector<int>{1,0,2}),
+            std::make_tuple(size_type{3},std::vector<int>{1,0,2})
+        );
         auto test = [](const auto& t){
-            auto pshape = std::get<0>(t);
+            auto pdim = std::get<0>(t);
             auto subs = std::get<1>(t);
-            auto apply_subs = [&pshape](const auto&...subs_){
-                check_subdim_subs_variadic(pshape, subs_...);
-            };
-            REQUIRE_THROWS_AS(std::apply(apply_subs,subs), subscript_exception);
+            REQUIRE_NOTHROW(check_transpose_args(pdim,subs));
         };
         apply_by_element(test, test_data);
     }
-    SECTION("test_check_subdim_subs_container_exception")
+    SECTION("test_check_transpose_args_exception")
     {
-        using container_type = shape_type;
+        //0pdim,1subs
+        auto test_data = std::make_tuple(
+            std::make_tuple(size_type{1},std::vector<int>{-1}),
+            std::make_tuple(size_type{1},std::vector<int>{1,1,-1}),
+            std::make_tuple(size_type{1},std::vector<int>{0,1}),
+            std::make_tuple(size_type{2},std::vector<int>{0,0}),
+            std::make_tuple(size_type{3},std::vector<int>{0,1,2,3}),
+            std::make_tuple(size_type{3},std::vector<int>{0,1,1}),
+            std::make_tuple(size_type{3},std::vector<int>{0,2,2}),
+            std::make_tuple(size_type{3},std::vector<int>{0,0,1}),
+            std::make_tuple(size_type{3},std::vector<int>{2,1,1})
+        );
         auto test = [](const auto& t){
-            auto pshape = std::get<0>(t);
+            auto pdim = std::get<0>(t);
             auto subs = std::get<1>(t);
-            auto make_container = [](const auto&...subs_){
-                return container_type{subs_...};
-            };
-            auto subs_container = std::apply(make_container, subs);
-            REQUIRE_THROWS_AS(check_subdim_subs_container(pshape,subs_container), subscript_exception);
+            REQUIRE_THROWS_AS(check_transpose_args(pdim,subs), subscript_exception);
         };
         apply_by_element(test, test_data);
+    }
+    SECTION("test_check_transpose_args_variadic"){
+        REQUIRE_NOTHROW(check_transpose_args_variadic());
+        REQUIRE_NOTHROW(check_transpose_args_variadic(0));
+        REQUIRE_NOTHROW(check_transpose_args_variadic(0,0));
+        REQUIRE_NOTHROW(check_transpose_args_variadic(0,1));
+        REQUIRE_NOTHROW(check_transpose_args_variadic(1,2,3));
+        REQUIRE_THROWS_AS(check_transpose_args_variadic(-1), subscript_exception);
+        REQUIRE_THROWS_AS(check_transpose_args_variadic(0,-1), subscript_exception);
+        REQUIRE_THROWS_AS(check_transpose_args_variadic(2,-1,3), subscript_exception);
+        REQUIRE_THROWS_AS(check_transpose_args_variadic(-2,-1,3), subscript_exception);
     }
 }
 
+//test mapping view helpers
 TEST_CASE("test_check_index_mapping_view_subs","[test_view_factory]")
 {
     using shape_type = typename gtensor::config::default_config::shape_type;
@@ -1362,3 +1238,4 @@ TEMPLATE_TEST_CASE("test_fill_bool_mapping_view","[test_view_factory]",
     apply_by_element(test,test_data);
 }
 
+//test view_factory
