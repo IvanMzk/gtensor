@@ -15,13 +15,6 @@
 namespace gtensor{
 
 namespace detail{
-
-template<typename T, typename IdxT, typename=void> constexpr inline bool is_index_tensor_v = false;
-template<typename T, typename IdxT> constexpr inline bool is_index_tensor_v<T,IdxT,std::void_t<std::enable_if_t<is_tensor_v<T>>>> = std::is_convertible_v<typename T::value_type, IdxT>;
-
-template<typename T, typename=void> constexpr inline bool is_bool_tensor_v = false;
-template<typename T> constexpr inline bool is_bool_tensor_v<T,std::void_t<std::enable_if_t<is_tensor_v<T>>>> = std::is_same_v<typename T::value_type, bool>;
-
 }   //end of namespace detail
 
 /*
@@ -48,7 +41,7 @@ class tensor{
     {}
 
     friend struct tensor_operator_dispatcher;
-    template<typename,typename> friend class view_factory;
+    friend class view_factory;
     friend class reducer;
     std::shared_ptr<impl_type> impl_;
 protected:
@@ -191,13 +184,13 @@ public:
         return create_reshape_view(*this, subs);
     }
     //mapping view
-    template<typename...Subs, std::enable_if_t<(detail::is_index_tensor_v<Subs,index_type>&&...),int> = 0 >
+    template<typename...Subs, std::enable_if_t<(detail::is_tensor_of_type_v<Subs,index_type>&&...),int> = 0 >
     auto operator()(const Subs&...subs)const{
-        return view_factory<ValT,CfgT>::create_index_mapping_view(impl(), subs...);
+        return create_index_mapping_view(*this, subs...);
     }
     template<typename Subs, std::enable_if_t<detail::is_bool_tensor_v<Subs> ,int> = 0 >
     auto operator()(const Subs& subs)const{
-        return view_factory<ValT,CfgT>::create_bool_mapping_view(impl(), subs);
+        return create_bool_mapping_view(*this, subs);
     }
 
     //reduce
