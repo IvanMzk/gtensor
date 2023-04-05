@@ -133,11 +133,20 @@ inline void check_slice_view_args(const ShT& pshape, const Container& subs){
         throw subscript_exception("invalid subscripts number");
     }
     auto pshape_it = pshape.begin();
+    size_type reduce_number{0};
     for (auto subs_it = subs.begin(); subs_it!=subs.end(); ++subs_it,++pshape_it){
         const auto& subs_ = *subs_it;
-        if (subs_.is_reduce() && make_slice_view_shape_element(*pshape_it, subs_) == index_type{0}){
-            throw subscript_exception("invalid subscripts");
+        if (subs_.is_reduce()){
+            const auto& pshape_element = *pshape_it;
+            const auto& start = make_slice_start(pshape_element, subs_);
+            if (start<index_type{0} || start>=pshape_element){
+                throw subscript_exception("invalid subscripts");
+            }
+            ++reduce_number;
         }
+    }
+    if (reduce_number >= pdim){
+        throw subscript_exception("cant make scalar with dim 0");
     }
 }
 //slice view shape
