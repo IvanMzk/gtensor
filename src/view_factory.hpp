@@ -691,7 +691,7 @@ public:
     //transpose view
     template<typename...Ts, typename Container, std::enable_if_t<detail::is_container_of_type_v<Container, typename tensor<Ts...>::size_type>,int> = 0>
     static auto create_transpose_view(const tensor<Ts...>& parent, const Container& subs){
-        return create_transpose_view_continer(parent, subs);
+        return create_transpose_view_container(parent, subs);
     }
     template<typename...Ts, typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs, typename tensor<Ts...>::size_type>&&...),int> = 0>
     static auto create_transpose_view(const tensor<Ts...>& parent, const Subs&...subs){
