@@ -17,6 +17,14 @@ class subscript_exception : public std::runtime_error{
 
 namespace detail{
 //slice view helpers
+template<typename IdxT>
+inline IdxT bound_low(const IdxT& min, const IdxT& i){
+    return i<min ? min:i;
+}
+template<typename IdxT>
+inline IdxT bound_high(const IdxT& max, const IdxT& i){
+    return i>max ? max:i;
+}
 template<typename SliceT, typename IdxT>
 inline IdxT make_slice_start(const IdxT& pshape_element, const SliceT& subs){
     using index_type = IdxT;
@@ -32,9 +40,6 @@ inline IdxT make_slice_stop(const IdxT& pshape_element, const SliceT& subs){
     using index_type = IdxT;
     const index_type zero_index{0};
     index_type stop = subs.stop();
-    if (subs.is_reduce()){
-        return make_slice_start(pshape_element, subs) + index_type{1};
-    }
     if (!subs.is_stop()){
         return subs.step()>zero_index ? pshape_element:-index_type{1};  //negative corrected defaults
     }
@@ -44,21 +49,21 @@ template<typename SliceT, typename IdxT>
 inline IdxT make_slice_view_shape_element(const IdxT& pshape_element, const SliceT& subs){
     using index_type = IdxT;
     const index_type zero_index{0};
-    const index_type start = make_slice_start(pshape_element, subs);
-    const index_type stop = make_slice_stop(pshape_element, subs);
     index_type step = subs.step();
     index_type d{0};
+    const index_type start = make_slice_start(pshape_element, subs);
+    const index_type stop = subs.is_reduce() ? start+index_type{1} : make_slice_stop(pshape_element, subs);
     if (step > zero_index){
         if (start >= pshape_element || stop<=zero_index){
             return zero_index;
         }else{
-            d = std::min(stop-start, pshape_element);
+            d = bound_high(pshape_element,stop) - bound_low(zero_index,start);
         }
     }else{
         if (start < zero_index || stop>=pshape_element-index_type{1}){
             return zero_index;
         }else{
-            d = std::min(start-stop, pshape_element);
+            d = bound_high(pshape_element-index_type{1},start) - bound_low(index_type{-1},stop);
         }
         step = -step;
     }
@@ -157,11 +162,16 @@ inline ShT make_slice_view_cstrides_direction(const ShT& pstrides, const SizeT& 
 template<typename ShT, typename Container>
 inline typename ShT::value_type make_slice_view_offset(const ShT& pshape, const ShT& pstrides, const Container& subs){
     using index_type = typename ShT::value_type;
+    const index_type zero_index{0};
     index_type res{0};
     auto pshape_it = pshape.begin();
     auto pstrides_it = pstrides.begin();
     for (auto subs_it = subs.begin(); subs_it!=subs.end(); ++subs_it,++pshape_it,++pstrides_it){
-        res+=*pstrides_it*make_slice_start(*pshape_it, *subs_it);
+        const auto& pshape_element = *pshape_it;
+        const auto& subs_ = *subs_it;
+        index_type start_ = make_slice_start(pshape_element, subs_);
+        start_ = subs_.step()>zero_index ? bound_low(zero_index, start_):bound_high(pshape_element-index_type{1}, start_);
+        res+=*pstrides_it*start_;
     }
     return res;
 }
