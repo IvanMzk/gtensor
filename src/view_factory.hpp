@@ -32,6 +32,9 @@ inline IdxT make_slice_stop(const IdxT& pshape_element, const SliceT& subs){
     using index_type = IdxT;
     const index_type zero_index{0};
     index_type stop = subs.stop();
+    if (subs.is_reduce()){
+        return make_slice_start(pshape_element, subs) + index_type{1};
+    }
     if (!subs.is_stop()){
         return subs.step()>zero_index ? pshape_element:-index_type{1};  //negative corrected defaults
     }
@@ -126,7 +129,7 @@ inline void check_slice_view_args(const ShT& pshape, const Container& subs){
     }
     auto pshape_it = pshape.begin();
     for (auto subs_it = subs.begin(); subs_it!=subs.end(); ++subs_it,++pshape_it){
-        const auto subs_ = *subs_it;
+        const auto& subs_ = *subs_it;
         if (subs_.is_reduce() && make_slice_view_shape_element(*pshape_it, subs_) == index_type{0}){
             throw subscript_exception("invalid subscripts");
         }

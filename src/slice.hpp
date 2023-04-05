@@ -15,7 +15,7 @@ struct Rtag{};
 namespace detail{
 
 enum class mask_type : char {
-    __k = 0b00000001, _j_ = 0b00000010, _jk = 0b00000011, i__ = 0b00000100, i_k = 0b00000101, ij_ = 0b00000110, ijk = 0b00000111, r___ = 0b00001000, rijk = 0b00001111, nop = 0b00000000
+    __k = 0b00000001, _j_ = 0b00000010, _jk = 0b00000011, i__ = 0b00000100, i_k = 0b00000101, ij_ = 0b00000110, ijk = 0b00000111, r___ = 0b00001000, ri_k = 0b00001101, nop = 0b00000000
 };
 inline constexpr mask_type operator&(mask_type lhs, mask_type rhs){return static_cast<mask_type>(static_cast<char>(lhs)&static_cast<char>(rhs));}
 inline constexpr mask_type operator|(mask_type lhs, mask_type rhs){return static_cast<mask_type>(static_cast<char>(lhs)|static_cast<char>(rhs));}
@@ -65,7 +65,7 @@ inline mask_type make_mask(const slice_item<T,N,R>& i){
 template<typename T, typename N, typename R>
 inline mask_type make_mask(const slice_item<T,N,R>& i, const slice_item<T,N,R>& j){
     if (j.is_reduce()){
-        return mask_type::rijk;
+        return mask_type::ri_k;
     }else{
         return i.is_nop() ?
             j.is_nop() ? mask_type::__k : mask_type::_jk:    //i.nop
@@ -125,7 +125,7 @@ public:
     slice(std::initializer_list<slice_item_type> l):
         mask_{detail::make_mask(l)},
         start_{is_start() ? l.begin()[0].item() : index_type{}},
-        stop_{is_reduce() ? l.begin()[0].item()+index_type{1} : (is_stop() ? l.begin()[1].item() : index_type{})},
+        stop_{is_stop() ? l.begin()[1].item() : index_type{}},
         step_{l.size()>2 ? (l.begin()[2].is_nop() ? index_type{1} : l.begin()[2].item()) : index_type{1} }
     {
         detail::check_slice_item_list(l);
@@ -163,7 +163,7 @@ public:
     slice(const index_type& start__, reduce_tag_type):
         mask_{make_mask(reduce_tag_type{})},
         start_{make_start_stop(start__)},
-        stop_{make_start_stop(start__+index_type{1})},
+        stop_{make_start_stop(nop_type{})},
         step_{make_step(nop_type{})}
     {}
 
@@ -182,7 +182,7 @@ public:
 
 private:
     constexpr mask_type make_mask(reduce_tag_type){
-        return mask_type::rijk;
+        return mask_type::ri_k;
     }
     template<typename Start>
     constexpr mask_type make_mask(Start){

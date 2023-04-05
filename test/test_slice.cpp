@@ -156,9 +156,9 @@ TEST_CASE("test_slice","[test_slice]"){
         //start,stop,step
         std::make_tuple(std::make_tuple(1,2,3), true,true,true,false, index_type{1},index_type{2},index_type{3}),
         //reduce
-        std::make_tuple(std::make_tuple(0,rtag_type{}), true,true,true,true, index_type{0},index_type{1},index_type{1}),
-        std::make_tuple(std::make_tuple(3,rtag_type{}), true,true,true,true, index_type{3},index_type{4},index_type{1}),
-        std::make_tuple(std::make_tuple(-3,rtag_type{}), true,true,true,true, index_type{-3},index_type{-2},index_type{1})
+        std::make_tuple(std::make_tuple(0,rtag_type{}), true,false,true,true, index_type{0},index_type{},index_type{1}),
+        std::make_tuple(std::make_tuple(3,rtag_type{}), true,false,true,true, index_type{3},index_type{},index_type{1}),
+        std::make_tuple(std::make_tuple(-3,rtag_type{}), true,false,true,true, index_type{-3},index_type{},index_type{1})
     );
     auto test_slice = [](const auto& slice_, const auto& t)
     {
