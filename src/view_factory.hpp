@@ -226,34 +226,41 @@ inline void check_transpose_args_variadic(const Subs&...subs){
     }
 }
 //subdim view helpers
+template<typename IdxT, typename Subs>
+IdxT make_subdim_index(const IdxT& pshape_element, const Subs& subs){
+    using index_type = IdxT;
+    index_type subs_{subs};
+    return subs_ < index_type{0} ? pshape_element+subs_:subs_;
+}
 template<typename ShT, typename SizeT>
 inline ShT make_subdim_view_shape(const ShT& pshape, const SizeT& subs_number){
     return ShT(pshape.begin()+subs_number, pshape.end());
 }
 template<typename ShT, typename Container>
-inline typename ShT::value_type make_subdim_view_offset(const ShT& pstrides, const Container& subs){
+inline typename ShT::value_type make_subdim_view_offset(const ShT& pshape, const ShT& pstrides, const Container& subs){
     using index_type = typename ShT::value_type;
     index_type res{0};
-    auto strides_it = pstrides.begin();
-    for (auto subs_it = subs.begin(); subs_it!=subs.end(); ++subs_it,++strides_it){
-        const index_type& sub = *subs_it;
-        res+=*strides_it*sub;
+    auto pstrides_it = pstrides.begin();
+    auto pshape_it = pshape.begin();
+    for (auto subs_it = subs.begin(); subs_it!=subs.end(); ++subs_it,++pshape_it,++pstrides_it){
+        res+=*pstrides_it*make_subdim_index(*pshape_it,*subs_it);
     }
     return res;
 }
 template<typename ShT, typename Container>
-inline void check_subdim_args(const ShT& shape, const Container& subs){
+inline void check_subdim_args(const ShT& pshape, const Container& subs){
     using index_type = typename ShT::value_type;
     using size_type = typename ShT::size_type;
     const size_type& subs_number = subs.size();
-    const size_type& pdim = shape.size();
+    const size_type& pdim = pshape.size();
     if (subs_number >= pdim){
         throw subscript_exception("subdim subscripts number must be less than dim");
     }
-    auto shape_it = shape.begin();
-    for (auto subs_it = subs.begin(), subs_end = subs.end(); subs_it != subs_end; ++subs_it, ++shape_it){
-        const index_type& sub = *subs_it;
-        if (sub < index_type{0} || sub >= *shape_it){
+    auto pshape_it = pshape.begin();
+    for (auto subs_it = subs.begin(), subs_end = subs.end(); subs_it != subs_end; ++subs_it, ++pshape_it){
+        const index_type& pshape_element = *pshape_it;
+        const index_type& sub = make_subdim_index(pshape_element ,*subs_it);
+        if (sub < index_type{0} || sub >= *pshape_it){
             throw subscript_exception("invalid subdim subscript");
         }
     }
@@ -479,7 +486,7 @@ class view_factory
         return viewing_tensor_factory<config_type,descriptor_type,impl_type>::make(
             descriptor_type{
                 detail::make_subdim_view_shape(pshape,subs_number),
-                detail::make_subdim_view_offset(parent_impl->strides(),subs)
+                detail::make_subdim_view_offset(pshape,parent_impl->strides(),subs)
             },
             parent_impl
         );
