@@ -24,9 +24,9 @@ auto make_test_tensor(T&& t){return TestT<std::decay_t<T>>{t};}
 
 template<typename ShT>
 auto check_bool_mapping_view_subs(const ShT& pshape, const ShT& subs_shape){
-    using size_type = typename ShT::size_type;
-    size_type pdim = pshape.size();
-    size_type subs_dim = subs_shape.size();
+    using dim_type = typename ShT::size_type;
+    dim_type pdim = pshape.size();
+    dim_type subs_dim = subs_shape.size();
     if (subs_dim > pdim){
         throw gtensor::subscript_exception("invalid bool tensor subscript");
     }
@@ -48,9 +48,9 @@ namespace subs_iterate_once{
 template<typename ShT, typename SizeT>
 inline ShT make_bool_mapping_view_shape(const ShT& pshape, const typename ShT::value_type& subs_trues_number, const SizeT& subs_dim){
     using shape_type = ShT;
-    using size_type = SizeT;
-    size_type pdim = pshape.size();
-    auto res = shape_type(pdim - subs_dim + size_type{1});
+    using dim_type = SizeT;
+    dim_type pdim = pshape.size();
+    auto res = shape_type(pdim - subs_dim + dim_type{1});
     auto res_it = res.begin();
     *res_it = subs_trues_number;
     ++res_it;
@@ -61,9 +61,9 @@ template<typename ShT, typename ParentIndexer, typename ResIt, typename Subs>
 auto fill_bool_mapping_view(const ShT& pshape, const ShT& pstrides, ParentIndexer pindexer, ResIt res_it, const Subs& subs){
     using config_type = typename Subs::config_type;
     using index_type = typename ShT::value_type;
-    using size_type = typename ShT::size_type;
+    using dim_type = typename ShT::size_type;
 
-    size_type subs_dim = subs.dim();
+    dim_type subs_dim = subs.dim();
     index_type block_size = mapping_view_block_size(pshape, subs_dim);
     index_type trues_number{0};
     gtensor::walker_forward_adapter<config_type, decltype(subs.engine().create_walker())> subs_it{subs.descriptor().shape(), subs.engine().create_walker()};
@@ -99,7 +99,7 @@ auto make_bool_mapping_view(const Parent& parent, const Subs& subs){
     const auto& subs_shape = subs.shape();
     check_bool_mapping_view_subs(pshape, subs_shape);
     auto res = make_test_tensor(gtensor::storage_tensor_factory<config_type,value_type>::make(pshape, value_type{}));
-        //size_type subs_dim = subs.dim();
+        //dim_type subs_dim = subs.dim();
     auto subs_trues_number = fill_bool_mapping_view(
         pshape,
         parent.descriptor().strides(),
@@ -119,11 +119,11 @@ template<typename ShT, typename Subs>
 inline ShT make_bool_mapping_view_shape(const ShT& pshape, const Subs& subs){
     using shape_type = ShT;
     using index_type = typename shape_type::value_type;
-    using size_type = typename shape_type::size_type;
-    size_type pdim = pshape.size();
-    size_type subs_dim = subs.dim();
+    using dim_type = typename shape_type::size_type;
+    dim_type pdim = pshape.size();
+    dim_type subs_dim = subs.dim();
     index_type subs_trues_number = std::count(subs.begin(),subs.end(),true);
-    auto res = shape_type(pdim - subs_dim + size_type{1});
+    auto res = shape_type(pdim - subs_dim + dim_type{1});
     auto res_it = res.begin();
     *res_it = subs_trues_number;
     ++res_it;
@@ -134,9 +134,9 @@ template<typename ShT, typename ParentIndexer, typename ResIt, typename Subs>
 auto fill_bool_mapping_view(const ShT& pshape, const ShT& pstrides, ParentIndexer pindexer, ResIt res_it, const Subs& subs){
     using config_type = typename Subs::config_type;
     using index_type = typename ShT::value_type;
-    using size_type = typename ShT::size_type;
+    using dim_type = typename ShT::size_type;
 
-    size_type subs_dim = subs.dim();
+    dim_type subs_dim = subs.dim();
     index_type block_size = mapping_view_block_size(pshape, subs_dim);
     gtensor::walker_forward_adapter<config_type, decltype(subs.engine().create_walker())> subs_it{subs.descriptor().shape(), subs.engine().create_walker()};
     if (block_size == index_type{1}){

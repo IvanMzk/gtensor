@@ -75,9 +75,9 @@ inline IdxT make_slice_view_cstride_element(const IdxT& pstride_element, const S
 }
 template<typename ShT, typename Container>
 inline typename ShT::size_type make_slice_view_dim(const ShT& pshape, const Container& subs){
-    using size_type = typename ShT::size_type;
-    size_type pdim = pshape.size();
-    size_type reduce_number = std::count_if(subs.begin(),subs.end(),[](const auto& subs_){return subs_.is_reduce();});
+    using dim_type = typename ShT::size_type;
+    dim_type pdim = pshape.size();
+    dim_type reduce_number = std::count_if(subs.begin(),subs.end(),[](const auto& subs_){return subs_.is_reduce();});
     return pdim - reduce_number;
 }
 template<typename ShT, typename SizeT, typename Container, typename ElementMaker>
@@ -100,11 +100,11 @@ inline ShT make_slice_view_shape_cstrides(const ShT& pshape_or_pstrides, const S
 }
 template<typename ShT, typename SizeT, typename SliceT, typename ElementMaker>
 inline ShT make_slice_view_shape_cstrides_direction(const ShT& pshape_pstrides, const SizeT& direction, const SliceT& subs, ElementMaker element_maker){
-    using size_type = SizeT;
+    using dim_type = SizeT;
     using index_type = typename ShT::value_type;
     if (subs.is_reduce()){
-        const size_type pdim = pshape_pstrides.size();
-        const size_type res_dim = pdim-1;
+        const dim_type pdim = pshape_pstrides.size();
+        const dim_type res_dim = pdim-1;
         ShT res(res_dim,index_type{});
         auto pshape_pstrides_it = pshape_pstrides.begin();
         const auto pshape_pstrides_direction_it = pshape_pstrides_it+direction;
@@ -125,15 +125,15 @@ inline ShT make_slice_view_shape_cstrides_direction(const ShT& pshape_pstrides, 
 //check args
 template<typename ShT, typename Container>
 inline void check_slice_view_args(const ShT& pshape, const Container& subs){
-    using size_type = typename ShT::size_type;
+    using dim_type = typename ShT::size_type;
     using index_type = typename ShT::value_type;
-    const size_type pdim = pshape.size();
-    const size_type subs_number = subs.size();
+    const dim_type pdim = pshape.size();
+    const dim_type subs_number = subs.size();
     if (subs_number > pdim){
         throw subscript_exception("invalid subscripts number");
     }
     auto pshape_it = pshape.begin();
-    size_type reduce_number{0};
+    dim_type reduce_number{0};
     for (auto subs_it = subs.begin(); subs_it!=subs.end(); ++subs_it,++pshape_it){
         const auto& subs_ = *subs_it;
         if (subs_.is_reduce()){
@@ -192,14 +192,14 @@ inline typename ShT::value_type make_slice_view_offset_direction(const ShT& psha
 template<typename ShT, typename Container>
 ShT make_transpose_view_shape(const ShT& pshape, const Container& subs){
     using shape_type = ShT;
-    using size_type = typename shape_type::size_type;
+    using dim_type = typename shape_type::size_type;
     if (std::empty(subs)){
         return shape_type(pshape.rbegin(), pshape.rend());
     }else{
         shape_type res{};
         res.reserve(pshape.size());
         for(auto it=subs.begin(); it!=subs.end(); ++it){
-            res.push_back(pshape[static_cast<size_type>(*it)]);
+            res.push_back(pshape[static_cast<dim_type>(*it)]);
         }
         return res;
     }
@@ -210,9 +210,9 @@ ShT make_view_transpose_strides(const ShT& pstrides, const Container& subs){
 }
 template<typename SizeT, typename Container>
 inline void check_transpose_args(const SizeT& dim, const Container& subs){
-    using size_type = SizeT;
+    using dim_type = SizeT;
     if (!std::empty(subs)){
-        const size_type subs_number = subs.size();
+        const dim_type subs_number = subs.size();
         if (dim!=subs_number){
             throw subscript_exception("transpose must have no or dim subscripts");
         }
@@ -224,7 +224,7 @@ inline void check_transpose_args(const SizeT& dim, const Container& subs){
             if (sub < sub_type{0}){
                 throw subscript_exception("invalid transpose argument");
             }
-            if (static_cast<const size_type&>(sub) >= dim){
+            if (static_cast<const dim_type&>(sub) >= dim){
                 throw subscript_exception("invalid transpose argument");
             }
             ++subs_it;
@@ -269,9 +269,9 @@ inline typename ShT::value_type make_subdim_view_offset(const ShT& pshape, const
 template<typename ShT, typename Container>
 inline void check_subdim_args(const ShT& pshape, const Container& subs){
     using index_type = typename ShT::value_type;
-    using size_type = typename ShT::size_type;
-    const size_type& subs_number = subs.size();
-    const size_type& pdim = pshape.size();
+    using dim_type = typename ShT::size_type;
+    const dim_type& subs_number = subs.size();
+    const dim_type& pdim = pshape.size();
     if (subs_number >= pdim){
         throw subscript_exception("subdim subscripts number must be less than dim");
     }
@@ -350,10 +350,10 @@ inline auto mapping_view_chunk_size(const ShT& pshape, const SizeT& subs_dim_or_
 //check of subscripts indeces defered to place where subscripts should be iterated (result fill or mapping descriptor making)
 template<typename ShT, typename...ShTs>
 inline void check_index_mapping_view_subs(const ShT& pshape, const ShTs&...subs_shapes){
-    using size_type = typename ShT::size_type;
+    using dim_type = typename ShT::size_type;
     using index_type = typename ShT::value_type;
-    auto pdim = static_cast<size_type>(pshape.size());
-    auto subs_number = static_cast<size_type>(sizeof...(ShTs));
+    auto pdim = static_cast<dim_type>(pshape.size());
+    auto subs_number = static_cast<dim_type>(sizeof...(ShTs));
     //check subs number not exceed parent dim
     if (subs_number > pdim){
         throw subscript_exception("invalid index tensor subscript");
@@ -369,9 +369,9 @@ inline void check_index_mapping_view_subs(const ShT& pshape, const ShTs&...subs_
 template<typename ShT, typename SizeT>
 inline ShT make_index_mapping_view_shape(const ShT& pshape, const ShT& subs_shape, const SizeT& subs_number){
     using shape_type = ShT;
-    using size_type = SizeT;
-    auto pdim = static_cast<size_type>(pshape.size());
-    auto subs_dim = static_cast<size_type>(subs_shape.size());
+    using dim_type = SizeT;
+    auto pdim = static_cast<dim_type>(pshape.size());
+    auto subs_dim = static_cast<dim_type>(subs_shape.size());
     auto res = shape_type(pdim - subs_number + subs_dim);
     std::copy(subs_shape.begin(), subs_shape.end(), res.begin());
     std::copy(pshape.begin()+subs_number, pshape.end(), res.begin()+subs_dim);
@@ -389,17 +389,17 @@ inline auto check_index(const IdxT& idx, const IdxT& shape_element){
 
 template<typename ShT, typename ParentIndexer, typename ResIt,  typename...SubsIt>
 auto fill_index_mapping_view(const ShT& pshape, const ShT& pstrides, ParentIndexer pindexer, ResIt res_it, const ShT& subs_shape, SubsIt...subs_it){
-    using size_type = typename ShT::size_type;
+    using dim_type = typename ShT::size_type;
     using index_type = typename ShT::value_type;
 
     const index_type subs_size = detail::make_size(subs_shape);
     if (subs_size != index_type{0}){
-        const size_type subs_number = sizeof...(SubsIt);
+        const dim_type subs_number = sizeof...(SubsIt);
         const index_type chunk_size = mapping_view_chunk_size(pshape, subs_number);
         if (chunk_size == index_type{1}){
             do{
                 index_type block_first{0};
-                size_type n{0};
+                dim_type n{0};
                 ((block_first+=check_index(static_cast<index_type>(*subs_it.walker()),pshape[n])*pstrides[n],++n),...);
                 *res_it = pindexer[block_first];
                 ++res_it;
@@ -407,7 +407,7 @@ auto fill_index_mapping_view(const ShT& pshape, const ShT& pstrides, ParentIndex
         }else{
             do{
                 index_type block_first{0};
-                size_type n{0};
+                dim_type n{0};
                 ((block_first+=check_index(static_cast<index_type>(*subs_it.walker()),pshape[n])*pstrides[n],++n),...);
                 for(index_type i{0}; i!=chunk_size; ++i){
                     *res_it = pindexer[block_first+i];
@@ -421,9 +421,9 @@ auto fill_index_mapping_view(const ShT& pshape, const ShT& pstrides, ParentIndex
 //helpers for making bool_mapping_view
 template<typename ShT>
 auto check_bool_mapping_view_subs(const ShT& pshape, const ShT& subs_shape){
-    using size_type = typename ShT::size_type;
-    size_type pdim = pshape.size();
-    size_type subs_dim = subs_shape.size();
+    using dim_type = typename ShT::size_type;
+    dim_type pdim = pshape.size();
+    dim_type subs_dim = subs_shape.size();
     if (subs_dim > pdim){
         throw subscript_exception("invalid bool tensor subscript");
     }
@@ -437,9 +437,9 @@ auto check_bool_mapping_view_subs(const ShT& pshape, const ShT& subs_shape){
 template<typename ShT, typename SizeT>
 inline ShT make_bool_mapping_view_shape(const ShT& pshape, const typename ShT::value_type& subs_trues_number, const SizeT& subs_dim){
     using shape_type = ShT;
-    using size_type = SizeT;
-    size_type pdim = pshape.size();
-    auto res = shape_type(pdim - subs_dim + size_type{1});
+    using dim_type = SizeT;
+    dim_type pdim = pshape.size();
+    auto res = shape_type(pdim - subs_dim + dim_type{1});
     auto res_it = res.begin();
     *res_it = subs_trues_number;
     ++res_it;
@@ -450,11 +450,11 @@ inline ShT make_bool_mapping_view_shape(const ShT& pshape, const typename ShT::v
 template<typename ShT, typename ParentIndexer, typename ResIt, typename Subs, typename SubsIt>
 auto fill_bool_mapping_view(const ShT& pshape, const ShT& pstrides, ParentIndexer pindexer, ResIt res_it, const Subs& subs, SubsIt subs_it){
     using index_type = typename ShT::value_type;
-    using size_type = typename ShT::size_type;
+    using dim_type = typename ShT::size_type;
 
     index_type trues_number{0};
     if (!subs.empty()){
-        size_type subs_dim = subs.dim();
+        dim_type subs_dim = subs.dim();
         index_type chunk_size = mapping_view_chunk_size(pshape, subs_dim);
 
         if (chunk_size == index_type{1}){
@@ -496,12 +496,12 @@ class view_factory
         using tensor_type = tensor<Ts...>;
         using impl_type = typename tensor_type::impl_type;
         using config_type = typename tensor_type::config_type;
-        using size_type = typename tensor_type::size_type;
+        using dim_type = typename tensor_type::dim_type;
         using descriptor_type = view_subdim_descriptor<config_type>;
         auto parent_impl = parent.impl();
         const auto& pshape = parent_impl->shape();
         detail::check_subdim_args(pshape,subs);
-        const size_type subs_number = subs.size();
+        const dim_type subs_number = subs.size();
         return viewing_tensor_factory<config_type,descriptor_type,impl_type>::make(
             descriptor_type{
                 detail::make_subdim_view_shape(pshape,subs_number),
@@ -559,9 +559,9 @@ class view_factory
     template<typename...Ts, typename...Subs>
     static auto create_transpose_view_variadic(const tensor<Ts...>& parent, const Subs&...subs){
         using config_type = typename tensor<Ts...>::config_type;
-        using size_type = typename config_type::size_type;
+        using dim_type = typename config_type::dim_type;
         detail::check_transpose_args_variadic(subs...);
-        return create_transpose_view_container(parent, typename config_type::template container<size_type>{static_cast<size_type>(subs)...});
+        return create_transpose_view_container(parent, typename config_type::template container<dim_type>{static_cast<dim_type>(subs)...});
     }
     //slice view
     template<typename...Ts, typename Container>
@@ -569,7 +569,7 @@ class view_factory
         using tensor_type = tensor<Ts...>;
         using impl_type = typename tensor_type::impl_type;
         using config_type = typename tensor_type::config_type;
-        using size_type = typename tensor_type::size_type;
+        using dim_type = typename tensor_type::dim_type;
         using slice_type = typename tensor_type::slice_type;
         using descriptor_type = slice_view_descriptor<config_type>;
         static_assert(std::is_same_v<typename Container::value_type,slice_type>);
@@ -577,7 +577,7 @@ class view_factory
         const auto& pshape = parent_impl->shape();
         detail::check_slice_view_args(pshape,subs);
         const auto& pstrides = parent_impl->strides();
-        size_type res_dim = detail::make_slice_view_dim(pshape, subs);
+        dim_type res_dim = detail::make_slice_view_dim(pshape, subs);
         return viewing_tensor_factory<config_type,descriptor_type,impl_type>::make(
             descriptor_type{
                 detail::make_slice_view_shape(pshape,res_dim,subs),
@@ -620,12 +620,12 @@ class view_factory
         using value_type = typename tensor_type::value_type;
         using config_type = typename tensor_type::config_type;
         using shape_type = typename tensor_type::shape_type;
-        using size_type = typename tensor_type::size_type;
+        using dim_type = typename tensor_type::dim_type;
         auto parent_impl = parent.impl();
         const auto& pshape = parent_impl->shape();
         detail::check_index_mapping_view_subs(pshape, subs.descriptor().shape()...);
         auto subs_shape = detail::broadcast_shape<shape_type>(subs.descriptor().shape()...);
-        size_type subs_number = sizeof...(Subs);
+        dim_type subs_number = sizeof...(Subs);
         auto res = storage_tensor_factory<config_type,value_type>::make(detail::make_index_mapping_view_shape(pshape, subs_shape, subs_number), value_type{});
         if (!res.empty()){
             detail::fill_index_mapping_view(
@@ -680,11 +680,11 @@ public:
         return create_reshape_view_variadic(parent, subs...);
     }
     //transpose view
-    template<typename...Ts, typename Container, std::enable_if_t<detail::is_container_of_type_v<Container, typename tensor<Ts...>::size_type>,int> = 0>
+    template<typename...Ts, typename Container, std::enable_if_t<detail::is_container_of_type_v<Container, typename tensor<Ts...>::dim_type>,int> = 0>
     static auto create_transpose_view(const tensor<Ts...>& parent, const Container& subs){
         return create_transpose_view_container(parent, subs);
     }
-    template<typename...Ts, typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs, typename tensor<Ts...>::size_type>&&...),int> = 0>
+    template<typename...Ts, typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs, typename tensor<Ts...>::dim_type>&&...),int> = 0>
     static auto create_transpose_view(const tensor<Ts...>& parent, const Subs&...subs){
         return create_transpose_view_variadic(parent, subs...);
     }
@@ -742,12 +742,12 @@ inline auto create_reshape_view(const tensor<Ts...>& parent, const Subs&...subs)
     return view_factory_selector<config_type>::type::create_reshape_view(parent, subs...);
 }
 //transpose view
-template<typename...Ts, typename Container, std::enable_if_t<detail::is_container_of_type_v<Container, typename tensor<Ts...>::size_type>,int> = 0>
+template<typename...Ts, typename Container, std::enable_if_t<detail::is_container_of_type_v<Container, typename tensor<Ts...>::dim_type>,int> = 0>
 inline auto create_transpose_view(const tensor<Ts...>& parent, const Container& subs){
     using config_type = typename tensor<Ts...>::config_type;
     return view_factory_selector<config_type>::type::create_transpose_view(parent, subs);
 }
-template<typename...Ts, typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs, typename tensor<Ts...>::size_type>&&...),int> = 0>
+template<typename...Ts, typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs, typename tensor<Ts...>::dim_type>&&...),int> = 0>
 inline auto create_transpose_view(const tensor<Ts...>& parent, const Subs&...subs){
     using config_type = typename tensor<Ts...>::config_type;
     return view_factory_selector<config_type>::type::create_transpose_view(parent, subs...);

@@ -44,7 +44,7 @@ TEST_CASE("test_tensor_default_constructor","[test_tensor]"){
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
     using config_type = tensor_type::config_type;
-    using size_type = config_type::size_type;
+    using dim_type = config_type::dim_type;
     using index_type = config_type::index_type;
     using shape_type = config_type::shape_type;
 
@@ -53,7 +53,7 @@ TEST_CASE("test_tensor_default_constructor","[test_tensor]"){
         tensor_type{}
     );
     REQUIRE(test_data.size() == index_type{0});
-    REQUIRE(test_data.dim() == size_type{1});
+    REQUIRE(test_data.dim() == dim_type{1});
     REQUIRE(test_data.shape() == shape_type{0,});
 }
 
@@ -63,8 +63,8 @@ TEST_CASE("test_tensor_constructor_from_list","[test_tensor]"){
     using tensor_type = gtensor::tensor<value_type, config_type>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
-    using size_type = typename config_type::size_type;
-    using test_type = std::tuple<tensor_type, shape_type, index_type, size_type>;
+    using dim_type = typename config_type::dim_type;
+    using test_type = std::tuple<tensor_type, shape_type, index_type, dim_type>;
     //tensor,expected_shape,expected size,expected dim
     auto test_data = GENERATE(
         test_type(tensor_type{1}, shape_type{1}, 1 , 1),
@@ -92,8 +92,8 @@ TEST_CASE("test_tensor_constructor_shape_value","[test_tensor]"){
     using tensor_type = gtensor::tensor<value_type, config_type>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
-    using size_type = typename config_type::size_type;
-    using test_type = std::tuple<tensor_type, shape_type, index_type, size_type>;
+    using dim_type = typename config_type::dim_type;
+    using test_type = std::tuple<tensor_type, shape_type, index_type, dim_type>;
     //tensor,expected_shape,expected size,expected dim
     auto test_data = GENERATE(
         test_type(tensor_type(shape_type{},1.0f), shape_type{}, 0 , 0),
@@ -162,7 +162,7 @@ TEST_CASE("test_tensor_construct_using_operator","[test_tensor]"){
     using config_type = gtensor::config::default_config;
     using tensor_type = gtensor::tensor<value_type, config_type>;
     using shape_type = typename config_type::shape_type;
-    using size_type = typename config_type::size_type;
+    using dim_type = typename config_type::dim_type;
     using index_type = typename config_type::index_type;
     using helpers_for_testing::apply_by_element;
     //0tensor,1expected_shape,2expected_size,3expected_dim
@@ -187,7 +187,7 @@ TEST_CASE("test_tensor_construct_using_operator","[test_tensor]"){
         auto expected_dim = std::get<3>(t);
         REQUIRE(ten.shape() == expected_shape);
         REQUIRE(ten.size() == static_cast<index_type>(expected_size));
-        REQUIRE(ten.dim() == static_cast<size_type>(expected_dim));
+        REQUIRE(ten.dim() == static_cast<dim_type>(expected_dim));
     };
     apply_by_element(test,test_data);
 }

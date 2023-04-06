@@ -23,7 +23,7 @@ protected:
 public:
     using typename tensor_base_type::value_type;
     using typename tensor_base_type::config_type;
-    using typename tensor_base_type::size_type;
+    using typename tensor_base_type::dim_type;
     using typename tensor_base_type::index_type;
     using typename tensor_base_type::shape_type;
 
@@ -35,7 +35,7 @@ public:
     const descriptor_type& descriptor()const override{return descriptor_;}
     descriptor_type& descriptor()override{return descriptor_;}
     index_type size()const override{return descriptor_.size();}
-    size_type dim()const override{return descriptor_.dim();}
+    dim_type dim()const override{return descriptor_.dim();}
     const shape_type& shape()const override{return descriptor_.shape();}
     const shape_type& strides()const override{return descriptor_.strides();}
 
@@ -54,7 +54,7 @@ class storage_tensor : public basic_tensor<basic_descriptor<typename EngineT::co
 public:
     using typename basic_tensor_base::config_type;
     using typename basic_tensor_base::value_type;
-    using typename basic_tensor_base::size_type;
+    using typename basic_tensor_base::dim_type;
     using typename basic_tensor_base::index_type;
     using typename basic_tensor_base::shape_type;
 private:
@@ -72,7 +72,7 @@ private:
 public:
     template<typename Nested>
     storage_tensor(std::initializer_list<Nested> init_data):
-        storage_tensor{detail::list_parse<size_type,shape_type>(init_data), init_data}
+        storage_tensor{detail::list_parse<dim_type,shape_type>(init_data), init_data}
     {}
     template<typename ShT>
     storage_tensor(ShT&& shape, const value_type& v):
@@ -98,7 +98,7 @@ class evaluating_tensor : public basic_tensor<basic_descriptor<typename EngineT:
 public:
     using typename basic_tensor_base::config_type;
     using typename basic_tensor_base::value_type;
-    using typename basic_tensor_base::size_type;
+    using typename basic_tensor_base::dim_type;
     using typename basic_tensor_base::index_type;
     using typename basic_tensor_base::shape_type;
 private:
@@ -125,7 +125,7 @@ class viewing_tensor : public basic_tensor<DescT, EngineT>
 public:
     using typename basic_tensor_base::config_type;
     using typename basic_tensor_base::value_type;
-    using typename basic_tensor_base::size_type;
+    using typename basic_tensor_base::dim_type;
     using typename basic_tensor_base::index_type;
     using typename basic_tensor_base::shape_type;
 public:

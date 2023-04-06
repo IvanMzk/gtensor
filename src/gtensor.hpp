@@ -55,8 +55,10 @@ protected:
 public:
     using config_type = CfgT;
     using value_type = ValT;
+    using size_type = typename config_type::index_type;
+    using difference_type = typename config_type::index_type;
     using index_type = typename config_type::index_type;
-    using size_type = typename config_type::size_type;
+    using dim_type = typename config_type::dim_type;
     using shape_type = typename config_type::shape_type;
     using slice_type = slice<index_type>;
     using slice_item_type = typename slice_type::slice_item_type;
@@ -154,11 +156,11 @@ public:
         return create_slice_view(*this, subs);
     }
     //transpose view
-    template<typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs,size_type>&&...),int> = 0 >
+    template<typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs,dim_type>&&...),int> = 0 >
     auto transpose(const Subs&...subs)const{
         return create_transpose_view(*this, subs...);
     }
-    template<typename Container, std::enable_if_t<detail::is_container_of_type_v<Container,size_type>,int> = 0>
+    template<typename Container, std::enable_if_t<detail::is_container_of_type_v<Container,dim_type>,int> = 0>
     auto transpose(const Container& subs)const{
         return create_transpose_view(*this, subs);
     }
@@ -186,7 +188,7 @@ public:
 
     //reduce
     template<typename BinaryOp>
-    auto reduce(const size_type& direction, BinaryOp op)const{
+    auto reduce(const dim_type& direction, BinaryOp op)const{
         detail::check_reduce_args(descriptor().shape(), direction);
         return gtensor::reduce(*this, direction, op);
     }

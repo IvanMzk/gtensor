@@ -18,9 +18,9 @@ namespace detail{
 
 template<typename ShT, typename SizeT>
 auto check_reduce_args(const ShT& pshape, const SizeT& direction){
-    using size_type = SizeT;
+    using dim_type = SizeT;
     using index_type = typename ShT::value_type;
-    const size_type pdim = pshape.size();
+    const dim_type pdim = pshape.size();
     if (direction >= pdim){
         throw reduce_exception("bad reduce direction");
     }
@@ -30,11 +30,11 @@ auto check_reduce_args(const ShT& pshape, const SizeT& direction){
 }
 template<typename ShT, typename SizeT>
 auto make_reduce_shape(const ShT& shape, const SizeT& direction){
-    using size_type = SizeT;
+    using dim_type = SizeT;
     using shape_type = ShT;
     using index_type = typename shape_type::value_type;
-    size_type dim = shape.size();
-    if (dim == size_type{1}){
+    dim_type dim = shape.size();
+    if (dim == dim_type{1}){
         return shape_type{index_type{1}};
     }else{
         shape_type res(--dim);
@@ -54,28 +54,28 @@ protected:
     using typename walker_forward_adapter_base::walker_type;
     using typename walker_forward_adapter_base::shape_type;
     using typename walker_forward_adapter_base::index_type;
-    using typename walker_forward_adapter_base::size_type;
+    using typename walker_forward_adapter_base::dim_type;
     using walker_forward_adapter_base::walker_;
     using walker_forward_adapter_base::dim_;
     using walker_forward_adapter_base::index_;
     using walker_forward_adapter_base::shape_;
 
     index_type reduce_direction_size_;
-    size_type reduce_direction_;
+    dim_type reduce_direction_;
     index_type reduce_counter_{reduce_direction_size_};
 
 public:
     template<typename Walker_>
-    walker_reducer_adapter(const shape_type& shape__, Walker_&& walker__, const size_type direction__):
+    walker_reducer_adapter(const shape_type& shape__, Walker_&& walker__, const dim_type direction__):
         walker_forward_adapter_base{shape__, std::forward<Walker_>(walker__)},
         reduce_direction_size_{shape__[direction__]},
-        reduce_direction_{dim_ - size_type{1} - direction__}
+        reduce_direction_{dim_ - dim_type{1} - direction__}
     {}
 
     bool next(){
         walker_.reset(reduce_direction_);
         reduce_counter_ = reduce_direction_size_;
-        size_type direction{0}; //start from direction with min stride
+        dim_type direction{0}; //start from direction with min stride
         auto index_it = index_.end();
         for(;direction!=dim_;++direction){
             if (direction == reduce_direction_){
@@ -128,16 +128,16 @@ struct min
 class reducer
 {
     template<typename ImplT, typename BinaryOp>
-    static auto reduce_(const ImplT& parent, const typename ImplT::size_type& direction, BinaryOp op){
+    static auto reduce_(const ImplT& parent, const typename ImplT::dim_type& direction, BinaryOp op){
         using value_type = typename ImplT::value_type;
         using config_type = typename ImplT::config_type;
-        using size_type = typename config_type::size_type;
+        using dim_type = typename config_type::dim_type;
         using res_value_type = std::decay_t<decltype(op(std::declval<value_type>(),std::declval<value_type>()))>;
 
         auto res = storage_tensor_factory<config_type,res_value_type>::make(detail::make_reduce_shape(parent.shape(), direction), res_value_type{});
         if (!res.empty()){
             auto pdim = parent.dim();
-            if (pdim == size_type{1}){
+            if (pdim == dim_type{1}){
                 auto pit = parent.engine().begin();
                 auto init = *pit;
                 *res.begin() = std::accumulate(++pit, parent.engine().end(), init, op);
@@ -158,19 +158,19 @@ class reducer
     }
 
     template<typename BinaryOp, typename...Ts>
-    static auto reduce_(const tensor<Ts...>& t, const typename tensor<Ts...>::size_type& direction, BinaryOp op){
+    static auto reduce_(const tensor<Ts...>& t, const typename tensor<Ts...>::dim_type& direction, BinaryOp op){
         return reduce_(t.impl_ref(), direction, op);
     }
 public:
     //interface
     template<typename BinaryOp, typename...Ts>
-    static auto reduce(const tensor<Ts...>& t, const typename tensor<Ts...>::size_type& direction, BinaryOp op){
+    static auto reduce(const tensor<Ts...>& t, const typename tensor<Ts...>::dim_type& direction, BinaryOp op){
         return reduce_(t,direction,op);
     }
 };
 
 template<typename BinaryOp, typename...Ts>
-auto reduce(const tensor<Ts...>& t, const typename tensor<Ts...>::size_type& direction, BinaryOp op){
+auto reduce(const tensor<Ts...>& t, const typename tensor<Ts...>::dim_type& direction, BinaryOp op){
     using config_type = typename tensor<Ts...>::config_type;
     return reducer_selector<config_type>::type::reduce(t, direction, op);
 }

@@ -9,7 +9,7 @@ struct config_tmpl_{
     using host_engine = HEng;
     using div_mode = Div;
     using index_type = typename gtensor::config::default_config::index_type;
-    using size_type = typename gtensor::config::default_config::size_type;
+    using dim_type = typename gtensor::config::default_config::dim_type;
     template<typename ValT> using storage = typename gtensor::config::default_config::storage<ValT>;
     template<typename T> using container = typename gtensor::config::default_config::container<T>;
     using shape_type = typename gtensor::config::default_config::shape_type;

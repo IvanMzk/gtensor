@@ -9,58 +9,58 @@ namespace gtensor{
 template<typename CfgT, typename F, typename...Walkers>
 class evaluating_walker
 {
-    using size_type = typename CfgT::size_type;
+    using dim_type = typename CfgT::dim_type;
     using index_type = typename CfgT::index_type;
     using shape_type = typename CfgT::shape_type;
 
-    size_type dim_;
+    dim_type dim_;
     detail::shape_inverter<CfgT> shape;
     F f;
     std::tuple<Walkers...> walkers;
 
     template<std::size_t...I>
-    void step_helper(const size_type& direction, std::index_sequence<I...>){(std::get<I>(walkers).step(direction),...);}
+    void step_helper(const dim_type& direction, std::index_sequence<I...>){(std::get<I>(walkers).step(direction),...);}
     template<std::size_t...I>
-    void step_back_helper(const size_type& direction, std::index_sequence<I...>){(std::get<I>(walkers).step_back(direction),...);}
+    void step_back_helper(const dim_type& direction, std::index_sequence<I...>){(std::get<I>(walkers).step_back(direction),...);}
     template<std::size_t...I>
-    void reset_helper(const size_type& direction, std::index_sequence<I...>){(std::get<I>(walkers).reset(direction),...);}
+    void reset_helper(const dim_type& direction, std::index_sequence<I...>){(std::get<I>(walkers).reset(direction),...);}
     template<std::size_t...I>
-    void reset_back_helper(const size_type& direction, std::index_sequence<I...>){(std::get<I>(walkers).reset_back(direction),...);}
+    void reset_back_helper(const dim_type& direction, std::index_sequence<I...>){(std::get<I>(walkers).reset_back(direction),...);}
     template<std::size_t...I>
     void reset_helper(std::index_sequence<I...>){(std::get<I>(walkers).reset(),...);}
     template<std::size_t...I>
     auto deref_helper(std::index_sequence<I...>) const {return f(*std::get<I>(walkers)...);}
     template<std::size_t...I>
-    void walk_helper(const size_type& direction, const index_type& steps, std::index_sequence<I...>){(std::get<I>(walkers).walk(direction,steps),...);}
+    void walk_helper(const dim_type& direction, const index_type& steps, std::index_sequence<I...>){(std::get<I>(walkers).walk(direction,steps),...);}
 
 public:
 
     evaluating_walker(const shape_type& shape_, const F& f_, Walkers&&...walkers_):
-        dim_{static_cast<size_type>(shape_.size())},
+        dim_{static_cast<dim_type>(shape_.size())},
         shape{shape_},
         f{f_},
         walkers{std::move(walkers_)...}
     {}
 
-    size_type dim()const{return dim_;}
+    dim_type dim()const{return dim_;}
 
     //walk method without check to utilize in evaluating_indexer
-    void walk_without_check(const size_type& direction, const index_type& steps){
+    void walk_without_check(const dim_type& direction, const index_type& steps){
         walk_helper(direction,steps,std::make_index_sequence<sizeof...(Walkers)>{});
     }
-    void walk(const size_type& direction, const index_type& steps){
+    void walk(const dim_type& direction, const index_type& steps){
         walk_helper(direction,steps,std::make_index_sequence<sizeof...(Walkers)>{});
     }
-    void step(const size_type& direction){
+    void step(const dim_type& direction){
         step_helper(direction,std::make_index_sequence<sizeof...(Walkers)>{});
     }
-    void step_back(const size_type& direction){
+    void step_back(const dim_type& direction){
         step_back_helper(direction,std::make_index_sequence<sizeof...(Walkers)>{});
     }
-    void reset(const size_type& direction){
+    void reset(const dim_type& direction){
         reset_helper(direction,std::make_index_sequence<sizeof...(Walkers)>{});
     }
-    void reset_back(const size_type& direction){
+    void reset_back(const dim_type& direction){
         reset_back_helper(direction,std::make_index_sequence<sizeof...(Walkers)>{});
     }
     void reset(){reset_helper(std::make_index_sequence<sizeof...(Walkers)>{});}
@@ -73,7 +73,7 @@ class evaluating_indexer
     using walker_type = Walker;
     using value_type = decltype(std::declval<walker_type>().operator*());
     using index_type = typename CfgT::index_type;
-    using size_type = typename CfgT::size_type;
+    using dim_type = typename CfgT::dim_type;
     using strides_div_type = typename detail::strides_div_traits<CfgT>::type;
 
     const strides_div_type* strides;
@@ -81,7 +81,7 @@ class evaluating_indexer
     mutable value_type data_cache{evaluate_at(0)};
     mutable index_type index_cache{0};
 
-    void walk(const size_type& direction, const index_type& steps)const{
+    void walk(const dim_type& direction, const index_type& steps)const{
         walker_.walk_without_check(direction,steps);
     }
     auto evaluate_at(index_type idx)const{
@@ -89,7 +89,7 @@ class evaluating_indexer
         walker_.reset();
         auto sit_begin{(*strides).begin()};
         auto sit_end{(*strides).end()};
-        for(size_type direction{walker_.dim()-size_type(1)}; sit_begin!=sit_end; ++sit_begin,--direction){
+        for(dim_type direction{walker_.dim()-dim_type(1)}; sit_begin!=sit_end; ++sit_begin,--direction){
             index_type steps = detail::divide(idx,*sit_begin);
             if (steps!=index_type{0}){
                 walk(direction,steps);

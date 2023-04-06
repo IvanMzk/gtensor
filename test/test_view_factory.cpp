@@ -214,7 +214,7 @@ TEST_CASE("test_make_slice_view_shape_element","[test_view_factory]"){
 TEST_CASE("test_make_slice_view_shape","[test_view_factory]"){
     using config_type = gtensor::config::default_config;
     using shape_type = config_type::shape_type;
-    using size_type = config_type::size_type;
+    using dim_type = config_type::dim_type;
     using slice_type = gtensor::slice_traits<config_type>::slice_type;
     using nop_type = gtensor::slice_traits<config_type>::nop_type;
     using rtag_type = gtensor::slice_traits<config_type>::rtag_type;
@@ -222,59 +222,59 @@ TEST_CASE("test_make_slice_view_shape","[test_view_factory]"){
     using helpers_for_testing::apply_by_element;
     //0pshape,1res_dim,2subs,3expected
     auto test_data = std::make_tuple(
-        std::make_tuple(shape_type{11},size_type{1},std::vector<slice_type>{}, shape_type{11}),
-        std::make_tuple(shape_type{11},size_type{1},std::vector<slice_type>{slice_type{-20,0,1}}, shape_type{0}),
-        std::make_tuple(shape_type{11},size_type{1},std::vector<slice_type>{slice_type{0,-20,1}}, shape_type{0}),
-        std::make_tuple(shape_type{11},size_type{1},std::vector<slice_type>{slice_type{20,0,1}}, shape_type{0}),
-        std::make_tuple(shape_type{11},size_type{1},std::vector<slice_type>{slice_type{7,3,1}}, shape_type{0}),
-        std::make_tuple(shape_type{11},size_type{1},std::vector<slice_type>{slice_type{20,11,-1}}, shape_type{0}),
-        std::make_tuple(shape_type{11},size_type{1},std::vector<slice_type>{slice_type{-12,-20,-1}}, shape_type{0}),
-        std::make_tuple(shape_type{11},size_type{1},std::vector<slice_type>{slice_type{10,20,-1}}, shape_type{0}),
-        std::make_tuple(shape_type{11},size_type{1},std::vector<slice_type>{slice_type{-12,0,-1}}, shape_type{0}),
-        std::make_tuple(shape_type{11},size_type{1},std::vector<slice_type>{slice_type{7,15,1}}, shape_type{4}),
-        std::make_tuple(shape_type{11},size_type{1},std::vector<slice_type>{slice_type{5,20,1}}, shape_type{6}),
-        std::make_tuple(shape_type{11},size_type{1},std::vector<slice_type>{slice_type{-15,5,1}}, shape_type{5}),
-        std::make_tuple(shape_type{11},size_type{1},std::vector<slice_type>{slice_type{-20,5,1}}, shape_type{5}),
-        std::make_tuple(shape_type{11},size_type{1},std::vector<slice_type>{slice_type{7,-20,-1}}, shape_type{8}),
-        std::make_tuple(shape_type{11},size_type{1},std::vector<slice_type>{slice_type{7,-8,-1}}, shape_type{4}),
-        std::make_tuple(shape_type{11},size_type{1},std::vector<slice_type>{slice_type{15,5,-1}}, shape_type{5}),
-        std::make_tuple(shape_type{11},size_type{1},std::vector<slice_type>{slice_type{15,-5,-1}}, shape_type{4}),
-        std::make_tuple(shape_type{11},size_type{1},std::vector<slice_type>{slice_type{0,20,1}}, shape_type{11}),
-        std::make_tuple(shape_type{11},size_type{1},std::vector<slice_type>{slice_type{0,11,1}}, shape_type{11}),
-        std::make_tuple(shape_type{11},size_type{1},std::vector<slice_type>{slice_type{0,11,2}}, shape_type{6}),
-        std::make_tuple(shape_type{11},size_type{1},std::vector<slice_type>{slice_type{3,11,1}}, shape_type{8}),
-        std::make_tuple(shape_type{11},size_type{1},std::vector<slice_type>{slice_type{3,9,3}}, shape_type{2}),
-        std::make_tuple(shape_type{11},size_type{1},std::vector<slice_type>{slice_type{3,11,2}}, shape_type{4}),
-        std::make_tuple(shape_type{11},size_type{1},std::vector<slice_type>{slice_type{5,5,1}}, shape_type{0}),
-        std::make_tuple(shape_type{11},size_type{1},std::vector<slice_type>{slice_type{5,5,2}}, shape_type{0}),
-        std::make_tuple(shape_type{2,4,3},size_type{3},std::vector<slice_type>{}, shape_type{2,4,3}),
-        std::make_tuple(shape_type{2,4,3},size_type{3},std::array<slice_type,2>{slice_type{0,2},slice_type{0,4}}, shape_type{2,4,3}),
-        std::make_tuple(shape_type{2,4,3},size_type{3},std::initializer_list<slice_type>{slice_type{1},slice_type{2}}, shape_type{1,2,3}),
-        std::make_tuple(shape_type{2,4,3},size_type{3},std::vector<slice_type>{slice_type{0,2},slice_type{0,4},slice_type{0,3}}, shape_type{2,4,3}),
-        std::make_tuple(shape_type{1,10,10},size_type{3},std::vector<slice_type>{slice_type{0,1,1},slice_type{9,-1,-1}}, shape_type{1,0,10}),
-        std::make_tuple(shape_type{1,10,10},size_type{3},std::vector<slice_type>{slice_type{0,1,1},slice_type{9,-11,-1}}, shape_type{1,10,10}),
-        std::make_tuple(shape_type{1,10,10},size_type{3},std::vector<slice_type>{slice_type{0,1,1},slice_type{9,nop_type{},-1}}, shape_type{1,10,10}),
-        std::make_tuple(shape_type{10,1,10},size_type{3},std::vector<slice_type>{slice_type{9,3,-2}}, shape_type{3,1,10}),
+        std::make_tuple(shape_type{11},dim_type{1},std::vector<slice_type>{}, shape_type{11}),
+        std::make_tuple(shape_type{11},dim_type{1},std::vector<slice_type>{slice_type{-20,0,1}}, shape_type{0}),
+        std::make_tuple(shape_type{11},dim_type{1},std::vector<slice_type>{slice_type{0,-20,1}}, shape_type{0}),
+        std::make_tuple(shape_type{11},dim_type{1},std::vector<slice_type>{slice_type{20,0,1}}, shape_type{0}),
+        std::make_tuple(shape_type{11},dim_type{1},std::vector<slice_type>{slice_type{7,3,1}}, shape_type{0}),
+        std::make_tuple(shape_type{11},dim_type{1},std::vector<slice_type>{slice_type{20,11,-1}}, shape_type{0}),
+        std::make_tuple(shape_type{11},dim_type{1},std::vector<slice_type>{slice_type{-12,-20,-1}}, shape_type{0}),
+        std::make_tuple(shape_type{11},dim_type{1},std::vector<slice_type>{slice_type{10,20,-1}}, shape_type{0}),
+        std::make_tuple(shape_type{11},dim_type{1},std::vector<slice_type>{slice_type{-12,0,-1}}, shape_type{0}),
+        std::make_tuple(shape_type{11},dim_type{1},std::vector<slice_type>{slice_type{7,15,1}}, shape_type{4}),
+        std::make_tuple(shape_type{11},dim_type{1},std::vector<slice_type>{slice_type{5,20,1}}, shape_type{6}),
+        std::make_tuple(shape_type{11},dim_type{1},std::vector<slice_type>{slice_type{-15,5,1}}, shape_type{5}),
+        std::make_tuple(shape_type{11},dim_type{1},std::vector<slice_type>{slice_type{-20,5,1}}, shape_type{5}),
+        std::make_tuple(shape_type{11},dim_type{1},std::vector<slice_type>{slice_type{7,-20,-1}}, shape_type{8}),
+        std::make_tuple(shape_type{11},dim_type{1},std::vector<slice_type>{slice_type{7,-8,-1}}, shape_type{4}),
+        std::make_tuple(shape_type{11},dim_type{1},std::vector<slice_type>{slice_type{15,5,-1}}, shape_type{5}),
+        std::make_tuple(shape_type{11},dim_type{1},std::vector<slice_type>{slice_type{15,-5,-1}}, shape_type{4}),
+        std::make_tuple(shape_type{11},dim_type{1},std::vector<slice_type>{slice_type{0,20,1}}, shape_type{11}),
+        std::make_tuple(shape_type{11},dim_type{1},std::vector<slice_type>{slice_type{0,11,1}}, shape_type{11}),
+        std::make_tuple(shape_type{11},dim_type{1},std::vector<slice_type>{slice_type{0,11,2}}, shape_type{6}),
+        std::make_tuple(shape_type{11},dim_type{1},std::vector<slice_type>{slice_type{3,11,1}}, shape_type{8}),
+        std::make_tuple(shape_type{11},dim_type{1},std::vector<slice_type>{slice_type{3,9,3}}, shape_type{2}),
+        std::make_tuple(shape_type{11},dim_type{1},std::vector<slice_type>{slice_type{3,11,2}}, shape_type{4}),
+        std::make_tuple(shape_type{11},dim_type{1},std::vector<slice_type>{slice_type{5,5,1}}, shape_type{0}),
+        std::make_tuple(shape_type{11},dim_type{1},std::vector<slice_type>{slice_type{5,5,2}}, shape_type{0}),
+        std::make_tuple(shape_type{2,4,3},dim_type{3},std::vector<slice_type>{}, shape_type{2,4,3}),
+        std::make_tuple(shape_type{2,4,3},dim_type{3},std::array<slice_type,2>{slice_type{0,2},slice_type{0,4}}, shape_type{2,4,3}),
+        std::make_tuple(shape_type{2,4,3},dim_type{3},std::initializer_list<slice_type>{slice_type{1},slice_type{2}}, shape_type{1,2,3}),
+        std::make_tuple(shape_type{2,4,3},dim_type{3},std::vector<slice_type>{slice_type{0,2},slice_type{0,4},slice_type{0,3}}, shape_type{2,4,3}),
+        std::make_tuple(shape_type{1,10,10},dim_type{3},std::vector<slice_type>{slice_type{0,1,1},slice_type{9,-1,-1}}, shape_type{1,0,10}),
+        std::make_tuple(shape_type{1,10,10},dim_type{3},std::vector<slice_type>{slice_type{0,1,1},slice_type{9,-11,-1}}, shape_type{1,10,10}),
+        std::make_tuple(shape_type{1,10,10},dim_type{3},std::vector<slice_type>{slice_type{0,1,1},slice_type{9,nop_type{},-1}}, shape_type{1,10,10}),
+        std::make_tuple(shape_type{10,1,10},dim_type{3},std::vector<slice_type>{slice_type{9,3,-2}}, shape_type{3,1,10}),
         //reduce
-        std::make_tuple(shape_type{3,4},size_type{1},std::vector<slice_type>{slice_type{0,rtag_type{}},slice_type{}}, shape_type{4}),
-        std::make_tuple(shape_type{3,4},size_type{1},std::vector<slice_type>{slice_type{1,rtag_type{}},slice_type{}}, shape_type{4}),
-        std::make_tuple(shape_type{3,4},size_type{1},std::vector<slice_type>{slice_type{2,rtag_type{}},slice_type{}}, shape_type{4}),
-        std::make_tuple(shape_type{3,4},size_type{1},std::vector<slice_type>{slice_type{0,rtag_type{}},slice_type{nop_type{},nop_type{},-1}}, shape_type{4}),
-        std::make_tuple(shape_type{3,4},size_type{1},std::vector<slice_type>{slice_type{1,rtag_type{}},slice_type{1,3}}, shape_type{2}),
-        std::make_tuple(shape_type{3,4},size_type{1},std::vector<slice_type>{slice_type{2,rtag_type{}},slice_type{nop_type{},nop_type{},3}}, shape_type{2}),
-        std::make_tuple(shape_type{3,4},size_type{1},std::vector<slice_type>{slice_type{},slice_type{0,rtag_type{}}}, shape_type{3}),
-        std::make_tuple(shape_type{3,4},size_type{1},std::vector<slice_type>{slice_type{},slice_type{1,rtag_type{}}}, shape_type{3}),
-        std::make_tuple(shape_type{3,4},size_type{1},std::vector<slice_type>{slice_type{},slice_type{2,rtag_type{}}}, shape_type{3}),
-        std::make_tuple(shape_type{3,4},size_type{1},std::vector<slice_type>{slice_type{},slice_type{3,rtag_type{}}}, shape_type{3}),
-        std::make_tuple(shape_type{3,4},size_type{1},std::vector<slice_type>{slice_type{1},slice_type{0,rtag_type{}}}, shape_type{2}),
-        std::make_tuple(shape_type{3,4},size_type{1},std::vector<slice_type>{slice_type{0,1},slice_type{1,rtag_type{}}}, shape_type{1}),
-        std::make_tuple(shape_type{3,4},size_type{1},std::vector<slice_type>{slice_type{nop_type{},nop_type{},-2},slice_type{2,rtag_type{}}}, shape_type{2}),
-        std::make_tuple(shape_type{2,4,3},size_type{2},std::vector<slice_type>{slice_type{1,rtag_type{}}}, shape_type{4,3}),
-        std::make_tuple(shape_type{2,4,3},size_type{2},std::vector<slice_type>{slice_type{}, slice_type{1,rtag_type{}}}, shape_type{2,3}),
-        std::make_tuple(shape_type{2,4,3},size_type{2},std::vector<slice_type>{slice_type{},slice_type{},slice_type{1,rtag_type{}}}, shape_type{2,4}),
-        std::make_tuple(shape_type{2,4,3},size_type{1},std::vector<slice_type>{slice_type{1,rtag_type{}},slice_type{2,rtag_type{}}}, shape_type{3}),
-        std::make_tuple(shape_type{2,4,3},size_type{1},std::vector<slice_type>{slice_type{1,rtag_type{}},slice_type{},slice_type{2,rtag_type{}}}, shape_type{4}),
-        std::make_tuple(shape_type{2,4,3},size_type{1},std::vector<slice_type>{slice_type{1,rtag_type{}},slice_type{nop_type{},nop_type{},3},slice_type{2,rtag_type{}}}, shape_type{2})
+        std::make_tuple(shape_type{3,4},dim_type{1},std::vector<slice_type>{slice_type{0,rtag_type{}},slice_type{}}, shape_type{4}),
+        std::make_tuple(shape_type{3,4},dim_type{1},std::vector<slice_type>{slice_type{1,rtag_type{}},slice_type{}}, shape_type{4}),
+        std::make_tuple(shape_type{3,4},dim_type{1},std::vector<slice_type>{slice_type{2,rtag_type{}},slice_type{}}, shape_type{4}),
+        std::make_tuple(shape_type{3,4},dim_type{1},std::vector<slice_type>{slice_type{0,rtag_type{}},slice_type{nop_type{},nop_type{},-1}}, shape_type{4}),
+        std::make_tuple(shape_type{3,4},dim_type{1},std::vector<slice_type>{slice_type{1,rtag_type{}},slice_type{1,3}}, shape_type{2}),
+        std::make_tuple(shape_type{3,4},dim_type{1},std::vector<slice_type>{slice_type{2,rtag_type{}},slice_type{nop_type{},nop_type{},3}}, shape_type{2}),
+        std::make_tuple(shape_type{3,4},dim_type{1},std::vector<slice_type>{slice_type{},slice_type{0,rtag_type{}}}, shape_type{3}),
+        std::make_tuple(shape_type{3,4},dim_type{1},std::vector<slice_type>{slice_type{},slice_type{1,rtag_type{}}}, shape_type{3}),
+        std::make_tuple(shape_type{3,4},dim_type{1},std::vector<slice_type>{slice_type{},slice_type{2,rtag_type{}}}, shape_type{3}),
+        std::make_tuple(shape_type{3,4},dim_type{1},std::vector<slice_type>{slice_type{},slice_type{3,rtag_type{}}}, shape_type{3}),
+        std::make_tuple(shape_type{3,4},dim_type{1},std::vector<slice_type>{slice_type{1},slice_type{0,rtag_type{}}}, shape_type{2}),
+        std::make_tuple(shape_type{3,4},dim_type{1},std::vector<slice_type>{slice_type{0,1},slice_type{1,rtag_type{}}}, shape_type{1}),
+        std::make_tuple(shape_type{3,4},dim_type{1},std::vector<slice_type>{slice_type{nop_type{},nop_type{},-2},slice_type{2,rtag_type{}}}, shape_type{2}),
+        std::make_tuple(shape_type{2,4,3},dim_type{2},std::vector<slice_type>{slice_type{1,rtag_type{}}}, shape_type{4,3}),
+        std::make_tuple(shape_type{2,4,3},dim_type{2},std::vector<slice_type>{slice_type{}, slice_type{1,rtag_type{}}}, shape_type{2,3}),
+        std::make_tuple(shape_type{2,4,3},dim_type{2},std::vector<slice_type>{slice_type{},slice_type{},slice_type{1,rtag_type{}}}, shape_type{2,4}),
+        std::make_tuple(shape_type{2,4,3},dim_type{1},std::vector<slice_type>{slice_type{1,rtag_type{}},slice_type{2,rtag_type{}}}, shape_type{3}),
+        std::make_tuple(shape_type{2,4,3},dim_type{1},std::vector<slice_type>{slice_type{1,rtag_type{}},slice_type{},slice_type{2,rtag_type{}}}, shape_type{4}),
+        std::make_tuple(shape_type{2,4,3},dim_type{1},std::vector<slice_type>{slice_type{1,rtag_type{}},slice_type{nop_type{},nop_type{},3},slice_type{2,rtag_type{}}}, shape_type{2})
     );
     auto test = [](const auto& t){
         auto pshape = std::get<0>(t);
@@ -290,29 +290,29 @@ TEST_CASE("test_make_slice_view_shape","[test_view_factory]"){
 TEST_CASE("test_make_slice_view_shape_direction","[test_view_factory]"){
     using config_type = gtensor::config::default_config;
     using shape_type = config_type::shape_type;
-    using size_type = config_type::size_type;
+    using dim_type = config_type::dim_type;
     using slice_type = gtensor::slice_traits<config_type>::slice_type;
     using rtag_type = gtensor::slice_traits<config_type>::rtag_type;
     using gtensor::detail::make_slice_view_shape_direction;
     using helpers_for_testing::apply_by_element;
     //0pshape,1direction,2subs,3expected
     auto test_data = std::make_tuple(
-        std::make_tuple(shape_type{11},size_type{0},slice_type{},shape_type{11}),
-        std::make_tuple(shape_type{11},size_type{0},slice_type{-1,-5,-1},shape_type{4}),
-        std::make_tuple(shape_type{4,3},size_type{0},slice_type{},shape_type{4,3}),
-        std::make_tuple(shape_type{4,3},size_type{0},slice_type{1,3},shape_type{2,3}),
-        std::make_tuple(shape_type{4,3},size_type{1},slice_type{},shape_type{4,3}),
-        std::make_tuple(shape_type{4,3},size_type{1},slice_type{1,3},shape_type{4,2}),
-        std::make_tuple(shape_type{4,3},size_type{0},slice_type{0,rtag_type{}},shape_type{3}),
-        std::make_tuple(shape_type{4,3},size_type{0},slice_type{1,rtag_type{}},shape_type{3}),
-        std::make_tuple(shape_type{4,3},size_type{1},slice_type{0,rtag_type{}},shape_type{4}),
-        std::make_tuple(shape_type{4,3},size_type{1},slice_type{1,rtag_type{}},shape_type{4}),
-        std::make_tuple(shape_type{4,3,5},size_type{0},slice_type{1,-1},shape_type{2,3,5}),
-        std::make_tuple(shape_type{4,3,5},size_type{1},slice_type{1,-1},shape_type{4,1,5}),
-        std::make_tuple(shape_type{4,3,5},size_type{2},slice_type{1,-1},shape_type{4,3,3}),
-        std::make_tuple(shape_type{4,3,5},size_type{0},slice_type{1,rtag_type{}},shape_type{3,5}),
-        std::make_tuple(shape_type{4,3,5},size_type{1},slice_type{1,rtag_type{}},shape_type{4,5}),
-        std::make_tuple(shape_type{4,3,5},size_type{2},slice_type{1,rtag_type{}},shape_type{4,3})
+        std::make_tuple(shape_type{11},dim_type{0},slice_type{},shape_type{11}),
+        std::make_tuple(shape_type{11},dim_type{0},slice_type{-1,-5,-1},shape_type{4}),
+        std::make_tuple(shape_type{4,3},dim_type{0},slice_type{},shape_type{4,3}),
+        std::make_tuple(shape_type{4,3},dim_type{0},slice_type{1,3},shape_type{2,3}),
+        std::make_tuple(shape_type{4,3},dim_type{1},slice_type{},shape_type{4,3}),
+        std::make_tuple(shape_type{4,3},dim_type{1},slice_type{1,3},shape_type{4,2}),
+        std::make_tuple(shape_type{4,3},dim_type{0},slice_type{0,rtag_type{}},shape_type{3}),
+        std::make_tuple(shape_type{4,3},dim_type{0},slice_type{1,rtag_type{}},shape_type{3}),
+        std::make_tuple(shape_type{4,3},dim_type{1},slice_type{0,rtag_type{}},shape_type{4}),
+        std::make_tuple(shape_type{4,3},dim_type{1},slice_type{1,rtag_type{}},shape_type{4}),
+        std::make_tuple(shape_type{4,3,5},dim_type{0},slice_type{1,-1},shape_type{2,3,5}),
+        std::make_tuple(shape_type{4,3,5},dim_type{1},slice_type{1,-1},shape_type{4,1,5}),
+        std::make_tuple(shape_type{4,3,5},dim_type{2},slice_type{1,-1},shape_type{4,3,3}),
+        std::make_tuple(shape_type{4,3,5},dim_type{0},slice_type{1,rtag_type{}},shape_type{3,5}),
+        std::make_tuple(shape_type{4,3,5},dim_type{1},slice_type{1,rtag_type{}},shape_type{4,5}),
+        std::make_tuple(shape_type{4,3,5},dim_type{2},slice_type{1,rtag_type{}},shape_type{4,3})
     );
     auto test = [](const auto& t){
         auto pshape = std::get<0>(t);
@@ -379,7 +379,7 @@ TEST_CASE("test_make_slice_view_offset","[test_view_factory]"){
 TEST_CASE("test_make_slice_view_offset_direction","[test_view_factory]"){
     using config_type = gtensor::config::default_config;
     using shape_type = config_type::shape_type;
-    using size_type = config_type::size_type;
+    using dim_type = config_type::dim_type;
     using index_type = config_type::index_type;
     using slice_type = gtensor::slice_traits<config_type>::slice_type;
     using rtag_type = gtensor::slice_traits<config_type>::rtag_type;
@@ -387,18 +387,18 @@ TEST_CASE("test_make_slice_view_offset_direction","[test_view_factory]"){
     using helpers_for_testing::apply_by_element;
     //0pshape,1pstrides,2direction,3subs,4expected
     auto test_data = std::make_tuple(
-        std::make_tuple(shape_type{11},shape_type{1},size_type{0},slice_type{},index_type{0}),
-        std::make_tuple(shape_type{11},shape_type{1},size_type{0},slice_type{3},index_type{3}),
-        std::make_tuple(shape_type{11},shape_type{1},size_type{0},slice_type{-3},index_type{8}),
-        std::make_tuple(shape_type{11},shape_type{1},size_type{0},slice_type{0,rtag_type{}},index_type{0}),
-        std::make_tuple(shape_type{11},shape_type{1},size_type{0},slice_type{3,rtag_type{}},index_type{3}),
-        std::make_tuple(shape_type{2,3,4},shape_type{12,4,1},size_type{0},slice_type{},index_type{0}),
-        std::make_tuple(shape_type{2,3,4},shape_type{12,4,1},size_type{0},slice_type{1},index_type{12}),
-        std::make_tuple(shape_type{2,3,4},shape_type{12,4,1},size_type{1},slice_type{},index_type{0}),
-        std::make_tuple(shape_type{2,3,4},shape_type{12,4,1},size_type{1},slice_type{1},index_type{4}),
-        std::make_tuple(shape_type{2,3,4},shape_type{12,4,1},size_type{2},slice_type{},index_type{0}),
-        std::make_tuple(shape_type{2,3,4},shape_type{12,4,1},size_type{2},slice_type{1},index_type{1}),
-        std::make_tuple(shape_type{2,3,4},shape_type{12,4,1},size_type{1},slice_type{2,rtag_type{}},index_type{8})
+        std::make_tuple(shape_type{11},shape_type{1},dim_type{0},slice_type{},index_type{0}),
+        std::make_tuple(shape_type{11},shape_type{1},dim_type{0},slice_type{3},index_type{3}),
+        std::make_tuple(shape_type{11},shape_type{1},dim_type{0},slice_type{-3},index_type{8}),
+        std::make_tuple(shape_type{11},shape_type{1},dim_type{0},slice_type{0,rtag_type{}},index_type{0}),
+        std::make_tuple(shape_type{11},shape_type{1},dim_type{0},slice_type{3,rtag_type{}},index_type{3}),
+        std::make_tuple(shape_type{2,3,4},shape_type{12,4,1},dim_type{0},slice_type{},index_type{0}),
+        std::make_tuple(shape_type{2,3,4},shape_type{12,4,1},dim_type{0},slice_type{1},index_type{12}),
+        std::make_tuple(shape_type{2,3,4},shape_type{12,4,1},dim_type{1},slice_type{},index_type{0}),
+        std::make_tuple(shape_type{2,3,4},shape_type{12,4,1},dim_type{1},slice_type{1},index_type{4}),
+        std::make_tuple(shape_type{2,3,4},shape_type{12,4,1},dim_type{2},slice_type{},index_type{0}),
+        std::make_tuple(shape_type{2,3,4},shape_type{12,4,1},dim_type{2},slice_type{1},index_type{1}),
+        std::make_tuple(shape_type{2,3,4},shape_type{12,4,1},dim_type{1},slice_type{2,rtag_type{}},index_type{8})
     );
     auto test = [](const auto& t){
         auto pshape = std::get<0>(t);
@@ -415,7 +415,7 @@ TEST_CASE("test_make_slice_view_offset_direction","[test_view_factory]"){
 TEST_CASE("test_make_slice_view_cstrides","[test_view_factory]"){
     using config_type = gtensor::config::default_config;
     using shape_type = config_type::shape_type;
-    using size_type = config_type::size_type;
+    using dim_type = config_type::dim_type;
     using slice_type = gtensor::slice_traits<config_type>::slice_type;
     using nop_type = gtensor::slice_traits<config_type>::nop_type;
     using rtag_type = gtensor::slice_traits<config_type>::rtag_type;
@@ -423,35 +423,35 @@ TEST_CASE("test_make_slice_view_cstrides","[test_view_factory]"){
     using helpers_for_testing::apply_by_element;
     //0pstrides,1res_dim,2subs,3expected
     auto test_data = std::make_tuple(
-        std::make_tuple(shape_type{1},size_type{1},std::vector<slice_type>{}, shape_type{1}),
-        std::make_tuple(shape_type{1},size_type{1},std::vector<slice_type>{slice_type{nop_type{},nop_type{},2}}, shape_type{2}),
-        std::make_tuple(shape_type{1},size_type{1},std::vector<slice_type>{slice_type{nop_type{},nop_type{},-2}}, shape_type{-2}),
-        std::make_tuple(shape_type{12,4,1},size_type{3},std::vector<slice_type>{}, shape_type{12,4,1}),
-        std::make_tuple(shape_type{12,4,1},size_type{3},std::vector<slice_type>{slice_type{nop_type{},nop_type{},-1}}, shape_type{-12,4,1}),
-        std::make_tuple(shape_type{12,4,1},size_type{3},std::vector<slice_type>{slice_type{nop_type{},nop_type{},2}}, shape_type{24,4,1}),
-        std::make_tuple(shape_type{12,4,1},size_type{3},std::vector<slice_type>{slice_type{nop_type{},nop_type{},-2}}, shape_type{-24,4,1}),
-        std::make_tuple(shape_type{12,4,1},size_type{3},std::vector<slice_type>{slice_type{nop_type{},nop_type{},2},slice_type{nop_type{},nop_type{},2}}, shape_type{24,8,1}),
+        std::make_tuple(shape_type{1},dim_type{1},std::vector<slice_type>{}, shape_type{1}),
+        std::make_tuple(shape_type{1},dim_type{1},std::vector<slice_type>{slice_type{nop_type{},nop_type{},2}}, shape_type{2}),
+        std::make_tuple(shape_type{1},dim_type{1},std::vector<slice_type>{slice_type{nop_type{},nop_type{},-2}}, shape_type{-2}),
+        std::make_tuple(shape_type{12,4,1},dim_type{3},std::vector<slice_type>{}, shape_type{12,4,1}),
+        std::make_tuple(shape_type{12,4,1},dim_type{3},std::vector<slice_type>{slice_type{nop_type{},nop_type{},-1}}, shape_type{-12,4,1}),
+        std::make_tuple(shape_type{12,4,1},dim_type{3},std::vector<slice_type>{slice_type{nop_type{},nop_type{},2}}, shape_type{24,4,1}),
+        std::make_tuple(shape_type{12,4,1},dim_type{3},std::vector<slice_type>{slice_type{nop_type{},nop_type{},-2}}, shape_type{-24,4,1}),
+        std::make_tuple(shape_type{12,4,1},dim_type{3},std::vector<slice_type>{slice_type{nop_type{},nop_type{},2},slice_type{nop_type{},nop_type{},2}}, shape_type{24,8,1}),
         std::make_tuple(
             shape_type{12,4,1},
-            size_type{3},
+            dim_type{3},
             std::vector<slice_type>{slice_type{nop_type{},nop_type{},2},slice_type{nop_type{},nop_type{},2},slice_type{nop_type{},nop_type{},2}},
             shape_type{24,8,2}
         ),
         std::make_tuple(
             shape_type{12,4,1},
-            size_type{3},
+            dim_type{3},
             std::vector<slice_type>{slice_type{nop_type{},nop_type{},-2},slice_type{nop_type{},nop_type{},-2},slice_type{nop_type{},nop_type{},-2}},
             shape_type{-24,-8,-2}
         ),
         std::make_tuple(
             shape_type{12,4,1},
-            size_type{2},
+            dim_type{2},
             std::vector<slice_type>{slice_type{1,rtag_type{}},slice_type{nop_type{},nop_type{},2},slice_type{nop_type{},nop_type{},2}},
             shape_type{8,2}
         ),
         std::make_tuple(
             shape_type{12,4,1},
-            size_type{1},
+            dim_type{1},
             std::vector<slice_type>{slice_type{0,rtag_type{}},slice_type{nop_type{},nop_type{},2},slice_type{0,rtag_type{}}},
             shape_type{8}
         )
@@ -470,7 +470,7 @@ TEST_CASE("test_make_slice_view_cstrides","[test_view_factory]"){
 TEST_CASE("test_make_slice_view_cstrides_direction","[test_view_factory]"){
     using config_type = gtensor::config::default_config;
     using shape_type = config_type::shape_type;
-    using size_type = config_type::size_type;
+    using dim_type = config_type::dim_type;
     using slice_type = gtensor::slice_traits<config_type>::slice_type;
     using nop_type = gtensor::slice_traits<config_type>::nop_type;
     using rtag_type = gtensor::slice_traits<config_type>::rtag_type;
@@ -478,22 +478,22 @@ TEST_CASE("test_make_slice_view_cstrides_direction","[test_view_factory]"){
     using helpers_for_testing::apply_by_element;
     //0pstrides,1direction,2subs,3expected
     auto test_data = std::make_tuple(
-        std::make_tuple(shape_type{1},size_type{0},slice_type{},shape_type{1}),
-        std::make_tuple(shape_type{1},size_type{0},slice_type{nop_type{},nop_type{},-1},shape_type{-1}),
-        std::make_tuple(shape_type{3,1},size_type{0},slice_type{},shape_type{3,1}),
-        std::make_tuple(shape_type{3,1},size_type{0},slice_type{nop_type{},nop_type{},2},shape_type{6,1}),
-        std::make_tuple(shape_type{3,1},size_type{1},slice_type{},shape_type{3,1}),
-        std::make_tuple(shape_type{3,1},size_type{1},slice_type{nop_type{},nop_type{},2},shape_type{3,2}),
-        std::make_tuple(shape_type{3,1},size_type{0},slice_type{0,rtag_type{}},shape_type{1}),
-        std::make_tuple(shape_type{3,1},size_type{0},slice_type{1,rtag_type{}},shape_type{1}),
-        std::make_tuple(shape_type{3,1},size_type{1},slice_type{0,rtag_type{}},shape_type{3}),
-        std::make_tuple(shape_type{3,1},size_type{1},slice_type{1,rtag_type{}},shape_type{3}),
-        std::make_tuple(shape_type{4,3,5},size_type{0},slice_type{nop_type{},nop_type{},2},shape_type{8,3,5}),
-        std::make_tuple(shape_type{4,3,5},size_type{1},slice_type{nop_type{},nop_type{},2},shape_type{4,6,5}),
-        std::make_tuple(shape_type{4,3,5},size_type{2},slice_type{nop_type{},nop_type{},2},shape_type{4,3,10}),
-        std::make_tuple(shape_type{15,5,1},size_type{0},slice_type{1,rtag_type{}},shape_type{5,1}),
-        std::make_tuple(shape_type{15,5,1},size_type{1},slice_type{1,rtag_type{}},shape_type{15,1}),
-        std::make_tuple(shape_type{15,5,1},size_type{2},slice_type{1,rtag_type{}},shape_type{15,5})
+        std::make_tuple(shape_type{1},dim_type{0},slice_type{},shape_type{1}),
+        std::make_tuple(shape_type{1},dim_type{0},slice_type{nop_type{},nop_type{},-1},shape_type{-1}),
+        std::make_tuple(shape_type{3,1},dim_type{0},slice_type{},shape_type{3,1}),
+        std::make_tuple(shape_type{3,1},dim_type{0},slice_type{nop_type{},nop_type{},2},shape_type{6,1}),
+        std::make_tuple(shape_type{3,1},dim_type{1},slice_type{},shape_type{3,1}),
+        std::make_tuple(shape_type{3,1},dim_type{1},slice_type{nop_type{},nop_type{},2},shape_type{3,2}),
+        std::make_tuple(shape_type{3,1},dim_type{0},slice_type{0,rtag_type{}},shape_type{1}),
+        std::make_tuple(shape_type{3,1},dim_type{0},slice_type{1,rtag_type{}},shape_type{1}),
+        std::make_tuple(shape_type{3,1},dim_type{1},slice_type{0,rtag_type{}},shape_type{3}),
+        std::make_tuple(shape_type{3,1},dim_type{1},slice_type{1,rtag_type{}},shape_type{3}),
+        std::make_tuple(shape_type{4,3,5},dim_type{0},slice_type{nop_type{},nop_type{},2},shape_type{8,3,5}),
+        std::make_tuple(shape_type{4,3,5},dim_type{1},slice_type{nop_type{},nop_type{},2},shape_type{4,6,5}),
+        std::make_tuple(shape_type{4,3,5},dim_type{2},slice_type{nop_type{},nop_type{},2},shape_type{4,3,10}),
+        std::make_tuple(shape_type{15,5,1},dim_type{0},slice_type{1,rtag_type{}},shape_type{5,1}),
+        std::make_tuple(shape_type{15,5,1},dim_type{1},slice_type{1,rtag_type{}},shape_type{15,1}),
+        std::make_tuple(shape_type{15,5,1},dim_type{2},slice_type{1,rtag_type{}},shape_type{15,5})
     );
     auto test = [](const auto& t){
         auto pstrides = std::get<0>(t);
@@ -546,15 +546,15 @@ TEST_CASE("test_check_slice_view_args","[test_view_factory]"){
 TEST_CASE("test_make_subdim_view_shape","[test_view_factory]"){
     using config_type = gtensor::config::default_config;
     using shape_type = config_type::shape_type;
-    using size_type = config_type::size_type;
+    using dim_type = config_type::dim_type;
     using gtensor::detail::make_subdim_view_shape;
-    using test_type = std::tuple<shape_type, size_type, shape_type>;
+    using test_type = std::tuple<shape_type, dim_type, shape_type>;
     //0pshape,1subs_number,2expected
     auto test_data = GENERATE(
-        test_type{shape_type{11,1},size_type{0}, shape_type{11,1}},
-        test_type{shape_type{11,1},size_type{1}, shape_type{1}},
-        test_type{shape_type{1,11},size_type{1}, shape_type{11}},
-        test_type{shape_type{3,4,10,2},size_type{2}, shape_type{10,2}}
+        test_type{shape_type{11,1},dim_type{0}, shape_type{11,1}},
+        test_type{shape_type{11,1},dim_type{1}, shape_type{1}},
+        test_type{shape_type{1,11},dim_type{1}, shape_type{11}},
+        test_type{shape_type{3,4,10,2},dim_type{2}, shape_type{10,2}}
     );
     auto pshape = std::get<0>(test_data);
     auto subs_number = std::get<1>(test_data);
@@ -821,7 +821,7 @@ TEST_CASE("test_make_transpose_view_shape","[test_view_factory]"){
 
 TEST_CASE("test_check_transpose_args","[test_view_factory]"){
     using config_type = gtensor::config::default_config;
-    using size_type = config_type::size_type;
+    using dim_type = config_type::dim_type;
     using gtensor::subscript_exception;
     using gtensor::subscript_exception;
     using gtensor::detail::check_transpose_args;
@@ -832,14 +832,14 @@ TEST_CASE("test_check_transpose_args","[test_view_factory]"){
     {
         //0pdim,1subs
         auto test_data = std::make_tuple(
-            std::make_tuple(size_type{1},std::vector<int>{}),
-            std::make_tuple(size_type{1},std::vector<int>{0}),
-            std::make_tuple(size_type{3},std::vector<int>{0,1,2}),
-            std::make_tuple(size_type{3},std::vector<int>{0,2,1}),
-            std::make_tuple(size_type{3},std::vector<int>{2,1,0}),
-            std::make_tuple(size_type{3},std::vector<int>{2,0,1}),
-            std::make_tuple(size_type{3},std::vector<int>{1,0,2}),
-            std::make_tuple(size_type{3},std::vector<int>{1,0,2})
+            std::make_tuple(dim_type{1},std::vector<int>{}),
+            std::make_tuple(dim_type{1},std::vector<int>{0}),
+            std::make_tuple(dim_type{3},std::vector<int>{0,1,2}),
+            std::make_tuple(dim_type{3},std::vector<int>{0,2,1}),
+            std::make_tuple(dim_type{3},std::vector<int>{2,1,0}),
+            std::make_tuple(dim_type{3},std::vector<int>{2,0,1}),
+            std::make_tuple(dim_type{3},std::vector<int>{1,0,2}),
+            std::make_tuple(dim_type{3},std::vector<int>{1,0,2})
         );
         auto test = [](const auto& t){
             auto pdim = std::get<0>(t);
@@ -852,15 +852,15 @@ TEST_CASE("test_check_transpose_args","[test_view_factory]"){
     {
         //0pdim,1subs
         auto test_data = std::make_tuple(
-            std::make_tuple(size_type{1},std::vector<int>{-1}),
-            std::make_tuple(size_type{1},std::vector<int>{1,1,-1}),
-            std::make_tuple(size_type{1},std::vector<int>{0,1}),
-            std::make_tuple(size_type{2},std::vector<int>{0,0}),
-            std::make_tuple(size_type{3},std::vector<int>{0,1,2,3}),
-            std::make_tuple(size_type{3},std::vector<int>{0,1,1}),
-            std::make_tuple(size_type{3},std::vector<int>{0,2,2}),
-            std::make_tuple(size_type{3},std::vector<int>{0,0,1}),
-            std::make_tuple(size_type{3},std::vector<int>{2,1,1})
+            std::make_tuple(dim_type{1},std::vector<int>{-1}),
+            std::make_tuple(dim_type{1},std::vector<int>{1,1,-1}),
+            std::make_tuple(dim_type{1},std::vector<int>{0,1}),
+            std::make_tuple(dim_type{2},std::vector<int>{0,0}),
+            std::make_tuple(dim_type{3},std::vector<int>{0,1,2,3}),
+            std::make_tuple(dim_type{3},std::vector<int>{0,1,1}),
+            std::make_tuple(dim_type{3},std::vector<int>{0,2,2}),
+            std::make_tuple(dim_type{3},std::vector<int>{0,0,1}),
+            std::make_tuple(dim_type{3},std::vector<int>{2,1,1})
         );
         auto test = [](const auto& t){
             auto pdim = std::get<0>(t);
@@ -962,7 +962,7 @@ TEMPLATE_TEST_CASE("test_make_index_mapping_view_shape","[test_view_factory]",
     typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
 ){
     using config_type = TestType;
-    using size_type = typename config_type::size_type;
+    using dim_type = typename config_type::dim_type;
     using shape_type = typename config_type::shape_type;
     using gtensor::subscript_exception;
     using gtensor::detail::make_index_mapping_view_shape;
@@ -989,7 +989,7 @@ TEMPLATE_TEST_CASE("test_make_index_mapping_view_shape","[test_view_factory]",
         auto parent_shape = std::get<0>(t);
         auto subs_shapes = std::get<1>(t);
         auto expected = std::get<2>(t);
-        size_type subs_number = std::tuple_size_v<decltype(subs_shapes)>;
+        dim_type subs_number = std::tuple_size_v<decltype(subs_shapes)>;
         auto make_subs_shape = [](const auto&...subs_shapes_){
             return broadcast_shape<shape_type>(subs_shapes_...);
         };
@@ -1199,27 +1199,27 @@ TEMPLATE_TEST_CASE("test_make_bool_mapping_view_shape","[test_view_factory]",
     using config_type = TestType;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
-    using size_type = typename config_type::size_type;
+    using dim_type = typename config_type::dim_type;
     using gtensor::detail::make_bool_mapping_view_shape;
-    using test_type = std::tuple<shape_type,index_type,size_type,shape_type>;
+    using test_type = std::tuple<shape_type,index_type,dim_type,shape_type>;
     //0pshape,1trues_number,2subs_dim,3expected
     auto test_data = GENERATE(
-        test_type{shape_type{0},index_type{0},size_type{1},shape_type{0}},
-        test_type{shape_type{1,0},index_type{0},size_type{1},shape_type{0,0}},
-        test_type{shape_type{1,0},index_type{0},size_type{2},shape_type{0}},
-        test_type{shape_type{10},index_type{10},size_type{1},shape_type{10}},
-        test_type{shape_type{10},index_type{3},size_type{1},shape_type{3}},
-        test_type{shape_type{10},index_type{0},size_type{1},shape_type{0}},
-        test_type{shape_type{2,3,4},index_type{0},size_type{1},shape_type{0,3,4}},
-        test_type{shape_type{2,3,4},index_type{1},size_type{1},shape_type{1,3,4}},
-        test_type{shape_type{2,3,4},index_type{2},size_type{1},shape_type{2,3,4}},
-        test_type{shape_type{2,3,4},index_type{0},size_type{2},shape_type{0,4}},
-        test_type{shape_type{2,3,4},index_type{1},size_type{2},shape_type{1,4}},
-        test_type{shape_type{2,3,4},index_type{6},size_type{2},shape_type{6,4}},
-        test_type{shape_type{2,3,4},index_type{0},size_type{3},shape_type{0}},
-        test_type{shape_type{2,3,4},index_type{1},size_type{3},shape_type{1}},
-        test_type{shape_type{2,3,4},index_type{5},size_type{3},shape_type{5}},
-        test_type{shape_type{0,2,3,4},index_type{0},size_type{2},shape_type{0,3,4}}
+        test_type{shape_type{0},index_type{0},dim_type{1},shape_type{0}},
+        test_type{shape_type{1,0},index_type{0},dim_type{1},shape_type{0,0}},
+        test_type{shape_type{1,0},index_type{0},dim_type{2},shape_type{0}},
+        test_type{shape_type{10},index_type{10},dim_type{1},shape_type{10}},
+        test_type{shape_type{10},index_type{3},dim_type{1},shape_type{3}},
+        test_type{shape_type{10},index_type{0},dim_type{1},shape_type{0}},
+        test_type{shape_type{2,3,4},index_type{0},dim_type{1},shape_type{0,3,4}},
+        test_type{shape_type{2,3,4},index_type{1},dim_type{1},shape_type{1,3,4}},
+        test_type{shape_type{2,3,4},index_type{2},dim_type{1},shape_type{2,3,4}},
+        test_type{shape_type{2,3,4},index_type{0},dim_type{2},shape_type{0,4}},
+        test_type{shape_type{2,3,4},index_type{1},dim_type{2},shape_type{1,4}},
+        test_type{shape_type{2,3,4},index_type{6},dim_type{2},shape_type{6,4}},
+        test_type{shape_type{2,3,4},index_type{0},dim_type{3},shape_type{0}},
+        test_type{shape_type{2,3,4},index_type{1},dim_type{3},shape_type{1}},
+        test_type{shape_type{2,3,4},index_type{5},dim_type{3},shape_type{5}},
+        test_type{shape_type{0,2,3,4},index_type{0},dim_type{2},shape_type{0,3,4}}
     );
     auto pshape = std::get<0>(test_data);
     auto trues_number = std::get<1>(test_data);

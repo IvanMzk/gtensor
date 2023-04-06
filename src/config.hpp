@@ -38,17 +38,17 @@ struct default_config{
 
 
     //meta-data elements storage type i.e. shape, strides are of shape_type
-    //must be indexable by size_type
+    //must be indexable by dim_type
     //must provide random access interface
     using shape_type = std::vector<index_type>;
 
     //used in indexed access to meta-data elements e.g. index of direction, directions number
-    //transpose view subscripts are of size_type, since they are directions indexes
+    //transpose view subscripts are of dim_type, since they are directions indexes
     //must have semantic of integral type, may be unsigned
-    //using size_type = std::int64_t;
-    using size_type = typename shape_type::size_type;
-    //using size_type = typename shape_type::difference_type
-    //using size_type = std::size_t;
+    //using dim_type = std::int64_t;
+    using dim_type = typename shape_type::size_type;
+    //using dim_type = typename shape_type::difference_type;
+
 
     //generally when public interface expected container parameter it may be any type providig usual container semantic and interface: iterators, aliases...
     //specialization of config_type::container uses as return type in public interface
@@ -60,7 +60,7 @@ struct default_config{
     // using direction_type = std::size_t;
     // using dim_type = std::size_t;
     // using index_type = std::size_t;
-    // using meta_size_type = std::size_t;
+    // using meta_dim_type = std::size_t;
 };
 
 }   //end of namespace config

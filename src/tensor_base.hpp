@@ -12,13 +12,13 @@ class tensor_base
 public:
     using value_type = ValT;
     using config_type = CfgT;
-    using size_type = typename config_type::size_type;
+    using dim_type = typename config_type::dim_type;
     using index_type = typename config_type::index_type;
     using shape_type = typename config_type::shape_type;
 
     virtual ~tensor_base(){}
     virtual index_type size()const = 0;
-    virtual size_type dim()const = 0;
+    virtual dim_type dim()const = 0;
     virtual const shape_type& shape()const = 0;
     virtual const shape_type& strides()const =0;
     virtual descriptor_base<config_type>& descriptor() = 0;

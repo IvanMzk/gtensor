@@ -95,11 +95,11 @@ inline auto list_parse_(const T&, ShT&){
 }
 template<typename SizeT, std::size_t Dims_number, std::size_t Dim = 0, typename T, typename ShT>
 inline auto list_parse_(std::initializer_list<T> list, ShT& shape_){
-    using size_type = SizeT;
+    using dim_type = SizeT;
     using index_type = typename ShT::value_type;
-    size_type shape_size = shape_.size();
-    if (shape_size == size_type(Dims_number)){
-        if ( shape_[size_type(Dim)] != index_type(list.size())){
+    dim_type shape_size = shape_.size();
+    if (shape_size == dim_type(Dims_number)){
+        if ( shape_[dim_type(Dim)] != index_type(list.size())){
             throw tensor_init_list_exception("list bad shape - different list size for dim");
         }
     }
@@ -115,11 +115,11 @@ inline auto list_parse_(std::initializer_list<T> list, ShT& shape_){
 }
 template<typename SizeT = std::size_t, typename ShT = std::vector<std::size_t>, typename T>
 inline auto list_parse(std::initializer_list<T> list){
-    using size_type = SizeT;
+    using dim_type = SizeT;
     constexpr std::size_t dims_number{nested_initialiser_list_depth<decltype(list)>::value};
     ShT shape;
-    shape.reserve(size_type(dims_number));
-    list_parse_<size_type, dims_number>(list,shape);
+    shape.reserve(dim_type(dims_number));
+    list_parse_<dim_type, dims_number>(list,shape);
     return shape;
 }
 
