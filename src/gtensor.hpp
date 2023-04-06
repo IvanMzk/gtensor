@@ -29,8 +29,13 @@ template<
 class tensor{
     using impl_type = ImplT;
 
+    class forward_tag{
+        struct private_tag{};
+        forward_tag(private_tag){}  //make not default constructible
+    public:
+        static auto tag(){return forward_tag{private_tag{}};}
+    };
     //initialize storage implementation by forwarding arguments, this constructor should be used by all public constructors
-    class forward_tag{};
     template<typename...Args>
     tensor(forward_tag, Args&&...args):
         impl_{std::make_shared<typename storage_tensor_implementation_selector<CfgT,ValT>::type>(std::forward<Args>(args)...)}
@@ -71,34 +76,42 @@ public:
 
     //all public constructors create tensor with storage implementation
     //nested init_list constructors
-    template<typename U, std::enable_if_t<std::is_convertible_v<U,value_type>,int> =0> tensor(std::initializer_list<U> init_data):tensor(forward_tag{}, init_data){}
-    template<typename U, std::enable_if_t<std::is_convertible_v<U,value_type>,int> =0> tensor(std::initializer_list<std::initializer_list<U>> init_data):tensor(forward_tag{}, init_data){}
-    template<typename U, std::enable_if_t<std::is_convertible_v<U,value_type>,int> =0> tensor(std::initializer_list<std::initializer_list<std::initializer_list<U>>> init_data):tensor(forward_tag{}, init_data){}
-    template<typename U, std::enable_if_t<std::is_convertible_v<U,value_type>,int> =0> tensor(std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<U>>>> init_data):tensor(forward_tag{}, init_data){}
-    template<typename U, std::enable_if_t<std::is_convertible_v<U,value_type>,int> =0> tensor(std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<U>>>>> init_data):tensor(forward_tag{}, init_data){}
+    template<typename U, std::enable_if_t<std::is_convertible_v<U,value_type>,int> =0> tensor(std::initializer_list<U> init_data):tensor(forward_tag::tag(), init_data){}
+    template<typename U, std::enable_if_t<std::is_convertible_v<U,value_type>,int> =0> tensor(std::initializer_list<std::initializer_list<U>> init_data):tensor(forward_tag::tag(), init_data){}
+    template<typename U, std::enable_if_t<std::is_convertible_v<U,value_type>,int> =0> tensor(std::initializer_list<std::initializer_list<std::initializer_list<U>>> init_data):tensor(forward_tag::tag(), init_data){}
+    template<typename U, std::enable_if_t<std::is_convertible_v<U,value_type>,int> =0> tensor(std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<U>>>> init_data):tensor(forward_tag::tag(), init_data){}
+    template<typename U, std::enable_if_t<std::is_convertible_v<U,value_type>,int> =0> tensor(std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<U>>>>> init_data):tensor(forward_tag::tag(), init_data){}
     //default constructor makes empty 1-d tensor
     tensor():
-        tensor(std::initializer_list<value_type>{})
+        tensor(forward_tag::tag(), std::initializer_list<value_type>{})
+    {}
+    //0-dim tensor constructor (aka tensor-scalar)
+    explicit tensor(const value_type& value__):
+        tensor(forward_tag::tag(), shape_type{}, value__)
     {}
     //init list shape and value
-    template<typename U>
-    tensor(std::initializer_list<U> shape__, const value_type& value__):
-        tensor(forward_tag{}, shape__, value__)
+    tensor(std::initializer_list<index_type> shape__, const value_type& value__):
+        tensor(forward_tag::tag(), shape__, value__)
     {}
     //init list shape and range
-    template<typename U, typename It>
-    tensor(std::initializer_list<U> shape__, It begin__, It end__):
-        tensor(forward_tag{}, shape__, begin__, end__)
+    template<typename It>
+    tensor(std::initializer_list<index_type> shape__, It begin__, It end__):
+        tensor(forward_tag::tag(), shape__, begin__, end__)
     {}
-    //arbitrary container shape and value
-    template<typename U>
-    tensor(U&& shape__, const value_type& value__):
-        tensor(forward_tag{}, std::forward<U>(shape__), value__)
+    //container shape, disambiguate with 0-dim constructor
+    template<typename Container, std::enable_if_t<detail::is_container_of_type_v<std::remove_reference_t<Container>,index_type>,int> =0>
+    explicit tensor(Container&& shape__):
+        tensor(forward_tag::tag(), std::forward<Container>(shape__), value_type{})
     {}
-    //arbitrary container shape and range
-    template<typename U, typename It>
-    tensor(U&& shape__, It begin__, It end__):
-        tensor(forward_tag{}, std::forward<U>(shape__), begin__, end__)
+    //container shape and value
+    template<typename Container>
+    tensor(Container&& shape__, const value_type& value__):
+        tensor(forward_tag::tag(), std::forward<Container>(shape__), value__)
+    {}
+    //container shape and range
+    template<typename Container, typename It>
+    tensor(Container&& shape__, It begin__, It end__):
+        tensor(forward_tag::tag(), std::forward<Container>(shape__), begin__, end__)
     {}
     //makes tensor with explicitly specified implementation type
     //Implementation must be convertible to tensor::impl_type

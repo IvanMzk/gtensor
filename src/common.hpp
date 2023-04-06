@@ -23,6 +23,9 @@ template<typename T, typename U> constexpr inline bool is_tensor_of_type_v<T,U,s
 template<typename T, typename=void> constexpr inline bool is_bool_tensor_v = false;
 template<typename T> constexpr inline bool is_bool_tensor_v<T,std::void_t<std::enable_if_t<is_tensor_v<T>>>> = std::is_same_v<typename T::value_type, bool>;
 
+template<typename, typename = void> constexpr bool is_iterator = false;
+template<typename T> constexpr bool is_iterator<T,std::void_t<typename std::iterator_traits<T>::iterator_category>> = true;
+
 }   //end of namespace detail
 }   //end of namespace gtensor
 

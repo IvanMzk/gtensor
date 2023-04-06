@@ -98,17 +98,13 @@ inline auto make_reset_strides(const ShT& shape, const ShT& strides){
 template<typename ShT>
 inline auto make_size(const ShT& shape, const ShT& strides){
     using index_type = typename ShT::value_type;
-    return std::empty(shape) ? index_type(0) : shape.front()*strides.front();
+    return std::empty(shape) ? index_type(1) : shape.front()*strides.front();
 }
 
 template<typename IdxT, typename ShT>
 inline auto make_size(const ShT& shape){
     using index_type = IdxT;
-    if (std::empty(shape)){
-        return index_type(0);
-    }else{
-        return std::accumulate(shape.begin(),shape.end(),index_type(1),std::multiplies<index_type>{});
-    }
+    return std::accumulate(shape.begin(),shape.end(),index_type(1),std::multiplies<index_type>{});
 }
 
 template<typename ShT>

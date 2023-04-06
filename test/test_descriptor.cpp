@@ -121,7 +121,7 @@ TEMPLATE_TEST_CASE("test_make_size","[test_descriptor]",
     //shape,expected
     using test_type = typename std::tuple<shape_type,index_type>;
     auto test_data = GENERATE(
-        test_type{shape_type{},index_type{0}},
+        test_type{shape_type{},index_type{1}},
         test_type{shape_type{0},index_type{0}},
         test_type{shape_type{1},index_type{1}},
         test_type{shape_type{5},index_type{5}},
@@ -226,7 +226,7 @@ TEST_CASE("test_basic_descriptor","[test_descriptor]"){
     using test_type = std::tuple<descriptor_type, shape_type, shape_type, shape_type, index_type, dim_type>;
     //0descriptor,1expected shape,2expected strides,3expected reset_strides,4expected size,5expected dim
     auto test_data = GENERATE(
-        test_type(descriptor_type{shape_type{}},shape_type{},shape_type{},shape_type{},0,0),
+        test_type(descriptor_type{shape_type{}},shape_type{},shape_type{},shape_type{},1,0),
         test_type(descriptor_type{shape_type{0}},shape_type{0},shape_type{1},shape_type{0},0,1),
         test_type(descriptor_type{shape_type{1}},shape_type{1},shape_type{1},shape_type{0},1,1),
         test_type(descriptor_type{shape_type{5}},shape_type{5},shape_type{1},shape_type{4},5,1),
@@ -292,7 +292,7 @@ TEST_CASE("test_descriptor_with_offset","[test_descriptor]"){
     using test_type = std::tuple<descriptor_type, shape_type, shape_type, index_type, dim_type, index_type>;
     //0descriptor,1expected shape,2expected strides,3expected size,4expected dim,5expected offset
     auto test_data = GENERATE(
-        test_type({shape_type{},0},shape_type{},shape_type{},0,0,0),
+        test_type({shape_type{},0},shape_type{},shape_type{},1,0,0),
         test_type({shape_type{1},0},shape_type{1},shape_type{1},1,1,0),
         test_type({shape_type{5},10},shape_type{5},shape_type{1},5,1,10),
         test_type({shape_type{1,1},0},shape_type{1,1},shape_type{1,1},1,2,0),

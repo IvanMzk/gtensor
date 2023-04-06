@@ -7,12 +7,12 @@
 #include "tensor_init_list.hpp"
 #include "indexer.hpp"
 #include "index_type_adapter.hpp"
+#include "common.hpp"
 
 namespace gtensor{
 
 namespace detail{
-    template<typename, typename = void> constexpr bool is_iterator = false;
-    template<typename T> constexpr bool is_iterator<T,std::void_t<typename std::iterator_traits<T>::iterator_category>> = true;
+
 }   //end of namespace detail
 
 template<typename ValT, typename CfgT>

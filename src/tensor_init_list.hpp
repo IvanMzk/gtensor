@@ -100,7 +100,7 @@ inline auto list_parse_(std::initializer_list<T> list, ShT& shape_){
     dim_type shape_size = shape_.size();
     if (shape_size == dim_type(Dims_number)){
         if ( shape_[dim_type(Dim)] != index_type(list.size())){
-            throw tensor_init_list_exception("list bad shape - different list size for dim");
+            throw tensor_init_list_exception("invalid initializer list: sizes of same dimensions not equal");
         }
     }
     else{
