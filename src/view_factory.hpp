@@ -670,15 +670,6 @@ class view_factory
 
 public:
     //view_factory interface
-    //subdim view
-    template<typename...Ts, typename Container, std::enable_if_t<detail::is_container_of_type_v<Container, typename tensor<Ts...>::index_type>,int> = 0>
-    static auto create_subdim_view(const tensor<Ts...>& parent, const Container& subs){
-        return create_subdim_view_container(parent, subs);
-    }
-    template<typename...Ts, typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs, typename tensor<Ts...>::index_type>&&...),int> = 0>
-    static auto create_subdim_view(const tensor<Ts...>& parent, const Subs&...subs){
-        return create_subdim_view_variadic(parent, subs...);
-    }
     //reshape view
     template<typename...Ts, typename Container, std::enable_if_t<detail::is_container_of_type_v<Container, typename tensor<Ts...>::index_type>,int> = 0>
     static auto create_reshape_view(const tensor<Ts...>& parent, const Container& subs){
@@ -738,17 +729,6 @@ template<
 inline auto create_slice_view(const tensor<Ts...>& parent, const Subs&...subs){
     using config_type = typename tensor<Ts...>::config_type;
     return view_factory_selector<config_type>::type::create_slice_view(parent, subs...);
-}
-//subdim view
-template<typename...Ts, typename Container, std::enable_if_t<detail::is_container_of_type_v<Container, typename tensor<Ts...>::index_type>,int> = 0>
-inline auto create_subdim_view(const tensor<Ts...>& parent, const Container& subs){
-    using config_type = typename tensor<Ts...>::config_type;
-    return view_factory_selector<config_type>::type::create_subdim_view(parent, subs);
-}
-template<typename...Ts, typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs, typename tensor<Ts...>::index_type>&&...),int> = 0>
-inline auto create_subdim_view(const tensor<Ts...>& parent, const Subs&...subs){
-    using config_type = typename tensor<Ts...>::config_type;
-    return view_factory_selector<config_type>::type::create_subdim_view(parent, subs...);
 }
 //reshape view
 template<typename...Ts, typename Container, std::enable_if_t<detail::is_container_of_type_v<Container, typename tensor<Ts...>::index_type>,int> = 0>

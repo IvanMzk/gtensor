@@ -162,15 +162,6 @@ public:
     auto transpose(const Container& subs)const{
         return create_transpose_view(*this, subs);
     }
-    //subdimension view
-    template<typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs,index_type>&&...),int> = 0>
-    auto subdim(const Subs&...subs)const{
-        return create_subdim_view(*this, subs...);
-    }
-    template<typename Container, std::enable_if_t<detail::is_container_of_type_v<Container,index_type>,int> = 0>
-    auto subdim(const Container& subs)const{
-        return create_subdim_view(*this, subs);
-    }
     //reshape view
     template<typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs,index_type>&&...),int> = 0 >
     auto reshape(const Subs&...subs)const{

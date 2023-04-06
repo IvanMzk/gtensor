@@ -43,7 +43,7 @@ struct test_data{
             //transpose of storage
             tensor_type{{{1},{4}},{{2},{5}},{{3},{6}}}.transpose(),
             //subdimension of storage
-            tensor_type{{{{0,0,0},{0,0,0}}},{{{1,2,3},{4,5,6}}}}.subdim(1),
+            tensor_type{{{{0,0,0},{0,0,0}}},{{{1,2,3},{4,5,6}}}}(1),
             //reshape of storage
             tensor_type{{{1},{2},{3}},{{4},{5},{6}}}.reshape(1,2,3),
             //view chain of storage
@@ -246,7 +246,7 @@ TEST_CASE("test_result_type","[test_expression_template_engine]"){
         REQUIRE(std::is_same_v<decltype(*cre.end()),value_type>);
     }
     SECTION("view_view_of_evaluating"){
-        auto vve = make_test_tensor((t+t+t).transpose().reshape()({{}}).subdim());
+        auto vve = make_test_tensor((t+t+t).transpose().reshape()({{}}));
         auto& re = vve.engine();
         const auto& cre = re;
         REQUIRE(std::is_same_v<decltype(re.create_indexer()[std::declval<index_type>()]),value_type>);
@@ -370,11 +370,11 @@ TEST_CASE("test_broadcast_assignment","[test_expression_template_engine]"){
     lhs({{{},{},2}}) = tensor_type{0};
 
     auto lhs1 = tensor_type{{1,2,3},{4,5,6}};
-    lhs1.subdim() = tensor_type{0,1,2};
+    lhs1({}) = tensor_type{0,1,2};
     REQUIRE(std::equal(lhs1.begin(), lhs1.end(), std::vector<value_type>{0,1,2,0,1,2}.begin()));
 
     auto lhs2 = tensor_type{{1,2,3},{4,5,6}};
-    lhs2.subdim(1) = tensor_type{0,1,2};
+    lhs2(1) = tensor_type{0,1,2};
     REQUIRE(std::equal(lhs2.begin(), lhs2.end(), std::vector<value_type>{1,2,3,0,1,2}.begin()));
 
     auto lhs4 = tensor_type{1,2,3,4,5};
@@ -383,7 +383,7 @@ TEST_CASE("test_broadcast_assignment","[test_expression_template_engine]"){
 
     //broadcast assignment exception, every element of lhs must be assigned only once
     auto lhs3 = tensor_type{0};
-    REQUIRE_THROWS_AS((lhs3.subdim() = tensor_type{0,1,2}), broadcast_exception);
+    REQUIRE_THROWS_AS((lhs3({}) = tensor_type{0,1,2}), broadcast_exception);
 
     //not compile, broadcast assignment to evaluating tensor
     //lhs+lhs = tensor_type{1};
