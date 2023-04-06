@@ -150,7 +150,7 @@ public:
         return create_slice_view(*this, subs...);
     }
     template<typename Container, std::enable_if_t<detail::is_container_of_type_v<Container,slice_type>,int> = 0>
-    auto operator()(const Container& subs){
+    auto operator()(const Container& subs)const{
         return create_slice_view(*this, subs);
     }
     //transpose view

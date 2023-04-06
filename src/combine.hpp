@@ -590,29 +590,34 @@ template<typename...Ts, typename IdxContainer>
 static auto split_by_points(const tensor<Ts...>& t, const IdxContainer& split_points, const typename tensor<Ts...>::size_type& direction){
     using tensor_type = tensor<Ts...>;
     using config_type = typename tensor_type::config_type;
-    using size_type = typename tensor_type::size_type;
     using index_type = typename tensor_type::index_type;
     using slice_type = typename slice_traits<config_type>::slice_type;
-    using view_type = decltype(t(slice_type{},size_type{0}));
+    using view_type = decltype(t(slice_type{}));
     using res_type = typename config_type::template container<view_type>;
     using res_size_type = typename res_type::size_type;
+    using slices_type = typename config_type::template container<slice_type>;
+    using slices_size_type = typename slices_type::size_type;
 
     detail::check_split_by_points_args(t, direction);
     if (std::empty(split_points)){
-        return res_type{t(slice_type{},size_type{0})};
+        return res_type{t(slice_type{})};
     }else{
         const res_size_type parts_number = static_cast<res_size_type>(split_points.size()) + res_size_type{1};
         res_type res{};
         res.reserve(parts_number);
         auto split_points_it = std::begin(split_points);
         index_type point{0};
+        slices_type slices(static_cast<slices_size_type>(t.dim()));
+        auto slices_direction_it = std::next(slices.begin(),static_cast<slices_size_type>(direction));
         do{
             index_type next_point = *split_points_it;
-            res.push_back(t(slice_type{point, next_point},direction));
+            *slices_direction_it = slice_type{point, next_point};
+            res.push_back(t(slices));
             point = next_point;
             ++split_points_it;
         }while(split_points_it != std::end(split_points));
-        res.push_back(t(slice_type{point},direction));
+        *slices_direction_it = slice_type{point};
+        res.push_back(t(slices));
         return res;
     }
 }
@@ -621,25 +626,29 @@ template<typename...Ts>
 static auto split_equal_parts(const tensor<Ts...>& t, const typename tensor<Ts...>::index_type& parts_number, const typename tensor<Ts...>::size_type& direction){
     using tensor_type = tensor<Ts...>;
     using config_type = typename tensor_type::config_type;
-    using size_type = typename tensor_type::size_type;
     using index_type = typename tensor_type::index_type;
     using slice_type = typename slice_traits<config_type>::slice_type;
-    using view_type = decltype(t(slice_type{},size_type{0}));
+    using view_type = decltype(t(slice_type{}));
     using res_type = typename config_type::template container<view_type>;
     using res_size_type = typename res_type::size_type;
+    using slices_type = typename config_type::template container<slice_type>;
+    using slices_size_type = typename slices_type::size_type;
 
     detail::check_split_by_equal_parts_args(t,direction,parts_number);
     const index_type direction_size = t.shape()[direction];
     if (parts_number == index_type{1}){
-        return res_type{t(slice_type{},size_type{0})};
+        return res_type{t(slice_type{})};
     }else{
         res_type res{};
         res.reserve(static_cast<res_size_type>(parts_number));
         const index_type part_size = direction_size/parts_number;
         index_type point{0};
+        slices_type slices(static_cast<slices_size_type>(t.dim()));
+        auto slices_direction_it = std::next(slices.begin(),static_cast<slices_size_type>(direction));
         do{
             index_type next_point = point+part_size;
-            res.push_back(t(slice_type{point,next_point},direction));
+            *slices_direction_it = slice_type{point, next_point};
+            res.push_back(t(slices));
             point = next_point;
         }while(point!=direction_size);
         return res;

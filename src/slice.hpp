@@ -205,10 +205,10 @@ private:
     auto make_step(const index_type& item_){return item_;}
     auto make_step(nop_type){return index_type{1};}
 
-    const mask_type mask_;
-    const index_type start_;
-    const index_type stop_;
-    const index_type step_;
+    mask_type mask_;
+    index_type start_;
+    index_type stop_;
+    index_type step_;
 };
 
 template<typename CfgT>
