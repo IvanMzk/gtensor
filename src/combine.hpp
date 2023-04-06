@@ -628,6 +628,7 @@ static auto split_equal_parts(const tensor<Ts...>& t, const typename tensor<Ts..
     using config_type = typename tensor_type::config_type;
     using index_type = typename tensor_type::index_type;
     using slice_type = typename slice_traits<config_type>::slice_type;
+    using nop_type = typename slice_traits<config_type>::nop_type;
     using view_type = decltype(t(slice_type{}));
     using res_type = typename config_type::template container<view_type>;
     using res_size_type = typename res_type::size_type;
@@ -636,23 +637,20 @@ static auto split_equal_parts(const tensor<Ts...>& t, const typename tensor<Ts..
 
     detail::check_split_by_equal_parts_args(t,direction,parts_number);
     const index_type direction_size = t.shape()[direction];
-    if (parts_number == index_type{1}){
-        return res_type{t(slice_type{})};
-    }else{
-        res_type res{};
-        res.reserve(static_cast<res_size_type>(parts_number));
-        const index_type part_size = direction_size/parts_number;
-        index_type point{0};
-        slices_type slices(static_cast<slices_size_type>(t.dim()));
-        auto slices_direction_it = std::next(slices.begin(),static_cast<slices_size_type>(direction));
-        do{
-            index_type next_point = point+part_size;
-            *slices_direction_it = slice_type{point, next_point};
-            res.push_back(t(slices));
-            point = next_point;
-        }while(point!=direction_size);
-        return res;
+    const index_type part_size = direction_size/parts_number;
+    index_type stop{part_size};
+    res_type res{};
+    res.reserve(static_cast<res_size_type>(parts_number));
+    slices_type slices(static_cast<slices_size_type>(t.dim()));
+    auto slices_direction_it = std::next(slices.begin(),static_cast<slices_size_type>(direction));
+    *slices_direction_it = slice_type{nop_type{},stop};
+    res.push_back(t(slices));
+    for (index_type i{1}; i!=parts_number; ++i){
+        *slices_direction_it = slice_type{stop,stop+part_size};
+        res.push_back(t(slices));
+        stop+=part_size;
     }
+    return res;
 }
 //split in direction 0
 template<typename...Ts, typename IdxContainer>

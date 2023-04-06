@@ -1139,12 +1139,33 @@ TEMPLATE_TEST_CASE("test_split_split_points","[test_combine]",
 
     //0ten,1split_points,2direction,3expected
     auto test_data = std::make_tuple(
+        std::make_tuple(tensor_type{}, std::vector<int>{}, size_type{0}, result_type{tensor_type{}}),
+        std::make_tuple(tensor_type{}, std::vector<int>{0}, size_type{0}, result_type{tensor_type{},tensor_type{}}),
+        std::make_tuple(tensor_type{}, std::vector<int>{0,1}, size_type{0}, result_type{tensor_type{},tensor_type{},tensor_type{}}),
+        std::make_tuple(tensor_type{}.reshape(5,0), std::vector<int>{}, size_type{0}, result_type{tensor_type{}.reshape(5,0).copy()}),
+        std::make_tuple(tensor_type{}.reshape(5,0), std::vector<int>{0}, size_type{0}, result_type{tensor_type{}.reshape(0,0).copy(), tensor_type{}.reshape(5,0).copy()}),
+        std::make_tuple(
+            tensor_type{}.reshape(5,0),
+            std::vector<int>{0,1},
+            size_type{0},
+            result_type{tensor_type{}.reshape(0,0).copy(), tensor_type{}.reshape(1,0).copy(), tensor_type{}.reshape(4,0).copy()}
+        ),
         std::make_tuple(tensor_type{1}, std::vector<int>{}, size_type{0}, result_type{tensor_type{1}}),
+        std::make_tuple(tensor_type{1}, std::vector<int>{0}, size_type{0}, result_type{tensor_type{},tensor_type{1}}),
+        std::make_tuple(tensor_type{1}, std::vector<int>{1}, size_type{0}, result_type{tensor_type{1},tensor_type{}}),
         std::make_tuple(tensor_type{1,2,3,4,5}, std::vector<int>{}, size_type{0}, result_type{tensor_type{1,2,3,4,5}}),
         std::make_tuple(tensor_type{1,2,3,4,5}, std::vector<int>{2}, size_type{0}, result_type{tensor_type{1,2}, tensor_type{3,4,5}}),
         std::make_tuple(tensor_type{1,2,3,4,5}, std::vector<int>{2,4}, size_type{0}, result_type{tensor_type{1,2}, tensor_type{3,4}, tensor_type{5}}),
+        std::make_tuple(tensor_type{1,2,3,4,5}, std::vector<int>{0,3,5}, size_type{0}, result_type{tensor_type{}, tensor_type{1,2,3}, tensor_type{4,5}, tensor_type{}}),
+        std::make_tuple(tensor_type{1,2,3,4,5}, std::vector<int>{1,2,3,4}, size_type{0}, result_type{tensor_type{1}, tensor_type{2}, tensor_type{3}, tensor_type{4}, tensor_type{5}}),
         std::make_tuple(tensor_type{1,2,3,4,5}, std::initializer_list<int>{2,4}, size_type{0}, result_type{tensor_type{1,2}, tensor_type{3,4}, tensor_type{5}}),
         std::make_tuple(tensor_type{1,2,3,4,5}, gtensor::tensor<int>{2,4}, size_type{0}, result_type{tensor_type{1,2}, tensor_type{3,4}, tensor_type{5}}),
+        std::make_tuple(
+            tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16}},
+            std::initializer_list<index_type>{0,2},
+            size_type{0},
+            result_type{tensor_type{}.reshape(0,4).copy(), tensor_type{{1,2,3,4},{5,6,7,8}}, tensor_type{{9,10,11,12},{13,14,15,16}}}
+        ),
         std::make_tuple(
             tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16}},
             std::initializer_list<index_type>{1,2},
@@ -1206,6 +1227,10 @@ TEMPLATE_TEST_CASE("test_split_equal_parts","[test_combine]",
 
     //0ten,1parts_number,2direction,3expected
     auto test_data = std::make_tuple(
+        std::make_tuple(tensor_type{}, index_type{1}, size_type{0}, result_type{tensor_type{}}),
+        std::make_tuple(tensor_type{}, index_type{2}, size_type{0}, result_type{tensor_type{},tensor_type{}}),
+        std::make_tuple(tensor_type{}, index_type{3}, size_type{0}, result_type{tensor_type{},tensor_type{},tensor_type{}}),
+        std::make_tuple(tensor_type{}.reshape(3,0), index_type{3}, size_type{0}, result_type{tensor_type{}.reshape(1,0).copy(),tensor_type{}.reshape(1,0).copy(),tensor_type{}.reshape(1,0).copy()}),
         std::make_tuple(tensor_type{1}, index_type{1}, size_type{0}, result_type{tensor_type{1}}),
         std::make_tuple(tensor_type{1,2,3,4,5}, index_type{1}, size_type{0}, result_type{tensor_type{1,2,3,4,5}}),
         std::make_tuple(tensor_type{1,2,3,4,5}, int{5}, size_type{0}, result_type{tensor_type{1}, tensor_type{2}, tensor_type{3}, tensor_type{4}, tensor_type{5}}),
