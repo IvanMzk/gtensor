@@ -2016,3 +2016,12 @@ TEMPLATE_TEST_CASE("test_create_bool_mapping_view","[test_view_factory]",
     }
 }
 
+
+ //view composition
+//         std::make_tuple(tensor_type{{1,2,3},{4,5,6}}.transpose().reshape(2,3), tensor_type{{1,4,2},{5,3,6}}),
+//         std::make_tuple((tensor_type{{1,2,3},{4,5,6}}.transpose().reshape(2,3) + tensor_type{{0},{1}})(bool_tensor_type{{false,true,false},{true,false,true}}), tensor_type{4,6,7}),
+//         std::make_tuple((tensor_type{{1,2,3},{4,5,6}}.transpose().reshape(2,3) + tensor_type{{0},{1}})(index_tensor_type{1,0,1}), tensor_type{{6,4,7},{1,4,2},{6,4,7}})
+//bool subscription
+//         std::make_tuple([](){auto x = tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}}; return x(x>tensor_type{10});}(),tensor_type{11,12,13,14,15,16}),
+//         std::make_tuple([](){auto x = tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}}; return x(x<tensor_type{5});}(),tensor_type{1,2,3,4}),
+//         std::make_tuple([](){auto x = tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}}; return x(x>tensor_type{5} && x<tensor_type{10});}(),tensor_type{6,7,8,9}),
