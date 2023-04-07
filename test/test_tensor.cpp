@@ -29,16 +29,31 @@ TEST_CASE("test_0-dim_tensor_constructor","[test_tensor]"){
     using dim_type = config_type::dim_type;
     using index_type = config_type::index_type;
     using shape_type = config_type::shape_type;
-
-    auto test_data = GENERATE(
-        tensor_type(0),
-        tensor_type(0.0f),
-        tensor_type(std::size_t{1}),
-        tensor_type(std::int64_t{1})
+    using helpers_for_testing::apply_by_element;
+    //0value
+    auto test_data = std::make_tuple(
+        0,
+        1.0f,
+        std::size_t{2},
+        std::int64_t{3}
     );
-    REQUIRE(test_data.size() == index_type{1});
-    REQUIRE(test_data.dim() == dim_type{0});
-    REQUIRE(test_data.shape() == shape_type{});
+    auto test = [](const auto& value){
+        const shape_type expected_shape{};
+        const index_type expected_size{1};
+        const dim_type expected_dim{0};
+        const value_type expected_value = static_cast<value_type>(value);
+        auto result_tensor = tensor_type(value);
+        auto result_shape = result_tensor.shape();
+        auto result_size = result_tensor.size();
+        auto result_dim = result_tensor.dim();
+        auto result_value = *result_tensor.begin();
+        REQUIRE(result_shape == expected_shape);
+        REQUIRE(result_size == expected_size);
+        REQUIRE(result_dim == expected_dim);
+        REQUIRE(result_value == expected_value);
+        REQUIRE(std::next(result_tensor.begin()) == result_tensor.end());
+    };
+    apply_by_element(test, test_data);
 }
 
 TEST_CASE("test_tensor_constructor_from_list","[test_tensor]"){
@@ -70,6 +85,7 @@ TEST_CASE("test_tensor_constructor_from_list","[test_tensor]"){
         REQUIRE(result.shape() == expected_shape);
         REQUIRE(result.size() == expected_size);
         REQUIRE(result.dim() == expected_dim);
+        REQUIRE(static_cast<index_type>(std::distance(result.begin(),result.end())) == static_cast<index_type>(std::distance(expected_elements.begin(),expected_elements.end())));
         REQUIRE(std::equal(result.begin(),result.end(),expected_elements.begin()));
     };
     apply_by_element(test, test_data);
@@ -201,41 +217,6 @@ TEST_CASE("test_tensor_constructor_shape_init_list_range","[test_tensor]"){
         auto result = std::get<0>(t);
         auto expected = std::get<1>(t);
         REQUIRE(result.equals(expected));
-    };
-    apply_by_element(test,test_data);
-}
-
-TEST_CASE("test_tensor_construct_using_operator","[test_tensor]"){
-    using value_type = double;
-    using config_type = gtensor::config::default_config;
-    using tensor_type = gtensor::tensor<value_type, config_type>;
-    using shape_type = typename config_type::shape_type;
-    using dim_type = typename config_type::dim_type;
-    using index_type = typename config_type::index_type;
-    using helpers_for_testing::apply_by_element;
-    //0tensor,1expected_shape,2expected_size,3expected_dim
-    auto test_data = std::make_tuple(
-        std::make_tuple((tensor_type{1}+tensor_type{1}), shape_type{1}, 1 , 1),
-        std::make_tuple((tensor_type{1}+tensor_type{1,2,3}), shape_type{3}, 3 , 1),
-        std::make_tuple((tensor_type{1,2,3}+tensor_type{1,2,3}), shape_type{3}, 3 , 1),
-        std::make_tuple((tensor_type{{1,2,3}}+tensor_type{1,2,3}), shape_type{1,3}, 3 , 2),
-        std::make_tuple((tensor_type{{1,2,3}}+tensor_type{{1},{2},{3}}), shape_type{3,3}, 9 , 2),
-        std::make_tuple((tensor_type{{1,2,3},{4,5,6}}+tensor_type{{1},{2}}), shape_type{2,3}, 6 , 2),
-        std::make_tuple((tensor_type{{{1,2,3},{4,5,6}}}+tensor_type{1,2,3}), shape_type{1,2,3}, 6 , 3),
-        std::make_tuple((tensor_type{1}+tensor_type{1}+tensor_type{1}), shape_type{1}, 1 , 1),
-        std::make_tuple((tensor_type{1,2,3}+tensor_type{1,2,3}+tensor_type{1}), shape_type{3}, 3 , 1),
-        std::make_tuple((tensor_type{1,2,3}+tensor_type{{1},{2},{3}}+tensor_type{1,2,3}), shape_type{3,3}, 9 , 2),
-        std::make_tuple(((tensor_type{1,2,3}+(tensor_type{{1},{2},{3}})+(tensor_type{1,2,3})+tensor_type{1})), shape_type{3,3}, 9 , 2)
-    );
-
-    auto test = [](auto& t){
-        auto ten = std::get<0>(t);
-        auto expected_shape = std::get<1>(t);
-        auto expected_size = std::get<2>(t);
-        auto expected_dim = std::get<3>(t);
-        REQUIRE(ten.shape() == expected_shape);
-        REQUIRE(ten.size() == static_cast<index_type>(expected_size));
-        REQUIRE(ten.dim() == static_cast<dim_type>(expected_dim));
     };
     apply_by_element(test,test_data);
 }

@@ -133,7 +133,6 @@ inline void check_slice_view_args(const ShT& pshape, const Container& subs){
         throw subscript_exception("invalid subscripts number");
     }
     auto pshape_it = pshape.begin();
-    dim_type reduce_number{0};
     for (auto subs_it = subs.begin(); subs_it!=subs.end(); ++subs_it,++pshape_it){
         const auto& subs_ = *subs_it;
         if (subs_.is_reduce()){
@@ -142,11 +141,7 @@ inline void check_slice_view_args(const ShT& pshape, const Container& subs){
             if (start<index_type{0} || start>=pshape_element){
                 throw subscript_exception("invalid subscripts");
             }
-            ++reduce_number;
         }
-    }
-    if (reduce_number >= pdim){
-        throw subscript_exception("cant make scalar with dim 0");
     }
 }
 //slice view shape
@@ -272,8 +267,8 @@ inline void check_subdim_args(const ShT& pshape, const Container& subs){
     using dim_type = typename ShT::size_type;
     const dim_type& subs_number = subs.size();
     const dim_type& pdim = pshape.size();
-    if (subs_number >= pdim){
-        throw subscript_exception("subdim subscripts number must be less than dim");
+    if (subs_number > pdim){
+        throw subscript_exception("subscripts number exceeds dim");
     }
     auto pshape_it = pshape.begin();
     for (auto subs_it = subs.begin(), subs_end = subs.end(); subs_it != subs_end; ++subs_it, ++pshape_it){
