@@ -44,13 +44,9 @@ template<typename ShT, typename...Ts>
 inline auto broadcast_shape(const Ts&...shapes){
     using shape_type = ShT;
     using index_type = typename shape_type::value_type;
-    if (std::min({shapes.size()...}) == 0){
-        throw broadcast_exception("shapes are not broadcastable");
-    }else{
-        auto res = shape_type(std::max({shapes.size()...}),index_type(-1));
-        broadcast_shape_helper(res, shapes...);
-        return res;
-    }
+    auto res = shape_type(std::max({shapes.size()...}),index_type(-1));
+    broadcast_shape_helper(res, shapes...);
+    return res;
 }
 
 template<typename SizeT, typename IdxT>

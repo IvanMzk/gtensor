@@ -16,6 +16,14 @@ TEMPLATE_TEST_CASE("test_variadic_broadcast_shape","[test_descriptor]", std::vec
     using gtensor::detail::broadcast_shape;
     //0shapes,1expected broadcast shape
     auto test_data = std::make_tuple(
+        std::make_tuple(std::make_tuple(shape_type{}), result_shape_type{}),
+        std::make_tuple(std::make_tuple(shape_type{}, shape_type{}), result_shape_type{}),
+        std::make_tuple(std::make_tuple(shape_type{0}, shape_type{}), result_shape_type{0}),
+        std::make_tuple(std::make_tuple(shape_type{}, shape_type{0}), result_shape_type{0}),
+        std::make_tuple(std::make_tuple(shape_type{1}, shape_type{}), result_shape_type{1}),
+        std::make_tuple(std::make_tuple(shape_type{}, shape_type{1}), result_shape_type{1}),
+        std::make_tuple(std::make_tuple(shape_type{}, shape_type{1}, shape_type{}), result_shape_type{1}),
+        std::make_tuple(std::make_tuple(shape_type{}, shape_type{2,3,4}, shape_type{}), result_shape_type{2,3,4}),
         std::make_tuple(std::make_tuple(shape_type{0}), result_shape_type{0}),
         std::make_tuple(std::make_tuple(shape_type{1}), result_shape_type{1}),
         std::make_tuple(std::make_tuple(shape_type{1,2,3}), result_shape_type{1,2,3}),
@@ -61,10 +69,6 @@ TEMPLATE_TEST_CASE("test_variadic_broadcast_shape_exception","[test_descriptor]"
     using helpers_for_testing::apply_by_element;
     //0shapes
     auto test_data = std::make_tuple(
-        std::make_tuple(shape_type{}),
-        std::make_tuple(shape_type{}, shape_type{}),
-        std::make_tuple(shape_type{1}, shape_type{}),
-        std::make_tuple(shape_type{}, shape_type{1}),
         std::make_tuple(shape_type{0}, shape_type{2}),
         std::make_tuple(shape_type{2}, shape_type{0}),
         std::make_tuple(shape_type{3}, shape_type{2}),
@@ -74,7 +78,6 @@ TEMPLATE_TEST_CASE("test_variadic_broadcast_shape_exception","[test_descriptor]"
         std::make_tuple(shape_type{1,2}, shape_type{4,3}),
         std::make_tuple(shape_type{3,2}, shape_type{4,2}),
         std::make_tuple(shape_type{5,1,2}, shape_type{4,4,2}),
-        std::make_tuple(shape_type{}, shape_type{1}, shape_type{}),
         std::make_tuple(shape_type{3}, shape_type{0}, shape_type{3}),
         std::make_tuple(shape_type{3}, shape_type{3}, shape_type{2}),
         std::make_tuple(shape_type{1,2}, shape_type{3}, shape_type{1}),
