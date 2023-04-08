@@ -2,16 +2,16 @@
 #define TENSOR_BASE_HPP_
 
 #include "forward_decl.hpp"
+#include "config.hpp"
 
 namespace gtensor{
 
-template<typename ValT, typename CfgT>
+template<typename CfgT, typename ValT>
 class tensor_base
 {
-    using descriptor_type = descriptor_base<CfgT>;
 public:
     using value_type = ValT;
-    using config_type = CfgT;
+    using config_type = config::extend_config_t<CfgT,ValT>;
     using dim_type = typename config_type::dim_type;
     using index_type = typename config_type::index_type;
     using shape_type = typename config_type::shape_type;
