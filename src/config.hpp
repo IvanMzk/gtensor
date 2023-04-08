@@ -17,51 +17,48 @@ using mode_div_native = tag<div_modes, div_modes::native>;
 using mode_div_libdivide = tag<div_modes, div_modes::libdivide>;
 using engine_expression_template = tag<engines, engines::expression_template>;
 
-struct default_config{
+struct default_config
+{
     using host_engine = engine_expression_template;
     using div_mode = mode_div_libdivide;
     //using div_mode = mode_div_native;
 
-    //index_type defines data elements address space
-    //used in indexed access to data elements:
-    //  ??? index_type must be convertible to storage<value_type>::iterator::difference_type
-    //shape and strides elements are of index_type
-    //slice, reshape, subdim, mapping view subscripts are of index_type
-    //must have semantic of signed integral type
-    //using index_type = std::int64_t;
-    using index_type = integral<std::int64_t>;
-
     //data elements storage template
     //must provide random access interface
-    //template<typename ValT> using storage = std::vector<ValT>;
-    template<typename ValT> using storage = storage_adapter<std::vector<ValT>, index_type>;
-
-
-    //meta-data elements storage type i.e. shape, strides are of shape_type
-    //must be indexable by dim_type
+    template<typename ValT> using storage = std::vector<ValT>;
+    //meta-data elements storage template i.e. shape, strides are specialization of shape
     //must provide random access interface
-    using shape_type = std::vector<index_type>;
-
-    //used in indexed access to meta-data elements e.g. index of direction, directions number
-    //transpose view subscripts are of dim_type, since they are directions indexes
-    //must have semantic of integral type, may be unsigned
-    //using dim_type = std::int64_t;
-    using dim_type = typename shape_type::size_type;
-    //using dim_type = typename shape_type::difference_type;
-
-
+    template<typename IdxT> using shape = std::vector<IdxT>;
     //generally when public interface expected container parameter it may be any type providig usual container semantic and interface: iterators, aliases...
     //specialization of config_type::container uses as return type in public interface
     //it may be used by implementation as general purpose container
     template<typename T> using container = std::vector<T>;
-
-
-
-    // using direction_type = std::size_t;
-    // using dim_type = std::size_t;
-    // using index_type = std::size_t;
-    // using meta_dim_type = std::size_t;
 };
+
+
+template<typename CfgT, typename ValT> class extend_config
+{
+    struct extended_config : CfgT{
+        using storage_type = typename CfgT::template storage<ValT>;
+
+        //index_type defines data elements address space:
+        //e.g. shape and strides elements are of index_type
+        //slice, reshape view subscripts are of index_type
+        //must have semantic of signed integral type
+        using index_type = typename storage_type::difference_type;
+
+        using shape_type = typename CfgT::template shape<index_type>;
+
+        //used in indexed access to meta-data elements:
+        //e.g. index of direction, dimensions number
+        //transpose view subscripts are of dim_type, since they are directions indexes
+        //must have semantic of integral type
+        using dim_type = typename shape_type::size_type;
+    };
+    public: using type = extended_config;
+};
+template<typename CfgT, typename ValT> using extend_config_t = typename extend_config<CfgT,ValT>::type;
+
 
 }   //end of namespace config
 }   //end of namespace gtensor
