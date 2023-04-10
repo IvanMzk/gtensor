@@ -1,5 +1,6 @@
 #include "catch.hpp"
-#include "gtensor.hpp"
+#include "forward_decl.hpp"
+#include "common.hpp"
 
 
 TEST_CASE("test_is_iterator","[test_tensor]"){

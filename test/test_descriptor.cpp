@@ -42,7 +42,7 @@ TEMPLATE_TEST_CASE("test_make_strides_div","[test_descriptor]",
     gtensor::config::mode_div_native
 )
 {
-    using config_type = typename test_config::config_div_mode_selector<TestType>::config_type;
+    using config_type = gtensor::config::extend_config_t<typename test_config::config_div_mode_selector<TestType>::config_type, int>;
     using shape_type = typename config_type::shape_type;
     using strides_div_type = typename gtensor::detail::strides_div_traits<config_type>::type;
     using divider_type = typename strides_div_type::value_type;
@@ -150,7 +150,7 @@ TEMPLATE_TEST_CASE("test_flat_to_multi", "[test_descriptor]",
     gtensor::config::mode_div_libdivide
 )
 {
-    using config_type = typename test_config::config_div_mode_selector<TestType>::config_type;
+    using config_type = gtensor::config::extend_config_t<typename test_config::config_div_mode_selector<TestType>::config_type, int>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     using gtensor::detail::make_dividers;
@@ -176,7 +176,7 @@ TEMPLATE_TEST_CASE("test_flat_to_flat", "[test_descriptor]",
     gtensor::config::mode_div_libdivide
 )
 {
-    using config_type = typename test_config::config_div_mode_selector<TestType>::config_type;
+    using config_type = gtensor::config::extend_config_t<typename test_config::config_div_mode_selector<TestType>::config_type, int>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     using gtensor::detail::make_dividers;
@@ -218,7 +218,7 @@ TEST_CASE("test_make_shape_of_type","[test_descriptor]"){
 }
 
 TEST_CASE("test_basic_descriptor","[test_descriptor]"){
-    using config_type = gtensor::config::default_config;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using descriptor_type = gtensor::basic_descriptor<config_type>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
@@ -262,7 +262,7 @@ TEST_CASE("test_basic_descriptor","[test_descriptor]"){
 }
 
 TEST_CASE("test_basic_descriptor_convert", "[test_descriptor]"){
-    using config_type = gtensor::config::default_config;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using descriptor_type = gtensor::basic_descriptor<config_type>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
@@ -284,7 +284,7 @@ TEST_CASE("test_basic_descriptor_convert", "[test_descriptor]"){
 }
 
 TEST_CASE("test_descriptor_with_offset","[test_descriptor]"){
-    using config_type = gtensor::config::default_config;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using descriptor_type = gtensor::descriptor_with_offset<config_type>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
@@ -315,7 +315,7 @@ TEST_CASE("test_descriptor_with_offset","[test_descriptor]"){
 }
 
 TEST_CASE("test_descriptor_with_offset_convert", "[test_descriptor]"){
-    using config_type = gtensor::config::default_config;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using descriptor_type = gtensor::descriptor_with_offset<config_type>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
@@ -336,8 +336,12 @@ TEST_CASE("test_descriptor_with_offset_convert", "[test_descriptor]"){
     REQUIRE(descriptor.convert(flat_idx) == expected_convert_flat_idx);
 }
 
-TEMPLATE_TEST_CASE("test_converting_descriptor_getters", "[test_descriptor]", gtensor::config::mode_div_libdivide, gtensor::config::mode_div_native){
-    using config_type = typename test_config::config_div_mode_selector<TestType>::config_type;
+TEMPLATE_TEST_CASE("test_converting_descriptor", "[test_descriptor]",
+    gtensor::config::mode_div_libdivide,
+    gtensor::config::mode_div_native
+)
+{
+    using config_type = gtensor::config::extend_config_t<typename test_config::config_div_mode_selector<TestType>::config_type, int>;
     using descriptor_type = gtensor::converting_descriptor<config_type>;
     using strides_div_type = typename gtensor::detail::strides_div_traits<config_type>::type;
     using shape_type = typename config_type::shape_type;
@@ -370,8 +374,12 @@ TEMPLATE_TEST_CASE("test_converting_descriptor_getters", "[test_descriptor]", gt
     REQUIRE(descriptor.strides_div() == expected_strides_div);
 }
 
-TEMPLATE_TEST_CASE("test_converting_descriptor_convert", "[test_descriptor]", gtensor::config::mode_div_native, gtensor::config::mode_div_libdivide){
-    using config_type = typename test_config::config_div_mode_selector<TestType>::config_type;
+TEMPLATE_TEST_CASE("test_converting_descriptor_convert", "[test_descriptor]",
+    gtensor::config::mode_div_native,
+    gtensor::config::mode_div_libdivide
+)
+{
+    using config_type = gtensor::config::extend_config_t<typename test_config::config_div_mode_selector<TestType>::config_type, int>;
     using descriptor_type = gtensor::converting_descriptor<config_type>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;

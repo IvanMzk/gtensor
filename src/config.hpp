@@ -19,7 +19,7 @@ using engine_expression_template = tag<engines, engines::expression_template>;
 
 struct default_config
 {
-    using host_engine = engine_expression_template;
+    using engine = engine_expression_template;
     using div_mode = mode_div_libdivide;
     //using div_mode = mode_div_native;
 

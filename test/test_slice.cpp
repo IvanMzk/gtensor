@@ -7,7 +7,7 @@
 #include "helpers_for_testing.hpp"
 
 TEST_CASE("slice_item","[test_slice]"){
-    using config_type = gtensor::config::default_config;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using index_type = typename config_type::index_type;
     using slice_item_type =  typename gtensor::slice_traits<config_type>::slice_item_type;
     SECTION("use_init_list"){
@@ -111,7 +111,7 @@ TEST_CASE("slice_item","[test_slice]"){
 }
 
 TEST_CASE("test_slice","[test_slice]"){
-    using config_type = gtensor::config::default_config;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using index_type = config_type::index_type;
     using slice_type = gtensor::slice_traits<config_type>::slice_type;
     using rtag_type = gtensor::slice_traits<config_type>::rtag_type;
