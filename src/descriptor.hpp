@@ -96,6 +96,20 @@ inline auto make_reset_strides(const ShT& shape, const ShT& strides){
 }
 
 template<typename ShT>
+inline auto make_adapted_strides(const ShT& shape, const ShT& strides){
+    using shape_type = ShT;
+    using index_type = typename shape_type::value_type;
+    shape_type res{strides};
+    auto shape_it = shape.begin();
+    for (auto res_it = res.begin(); res_it!=res.end(); ++res_it,++shape_it){
+        if (*shape_it == index_type{1}){
+            *res_it = index_type{0};
+        }
+    }
+    return res;
+}
+
+template<typename ShT>
 inline auto make_size(const ShT& shape, const ShT& strides){
     using index_type = typename ShT::value_type;
     return std::empty(shape) ? index_type(1) : shape.front()*strides.front();
@@ -203,14 +217,18 @@ class strides_extension
 {
     using shape_type = typename CfgT::shape_type;
     shape_type strides_;
+    shape_type adapted_strides_;
     shape_type reset_strides_;
+
 protected:
     strides_extension() = default;
     strides_extension(const shape_type& shape__):
         strides_{detail::make_strides(shape__)},
+        adapted_strides_{detail::make_adapted_strides(shape__,strides_)},
         reset_strides_{detail::make_reset_strides(shape__,strides_)}
     {}
     const auto&  strides()const{return strides_;}
+    const auto&  adapted_strides()const{return adapted_strides_;}
     const auto&  reset_strides()const{return reset_strides_;}
 };
 
@@ -233,6 +251,7 @@ public:
     {}
     const auto& strides_div()const{return strides_div(typename CfgT::div_mode{});}
     const auto& strides()const{return strides_extension_base::strides();}
+    const auto& adapted_strides()const{return strides_extension_base::adapted_strides();}
     const auto& reset_strides()const{return strides_extension_base::reset_strides();}
 };
 
@@ -257,6 +276,7 @@ public:
     virtual const shape_type& shape()const = 0;
     virtual const strides_div_type& strides_div()const = 0; //strides optimized for division
     virtual const shape_type& strides()const = 0;
+    virtual const shape_type& adapted_strides()const = 0;
     virtual const shape_type& reset_strides()const = 0;
     virtual const shape_type& cstrides()const = 0;
     virtual const shape_type& reset_cstrides()const = 0;
@@ -275,6 +295,7 @@ public:
     const auto& shape()const{return shape_;}
     const auto& strides_div()const{return strides_.strides_div();}
     const auto& strides()const{return strides_.strides();}
+    const auto& adapted_strides()const{return strides_.adapted_strides();}
     const auto& reset_strides()const{return strides_.reset_strides();}
 
     template<typename ShT, std::enable_if_t<!std::is_convertible_v<std::decay_t<ShT>, descriptor_common>,int> =0 >
@@ -309,6 +330,7 @@ public:
     const shape_type& shape()const override{return impl_.shape();}
     const strides_div_type& strides_div()const override{return impl_.strides_div();}
     const shape_type& strides()const override{return impl_.strides();}
+    const shape_type& adapted_strides()const override{return impl_.adapted_strides();}
     const shape_type& reset_strides()const override{return impl_.reset_strides();}
     index_type offset()const override{return index_type{0};}
     const shape_type& cstrides()const override{return strides();}
