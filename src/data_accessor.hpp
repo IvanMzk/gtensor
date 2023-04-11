@@ -120,7 +120,7 @@ private:
     dim_type dim_offset_;
 };
 
-//adapter of Indexer
+//Indexer is adaptee
 template<typename Config, typename Indexer>
 class walker
 {
@@ -146,7 +146,8 @@ public:
     decltype(indexer[index_walker.cursor()]) operator*()const{return indexer[index_walker.cursor()];}
 };
 
-
+//walker_traverser implement algorithms to iterate walker using given shape
+//traverse shape may be not native walker shape but shapes must be broadcastable
 template<typename Config, typename Walker>
 class walker_forward_traverser
 {
@@ -247,45 +248,42 @@ public:
     }
 };
 
-// template<typename CfgT, typename Walker>
-// class walker_iterator_adapter : public walker_bidirectional_adapter<CfgT, Walker>
-// {
-//     using walker_bidirectional_adapter_base = walker_bidirectional_adapter<CfgT, Walker>;
-//     using typename walker_bidirectional_adapter_base::config_type;
-//     using typename walker_bidirectional_adapter_base::walker_type;
-//     using typename walker_bidirectional_adapter_base::shape_type;
-//     using typename walker_bidirectional_adapter_base::index_type;
-//     using typename walker_bidirectional_adapter_base::dim_type;
-//     using strides_div_type = typename detail::strides_div_traits<CfgT>::type;
-//     using walker_bidirectional_adapter_base::walker_;
-//     using walker_bidirectional_adapter_base::dim_;
-//     using walker_bidirectional_adapter_base::index_;
-//     const strides_div_type* strides_;
-// public:
-//     template<typename Walker_>
-//     walker_iterator_adapter(const shape_type& shape__, const strides_div_type& strides__ ,Walker_&& walker__):
-//         walker_bidirectional_adapter_base(shape__,walker__),
-//         strides_{&strides__}
-//     {}
-//     void move(index_type n){
-//         walker_.reset();
-//         auto strides_it = strides_->begin();
-//         auto strides_end = strides_->end();
-//         auto index_it = index_.begin();
-//         dim_type direction{dim_};
-//         for(;strides_it!=strides_end; ++strides_it,++index_it){
-//             --direction;
-//             auto steps = detail::divide(n,*strides_it);
-//             if (steps!=index_type{0}){
-//                 walker_.walk(direction,steps);
-//             }
-//             *index_it = steps;
-//         }
-//     }
-// };
-
-
-
+template<typename CfgT, typename Walker>
+class walker_random_access_traverser : public walker_bidirectional_traverser<CfgT, Walker>
+{
+    using walker_bidirectional_traverser_base = walker_bidirectional_traverser<CfgT, Walker>;
+    using typename walker_bidirectional_traverser_base::config_type;
+    using typename walker_bidirectional_traverser_base::walker_type;
+    using typename walker_bidirectional_traverser_base::shape_type;
+    using typename walker_bidirectional_traverser_base::index_type;
+    using typename walker_bidirectional_traverser_base::dim_type;
+    using strides_div_type = typename detail::strides_div_traits<CfgT>::type;
+    using walker_bidirectional_traverser_base::walker_;
+    using walker_bidirectional_traverser_base::dim_;
+    using walker_bidirectional_traverser_base::index_;
+    using walker_bidirectional_traverser_base::overflow_;
+    const strides_div_type* strides_;
+public:
+    template<typename Walker_>
+    walker_random_access_traverser(const shape_type& shape__, const strides_div_type& strides__ ,Walker_&& walker__):
+        walker_bidirectional_traverser_base(shape__,walker__),
+        strides_{&strides__}
+    {}
+    //in must be in range [0,size-1], where size = make_size(shape__)
+    void move(index_type n){
+        walker_.reset_back();
+        overflow_ = index_type{0};
+        auto index_it = index_.begin();
+        dim_type direction{0};
+        for(auto strides_it = strides_->begin(); strides_it!=strides_->end(); ++strides_it,++index_it,++direction){
+            auto steps = detail::divide(n,*strides_it);
+            if (steps!=index_type{0}){
+                walker_.walk(direction,steps);
+            }
+            *index_it = steps;
+        }
+    }
+};
 
 }   //end of namespace gtensor
 

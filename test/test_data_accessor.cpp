@@ -318,6 +318,7 @@ TEST_CASE("test_walker_traverser_prev","test_data_accessor"){
     using gtensor::basic_indexer;
     using gtensor::walker;
     using gtensor::walker_bidirectional_traverser;
+    using gtensor::walker_random_access_traverser;
     using shape_type = config_type::shape_type;
     using dim_type = config_type::dim_type;
     using index_type = config_type::index_type;
@@ -327,6 +328,7 @@ TEST_CASE("test_walker_traverser_prev","test_data_accessor"){
     using gtensor::detail::make_strides;
     using gtensor::detail::make_adapted_strides;
     using gtensor::detail::make_reset_strides;
+    using gtensor::detail::make_dividers;
     using helpers_for_testing::apply_by_element;
 
     auto do_next = [](auto& tr, auto n){
@@ -394,7 +396,7 @@ TEST_CASE("test_walker_traverser_prev","test_data_accessor"){
         REQUIRE(result_index == expected_index);
         REQUIRE(result_element == expected_element);
     };
-    SECTION("test_walker_bidirectional_traverser_next")
+    SECTION("test_walker_bidirectional_traverser_prev")
     {
         auto test_ = [test](const auto& t){
             auto storage = std::get<0>(t);
@@ -408,6 +410,130 @@ TEST_CASE("test_walker_traverser_prev","test_data_accessor"){
             dim_type max_dim = shape.size();
             auto walker =  walker_type{adapted_strides, reset_strides, offset, indexer, max_dim};
             auto traverser = traverser_type{shape, walker};
+            test(t,traverser);
+        };
+        apply_by_element(test_, test_data);
+    }
+    SECTION("test_walker_random_access_traverser_prev")
+    {
+        auto test_ = [test](const auto& t){
+            auto storage = std::get<0>(t);
+            auto shape = std::get<1>(t);
+            using traverser_type = walker_random_access_traverser<config_type, walker_type>;
+            auto indexer = indexer_type{storage};
+            auto strides = make_strides(shape);
+            auto adapted_strides = make_adapted_strides(shape,strides);
+            auto reset_strides = make_reset_strides(shape,strides);
+            index_type offset{0};
+            dim_type max_dim = shape.size();
+            auto walker =  walker_type{adapted_strides, reset_strides, offset, indexer, max_dim};
+            auto strides_div = make_dividers<config_type>(strides);
+            auto traverser = traverser_type{shape, strides_div, walker};
+            test(t,traverser);
+        };
+        apply_by_element(test_, test_data);
+    }
+}
+
+TEST_CASE("test_walker_traverser_move","test_data_accessor"){
+    using value_type = int;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
+    using gtensor::basic_indexer;
+    using gtensor::walker;
+    using gtensor::walker_random_access_traverser;
+    using shape_type = config_type::shape_type;
+    using dim_type = config_type::dim_type;
+    using index_type = config_type::index_type;
+    using storage_type = std::vector<value_type>;
+    using indexer_type = basic_indexer<storage_type&>;
+    using walker_type = walker<config_type, indexer_type>;
+    using gtensor::detail::make_strides;
+    using gtensor::detail::make_adapted_strides;
+    using gtensor::detail::make_reset_strides;
+    using gtensor::detail::make_dividers;
+    using helpers_for_testing::apply_by_element;
+
+    auto do_next = [](auto& tr, auto n){
+        bool result{true};
+        while(n!=0){
+            result = tr.next();
+            --n;
+        }
+        return result;
+    };
+    auto do_prev = [](auto& tr, auto n){
+        bool result{true};
+        while(n!=0){
+            result = tr.prev();
+            --n;
+        }
+        return result;
+    };
+
+    //0storage,1shape,2mover,3expected_index,4expected_element,5expected_is_next
+    auto test_data = std::make_tuple(
+        //1-d
+        std::make_tuple(storage_type{1,2,3,4,5,6}, shape_type{6}, [](auto& tr){tr.move(0); return true;}, shape_type{0} ,value_type{1}, true),
+        std::make_tuple(storage_type{1,2,3,4,5,6}, shape_type{6}, [](auto& tr){tr.move(1); return true;}, shape_type{1} ,value_type{2}, true),
+        std::make_tuple(storage_type{1,2,3,4,5,6}, shape_type{6}, [](auto& tr){tr.move(2); return true;}, shape_type{2} ,value_type{3}, true),
+        std::make_tuple(storage_type{1,2,3,4,5,6}, shape_type{6}, [](auto& tr){tr.move(5); return true;}, shape_type{5} ,value_type{6}, true),
+        std::make_tuple(storage_type{1,2,3,4,5,6}, shape_type{6}, [](auto& tr){tr.move(0); tr.move(0); return true;}, shape_type{0} ,value_type{1}, true),
+        std::make_tuple(storage_type{1,2,3,4,5,6}, shape_type{6}, [](auto& tr){tr.move(1); tr.move(1); return true;}, shape_type{1} ,value_type{2}, true),
+        std::make_tuple(storage_type{1,2,3,4,5,6}, shape_type{6}, [](auto& tr){tr.move(1); tr.move(0); return true;}, shape_type{0} ,value_type{1}, true),
+        std::make_tuple(storage_type{1,2,3,4,5,6}, shape_type{6}, [](auto& tr){tr.move(0); tr.move(1); return true;}, shape_type{1} ,value_type{2}, true),
+        std::make_tuple(storage_type{1,2,3,4,5,6}, shape_type{6}, [](auto& tr){tr.move(5); tr.move(0); return true;}, shape_type{0} ,value_type{1}, true),
+        std::make_tuple(storage_type{1,2,3,4,5,6}, shape_type{6}, [](auto& tr){tr.move(1); tr.move(5); return true;}, shape_type{5} ,value_type{6}, true),
+        std::make_tuple(storage_type{1,2,3,4,5,6}, shape_type{6}, [do_next,do_prev](auto& tr){return do_prev(tr,1),tr.move(5),do_next(tr,1);}, shape_type{0} ,value_type{1}, false),
+        std::make_tuple(storage_type{1,2,3,4,5,6}, shape_type{6}, [do_prev](auto& tr){return do_prev(tr,1),tr.move(5),do_prev(tr,1);}, shape_type{4} ,value_type{5}, true),
+        std::make_tuple(storage_type{1,2,3,4,5,6}, shape_type{6}, [do_next,do_prev](auto& tr){return do_prev(tr,1),tr.move(4),do_next(tr,1);}, shape_type{5} ,value_type{6}, true),
+        std::make_tuple(storage_type{1,2,3,4,5,6}, shape_type{6}, [do_next,do_prev](auto& tr){return do_next(tr,6),tr.move(0),do_prev(tr,1);}, shape_type{5} ,value_type{6}, false),
+        std::make_tuple(storage_type{1,2,3,4,5,6}, shape_type{6}, [do_next](auto& tr){return do_next(tr,6),tr.move(1),do_next(tr,1);}, shape_type{2} ,value_type{3}, true),
+        std::make_tuple(storage_type{1,2,3,4,5,6}, shape_type{6}, [do_next,do_prev](auto& tr){return do_next(tr,6),tr.move(1),do_prev(tr,1);}, shape_type{0} ,value_type{1}, true),
+        //3-d
+        std::make_tuple(storage_type{1,2,3,4,5,6}, shape_type{2,1,3}, [](auto& tr){tr.move(0); return true;}, shape_type{0,0,0} ,value_type{1}, true),
+        std::make_tuple(storage_type{1,2,3,4,5,6}, shape_type{2,1,3}, [](auto& tr){tr.move(1); return true;}, shape_type{0,0,1} ,value_type{2}, true),
+        std::make_tuple(storage_type{1,2,3,4,5,6}, shape_type{2,1,3}, [](auto& tr){tr.move(2); return true;}, shape_type{0,0,2} ,value_type{3}, true),
+        std::make_tuple(storage_type{1,2,3,4,5,6}, shape_type{2,1,3}, [](auto& tr){tr.move(5); return true;}, shape_type{1,0,2} ,value_type{6}, true),
+        std::make_tuple(storage_type{1,2,3,4,5,6}, shape_type{2,1,3}, [](auto& tr){tr.move(0); tr.move(0); return true;}, shape_type{0,0,0} ,value_type{1}, true),
+        std::make_tuple(storage_type{1,2,3,4,5,6}, shape_type{2,1,3}, [](auto& tr){tr.move(1); tr.move(1); return true;}, shape_type{0,0,1} ,value_type{2}, true),
+        std::make_tuple(storage_type{1,2,3,4,5,6}, shape_type{2,1,3}, [](auto& tr){tr.move(1); tr.move(0); return true;}, shape_type{0,0,0} ,value_type{1}, true),
+        std::make_tuple(storage_type{1,2,3,4,5,6}, shape_type{2,1,3}, [](auto& tr){tr.move(0); tr.move(1); return true;}, shape_type{0,0,1} ,value_type{2}, true),
+        std::make_tuple(storage_type{1,2,3,4,5,6}, shape_type{2,1,3}, [](auto& tr){tr.move(5); tr.move(0); return true;}, shape_type{0,0,0} ,value_type{1}, true),
+        std::make_tuple(storage_type{1,2,3,4,5,6}, shape_type{2,1,3}, [](auto& tr){tr.move(1); tr.move(5); return true;}, shape_type{1,0,2} ,value_type{6}, true),
+        std::make_tuple(storage_type{1,2,3,4,5,6}, shape_type{2,1,3}, [do_next,do_prev](auto& tr){return do_prev(tr,1),tr.move(5),do_next(tr,1);}, shape_type{0,0,0} ,value_type{1}, false),
+        std::make_tuple(storage_type{1,2,3,4,5,6}, shape_type{2,1,3}, [do_prev](auto& tr){return do_prev(tr,1),tr.move(5),do_prev(tr,1);}, shape_type{1,0,1} ,value_type{5}, true),
+        std::make_tuple(storage_type{1,2,3,4,5,6}, shape_type{2,1,3}, [do_next,do_prev](auto& tr){return do_prev(tr,1),tr.move(4),do_next(tr,1);}, shape_type{1,0,2} ,value_type{6}, true),
+        std::make_tuple(storage_type{1,2,3,4,5,6}, shape_type{2,1,3}, [do_next,do_prev](auto& tr){return do_next(tr,6),tr.move(0),do_prev(tr,1);}, shape_type{1,0,2} ,value_type{6}, false),
+        std::make_tuple(storage_type{1,2,3,4,5,6}, shape_type{2,1,3}, [do_next](auto& tr){return do_next(tr,6),tr.move(1),do_next(tr,1);}, shape_type{0,0,2} ,value_type{3}, true),
+        std::make_tuple(storage_type{1,2,3,4,5,6}, shape_type{2,1,3}, [do_next,do_prev](auto& tr){return do_next(tr,6),tr.move(1),do_prev(tr,1);}, shape_type{0,0,0} ,value_type{1}, true)
+    );
+    auto test = [](const auto& t, auto& traverser){
+        auto mover = std::get<2>(t);
+        auto expected_index = std::get<3>(t);
+        auto expected_element = std::get<4>(t);
+        auto expected_is_next = std::get<5>(t);
+        auto result_is_next = mover(traverser);
+        auto result_index = traverser.index();
+        auto result_element = *traverser.walker();
+        REQUIRE(result_is_next == expected_is_next);
+        REQUIRE(result_index == expected_index);
+        REQUIRE(result_element == expected_element);
+    };
+    SECTION("test_walker_random_access_traverser_move")
+    {
+        auto test_ = [test](const auto& t){
+            auto storage = std::get<0>(t);
+            auto shape = std::get<1>(t);
+            using traverser_type = walker_random_access_traverser<config_type, walker_type>;
+            auto indexer = indexer_type{storage};
+            auto strides = make_strides(shape);
+            auto adapted_strides = make_adapted_strides(shape,strides);
+            auto reset_strides = make_reset_strides(shape,strides);
+            index_type offset{0};
+            dim_type max_dim = shape.size();
+            auto walker =  walker_type{adapted_strides, reset_strides, offset, indexer, max_dim};
+            auto strides_div = make_dividers<config_type>(strides);
+            auto traverser = traverser_type{shape, strides_div, walker};
             test(t,traverser);
         };
         apply_by_element(test_, test_data);
