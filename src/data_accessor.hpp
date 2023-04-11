@@ -5,6 +5,38 @@
 
 namespace gtensor{
 
+namespace detail{
+
+template<typename SizeT, typename IdxT>
+constexpr inline bool can_walk(const SizeT& direction, const SizeT& dim, const IdxT& direction_dim){
+    return direction < dim && direction_dim != IdxT(1);
+}
+
+template<typename CfgT>
+class shape_inverter
+{
+    using index_type = typename CfgT::index_type;
+    using shape_type = typename CfgT::shape_type;
+    using dim_type = typename CfgT::dim_type;
+
+    const index_type* shape_last;
+
+public:
+    shape_inverter(const shape_type& shape_):
+        shape_last{shape_.data()+shape_.size()-1}
+    {}
+
+    //direction must be in range [0,dim-1]
+    //0 direction corresponding to last shape element - direction with minimal stride
+    //1 direction corresponding to shape element befor last
+    //...
+    //dim-1 direction correcponding to 0 shape element - direction with max stride
+    index_type element(const dim_type& direction)const{return *(shape_last-direction);}
+};
+
+}   //end of namespace detail
+
+
 //basic indexer is data accessor that uses flat index to address data
 //indexers can be chained to make data view
 template<typename...> class basic_indexer;
