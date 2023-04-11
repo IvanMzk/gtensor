@@ -7,6 +7,14 @@
 #include "libdivide_helper.hpp"
 
 namespace gtensor{
+
+class broadcast_exception : public std::runtime_error{
+public:
+    explicit broadcast_exception(const char* what):
+        runtime_error(what)
+    {}
+};
+
 namespace detail{
 
 //select type of strides_div
@@ -30,12 +38,42 @@ public:
     using type = typename selector_<typename config_type::div_mode, void>::type;
 };
 
+//makes broadcast shape, throws if shapes are not broadcastable
+template<typename ShT>
+inline void make_broadcast_shape_helper(ShT&){}
+template<typename ShT, typename T, typename...Ts>
+inline void make_broadcast_shape_helper(ShT& res, const T& shape, const Ts&...shapes){
+    using shape_type = ShT;
+    using index_type = typename shape_type::value_type;
+    auto res_it = res.end();
+    auto shape_it = shape.end();
+    auto shape_begin = shape.begin();
+    while(shape_it!=shape_begin){
+        const index_type& r{*--res_it};
+        const index_type& s{*--shape_it};
+        if (r==index_type(-1) || r==index_type(1)){
+            *res_it = s;
+        }
+        else if (s!=index_type(1) && s!=r){
+            throw broadcast_exception("shapes are not broadcastable");
+        }
+    }
+    make_broadcast_shape_helper(res, shapes...);
+}
+template<typename ShT, typename...Ts>
+inline auto make_broadcast_shape(const Ts&...shapes){
+    using shape_type = ShT;
+    using index_type = typename shape_type::value_type;
+    auto res = shape_type(std::max({shapes.size()...}),index_type(-1));
+    make_broadcast_shape_helper(res, shapes...);
+    return res;
+}
+
 template<typename T>
 inline T make_shape_element(const T& shape_element){
     using shape_element_type = T;
     return shape_element==shape_element_type{0} ? shape_element_type{1}:shape_element;
 }
-
 template<typename ResT, typename ShT>
 inline ResT make_strides(const ShT& shape, typename ShT::value_type min_stride = typename ShT::value_type(1)){
     using result_type = ResT;

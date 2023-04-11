@@ -3,11 +3,96 @@
 #include "catch.hpp"
 #include "descriptor.hpp"
 #include "test_config.hpp"
+#include "helpers_for_testing.hpp"
 
-TEMPLATE_TEST_CASE("test_make_strides","[test_descriptor]",
-    std::vector<std::int64_t>,
-    std::vector<std::size_t>
-)
+
+TEMPLATE_TEST_CASE("test_make_broadcast_shape","[test_descriptor]", std::vector<std::int64_t>)
+{
+    using shape_type = TestType;
+    using result_shape_type = shape_type;
+    using helpers_for_testing::apply_by_element;
+    using gtensor::detail::make_broadcast_shape;
+    //0shapes,1expected broadcast shape
+    auto test_data = std::make_tuple(
+        std::make_tuple(std::make_tuple(shape_type{}), result_shape_type{}),
+        std::make_tuple(std::make_tuple(shape_type{}, shape_type{}), result_shape_type{}),
+        std::make_tuple(std::make_tuple(shape_type{0}, shape_type{}), result_shape_type{0}),
+        std::make_tuple(std::make_tuple(shape_type{}, shape_type{0}), result_shape_type{0}),
+        std::make_tuple(std::make_tuple(shape_type{1}, shape_type{}), result_shape_type{1}),
+        std::make_tuple(std::make_tuple(shape_type{}, shape_type{1}), result_shape_type{1}),
+        std::make_tuple(std::make_tuple(shape_type{}, shape_type{1}, shape_type{}), result_shape_type{1}),
+        std::make_tuple(std::make_tuple(shape_type{}, shape_type{2,3,4}, shape_type{}), result_shape_type{2,3,4}),
+        std::make_tuple(std::make_tuple(shape_type{0}), result_shape_type{0}),
+        std::make_tuple(std::make_tuple(shape_type{1}), result_shape_type{1}),
+        std::make_tuple(std::make_tuple(shape_type{1,2,3}), result_shape_type{1,2,3}),
+        std::make_tuple(std::make_tuple(shape_type{0}, shape_type{0}), result_shape_type{0}),
+        std::make_tuple(std::make_tuple(shape_type{0}, shape_type{1}), result_shape_type{0}),
+        std::make_tuple(std::make_tuple(shape_type{1}, shape_type{0}), result_shape_type{0}),
+        std::make_tuple(std::make_tuple(shape_type{1}, shape_type{1}), result_shape_type{1}),
+        std::make_tuple(std::make_tuple(shape_type{1}, shape_type{1}, shape_type{1}), result_shape_type{1}),
+        std::make_tuple(std::make_tuple(shape_type{5}, shape_type{5}), result_shape_type{5}),
+        std::make_tuple(std::make_tuple(shape_type{1,1}, shape_type{0}), result_shape_type{1,0}),
+        std::make_tuple(std::make_tuple(shape_type{0}, shape_type{1,1}), result_shape_type{1,0}),
+        std::make_tuple(std::make_tuple(shape_type{2,1}, shape_type{0}), result_shape_type{2,0}),
+        std::make_tuple(std::make_tuple(shape_type{1,1}, shape_type{1}), result_shape_type{1,1}),
+        std::make_tuple(std::make_tuple(shape_type{1,1}, shape_type{1}, shape_type{1,1,1}, shape_type{1,1}), result_shape_type{1,1,1}),
+        std::make_tuple(std::make_tuple(shape_type{1,1}, shape_type{1,1}, shape_type{1,1}), result_shape_type{1,1}),
+        std::make_tuple(std::make_tuple(shape_type{1,5}, shape_type{5,1}), result_shape_type{5,5}),
+        std::make_tuple(std::make_tuple(shape_type{1,5}, shape_type{5,1}, shape_type{1,5}, shape_type{1,1}), result_shape_type{5,5}),
+        std::make_tuple(std::make_tuple(shape_type{1,2,0}, shape_type{3,1,1}), result_shape_type{3,2,0}),
+        std::make_tuple(std::make_tuple(shape_type{2,3,4}, shape_type{3,4}), result_shape_type{2,3,4}),
+        std::make_tuple(std::make_tuple(shape_type{2,3,4}, shape_type{3,4}, shape_type{1,1,1,1}, shape_type{5,1,1,1}), result_shape_type{5,2,3,4}),
+        std::make_tuple(std::make_tuple(shape_type{2,1,4}, shape_type{3,1}, shape_type{3,4}), result_shape_type{2,3,4}),
+        std::make_tuple(std::make_tuple(shape_type{0,1,4}, shape_type{3,1}, shape_type{0,3,4}, shape_type{1,3,4}), result_shape_type{0,3,4}),
+        std::make_tuple(std::make_tuple(shape_type{2,4}, shape_type{3,1,4}), result_shape_type{3,2,4}),
+        std::make_tuple(std::make_tuple(shape_type{2,1}, shape_type{2,4}, shape_type{3,1,4}), result_shape_type{3,2,4})
+    );
+    auto test = [](const auto& t){
+        auto shapes = std::get<0>(t);
+        auto expected = std::get<1>(t);
+        auto apply_shapes = [](const auto&...shapes_){
+            return make_broadcast_shape<result_shape_type>(shapes_...);
+        };
+        auto result = std::apply(apply_shapes, shapes);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test, test_data);
+}
+
+TEMPLATE_TEST_CASE("test_make_broadcast_shape_exception","[test_descriptor]", std::vector<std::int64_t>)
+{
+    using shape_type = TestType;
+    using gtensor::broadcast_exception;
+    using gtensor::detail::make_broadcast_shape;
+    using helpers_for_testing::apply_by_element;
+    //0shapes
+    auto test_data = std::make_tuple(
+        std::make_tuple(shape_type{0}, shape_type{2}),
+        std::make_tuple(shape_type{2}, shape_type{0}),
+        std::make_tuple(shape_type{3}, shape_type{2}),
+        std::make_tuple(shape_type{2}, shape_type{3}),
+        std::make_tuple(shape_type{1,2}, shape_type{0}),
+        std::make_tuple(shape_type{1,2}, shape_type{3}),
+        std::make_tuple(shape_type{1,2}, shape_type{4,3}),
+        std::make_tuple(shape_type{3,2}, shape_type{4,2}),
+        std::make_tuple(shape_type{5,1,2}, shape_type{4,4,2}),
+        std::make_tuple(shape_type{3}, shape_type{0}, shape_type{3}),
+        std::make_tuple(shape_type{3}, shape_type{3}, shape_type{2}),
+        std::make_tuple(shape_type{1,2}, shape_type{3}, shape_type{1}),
+        std::make_tuple(shape_type{1,2}, shape_type{1,1}, shape_type{4,4}),
+        std::make_tuple(shape_type{5,1,0}, shape_type{2,1}, shape_type{5,2,2}),
+        std::make_tuple(shape_type{5,1,2}, shape_type{2,2}, shape_type{4,4,2})
+    );
+    auto test = [](const auto& shapes){
+        auto apply_shapes = [](const auto&...shapes_){
+            return make_broadcast_shape<shape_type>(shapes_...);
+        };
+        REQUIRE_THROWS_AS(std::apply(apply_shapes, shapes), broadcast_exception);
+    };
+    apply_by_element(test, test_data);
+}
+
+TEMPLATE_TEST_CASE("test_make_strides","[test_descriptor]", std::vector<std::int64_t>)
 {
     using shape_type = TestType;
     using gtensor::detail::make_strides;
@@ -37,6 +122,7 @@ TEMPLATE_TEST_CASE("test_make_strides","[test_descriptor]",
     auto strides_result = make_strides(shape);
     REQUIRE(strides_result == strides_expected);
 }
+
 TEMPLATE_TEST_CASE("test_make_strides_div","[test_descriptor]",
     gtensor::config::mode_div_libdivide,
     gtensor::config::mode_div_native
@@ -75,10 +161,7 @@ TEMPLATE_TEST_CASE("test_make_strides_div","[test_descriptor]",
     REQUIRE(strides_result == strides_expected);
 }
 
-TEMPLATE_TEST_CASE("test_make_reset_strides","[test_descriptor]",
-    std::vector<std::int64_t>,
-    std::vector<std::size_t>
-)
+TEMPLATE_TEST_CASE("test_make_reset_strides","[test_descriptor]",std::vector<std::int64_t>)
 {
     using shape_type = TestType;
     using gtensor::detail::make_reset_strides;
@@ -110,10 +193,7 @@ TEMPLATE_TEST_CASE("test_make_reset_strides","[test_descriptor]",
     REQUIRE(reset_strides_result == reset_strides_expected);
 }
 
-TEMPLATE_TEST_CASE("test_make_adapted_strides","[test_descriptor]",
-    std::vector<std::int64_t>,
-    std::vector<std::size_t>
-)
+TEMPLATE_TEST_CASE("test_make_adapted_strides","[test_descriptor]",std::vector<std::int64_t>)
 {
     using shape_type = TestType;
     using gtensor::detail::make_adapted_strides;
@@ -146,10 +226,7 @@ TEMPLATE_TEST_CASE("test_make_adapted_strides","[test_descriptor]",
     REQUIRE(result == expected);
 }
 
-TEMPLATE_TEST_CASE("test_make_size","[test_descriptor]",
-    std::vector<std::int64_t>,
-    std::vector<std::size_t>
-)
+TEMPLATE_TEST_CASE("test_make_size","[test_descriptor]",std::vector<std::int64_t>)
 {
     using shape_type = TestType;
     using index_type = typename TestType::value_type;
