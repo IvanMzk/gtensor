@@ -190,60 +190,62 @@ public:
     }
 };
 
-// template<typename CfgT, typename Walker>
-// class walker_bidirectional_adapter : public walker_forward_adapter<CfgT, Walker>
-// {
-// protected:
-//     using walker_forward_adapter_base = walker_forward_adapter<CfgT, Walker>;
-//     using typename walker_forward_adapter_base::config_type;
-//     using typename walker_forward_adapter_base::walker_type;
-//     using typename walker_forward_adapter_base::shape_type;
-//     using typename walker_forward_adapter_base::index_type;
-//     using typename walker_forward_adapter_base::dim_type;
-//     using walker_forward_adapter_base::walker_;
-//     using walker_forward_adapter_base::dim_;
-//     using walker_forward_adapter_base::index_;
-//     using walker_forward_adapter_base::shape_;
+template<typename Config, typename Walker>
+class walker_bidirectional_traverser : public walker_forward_traverser<Config, Walker>
+{
+protected:
+    using walker_forward_traverser_base = walker_forward_traverser<Config, Walker>;
+    using typename walker_forward_traverser_base::config_type;
+    using typename walker_forward_traverser_base::walker_type;
+    using typename walker_forward_traverser_base::shape_type;
+    using typename walker_forward_traverser_base::index_type;
+    using typename walker_forward_traverser_base::dim_type;
+    using walker_forward_traverser_base::walker_;
+    using walker_forward_traverser_base::dim_;
+    using walker_forward_traverser_base::index_;
+    using walker_forward_traverser_base::shape_;
 
-//     index_type overflow_{0};
-// public:
-//     using walker_forward_adapter_base::walker_forward_adapter_base;
+    index_type overflow_{0};
+public:
+    using walker_forward_traverser_base::walker_forward_traverser_base;
 
-//     bool next(){
-//         if (walker_forward_adapter_base::next()){
-//             return true;
-//         }else{
-//             if (overflow_ == index_type{-1}){
-//                 ++overflow_;
-//                 return true;
-//             }else{
-//                 ++overflow_;
-//                 return false;
-//             }
-//         }
-//     }
-//     bool prev(){
-//         dim_type direction{0}; //start from direction with min stride
-//         auto index_it = index_.end();
-//         for(;direction!=dim_;++direction){
-//             if (*--index_it == index_type{0}){   //direction at their min
-//                 *index_it = shape_.element(direction)-index_type{1};
-//                 walker_.reset_back(direction);
-//             }else{  //can prev on direction
-//                 --(*index_it);
-//                 walker_.step_back(direction);
-//                 return true;
-//             }
-//         }
-//         if (overflow_ == index_type{1}){
-//             --overflow_;
-//             return true;
-//         }else{
-//             --overflow_;
-//             return false;
-//         }
-//     }
-// };
+    bool next(){
+        if (walker_forward_traverser_base::next()){
+            return true;
+        }else{
+            if (overflow_ == index_type{-1}){
+                ++overflow_;
+                return true;
+            }else{
+                ++overflow_;
+                return false;
+            }
+        }
+    }
+    bool prev(){
+        dim_type direction{dim_}; //start from direction with min stride
+        auto index_it = index_.end();
+        while(direction!=dim_type{0}){
+            --index_it;
+            --direction;
+            if (*index_it == index_type{0}){   //direction at their min
+                *index_it = (*shape_)[direction]-index_type{1};
+                walker_.reset(direction);
+            }else{  //can prev on direction
+                --(*index_it);
+                walker_.step_back(direction);
+                return true;
+            }
+        }
+        if (overflow_ == index_type{1}){
+            --overflow_;
+            return true;
+        }else{
+            --overflow_;
+            return false;
+        }
+    }
+};
 
 // template<typename CfgT, typename Walker>
 // class walker_iterator_adapter : public walker_bidirectional_adapter<CfgT, Walker>
