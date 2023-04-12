@@ -42,33 +42,28 @@ namespace detail{
 
 /*
 * random access iterator, use indexer to access data
-* IndexerT is indexer type
+* Indexer is indexer type
 */
-template<typename CfgT, typename IndexerT>
-class trivial_broadcast_iterator
+template<typename Config, typename Indexer>
+class indexer_iterator
 {
 protected:
-    using indexer_type = IndexerT;
-    using shape_type = typename CfgT::shape_type;
-    using index_type = typename CfgT::index_type;
+    using indexer_type = Indexer;
+    using index_type = typename Config::index_type;
     using result_type = decltype(std::declval<indexer_type>()[std::declval<index_type>()]);
 public:
     using iterator_category = std::random_access_iterator_tag;
     using value_type = std::decay_t<result_type>;
-    using difference_type = typename CfgT::index_type;
+    using difference_type = index_type;
     using pointer = typename detail::iterator_internals_selector<value_type>::pointer;
     using reference = typename detail::iterator_internals_selector<value_type>::reference;
     using const_reference = typename detail::iterator_internals_selector<value_type>::const_reference;
-    //begin constructor
-    template<typename W, std::enable_if_t<std::is_same_v<W,indexer_type> ,int> =0 >
-    explicit trivial_broadcast_iterator(W&& indexer_):
-        indexer{std::forward<W>(indexer_)},
-        flat_index{0}
-    {}
-    //end constructor
-    template<typename W, std::enable_if_t<std::is_same_v<W,indexer_type> ,int> =0 >
-    trivial_broadcast_iterator(W&& indexer_, const difference_type& flat_index_):
-        indexer{std::forward<W>(indexer_)},
+
+    //assuming ussual stoarge subscript operator semantic i.e. subscript index in range [0,size()-1]:
+    //begin should be constructed with zero flat_index_ argument, end with size() flat_index_argument
+    template<typename Indexer_, std::enable_if_t<!std::is_convertible_v<Indexer_,indexer_iterator> ,int> =0>
+    indexer_iterator(Indexer_&& indexer_, const difference_type& flat_index_):
+        indexer{std::forward<Indexer_>(indexer_)},
         flat_index{flat_index_}
     {}
     auto& operator++(){
@@ -81,21 +76,21 @@ public:
     };
     auto& operator+=(difference_type n){return advance(n);}
     auto& operator-=(difference_type n){return advance(-n);}
-    trivial_broadcast_iterator operator+(difference_type n) const{
+    indexer_iterator operator+(difference_type n) const{
         auto it = *this;
         it+=n;
         return it;
     }
-    trivial_broadcast_iterator operator-(difference_type n) const{
+    indexer_iterator operator-(difference_type n) const{
         auto it = *this;
         it-=n;
         return it;
     }
-    bool operator==(const trivial_broadcast_iterator& it)const{return flat_index == it.flat_index;}
-    bool operator!=(const trivial_broadcast_iterator& it)const{return flat_index != it.flat_index;}
+    bool operator==(const indexer_iterator& it)const{return flat_index == it.flat_index;}
+    bool operator!=(const indexer_iterator& it)const{return flat_index != it.flat_index;}
     result_type operator[](difference_type n)const{return *(*this+n);}
-    result_type operator*() const{return indexer[static_cast<index_type>(flat_index)];}
-    inline difference_type friend operator-(const trivial_broadcast_iterator& lhs, const trivial_broadcast_iterator& rhs){return lhs.flat_index - rhs.flat_index;}
+    result_type operator*() const{return indexer[flat_index];}
+    inline difference_type friend operator-(const indexer_iterator& lhs, const indexer_iterator& rhs){return lhs.flat_index - rhs.flat_index;}
 private:
     auto& advance(difference_type n){
         flat_index+=n;
@@ -105,91 +100,90 @@ private:
     difference_type flat_index;
 };
 
-template<typename CfgT, typename IndexerT>
-inline bool operator>(const trivial_broadcast_iterator<CfgT,IndexerT>& lhs, const trivial_broadcast_iterator<CfgT,IndexerT>& rhs){return (lhs - rhs) > typename trivial_broadcast_iterator<CfgT,IndexerT>::difference_type(0);}
-template<typename CfgT, typename IndexerT>
-inline bool operator<(const trivial_broadcast_iterator<CfgT,IndexerT>& lhs, const trivial_broadcast_iterator<CfgT,IndexerT>& rhs){return (rhs - lhs) > typename trivial_broadcast_iterator<CfgT,IndexerT>::difference_type(0);}
-template<typename CfgT, typename IndexerT>
-inline bool operator>=(const trivial_broadcast_iterator<CfgT,IndexerT>& lhs, const trivial_broadcast_iterator<CfgT,IndexerT>& rhs){return !(lhs < rhs);}
-template<typename CfgT, typename IndexerT>
-inline bool operator<=(const trivial_broadcast_iterator<CfgT,IndexerT>& lhs, const trivial_broadcast_iterator<CfgT,IndexerT>& rhs){return !(lhs > rhs);}
+template<typename Config, typename Indexer>
+inline bool operator>(const indexer_iterator<Config,Indexer>& lhs, const indexer_iterator<Config,Indexer>& rhs){
+    return (lhs - rhs) > typename indexer_iterator<Config,Indexer>::difference_type(0);
+}
+template<typename Config, typename Indexer>
+inline bool operator<(const indexer_iterator<Config,Indexer>& lhs, const indexer_iterator<Config,Indexer>& rhs){
+    return (rhs - lhs) > typename indexer_iterator<Config,Indexer>::difference_type(0);
+}
+template<typename Config, typename Indexer>
+inline bool operator>=(const indexer_iterator<Config,Indexer>& lhs, const indexer_iterator<Config,Indexer>& rhs){return !(lhs < rhs);}
+template<typename Config, typename Indexer>
+inline bool operator<=(const indexer_iterator<Config,Indexer>& lhs, const indexer_iterator<Config,Indexer>& rhs){return !(lhs > rhs);}
 
 
-template<typename CfgT, typename IndexerT>
-class reverse_trivial_broadcast_iterator : private trivial_broadcast_iterator<CfgT,IndexerT>
+template<typename Config, typename Indexer>
+class reverse_indexer_iterator : private indexer_iterator<Config,Indexer>
 {
-    using trivial_broadcast_iterator_base = trivial_broadcast_iterator<CfgT,IndexerT>;
+    using indexer_iterator_base = indexer_iterator<Config,Indexer>;
 protected:
-    using typename trivial_broadcast_iterator_base::indexer_type;
-    using typename trivial_broadcast_iterator_base::result_type;
-    using typename trivial_broadcast_iterator_base::shape_type;
-    using typename trivial_broadcast_iterator_base::index_type;
+    using typename indexer_iterator_base::indexer_type;
+    using typename indexer_iterator_base::result_type;
+    using typename indexer_iterator_base::index_type;
 public:
     using iterator_category = std::random_access_iterator_tag;
-    using typename trivial_broadcast_iterator_base::value_type;
-    using typename trivial_broadcast_iterator_base::difference_type;
-    using typename trivial_broadcast_iterator_base::pointer;
-    using typename trivial_broadcast_iterator_base::reference;
-    using typename trivial_broadcast_iterator_base::const_reference;
-    using trivial_broadcast_iterator_base::operator*;
+    using typename indexer_iterator_base::value_type;
+    using typename indexer_iterator_base::difference_type;
+    using typename indexer_iterator_base::pointer;
+    using typename indexer_iterator_base::reference;
+    using typename indexer_iterator_base::const_reference;
+    using indexer_iterator_base::operator*;
 
-    //rbegin constructor
-    template<typename W, std::enable_if_t<std::is_same_v<W,indexer_type> ,int> =0 >
-    reverse_trivial_broadcast_iterator(W&& indexer_, const difference_type& size_):
-        trivial_broadcast_iterator_base{std::forward<W>(indexer_), size_}
+    //rbegin should be constructed with size() flat_index_ argument, rend with zero flat_index_ argument
+    template<typename Indexer_, std::enable_if_t<!std::is_convertible_v<Indexer_,indexer_iterator> ,int> =0>
+    reverse_indexer_iterator(Indexer_&& indexer_, const difference_type& flat_index_):
+        indexer_iterator_base{std::forward<Indexer_>(indexer_), flat_index_}
     {
-        trivial_broadcast_iterator_base::operator--();
+        indexer_iterator_base::operator--();
     }
-    //rend constructor
-    template<typename W, std::enable_if_t<std::is_same_v<W,indexer_type> ,int> =0 >
-    reverse_trivial_broadcast_iterator(W&& indexer_):
-        trivial_broadcast_iterator_base{std::forward<W>(indexer_)}
-    {
-        trivial_broadcast_iterator_base::operator--();
-    }
-
     auto& operator++(){
-        trivial_broadcast_iterator_base::operator--();
+        indexer_iterator_base::operator--();
         return *this;
     }
     auto& operator--(){
-        trivial_broadcast_iterator_base::operator++();
+        indexer_iterator_base::operator++();
         return *this;
     }
     auto& operator+=(difference_type n){
-        trivial_broadcast_iterator_base::operator-=(n);
+        indexer_iterator_base::operator-=(n);
         return *this;
     }
     auto& operator-=(difference_type n){
-        trivial_broadcast_iterator_base::operator+=(n);
+        indexer_iterator_base::operator+=(n);
         return *this;
     }
-    reverse_trivial_broadcast_iterator operator+(difference_type n)const{
+    reverse_indexer_iterator operator+(difference_type n)const{
         auto tmp = *this;
         tmp+=n;
         return tmp;
     }
-    reverse_trivial_broadcast_iterator operator-(difference_type n)const{
+    reverse_indexer_iterator operator-(difference_type n)const{
         auto tmp = *this;
         tmp-=n;
         return tmp;
     }
     result_type operator[](difference_type n)const{return *(*this+n);}
-    bool operator==(const reverse_trivial_broadcast_iterator& other)const{return static_cast<const trivial_broadcast_iterator_base&>(*this) == static_cast<const trivial_broadcast_iterator_base&>(other);}
-    bool operator!=(const reverse_trivial_broadcast_iterator& other)const{return !(*this == other);}
-    inline difference_type friend operator-(const reverse_trivial_broadcast_iterator& lhs, const reverse_trivial_broadcast_iterator& rhs){
-        return static_cast<const trivial_broadcast_iterator_base&>(rhs) - static_cast<const trivial_broadcast_iterator_base&>(lhs);
+    bool operator==(const reverse_indexer_iterator& other)const{return static_cast<const indexer_iterator_base&>(*this) == static_cast<const indexer_iterator_base&>(other);}
+    bool operator!=(const reverse_indexer_iterator& other)const{return !(*this == other);}
+    inline difference_type friend operator-(const reverse_indexer_iterator& lhs, const reverse_indexer_iterator& rhs){
+        return static_cast<const indexer_iterator_base&>(rhs) - static_cast<const indexer_iterator_base&>(lhs);
     }
 };
 
-template<typename CfgT, typename IndexerT>
-inline bool operator>(const reverse_trivial_broadcast_iterator<CfgT,IndexerT>& lhs, const reverse_trivial_broadcast_iterator<CfgT,IndexerT>& rhs){return (lhs - rhs) > typename reverse_trivial_broadcast_iterator<CfgT,IndexerT>::difference_type(0);}
-template<typename CfgT, typename IndexerT>
-inline bool operator<(const reverse_trivial_broadcast_iterator<CfgT,IndexerT>& lhs, const reverse_trivial_broadcast_iterator<CfgT,IndexerT>& rhs){return (rhs - lhs) > typename reverse_trivial_broadcast_iterator<CfgT,IndexerT>::difference_type(0);}
-template<typename CfgT, typename IndexerT>
-inline bool operator>=(const reverse_trivial_broadcast_iterator<CfgT,IndexerT>& lhs, const reverse_trivial_broadcast_iterator<CfgT,IndexerT>& rhs){return !(lhs < rhs);}
-template<typename CfgT, typename IndexerT>
-inline bool operator<=(const reverse_trivial_broadcast_iterator<CfgT,IndexerT>& lhs, const reverse_trivial_broadcast_iterator<CfgT,IndexerT>& rhs){return !(lhs > rhs);}
+template<typename Config, typename Indexer>
+inline bool operator>(const reverse_indexer_iterator<Config,Indexer>& lhs, const reverse_indexer_iterator<Config,Indexer>& rhs){
+    return (lhs - rhs) > typename reverse_indexer_iterator<Config,Indexer>::difference_type(0);
+}
+template<typename Config, typename Indexer>
+inline bool operator<(const reverse_indexer_iterator<Config,Indexer>& lhs, const reverse_indexer_iterator<Config,Indexer>& rhs){
+    return (rhs - lhs) > typename reverse_indexer_iterator<Config,Indexer>::difference_type(0);
+}
+template<typename Config, typename Indexer>
+inline bool operator>=(const reverse_indexer_iterator<Config,Indexer>& lhs, const reverse_indexer_iterator<Config,Indexer>& rhs){return !(lhs < rhs);}
+template<typename Config, typename Indexer>
+inline bool operator<=(const reverse_indexer_iterator<Config,Indexer>& lhs, const reverse_indexer_iterator<Config,Indexer>& rhs){return !(lhs > rhs);}
 
 
 /*

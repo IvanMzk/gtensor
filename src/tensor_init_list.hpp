@@ -75,7 +75,7 @@ template<typename T, typename SizeT>
 inline auto list_size_(std::initializer_list<T> list, SizeT& size){
     for (auto p=list.begin();p!=list.end(); ++p){
         if (list_size_(*p, size)){
-            size += list.size();
+            size += static_cast<SizeT>(list.size());
             break;
         }
     }

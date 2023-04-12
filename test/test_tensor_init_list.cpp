@@ -96,17 +96,17 @@ TEST_CASE("test_list_size","[test_tensor_init_list]")
     using gtensor::detail::nested_init_list1;
     using gtensor::detail::nested_init_list2;
     using gtensor::detail::nested_init_list3;
-    using dim_type = int;
+    using size_type = std::int64_t;
     using gtensor::detail::list_size;
     //0result,1expected
-    using test_type = std::tuple<dim_type, dim_type>;
+    using test_type = std::tuple<size_type, size_type>;
     auto test_data = GENERATE(
-        test_type{list_size<dim_type>(nested_init_list1<int>{}),0},
-        test_type{list_size<dim_type>(nested_init_list1<int>{1,2,3,4,5}),5},
-        test_type{list_size<dim_type>(nested_init_list2<int>{{},{},{}}),0},
-        test_type{list_size<dim_type>(nested_init_list2<int>{{1,2},{3,4},{5,6}}),6},
-        test_type{list_size<dim_type>(nested_init_list3<int>{{{},{}},{{},{}},{{},{}}}),0},
-        test_type{list_size<dim_type>(nested_init_list3<int>{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}}}),12}
+        test_type{list_size<size_type>(nested_init_list1<int>{}),0},
+        test_type{list_size<size_type>(nested_init_list1<int>{1,2,3,4,5}),5},
+        test_type{list_size<size_type>(nested_init_list2<int>{{},{},{}}),0},
+        test_type{list_size<size_type>(nested_init_list2<int>{{1,2},{3,4},{5,6}}),6},
+        test_type{list_size<size_type>(nested_init_list3<int>{{{},{}},{{},{}},{{},{}}}),0},
+        test_type{list_size<size_type>(nested_init_list3<int>{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}}}),12}
     );
     auto result = std::get<0>(test_data);
     auto expected = std::get<1>(test_data);
