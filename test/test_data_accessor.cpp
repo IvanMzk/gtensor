@@ -114,6 +114,8 @@ TEMPLATE_TEST_CASE("test_walker","test_data_accessor",
     using dim_type = typename config_type::dim_type;
     using index_type = typename config_type::index_type;
     using storage_type = typename config_type::storage_type;
+    using indexer_type = basic_indexer<storage_type&>;
+    using walker_type = walker<config_type, indexer_type>;
     using helpers_for_testing::apply_by_element;
     //0storage,1adapted_strides,2reset_strides,3offset,4max_dim,5mover,6expected
     auto test_data = std::make_tuple(
@@ -191,42 +193,47 @@ TEMPLATE_TEST_CASE("test_walker","test_data_accessor",
         std::make_tuple(storage_type{1,2,3,4,5,6}, shape_type{3,0,1}, shape_type{3,0,2}, index_type{0}, dim_type{3}, [](auto& w){w.walk(2,2); w.reset_back(1);}, value_type{3}),
         std::make_tuple(storage_type{1,2,3,4,5,6}, shape_type{3,0,1}, shape_type{3,0,2}, index_type{0}, dim_type{3}, [](auto& w){w.reset(1);}, value_type{1})
     );
-    auto test = [](const auto& t, auto& storage){
+    auto test = [](const auto& t){
+        auto storage = std::get<0>(t);
         auto adapted_strides = std::get<1>(t);
         auto reset_strides = std::get<2>(t);
         auto offset = std::get<3>(t);
         auto max_dim = std::get<4>(t);
         auto mover = std::get<5>(t);
         auto expected = std::get<6>(t);
-        using storage_type_ = decltype(storage);
-        using indexer_type = basic_indexer<storage_type_>;
-        using walker_type = walker<config_type, indexer_type>;
         auto indexer = indexer_type{storage};
         auto walker =  walker_type{adapted_strides,reset_strides,offset,indexer,max_dim};
         mover(walker);
         auto result = *walker;
-        REQUIRE(std::is_same_v<decltype(storage[std::declval<index_type>()]),decltype(*walker)>);
         REQUIRE(result == expected);
     };
+    apply_by_element(test, test_data);
+}
+
+TEMPLATE_TEST_CASE("test_walker_result_type","test_data_accessor",
+    test_config::config_storage_selector<std::vector>::config_type,
+    test_config::config_storage_selector<gtensor::storage_vector>::config_type
+)
+{
+    using value_type = int;
+    using config_type = gtensor::config::extend_config_t<TestType,value_type>;
+    using index_type = typename config_type::index_type;
+    using gtensor::basic_indexer;
+    using gtensor::walker;
+    using helpers_for_testing::apply_by_element;
     SECTION("test_walker_non_const_storage")
     {
-        auto test_ = [test](const auto& t){
-            auto storage = std::get<0>(t);
-            using storage_type_ = decltype(storage);
-            static_assert(!std::is_const_v<storage_type_>);
-            test(t, storage);
-        };
-        apply_by_element(test_, test_data);
+        using storage_type = typename config_type::storage_type;
+        using indexer_type = basic_indexer<storage_type&>;
+        using walker_type = walker<config_type,indexer_type>;
+        REQUIRE(std::is_same_v<decltype(std::declval<storage_type>()[std::declval<index_type>()]),decltype(std::declval<walker_type>().operator*())>);
     }
     SECTION("test_walker_const_storage")
     {
-        auto test_ = [test](const auto& t){
-            const auto storage = std::get<0>(t);
-            using storage_type_ = decltype(storage);
-            static_assert(std::is_const_v<storage_type_>);
-            test(t, storage);
-        };
-        apply_by_element(test_, test_data);
+        using storage_type = const typename config_type::storage_type;
+        using indexer_type = basic_indexer<storage_type&>;
+        using walker_type = walker<config_type,indexer_type>;
+        REQUIRE(std::is_same_v<decltype(std::declval<storage_type>()[std::declval<index_type>()]),decltype(std::declval<walker_type>().operator*())>);
     }
 }
 
