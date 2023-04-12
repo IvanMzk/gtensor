@@ -2,6 +2,7 @@
 #define DATA_ACCESSOR_HPP_
 
 #include <type_traits>
+#include "descriptor.hpp"
 
 namespace gtensor{
 

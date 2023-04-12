@@ -24,7 +24,8 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_SOURCE_DIR}/test_libdivide_helper.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_slice.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_descriptor.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_data_accessor.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_data_accessor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_iterator.cpp
 
     #${CMAKE_CURRENT_SOURCE_DIR}/test_common.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_view_factory.cpp
