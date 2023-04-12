@@ -2,17 +2,23 @@
 #include "descriptor.hpp"
 #include "data_accessor.hpp"
 #include "helpers_for_testing.hpp"
+#include "test_config.hpp"
 
-TEST_CASE("test_basic_indexer_reference_specialization","test_data_accessor"){
+TEMPLATE_TEST_CASE("test_basic_indexer_reference_specialization","test_data_accessor",
+    std::vector<int>,
+    gtensor::storage_vector<int>
+)
+{
+    using storage_type = TestType;
     using gtensor::basic_indexer;
     using helpers_for_testing::apply_by_element;
 
     //0parent,1index,2expected
     auto test_data = std::make_tuple(
-        std::make_tuple(std::vector<int>{1,2,3,0}, 0, 1),
-        std::make_tuple(std::vector<int>{1,2,3,0}, 1, 2),
-        std::make_tuple(std::vector<int>{1,2,3,0}, 2, 3),
-        std::make_tuple(std::vector<int>{1,2,3,0}, 3, 0)
+        std::make_tuple(storage_type{1,2,3,0}, 0, 1),
+        std::make_tuple(storage_type{1,2,3,0}, 1, 2),
+        std::make_tuple(storage_type{1,2,3,0}, 2, 3),
+        std::make_tuple(storage_type{1,2,3,0}, 3, 0)
     );
     auto test = [](const auto& t, auto& parent){
         auto index = std::get<1>(t);
@@ -45,16 +51,21 @@ TEST_CASE("test_basic_indexer_reference_specialization","test_data_accessor"){
     }
 }
 
-TEST_CASE("test_basic_indexer_converter_specialization","test_data_accessor"){
+TEMPLATE_TEST_CASE("test_basic_indexer_converter_specialization","test_data_accessor",
+    std::vector<int>,
+    gtensor::storage_vector<int>
+)
+{
+    using stoarge_type = TestType;
     using gtensor::basic_indexer;
     using helpers_for_testing::apply_by_element;
 
     //0parent,1convertor,2index,3expected
     auto test_data = std::make_tuple(
-        std::make_tuple(std::vector<int>{1,2,3,0}, [](auto i){return i;}, 0, 1),
-        std::make_tuple(std::vector<int>{1,2,3,0}, [](auto i){return ++i;}, 1, 3),
-        std::make_tuple(std::vector<int>{1,2,3,0}, [](auto i){return --i;}, 2, 2),
-        std::make_tuple(std::vector<int>{1,2,3,0}, [](auto i){return i;}, 3, 0)
+        std::make_tuple(stoarge_type{1,2,3,0}, [](auto i){return i;}, 0, 1),
+        std::make_tuple(stoarge_type{1,2,3,0}, [](auto i){return ++i;}, 1, 3),
+        std::make_tuple(stoarge_type{1,2,3,0}, [](auto i){return --i;}, 2, 2),
+        std::make_tuple(stoarge_type{1,2,3,0}, [](auto i){return i;}, 3, 0)
     );
     auto test = [](const auto& t, auto& parent){
         auto converter = std::get<1>(t);
@@ -90,15 +101,19 @@ TEST_CASE("test_basic_indexer_converter_specialization","test_data_accessor"){
     }
 }
 
-TEST_CASE("test_walker","test_data_accessor"){
+TEMPLATE_TEST_CASE("test_walker","test_data_accessor",
+    test_config::config_storage_selector<std::vector>::config_type,
+    test_config::config_storage_selector<gtensor::storage_vector>::config_type
+)
+{
     using value_type = int;
-    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
+    using config_type = gtensor::config::extend_config_t<TestType,value_type>;
     using gtensor::basic_indexer;
     using gtensor::walker;
-    using shape_type = config_type::shape_type;
-    using dim_type = config_type::dim_type;
-    using index_type = config_type::index_type;
-    using storage_type = std::vector<value_type>;
+    using shape_type = typename config_type::shape_type;
+    using dim_type = typename config_type::dim_type;
+    using index_type = typename config_type::index_type;
+    using storage_type = typename config_type::storage_type;
     using helpers_for_testing::apply_by_element;
     //0storage,1adapted_strides,2reset_strides,3offset,4max_dim,5mover,6expected
     auto test_data = std::make_tuple(
@@ -215,17 +230,21 @@ TEST_CASE("test_walker","test_data_accessor"){
     }
 }
 
-TEST_CASE("test_walker_traverser_next","test_data_accessor"){
+TEMPLATE_TEST_CASE("test_walker_traverser_next","test_data_accessor",
+    test_config::config_storage_selector<std::vector>::config_type,
+    test_config::config_storage_selector<gtensor::storage_vector>::config_type
+)
+{
     using value_type = int;
-    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
+    using config_type = gtensor::config::extend_config_t<TestType,value_type>;
     using gtensor::basic_indexer;
     using gtensor::walker;
     using gtensor::walker_forward_traverser;
     using gtensor::walker_bidirectional_traverser;
-    using shape_type = config_type::shape_type;
-    using dim_type = config_type::dim_type;
-    using index_type = config_type::index_type;
-    using storage_type = std::vector<value_type>;
+    using shape_type = typename config_type::shape_type;
+    using dim_type = typename config_type::dim_type;
+    using index_type = typename config_type::index_type;
+    using storage_type = typename config_type::storage_type;
     using indexer_type = basic_indexer<storage_type&>;
     using walker_type = walker<config_type, indexer_type>;
     using gtensor::detail::make_strides;
@@ -312,17 +331,20 @@ TEST_CASE("test_walker_traverser_next","test_data_accessor"){
     }
 }
 
-TEST_CASE("test_walker_traverser_prev","test_data_accessor"){
+TEMPLATE_TEST_CASE("test_walker_traverser_prev","test_data_accessor",
+    test_config::config_storage_selector<std::vector>::config_type,
+    test_config::config_storage_selector<gtensor::storage_vector>::config_type
+){
     using value_type = int;
-    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
+    using config_type = gtensor::config::extend_config_t<TestType,value_type>;
     using gtensor::basic_indexer;
     using gtensor::walker;
     using gtensor::walker_bidirectional_traverser;
     using gtensor::walker_random_access_traverser;
-    using shape_type = config_type::shape_type;
-    using dim_type = config_type::dim_type;
-    using index_type = config_type::index_type;
-    using storage_type = std::vector<value_type>;
+    using shape_type = typename config_type::shape_type;
+    using dim_type = typename config_type::dim_type;
+    using index_type = typename config_type::index_type;
+    using storage_type = typename config_type::storage_type;
     using indexer_type = basic_indexer<storage_type&>;
     using walker_type = walker<config_type, indexer_type>;
     using gtensor::detail::make_strides;
@@ -435,16 +457,19 @@ TEST_CASE("test_walker_traverser_prev","test_data_accessor"){
     }
 }
 
-TEST_CASE("test_walker_traverser_move","test_data_accessor"){
+TEMPLATE_TEST_CASE("test_walker_traverser_move","test_data_accessor",
+    test_config::config_storage_selector<std::vector>::config_type,
+    test_config::config_storage_selector<gtensor::storage_vector>::config_type
+){
     using value_type = int;
-    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
+    using config_type = gtensor::config::extend_config_t<TestType,value_type>;
     using gtensor::basic_indexer;
     using gtensor::walker;
     using gtensor::walker_random_access_traverser;
-    using shape_type = config_type::shape_type;
-    using dim_type = config_type::dim_type;
-    using index_type = config_type::index_type;
-    using storage_type = std::vector<value_type>;
+    using shape_type = typename config_type::shape_type;
+    using dim_type = typename config_type::dim_type;
+    using index_type = typename config_type::index_type;
+    using storage_type = typename config_type::storage_type;
     using indexer_type = basic_indexer<storage_type&>;
     using walker_type = walker<config_type, indexer_type>;
     using gtensor::detail::make_strides;

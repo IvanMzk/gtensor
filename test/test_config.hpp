@@ -4,7 +4,7 @@
 
 namespace test_config{
 
-template<typename Div, typename Eng, template<typename> typename Stor>
+template<typename Div, typename Eng, template<typename...> typename Stor>
 struct config_tmpl_{
     using engine = Eng;
     using div_mode = Div;
@@ -27,7 +27,7 @@ template<typename Div>
 struct config_div_mode_selector{
     using config_type = config_tmpl_<Div,gtensor::config::default_config::engine,gtensor::config::default_config::template storage>;
 };
-template<template<typename> typename Stor>
+template<template<typename...> typename Stor>
 struct config_storage_selector{
     using config_type = config_tmpl_<gtensor::config::default_config::div_mode,gtensor::config::default_config::engine,Stor>;
 };

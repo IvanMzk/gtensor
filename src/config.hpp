@@ -2,8 +2,7 @@
 #define CONFIG_HPP_
 
 #include <vector>
-#include "integral_type.hpp"
-#include "index_type_adapter.hpp"
+#include "storage_adapter.hpp"
 
 namespace gtensor{
 namespace config{
