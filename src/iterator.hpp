@@ -66,26 +66,7 @@ public:
         indexer{std::forward<Indexer_>(indexer_)},
         flat_index{flat_index_}
     {}
-    auto& operator++(){
-        ++flat_index;
-        return *this;
-    };
-    auto& operator--(){
-        --flat_index;
-        return *this;
-    };
     auto& operator+=(difference_type n){return advance(n);}
-    auto& operator-=(difference_type n){return advance(-n);}
-    indexer_iterator operator+(difference_type n) const{
-        auto it = *this;
-        it+=n;
-        return it;
-    }
-    indexer_iterator operator-(difference_type n) const{
-        auto it = *this;
-        it-=n;
-        return it;
-    }
     result_type operator[](difference_type n)const{return *(*this+n);}
     result_type operator*() const{return indexer[flat_index];}
     inline difference_type friend operator-(const indexer_iterator& lhs, const indexer_iterator& rhs){return lhs.flat_index - rhs.flat_index;}
@@ -98,6 +79,30 @@ private:
     difference_type flat_index;
 };
 
+template<typename Config, typename Indexer>
+inline indexer_iterator<Config,Indexer>& operator-=(indexer_iterator<Config,Indexer>& lhs, typename indexer_iterator<Config,Indexer>::difference_type n){
+    return lhs+=-n;
+}
+template<typename Config, typename Indexer>
+inline indexer_iterator<Config,Indexer> operator+(const indexer_iterator<Config,Indexer>& lhs, typename indexer_iterator<Config,Indexer>::difference_type n){
+    auto tmp = lhs;
+    tmp+=n;
+    return tmp;
+}
+template<typename Config, typename Indexer>
+inline indexer_iterator<Config,Indexer> operator-(const indexer_iterator<Config,Indexer>& lhs, typename indexer_iterator<Config,Indexer>::difference_type n){
+    auto tmp = lhs;
+    tmp+=-n;
+    return tmp;
+}
+template<typename Config, typename Indexer>
+inline indexer_iterator<Config,Indexer>& operator++(indexer_iterator<Config,Indexer>& lhs){
+    return lhs+=typename indexer_iterator<Config,Indexer>::difference_type{1};
+}
+template<typename Config, typename Indexer>
+inline indexer_iterator<Config,Indexer>& operator--(indexer_iterator<Config,Indexer>& lhs){
+    return lhs+=typename indexer_iterator<Config,Indexer>::difference_type{-1};
+}
 template<typename Config, typename Indexer>
 inline indexer_iterator<Config,Indexer> operator++(indexer_iterator<Config,Indexer>& lhs, int){
     auto tmp = lhs;
@@ -154,33 +159,11 @@ public:
     reverse_indexer_iterator(Indexer_&& indexer_, const difference_type& flat_index_):
         indexer_iterator_base{std::forward<Indexer_>(indexer_), flat_index_}
     {
-        indexer_iterator_base::operator--();
-    }
-    auto& operator++(){
-        indexer_iterator_base::operator--();
-        return *this;
-    }
-    auto& operator--(){
-        indexer_iterator_base::operator++();
-        return *this;
+        ++(*this);
     }
     auto& operator+=(difference_type n){
-        indexer_iterator_base::operator-=(n);
+        indexer_iterator_base::operator+=(-n);
         return *this;
-    }
-    auto& operator-=(difference_type n){
-        indexer_iterator_base::operator+=(n);
-        return *this;
-    }
-    reverse_indexer_iterator operator+(difference_type n)const{
-        auto tmp = *this;
-        tmp+=n;
-        return tmp;
-    }
-    reverse_indexer_iterator operator-(difference_type n)const{
-        auto tmp = *this;
-        tmp-=n;
-        return tmp;
     }
     result_type operator[](difference_type n)const{return *(*this+n);}
     inline difference_type friend operator-(const reverse_indexer_iterator& lhs, const reverse_indexer_iterator& rhs){
@@ -188,6 +171,30 @@ public:
     }
 };
 
+template<typename Config, typename Indexer>
+inline reverse_indexer_iterator<Config,Indexer>& operator-=(reverse_indexer_iterator<Config,Indexer>& lhs, typename reverse_indexer_iterator<Config,Indexer>::difference_type n){
+    return lhs+=-n;
+}
+template<typename Config, typename Indexer>
+inline reverse_indexer_iterator<Config,Indexer> operator+(const reverse_indexer_iterator<Config,Indexer>& lhs, typename reverse_indexer_iterator<Config,Indexer>::difference_type n){
+    auto tmp = lhs;
+    tmp+=n;
+    return tmp;
+}
+template<typename Config, typename Indexer>
+inline reverse_indexer_iterator<Config,Indexer> operator-(const reverse_indexer_iterator<Config,Indexer>& lhs, typename reverse_indexer_iterator<Config,Indexer>::difference_type n){
+    auto tmp = lhs;
+    tmp+=-n;
+    return tmp;
+}
+template<typename Config, typename Indexer>
+inline reverse_indexer_iterator<Config,Indexer>& operator++(reverse_indexer_iterator<Config,Indexer>& lhs){
+    return lhs+=typename reverse_indexer_iterator<Config,Indexer>::difference_type{1};
+}
+template<typename Config, typename Indexer>
+inline reverse_indexer_iterator<Config,Indexer>& operator--(reverse_indexer_iterator<Config,Indexer>& lhs){
+    return lhs+=typename reverse_indexer_iterator<Config,Indexer>::difference_type{-1};
+}
 template<typename Config, typename Indexer>
 inline reverse_indexer_iterator<Config,Indexer> operator++(reverse_indexer_iterator<Config,Indexer>& lhs, int){
     auto tmp = lhs;
