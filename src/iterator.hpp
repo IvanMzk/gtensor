@@ -99,6 +99,18 @@ private:
 };
 
 template<typename Config, typename Indexer>
+inline indexer_iterator<Config,Indexer> operator++(indexer_iterator<Config,Indexer>& lhs, int){
+    auto tmp = lhs;
+    ++lhs;
+    return tmp;
+}
+template<typename Config, typename Indexer>
+inline indexer_iterator<Config,Indexer> operator--(indexer_iterator<Config,Indexer>& lhs, int){
+    auto tmp = lhs;
+    --lhs;
+    return tmp;
+}
+template<typename Config, typename Indexer>
 inline bool operator==(const indexer_iterator<Config,Indexer>& lhs, const indexer_iterator<Config,Indexer>& rhs){
     return (lhs - rhs) == typename indexer_iterator<Config,Indexer>::difference_type(0);
 }
@@ -176,6 +188,18 @@ public:
     }
 };
 
+template<typename Config, typename Indexer>
+inline reverse_indexer_iterator<Config,Indexer> operator++(reverse_indexer_iterator<Config,Indexer>& lhs, int){
+    auto tmp = lhs;
+    ++lhs;
+    return tmp;
+}
+template<typename Config, typename Indexer>
+inline reverse_indexer_iterator<Config,Indexer> operator--(reverse_indexer_iterator<Config,Indexer>& lhs, int){
+    auto tmp = lhs;
+    --lhs;
+    return tmp;
+}
 template<typename Config, typename Indexer>
 inline bool operator==(const reverse_indexer_iterator<Config,Indexer>& lhs, const reverse_indexer_iterator<Config,Indexer>& rhs){
     return (lhs - rhs) == typename reverse_indexer_iterator<Config,Indexer>::difference_type(0);
