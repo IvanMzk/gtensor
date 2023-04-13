@@ -4,9 +4,36 @@
 #include <iterator>
 #include "config.hpp"
 #include "libdivide_helper.hpp"
-#include "broadcast.hpp"
+#include "data_accessor.hpp"
 
 namespace gtensor{
+
+#define GTENSOR_ITERATOR_OPERATOR_ASSIGN_MINUS(ITERATOR)\
+template<typename...Ts> inline ITERATOR<Ts...>& operator-=(ITERATOR<Ts...>& lhs, typename ITERATOR<Ts...>::difference_type n){return lhs+=-n;}
+#define GTENSOR_ITERATOR_OPERATOR_PLUS(ITERATOR)\
+template<typename...Ts> inline ITERATOR<Ts...> operator+(const ITERATOR<Ts...>& lhs, typename ITERATOR<Ts...>::difference_type n){auto tmp = lhs; return tmp+=n;}
+#define GTENSOR_ITERATOR_OPERATOR_MINUS(ITERATOR)\
+template<typename...Ts> inline ITERATOR<Ts...> operator-(const ITERATOR<Ts...>& lhs, typename ITERATOR<Ts...>::difference_type n){auto tmp = lhs; return tmp+=-n;}
+#define GTENSOR_ITERATOR_OPERATOR_PREFIX_INC(ITERATOR)\
+template<typename...Ts> inline ITERATOR<Ts...>& operator++(ITERATOR<Ts...>& lhs){return lhs+=typename ITERATOR<Ts...>::difference_type{1};}
+#define GTENSOR_ITERATOR_OPERATOR_PREFIX_DEC(ITERATOR)\
+template<typename...Ts> inline ITERATOR<Ts...>& operator--(ITERATOR<Ts...>& lhs){return lhs+=typename ITERATOR<Ts...>::difference_type{-1};}
+#define GTENSOR_ITERATOR_OPERATOR_POSTFIX_INC(ITERATOR)\
+template<typename...Ts> inline ITERATOR<Ts...> operator++(ITERATOR<Ts...>& lhs, int){auto tmp = lhs; ++lhs; return tmp;}
+#define GTENSOR_ITERATOR_OPERATOR_POSTFIX_DEC(ITERATOR)\
+template<typename...Ts> inline ITERATOR<Ts...> operator--(ITERATOR<Ts...>& lhs, int){auto tmp = lhs; --lhs; return tmp;}
+#define GTENSOR_ITERATOR_OPERATOR_EQUAL(ITERATOR)\
+template<typename...Ts> inline bool operator==(const ITERATOR<Ts...>& lhs, const ITERATOR<Ts...>& rhs){return (lhs - rhs) == typename ITERATOR<Ts...>::difference_type(0);}
+#define GTENSOR_ITERATOR_OPERATOR_NOT_EQUAL(ITERATOR)\
+template<typename...Ts> inline bool operator!=(const ITERATOR<Ts...>& lhs, const ITERATOR<Ts...>& rhs){return !(lhs==rhs);}
+#define GTENSOR_ITERATOR_OPERATOR_GREATER(ITERATOR)\
+template<typename...Ts> inline bool operator>(const ITERATOR<Ts...>& lhs, const ITERATOR<Ts...>& rhs){return (lhs - rhs) > typename ITERATOR<Ts...>::difference_type(0);}
+#define GTENSOR_ITERATOR_OPERATOR_LESS(ITERATOR)\
+template<typename...Ts> inline bool operator<(const ITERATOR<Ts...>& lhs, const ITERATOR<Ts...>& rhs){return (rhs - lhs) > typename ITERATOR<Ts...>::difference_type(0);}
+#define GTENSOR_ITERATOR_OPERATOR_GREATER_EQUAL(ITERATOR)\
+template<typename...Ts> inline bool operator>=(const ITERATOR<Ts...>& lhs, const ITERATOR<Ts...>& rhs){return !(lhs < rhs);}
+#define GTENSOR_ITERATOR_OPERATOR_LESS_EQUAL(ITERATOR)\
+template<typename...Ts> inline bool operator<=(const ITERATOR<Ts...>& lhs, const ITERATOR<Ts...>& rhs){return !(lhs > rhs);}
 
 namespace detail{
     template<typename ValT> struct iterator_internals_selector{
@@ -40,10 +67,7 @@ namespace detail{
 
 }   //end of namespace detail
 
-/*
-* random access iterator, use indexer to access data
-* Indexer is indexer type
-*/
+//random access iterator, use indexer data accessor
 template<typename Config, typename Indexer>
 class indexer_iterator
 {
@@ -79,63 +103,19 @@ private:
     difference_type flat_index;
 };
 
-template<typename Config, typename Indexer>
-inline indexer_iterator<Config,Indexer>& operator-=(indexer_iterator<Config,Indexer>& lhs, typename indexer_iterator<Config,Indexer>::difference_type n){
-    return lhs+=-n;
-}
-template<typename Config, typename Indexer>
-inline indexer_iterator<Config,Indexer> operator+(const indexer_iterator<Config,Indexer>& lhs, typename indexer_iterator<Config,Indexer>::difference_type n){
-    auto tmp = lhs;
-    tmp+=n;
-    return tmp;
-}
-template<typename Config, typename Indexer>
-inline indexer_iterator<Config,Indexer> operator-(const indexer_iterator<Config,Indexer>& lhs, typename indexer_iterator<Config,Indexer>::difference_type n){
-    auto tmp = lhs;
-    tmp+=-n;
-    return tmp;
-}
-template<typename Config, typename Indexer>
-inline indexer_iterator<Config,Indexer>& operator++(indexer_iterator<Config,Indexer>& lhs){
-    return lhs+=typename indexer_iterator<Config,Indexer>::difference_type{1};
-}
-template<typename Config, typename Indexer>
-inline indexer_iterator<Config,Indexer>& operator--(indexer_iterator<Config,Indexer>& lhs){
-    return lhs+=typename indexer_iterator<Config,Indexer>::difference_type{-1};
-}
-template<typename Config, typename Indexer>
-inline indexer_iterator<Config,Indexer> operator++(indexer_iterator<Config,Indexer>& lhs, int){
-    auto tmp = lhs;
-    ++lhs;
-    return tmp;
-}
-template<typename Config, typename Indexer>
-inline indexer_iterator<Config,Indexer> operator--(indexer_iterator<Config,Indexer>& lhs, int){
-    auto tmp = lhs;
-    --lhs;
-    return tmp;
-}
-template<typename Config, typename Indexer>
-inline bool operator==(const indexer_iterator<Config,Indexer>& lhs, const indexer_iterator<Config,Indexer>& rhs){
-    return (lhs - rhs) == typename indexer_iterator<Config,Indexer>::difference_type(0);
-}
-template<typename Config, typename Indexer>
-inline bool operator!=(const indexer_iterator<Config,Indexer>& lhs, const indexer_iterator<Config,Indexer>& rhs){
-    return !(lhs==rhs);
-}
-template<typename Config, typename Indexer>
-inline bool operator>(const indexer_iterator<Config,Indexer>& lhs, const indexer_iterator<Config,Indexer>& rhs){
-    return (lhs - rhs) > typename indexer_iterator<Config,Indexer>::difference_type(0);
-}
-template<typename Config, typename Indexer>
-inline bool operator<(const indexer_iterator<Config,Indexer>& lhs, const indexer_iterator<Config,Indexer>& rhs){
-    return (rhs - lhs) > typename indexer_iterator<Config,Indexer>::difference_type(0);
-}
-template<typename Config, typename Indexer>
-inline bool operator>=(const indexer_iterator<Config,Indexer>& lhs, const indexer_iterator<Config,Indexer>& rhs){return !(lhs < rhs);}
-template<typename Config, typename Indexer>
-inline bool operator<=(const indexer_iterator<Config,Indexer>& lhs, const indexer_iterator<Config,Indexer>& rhs){return !(lhs > rhs);}
-
+GTENSOR_ITERATOR_OPERATOR_ASSIGN_MINUS(indexer_iterator);
+GTENSOR_ITERATOR_OPERATOR_PLUS(indexer_iterator);
+GTENSOR_ITERATOR_OPERATOR_MINUS(indexer_iterator);
+GTENSOR_ITERATOR_OPERATOR_PREFIX_INC(indexer_iterator);
+GTENSOR_ITERATOR_OPERATOR_PREFIX_DEC(indexer_iterator);
+GTENSOR_ITERATOR_OPERATOR_POSTFIX_INC(indexer_iterator);
+GTENSOR_ITERATOR_OPERATOR_POSTFIX_DEC(indexer_iterator);
+GTENSOR_ITERATOR_OPERATOR_EQUAL(indexer_iterator);
+GTENSOR_ITERATOR_OPERATOR_NOT_EQUAL(indexer_iterator);
+GTENSOR_ITERATOR_OPERATOR_GREATER(indexer_iterator);
+GTENSOR_ITERATOR_OPERATOR_LESS(indexer_iterator);
+GTENSOR_ITERATOR_OPERATOR_GREATER_EQUAL(indexer_iterator);
+GTENSOR_ITERATOR_OPERATOR_LESS_EQUAL(indexer_iterator);
 
 template<typename Config, typename Indexer>
 class reverse_indexer_iterator : private indexer_iterator<Config,Indexer>
@@ -171,152 +151,80 @@ public:
     }
 };
 
-template<typename Config, typename Indexer>
-inline reverse_indexer_iterator<Config,Indexer>& operator-=(reverse_indexer_iterator<Config,Indexer>& lhs, typename reverse_indexer_iterator<Config,Indexer>::difference_type n){
-    return lhs+=-n;
-}
-template<typename Config, typename Indexer>
-inline reverse_indexer_iterator<Config,Indexer> operator+(const reverse_indexer_iterator<Config,Indexer>& lhs, typename reverse_indexer_iterator<Config,Indexer>::difference_type n){
-    auto tmp = lhs;
-    tmp+=n;
-    return tmp;
-}
-template<typename Config, typename Indexer>
-inline reverse_indexer_iterator<Config,Indexer> operator-(const reverse_indexer_iterator<Config,Indexer>& lhs, typename reverse_indexer_iterator<Config,Indexer>::difference_type n){
-    auto tmp = lhs;
-    tmp+=-n;
-    return tmp;
-}
-template<typename Config, typename Indexer>
-inline reverse_indexer_iterator<Config,Indexer>& operator++(reverse_indexer_iterator<Config,Indexer>& lhs){
-    return lhs+=typename reverse_indexer_iterator<Config,Indexer>::difference_type{1};
-}
-template<typename Config, typename Indexer>
-inline reverse_indexer_iterator<Config,Indexer>& operator--(reverse_indexer_iterator<Config,Indexer>& lhs){
-    return lhs+=typename reverse_indexer_iterator<Config,Indexer>::difference_type{-1};
-}
-template<typename Config, typename Indexer>
-inline reverse_indexer_iterator<Config,Indexer> operator++(reverse_indexer_iterator<Config,Indexer>& lhs, int){
-    auto tmp = lhs;
-    ++lhs;
-    return tmp;
-}
-template<typename Config, typename Indexer>
-inline reverse_indexer_iterator<Config,Indexer> operator--(reverse_indexer_iterator<Config,Indexer>& lhs, int){
-    auto tmp = lhs;
-    --lhs;
-    return tmp;
-}
-template<typename Config, typename Indexer>
-inline bool operator==(const reverse_indexer_iterator<Config,Indexer>& lhs, const reverse_indexer_iterator<Config,Indexer>& rhs){
-    return (lhs - rhs) == typename reverse_indexer_iterator<Config,Indexer>::difference_type(0);
-}
-template<typename Config, typename Indexer>
-inline bool operator!=(const reverse_indexer_iterator<Config,Indexer>& lhs, const reverse_indexer_iterator<Config,Indexer>& rhs){
-    return !(lhs==rhs);
-}
-template<typename Config, typename Indexer>
-inline bool operator>(const reverse_indexer_iterator<Config,Indexer>& lhs, const reverse_indexer_iterator<Config,Indexer>& rhs){
-    return (lhs - rhs) > typename reverse_indexer_iterator<Config,Indexer>::difference_type(0);
-}
-template<typename Config, typename Indexer>
-inline bool operator<(const reverse_indexer_iterator<Config,Indexer>& lhs, const reverse_indexer_iterator<Config,Indexer>& rhs){
-    return (rhs - lhs) > typename reverse_indexer_iterator<Config,Indexer>::difference_type(0);
-}
-template<typename Config, typename Indexer>
-inline bool operator>=(const reverse_indexer_iterator<Config,Indexer>& lhs, const reverse_indexer_iterator<Config,Indexer>& rhs){return !(lhs < rhs);}
-template<typename Config, typename Indexer>
-inline bool operator<=(const reverse_indexer_iterator<Config,Indexer>& lhs, const reverse_indexer_iterator<Config,Indexer>& rhs){return !(lhs > rhs);}
+GTENSOR_ITERATOR_OPERATOR_ASSIGN_MINUS(reverse_indexer_iterator);
+GTENSOR_ITERATOR_OPERATOR_PLUS(reverse_indexer_iterator);
+GTENSOR_ITERATOR_OPERATOR_MINUS(reverse_indexer_iterator);
+GTENSOR_ITERATOR_OPERATOR_PREFIX_INC(reverse_indexer_iterator);
+GTENSOR_ITERATOR_OPERATOR_PREFIX_DEC(reverse_indexer_iterator);
+GTENSOR_ITERATOR_OPERATOR_POSTFIX_INC(reverse_indexer_iterator);
+GTENSOR_ITERATOR_OPERATOR_POSTFIX_DEC(reverse_indexer_iterator);
+GTENSOR_ITERATOR_OPERATOR_EQUAL(reverse_indexer_iterator);
+GTENSOR_ITERATOR_OPERATOR_NOT_EQUAL(reverse_indexer_iterator);
+GTENSOR_ITERATOR_OPERATOR_GREATER(reverse_indexer_iterator);
+GTENSOR_ITERATOR_OPERATOR_LESS(reverse_indexer_iterator);
+GTENSOR_ITERATOR_OPERATOR_GREATER_EQUAL(reverse_indexer_iterator);
+GTENSOR_ITERATOR_OPERATOR_LESS_EQUAL(reverse_indexer_iterator);
 
+//random access iterator, use walker data accessor
+template<typename Config, typename Walker>
+class walker_iterator
+{
+protected:
+    using walker_type = Walker;
+    using config_type = Config;
+    using result_type = decltype(*std::declval<walker_type>());
+    using shape_type = typename config_type::shape_type;
+    using index_type = typename config_type::index_type;
+    using strides_div_type = typename detail::strides_div_traits<config_type>::type;
+    using traverser_type = walker_random_access_traverser<config_type, walker_type>;
+public:
+    using iterator_category = std::random_access_iterator_tag;
+    using value_type = std::decay_t<result_type>;
+    using difference_type = typename config_type::index_type;
+    using pointer = typename detail::iterator_internals_selector<value_type>::pointer;
+    using reference = typename detail::iterator_internals_selector<value_type>::reference;
+    using const_reference = typename detail::iterator_internals_selector<value_type>::const_reference;
 
-// /*
-// * random access broadcast iterator, use walker to access data
-// * WalkerT broadcast walker type, must satisfy broadcast walker interface
-// */
-// template<typename CfgT, typename WalkerT>
-// class broadcast_iterator{
-// protected:
-//     using walker_type = WalkerT;
-//     using config_type = CfgT;
-//     using result_type = decltype(*std::declval<walker_type>());
-//     using shape_type = typename config_type::shape_type;
-//     using index_type = typename config_type::index_type;
-//     using strides_div_type = typename detail::strides_div_traits<config_type>::type;
-//     using adapter_type = walker_iterator_adapter<config_type, walker_type>;
-// public:
-//     using iterator_category = std::random_access_iterator_tag;
-//     using value_type = std::decay_t<result_type>;
-//     using difference_type = typename config_type::index_type;
-//     using pointer = typename detail::iterator_internals_selector<value_type>::pointer;
-//     using reference = typename detail::iterator_internals_selector<value_type>::reference;
-//     using const_reference = typename detail::iterator_internals_selector<value_type>::const_reference;
+    //begin should be constructed with zero flat_index_ argument, end with size() flat_index_argument
+    template<typename Walker_, std::enable_if_t<!std::is_convertible_v<Walker_,walker_iterator> ,int> =0>
+    walker_iterator(Walker_&& walker_, const shape_type& shape_, const strides_div_type& strides_, const difference_type& flat_index_):
+        traverser{shape_, strides_, std::forward<Walker_>(walker_)},
+        flat_index{flat_index_}
+    {
+        if (flat_index_ > difference_type{0}){
+            traverser.move(flat_index_-difference_type(1));
+            traverser.next();
+        }
+    }
+    auto& operator+=(difference_type n){
+        advance(n);
+        return *this;
+    }
+    result_type operator[](difference_type n)const{return *(*this+n);}
+    result_type operator*() const{return *traverser.walker();}
+    inline difference_type friend operator-(const walker_iterator& lhs, const walker_iterator& rhs){return lhs.flat_index - rhs.flat_index;}
+private:
+    void advance(difference_type n){
+        flat_index+=n;
+        traverser.move(flat_index);
+    }
+    traverser_type traverser;
+    difference_type flat_index;
+};
 
-//     //begin constructor
-//     template<typename W, std::enable_if_t<std::is_same_v<W,walker_type> ,int> =0 >
-//     broadcast_iterator(W&& walker_, const shape_type& shape_, const strides_div_type& strides_):
-//         adapted_walker{shape_, strides_, std::forward<W>(walker_)},
-//         flat_index{0}
-//     {}
-//     //end constructor
-//     template<typename W, std::enable_if_t<std::is_same_v<W,walker_type> ,int> =0 >
-//     broadcast_iterator(W&& walker_, const shape_type& shape_, const strides_div_type& strides_, const difference_type& size_):
-//         adapted_walker{shape_, strides_, std::forward<W>(walker_)},
-//         flat_index{size_}
-//     {
-//         adapted_walker.move(size_-difference_type(1));
-//         adapted_walker.next();
-//     }
-//     auto& operator++(){
-//         adapted_walker.next();
-//         ++flat_index;
-//         return *this;
-//     }
-//     auto& operator--(){
-//         adapted_walker.prev();
-//         --flat_index;
-//         return *this;
-//     }
-//     auto& operator+=(difference_type n){
-//         advance(n);
-//         return *this;
-//     }
-//     auto& operator-=(difference_type n){
-//         advance(-n);
-//         return *this;
-//     }
-//     broadcast_iterator operator+(difference_type n)const{
-//         auto it = *this;
-//         it+=n;
-//         return it;
-//     }
-//     broadcast_iterator operator-(difference_type n)const{
-//         auto it = *this;
-//         it-=n;
-//         return it;
-//     }
-//     result_type operator[](difference_type n)const{return *(*this+n);}
-//     inline difference_type friend operator-(const broadcast_iterator& lhs, const broadcast_iterator& rhs){return lhs.flat_index - rhs.flat_index;}
-//     bool operator==(const broadcast_iterator& other)const{return flat_index == other.flat_index;}
-//     bool operator!=(const broadcast_iterator& other)const{return flat_index != other.flat_index;}
-//     result_type operator*() const{return *adapted_walker.walker();}
-// private:
-//     void advance(difference_type n){
-//         flat_index+=n;
-//         adapted_walker.move(flat_index);
-//     }
-
-//     adapter_type adapted_walker;
-//     difference_type flat_index;
-// };
-
-// template<typename CfgT, typename WalkerT>
-// inline bool operator>(const broadcast_iterator<CfgT,WalkerT>& lhs, const broadcast_iterator<CfgT,WalkerT>& rhs){return (lhs - rhs) > typename broadcast_iterator<CfgT,WalkerT>::difference_type(0);}
-// template<typename CfgT, typename WalkerT>
-// inline bool operator<(const broadcast_iterator<CfgT,WalkerT>& lhs, const broadcast_iterator<CfgT,WalkerT>& rhs){return (rhs - lhs) > typename broadcast_iterator<CfgT,WalkerT>::difference_type(0);}
-// template<typename CfgT, typename WalkerT>
-// inline bool operator>=(const broadcast_iterator<CfgT,WalkerT>& lhs, const broadcast_iterator<CfgT,WalkerT>& rhs){return !(lhs < rhs);}
-// template<typename CfgT, typename WalkerT>
-// inline bool operator<=(const broadcast_iterator<CfgT,WalkerT>& lhs, const broadcast_iterator<CfgT,WalkerT>& rhs){return !(lhs > rhs);}
+GTENSOR_ITERATOR_OPERATOR_ASSIGN_MINUS(walker_iterator);
+GTENSOR_ITERATOR_OPERATOR_PLUS(walker_iterator);
+GTENSOR_ITERATOR_OPERATOR_MINUS(walker_iterator);
+GTENSOR_ITERATOR_OPERATOR_PREFIX_INC(walker_iterator);
+GTENSOR_ITERATOR_OPERATOR_PREFIX_DEC(walker_iterator);
+GTENSOR_ITERATOR_OPERATOR_POSTFIX_INC(walker_iterator);
+GTENSOR_ITERATOR_OPERATOR_POSTFIX_DEC(walker_iterator);
+GTENSOR_ITERATOR_OPERATOR_EQUAL(walker_iterator);
+GTENSOR_ITERATOR_OPERATOR_NOT_EQUAL(walker_iterator);
+GTENSOR_ITERATOR_OPERATOR_GREATER(walker_iterator);
+GTENSOR_ITERATOR_OPERATOR_LESS(walker_iterator);
+GTENSOR_ITERATOR_OPERATOR_GREATER_EQUAL(walker_iterator);
+GTENSOR_ITERATOR_OPERATOR_LESS_EQUAL(walker_iterator);
 
 // template<typename CfgT, typename WalkerT>
 // class broadcast_shape_iterator:
@@ -351,73 +259,73 @@ inline bool operator<=(const reverse_indexer_iterator<Config,Indexer>& lhs, cons
 //     {}
 // };
 
-// template<typename IterT>
-// class reverse_broadcast_iterator_generic : private IterT
-// {
-//     using broadcast_iterator_base = IterT;
-// protected:
-//     using typename broadcast_iterator_base::walker_type;
-//     using typename broadcast_iterator_base::result_type;
-//     using typename broadcast_iterator_base::shape_type;
-//     using typename broadcast_iterator_base::index_type;
-//     using typename broadcast_iterator_base::strides_div_type;
-// public:
-//     using iterator_category = std::random_access_iterator_tag;
-//     using typename broadcast_iterator_base::value_type;
-//     using typename broadcast_iterator_base::difference_type;
-//     using typename broadcast_iterator_base::pointer;
-//     using typename broadcast_iterator_base::reference;
-//     using typename broadcast_iterator_base::const_reference;
-//     using broadcast_iterator_base::operator*;
+template<typename IterT>
+class reverse_broadcast_iterator_generic : private IterT
+{
+    using broadcast_iterator_base = IterT;
+protected:
+    using typename broadcast_iterator_base::walker_type;
+    using typename broadcast_iterator_base::result_type;
+    using typename broadcast_iterator_base::shape_type;
+    using typename broadcast_iterator_base::index_type;
+    using typename broadcast_iterator_base::strides_div_type;
+public:
+    using iterator_category = std::random_access_iterator_tag;
+    using typename broadcast_iterator_base::value_type;
+    using typename broadcast_iterator_base::difference_type;
+    using typename broadcast_iterator_base::pointer;
+    using typename broadcast_iterator_base::reference;
+    using typename broadcast_iterator_base::const_reference;
+    using broadcast_iterator_base::operator*;
 
-//     //rbegin constructor
-//     template<typename W, std::enable_if_t<std::is_same_v<W,walker_type> ,int> =0 >
-//     reverse_broadcast_iterator_generic(W&& walker_, const shape_type& shape_, const strides_div_type& strides_, const difference_type& size_):
-//         broadcast_iterator_base{std::forward<W>(walker_), shape_, strides_, size_}
-//     {
-//         broadcast_iterator_base::operator--();
-//     }
-//     //rend constructor
-//     template<typename W, std::enable_if_t<std::is_same_v<W,walker_type> ,int> =0 >
-//     reverse_broadcast_iterator_generic(W&& walker_, const shape_type& shape_, const strides_div_type& strides_):
-//         broadcast_iterator_base{std::forward<W>(walker_), shape_, strides_}
-//     {
-//         broadcast_iterator_base::operator--();
-//     }
+    //rbegin constructor
+    template<typename W, std::enable_if_t<std::is_same_v<W,walker_type> ,int> =0 >
+    reverse_broadcast_iterator_generic(W&& walker_, const shape_type& shape_, const strides_div_type& strides_, const difference_type& size_):
+        broadcast_iterator_base{std::forward<W>(walker_), shape_, strides_, size_}
+    {
+        broadcast_iterator_base::operator--();
+    }
+    //rend constructor
+    template<typename W, std::enable_if_t<std::is_same_v<W,walker_type> ,int> =0 >
+    reverse_broadcast_iterator_generic(W&& walker_, const shape_type& shape_, const strides_div_type& strides_):
+        broadcast_iterator_base{std::forward<W>(walker_), shape_, strides_}
+    {
+        broadcast_iterator_base::operator--();
+    }
 
-//     auto& operator++(){
-//         broadcast_iterator_base::operator--();
-//         return *this;
-//     }
-//     auto& operator--(){
-//         broadcast_iterator_base::operator++();
-//         return *this;
-//     }
-//     auto& operator+=(difference_type n){
-//         broadcast_iterator_base::operator-=(n);
-//         return *this;
-//     }
-//     auto& operator-=(difference_type n){
-//         broadcast_iterator_base::operator+=(n);
-//         return *this;
-//     }
-//     reverse_broadcast_iterator_generic operator+(difference_type n)const{
-//         auto tmp = *this;
-//         tmp+=n;
-//         return tmp;
-//     }
-//     reverse_broadcast_iterator_generic operator-(difference_type n)const{
-//         auto tmp = *this;
-//         tmp-=n;
-//         return tmp;
-//     }
-//     result_type operator[](difference_type n)const{return *(*this+n);}
-//     bool operator==(const reverse_broadcast_iterator_generic& other)const{return static_cast<const broadcast_iterator_base&>(*this) == static_cast<const broadcast_iterator_base&>(other);}
-//     bool operator!=(const reverse_broadcast_iterator_generic& other)const{return !(*this == other);}
-//     inline difference_type friend operator-(const reverse_broadcast_iterator_generic& lhs, const reverse_broadcast_iterator_generic& rhs){
-//         return static_cast<const broadcast_iterator_base&>(rhs) - static_cast<const broadcast_iterator_base&>(lhs);
-//     }
-// };
+    auto& operator++(){
+        broadcast_iterator_base::operator--();
+        return *this;
+    }
+    auto& operator--(){
+        broadcast_iterator_base::operator++();
+        return *this;
+    }
+    auto& operator+=(difference_type n){
+        broadcast_iterator_base::operator-=(n);
+        return *this;
+    }
+    auto& operator-=(difference_type n){
+        broadcast_iterator_base::operator+=(n);
+        return *this;
+    }
+    reverse_broadcast_iterator_generic operator+(difference_type n)const{
+        auto tmp = *this;
+        tmp+=n;
+        return tmp;
+    }
+    reverse_broadcast_iterator_generic operator-(difference_type n)const{
+        auto tmp = *this;
+        tmp-=n;
+        return tmp;
+    }
+    result_type operator[](difference_type n)const{return *(*this+n);}
+    bool operator==(const reverse_broadcast_iterator_generic& other)const{return static_cast<const broadcast_iterator_base&>(*this) == static_cast<const broadcast_iterator_base&>(other);}
+    bool operator!=(const reverse_broadcast_iterator_generic& other)const{return !(*this == other);}
+    inline difference_type friend operator-(const reverse_broadcast_iterator_generic& lhs, const reverse_broadcast_iterator_generic& rhs){
+        return static_cast<const broadcast_iterator_base&>(rhs) - static_cast<const broadcast_iterator_base&>(lhs);
+    }
+};
 
 // template<typename IterT>
 // inline bool operator>(const reverse_broadcast_iterator_generic<IterT>& lhs, const reverse_broadcast_iterator_generic<IterT>& rhs){return (lhs - rhs) > typename reverse_broadcast_iterator_generic<IterT>::difference_type(0);}
