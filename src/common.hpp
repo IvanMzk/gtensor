@@ -8,6 +8,15 @@
 namespace gtensor{
 namespace detail{
 
+#define GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(name,signature,postfix)\
+template<typename T, typename = void>\
+struct has_member_function_##postfix : std::false_type{};\
+template<typename T>\
+struct has_member_function_##postfix<T, std::void_t<std::integral_constant<signature,&T::name>>> : std::true_type{};
+
+
+
+
 template<typename T, typename = void> constexpr inline bool is_container_v = false;
 template<typename T> constexpr inline bool is_container_v<T, std::void_t<decltype(std::begin(std::declval<T&>())), decltype(std::size(std::declval<T&>())), typename T::value_type>> = true;
 
