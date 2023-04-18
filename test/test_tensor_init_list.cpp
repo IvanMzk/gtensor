@@ -71,20 +71,32 @@ TEST_CASE("test_fill_from_list","[test_tensor_init_list]")
     using gtensor::detail::nested_init_list3;
     using gtensor::detail::fill_from_list;
 
-    auto filler = [](const auto& n, auto init_list){
+    auto iterator_filler = [](const auto& n, auto init_list){
         container_type container(n);
         fill_from_list(init_list, container.begin());
         return container;
     };
+    // auto indexer_filler = [](const auto& n, auto init_list){
+    //     container_type container(n);
+    //     struct indexer_type{
+    //         container_type& ref;
+    //         indexer_type(container_type& ref_):
+    //             ref{ref_}
+    //         {}
+
+    //     };
+    //     fill_from_list(init_list, container.begin());
+    //     return container;
+    // };
     //0result,1expected
     using test_type = std::tuple<container_type, container_type>;
     auto test_data = GENERATE_COPY(
-        test_type{filler(0,nested_init_list1<int>{}), container_type{}},
-        test_type{filler(5,nested_init_list1<int>{1,2,3,4,5}), container_type{1,2,3,4,5}},
-        test_type{filler(0,nested_init_list2<int>{{},{},{}}), container_type{}},
-        test_type{filler(6,nested_init_list2<int>{{1,2},{3,4},{5,6}}), container_type{1,2,3,4,5,6}},
-        test_type{filler(0,nested_init_list3<int>{{{},{}},{{},{}},{{},{}}}), container_type{}},
-        test_type{filler(18,nested_init_list3<int>{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}},{{13,14,15},{16,17,18}}}), container_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}}
+        test_type{iterator_filler(0,nested_init_list1<int>{}), container_type{}},
+        test_type{iterator_filler(5,nested_init_list1<int>{1,2,3,4,5}), container_type{1,2,3,4,5}},
+        test_type{iterator_filler(0,nested_init_list2<int>{{},{},{}}), container_type{}},
+        test_type{iterator_filler(6,nested_init_list2<int>{{1,2},{3,4},{5,6}}), container_type{1,2,3,4,5,6}},
+        test_type{iterator_filler(0,nested_init_list3<int>{{{},{}},{{},{}},{{},{}}}), container_type{}},
+        test_type{iterator_filler(18,nested_init_list3<int>{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}},{{13,14,15},{16,17,18}}}), container_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}}
     );
     auto result = std::get<0>(test_data);
     auto expected = std::get<1>(test_data);

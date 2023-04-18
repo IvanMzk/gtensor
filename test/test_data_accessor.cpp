@@ -113,7 +113,7 @@ TEMPLATE_TEST_CASE("test_walker","test_data_accessor",
     using shape_type = typename config_type::shape_type;
     using dim_type = typename config_type::dim_type;
     using index_type = typename config_type::index_type;
-    using storage_type = typename config_type::storage_type;
+    using storage_type = typename config_type::template storage<value_type>;
     using indexer_type = basic_indexer<storage_type&>;
     using walker_type = walker<config_type, indexer_type>;
     using helpers_for_testing::apply_by_element;
@@ -223,14 +223,14 @@ TEMPLATE_TEST_CASE("test_walker_result_type","test_data_accessor",
     using helpers_for_testing::apply_by_element;
     SECTION("test_walker_non_const_storage")
     {
-        using storage_type = typename config_type::storage_type;
+        using storage_type = typename config_type::template storage<value_type>;
         using indexer_type = basic_indexer<storage_type&>;
         using walker_type = walker<config_type,indexer_type>;
         REQUIRE(std::is_same_v<decltype(std::declval<storage_type>()[std::declval<index_type>()]),decltype(std::declval<walker_type>().operator*())>);
     }
     SECTION("test_walker_const_storage")
     {
-        using storage_type = const typename config_type::storage_type;
+        using storage_type = const typename config_type::template storage<value_type>;
         using indexer_type = basic_indexer<storage_type&>;
         using walker_type = walker<config_type,indexer_type>;
         REQUIRE(std::is_same_v<decltype(std::declval<storage_type>()[std::declval<index_type>()]),decltype(std::declval<walker_type>().operator*())>);
@@ -251,7 +251,7 @@ TEMPLATE_TEST_CASE("test_walker_traverser_next","test_data_accessor",
     using shape_type = typename config_type::shape_type;
     using dim_type = typename config_type::dim_type;
     using index_type = typename config_type::index_type;
-    using storage_type = typename config_type::storage_type;
+    using storage_type = typename config_type::template storage<value_type>;
     using indexer_type = basic_indexer<storage_type&>;
     using walker_type = walker<config_type, indexer_type>;
     using gtensor::detail::make_strides;
@@ -351,7 +351,7 @@ TEMPLATE_TEST_CASE("test_walker_traverser_prev","test_data_accessor",
     using shape_type = typename config_type::shape_type;
     using dim_type = typename config_type::dim_type;
     using index_type = typename config_type::index_type;
-    using storage_type = typename config_type::storage_type;
+    using storage_type = typename config_type::template storage<value_type>;
     using indexer_type = basic_indexer<storage_type&>;
     using walker_type = walker<config_type, indexer_type>;
     using gtensor::detail::make_strides;
@@ -476,7 +476,7 @@ TEMPLATE_TEST_CASE("test_walker_traverser_move","test_data_accessor",
     using shape_type = typename config_type::shape_type;
     using dim_type = typename config_type::dim_type;
     using index_type = typename config_type::index_type;
-    using storage_type = typename config_type::storage_type;
+    using storage_type = typename config_type::template storage<value_type>;
     using indexer_type = basic_indexer<storage_type&>;
     using walker_type = walker<config_type, indexer_type>;
     using gtensor::detail::make_strides;

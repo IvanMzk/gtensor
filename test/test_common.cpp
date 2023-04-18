@@ -3,15 +3,15 @@
 #include "common.hpp"
 
 
-TEST_CASE("test_is_iterator","[test_tensor]")
+TEST_CASE("test_is_iterator","[test_common]")
 {
-    using gtensor::detail::is_iterator;
-    REQUIRE(!is_iterator<int>);
-    REQUIRE(!is_iterator<std::vector<int>>);
-    REQUIRE(is_iterator<std::vector<int>::iterator>);
+    using gtensor::detail::is_iterator_v;
+    REQUIRE(!is_iterator_v<int>);
+    REQUIRE(!is_iterator_v<std::vector<int>>);
+    REQUIRE(is_iterator_v<std::vector<int>::iterator>);
 }
 
-// TEST_CASE("test_is_tensor","[test_tensor]")
+// TEST_CASE("test_is_tensor","[test_common]")
 // {
 //     using gtensor::tensor;
 //     using gtensor::integral;
@@ -47,38 +47,70 @@ namespace test_has_member_function{
         int g()const;
         double g();
         int h(double) const;
-        double h(double);
+        double h(int);
+
+        using size_type = std::size_t;
+        int operator[](size_type);
     };
 
-    GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(f,void(T::*)(),f);
-    GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(f,void(T::*)()const,f_const);
+    GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(f,void(T::*)(),has_f);
+    GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(f,void(T::*)()const,has_f_const);
 
-    GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(g,decltype(std::declval<const T&>().g())(T::*)()const,g_const);
-    GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(g,decltype(std::declval<T>().g())(T::*)(),g);
+    GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(g,decltype(std::declval<const T&>().g())(T::*)()const,has_g_const);
+    GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(g,decltype(std::declval<T>().g())(T::*)(),has_g);
 
-    GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(h,decltype(std::declval<const T&>().h(std::declval<double>()))(T::*)(double)const,h_double_const);
-    GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(h,decltype(std::declval<const T&>().h(std::declval<double>()))(T::*)(int)const,h_int_const);
-    GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(h,decltype(std::declval<T>().h(std::declval<double>()))(T::*)(double),h_double);
+    GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(h,decltype(std::declval<const T&>().h(std::declval<double>()))(T::*)(double)const,has_h_double_const);
+    GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(h,decltype(std::declval<const T&>().h(std::declval<double>()))(T::*)(int)const,has_h_int_const);
+    GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(h,decltype(std::declval<T>().h(std::declval<int>()))(T::*)(int),has_h_int);
+    GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(h,decltype(std::declval<T>().h(std::declval<std::int64_t>()))(T::*)(std::int64_t),has_h_int64);
+
+    GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(operator[],decltype(std::declval<T>()[std::declval<typename T::size_type>()])(T::*)(typename T::size_type),has_subscript_operator);
+
 }
 
-TEST_CASE("test_has_member_function","[test_tensor]")
+TEST_CASE("test_has_member_function","[test_common]")
 {
     using test_has_member_function::test_type;
 
-    REQUIRE(test_has_member_function::has_member_function_f<test_type>{}());
-    REQUIRE(!test_has_member_function::has_member_function_f_const<test_type>{}());
+    REQUIRE(test_has_member_function::has_f<test_type>{}());
+    REQUIRE(!test_has_member_function::has_f_const<test_type>{}());
 
-    REQUIRE(test_has_member_function::has_member_function_g_const<test_type>{}());
-    REQUIRE(test_has_member_function::has_member_function_g<test_type>{}());
+    REQUIRE(test_has_member_function::has_g_const<test_type>{}());
+    REQUIRE(test_has_member_function::has_g<test_type>{}());
 
-    REQUIRE(test_has_member_function::has_member_function_h_double_const<test_type>{}());
-    REQUIRE(test_has_member_function::has_member_function_h_double<test_type>{}());
-    REQUIRE(!test_has_member_function::has_member_function_h_int_const<test_type>{}());
+    REQUIRE(test_has_member_function::has_h_double_const<test_type>{}());
+    REQUIRE(!test_has_member_function::has_h_int_const<test_type>{}());
+    REQUIRE(test_has_member_function::has_h_int<test_type>{}());
+    REQUIRE(!test_has_member_function::has_h_int64<test_type>{}());
 
+    REQUIRE(test_has_member_function::has_subscript_operator<test_type>{}());
+}
 
-    // REQUIRE(!test_has_member_function::has_member_function_h_const<test_type>{}());
-    // REQUIRE(!test_has_member_function::has_member_function_h_int_const<test_type>{}());
-    // REQUIRE(!test_has_member_function::has_member_function_h_crdouble_const<test_type>{}());
+TEST_CASE("test_is_static_castable","[test_common]")
+{
+    using gtensor::detail::is_static_castable_v;
 
+    struct A{};
+    struct B{
+        operator A(){return A{};}
+    };
+    REQUIRE(is_static_castable_v<int,int>);
+    REQUIRE(is_static_castable_v<int,const int&>);
+    REQUIRE(is_static_castable_v<int,int&&>);
+    REQUIRE(is_static_castable_v<int,double>);
+    REQUIRE(is_static_castable_v<double,int>);
+    REQUIRE(is_static_castable_v<int&,int>);
+    REQUIRE(is_static_castable_v<int&,int&>);
+    REQUIRE(is_static_castable_v<int&,const int&>);
+    REQUIRE(is_static_castable_v<int&,int&&>);
+    REQUIRE(is_static_castable_v<int&&,int>);
+    REQUIRE(is_static_castable_v<int&&,const int&>);
+    REQUIRE(is_static_castable_v<int&&,int&&>);
+    REQUIRE(is_static_castable_v<B,A>);
 
+    REQUIRE(!is_static_castable_v<int&&,int&>);
+    REQUIRE(!is_static_castable_v<int,int&>);
+    REQUIRE(!is_static_castable_v<int,int*>);
+    REQUIRE(!is_static_castable_v<int*,int>);
+    REQUIRE(!is_static_castable_v<A,B>);
 }

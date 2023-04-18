@@ -12,7 +12,7 @@ TEMPLATE_TEST_CASE("test_random_access_iterator_difference","[test_iterator]",
     using value_type = int;
     using config_type = gtensor::config::extend_config_t<TestType,value_type>;
     using index_type = typename config_type::index_type;
-    using storage_type = typename config_type::storage_type;
+    using storage_type = typename config_type::template storage<value_type>;
     using indexer_type = gtensor::basic_indexer<storage_type&>;
     using gtensor::indexer_iterator;
     using gtensor::reverse_indexer_iterator;
@@ -158,7 +158,7 @@ TEMPLATE_TEST_CASE("test_random_access_iterator_compare","[test_iterator]",
     using value_type = int;
     using config_type = gtensor::config::extend_config_t<TestType,value_type>;
     using index_type = typename config_type::index_type;
-    using storage_type = typename config_type::storage_type;
+    using storage_type = typename config_type::template storage<value_type>;
     using indexer_type = gtensor::basic_indexer<storage_type&>;
     using gtensor::indexer_iterator;
     using gtensor::reverse_indexer_iterator;
@@ -291,7 +291,7 @@ TEMPLATE_TEST_CASE("test_random_access_iterator_dereference","[test_iterator]",
     using value_type = int;
     using config_type = gtensor::config::extend_config_t<TestType,value_type>;
     using index_type = typename config_type::index_type;
-    using storage_type = typename config_type::storage_type;
+    using storage_type = typename config_type::template storage<value_type>;
     using indexer_type = gtensor::basic_indexer<storage_type&>;
     using gtensor::indexer_iterator;
     using gtensor::reverse_indexer_iterator;
