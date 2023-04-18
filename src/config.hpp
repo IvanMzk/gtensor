@@ -34,30 +34,23 @@ struct default_config
     template<typename T> using container = std::vector<T>;
 };
 
+template<typename Config, typename IdxT>
+struct extended_config : Config{
+    //using storage_type = typename CfgT::template storage<ValT>;
 
-template<typename CfgT, typename ValT> class extend_config
-{
-    struct extended_config : CfgT{
-        using storage_type = typename CfgT::template storage<ValT>;
-
-        //index_type defines data elements address space:
-        //e.g. shape and strides elements are of index_type
-        //slice, reshape view subscripts are of index_type
-        //must have semantic of signed integral type
-        using index_type = typename storage_type::difference_type;
-
-        using shape_type = typename CfgT::template shape<index_type>;
-
-        //used in indexed access to meta-data elements:
-        //e.g. index of direction, dimensions number
-        //transpose view subscripts are of dim_type, since they are directions indexes
-        //must have semantic of integral type
-        using dim_type = typename shape_type::size_type;
-    };
-    public: using type = extended_config;
+    //index_type defines data elements address space:
+    //e.g. shape and strides elements are of index_type
+    //slice, reshape view subscripts are of index_type
+    //must have semantic of signed integral type
+    using index_type = IdxT;
+    using shape_type = typename Config::template shape<index_type>;
+    //used in indexed access to meta-data elements:
+    //e.g. index of direction, dimensions number
+    //transpose view subscripts are of dim_type, since they are directions indexes
+    //must have semantic of integral type
+    using dim_type = typename shape_type::size_type;
 };
-template<typename CfgT, typename ValT> using extend_config_t = typename extend_config<CfgT,ValT>::type;
-
+template<typename Config, typename ValT> using extend_config_t = extended_config<Config, typename Config::template storage<ValT>::difference_type>;
 
 }   //end of namespace config
 }   //end of namespace gtensor
