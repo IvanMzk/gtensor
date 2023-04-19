@@ -65,6 +65,57 @@ public:
 private:
     const Converter_type* converter_;
 };
+//walker-indexer adaptes walker to indexer interface
+template<typename Walker>
+class walker_indexer
+{
+    static_assert(!std::is_reference_v<Walker>);
+    using walker_type = Walker;
+    using config_type = typename walker_type::config_type;
+    using dim_type = typename walker_type::dim_type;
+    using index_type = typename walker_type::index_type;
+    using strides_div_type = typename detail::strides_div_traits<config_type>::type;
+
+    const strides_div_type* strides_;
+    mutable walker_type walker_;
+public:
+    template<typename Walker_, std::enable_if_t<!std::is_convertible_v<std::decay_t<Walker_>, walker_indexer>,int> =0>
+    explicit walker_indexer(const strides_div_type& strides__, Walker_&& walker__):
+        strides_{&strides__},
+        walker_{std::forward<Walker_>(walker__)}
+    {}
+    decltype(std::declval<walker_type>().operator*()) operator[](index_type i)const{
+        walker_.reset_back();
+        dim_type direction{0};
+        for(auto strides_it = strides_->begin(), srtides_end=strides_->end(); strides_it!=srtides_end; ++strides_it, ++direction){
+            auto steps = detail::divide(i,*strides_it);
+            if (steps!=index_type{0}){
+                walker_.walk(direction,steps);
+            }
+        }
+        return *walker_;
+    }
+};
+//iterator-indexer adaptes iterator to indexer interface
+template<typename Iterator>
+class iterator_indexer
+{
+    static_assert(!std::is_reference_v<Iterator>);
+    using iterator_type = Iterator;
+    iterator_type iterator_;
+public:
+    //iterator__ argument should point to the first element
+    template<typename Iterator_, std::enable_if_t<!std::is_convertible_v<std::decay_t<Iterator_>, iterator_indexer>,int> =0>
+    explicit iterator_indexer(Iterator_&& iterator__):
+        iterator_{std::forward<Iterator_>(iterator__)}
+    {}
+    template<typename U>
+    decltype(std::declval<iterator_type>().operator*()) operator[](const U& i)const{
+        iterator_type tmp = iterator_;
+        std::advance(tmp, i);
+        return *tmp;
+    }
+};
 
 //walker is indexer adapter that allows address data elements using multidimensional index
 //Cursor is responsible for storing flat position, it may have semantic of integral type or random access iterator
@@ -125,15 +176,13 @@ private:
 template<typename Config, typename Indexer>
 class walker
 {
+    using indexer_type = Indexer;
+public:
     using config_type = Config;
     using index_type = typename config_type::index_type;
     using dim_type = typename config_type::dim_type;
     using shape_type = typename config_type::shape_type;
-    using indexer_type = Indexer;
 
-    walker_common<config_type, index_type> index_walker;
-    indexer_type indexer;
-public:
     walker(const shape_type& adapted_strides_, const shape_type& reset_strides_, const index_type& offset_, const indexer_type& indexer_, const dim_type& max_dim_):
         index_walker{adapted_strides_, reset_strides_, offset_, max_dim_},
         indexer{indexer_}
@@ -144,7 +193,10 @@ public:
     void reset(const dim_type& direction){index_walker.reset(direction);}
     void reset_back(const dim_type& direction){index_walker.reset_back(direction);}
     void reset_back(){index_walker.reset_back();}
-    decltype(indexer[index_walker.cursor()]) operator*()const{return indexer[index_walker.cursor()];}
+    decltype(std::declval<indexer_type&>()[std::declval<index_type&>()]) operator*()const{return indexer[index_walker.cursor()];}
+private:
+    walker_common<config_type, index_type> index_walker;
+    indexer_type indexer;
 };
 
 //walker_traverser implement algorithms to iterate walker using given shape
