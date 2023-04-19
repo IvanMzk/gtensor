@@ -47,6 +47,7 @@ inline auto apply_by_element(F&& f, Tuple&& t){
     return apply_by_element(std::forward<F>(f), std::forward<Tuple>(t), std::make_index_sequence<std::tuple_size_v<tuple_type>>{});
 }
 
+
 //safe cmp of signed,unsigned integrals
 template<typename T, typename U>
 inline constexpr bool cmp_equal(T t, U u){
