@@ -1,4 +1,6 @@
 #include <tuple>
+#include <iostream>
+#include <sstream>
 #include "catch.hpp"
 #include "helpers_for_testing.hpp"
 
@@ -123,4 +125,102 @@ TEST_CASE("test_apply_by_element","[test_helpers_for_testing]"){
         apply_by_element(test, test_data);
     };
     apply_by_element(apply_tests, tests);
+}
+
+namespace test_tuple{
+
+template<typename T> struct type_tree_to_str{
+    auto operator()()const{return std::string{typeid(T).name()};}
+};
+template<template<typename...> typename L, typename...Ts>
+struct type_tree_to_str<L<Ts...>>{
+    auto operator()()const{
+        std::stringstream ss{};
+        ss<<"[";
+        ((ss<<type_tree_to_str<Ts>{}()),...);
+        ss<<"]";
+        return ss.str();
+    }
+};
+
+template<template<typename...> typename TypeListIndexer>
+struct type_list_indexer_wrapper{
+    template<typename...Ts> using type_list_indexer = TypeListIndexer<Ts...>;
+};
+
+}   //end of namespace test_tuple
+
+TEMPLATE_TEST_CASE("test_type_list_indexer","[test_helpers_for_testing]",
+    test_tuple::type_list_indexer_wrapper<helpers_for_testing::tuple_details::type_list_indexer_2>,
+    test_tuple::type_list_indexer_wrapper<helpers_for_testing::tuple_details::type_list_indexer_4>
+)
+{
+    //using helpers_for_testing::tuple_details::type_list_indexer_4;
+    //using type_list
+    SECTION("list_1")
+    {
+        REQUIRE(std::is_same_v<typename TestType::template type_list_indexer<void>::template at<0>, void>);
+        REQUIRE(std::is_same_v<typename TestType::template type_list_indexer<void*>::template at<0>, void*>);
+        REQUIRE(std::is_same_v<typename TestType::template type_list_indexer<int>::template at<0>, int>);
+        REQUIRE(std::is_same_v<typename TestType::template type_list_indexer<int*>::template at<0>, int*>);
+        REQUIRE(std::is_same_v<typename TestType::template type_list_indexer<double>::template at<0>, double>);
+        REQUIRE(std::is_same_v<typename TestType::template type_list_indexer<double&&>::template at<0>, double&&>);
+        REQUIRE(std::is_same_v<typename TestType::template type_list_indexer<const double&>::template at<0>, const double&>);
+        REQUIRE(std::is_same_v<typename TestType::template type_list_indexer<std::string>::template at<0>, std::string>);
+    }
+    SECTION("list_20")
+    {
+        using indexer_20_type = typename TestType::template type_list_indexer<void,int,float&,const double,std::vector<int>,int&&,double,double,int,int,
+            const int**,std::string,char,char,int,void,void*,const int&,double,char>;
+
+        REQUIRE(std::is_same_v<typename indexer_20_type::template at<0>, void>);
+        REQUIRE(std::is_same_v<typename indexer_20_type::template at<1>, int>);
+        REQUIRE(std::is_same_v<typename indexer_20_type::template at<2>, float&>);
+        REQUIRE(std::is_same_v<typename indexer_20_type::template at<3>, const double>);
+        REQUIRE(std::is_same_v<typename indexer_20_type::template at<4>, std::vector<int>>);
+        REQUIRE(std::is_same_v<typename indexer_20_type::template at<5>, int&&>);
+        REQUIRE(std::is_same_v<typename indexer_20_type::template at<6>, double>);
+        REQUIRE(std::is_same_v<typename indexer_20_type::template at<7>, double>);
+        REQUIRE(std::is_same_v<typename indexer_20_type::template at<8>, int>);
+        REQUIRE(std::is_same_v<typename indexer_20_type::template at<9>, int>);
+        REQUIRE(std::is_same_v<typename indexer_20_type::template at<10>, const int**>);
+        REQUIRE(std::is_same_v<typename indexer_20_type::template at<11>, std::string>);
+        REQUIRE(std::is_same_v<typename indexer_20_type::template at<12>, char>);
+        REQUIRE(std::is_same_v<typename indexer_20_type::template at<13>, char>);
+        REQUIRE(std::is_same_v<typename indexer_20_type::template at<14>, int>);
+        REQUIRE(std::is_same_v<typename indexer_20_type::template at<15>, void>);
+        REQUIRE(std::is_same_v<typename indexer_20_type::template at<16>, void*>);
+        REQUIRE(std::is_same_v<typename indexer_20_type::template at<17>, const int&>);
+        REQUIRE(std::is_same_v<typename indexer_20_type::template at<18>, double>);
+        REQUIRE(std::is_same_v<typename indexer_20_type::template at<19>, char>);
+    }
+}
+
+TEST_CASE("test_tuple","[test_helpers_for_testing]"){
+    using helpers_for_testing::tuple;
+    int i{};
+
+    tuple<> t0{};
+    tuple<int> t1{1};
+    tuple<const int> ct1{1};
+    tuple<const int> cct1{i};
+    tuple<int,double> t2{1,2};
+    tuple<int,double> t2_def{};
+    tuple<int,double,std::string> t3{1,2,"3"};
+    tuple<int,double,std::string> t3_def{};
+    tuple<int*,const double*,std::string> t_with_ptr{};
+    tuple<int&,double> my_t_with_ref{i,2};
+    tuple<const int&,double> my_t_with_const_ref{i,2};
+    tuple<const int&,double> my_t_with_const_ref1{1,2};
+    tuple<int&&,double> my_t_rval_ref{std::move(i),2};
+    //tuple<int&&,double> my_t_rval_ref1{i,2}; //must not compile
+
+    std::reference_wrapper<const int> ref{i};
+    //std::reference_wrapper<const int> ref1{1};
+
+    std::tuple<int&,double> t_with_lval_ref{i,2};
+    std::tuple<const int&,double> t_with_const_lval_ref{1,2};
+    //std::tuple<int&&,double> t_with_rval_ref{i,2};
+    std::tuple<int&&,double> t_with_rval_ref1{1,2};
+    std::tuple<int&&,double> t_with_rval_ref2{std::move(i),2};
 }
