@@ -90,6 +90,8 @@ inline constexpr bool cmp_greater_equal(T t, U u){
 
 namespace tuple_details{
 
+template<typename> inline constexpr bool always_false = false;
+
 template<typename T>
     class lvalue_ref_wrapper
     {
@@ -101,7 +103,9 @@ template<typename T>
         explicit lvalue_ref_wrapper(U&& u):
             wrapped_{&u}
         {}
-
+        lvalue_ref_wrapper& operator=(const lvalue_ref_wrapper&) = delete;
+        lvalue_ref_wrapper& operator=(lvalue_ref_wrapper&&) = delete;
+        explicit operator T&()const{return *wrapped_;}
     };
     template<typename T>
     class rvalue_ref_wrapper
@@ -114,10 +118,18 @@ template<typename T>
         explicit rvalue_ref_wrapper(U&& u):
             wrapped_{&u}
         {}
+        rvalue_ref_wrapper& operator=(const rvalue_ref_wrapper&) = delete;
+        rvalue_ref_wrapper& operator=(rvalue_ref_wrapper&&) = delete;
+        explicit operator T&&()const{return static_cast<T&&>(*wrapped_);}
+        //must allow to emulate reference collapsing
+        explicit operator T&()const{return *wrapped_;}
     };
     template<typename T> struct type_adapter{using type = T;};
     template<typename T> struct type_adapter<T&>{using type = lvalue_ref_wrapper<T>;};
     template<typename T> struct type_adapter<T&&>{using type = rvalue_ref_wrapper<T>;};
+    template<typename T> struct type_adapter<lvalue_ref_wrapper<T>>{using type = T&;};
+    template<typename T> struct type_adapter<rvalue_ref_wrapper<T>>{using type = T&&;};
+    template<typename T> using type_adapter_t = typename type_adapter<T>::type;
 
     //type list indexing helpers
     template<typename, typename...> struct split_list_2;
@@ -238,11 +250,17 @@ template<typename T>
     };
 }   //end of namespace tuple_details
 
+template<typename> struct tuple_size;
+template<std::size_t, typename> struct tuple_element;
+template<typename T> inline constexpr std::size_t tuple_size_v = tuple_size<T>::value;
+template<std::size_t I, typename T> using tuple_element_t = typename tuple_element<I,T>::type;
+
 template<typename...Types>
 class basic_tuple
 {
-    using size_type = std::size_t;
 public:
+    using size_type = std::size_t;
+    using type_list_indexer = tuple_details::type_list_indexer_4<Types...>;
 
     ~basic_tuple()
     {
@@ -287,19 +305,39 @@ public:
     }
 
     //add converting copy,move operations
+    //add swap
+
+    template<size_type I, typename...Ts> friend tuple_element_t<I,basic_tuple<Ts...>>& get(basic_tuple<Ts...>&);
+    template<size_type I, typename...Ts> friend const tuple_element_t<I,basic_tuple<Ts...>>& get(const basic_tuple<Ts...>&);
+    template<size_type I, typename...Ts> friend tuple_element_t<I,basic_tuple<Ts...>>&& get(basic_tuple<Ts...>&&);
+    template<size_type I, typename...Ts> friend const tuple_element_t<I,basic_tuple<Ts...>>&& get(const basic_tuple<Ts...>&&);
 
 private:
 
+    //get pointer to stored element at index, need additional cast for to tuple_element_t due to reference wrapper
     template<size_type I>
-    void* get_(){
-        return static_cast<void*>(elements_+offsets_[I]);
+    auto get_(){
+        return reinterpret_cast<typename type_list_indexer::template at<I>*>(elements_+offsets_[I]);
+    }
+    template<size_type I>
+    auto get_()const{
+        return reinterpret_cast<const typename type_list_indexer::template at<I>*>(elements_+offsets_[I]);
+    }
+
+    template<typename U>
+    static constexpr size_type size_of_type(){
+        if constexpr (std::is_void_v<U>){
+            return 0;
+        }else{
+            return sizeof(U);
+        }
     }
 
     static constexpr size_type size(){
         if constexpr (sizeof...(Types) == 0){
             return 0;
         }else{
-            return (...+sizeof(Types));
+            return (...+size_of_type<Types>());
         }
     }
 
@@ -319,7 +357,7 @@ private:
     }
 
     template<size_type...I>
-    static constexpr auto make_offsets(){
+    static constexpr auto make_offsets(std::integer_sequence<size_type, I...>){
         return std::array<size_type, size()>{make_offset<I>()...};
     }
 
@@ -352,13 +390,56 @@ private:
         ((*reinterpret_cast<Types*>(elements_+offsets_[I]) = std::move(*reinterpret_cast<Types*>(other_elements_+offsets_[I]))),...);
     }
 
-    static constexpr std::array<size_type, size()> offsets_{make_offsets()};
+    static constexpr std::array<size_type, size()> offsets_{make_offsets(std::make_integer_sequence<size_type, sizeof...(Types)>{})};
     std::byte elements_[size()];
 };
 
-template<typename...Types> using tuple = basic_tuple<typename tuple_details::type_adapter<Types>::type...>;
+//tuple
+template<typename...Types> using tuple = basic_tuple<tuple_details::type_adapter_t<Types>...>;
+//tuple_size
+template<typename...Ts> struct tuple_size<basic_tuple<Ts...>> : std::integral_constant<std::size_t, sizeof...(Ts)>{};
+//tuple_element
+template<std::size_t I, typename T> struct tuple_element<I,const T>{
+    using type = std::add_const_t<typename tuple_element<I,T>::type>;
+};
+template<std::size_t I> struct tuple_element<I,basic_tuple<>>{
+    static_assert(tuple_details::always_false<std::integral_constant<std::size_t,I>>, "tuple index out of bounds");
+};
+template<std::size_t I, typename...Ts> struct tuple_element<I,basic_tuple<Ts...>>{
+    using type = tuple_details::type_adapter_t<typename basic_tuple<Ts...>::type_list_indexer::template at<I>>;
+};
+//get by index
+template<std::size_t I, typename...Ts>
+tuple_element_t<I,basic_tuple<Ts...>>& get(basic_tuple<Ts...>& t){
+    return static_cast<tuple_element_t<I,basic_tuple<Ts...>>&>(*t.template get_<I>());
+}
+template<std::size_t I, typename...Ts>
+const tuple_element_t<I,basic_tuple<Ts...>>& get(const basic_tuple<Ts...>& t){
+    return static_cast<const tuple_element_t<I,basic_tuple<Ts...>>&>(*t.template get_<I>());
+}
+template<std::size_t I, typename...Ts>
+tuple_element_t<I,basic_tuple<Ts...>>&& get(basic_tuple<Ts...>&& t){
+    return static_cast<tuple_element_t<I,basic_tuple<Ts...>>&&>(*t.template get_<I>());
+}
+template<std::size_t I, typename...Ts>
+const tuple_element_t<I,basic_tuple<Ts...>>&& get(const basic_tuple<Ts...>&& t){
+    return static_cast<const tuple_element_t<I,basic_tuple<Ts...>>&&>(*t.template get_<I>());
+}
+//tuple operators
+namespace tuple_details{
 
+template<typename...Ts,typename...Vs, std::size_t...I>
+bool equals(const basic_tuple<Ts...>& lhs, const basic_tuple<Vs...>& rhs, std::integer_sequence<std::size_t, I...>){
+    return (...&&(get<I>(lhs)==get<I>(rhs)));
+}
 
+}   //end of namespace tuple_details
+
+template<typename...Ts,typename...Vs>
+bool operator==(const basic_tuple<Ts...>& lhs, const basic_tuple<Vs...>& rhs){
+    static_assert(sizeof...(Ts) == sizeof...(Vs), "cannot compare tuples of different sizes");
+    return tuple_details::equals(lhs,rhs,std::make_integer_sequence<std::size_t,sizeof...(Ts)>{});
+}
 
 }   //end of namespace helpers_for_testing
 

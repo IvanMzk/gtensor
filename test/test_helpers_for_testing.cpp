@@ -196,8 +196,93 @@ TEMPLATE_TEST_CASE("test_type_list_indexer","[test_helpers_for_testing]",
     }
 }
 
+TEST_CASE("test_tuple_size","[test_helpers_for_testing]")
+{
+    using helpers_for_testing::tuple;
+    using helpers_for_testing::tuple_size_v;
+
+    REQUIRE(tuple_size_v<tuple<>> == 0);
+    REQUIRE(tuple_size_v<tuple<void>> == 1);
+    REQUIRE(tuple_size_v<tuple<int>> == 1);
+    REQUIRE(tuple_size_v<tuple<void,void>> == 2);
+    REQUIRE(tuple_size_v<tuple<int,double,std::string>> == 3);
+    REQUIRE(tuple_size_v<tuple<int&,double*,std::string&&,void,void>> == 5);
+}
+
+TEST_CASE("test_tuple_element","[test_helpers_for_testing]")
+{
+    using helpers_for_testing::tuple;
+    using helpers_for_testing::tuple_element_t;
+
+    REQUIRE(std::is_same_v<tuple_element_t<0,tuple<void>>,void>);
+    REQUIRE(std::is_same_v<tuple_element_t<0,tuple<const volatile void>>,const volatile void>);
+    REQUIRE(std::is_same_v<tuple_element_t<0,tuple<void*>>,void*>);
+    REQUIRE(std::is_same_v<tuple_element_t<0,tuple<const void*>>,const void*>);
+    REQUIRE(std::is_same_v<tuple_element_t<0,tuple<int>>,int>);
+    REQUIRE(std::is_same_v<tuple_element_t<0,tuple<const int>>,const int>);
+    REQUIRE(std::is_same_v<tuple_element_t<0,tuple<int&,double,char>>,int&>);
+    REQUIRE(std::is_same_v<tuple_element_t<1,tuple<int,double&&,char>>,double&&>);
+    REQUIRE(std::is_same_v<tuple_element_t<2,tuple<int,double,char*>>,char*>);
+    REQUIRE(std::is_same_v<tuple_element_t<2,tuple<int,double,char**>>,char**>);
+    REQUIRE(std::is_same_v<tuple_element_t<2,tuple<int,double,const char*>>,const char*>);
+    REQUIRE(std::is_same_v<tuple_element_t<1,tuple<int,const double&,char>>,const double&>);
+    REQUIRE(std::is_same_v<tuple_element_t<1,tuple<int,const double&&,char>>,const double&&>);
+}
+
+TEMPLATE_TEST_CASE("test_tuple_get","[test_helpers_for_testing]",
+    (std::integral_constant<std::size_t,0>),
+    (std::integral_constant<std::size_t,1>),
+    (std::integral_constant<std::size_t,2>),
+    (std::integral_constant<std::size_t,3>),
+    (std::integral_constant<std::size_t,4>),
+    (std::integral_constant<std::size_t,5>),
+    (std::integral_constant<std::size_t,6>),
+    (std::integral_constant<std::size_t,7>),
+    (std::integral_constant<std::size_t,8>),
+    (std::integral_constant<std::size_t,9>)
+)
+{
+    using helpers_for_testing::tuple;
+    using helpers_for_testing::get;
+    using tuple_type = tuple<int,const char,int&,const double&,std::string,float&&,const int&&,char*,const char*,const char*const>;
+    using std_tuple_type = std::tuple<int,const char,int&,const double&,std::string,float&&,const int&&,char*,const char*,const char*const>;
+    static constexpr std::size_t I = TestType::value;
+
+    SECTION("test_tuple_get_result_type")
+    {
+        //lvalue argument
+        REQUIRE(std::is_same_v<decltype(get<I>(std::declval<tuple_type&>())), decltype(std::get<I>(std::declval<std_tuple_type&>()))>);
+        //const lvalue argument
+        REQUIRE(std::is_same_v<decltype(get<I>(std::declval<const tuple_type&>())), decltype(std::get<I>(std::declval<const std_tuple_type&>()))>);
+        //rvalue argument
+        REQUIRE(std::is_same_v<decltype(get<I>(std::declval<tuple_type>())), decltype(std::get<I>(std::declval<std_tuple_type>()))>);
+        //const rvalue argument
+        REQUIRE(std::is_same_v<decltype(get<I>(std::declval<const tuple_type>())), decltype(std::get<I>(std::declval<const std_tuple_type>()))>);
+    }
+    SECTION("test_tuple_get_result_value")
+    {
+        int i{0};
+        double d{1};
+        float f{2};
+        char c{3};
+        tuple_type test_tuple{1,2,i,d,"abcd",std::move(f),std::move(i),&c,&c,&c};
+        std_tuple_type test_std_tuple{1,2,i,d,"abcd",std::move(f),std::move(i),&c,&c,&c};
+        //lvalue argument
+        REQUIRE(get<I>(test_tuple) == std::get<I>(test_std_tuple));
+        //const lvalue argument
+        REQUIRE(get<I>(static_cast<const tuple_type&>(test_tuple)) == std::get<I>(static_cast<const std_tuple_type&>(test_std_tuple)));
+        //rvalue argument
+        REQUIRE(get<I>(static_cast<tuple_type&&>(test_tuple)) == std::get<I>(static_cast<std_tuple_type&&>(test_std_tuple)));
+        //const rvalue argument
+        REQUIRE(get<I>(static_cast<const tuple_type&&>(test_tuple)) == std::get<I>(static_cast<const std_tuple_type&&>(test_std_tuple)));
+    }
+}
+
+
+
 TEST_CASE("test_tuple","[test_helpers_for_testing]"){
     using helpers_for_testing::tuple;
+    using helpers_for_testing::get;
     int i{};
 
     tuple<> t0{};
@@ -209,18 +294,60 @@ TEST_CASE("test_tuple","[test_helpers_for_testing]"){
     tuple<int,double,std::string> t3{1,2,"3"};
     tuple<int,double,std::string> t3_def{};
     tuple<int*,const double*,std::string> t_with_ptr{};
-    tuple<int&,double> my_t_with_ref{i,2};
     tuple<const int&,double> my_t_with_const_ref{i,2};
     tuple<const int&,double> my_t_with_const_ref1{1,2};
-    tuple<int&&,double> my_t_rval_ref{std::move(i),2};
     //tuple<int&&,double> my_t_rval_ref1{i,2}; //must not compile
+
+
+    tuple<int&,double> my_t_lval_ref{i,2};
+    get<0>(my_t_lval_ref);  //conversion from lvalue_ref_wrapper<int> to int&
+    get<0>(std::move(my_t_lval_ref));    //lvalue_ref_wrapper<int> conversion to int& && -> int&
+    REQUIRE(std::is_same_v<decltype(get<0>(my_t_lval_ref)),int&>);
+    REQUIRE(std::is_same_v<decltype(get<0>(std::move(my_t_lval_ref))),int&>);
+    const tuple<int&,double> my_const_t_lval_ref{i,2};
+    //there is no const references
+    REQUIRE(std::is_same_v<decltype(get<0>(my_const_t_lval_ref)), int&>);
+    REQUIRE(std::is_same_v<decltype(get<0>(std::move(my_const_t_lval_ref))), int&>);
+
+
+    tuple<int&&,double> my_t_rval_ref{std::move(i),2};
+    get<0>(my_t_rval_ref);    //conversion from rvalue_ref_wrapper<int> to int&& & -> int& , no such conversion for rvalue_ref_wrapper<int>
+    get<0>(std::move(my_t_rval_ref));    //conversion from rvalue_ref_wrapper<int> to int&&
+    REQUIRE(std::is_same_v<decltype(get<0>(my_t_rval_ref)),int&>);
+    REQUIRE(std::is_same_v<decltype(get<0>(std::move(my_t_rval_ref))),int&&>);
+    const tuple<int&&,double> my_const_t_rval_ref{std::move(i),2};
+    REQUIRE(std::is_same_v<decltype(get<0>(my_const_t_rval_ref)), int&>);
+    REQUIRE(std::is_same_v<decltype(get<0>(std::move(my_const_t_rval_ref))), int&&>);
+
+
+    std::tuple<int&,double> t_lval_ref{i,2};
+    //int& element type on rvalue reference tuple argument gives us int& due to reference collapsing
+    REQUIRE(std::is_same_v<decltype(std::get<0>(t_lval_ref)),int&>);
+    REQUIRE(std::is_same_v<decltype(std::get<0>(std::move(t_lval_ref))),int&>);
+    const std::tuple<int&,double> const_t_lval_ref{i,2};
+    REQUIRE(std::is_same_v<decltype(std::get<0>(const_t_lval_ref)),int&>);
+    REQUIRE(std::is_same_v<decltype(std::get<0>(std::move(const_t_lval_ref))),int&>);
+
+
+    std::tuple<int&&,double> t_rval_ref{1,2};
+    //std::get on lvalue tuple argument convert int&& to int& due to reference collapsing, but there is no static_cast from int&& to int&
+    REQUIRE(std::is_same_v<decltype(std::get<0>(t_rval_ref)),int&>);
+    //on rvalue tuple argument everythin is ok
+    REQUIRE(std::is_same_v<decltype(std::get<0>(std::move(t_rval_ref))),int&&>);
+    const std::tuple<int&&,double> const_t_rval_ref{1,2};
+    REQUIRE(std::is_same_v<decltype(std::get<0>(const_t_rval_ref)),int&>);
+    REQUIRE(std::is_same_v<decltype(std::get<0>(std::move(const_t_rval_ref))),int&&>);
+
+
+    tuple<int,const char> ttt{1,2};
+    REQUIRE(get<0>(ttt) == 1);
+    REQUIRE(get<1>(ttt) == 2);
+
 
     std::reference_wrapper<const int> ref{i};
     //std::reference_wrapper<const int> ref1{1};
 
-    std::tuple<int&,double> t_with_lval_ref{i,2};
     std::tuple<const int&,double> t_with_const_lval_ref{1,2};
     //std::tuple<int&&,double> t_with_rval_ref{i,2};
-    std::tuple<int&&,double> t_with_rval_ref1{1,2};
     std::tuple<int&&,double> t_with_rval_ref2{std::move(i),2};
 }
