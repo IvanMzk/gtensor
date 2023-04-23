@@ -278,7 +278,38 @@ TEMPLATE_TEST_CASE("test_tuple_get","[test_helpers_for_testing]",
     }
 }
 
+TEST_CASE("test_tuple_operator==","[test_helpers_for_testing]"){
+    using helpers_for_testing::tuple;
 
+    int i1{1};
+    int i2{2};
+    std::string s_abc{"abc"};
+    std::string s_def{"def"};
+
+    REQUIRE(tuple<>{} == tuple<>{});
+    REQUIRE(tuple<int>{} == tuple<int>{});
+    REQUIRE(tuple<int>{} == tuple<double>{});
+    REQUIRE(tuple<int>{1} == tuple<int>{1});
+    REQUIRE(tuple<int>{1} == tuple<double>{1});
+    REQUIRE(tuple<int,double>{1,2} == tuple<int,double>{1,2});
+    REQUIRE(tuple<int,int>{1,2} == tuple<double,double>{1,2});
+    REQUIRE(tuple<int&>{i1} == tuple<int&>{i1});
+    REQUIRE(tuple<int&&>{std::move(i1)} == tuple<int&&>{std::move(i1)});
+    REQUIRE(tuple<std::string&>{s_abc} == tuple<std::string>{"abc"});
+    REQUIRE(tuple<int*>{&i1} == tuple<int*>{&i1});
+    REQUIRE(tuple<std::string, const int&, int*>{s_abc,i1,&i1} == tuple<std::string, double, int*>{"abc",1,&i1});
+
+    REQUIRE(tuple<int>{0} != tuple<int>{1});
+    REQUIRE(tuple<int,std::string>{0,"abc"} != tuple<int,std::string>{0,"def"});
+    REQUIRE(tuple<int,double>{0,1} != tuple<double,int>{1,0});
+    REQUIRE(tuple<int&>{i1} != tuple<int&>{i2});
+    REQUIRE(tuple<int&&>{std::move(i1)} != tuple<int&&>{std::move(i2)});
+    REQUIRE(tuple<std::string&>{s_abc} != tuple<std::string>{"def"});
+    REQUIRE(tuple<int*>{&i1} != tuple<int*>{&i2});
+    REQUIRE(tuple<std::string, const int&, int*>{"abc",i1,&i1} != tuple<std::string&, double, int*>{s_def,1,&i1});
+    REQUIRE(tuple<std::string, const int&, int*>{"def",i1,&i1} != tuple<std::string&, double, int*>{s_def,2,&i1});
+    REQUIRE(tuple<std::string, const int&, int*>{"def",i1,&i1} != tuple<std::string&, double, int*>{s_def,1,&i2});
+}
 
 TEST_CASE("test_tuple","[test_helpers_for_testing]"){
     using helpers_for_testing::tuple;
