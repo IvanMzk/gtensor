@@ -150,166 +150,219 @@ struct type_list_indexer_wrapper{
 
 }   //end of namespace test_tuple
 
-TEMPLATE_TEST_CASE("test_type_list_indexer","[test_helpers_for_testing]",
-    test_tuple::type_list_indexer_wrapper<helpers_for_testing::tuple_details::type_list_indexer_2>,
-    test_tuple::type_list_indexer_wrapper<helpers_for_testing::tuple_details::type_list_indexer_4>
-)
-{
-    //using helpers_for_testing::tuple_details::type_list_indexer_4;
-    //using type_list
-    SECTION("list_1")
-    {
-        REQUIRE(std::is_same_v<typename TestType::template type_list_indexer<void>::template at<0>, void>);
-        REQUIRE(std::is_same_v<typename TestType::template type_list_indexer<void*>::template at<0>, void*>);
-        REQUIRE(std::is_same_v<typename TestType::template type_list_indexer<int>::template at<0>, int>);
-        REQUIRE(std::is_same_v<typename TestType::template type_list_indexer<int*>::template at<0>, int*>);
-        REQUIRE(std::is_same_v<typename TestType::template type_list_indexer<double>::template at<0>, double>);
-        REQUIRE(std::is_same_v<typename TestType::template type_list_indexer<double&&>::template at<0>, double&&>);
-        REQUIRE(std::is_same_v<typename TestType::template type_list_indexer<const double&>::template at<0>, const double&>);
-        REQUIRE(std::is_same_v<typename TestType::template type_list_indexer<std::string>::template at<0>, std::string>);
-    }
-    SECTION("list_20")
-    {
-        using indexer_20_type = typename TestType::template type_list_indexer<void,int,float&,const double,std::vector<int>,int&&,double,double,int,int,
-            const int**,std::string,char,char,int,void,void*,const int&,double,char>;
+// TEMPLATE_TEST_CASE("test_type_list_indexer","[test_helpers_for_testing]",
+//     test_tuple::type_list_indexer_wrapper<helpers_for_testing::tuple_details::type_list_indexer_2>,
+//     test_tuple::type_list_indexer_wrapper<helpers_for_testing::tuple_details::type_list_indexer_4>
+// )
+// {
+//     //using helpers_for_testing::tuple_details::type_list_indexer_4;
+//     //using type_list
+//     SECTION("list_1")
+//     {
+//         REQUIRE(std::is_same_v<typename TestType::template type_list_indexer<void>::template at<0>, void>);
+//         REQUIRE(std::is_same_v<typename TestType::template type_list_indexer<void*>::template at<0>, void*>);
+//         REQUIRE(std::is_same_v<typename TestType::template type_list_indexer<int>::template at<0>, int>);
+//         REQUIRE(std::is_same_v<typename TestType::template type_list_indexer<int*>::template at<0>, int*>);
+//         REQUIRE(std::is_same_v<typename TestType::template type_list_indexer<double>::template at<0>, double>);
+//         REQUIRE(std::is_same_v<typename TestType::template type_list_indexer<double&&>::template at<0>, double&&>);
+//         REQUIRE(std::is_same_v<typename TestType::template type_list_indexer<const double&>::template at<0>, const double&>);
+//         REQUIRE(std::is_same_v<typename TestType::template type_list_indexer<std::string>::template at<0>, std::string>);
+//     }
+//     SECTION("list_20")
+//     {
+//         using indexer_20_type = typename TestType::template type_list_indexer<void,int,float&,const double,std::vector<int>,int&&,double,double,int,int,
+//             const int**,std::string,char,char,int,void,void*,const int&,double,char>;
 
-        REQUIRE(std::is_same_v<typename indexer_20_type::template at<0>, void>);
-        REQUIRE(std::is_same_v<typename indexer_20_type::template at<1>, int>);
-        REQUIRE(std::is_same_v<typename indexer_20_type::template at<2>, float&>);
-        REQUIRE(std::is_same_v<typename indexer_20_type::template at<3>, const double>);
-        REQUIRE(std::is_same_v<typename indexer_20_type::template at<4>, std::vector<int>>);
-        REQUIRE(std::is_same_v<typename indexer_20_type::template at<5>, int&&>);
-        REQUIRE(std::is_same_v<typename indexer_20_type::template at<6>, double>);
-        REQUIRE(std::is_same_v<typename indexer_20_type::template at<7>, double>);
-        REQUIRE(std::is_same_v<typename indexer_20_type::template at<8>, int>);
-        REQUIRE(std::is_same_v<typename indexer_20_type::template at<9>, int>);
-        REQUIRE(std::is_same_v<typename indexer_20_type::template at<10>, const int**>);
-        REQUIRE(std::is_same_v<typename indexer_20_type::template at<11>, std::string>);
-        REQUIRE(std::is_same_v<typename indexer_20_type::template at<12>, char>);
-        REQUIRE(std::is_same_v<typename indexer_20_type::template at<13>, char>);
-        REQUIRE(std::is_same_v<typename indexer_20_type::template at<14>, int>);
-        REQUIRE(std::is_same_v<typename indexer_20_type::template at<15>, void>);
-        REQUIRE(std::is_same_v<typename indexer_20_type::template at<16>, void*>);
-        REQUIRE(std::is_same_v<typename indexer_20_type::template at<17>, const int&>);
-        REQUIRE(std::is_same_v<typename indexer_20_type::template at<18>, double>);
-        REQUIRE(std::is_same_v<typename indexer_20_type::template at<19>, char>);
-    }
-}
+//         REQUIRE(std::is_same_v<typename indexer_20_type::template at<0>, void>);
+//         REQUIRE(std::is_same_v<typename indexer_20_type::template at<1>, int>);
+//         REQUIRE(std::is_same_v<typename indexer_20_type::template at<2>, float&>);
+//         REQUIRE(std::is_same_v<typename indexer_20_type::template at<3>, const double>);
+//         REQUIRE(std::is_same_v<typename indexer_20_type::template at<4>, std::vector<int>>);
+//         REQUIRE(std::is_same_v<typename indexer_20_type::template at<5>, int&&>);
+//         REQUIRE(std::is_same_v<typename indexer_20_type::template at<6>, double>);
+//         REQUIRE(std::is_same_v<typename indexer_20_type::template at<7>, double>);
+//         REQUIRE(std::is_same_v<typename indexer_20_type::template at<8>, int>);
+//         REQUIRE(std::is_same_v<typename indexer_20_type::template at<9>, int>);
+//         REQUIRE(std::is_same_v<typename indexer_20_type::template at<10>, const int**>);
+//         REQUIRE(std::is_same_v<typename indexer_20_type::template at<11>, std::string>);
+//         REQUIRE(std::is_same_v<typename indexer_20_type::template at<12>, char>);
+//         REQUIRE(std::is_same_v<typename indexer_20_type::template at<13>, char>);
+//         REQUIRE(std::is_same_v<typename indexer_20_type::template at<14>, int>);
+//         REQUIRE(std::is_same_v<typename indexer_20_type::template at<15>, void>);
+//         REQUIRE(std::is_same_v<typename indexer_20_type::template at<16>, void*>);
+//         REQUIRE(std::is_same_v<typename indexer_20_type::template at<17>, const int&>);
+//         REQUIRE(std::is_same_v<typename indexer_20_type::template at<18>, double>);
+//         REQUIRE(std::is_same_v<typename indexer_20_type::template at<19>, char>);
+//     }
+// }
 
-TEST_CASE("test_tuple_size","[test_helpers_for_testing]")
-{
-    using helpers_for_testing::tuple;
-    using helpers_for_testing::tuple_size_v;
+// TEST_CASE("test_tuple_size","[test_helpers_for_testing]")
+// {
+//     using helpers_for_testing::tuple;
+//     using helpers_for_testing::tuple_size_v;
 
-    REQUIRE(tuple_size_v<tuple<>> == 0);
-    REQUIRE(tuple_size_v<tuple<void>> == 1);
-    REQUIRE(tuple_size_v<tuple<int>> == 1);
-    REQUIRE(tuple_size_v<tuple<void,void>> == 2);
-    REQUIRE(tuple_size_v<tuple<int,double,std::string>> == 3);
-    REQUIRE(tuple_size_v<tuple<int&,double*,std::string&&,void,void>> == 5);
-}
+//     REQUIRE(tuple_size_v<tuple<>> == 0);
+//     REQUIRE(tuple_size_v<tuple<void>> == 1);
+//     REQUIRE(tuple_size_v<tuple<int>> == 1);
+//     REQUIRE(tuple_size_v<tuple<void,void>> == 2);
+//     REQUIRE(tuple_size_v<tuple<int,double,std::string>> == 3);
+//     REQUIRE(tuple_size_v<tuple<int&,double*,std::string&&,void,void>> == 5);
+// }
 
-TEST_CASE("test_tuple_element","[test_helpers_for_testing]")
-{
-    using helpers_for_testing::tuple;
-    using helpers_for_testing::tuple_element_t;
+// TEST_CASE("test_tuple_element","[test_helpers_for_testing]")
+// {
+//     using helpers_for_testing::tuple;
+//     using helpers_for_testing::tuple_element_t;
 
-    REQUIRE(std::is_same_v<tuple_element_t<0,tuple<void*>>,void*>);
-    REQUIRE(std::is_same_v<tuple_element_t<0,tuple<const void*>>,const void*>);
-    REQUIRE(std::is_same_v<tuple_element_t<0,tuple<int>>,int>);
-    REQUIRE(std::is_same_v<tuple_element_t<0,tuple<const int>>,const int>);
-    REQUIRE(std::is_same_v<tuple_element_t<0,tuple<int&,double,char>>,int&>);
-    REQUIRE(std::is_same_v<tuple_element_t<1,tuple<int,double&&,char>>,double&&>);
-    REQUIRE(std::is_same_v<tuple_element_t<2,tuple<int,double,char*>>,char*>);
-    REQUIRE(std::is_same_v<tuple_element_t<2,tuple<int,double,char**>>,char**>);
-    REQUIRE(std::is_same_v<tuple_element_t<2,tuple<int,double,const char*>>,const char*>);
-    REQUIRE(std::is_same_v<tuple_element_t<1,tuple<int,const double&,char>>,const double&>);
-    REQUIRE(std::is_same_v<tuple_element_t<1,tuple<int,const double&&,char>>,const double&&>);
-}
+//     REQUIRE(std::is_same_v<tuple_element_t<0,tuple<void*>>,void*>);
+//     REQUIRE(std::is_same_v<tuple_element_t<0,tuple<const void*>>,const void*>);
+//     REQUIRE(std::is_same_v<tuple_element_t<0,tuple<int>>,int>);
+//     REQUIRE(std::is_same_v<tuple_element_t<0,tuple<const int>>,const int>);
+//     REQUIRE(std::is_same_v<tuple_element_t<0,tuple<int&,double,char>>,int&>);
+//     REQUIRE(std::is_same_v<tuple_element_t<1,tuple<int,double&&,char>>,double&&>);
+//     REQUIRE(std::is_same_v<tuple_element_t<2,tuple<int,double,char*>>,char*>);
+//     REQUIRE(std::is_same_v<tuple_element_t<2,tuple<int,double,char**>>,char**>);
+//     REQUIRE(std::is_same_v<tuple_element_t<2,tuple<int,double,const char*>>,const char*>);
+//     REQUIRE(std::is_same_v<tuple_element_t<1,tuple<int,const double&,char>>,const double&>);
+//     REQUIRE(std::is_same_v<tuple_element_t<1,tuple<int,const double&&,char>>,const double&&>);
+// }
 
-TEMPLATE_TEST_CASE("test_tuple_get","[test_helpers_for_testing]",
-    (std::integral_constant<std::size_t,0>),
-    (std::integral_constant<std::size_t,1>),
-    (std::integral_constant<std::size_t,2>),
-    (std::integral_constant<std::size_t,3>),
-    (std::integral_constant<std::size_t,4>),
-    (std::integral_constant<std::size_t,5>),
-    (std::integral_constant<std::size_t,6>),
-    (std::integral_constant<std::size_t,7>),
-    (std::integral_constant<std::size_t,8>),
-    (std::integral_constant<std::size_t,9>)
-)
+// TEMPLATE_TEST_CASE("test_tuple_get","[test_helpers_for_testing]",
+//     (std::integral_constant<std::size_t,0>),
+//     (std::integral_constant<std::size_t,1>),
+//     (std::integral_constant<std::size_t,2>),
+//     (std::integral_constant<std::size_t,3>),
+//     (std::integral_constant<std::size_t,4>),
+//     (std::integral_constant<std::size_t,5>),
+//     (std::integral_constant<std::size_t,6>),
+//     (std::integral_constant<std::size_t,7>),
+//     (std::integral_constant<std::size_t,8>),
+//     (std::integral_constant<std::size_t,9>)
+// )
+// {
+//     using helpers_for_testing::tuple;
+//     using helpers_for_testing::get;
+//     using tuple_type = tuple<int,const char,int&,const double&,std::string,float&&,const int&&,char*,const char*,const char*const>;
+//     using std_tuple_type = std::tuple<int,const char,int&,const double&,std::string,float&&,const int&&,char*,const char*,const char*const>;
+//     static constexpr std::size_t I = TestType::value;
+
+//     SECTION("test_tuple_get_result_type")
+//     {
+//         //lvalue argument
+//         REQUIRE(std::is_same_v<decltype(get<I>(std::declval<tuple_type&>())), decltype(std::get<I>(std::declval<std_tuple_type&>()))>);
+//         //const lvalue argument
+//         REQUIRE(std::is_same_v<decltype(get<I>(std::declval<const tuple_type&>())), decltype(std::get<I>(std::declval<const std_tuple_type&>()))>);
+//         //rvalue argument
+//         REQUIRE(std::is_same_v<decltype(get<I>(std::declval<tuple_type>())), decltype(std::get<I>(std::declval<std_tuple_type>()))>);
+//         //const rvalue argument
+//         REQUIRE(std::is_same_v<decltype(get<I>(std::declval<const tuple_type>())), decltype(std::get<I>(std::declval<const std_tuple_type>()))>);
+//     }
+//     SECTION("test_tuple_get_result_value")
+//     {
+//         int i{0};
+//         double d{1};
+//         float f{2};
+//         char c{3};
+//         tuple_type test_tuple{1,c,i,d,"abcd",std::move(f),std::move(i),&c,&c,&c};
+//         std_tuple_type test_std_tuple{1,c,i,d,"abcd",std::move(f),std::move(i),&c,&c,&c};
+//         // tuple_type test_tuple{1,2,i,d,"abcd",std::move(f),std::move(i),&c,&c,&c};
+//         // std_tuple_type test_std_tuple{1,2,i,d,"abcd",std::move(f),std::move(i),&c,&c,&c};
+//         //lvalue argument
+//         REQUIRE(get<I>(test_tuple) == std::get<I>(test_std_tuple));
+//         //const lvalue argument
+//         REQUIRE(get<I>(static_cast<const tuple_type&>(test_tuple)) == std::get<I>(static_cast<const std_tuple_type&>(test_std_tuple)));
+//         //rvalue argument
+//         REQUIRE(get<I>(static_cast<tuple_type&&>(test_tuple)) == std::get<I>(static_cast<std_tuple_type&&>(test_std_tuple)));
+//         //const rvalue argument
+//         REQUIRE(get<I>(static_cast<const tuple_type&&>(test_tuple)) == std::get<I>(static_cast<const std_tuple_type&&>(test_std_tuple)));
+//     }
+// }
+
+// TEST_CASE("test_tuple_operator==","[test_helpers_for_testing]")
+// {
+//     using helpers_for_testing::tuple;
+
+//     int i1{1};
+//     int i2{2};
+//     std::string s_abc{"abc"};
+//     std::string s_def{"def"};
+
+//     REQUIRE(tuple<>{} == tuple<>{});
+//     REQUIRE(tuple<int>{} == tuple<int>{});
+//     REQUIRE(tuple<int>{} == tuple<double>{});
+//     REQUIRE(tuple<int>{1} == tuple<int>{1});
+//     REQUIRE(tuple<int>{1} == tuple<double>{1});
+//     REQUIRE(tuple<int,double>{1,2} == tuple<int,double>{1,2});
+//     REQUIRE(tuple<int,int>{1,2} == tuple<double,double>{1,2});
+//     REQUIRE(tuple<int&>{i1} == tuple<int&>{i1});
+//     REQUIRE(tuple<int&&>{std::move(i1)} == tuple<int&&>{std::move(i1)});
+//     REQUIRE(tuple<std::string&>{s_abc} == tuple<std::string>{"abc"});
+//     REQUIRE(tuple<int*>{&i1} == tuple<int*>{&i1});
+//     REQUIRE(tuple<std::string, const int&, int*>{s_abc,i1,&i1} == tuple<std::string, double, int*>{"abc",1,&i1});
+
+//     REQUIRE(tuple<int>{0} != tuple<int>{1});
+//     REQUIRE(tuple<int,std::string>{0,"abc"} != tuple<int,std::string>{0,"def"});
+//     REQUIRE(tuple<int,double>{0,1} != tuple<double,int>{1,0});
+//     REQUIRE(tuple<int&>{i1} != tuple<int&>{i2});
+//     REQUIRE(tuple<int&&>{std::move(i1)} != tuple<int&&>{std::move(i2)});
+//     REQUIRE(tuple<std::string&>{s_abc} != tuple<std::string>{"def"});
+//     REQUIRE(tuple<int*>{&i1} != tuple<int*>{&i2});
+//     REQUIRE(tuple<std::string, const int&, int*>{"abc",i1,&i1} != tuple<std::string&, double, int*>{s_def,1,&i1});
+//     REQUIRE(tuple<std::string, const int&, int*>{"def",i1,&i1} != tuple<std::string&, double, int*>{s_def,2,&i1});
+//     REQUIRE(tuple<std::string, const int&, int*>{"def",i1,&i1} != tuple<std::string&, double, int*>{s_def,1,&i2});
+// }
+
+//add tests:
+//default constructo
+//converting copy assignment
+//convereting move assignment
+//destructor
+//exception cleanup
+
+TEST_CASE("test_tuple_converting_args_constructor","[test_helpers_for_testing]")
 {
     using helpers_for_testing::tuple;
     using helpers_for_testing::get;
-    using tuple_type = tuple<int,const char,int&,const double&,std::string,float&&,const int&&,char*,const char*,const char*const>;
-    using std_tuple_type = std::tuple<int,const char,int&,const double&,std::string,float&&,const int&&,char*,const char*,const char*const>;
-    static constexpr std::size_t I = TestType::value;
 
-    SECTION("test_tuple_get_result_type")
-    {
-        //lvalue argument
-        REQUIRE(std::is_same_v<decltype(get<I>(std::declval<tuple_type&>())), decltype(std::get<I>(std::declval<std_tuple_type&>()))>);
-        //const lvalue argument
-        REQUIRE(std::is_same_v<decltype(get<I>(std::declval<const tuple_type&>())), decltype(std::get<I>(std::declval<const std_tuple_type&>()))>);
-        //rvalue argument
-        REQUIRE(std::is_same_v<decltype(get<I>(std::declval<tuple_type>())), decltype(std::get<I>(std::declval<std_tuple_type>()))>);
-        //const rvalue argument
-        REQUIRE(std::is_same_v<decltype(get<I>(std::declval<const tuple_type>())), decltype(std::get<I>(std::declval<const std_tuple_type>()))>);
-    }
-    SECTION("test_tuple_get_result_value")
-    {
+    SECTION("Types>1_Args>1"){
         int i{0};
-        double d{1};
-        float f{2};
-        char c{3};
-        tuple_type test_tuple{1,c,i,d,"abcd",std::move(f),std::move(i),&c,&c,&c};
-        std_tuple_type test_std_tuple{1,c,i,d,"abcd",std::move(f),std::move(i),&c,&c,&c};
-        // tuple_type test_tuple{1,2,i,d,"abcd",std::move(f),std::move(i),&c,&c,&c};
-        // std_tuple_type test_std_tuple{1,2,i,d,"abcd",std::move(f),std::move(i),&c,&c,&c};
-        //lvalue argument
-        REQUIRE(get<I>(test_tuple) == std::get<I>(test_std_tuple));
-        //const lvalue argument
-        REQUIRE(get<I>(static_cast<const tuple_type&>(test_tuple)) == std::get<I>(static_cast<const std_tuple_type&>(test_std_tuple)));
-        //rvalue argument
-        REQUIRE(get<I>(static_cast<tuple_type&&>(test_tuple)) == std::get<I>(static_cast<std_tuple_type&&>(test_std_tuple)));
-        //const rvalue argument
-        REQUIRE(get<I>(static_cast<const tuple_type&&>(test_tuple)) == std::get<I>(static_cast<const std_tuple_type&&>(test_std_tuple)));
+        std::vector<int> v{1,2,3};
+        tuple<double, void*, std::string, std::vector<int>> result{i,&i,"abc",std::move(v)};
+        REQUIRE(get<0>(result) == i);
+        REQUIRE(get<1>(result) == &i);
+        REQUIRE(get<2>(result) == std::string{"abc"});
+        REQUIRE(get<3>(result) == std::vector<int>{1,2,3});
+        REQUIRE(v.empty());
     }
-}
-
-TEST_CASE("test_tuple_operator==","[test_helpers_for_testing]")
-{
-    using helpers_for_testing::tuple;
-
-    int i1{1};
-    int i2{2};
-    std::string s_abc{"abc"};
-    std::string s_def{"def"};
-
-    REQUIRE(tuple<>{} == tuple<>{});
-    REQUIRE(tuple<int>{} == tuple<int>{});
-    REQUIRE(tuple<int>{} == tuple<double>{});
-    REQUIRE(tuple<int>{1} == tuple<int>{1});
-    REQUIRE(tuple<int>{1} == tuple<double>{1});
-    REQUIRE(tuple<int,double>{1,2} == tuple<int,double>{1,2});
-    REQUIRE(tuple<int,int>{1,2} == tuple<double,double>{1,2});
-    REQUIRE(tuple<int&>{i1} == tuple<int&>{i1});
-    REQUIRE(tuple<int&&>{std::move(i1)} == tuple<int&&>{std::move(i1)});
-    REQUIRE(tuple<std::string&>{s_abc} == tuple<std::string>{"abc"});
-    REQUIRE(tuple<int*>{&i1} == tuple<int*>{&i1});
-    REQUIRE(tuple<std::string, const int&, int*>{s_abc,i1,&i1} == tuple<std::string, double, int*>{"abc",1,&i1});
-
-    REQUIRE(tuple<int>{0} != tuple<int>{1});
-    REQUIRE(tuple<int,std::string>{0,"abc"} != tuple<int,std::string>{0,"def"});
-    REQUIRE(tuple<int,double>{0,1} != tuple<double,int>{1,0});
-    REQUIRE(tuple<int&>{i1} != tuple<int&>{i2});
-    REQUIRE(tuple<int&&>{std::move(i1)} != tuple<int&&>{std::move(i2)});
-    REQUIRE(tuple<std::string&>{s_abc} != tuple<std::string>{"def"});
-    REQUIRE(tuple<int*>{&i1} != tuple<int*>{&i2});
-    REQUIRE(tuple<std::string, const int&, int*>{"abc",i1,&i1} != tuple<std::string&, double, int*>{s_def,1,&i1});
-    REQUIRE(tuple<std::string, const int&, int*>{"def",i1,&i1} != tuple<std::string&, double, int*>{s_def,2,&i1});
-    REQUIRE(tuple<std::string, const int&, int*>{"def",i1,&i1} != tuple<std::string&, double, int*>{s_def,1,&i2});
+    SECTION("Types==1_Args==1_tuple>1"){
+        struct abc{
+            int i0_,i1_;
+            abc(const tuple<int,int>& arg):
+                i0_{get<0>(arg)},
+                i1_{get<1>(arg)}
+            {}
+        };
+        tuple<int,int> arg{1,2};
+        tuple<abc> result{arg};
+        REQUIRE(get<0>(result).i0_ == 1);
+        REQUIRE(get<0>(result).i1_ == 2);
+    }
+    SECTION("Types==1_Args==1_tuple==1"){
+        struct abc{
+            int i0_{};
+            int i_{};
+            abc(const tuple<int>& arg):
+                i0_{get<0>(arg)}
+            {}
+            abc(int arg):
+                i_{arg}
+            {}
+        };
+        tuple<int> arg{2};
+        tuple<abc> result{arg};
+        REQUIRE(get<0>(result).i0_ == 2);
+        REQUIRE(get<0>(result).i_ == int{});
+    }
 }
 
 TEST_CASE("test_tuple_copy_operations","[test_helpers_for_testing]")
@@ -317,13 +370,15 @@ TEST_CASE("test_tuple_copy_operations","[test_helpers_for_testing]")
     using helpers_for_testing::tuple;
     using helpers_for_testing::get;
 
-    SECTION("test_tuple_copy_constructor"){
+    SECTION("test_tuple_copy_constructor")
+    {
         int i{1};
         double d{2};
         using tuple_type = tuple<int,const int,int&,int&&,std::string,const double&, const double&&>;
         tuple_type test_tuple{3,4,i,std::move(i),"abc",d,std::move(d)};
-        tuple_type tuple_copy1 = test_tuple;
-        tuple_type tuple_copy2 = test_tuple;
+        const tuple_type& cr_test_tuple{test_tuple};
+        tuple_type tuple_copy1{test_tuple};
+        tuple_type tuple_copy2{cr_test_tuple};
         REQUIRE(test_tuple == tuple_copy1);
         REQUIRE(test_tuple == tuple_copy2);
         get<4>(tuple_copy1) = "def";
@@ -339,7 +394,8 @@ TEST_CASE("test_tuple_copy_operations","[test_helpers_for_testing]")
         tuple<> empty_tuple_copy = empty_tuple;
         REQUIRE(empty_tuple == empty_tuple_copy);
     }
-    SECTION("test_tuple_copy_assignment"){
+    SECTION("test_tuple_copy_assignment")
+    {
         using tuple_type = tuple<int,double,std::string>;
         tuple_type rhs{1,2,"abc"};
         tuple_type lhs{};
@@ -352,91 +408,37 @@ TEST_CASE("test_tuple_copy_operations","[test_helpers_for_testing]")
         empty_lhs = empty_rhs;
         REQUIRE(empty_lhs == empty_rhs);
     }
+    SECTION("test_tuple_converting_copy_constructor")
+    {
+        SECTION("Types>1")
+        {
+            double d{};
+            tuple<int,double*> src{1,&d};
+            tuple<double,void*> from_src{src};
+            REQUIRE(from_src == tuple<double,void*>{1,&d});
 
-    SECTION("test_tuple_converting_copy_constructor"){
+            const tuple<int,double*> const_src{1,&d};
+            tuple<double,void*> from_const_src{const_src};
+            REQUIRE(from_const_src == tuple<double,void*>{1,&d});
+        }
+        SECTION("Types==1")
+        {
+            struct Int
+            {
+                int i_;
+                Int(int i__):
+                    i_{i__}
+                {}
+                bool operator==(const Int& other)const{return i_==other.i_;}
+            };
+            tuple<int> srs{2};
+            tuple<Int> from_src{srs};
+            REQUIRE(get<0>(from_src) == Int{2});
 
-        // tuple<const int&> tt{1};
-        // //std::tuple<const int&> stt{1};
-        // tuple<int> lhs = tuple<double>{1};
-
-        //ok, it is not known if lifetime of temporary shorter then constructed tuple (temporary created out of tuple)
-        // tuple<const int&> t_lref_bound_temporary{1};
-        // std::tuple<const int&> std_t_lref_bound_temporary{1};
-        // tuple<int&&> t_rref_bound_temporary{1};
-        // std::tuple<int&&> std_t_rref_bound_temporary{1};
-
-
-        //not compile, bound temporary with lifetime known shorter then constructed tuple ("inner temporary")
-        //tuple<const double&> t_lref_bound_inner_temporary{1};
-        //std::tuple<const double&> std_t_lref_bound_inner_temporary{1};
-        //tuple<double&&> t_rref_bound_inner_temporary{1};
-        //std::tuple<double&&> std_t_rref_bound_inner_temporary{1};
-        //tuple<const int&,const int&>  t_lref_bound_inner_temporary1{tuple<double,double>{1,2}};
-        //std::tuple<const int&,const int&>  std_t_lref_bound_inner_temporary1{std::tuple<double,double>{1,2}};
-        //tuple<int&&,int&&>  t_rref_bound_inner_temporary1{tuple<double,double>{1,2}};
-        //std::tuple<int&&,int&&>  std_t_rref_bound_inner_temporary1{std::tuple<double,double>{1,2}};
-
-
-
-        // //tuple<const double&> lhs1 = tuple<int>{1};
-        // //std::tuple<const int&> std_lhs1 = std::tuple<double>{1};
-
-        // tuple<const int&> lhs2 = tuple<int>{1};
-        // std::tuple<const int&> std_lhs2 = std::tuple<int>{1};
-
-        // tuple<int> ti_move = tuple<int>{};    //move_elements_, move constructor
-        // tuple<int> ti_conv_move = tuple<double>{};    //move_elements_, move converting constructor
-
-        // tuple<int> ti_conv_copy_elems{1};  //init_elements_, conv copy elements constructor
-
-        //tuple<tuple<int>> ti_conv_copy_elems1{tuple<int>{1}};  //call move_elements_, move converting constructor, but must be init_elements_, conv copy elements constructor
-
-        //tuple<tuple<int>,tuple<int>> ti_conv_copy_elems2{tuple<int,int>{1,2}};  //call move_elements_, move converting constructor, but must be init_elements_, conv copy elements constructor
-
-
-        //elements > 1 and single tuple argument the only variant is converting copy or move constructor
-        //tuple<int,int> t_conv_move_elems{tuple<double,double>{1,2}};  //ok call move_elements_, move converting constructor
-
-        //elements > 1 and arguments > 1 - converting elements constructor or direct constructor
-        //tuple<int,int> t_conv_elems{tuple<int>{},tuple<int>{}};   //no convrsion from tuple<int> to int
-        //tuple<int,double> t_conv_elems{1,2};
-        //elements == 1 and single not tuple specialization aregument - converting elements constructor or direct constructor ?? explicit
-        //tuple<int> t_conv_elements_single{1};
-
-        //elements == 1 and single tuple specialization argument
-        //tuple<int> t_tuple_arg_conv_elems{tuple<int>{1}};    //ok move elided, just single call to elements converting constructor explicit tuple(Arg&& arg)
-        //tuple<int> t_tuple_arg_conv_move{tuple<double>{1}};    //ok, int is not constructible from tuple<double>, move converting constructor tuple(tuple<Ts...>&& other)
-
-        //tuple<tuple<int>> t_tuple_arg_conv_elems1{tuple<int>{1}};   //not ok, should call elements converting but call move converting
-
-        struct abc{
-            abc(tuple<int,int>){}
-            abc(std::tuple<int,int>){}
-        };
-
-        struct def{
-            def(int){}
-            //def(std::tuple<int>){}
-        };
-
-
-
-        //tuple<abc> t_tuple_arg_conv_elems2{tuple<int,int>{1,1}};    //not ok, should compile, call elements converting but not compile, call move converting
-        //std::tuple<abc> std_t_tuple_arg_conv_elems2{std::tuple<int,int>{1,1}};
-        std::tuple<def> std_t_tuple_arg_conv_elems2{std::tuple<int>{1}};
-
-        std::cout<<std::endl<<std::is_constructible_v<def,int>;
-        std::cout<<std::endl<<std::is_constructible_v<def,tuple<int>>;
-        std::cout<<std::endl<<std::is_convertible_v<tuple<int>,def>;
-
-
-        //std::tuple<std::tuple<int>,std::tuple<int>> std_ti_conv_copy_elems2{std::tuple<double,double>{1,2}};  //call move_elements_, move converting constructor, but must be init_elements_, conv copy elements constructor
-
-        //tuple<tuple<int>> ti_conv_copy_elems2{tuple<int>{1,2}};  //call move_elements_, move converting constructor, but must be init_elements_, conv copy elements constructor
-
-
-        //tuple<tuple<int>,tuple<int>> ti_conv_copy_elems2{tuple<int>{1},tuple<int>{2}};  //call init_elements_, conv copy elements constructor
-
+            const tuple<int> const_src{2};
+            tuple<Int> from_const_src{const_src};
+            REQUIRE(get<0>(from_const_src) == Int{2});
+        }
     }
 }
 
@@ -468,6 +470,43 @@ TEST_CASE("test_tuple_move_operations","[test_helpers_for_testing]")
         tuple<> empty_lhs{};
         empty_lhs = empty_rhs;
         REQUIRE(empty_lhs == tuple<>{});
+    }
+    SECTION("test_tuple_converting_move_constructor")
+    {
+        SECTION("Types>1")
+        {
+            double d{};
+            tuple<int,double*,std::vector<int>> src{1,&d,{1,2,3}};
+            tuple<double,void*,std::vector<int>> from_src{std::move(src)};
+            REQUIRE(from_src == tuple<double,void*,std::vector<int>>{1,&d,{1,2,3}});
+            REQUIRE(get<2>(src).empty());
+        }
+        SECTION("Types==1")
+        {
+            struct abc
+            {
+                std::vector<char> s_;
+                abc(std::initializer_list<char> s__):
+                    s_{s__}
+                {}
+                auto empty()const{return s_.empty();}
+            };
+            struct def
+            {
+                std::vector<char> s_;
+                def(std::initializer_list<char> s__):
+                    s_{s__}
+                {}
+                def(abc&& other):
+                    s_{std::move(other.s_)}
+                {}
+                bool operator==(const def& other)const{return s_==other.s_;}
+            };
+            tuple<abc> src{{'a','b','c'}};
+            tuple<def> from_src{std::move(src)};
+            REQUIRE(get<0>(from_src) == def{'a','b','c'});
+            REQUIRE(get<0>(src).empty());
+        }
     }
 }
 

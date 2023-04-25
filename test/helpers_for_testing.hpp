@@ -278,17 +278,20 @@ public:
     }
     //direct constructor, must be template to disambiguate with default constructor for tuple<>
     template<typename = void>
-    tuple(const Types&...args)
+    explicit tuple(const Types&...args)
     {
+        std::cout<<std::endl<<"explicit tuple(const Types&...args)"<<sizeof...(Types);
         init_elements(std::make_integer_sequence<size_type, tuple_size>{}, args...);
     }
     //copy,move operations
     tuple(const tuple& other)
     {
+        std::cout<<std::endl<<"tuple(const tuple& other)";
         copy_elements_(*this, other, std::make_integer_sequence<size_type, tuple_size>{});
     }
     tuple& operator=(const tuple& other)
     {
+        std::cout<<std::endl<<"tuple& operator=(const tuple& other)";
         copy_assign_elements_(*this, other, std::make_integer_sequence<size_type, tuple_size>{});
         return *this;
     }
@@ -299,40 +302,71 @@ public:
     }
     tuple& operator=(tuple&& other)
     {
+        std::cout<<std::endl<<"tuple& operator=(tuple&& other)";
         move_assign_elements_(*this, std::move(other), std::make_integer_sequence<size_type, tuple_size>{});
         return *this;
     }
     //converting constructors
-    template<typename Arg, std::enable_if_t<!std::is_same_v<Arg,tuple>,int> =0>
-    explicit tuple(Arg&& arg)
+    template<typename, typename...> struct forward_args : std::false_type{};
+    template<typename...Ts, typename...Args> struct forward_args<tuple<Ts...>,Args...> : std::bool_constant<sizeof...(Ts)==sizeof...(Args)>{};
+    template<typename T,typename Arg> struct forward_args<tuple<T>,Arg> :
+        std::bool_constant<std::is_constructible_v<T,Arg>&&!std::is_same_v<tuple<T>,std::remove_cv_t<std::remove_reference_t<Arg>>>>{};
+
+    template<typename...Args, std::enable_if_t<forward_args<tuple,Args...>::value,int> =0>
+    explicit tuple(Args&&...args)
     {
-        std::cout<<std::endl<<"explicit tuple(Arg&& arg)";
-        static_assert(tuple_size == 1);
-        init_elements(std::make_integer_sequence<size_type, tuple_size>{}, std::forward<Arg>(arg));
-    }
-    template<typename...Args, std::enable_if_t<(sizeof...(Args)>1),int> =0>
-    tuple(Args&&...args)
-    {
-        std::cout<<std::endl<<"tuple(Args&&...args)";
-        static_assert(tuple_size == sizeof...(Args));
+        std::cout<<std::endl<<"explicit tuple(Args&&...args)"<<sizeof...(Args);
         init_elements(std::make_integer_sequence<size_type, tuple_size>{}, std::forward<Args>(args)...);
     }
-    template<typename...Ts>
-    tuple(const tuple<Ts...>& other)
+
+    template<typename,typename> struct copy_convert_tuple : std::false_type{};
+    template<typename V> struct copy_convert_tuple<V,V> : std::false_type{};
+    template<typename...Ts, typename...Us> struct copy_convert_tuple<tuple<Ts...>,tuple<Us...>> : std::bool_constant<sizeof...(Ts)==sizeof...(Us)>{};
+    template<typename T, typename U> struct copy_convert_tuple<tuple<T>,tuple<U>> :
+        std::bool_constant<!(std::is_same_v<T,U>||std::is_convertible_v<const tuple<U>&,T>||std::is_constructible_v<T,const tuple<U>&>)>{};
+
+    template<typename...Us, std::enable_if_t<copy_convert_tuple<tuple, tuple<Us...>>::value,int> = 0>
+    explicit tuple(const tuple<Us...>& other)
     {
-        static_assert(tuple_size == sizeof...(Ts));
+        std::cout<<std::endl<<"tuple(const tuple<Ts...>& other)";
         copy_elements_(*this, other, std::make_integer_sequence<size_type, tuple_size>{});
     }
-    template<typename...Ts>
-    tuple(tuple<Ts...>&& other)
+
+    template<typename, typename> struct move_convert_tuple : std::false_type{};
+    template<typename V> struct move_convert_tuple<V,V> : std::false_type{};
+    template<typename...Ts, typename...Us> struct move_convert_tuple<tuple<Ts...>,tuple<Us...>> : std::bool_constant<sizeof...(Ts)==sizeof...(Us)>{};
+    template<typename T, typename U> struct move_convert_tuple<tuple<T>,tuple<U>> :
+        std::bool_constant<!(std::is_same_v<T,U>||std::is_convertible_v<tuple<U>,T>||std::is_constructible_v<T,tuple<U>>)>{};
+
+    template<typename...Us, std::enable_if_t<move_convert_tuple<tuple, tuple<Us...>>::value,int> = 0>
+    explicit tuple(tuple<Us...>&& other)
     {
         std::cout<<std::endl<<"tuple(tuple<Ts...>&& other)";
-        static_assert(tuple_size == sizeof...(Ts));
         move_elements_(*this, std::move(other), std::make_integer_sequence<size_type, tuple_size>{});
     }
+    //converting assignment
+    template<typename,typename> struct assign_convert : std::false_type{};
+    template<typename V> struct assign_convert<V,V> : std::false_type{};
+    template<typename...Ts, typename...Us> struct assign_convert<tuple<Ts...>,tuple<Us...>> : std::bool_constant<sizeof...(Ts)==sizeof...(Us)>{};
 
-    //add converting copy,move operations
+    template<typename...Us, std::enable_if_t<assign_convert<tuple, tuple<Us...>>::value,int> = 0>
+    tuple& operator=(const tuple<Us...>& other)
+    {
+        std::cout<<std::endl<<"tuple& operator=(const tuple<Us...>& other)";
+        copy_assign_elements_(*this, other, std::make_integer_sequence<size_type, tuple_size>{});
+        return *this;
+    }
+    template<typename...Us, std::enable_if_t<assign_convert<tuple, tuple<Us...>>::value,int> = 0>
+    tuple& operator=(tuple<Us...>&& other)
+    {
+        std::cout<<std::endl<<"tuple& operator=(tuple<Us...>&& other)";
+        copy_assign_elements_(*this, std::move(other), std::make_integer_sequence<size_type, tuple_size>{});
+        return *this;
+    }
+
     //add swap
+    //add make_tuple
+    //add concat_tuple
 
     template<typename...Ts,typename...Vs, std::size_t...I> friend void copy_elements_(tuple<Ts...>& lhs, const tuple<Vs...>& rhs, std::integer_sequence<std::size_t, I...>);
     template<typename...Ts,typename...Vs, std::size_t...I> friend void copy_assign_elements_(tuple<Ts...>& lhs, const tuple<Vs...>& rhs, std::integer_sequence<std::size_t, I...>);
@@ -414,13 +448,22 @@ private:
             destroy_first_n_elements(I, std::make_integer_sequence<size_type,tuple_size>{});
         }
     }
+    template<std::size_t I, typename ThisElementType>
+    void emplace_element_default(void* this_place){
+        try{
+            new(this_place) ThisElementType{};
+        }catch(...){
+            destroy_first_n_elements(I, std::make_integer_sequence<size_type,tuple_size>{});
+        }
+    }
     template<size_type...I, typename...Args>
     void init_elements(std::integer_sequence<size_type, I...>, Args&&...args){
         (emplace_element<I,type_adapter_t<Types>>(get_<I>(),std::forward<Args>(args)),...);
     }
+
     template<size_type...I>
     void init_elements_default(std::integer_sequence<size_type, I...>){
-        (emplace_element<I,type_adapter_t<Types>>(get_<I>(),type_adapter_t<Types>{}),...);
+        (emplace_element_default<I,type_adapter_t<Types>>(get_<I>()),...);
     }
 
     static constexpr std::array<size_type, size()> offsets_{make_offsets(std::make_integer_sequence<size_type, tuple_size>{})};
@@ -460,7 +503,7 @@ const tuple_element_t<I,tuple<Ts...>>&& get(const tuple<Ts...>&& t){
     using element_type = tuple_element_t<I,tuple<Ts...>>;
     return static_cast<const element_type&&>(*reinterpret_cast<const tuple_details::type_adapter_t<element_type>*>(t.template get_<I>()));
 }
-//tuple friends helpers
+//tuple helper friends
 template<typename...Ts,typename...Vs, std::size_t...I>
 void copy_elements_(tuple<Ts...>& this_, const tuple<Vs...>& other_, std::integer_sequence<std::size_t, I...>){
     (this_.template emplace_element<I,tuple_details::type_adapter_t<Ts>>(this_.template get_<I>(), *reinterpret_cast<const tuple_details::type_adapter_t<Vs>*>(other_.template get_<I>())),...);
@@ -477,23 +520,12 @@ template<typename...Ts,typename...Vs, std::size_t...I>
 void move_assign_elements_(tuple<Ts...>& this_, tuple<Vs...>&& other_, std::integer_sequence<std::size_t, I...>){
     ((*reinterpret_cast<tuple_details::type_adapter_t<Ts>*>(this_.template get_<I>()) = std::move(*reinterpret_cast<tuple_details::type_adapter_t<Vs>*>(other_.template get_<I>()))),...);
 }
-
-
-//tuple operators
-// namespace tuple_details{
-
-// template<typename...Ts,typename...Vs, std::size_t...I>
-// bool equals(const tuple<Ts...>& lhs, const tuple<Vs...>& rhs, std::integer_sequence<std::size_t, I...>){
-//     return (...&&(get<I>(lhs)==get<I>(rhs)));
-// }
-
-// }   //end of namespace tuple_details
-
 template<typename...Ts,typename...Vs, std::size_t...I>
 bool equals_(const tuple<Ts...>& lhs, const tuple<Vs...>& rhs, std::integer_sequence<std::size_t, I...>){
     return (...&&(static_cast<const Ts&>(*reinterpret_cast<const tuple_details::type_adapter_t<Ts>*>(lhs.template get_<I>())) ==
     static_cast<const Vs&>(*reinterpret_cast<const tuple_details::type_adapter_t<Vs>*>(rhs.template get_<I>()))));
 }
+//tuple operators
 template<typename...Ts,typename...Vs>
 bool operator==(const tuple<Ts...>& lhs, const tuple<Vs...>& rhs){
     static_assert(sizeof...(Ts) == sizeof...(Vs), "cannot compare tuples of different sizes");
@@ -503,198 +535,6 @@ template<typename...Ts,typename...Vs>
 bool operator!=(const tuple<Ts...>& lhs, const tuple<Vs...>& rhs){
     return !(lhs==rhs);
 }
-// template<typename...Ts,typename...Vs>
-// bool operator==(const tuple<Ts...>& lhs, const tuple<Vs...>& rhs){
-//     static_assert(sizeof...(Ts) == sizeof...(Vs), "cannot compare tuples of different sizes");
-//     return tuple_details::equals(lhs,rhs,std::make_integer_sequence<std::size_t,sizeof...(Ts)>{});
-// }
-
-
-// template<typename...Types>
-// class basic_tuple
-// {
-// public:
-//     using size_type = std::size_t;
-//     using type_list_indexer = tuple_details::type_list_indexer_4<Types...>;
-
-//     ~basic_tuple()
-//     {
-//         destroy_elements(std::make_integer_sequence<size_type, sizeof...(Types)>{});
-//     }
-//     //default constructor
-//     basic_tuple()
-//     {
-//         init_elements_default(std::make_integer_sequence<size_type, sizeof...(Types)>{});
-//     }
-//     //converting constructors
-//     template<typename Arg, std::enable_if_t<!std::is_convertible_v<Arg,basic_tuple>,int> =0>
-//     explicit basic_tuple(Arg&& arg)
-//     {
-//         static_assert(sizeof...(Types) == 1);
-//         init_elements(std::make_integer_sequence<size_type, sizeof...(Types)>{}, std::forward<Arg>(arg));
-//     }
-//     template<typename...Args>
-//     basic_tuple(Args&&...args)
-//     {
-//         static_assert(sizeof...(Types) == sizeof...(Args));
-//         init_elements(std::make_integer_sequence<size_type, sizeof...(Types)>{}, std::forward<Args>(args)...);
-//     }
-//     //copy,move operations
-//     basic_tuple(const basic_tuple& other)
-//     {
-//         copy_elements(std::make_integer_sequence<size_type, sizeof...(Types)>{}, other.elements_);
-//     }
-//     basic_tuple& operator=(const basic_tuple& other)
-//     {
-//         copy_assign_elements(std::make_integer_sequence<size_type, sizeof...(Types)>{}, other.elements_);
-//         return *this;
-//     }
-//     basic_tuple(basic_tuple&& other)
-//     {
-//         move_elements(std::make_integer_sequence<size_type, sizeof...(Types)>{}, other.elements_);
-//     }
-//     basic_tuple& operator=(basic_tuple&& other)
-//     {
-//         move_assign_elements(std::make_integer_sequence<size_type, sizeof...(Types)>{}, other.elements_);
-//         return *this;
-//     }
-
-//     //add converting copy,move operations
-//     //add swap
-
-//     template<size_type I, typename...Ts> friend tuple_element_t<I,basic_tuple<Ts...>>& get(basic_tuple<Ts...>&);
-//     template<size_type I, typename...Ts> friend const tuple_element_t<I,basic_tuple<Ts...>>& get(const basic_tuple<Ts...>&);
-//     template<size_type I, typename...Ts> friend tuple_element_t<I,basic_tuple<Ts...>>&& get(basic_tuple<Ts...>&&);
-//     template<size_type I, typename...Ts> friend const tuple_element_t<I,basic_tuple<Ts...>>&& get(const basic_tuple<Ts...>&&);
-
-// private:
-
-//     //get pointer to stored element at index, need additional cast for to tuple_element_t due to reference wrapper
-//     template<size_type I>
-//     auto get_(){
-//         return reinterpret_cast<typename type_list_indexer::template at<I>*>(elements_+offsets_[I]);
-//     }
-//     template<size_type I>
-//     auto get_()const{
-//         return reinterpret_cast<const typename type_list_indexer::template at<I>*>(elements_+offsets_[I]);
-//     }
-
-//     template<typename U>
-//     static constexpr size_type size_of_type(){
-//         if constexpr (std::is_void_v<U>){
-//             return 0;
-//         }else{
-//             return sizeof(U);
-//         }
-//     }
-
-//     static constexpr size_type size(){
-//         if constexpr (sizeof...(Types) == 0){
-//             return 0;
-//         }else{
-//             return (...+size_of_type<Types>());
-//         }
-//     }
-
-//     template<size_type I, typename Type_, typename...Types_>
-//     static constexpr size_type make_offset(){
-//         if constexpr (I == 0){
-//             return 0;
-//         }else{
-//             return sizeof(Type_)+make_offset<I-1,Types_...>();
-//         }
-//     }
-
-//     template<size_type I>
-//     static constexpr size_type make_offset(){
-//         static_assert(I < sizeof...(Types));
-//         return make_offset<I, Types...>();
-//     }
-
-//     template<size_type...I>
-//     static constexpr auto make_offsets(std::integer_sequence<size_type, I...>){
-//         return std::array<size_type, size()>{make_offset<I>()...};
-//     }
-
-//     template<size_type...I>
-//     void destroy_elements(std::integer_sequence<size_type, I...>){
-//         ((reinterpret_cast<Types*>(elements_+offsets_[I])->~Types()),...);
-//     }
-//     template<size_type...I, typename...Args>
-//     void init_elements(std::integer_sequence<size_type, I...>, Args&&...args){
-//         ((new(static_cast<void*>(elements_+offsets_[I])) Types(std::forward<Args>(args))),...);
-//     }
-//     template<size_type...I>
-//     void init_elements_default(std::integer_sequence<size_type, I...>){
-//         ((new(static_cast<void*>(elements_+offsets_[I])) Types{}),...);
-//     }
-//     template<size_type...I>
-//     void copy_elements(std::integer_sequence<size_type, I...>, const std::byte* other_elements_){
-//         ((new(static_cast<void*>(elements_+offsets_[I])) Types(*reinterpret_cast<const Types*>(other_elements_+offsets_[I]))),...);
-//     }
-//     template<size_type...I>
-//     void copy_assign_elements(std::integer_sequence<size_type, I...>, const std::byte* other_elements_){
-//         ((*reinterpret_cast<Types*>(elements_+offsets_[I]) = *reinterpret_cast<const Types*>(other_elements_+offsets_[I])),...);
-//     }
-//     template<size_type...I>
-//     void move_elements(std::integer_sequence<size_type, I...>, std::byte* other_elements_){
-//         ((new(static_cast<void*>(elements_+offsets_[I])) Types(std::move(*reinterpret_cast<Types*>(other_elements_+offsets_[I])))),...);
-//     }
-//     template<size_type...I>
-//     void move_assign_elements(std::integer_sequence<size_type, I...>, std::byte* other_elements_){
-//         ((*reinterpret_cast<Types*>(elements_+offsets_[I]) = std::move(*reinterpret_cast<Types*>(other_elements_+offsets_[I]))),...);
-//     }
-
-//     static constexpr std::array<size_type, size()> offsets_{make_offsets(std::make_integer_sequence<size_type, sizeof...(Types)>{})};
-//     std::byte elements_[size()];
-// };
-
-// //tuple
-// template<typename...Types> using tuple = basic_tuple<tuple_details::type_adapter_t<Types>...>;
-// //tuple_size
-// template<typename...Ts> struct tuple_size<basic_tuple<Ts...>> : std::integral_constant<std::size_t, sizeof...(Ts)>{};
-// //tuple_element
-// template<std::size_t I, typename T> struct tuple_element<I,const T>{
-//     using type = std::add_const_t<typename tuple_element<I,T>::type>;
-// };
-// template<std::size_t I> struct tuple_element<I,basic_tuple<>>{
-//     static_assert(tuple_details::always_false<std::integral_constant<std::size_t,I>>, "tuple index out of bounds");
-// };
-// template<std::size_t I, typename...Ts> struct tuple_element<I,basic_tuple<Ts...>>{
-//     using type = tuple_details::type_adapter_t<typename basic_tuple<Ts...>::type_list_indexer::template at<I>>;
-// };
-// //get by index
-// template<std::size_t I, typename...Ts>
-// tuple_element_t<I,basic_tuple<Ts...>>& get(basic_tuple<Ts...>& t){
-//     return static_cast<tuple_element_t<I,basic_tuple<Ts...>>&>(*t.template get_<I>());
-// }
-// template<std::size_t I, typename...Ts>
-// const tuple_element_t<I,basic_tuple<Ts...>>& get(const basic_tuple<Ts...>& t){
-//     return static_cast<const tuple_element_t<I,basic_tuple<Ts...>>&>(*t.template get_<I>());
-// }
-// template<std::size_t I, typename...Ts>
-// tuple_element_t<I,basic_tuple<Ts...>>&& get(basic_tuple<Ts...>&& t){
-//     return static_cast<tuple_element_t<I,basic_tuple<Ts...>>&&>(*t.template get_<I>());
-// }
-// template<std::size_t I, typename...Ts>
-// const tuple_element_t<I,basic_tuple<Ts...>>&& get(const basic_tuple<Ts...>&& t){
-//     return static_cast<const tuple_element_t<I,basic_tuple<Ts...>>&&>(*t.template get_<I>());
-// }
-// //tuple operators
-// namespace tuple_details{
-
-// template<typename...Ts,typename...Vs, std::size_t...I>
-// bool equals(const basic_tuple<Ts...>& lhs, const basic_tuple<Vs...>& rhs, std::integer_sequence<std::size_t, I...>){
-//     return (...&&(get<I>(lhs)==get<I>(rhs)));
-// }
-
-// }   //end of namespace tuple_details
-
-// template<typename...Ts,typename...Vs>
-// bool operator==(const basic_tuple<Ts...>& lhs, const basic_tuple<Vs...>& rhs){
-//     static_assert(sizeof...(Ts) == sizeof...(Vs), "cannot compare tuples of different sizes");
-//     return tuple_details::equals(lhs,rhs,std::make_integer_sequence<std::size_t,sizeof...(Ts)>{});
-// }
 
 }   //end of namespace helpers_for_testing
 
