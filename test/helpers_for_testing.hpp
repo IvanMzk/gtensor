@@ -2,6 +2,7 @@
 #define HELPERS_FOR_TESTING_HPP_
 
 #include <tuple>
+#include <array>
 #include <functional>
 
 namespace helpers_for_testing{
@@ -87,7 +88,6 @@ inline constexpr bool cmp_greater_equal(T t, U u){
     return !cmp_less(t, u);
 }
 
-
 namespace tuple_details{
 
 template<typename> inline constexpr bool always_false = false;
@@ -103,6 +103,8 @@ template<typename T>
         explicit lvalue_ref_wrapper(U&& u):
             wrapped_{&u}
         {}
+        lvalue_ref_wrapper(const lvalue_ref_wrapper&) = default;
+        //cant assign to reference
         lvalue_ref_wrapper& operator=(const lvalue_ref_wrapper&) = delete;
         lvalue_ref_wrapper& operator=(lvalue_ref_wrapper&&) = delete;
         explicit operator T&()const{return *wrapped_;}
@@ -118,6 +120,8 @@ template<typename T>
         explicit rvalue_ref_wrapper(U&& u):
             wrapped_{&u}
         {}
+        rvalue_ref_wrapper(const rvalue_ref_wrapper&) = default;
+        //cant assign to reference
         rvalue_ref_wrapper& operator=(const rvalue_ref_wrapper&) = delete;
         rvalue_ref_wrapper& operator=(rvalue_ref_wrapper&&) = delete;
         explicit operator T&&()const{return static_cast<T&&>(*wrapped_);}
@@ -259,7 +263,6 @@ template<typename...Types>
 class tuple
 {
     template<typename T> using type_adapter_t = tuple_details::type_adapter_t<T>;
-    //using seq_type = std::make_integer_sequence<size_type, sizeof...(Types)>;
 public:
     using size_type = std::size_t;
     static constexpr size_type tuple_size = sizeof...(Types);
@@ -273,73 +276,75 @@ public:
     {
         init_elements_default(std::make_integer_sequence<size_type, tuple_size>{});
     }
-    //converting constructors
-    template<typename Arg, std::enable_if_t<!std::is_convertible_v<Arg,tuple>,int> =0>
-    explicit tuple(Arg&& arg)
+    //direct constructor, must be template to disambiguate with default constructor for tuple<>
+    template<typename = void>
+    tuple(const Types&...args)
     {
-        static_assert(tuple_size == 1);
-        init_elements(std::make_integer_sequence<size_type, tuple_size>{}, std::forward<Arg>(arg));
-    }
-    template<typename...Args>
-    tuple(Args&&...args)
-    {
-        static_assert(tuple_size == sizeof...(Args));
-        init_elements(std::make_integer_sequence<size_type, tuple_size>{}, std::forward<Args>(args)...);
+        init_elements(std::make_integer_sequence<size_type, tuple_size>{}, args...);
     }
     //copy,move operations
     tuple(const tuple& other)
     {
-        copy_elements(std::make_integer_sequence<size_type, tuple_size>{}, other.elements_);
+        copy_elements_(*this, other, std::make_integer_sequence<size_type, tuple_size>{});
     }
     tuple& operator=(const tuple& other)
     {
-        copy_assign_elements(std::make_integer_sequence<size_type, tuple_size>{}, other.elements_);
+        copy_assign_elements_(*this, other, std::make_integer_sequence<size_type, tuple_size>{});
         return *this;
     }
     tuple(tuple&& other)
     {
-        move_elements(std::make_integer_sequence<size_type, tuple_size>{}, other.elements_);
+        std::cout<<std::endl<<"tuple(tuple&& other)";
+        move_elements_(*this, std::move(other), std::make_integer_sequence<size_type, tuple_size>{});
     }
     tuple& operator=(tuple&& other)
     {
-        move_assign_elements(std::make_integer_sequence<size_type, tuple_size>{}, other.elements_);
+        move_assign_elements_(*this, std::move(other), std::make_integer_sequence<size_type, tuple_size>{});
         return *this;
+    }
+    //converting constructors
+    template<typename Arg, std::enable_if_t<!std::is_same_v<Arg,tuple>,int> =0>
+    explicit tuple(Arg&& arg)
+    {
+        std::cout<<std::endl<<"explicit tuple(Arg&& arg)";
+        static_assert(tuple_size == 1);
+        init_elements(std::make_integer_sequence<size_type, tuple_size>{}, std::forward<Arg>(arg));
+    }
+    template<typename...Args, std::enable_if_t<(sizeof...(Args)>1),int> =0>
+    tuple(Args&&...args)
+    {
+        std::cout<<std::endl<<"tuple(Args&&...args)";
+        static_assert(tuple_size == sizeof...(Args));
+        init_elements(std::make_integer_sequence<size_type, tuple_size>{}, std::forward<Args>(args)...);
+    }
+    template<typename...Ts>
+    tuple(const tuple<Ts...>& other)
+    {
+        static_assert(tuple_size == sizeof...(Ts));
+        copy_elements_(*this, other, std::make_integer_sequence<size_type, tuple_size>{});
+    }
+    template<typename...Ts>
+    tuple(tuple<Ts...>&& other)
+    {
+        std::cout<<std::endl<<"tuple(tuple<Ts...>&& other)";
+        static_assert(tuple_size == sizeof...(Ts));
+        move_elements_(*this, std::move(other), std::make_integer_sequence<size_type, tuple_size>{});
     }
 
     //add converting copy,move operations
     //add swap
 
-    // template<typename...Ts,typename...Vs>
-    // friend bool equals(const tuple<Ts...>& lhs, const tuple<Vs...>& rhs){
-
-    // }
-
-    //template<typename...Ts,typename...Vs> friend bool operator==(const tuple<Ts...>& lhs, const tuple<Vs...>& rhs);
-
-    template<typename...Ts,typename...Vs, std::size_t...I> friend bool equals(const tuple<Ts...>& lhs, const tuple<Vs...>& rhs, std::integer_sequence<std::size_t, I...>);
+    template<typename...Ts,typename...Vs, std::size_t...I> friend void copy_elements_(tuple<Ts...>& lhs, const tuple<Vs...>& rhs, std::integer_sequence<std::size_t, I...>);
+    template<typename...Ts,typename...Vs, std::size_t...I> friend void copy_assign_elements_(tuple<Ts...>& lhs, const tuple<Vs...>& rhs, std::integer_sequence<std::size_t, I...>);
+    template<typename...Ts,typename...Vs, std::size_t...I> friend void move_elements_(tuple<Ts...>& lhs, tuple<Vs...>&& rhs, std::integer_sequence<std::size_t, I...>);
+    template<typename...Ts,typename...Vs, std::size_t...I> friend void move_assign_elements_(tuple<Ts...>& lhs, tuple<Vs...>&& rhs, std::integer_sequence<std::size_t, I...>);
+    template<typename...Ts,typename...Vs, std::size_t...I> friend bool equals_(const tuple<Ts...>& lhs, const tuple<Vs...>& rhs, std::integer_sequence<std::size_t, I...>);
     template<size_type I, typename...Ts> friend tuple_element_t<I,tuple<Ts...>>& get(tuple<Ts...>&);
     template<size_type I, typename...Ts> friend const tuple_element_t<I,tuple<Ts...>>& get(const tuple<Ts...>&);
     template<size_type I, typename...Ts> friend tuple_element_t<I,tuple<Ts...>>&& get(tuple<Ts...>&&);
     template<size_type I, typename...Ts> friend const tuple_element_t<I,tuple<Ts...>>&& get(const tuple<Ts...>&&);
 
 private:
-    template<size_type I>
-    auto get_(){
-        return elements_+offsets_[I];
-    }
-    template<size_type I>
-    auto get_()const{
-        return elements_+offsets_[I];
-    }
-    // template<size_type I>
-    // auto get_(){
-    //     return reinterpret_cast<type_adapter_t<tuple_element_t<I,tuple>>*>(elements_+offsets_[I]);
-    // }
-    // template<size_type I>
-    // auto get_()const{
-    //     return reinterpret_cast<const type_adapter_t<tuple_element_t<I,tuple>>*>(elements_+offsets_[I]);
-    // }
-
     template<typename U>
     static constexpr size_type size_of_type(){
         if constexpr (std::is_void_v<U>){
@@ -348,7 +353,6 @@ private:
             return sizeof(U);
         }
     }
-
     static constexpr size_type size(){
         if constexpr (tuple_size == 0){
             return 0;
@@ -356,7 +360,6 @@ private:
             return (...+size_of_type<type_adapter_t<Types>>());
         }
     }
-
     template<size_type I, typename Type_, typename...Types_>
     static constexpr size_type make_offset(){
         if constexpr (I == 0){
@@ -365,53 +368,63 @@ private:
             return sizeof(Type_)+make_offset<I-1,Types_...>();
         }
     }
-
     template<size_type I>
     static constexpr size_type make_offset(){
         static_assert(I < tuple_size);
         return make_offset<I, type_adapter_t<Types>...>();
     }
-
     template<size_type...I>
     static constexpr auto make_offsets(std::integer_sequence<size_type, I...>){
         return std::array<size_type, size()>{make_offset<I>()...};
     }
 
+    template<size_type I>
+    void* get_(){
+        return elements_.data()+offsets_[I];
+    }
+    template<size_type I>
+    const void* get_()const{
+        return elements_.data()+offsets_[I];
+    }
+
+    template<typename InnerType>
+    void destroy_element(InnerType* p){
+        p->~InnerType();
+    }
+    template<typename InnerType>
+    void destroy_element(size_type i, size_type n, InnerType* p){
+        if (i<n){
+            p->~InnerType();
+        }
+    }
     template<size_type...I>
     void destroy_elements(std::integer_sequence<size_type, I...>){
-        ((reinterpret_cast<type_adapter_t<Types>*>(elements_+offsets_[I])->~type_adapter_t<Types>()),...);
+        (destroy_element(reinterpret_cast<type_adapter_t<Types>*>(get_<I>())),...);
+    }
+    template<size_type...I>
+    void destroy_first_n_elements(size_type n, std::integer_sequence<size_type, I...>){
+        (destroy_element(I, n, reinterpret_cast<type_adapter_t<Types>*>(get_<I>())),...);
+    }
+
+    template<std::size_t I, typename ThisElementType, typename OtherElementType>
+    void emplace_element(void* this_place, OtherElementType&& other_element){
+        try{
+            new(this_place) ThisElementType(std::forward<OtherElementType>(other_element));
+        }catch(...){
+            destroy_first_n_elements(I, std::make_integer_sequence<size_type,tuple_size>{});
+        }
     }
     template<size_type...I, typename...Args>
     void init_elements(std::integer_sequence<size_type, I...>, Args&&...args){
-        ((new(static_cast<void*>(elements_+offsets_[I])) type_adapter_t<Types>(std::forward<Args>(args))),...);
+        (emplace_element<I,type_adapter_t<Types>>(get_<I>(),std::forward<Args>(args)),...);
     }
     template<size_type...I>
     void init_elements_default(std::integer_sequence<size_type, I...>){
-        ((new(static_cast<void*>(elements_+offsets_[I])) type_adapter_t<Types>{}),...);
-    }
-    template<size_type...I>
-    void copy_elements(std::integer_sequence<size_type, I...>, const std::byte* other_elements_){
-        ((new(static_cast<void*>(elements_+offsets_[I])) type_adapter_t<Types>(*reinterpret_cast<const type_adapter_t<Types>*>(other_elements_+offsets_[I]))),...);
-    }
-    template<size_type...I>
-    void copy_assign_elements(std::integer_sequence<size_type, I...>, const std::byte* other_elements_){
-        ((*reinterpret_cast<type_adapter_t<Types>*>(elements_+offsets_[I]) = *reinterpret_cast<const type_adapter_t<Types>*>(other_elements_+offsets_[I])),...);
-    }
-    template<size_type...I>
-    void move_elements(std::integer_sequence<size_type, I...>, std::byte* other_elements_){
-        ((new(static_cast<void*>(elements_+offsets_[I])) type_adapter_t<Types>(std::move(*reinterpret_cast<type_adapter_t<Types>*>(other_elements_+offsets_[I])))),...);
-    }
-    template<size_type...I>
-    void move_assign_elements(std::integer_sequence<size_type, I...>, std::byte* other_elements_){
-        ((*reinterpret_cast<type_adapter_t<Types>*>(elements_+offsets_[I]) = std::move(*reinterpret_cast<type_adapter_t<Types>*>(other_elements_+offsets_[I]))),...);
+        (emplace_element<I,type_adapter_t<Types>>(get_<I>(),type_adapter_t<Types>{}),...);
     }
 
-    // template<typename...Ts,typename...Vs>
-    // bool equals(const tuple<Ts...>& lhs, const tuple<Vs...>& rhs, const std::byte* lhs_elements, const std::byte* rhs_elements){
-    //     reinterpret_cast<Ts>
-    // }
     static constexpr std::array<size_type, size()> offsets_{make_offsets(std::make_integer_sequence<size_type, tuple_size>{})};
-    std::byte elements_[size()];
+    std::array<std::byte,size()> elements_;
 };
 
 //tuple_size
@@ -447,22 +460,25 @@ const tuple_element_t<I,tuple<Ts...>>&& get(const tuple<Ts...>&& t){
     using element_type = tuple_element_t<I,tuple<Ts...>>;
     return static_cast<const element_type&&>(*reinterpret_cast<const tuple_details::type_adapter_t<element_type>*>(t.template get_<I>()));
 }
-// template<std::size_t I, typename...Ts>
-// tuple_element_t<I,tuple<Ts...>>& get(tuple<Ts...>& t){
-//     return static_cast<tuple_element_t<I,tuple<Ts...>>&>(*t.template get_<I>());
-// }
-// template<std::size_t I, typename...Ts>
-// const tuple_element_t<I,tuple<Ts...>>& get(const tuple<Ts...>& t){
-//     return static_cast<const tuple_element_t<I,tuple<Ts...>>&>(*t.template get_<I>());
-// }
-// template<std::size_t I, typename...Ts>
-// tuple_element_t<I,tuple<Ts...>>&& get(tuple<Ts...>&& t){
-//     return static_cast<tuple_element_t<I,tuple<Ts...>>&&>(*t.template get_<I>());
-// }
-// template<std::size_t I, typename...Ts>
-// const tuple_element_t<I,tuple<Ts...>>&& get(const tuple<Ts...>&& t){
-//     return static_cast<const tuple_element_t<I,tuple<Ts...>>&&>(*t.template get_<I>());
-// }
+//tuple friends helpers
+template<typename...Ts,typename...Vs, std::size_t...I>
+void copy_elements_(tuple<Ts...>& this_, const tuple<Vs...>& other_, std::integer_sequence<std::size_t, I...>){
+    (this_.template emplace_element<I,tuple_details::type_adapter_t<Ts>>(this_.template get_<I>(), *reinterpret_cast<const tuple_details::type_adapter_t<Vs>*>(other_.template get_<I>())),...);
+}
+template<typename...Ts,typename...Vs, std::size_t...I>
+void copy_assign_elements_(tuple<Ts...>& this_, const tuple<Vs...>& other_, std::integer_sequence<std::size_t, I...>){
+    ((*reinterpret_cast<tuple_details::type_adapter_t<Ts>*>(this_.template get_<I>()) = *reinterpret_cast<const tuple_details::type_adapter_t<Vs>*>(other_.template get_<I>())),...);
+}
+template<typename...Ts,typename...Vs, std::size_t...I>
+void move_elements_(tuple<Ts...>& this_, tuple<Vs...>&& other_, std::integer_sequence<std::size_t, I...>){
+    (this_.template emplace_element<I,tuple_details::type_adapter_t<Ts>>(this_.template get_<I>(), std::move(*reinterpret_cast<tuple_details::type_adapter_t<Vs>*>(other_.template get_<I>()))),...);
+}
+template<typename...Ts,typename...Vs, std::size_t...I>
+void move_assign_elements_(tuple<Ts...>& this_, tuple<Vs...>&& other_, std::integer_sequence<std::size_t, I...>){
+    ((*reinterpret_cast<tuple_details::type_adapter_t<Ts>*>(this_.template get_<I>()) = std::move(*reinterpret_cast<tuple_details::type_adapter_t<Vs>*>(other_.template get_<I>()))),...);
+}
+
+
 //tuple operators
 // namespace tuple_details{
 
@@ -474,14 +490,14 @@ const tuple_element_t<I,tuple<Ts...>>&& get(const tuple<Ts...>&& t){
 // }   //end of namespace tuple_details
 
 template<typename...Ts,typename...Vs, std::size_t...I>
-bool equals(const tuple<Ts...>& lhs, const tuple<Vs...>& rhs, std::integer_sequence<std::size_t, I...>){
+bool equals_(const tuple<Ts...>& lhs, const tuple<Vs...>& rhs, std::integer_sequence<std::size_t, I...>){
     return (...&&(static_cast<const Ts&>(*reinterpret_cast<const tuple_details::type_adapter_t<Ts>*>(lhs.template get_<I>())) ==
     static_cast<const Vs&>(*reinterpret_cast<const tuple_details::type_adapter_t<Vs>*>(rhs.template get_<I>()))));
 }
 template<typename...Ts,typename...Vs>
 bool operator==(const tuple<Ts...>& lhs, const tuple<Vs...>& rhs){
     static_assert(sizeof...(Ts) == sizeof...(Vs), "cannot compare tuples of different sizes");
-    return equals(lhs,rhs,std::make_integer_sequence<std::size_t, sizeof...(Ts)>{});
+    return equals_(lhs,rhs,std::make_integer_sequence<std::size_t, sizeof...(Ts)>{});
 }
 template<typename...Ts,typename...Vs>
 bool operator!=(const tuple<Ts...>& lhs, const tuple<Vs...>& rhs){

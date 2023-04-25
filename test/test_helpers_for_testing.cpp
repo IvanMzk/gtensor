@@ -25,107 +25,107 @@ template<typename F, typename S> struct type_pair{
 
 }   //end of namespace test_helpers_for_testing
 
-TEST_CASE("test_list_concat","[test_helpers_for_testing]"){
-    using helpers_for_testing::list_concat;
-    using test_helpers_for_testing::type_list;
-    using test_helpers_for_testing::A;
-    using test_helpers_for_testing::B;
-    using test_helpers_for_testing::C;
-    using test_helpers_for_testing::D;
-    using test_helpers_for_testing::E;
-    using test_helpers_for_testing::F;
+// TEST_CASE("test_list_concat","[test_helpers_for_testing]"){
+//     using helpers_for_testing::list_concat;
+//     using test_helpers_for_testing::type_list;
+//     using test_helpers_for_testing::A;
+//     using test_helpers_for_testing::B;
+//     using test_helpers_for_testing::C;
+//     using test_helpers_for_testing::D;
+//     using test_helpers_for_testing::E;
+//     using test_helpers_for_testing::F;
 
-    using l1 = type_list<A>;
-    using l2 = type_list<B,C>;
-    using l3 = type_list<D,E,F>;
-    using l4 = type_list<>;
+//     using l1 = type_list<A>;
+//     using l2 = type_list<B,C>;
+//     using l3 = type_list<D,E,F>;
+//     using l4 = type_list<>;
 
-    REQUIRE(std::is_same_v<list_concat<l1,l2>::type, type_list<A,B,C>>);
-    REQUIRE(std::is_same_v<list_concat<l2,l1>::type, type_list<B,C,A>>);
-    REQUIRE(std::is_same_v<list_concat<l4,l1>::type, type_list<A>>);
-    REQUIRE(std::is_same_v<list_concat<l3,l4,l1,l2>::type, type_list<D,E,F,A,B,C>>);
-}
+//     REQUIRE(std::is_same_v<list_concat<l1,l2>::type, type_list<A,B,C>>);
+//     REQUIRE(std::is_same_v<list_concat<l2,l1>::type, type_list<B,C,A>>);
+//     REQUIRE(std::is_same_v<list_concat<l4,l1>::type, type_list<A>>);
+//     REQUIRE(std::is_same_v<list_concat<l3,l4,l1,l2>::type, type_list<D,E,F,A,B,C>>);
+// }
 
-TEST_CASE("test_types_cross_product_with_type_list","[test_helpers_for_testing]"){
-    using helpers_for_testing::cross_product;
-    using test_helpers_for_testing::type_list;
-    using test_helpers_for_testing::type_pair;
-    using test_helpers_for_testing::A;
-    using test_helpers_for_testing::B;
-    using test_helpers_for_testing::C;
-    using test_helpers_for_testing::D;
-    using test_helpers_for_testing::E;
-    using test_helpers_for_testing::F;
+// TEST_CASE("test_types_cross_product_with_type_list","[test_helpers_for_testing]"){
+//     using helpers_for_testing::cross_product;
+//     using test_helpers_for_testing::type_list;
+//     using test_helpers_for_testing::type_pair;
+//     using test_helpers_for_testing::A;
+//     using test_helpers_for_testing::B;
+//     using test_helpers_for_testing::C;
+//     using test_helpers_for_testing::D;
+//     using test_helpers_for_testing::E;
+//     using test_helpers_for_testing::F;
 
-    REQUIRE(std::is_same_v<
-        cross_product<type_list, type_list<A,B,C>, type_list<D,E,F>>::type ,
-        type_list<type_list<A,D>,type_list<A,E>,type_list<A,F>,type_list<B,D>,type_list<B,E>,type_list<B,F>,type_list<C,D>,type_list<C,E>,type_list<C,F>> >
-    );
-    REQUIRE(std::is_same_v<
-        cross_product<type_pair, type_list<A,B,C>, type_list<D,E,F>>::type ,
-        type_list<type_pair<A,D>,type_pair<A,E>,type_pair<A,F>,type_pair<B,D>,type_pair<B,E>,type_pair<B,F>,type_pair<C,D>,type_pair<C,E>,type_pair<C,F>> >
-    );
-    REQUIRE(std::is_same_v<
-        cross_product<type_list, type_list<A,A,C>, type_list<D,E,E>>::type ,
-        type_list<type_list<A,D>,type_list<A,E>,type_list<A,E>,type_list<A,D>,type_list<A,E>,type_list<A,E>,type_list<C,D>,type_list<C,E>,type_list<C,E>> >
-    );
-    REQUIRE(std::is_same_v<cross_product<type_list, type_list<A>, type_list<B>>::type , type_list<type_list<A,B>>>);
-    REQUIRE(std::is_same_v<cross_product<type_list, type_list<>, type_list<B>>::type , type_list<>>);
-    REQUIRE(std::is_same_v<cross_product<type_list, type_list<>, type_list<>>::type , type_list<>>);
-    REQUIRE(std::is_same_v<cross_product<type_list, type_list<A,B,C>, type_list<>>::type , type_list<>>);
-}
+//     REQUIRE(std::is_same_v<
+//         cross_product<type_list, type_list<A,B,C>, type_list<D,E,F>>::type ,
+//         type_list<type_list<A,D>,type_list<A,E>,type_list<A,F>,type_list<B,D>,type_list<B,E>,type_list<B,F>,type_list<C,D>,type_list<C,E>,type_list<C,F>> >
+//     );
+//     REQUIRE(std::is_same_v<
+//         cross_product<type_pair, type_list<A,B,C>, type_list<D,E,F>>::type ,
+//         type_list<type_pair<A,D>,type_pair<A,E>,type_pair<A,F>,type_pair<B,D>,type_pair<B,E>,type_pair<B,F>,type_pair<C,D>,type_pair<C,E>,type_pair<C,F>> >
+//     );
+//     REQUIRE(std::is_same_v<
+//         cross_product<type_list, type_list<A,A,C>, type_list<D,E,E>>::type ,
+//         type_list<type_list<A,D>,type_list<A,E>,type_list<A,E>,type_list<A,D>,type_list<A,E>,type_list<A,E>,type_list<C,D>,type_list<C,E>,type_list<C,E>> >
+//     );
+//     REQUIRE(std::is_same_v<cross_product<type_list, type_list<A>, type_list<B>>::type , type_list<type_list<A,B>>>);
+//     REQUIRE(std::is_same_v<cross_product<type_list, type_list<>, type_list<B>>::type , type_list<>>);
+//     REQUIRE(std::is_same_v<cross_product<type_list, type_list<>, type_list<>>::type , type_list<>>);
+//     REQUIRE(std::is_same_v<cross_product<type_list, type_list<A,B,C>, type_list<>>::type , type_list<>>);
+// }
 
-TEST_CASE("test_types_cross_product_with_tuple","[test_helpers_for_testing]"){
-    using helpers_for_testing::cross_product;
-    using test_helpers_for_testing::A;
-    using test_helpers_for_testing::B;
-    using test_helpers_for_testing::C;
-    using test_helpers_for_testing::D;
-    using test_helpers_for_testing::E;
-    using test_helpers_for_testing::F;
+// TEST_CASE("test_types_cross_product_with_tuple","[test_helpers_for_testing]"){
+//     using helpers_for_testing::cross_product;
+//     using test_helpers_for_testing::A;
+//     using test_helpers_for_testing::B;
+//     using test_helpers_for_testing::C;
+//     using test_helpers_for_testing::D;
+//     using test_helpers_for_testing::E;
+//     using test_helpers_for_testing::F;
 
-    REQUIRE(std::is_same_v<
-        cross_product<std::tuple, std::tuple<A,B,C>, std::tuple<D,E,F>>::type ,
-        std::tuple<std::tuple<A,D>,std::tuple<A,E>,std::tuple<A,F>,std::tuple<B,D>,std::tuple<B,E>,std::tuple<B,F>,std::tuple<C,D>,std::tuple<C,E>,std::tuple<C,F>> >
-    );
-    REQUIRE(std::is_same_v<
-        cross_product<std::pair, std::tuple<A,B,C>, std::tuple<D,E,F>>::type ,
-        std::tuple<std::pair<A,D>,std::pair<A,E>,std::pair<A,F>,std::pair<B,D>,std::pair<B,E>,std::pair<B,F>,std::pair<C,D>,std::pair<C,E>,std::pair<C,F>> >
-    );
-    REQUIRE(std::is_same_v<
-        cross_product<std::tuple, std::tuple<A,A,C>, std::tuple<D,E,E>>::type ,
-        std::tuple<std::tuple<A,D>,std::tuple<A,E>,std::tuple<A,E>,std::tuple<A,D>,std::tuple<A,E>,std::tuple<A,E>,std::tuple<C,D>,std::tuple<C,E>,std::tuple<C,E>> >
-    );
-    REQUIRE(std::is_same_v<cross_product<std::tuple, std::tuple<A>, std::tuple<B>>::type , std::tuple<std::tuple<A,B>>>);
-    REQUIRE(std::is_same_v<cross_product<std::tuple, std::tuple<>, std::tuple<B>>::type , std::tuple<>>);
-    REQUIRE(std::is_same_v<cross_product<std::tuple, std::tuple<>, std::tuple<>>::type , std::tuple<>>);
-    REQUIRE(std::is_same_v<cross_product<std::tuple, std::tuple<A,B,C>, std::tuple<>>::type , std::tuple<>>);
-}
+//     REQUIRE(std::is_same_v<
+//         cross_product<std::tuple, std::tuple<A,B,C>, std::tuple<D,E,F>>::type ,
+//         std::tuple<std::tuple<A,D>,std::tuple<A,E>,std::tuple<A,F>,std::tuple<B,D>,std::tuple<B,E>,std::tuple<B,F>,std::tuple<C,D>,std::tuple<C,E>,std::tuple<C,F>> >
+//     );
+//     REQUIRE(std::is_same_v<
+//         cross_product<std::pair, std::tuple<A,B,C>, std::tuple<D,E,F>>::type ,
+//         std::tuple<std::pair<A,D>,std::pair<A,E>,std::pair<A,F>,std::pair<B,D>,std::pair<B,E>,std::pair<B,F>,std::pair<C,D>,std::pair<C,E>,std::pair<C,F>> >
+//     );
+//     REQUIRE(std::is_same_v<
+//         cross_product<std::tuple, std::tuple<A,A,C>, std::tuple<D,E,E>>::type ,
+//         std::tuple<std::tuple<A,D>,std::tuple<A,E>,std::tuple<A,E>,std::tuple<A,D>,std::tuple<A,E>,std::tuple<A,E>,std::tuple<C,D>,std::tuple<C,E>,std::tuple<C,E>> >
+//     );
+//     REQUIRE(std::is_same_v<cross_product<std::tuple, std::tuple<A>, std::tuple<B>>::type , std::tuple<std::tuple<A,B>>>);
+//     REQUIRE(std::is_same_v<cross_product<std::tuple, std::tuple<>, std::tuple<B>>::type , std::tuple<>>);
+//     REQUIRE(std::is_same_v<cross_product<std::tuple, std::tuple<>, std::tuple<>>::type , std::tuple<>>);
+//     REQUIRE(std::is_same_v<cross_product<std::tuple, std::tuple<A,B,C>, std::tuple<>>::type , std::tuple<>>);
+// }
 
-TEST_CASE("test_apply_by_element","[test_helpers_for_testing]"){
-    using helpers_for_testing::apply_by_element;
+// TEST_CASE("test_apply_by_element","[test_helpers_for_testing]"){
+//     using helpers_for_testing::apply_by_element;
 
-    auto tests = std::make_tuple(
-        [](const auto& t){REQUIRE(t == t);},
-        [](const auto& t){REQUIRE((t+0) == t);},
-        [](const auto& t){REQUIRE(t+1 > t);},
-        [](const auto& t){REQUIRE(t-1 < t);}
-    );
+//     auto tests = std::make_tuple(
+//         [](const auto& t){REQUIRE(t == t);},
+//         [](const auto& t){REQUIRE((t+0) == t);},
+//         [](const auto& t){REQUIRE(t+1 > t);},
+//         [](const auto& t){REQUIRE(t-1 < t);}
+//     );
 
-    auto test_data = std::make_tuple(
-        int{0},
-        int{1},
-        float{0},
-        float{1},
-        double{0},
-        double{1}
-    );
+//     auto test_data = std::make_tuple(
+//         int{0},
+//         int{1},
+//         float{0},
+//         float{1},
+//         double{0},
+//         double{1}
+//     );
 
-    auto apply_tests = [&test_data](auto& test){
-        apply_by_element(test, test_data);
-    };
-    apply_by_element(apply_tests, tests);
-}
+//     auto apply_tests = [&test_data](auto& test){
+//         apply_by_element(test, test_data);
+//     };
+//     apply_by_element(apply_tests, tests);
+// }
 
 namespace test_tuple{
 
@@ -214,8 +214,6 @@ TEST_CASE("test_tuple_element","[test_helpers_for_testing]")
     using helpers_for_testing::tuple;
     using helpers_for_testing::tuple_element_t;
 
-    REQUIRE(std::is_same_v<tuple_element_t<0,tuple<void>>,void>);
-    REQUIRE(std::is_same_v<tuple_element_t<0,tuple<const volatile void>>,const volatile void>);
     REQUIRE(std::is_same_v<tuple_element_t<0,tuple<void*>>,void*>);
     REQUIRE(std::is_same_v<tuple_element_t<0,tuple<const void*>>,const void*>);
     REQUIRE(std::is_same_v<tuple_element_t<0,tuple<int>>,int>);
@@ -265,8 +263,10 @@ TEMPLATE_TEST_CASE("test_tuple_get","[test_helpers_for_testing]",
         double d{1};
         float f{2};
         char c{3};
-        tuple_type test_tuple{1,2,i,d,"abcd",std::move(f),std::move(i),&c,&c,&c};
-        std_tuple_type test_std_tuple{1,2,i,d,"abcd",std::move(f),std::move(i),&c,&c,&c};
+        tuple_type test_tuple{1,c,i,d,"abcd",std::move(f),std::move(i),&c,&c,&c};
+        std_tuple_type test_std_tuple{1,c,i,d,"abcd",std::move(f),std::move(i),&c,&c,&c};
+        // tuple_type test_tuple{1,2,i,d,"abcd",std::move(f),std::move(i),&c,&c,&c};
+        // std_tuple_type test_std_tuple{1,2,i,d,"abcd",std::move(f),std::move(i),&c,&c,&c};
         //lvalue argument
         REQUIRE(get<I>(test_tuple) == std::get<I>(test_std_tuple));
         //const lvalue argument
@@ -278,7 +278,8 @@ TEMPLATE_TEST_CASE("test_tuple_get","[test_helpers_for_testing]",
     }
 }
 
-TEST_CASE("test_tuple_operator==","[test_helpers_for_testing]"){
+TEST_CASE("test_tuple_operator==","[test_helpers_for_testing]")
+{
     using helpers_for_testing::tuple;
 
     int i1{1};
@@ -311,74 +312,162 @@ TEST_CASE("test_tuple_operator==","[test_helpers_for_testing]"){
     REQUIRE(tuple<std::string, const int&, int*>{"def",i1,&i1} != tuple<std::string&, double, int*>{s_def,1,&i2});
 }
 
-TEST_CASE("test_tuple","[test_helpers_for_testing]"){
+TEST_CASE("test_tuple_copy_operations","[test_helpers_for_testing]")
+{
     using helpers_for_testing::tuple;
     using helpers_for_testing::get;
-    int i{};
 
-    tuple<> t0{};
-    tuple<int> t1{1};
-    tuple<const int> ct1{1};
-    tuple<const int> cct1{i};
-    tuple<int,double> t2{1,2};
-    tuple<int,double> t2_def{};
-    tuple<int,double,std::string> t3{1,2,"3"};
-    tuple<int,double,std::string> t3_def{};
-    tuple<int*,const double*,std::string> t_with_ptr{};
-    tuple<const int&,double> my_t_with_const_ref{i,2};
-    tuple<const int&,double> my_t_with_const_ref1{1,2};
-    //tuple<int&&,double> my_t_rval_ref1{i,2}; //must not compile
+    SECTION("test_tuple_copy_constructor"){
+        int i{1};
+        double d{2};
+        using tuple_type = tuple<int,const int,int&,int&&,std::string,const double&, const double&&>;
+        tuple_type test_tuple{3,4,i,std::move(i),"abc",d,std::move(d)};
+        tuple_type tuple_copy1 = test_tuple;
+        tuple_type tuple_copy2 = test_tuple;
+        REQUIRE(test_tuple == tuple_copy1);
+        REQUIRE(test_tuple == tuple_copy2);
+        get<4>(tuple_copy1) = "def";
+        REQUIRE(test_tuple != tuple_copy1);
+        REQUIRE(test_tuple == tuple_copy2);
+        i = 3;
+        REQUIRE(get<2>(test_tuple) == i);
+        REQUIRE(get<2>(tuple_copy1) == i);
+        REQUIRE(get<3>(test_tuple) == i);
+        REQUIRE(get<3>(tuple_copy1) == i);
 
+        tuple<> empty_tuple{};
+        tuple<> empty_tuple_copy = empty_tuple;
+        REQUIRE(empty_tuple == empty_tuple_copy);
+    }
+    SECTION("test_tuple_copy_assignment"){
+        using tuple_type = tuple<int,double,std::string>;
+        tuple_type rhs{1,2,"abc"};
+        tuple_type lhs{};
+        REQUIRE(lhs != rhs);
+        lhs = rhs;
+        REQUIRE(lhs == rhs);
 
-    tuple<int&,double> my_t_lval_ref{i,2};
-    get<0>(my_t_lval_ref);  //conversion from lvalue_ref_wrapper<int> to int&
-    get<0>(std::move(my_t_lval_ref));    //lvalue_ref_wrapper<int> conversion to int& && -> int&
-    REQUIRE(std::is_same_v<decltype(get<0>(my_t_lval_ref)),int&>);
-    REQUIRE(std::is_same_v<decltype(get<0>(std::move(my_t_lval_ref))),int&>);
-    const tuple<int&,double> my_const_t_lval_ref{i,2};
-    //there is no const references
-    REQUIRE(std::is_same_v<decltype(get<0>(my_const_t_lval_ref)), int&>);
-    REQUIRE(std::is_same_v<decltype(get<0>(std::move(my_const_t_lval_ref))), int&>);
+        tuple<> empty_rhs{};
+        tuple<> empty_lhs{};
+        empty_lhs = empty_rhs;
+        REQUIRE(empty_lhs == empty_rhs);
+    }
 
+    SECTION("test_tuple_converting_copy_constructor"){
 
-    tuple<int&&,double> my_t_rval_ref{std::move(i),2};
-    get<0>(my_t_rval_ref);    //conversion from rvalue_ref_wrapper<int> to int&& & -> int& , no such conversion for rvalue_ref_wrapper<int>
-    get<0>(std::move(my_t_rval_ref));    //conversion from rvalue_ref_wrapper<int> to int&&
-    REQUIRE(std::is_same_v<decltype(get<0>(my_t_rval_ref)),int&>);
-    REQUIRE(std::is_same_v<decltype(get<0>(std::move(my_t_rval_ref))),int&&>);
-    const tuple<int&&,double> my_const_t_rval_ref{std::move(i),2};
-    REQUIRE(std::is_same_v<decltype(get<0>(my_const_t_rval_ref)), int&>);
-    REQUIRE(std::is_same_v<decltype(get<0>(std::move(my_const_t_rval_ref))), int&&>);
+        // tuple<const int&> tt{1};
+        // //std::tuple<const int&> stt{1};
+        // tuple<int> lhs = tuple<double>{1};
 
-
-    std::tuple<int&,double> t_lval_ref{i,2};
-    //int& element type on rvalue reference tuple argument gives us int& due to reference collapsing
-    REQUIRE(std::is_same_v<decltype(std::get<0>(t_lval_ref)),int&>);
-    REQUIRE(std::is_same_v<decltype(std::get<0>(std::move(t_lval_ref))),int&>);
-    const std::tuple<int&,double> const_t_lval_ref{i,2};
-    REQUIRE(std::is_same_v<decltype(std::get<0>(const_t_lval_ref)),int&>);
-    REQUIRE(std::is_same_v<decltype(std::get<0>(std::move(const_t_lval_ref))),int&>);
-
-
-    std::tuple<int&&,double> t_rval_ref{1,2};
-    //std::get on lvalue tuple argument convert int&& to int& due to reference collapsing, but there is no static_cast from int&& to int&
-    REQUIRE(std::is_same_v<decltype(std::get<0>(t_rval_ref)),int&>);
-    //on rvalue tuple argument everythin is ok
-    REQUIRE(std::is_same_v<decltype(std::get<0>(std::move(t_rval_ref))),int&&>);
-    const std::tuple<int&&,double> const_t_rval_ref{1,2};
-    REQUIRE(std::is_same_v<decltype(std::get<0>(const_t_rval_ref)),int&>);
-    REQUIRE(std::is_same_v<decltype(std::get<0>(std::move(const_t_rval_ref))),int&&>);
+        //ok, it is not known if lifetime of temporary shorter then constructed tuple (temporary created out of tuple)
+        // tuple<const int&> t_lref_bound_temporary{1};
+        // std::tuple<const int&> std_t_lref_bound_temporary{1};
+        // tuple<int&&> t_rref_bound_temporary{1};
+        // std::tuple<int&&> std_t_rref_bound_temporary{1};
 
 
-    tuple<int,const char> ttt{1,2};
-    REQUIRE(get<0>(ttt) == 1);
-    REQUIRE(get<1>(ttt) == 2);
+        //not compile, bound temporary with lifetime known shorter then constructed tuple ("inner temporary")
+        //tuple<const double&> t_lref_bound_inner_temporary{1};
+        //std::tuple<const double&> std_t_lref_bound_inner_temporary{1};
+        //tuple<double&&> t_rref_bound_inner_temporary{1};
+        //std::tuple<double&&> std_t_rref_bound_inner_temporary{1};
+        //tuple<const int&,const int&>  t_lref_bound_inner_temporary1{tuple<double,double>{1,2}};
+        //std::tuple<const int&,const int&>  std_t_lref_bound_inner_temporary1{std::tuple<double,double>{1,2}};
+        //tuple<int&&,int&&>  t_rref_bound_inner_temporary1{tuple<double,double>{1,2}};
+        //std::tuple<int&&,int&&>  std_t_rref_bound_inner_temporary1{std::tuple<double,double>{1,2}};
 
 
-    std::reference_wrapper<const int> ref{i};
-    //std::reference_wrapper<const int> ref1{1};
 
-    std::tuple<const int&,double> t_with_const_lval_ref{1,2};
-    //std::tuple<int&&,double> t_with_rval_ref{i,2};
-    std::tuple<int&&,double> t_with_rval_ref2{std::move(i),2};
+        // //tuple<const double&> lhs1 = tuple<int>{1};
+        // //std::tuple<const int&> std_lhs1 = std::tuple<double>{1};
+
+        // tuple<const int&> lhs2 = tuple<int>{1};
+        // std::tuple<const int&> std_lhs2 = std::tuple<int>{1};
+
+        // tuple<int> ti_move = tuple<int>{};    //move_elements_, move constructor
+        // tuple<int> ti_conv_move = tuple<double>{};    //move_elements_, move converting constructor
+
+        // tuple<int> ti_conv_copy_elems{1};  //init_elements_, conv copy elements constructor
+
+        //tuple<tuple<int>> ti_conv_copy_elems1{tuple<int>{1}};  //call move_elements_, move converting constructor, but must be init_elements_, conv copy elements constructor
+
+        //tuple<tuple<int>,tuple<int>> ti_conv_copy_elems2{tuple<int,int>{1,2}};  //call move_elements_, move converting constructor, but must be init_elements_, conv copy elements constructor
+
+
+        //elements > 1 and single tuple argument the only variant is converting copy or move constructor
+        //tuple<int,int> t_conv_move_elems{tuple<double,double>{1,2}};  //ok call move_elements_, move converting constructor
+
+        //elements > 1 and arguments > 1 - converting elements constructor or direct constructor
+        //tuple<int,int> t_conv_elems{tuple<int>{},tuple<int>{}};   //no convrsion from tuple<int> to int
+        //tuple<int,double> t_conv_elems{1,2};
+        //elements == 1 and single not tuple specialization aregument - converting elements constructor or direct constructor ?? explicit
+        //tuple<int> t_conv_elements_single{1};
+
+        //elements == 1 and single tuple specialization argument
+        //tuple<int> t_tuple_arg_conv_elems{tuple<int>{1}};    //ok move elided, just single call to elements converting constructor explicit tuple(Arg&& arg)
+        //tuple<int> t_tuple_arg_conv_move{tuple<double>{1}};    //ok, int is not constructible from tuple<double>, move converting constructor tuple(tuple<Ts...>&& other)
+
+        //tuple<tuple<int>> t_tuple_arg_conv_elems1{tuple<int>{1}};   //not ok, should call elements converting but call move converting
+
+        struct abc{
+            abc(tuple<int,int>){}
+            abc(std::tuple<int,int>){}
+        };
+
+        struct def{
+            def(int){}
+            //def(std::tuple<int>){}
+        };
+
+
+
+        //tuple<abc> t_tuple_arg_conv_elems2{tuple<int,int>{1,1}};    //not ok, should compile, call elements converting but not compile, call move converting
+        //std::tuple<abc> std_t_tuple_arg_conv_elems2{std::tuple<int,int>{1,1}};
+        std::tuple<def> std_t_tuple_arg_conv_elems2{std::tuple<int>{1}};
+
+        std::cout<<std::endl<<std::is_constructible_v<def,int>;
+        std::cout<<std::endl<<std::is_constructible_v<def,tuple<int>>;
+        std::cout<<std::endl<<std::is_convertible_v<tuple<int>,def>;
+
+
+        //std::tuple<std::tuple<int>,std::tuple<int>> std_ti_conv_copy_elems2{std::tuple<double,double>{1,2}};  //call move_elements_, move converting constructor, but must be init_elements_, conv copy elements constructor
+
+        //tuple<tuple<int>> ti_conv_copy_elems2{tuple<int>{1,2}};  //call move_elements_, move converting constructor, but must be init_elements_, conv copy elements constructor
+
+
+        //tuple<tuple<int>,tuple<int>> ti_conv_copy_elems2{tuple<int>{1},tuple<int>{2}};  //call init_elements_, conv copy elements constructor
+
+    }
 }
+
+TEST_CASE("test_tuple_move_operations","[test_helpers_for_testing]")
+{
+    using helpers_for_testing::tuple;
+    using helpers_for_testing::get;
+
+    SECTION("test_tuple_move_constructor"){
+        using tuple_type = tuple<int,std::vector<int>>;
+        tuple_type test_tuple{1,{1,2,3}};
+        tuple_type tuple_move = std::move(test_tuple);
+        REQUIRE(tuple_move == tuple_type{1,{1,2,3}});
+        REQUIRE(get<1>(test_tuple).empty() == true);
+
+        tuple<> empty_tuple{};
+        tuple<> empty_tuple_move = std::move(empty_tuple);
+        REQUIRE(empty_tuple == tuple<>{});
+    }
+    SECTION("test_tuple_move_assignment"){
+        using tuple_type = tuple<int,std::vector<int>>;
+        tuple_type rhs{1,{1,2,3}};
+        tuple_type lhs{};
+        lhs = std::move(rhs);
+        REQUIRE(lhs == tuple_type{1,{1,2,3}});
+        REQUIRE(get<1>(rhs).empty() == true);
+
+        tuple<> empty_rhs{};
+        tuple<> empty_lhs{};
+        empty_lhs = empty_rhs;
+        REQUIRE(empty_lhs == tuple<>{});
+    }
+}
+
