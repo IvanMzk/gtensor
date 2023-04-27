@@ -263,47 +263,42 @@ template<typename...Types>
 class tuple
 {
     template<typename T> using type_adapter_t = tuple_details::type_adapter_t<T>;
+    using make_sequence_type = std::make_integer_sequence<std::size_t, sizeof...(Types)>;
 public:
     using size_type = std::size_t;
-    static constexpr size_type tuple_size = sizeof...(Types);
     using type_list_indexer = tuple_details::type_list_indexer_4<Types...>;
     ~tuple()
     {
-        destroy_elements(std::make_integer_sequence<size_type, tuple_size>{});
+        destroy_elements(make_sequence_type{});
     }
     //default constructor
     tuple()
     {
-        init_elements_default(std::make_integer_sequence<size_type, tuple_size>{});
+        init_elements_default(make_sequence_type{});
     }
     //direct constructor, must be template to disambiguate with default constructor for tuple<>
     template<typename = void>
     explicit tuple(const Types&...args)
     {
-        std::cout<<std::endl<<"explicit tuple(const Types&...args)"<<sizeof...(Types);
-        init_elements(std::make_integer_sequence<size_type, tuple_size>{}, args...);
+        init_elements(make_sequence_type{}, args...);
     }
     //copy,move operations
     tuple(const tuple& other)
     {
-        std::cout<<std::endl<<"tuple(const tuple& other)";
-        copy_elements_(*this, other, std::make_integer_sequence<size_type, tuple_size>{});
+        copy_elements_(*this, other, make_sequence_type{});
     }
     tuple& operator=(const tuple& other)
     {
-        std::cout<<std::endl<<"tuple& operator=(const tuple& other)";
-        copy_assign_elements_(*this, other, std::make_integer_sequence<size_type, tuple_size>{});
+        copy_assign_elements_(*this, other, make_sequence_type{});
         return *this;
     }
     tuple(tuple&& other)
     {
-        std::cout<<std::endl<<"tuple(tuple&& other)";
-        move_elements_(*this, std::move(other), std::make_integer_sequence<size_type, tuple_size>{});
+        move_elements_(*this, std::move(other), make_sequence_type{});
     }
     tuple& operator=(tuple&& other)
     {
-        std::cout<<std::endl<<"tuple& operator=(tuple&& other)";
-        move_assign_elements_(*this, std::move(other), std::make_integer_sequence<size_type, tuple_size>{});
+        move_assign_elements_(*this, std::move(other), make_sequence_type{});
         return *this;
     }
     //converting constructors
@@ -315,8 +310,7 @@ public:
     template<typename...Args, std::enable_if_t<forward_args<tuple,Args...>::value,int> =0>
     explicit tuple(Args&&...args)
     {
-        std::cout<<std::endl<<"explicit tuple(Args&&...args)"<<sizeof...(Args);
-        init_elements(std::make_integer_sequence<size_type, tuple_size>{}, std::forward<Args>(args)...);
+        init_elements(make_sequence_type{}, std::forward<Args>(args)...);
     }
 
     template<typename,typename> struct copy_convert_tuple : std::false_type{};
@@ -328,8 +322,7 @@ public:
     template<typename...Us, std::enable_if_t<copy_convert_tuple<tuple, tuple<Us...>>::value,int> = 0>
     explicit tuple(const tuple<Us...>& other)
     {
-        std::cout<<std::endl<<"tuple(const tuple<Ts...>& other)";
-        copy_elements_(*this, other, std::make_integer_sequence<size_type, tuple_size>{});
+        copy_elements_(*this, other, make_sequence_type{});
     }
 
     template<typename, typename> struct move_convert_tuple : std::false_type{};
@@ -341,8 +334,7 @@ public:
     template<typename...Us, std::enable_if_t<move_convert_tuple<tuple, tuple<Us...>>::value,int> = 0>
     explicit tuple(tuple<Us...>&& other)
     {
-        std::cout<<std::endl<<"tuple(tuple<Ts...>&& other)";
-        move_elements_(*this, std::move(other), std::make_integer_sequence<size_type, tuple_size>{});
+        move_elements_(*this, std::move(other), make_sequence_type{});
     }
     //converting assignment
     template<typename,typename> struct assign_convert : std::false_type{};
@@ -352,15 +344,13 @@ public:
     template<typename...Us, std::enable_if_t<assign_convert<tuple, tuple<Us...>>::value,int> = 0>
     tuple& operator=(const tuple<Us...>& other)
     {
-        std::cout<<std::endl<<"tuple& operator=(const tuple<Us...>& other)";
-        copy_assign_elements_(*this, other, std::make_integer_sequence<size_type, tuple_size>{});
+        copy_assign_elements_(*this, other, make_sequence_type{});
         return *this;
     }
     template<typename...Us, std::enable_if_t<assign_convert<tuple, tuple<Us...>>::value,int> = 0>
     tuple& operator=(tuple<Us...>&& other)
     {
-        std::cout<<std::endl<<"tuple& operator=(tuple<Us...>&& other)";
-        move_assign_elements_(*this, std::move(other), std::make_integer_sequence<size_type, tuple_size>{});
+        move_assign_elements_(*this, std::move(other), make_sequence_type{});
         return *this;
     }
 
@@ -388,7 +378,7 @@ private:
         }
     }
     static constexpr size_type size(){
-        if constexpr (tuple_size == 0){
+        if constexpr (sizeof...(Types) == 0){
             return 0;
         }else{
             return (...+size_of_type<type_adapter_t<Types>>());
@@ -404,7 +394,7 @@ private:
     }
     template<size_type I>
     static constexpr size_type make_offset(){
-        static_assert(I < tuple_size);
+        static_assert(I < sizeof...(Types));
         return make_offset<I, type_adapter_t<Types>...>();
     }
     template<size_type...I>
@@ -445,7 +435,7 @@ private:
         try{
             new(this_place) ThisElementType(std::forward<OtherElementType>(other_element));
         }catch(...){
-            destroy_first_n_elements(I, std::make_integer_sequence<size_type,tuple_size>{});
+            destroy_first_n_elements(I, make_sequence_type{});
             throw;
         }
     }
@@ -454,7 +444,7 @@ private:
         try{
             new(this_place) ThisElementType{};
         }catch(...){
-            destroy_first_n_elements(I, std::make_integer_sequence<size_type,tuple_size>{});
+            destroy_first_n_elements(I, make_sequence_type{});
             throw;
         }
     }
@@ -468,7 +458,7 @@ private:
         (emplace_element_default<I,type_adapter_t<Types>>(get_<I>()),...);
     }
 
-    static constexpr std::array<size_type, size()> offsets_{make_offsets(std::make_integer_sequence<size_type, tuple_size>{})};
+    static constexpr std::array<size_type, size()> offsets_{make_offsets(make_sequence_type{})};
     std::array<std::byte,size()> elements_;
 };
 
