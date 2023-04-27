@@ -883,3 +883,20 @@ TEST_CASE("test_tuple_swap","[test_helpers_for_testing]")
         REQUIRE(b == tuple<int,std::string,double>{1,"abc",2.0});
     }
 }
+
+//test tuple swap
+TEST_CASE("test_tuple_cat","[test_helpers_for_testing]")
+{
+    using helpers_for_testing::tuple;
+    using helpers_for_testing::tuple_cat;
+
+    tuple<> t1;
+    tuple<> t2;
+    tuple<int> t3{1};
+    tuple<int,int> t4{2,3};
+    REQUIRE(tuple_cat() == tuple<>{});
+    REQUIRE(tuple_cat(t1) == tuple<>{});
+    REQUIRE(tuple_cat(t1,t2) == tuple<>{});
+    REQUIRE(tuple_cat(t1,t2,t3) == tuple<int>{1});
+    REQUIRE(tuple_cat(t1,t2,t3,t4) == tuple<int,int,int>{1,2,3});
+}
