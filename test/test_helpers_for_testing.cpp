@@ -241,13 +241,14 @@ TEMPLATE_TEST_CASE("test_tuple_get","[test_helpers_for_testing]",
     (std::integral_constant<std::size_t,6>),
     (std::integral_constant<std::size_t,7>),
     (std::integral_constant<std::size_t,8>),
-    (std::integral_constant<std::size_t,9>)
+    (std::integral_constant<std::size_t,9>),
+    (std::integral_constant<std::size_t,10>)
 )
 {
     using helpers_for_testing::tuple;
     using helpers_for_testing::get;
-    using tuple_type = tuple<int,const char,int&,const double&,std::string,float&&,const int&&,char*,const char*,const char*const>;
-    using std_tuple_type = std::tuple<int,const char,int&,const double&,std::string,float&&,const int&&,char*,const char*,const char*const>;
+    using tuple_type = tuple<int,const char,int&,const double&,std::string,float&&,const int&&,char*,const char*,const char*const,std::reference_wrapper<int>>;
+    using std_tuple_type = std::tuple<int,const char,int&,const double&,std::string,float&&,const int&&,char*,const char*,const char*const,std::reference_wrapper<int>>;
     static constexpr std::size_t I = TestType::value;
 
     SECTION("test_tuple_get_result_type")
@@ -267,8 +268,8 @@ TEMPLATE_TEST_CASE("test_tuple_get","[test_helpers_for_testing]",
         double d{1};
         float f{2};
         char c{3};
-        tuple_type test_tuple{1,c,i,d,"abcd",std::move(f),std::move(i),&c,&c,&c};
-        std_tuple_type test_std_tuple{1,c,i,d,"abcd",std::move(f),std::move(i),&c,&c,&c};
+        tuple_type test_tuple{1,c,i,d,"abcd",std::move(f),std::move(i),&c,&c,&c,std::reference_wrapper<int>{i}};
+        std_tuple_type test_std_tuple{1,c,i,d,"abcd",std::move(f),std::move(i),&c,&c,&c,std::reference_wrapper<int>{i}};
         // tuple_type test_tuple{1,2,i,d,"abcd",std::move(f),std::move(i),&c,&c,&c};
         // std_tuple_type test_std_tuple{1,2,i,d,"abcd",std::move(f),std::move(i),&c,&c,&c};
         //lvalue argument
@@ -827,6 +828,7 @@ TEST_CASE("test_empty_tuple_move_operations","[test_helpers_for_testing]")
     }
 }
 
+//test create_tuple
 TEST_CASE("test_create_tuple","[test_helpers_for_testing]")
 {
     using helpers_for_testing::tuple;
@@ -850,4 +852,34 @@ TEST_CASE("test_create_tuple","[test_helpers_for_testing]")
 
     REQUIRE(std::is_same_v<decltype(create_tuple(std::vector<int>{1,2,3},2.0)),tuple<std::vector<int>,double>>);
     REQUIRE(create_tuple(std::vector<int>{1,2,3},2.0) == tuple<std::vector<int>,double>{{1,2,3},2.0});
+}
+
+//test tuple swap
+TEST_CASE("test_tuple_swap","[test_helpers_for_testing]")
+{
+    using helpers_for_testing::tuple;
+    SECTION("swap_0")
+    {
+        tuple<> a{};
+        tuple<> b{};
+        a.swap(b);
+        REQUIRE(a == tuple<>{});
+        REQUIRE(b == tuple<>{});
+    }
+    SECTION("swap_1")
+    {
+        tuple<int> a{1};
+        tuple<int> b{2};
+        a.swap(b);
+        REQUIRE(a == tuple<int>{2});
+        REQUIRE(b == tuple<int>{1});
+    }
+    SECTION("swap_2")
+    {
+        tuple<int,std::string,double> a{1,"abc",2.0};
+        tuple<int,std::string,double> b{2,"def",3.0};
+        a.swap(b);
+        REQUIRE(a == tuple<int,std::string,double>{2,"def",3.0});
+        REQUIRE(b == tuple<int,std::string,double>{1,"abc",2.0});
+    }
 }
