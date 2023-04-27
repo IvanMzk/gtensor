@@ -827,3 +827,27 @@ TEST_CASE("test_empty_tuple_move_operations","[test_helpers_for_testing]")
     }
 }
 
+TEST_CASE("test_create_tuple","[test_helpers_for_testing]")
+{
+    using helpers_for_testing::tuple;
+    using helpers_for_testing::create_tuple;
+    int i{1};
+
+    REQUIRE(create_tuple() == tuple<>{});
+    REQUIRE(std::is_same_v<decltype(create_tuple()),tuple<>>);
+
+    REQUIRE(std::is_same_v<decltype(create_tuple(1)),tuple<int>>);
+    REQUIRE(create_tuple(1) == tuple<int>{1});
+
+    REQUIRE(std::is_same_v<decltype(create_tuple(1,2.0)),tuple<int,double>>);
+    REQUIRE(create_tuple(1,2.0) == tuple<int,double>{1,2.0});
+
+    REQUIRE(std::is_same_v<decltype(create_tuple(i,2.0)),tuple<int,double>>);
+    REQUIRE(create_tuple(i,2.0) == tuple<int,double>{i,2.0});
+
+    REQUIRE(std::is_same_v<decltype(create_tuple(std::reference_wrapper<int>{i},2.0)),tuple<int&,double>>);
+    REQUIRE(create_tuple(std::reference_wrapper<int>{i},2.0) == tuple<int&,double>{i,2.0});
+
+    REQUIRE(std::is_same_v<decltype(create_tuple(std::vector<int>{1,2,3},2.0)),tuple<std::vector<int>,double>>);
+    REQUIRE(create_tuple(std::vector<int>{1,2,3},2.0) == tuple<std::vector<int>,double>{{1,2,3},2.0});
+}

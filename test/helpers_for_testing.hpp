@@ -99,9 +99,19 @@ template<typename T>
         static std::true_type can_bound(T&);
         static std::false_type can_bound(...);
     public:
-        template<typename U, std::enable_if_t<decltype(can_bound(std::declval<U>()))::value&&!std::is_convertible_v<std::decay_t<U>,lvalue_ref_wrapper>,int> =0>
+        template<typename, bool> struct uref_constructor0 : std::false_type{};
+        template<typename V> struct uref_constructor0<std::reference_wrapper<V>,true> : std::false_type{};
+        template<typename V> struct uref_constructor0<std::reference_wrapper<V>,false> : std::false_type{};
+        template<typename U_> struct uref_constructor0<U_,true> : std::conjunction<std::negation<std::is_same<U_,lvalue_ref_wrapper>>>{};
+        template<typename U> struct uref_constructor : uref_constructor0<std::remove_cv_t<std::remove_reference_t<U>>,decltype(can_bound(std::declval<U>()))::value>{};
+
+        template<typename U, std::enable_if_t<uref_constructor<U>::value,int> =0>
         explicit lvalue_ref_wrapper(U&& u):
             wrapped_{&u}
+        {}
+        template<typename V>
+        explicit lvalue_ref_wrapper(const std::reference_wrapper<V>& v):
+            wrapped_{&v.get()}
         {}
         lvalue_ref_wrapper(const lvalue_ref_wrapper&) = default;
         //cant assign to reference
@@ -134,6 +144,10 @@ template<typename T>
     template<typename T> struct type_adapter<lvalue_ref_wrapper<T>>{using type = T&;};
     template<typename T> struct type_adapter<rvalue_ref_wrapper<T>>{using type = T&&;};
     template<typename T> using type_adapter_t = typename type_adapter<T>::type;
+    //make_tuple helpers
+    template<typename T> struct unwrap_std_ref_wrapper{using type = T;};
+    template<typename T> struct unwrap_std_ref_wrapper<std::reference_wrapper<T>>{using type = T&;};
+    template<typename T> using unwrap_std_ref_wrapper_t = typename unwrap_std_ref_wrapper<T>::type;
 
     //type list indexing helpers
     template<typename, typename...> struct split_list_2;
@@ -452,7 +466,6 @@ private:
     void init_elements(std::integer_sequence<size_type, I...>, Args&&...args){
         (emplace_element<I,type_adapter_t<Types>>(get_<I>(),std::forward<Args>(args)),...);
     }
-
     template<size_type...I>
     void init_elements_default(std::integer_sequence<size_type, I...>){
         (emplace_element_default<I,type_adapter_t<Types>>(get_<I>()),...);
@@ -474,6 +487,11 @@ template<std::size_t I> struct tuple_element<I,tuple<>>{
 template<std::size_t I, typename...Ts> struct tuple_element<I,tuple<Ts...>>{
     using type = typename tuple<Ts...>::type_list_indexer::template at<I>;
 };
+//create_tuple, make_tuple
+template<typename...Args>
+tuple<tuple_details::unwrap_std_ref_wrapper_t<std::decay_t<Args>>...> create_tuple(Args&&...args){
+    return tuple<tuple_details::unwrap_std_ref_wrapper_t<std::decay_t<Args>>...>{std::forward<Args>(args)...};
+}
 //get by index
 template<std::size_t I, typename...Ts>
 tuple_element_t<I,tuple<Ts...>>& get(tuple<Ts...>& t){
