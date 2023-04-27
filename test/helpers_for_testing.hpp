@@ -360,7 +360,7 @@ public:
     tuple& operator=(tuple<Us...>&& other)
     {
         std::cout<<std::endl<<"tuple& operator=(tuple<Us...>&& other)";
-        copy_assign_elements_(*this, std::move(other), std::make_integer_sequence<size_type, tuple_size>{});
+        move_assign_elements_(*this, std::move(other), std::make_integer_sequence<size_type, tuple_size>{});
         return *this;
     }
 
@@ -446,6 +446,7 @@ private:
             new(this_place) ThisElementType(std::forward<OtherElementType>(other_element));
         }catch(...){
             destroy_first_n_elements(I, std::make_integer_sequence<size_type,tuple_size>{});
+            throw;
         }
     }
     template<std::size_t I, typename ThisElementType>
@@ -454,6 +455,7 @@ private:
             new(this_place) ThisElementType{};
         }catch(...){
             destroy_first_n_elements(I, std::make_integer_sequence<size_type,tuple_size>{});
+            throw;
         }
     }
     template<size_type...I, typename...Args>
