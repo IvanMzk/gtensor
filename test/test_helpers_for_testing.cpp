@@ -172,3 +172,59 @@ TEST_CASE("test_apply_by_element_return","[test_helpers_for_testing]")
         REQUIRE(apply_by_element(inc,t) == create_tuple(2,3,4));
     }
 }
+
+TEST_CASE("test_light_tuple_for_testing_get","[test_helpers_for_testing]")
+{
+    using ltp::ltuple;
+    using ltp::get;
+
+    ltuple<int,double,std::vector<int>> t_{1,2.0,{1,2,3}};
+    SECTION("not_const_arg")
+    {
+        auto& t = t_;
+        REQUIRE(get<0>(t) == 1);
+        REQUIRE(get<1>(t) == 2);
+        REQUIRE(get<2>(t) == std::vector<int>{1,2,3});
+        REQUIRE(std::is_same_v<decltype(get<0>(t)),int&>);
+        REQUIRE(std::is_same_v<decltype(get<1>(t)),double&>);
+        REQUIRE(std::is_same_v<decltype(get<2>(t)),std::vector<int>&>);
+    }
+    SECTION("const_arg")
+    {
+        const auto& t = t_;
+        REQUIRE(get<0>(t) == 1);
+        REQUIRE(get<1>(t) == 2);
+        REQUIRE(get<2>(t) == std::vector<int>{1,2,3});
+        REQUIRE(std::is_same_v<decltype(get<0>(t)),const int&>);
+        REQUIRE(std::is_same_v<decltype(get<1>(t)),const double&>);
+        REQUIRE(std::is_same_v<decltype(get<2>(t)),const std::vector<int>&>);
+    }
+    SECTION("rvalue_arg")
+    {
+        auto& t = t_;
+        REQUIRE(get<0>(std::move(t)) == 1);
+        REQUIRE(get<1>(std::move(t)) == 2);
+        REQUIRE(get<2>(std::move(t)) == std::vector<int>{1,2,3});
+        REQUIRE(std::is_same_v<decltype(get<0>(std::move(t))),int&&>);
+        REQUIRE(std::is_same_v<decltype(get<1>(std::move(t))),double&&>);
+        REQUIRE(std::is_same_v<decltype(get<2>(std::move(t))),std::vector<int>&&>);
+    }
+}
+
+TEST_CASE("test_light_tuple_for_testing_operator==,!=","[test_helpers_for_testing]")
+{
+    using ltp::ltuple;
+    using ltp::create_ltuple;
+
+    ltuple<int> t0{0};
+    ltuple<int> t1{1};
+    REQUIRE(t0 == t0);
+    REQUIRE(t1 != t0);
+    REQUIRE(ltuple<int>{1} == ltuple<int>{1});
+    REQUIRE(ltuple<int>{1} == ltuple<double>{1});
+    REQUIRE(ltuple<int>{1} != ltuple<int>{0});
+    REQUIRE(ltuple<int,double>{1,2.0} == ltuple<int,double>{1,2.0});
+    REQUIRE(ltuple<int,double>{1,2.0} != ltuple<int,double>{1,3.0});
+    REQUIRE(ltuple<int,double,std::string>{1,2.0,"abc"} == ltuple<int,double,std::string>{1,2.0,"abc"});
+    REQUIRE(ltuple<int,double,std::string>{1,2.0,"abc"} != ltuple<int,double,std::string>{1,2.0,"def"});
+}
