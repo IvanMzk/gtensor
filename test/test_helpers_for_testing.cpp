@@ -428,15 +428,15 @@ namespace test_tuple_{
             dcounter_{other.dcounter_}
         {}
     };
-    void throw_(const void* valid){
+    void throw_(const void* valid, std::string mes=""){
         if (!(valid < reinterpret_cast<void*>(1))){
-            throw std::runtime_error{"throw_on_move_construction"};
+            throw std::runtime_error{mes};
         }
     }
     struct throw_on_default_construction{
         throw_on_default_construction()
         {
-            throw_(this);
+            throw_(this,"throw_on_default_construction");
         }
     };
     struct throw_on_copy_construction{
@@ -444,7 +444,7 @@ namespace test_tuple_{
         throw_on_copy_construction(throw_on_copy_construction&&) = default;
         throw_on_copy_construction(const throw_on_copy_construction&)
         {
-            throw_(this);
+            throw_(this,"throw_on_copy_construction");
         }
     };
     struct throw_on_move_construction{
@@ -452,7 +452,7 @@ namespace test_tuple_{
         throw_on_move_construction(const throw_on_move_construction&) = default;
         throw_on_move_construction(throw_on_move_construction&&)
         {
-            throw_(this);
+            throw_(this,"throw_on_move_construction");
         }
     };
 }   //end of namespace test_tuple_
@@ -884,19 +884,48 @@ TEST_CASE("test_tuple_swap","[test_helpers_for_testing]")
     }
 }
 
-//test tuple swap
+//test tuple_cat
 TEST_CASE("test_tuple_cat","[test_helpers_for_testing]")
 {
     using helpers_for_testing::tuple;
     using helpers_for_testing::tuple_cat;
+    using helpers_for_testing::get;
 
     tuple<> t1;
-    tuple<> t2;
-    tuple<int> t3{1};
-    tuple<int,int> t4{2,3};
+    tuple<int> t2{1};
+    tuple<int,int> t3{2,3};
+    tuple<std::vector<int>,double> t4{{7,8,9},2.0};
     REQUIRE(tuple_cat() == tuple<>{});
     REQUIRE(tuple_cat(t1) == tuple<>{});
-    REQUIRE(tuple_cat(t1,t2) == tuple<>{});
-    REQUIRE(tuple_cat(t1,t2,t3) == tuple<int>{1});
-    REQUIRE(tuple_cat(t1,t2,t3,t4) == tuple<int,int,int>{1,2,3});
+    REQUIRE(tuple_cat(t1,t1) == tuple<>{});
+    REQUIRE(tuple_cat(t1,t1,t1) == tuple<>{});
+    REQUIRE(tuple_cat(t1,t2,t3) == tuple<int,int,int>{1,2,3});
+    REQUIRE(tuple_cat(t1,t2,t3,t4) == tuple<int,int,int,std::vector<int>,double>{1,2,3,{7,8,9},2.0});
+    REQUIRE(!get<0>(t4).empty());
+    REQUIRE(tuple_cat(t1,t2,t3,std::move(t4)) == tuple<int,int,int,std::vector<int>,double>{1,2,3,{7,8,9},2.0});
+    REQUIRE(get<0>(t4).empty());
+}
+
+TEST_CASE("test_tuple_cat_cleanup_on_exception","[test_helpers_for_testing]")
+{
+    using helpers_for_testing::tuple;
+    using helpers_for_testing::tuple_cat;
+    using test_tuple_::dlogger;
+    using test_tuple_::throw_on_copy_construction;
+    int dcounter{0};
+    dlogger logger{&dcounter};
+    throw_on_copy_construction thrower{};
+
+    tuple<throw_on_copy_construction,dlogger,dlogger> t0{std::move(thrower),logger,logger};
+    tuple<dlogger,dlogger> t1{logger,logger};
+    REQUIRE(dcounter == 0);
+    {
+        REQUIRE_THROWS(tuple_cat(t0,t1));
+    }
+    REQUIRE(dcounter == 0);
+    {
+        REQUIRE_THROWS(tuple_cat(t1,t0));
+    }
+    REQUIRE(dcounter == 2);
+
 }
