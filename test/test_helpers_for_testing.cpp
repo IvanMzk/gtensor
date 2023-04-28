@@ -884,48 +884,73 @@ TEST_CASE("test_tuple_swap","[test_helpers_for_testing]")
     }
 }
 
-//test tuple_cat
-TEST_CASE("test_tuple_cat","[test_helpers_for_testing]")
+//test tuple_concat
+TEST_CASE("test_tuple_concat","[test_helpers_for_testing]")
 {
     using helpers_for_testing::tuple;
-    using helpers_for_testing::tuple_cat;
+    using helpers_for_testing::tuple_concat;
     using helpers_for_testing::get;
 
     tuple<> t1;
     tuple<int> t2{1};
     tuple<int,int> t3{2,3};
     tuple<std::vector<int>,double> t4{{7,8,9},2.0};
-    REQUIRE(tuple_cat() == tuple<>{});
-    REQUIRE(tuple_cat(t1) == tuple<>{});
-    REQUIRE(tuple_cat(t1,t1) == tuple<>{});
-    REQUIRE(tuple_cat(t1,t1,t1) == tuple<>{});
-    REQUIRE(tuple_cat(t1,t2,t3) == tuple<int,int,int>{1,2,3});
-    REQUIRE(tuple_cat(t1,t2,t3,t4) == tuple<int,int,int,std::vector<int>,double>{1,2,3,{7,8,9},2.0});
+    REQUIRE(tuple_concat() == tuple<>{});
+    REQUIRE(tuple_concat(t1) == tuple<>{});
+    REQUIRE(tuple_concat(t1,t1) == tuple<>{});
+    REQUIRE(tuple_concat(t1,t1,t1) == tuple<>{});
+    REQUIRE(tuple_concat(t1,t2,t3) == tuple<int,int,int>{1,2,3});
+    REQUIRE(tuple_concat(t1,t2,t3,t4) == tuple<int,int,int,std::vector<int>,double>{1,2,3,{7,8,9},2.0});
     REQUIRE(!get<0>(t4).empty());
-    REQUIRE(tuple_cat(t1,t2,t3,std::move(t4)) == tuple<int,int,int,std::vector<int>,double>{1,2,3,{7,8,9},2.0});
+    REQUIRE(tuple_concat(t1,t2,t3,std::move(t4)) == tuple<int,int,int,std::vector<int>,double>{1,2,3,{7,8,9},2.0});
     REQUIRE(get<0>(t4).empty());
 }
 
-TEST_CASE("test_tuple_cat_cleanup_on_exception","[test_helpers_for_testing]")
+TEST_CASE("test_tuple_concat_cleanup_on_exception","[test_helpers_for_testing]")
 {
     using helpers_for_testing::tuple;
-    using helpers_for_testing::tuple_cat;
+    using helpers_for_testing::tuple_concat;
     using test_tuple_::dlogger;
-    using test_tuple_::throw_on_copy_construction;
     int dcounter{0};
     dlogger logger{&dcounter};
-    throw_on_copy_construction thrower{};
-
-    tuple<throw_on_copy_construction,dlogger,dlogger> t0{std::move(thrower),logger,logger};
-    tuple<dlogger,dlogger> t1{logger,logger};
-    REQUIRE(dcounter == 0);
+    SECTION("copy")
     {
-        REQUIRE_THROWS(tuple_cat(t0,t1));
+        using test_tuple_::throw_on_copy_construction;
+        throw_on_copy_construction thrower{};
+        tuple<throw_on_copy_construction,dlogger,dlogger> t0{std::move(thrower),logger,logger};
+        tuple<dlogger,dlogger> t1{logger,logger};
+        REQUIRE(dcounter == 0);
+        {
+            REQUIRE_THROWS(tuple_concat(t0,t1));
+        }
+        REQUIRE(dcounter == 0);
+        {
+            REQUIRE_THROWS(tuple_concat(t1,t0));
+        }
+        REQUIRE(dcounter == 2);
+        {
+            REQUIRE_THROWS(tuple_concat(t1,t1,t0));
+        }
+        REQUIRE(dcounter == 6);
     }
-    REQUIRE(dcounter == 0);
+    SECTION("move")
     {
-        REQUIRE_THROWS(tuple_cat(t1,t0));
+        using test_tuple_::throw_on_move_construction;
+        throw_on_move_construction thrower{};
+        tuple<throw_on_move_construction,dlogger,dlogger> t0{thrower,logger,logger};
+        tuple<dlogger,dlogger> t1{logger,logger};
+        REQUIRE(dcounter == 0);
+        {
+            REQUIRE_THROWS(tuple_concat(std::move(t0),t1));
+        }
+        REQUIRE(dcounter == 0);
+        {
+            REQUIRE_THROWS(tuple_concat(t1,std::move(t0)));
+        }
+        REQUIRE(dcounter == 2);
+        {
+            REQUIRE_THROWS(tuple_concat(t1,t1,std::move(t0)));
+        }
+        REQUIRE(dcounter == 6);
     }
-    REQUIRE(dcounter == 2);
-
 }
