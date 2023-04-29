@@ -33,19 +33,15 @@ GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(end, decltype(std::declval<const T&>().en
 GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(rbegin, decltype(std::declval<const T&>().rbegin())(T::*)()const, has_rbegin_const);
 GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(rend, decltype(std::declval<const T&>().rend())(T::*)()const, has_rend_const);
 
-template<typename T> inline constexpr bool has_iterator_v = has_begin<T>()&&has_end<T>();
-template<typename T> inline constexpr bool has_const_iterator_v = has_begin_const<T>()&&has_end_const<T>();
-template<typename T> inline constexpr bool has_reverse_iterator_v = has_rbegin<T>()&&has_rend<T>();
-template<typename T> inline constexpr bool has_const_reverse_iterator_v = has_rbegin_const<T>()&&has_rend_const<T>();
+template<typename T> using is_subscriptable = std::disjunction<has_subscript_operator<T>,has_subscript_operator_const<T>>;
+template<typename T> using has_iterator = std::conjunction<has_begin<T>,has_end<T>>;
+template<typename T> using has_const_iterator = std::conjunction<has_begin_const<T>,has_end_const<T>>;
+template<typename T> using has_reverse_iterator = std::conjunction<has_rbegin<T>,has_rend<T>>;
+template<typename T> using has_const_reverse_iterator = std::conjunction<has_rbegin_const<T>,has_rend_const<T>>;
 
-template<typename T> inline constexpr bool is_iterable_v = has_iterator_v<T>||has_const_iterator_v<T>;
-template<typename T> inline constexpr bool is_subscriptable_v = has_subscript_operator<T>()||has_subscript_operator_const<T>();
-
-template<typename T> inline constexpr bool is_random_access_iterator_v = std::is_convertible_v<typename std::iterator_traits<T>::iterator_category, std::random_access_iterator_tag>;
 
 template<typename T, typename=void> inline constexpr bool has_mutating_iterator_v = false;
 template<typename T> inline constexpr bool has_mutating_iterator_v<T,std::void_t< std::enable_if_t<std::is_assignable_v<decltype(*std::declval<T&>().begin()), typename T::value_type> > > > = true;
-
 template<typename T, typename=void> inline constexpr bool has_mutating_subscript_operator_v = false;
 template<typename T> inline constexpr bool has_mutating_subscript_operator_v<T,std::void_t< std::enable_if_t<std::is_assignable_v<decltype(std::declval<T&>()[std::declval<typename T::difference_type&>()]), typename T::value_type> > > > = true;
 
@@ -74,11 +70,9 @@ inline auto create_indexer(T& t){
     }else if constexpr (has_subscript_operator<T>::value){
         return gtensor::basic_indexer<T&>{t};
     }else if constexpr (has_create_walker<T>::value){
-        //need walker indexer adapter
-        //return ...
-    }else if constexpr (has_iterator_v<T>){
-        //need iterator indexer adapter
-        //retrun ...
+        return gtensor::walker_indexer<decltype(t.create_walker())>{t.create_walker()};
+    }else if constexpr (has_iterator<T>::value){
+        return gtensor::iterator_indexer<decltype(t.begin())>{t.begin()};
     }else{
         return;
     }
@@ -87,19 +81,16 @@ template<typename T>
 inline auto create_const_indexer(const T& t){
     if constexpr (has_create_indexer_const<T>::value){
         return t.create_indexer();
-    }else if constexpr (has_subscript_operator_const<T>::value){
+    }else if constexpr (is_subscriptable<T>::value){
         return gtensor::basic_indexer<const T&>{t};
     }else if constexpr (has_create_walker_const<T>::value){
-        //need walker indexer adapter
-        //return ...
-    }else if constexpr (has_const_iterator_v<T>){
-        //need iterator indexer adapter
-        //retrun ...
+        return gtensor::walker_indexer<decltype(t.create_walker())>{t.create_walker()};
+    }else if constexpr (has_const_iterator<T>::value){
+        return gtensor::iterator_indexer<decltype(t.begin())>{t.begin()};
     }else{
         return;
     }
 }
-
 //create walker using avilable data accessors
 template<typename Config, typename T, typename Descriptor>
 inline auto create_walker(T& t, const Descriptor& descriptor){
@@ -110,9 +101,9 @@ inline auto create_walker(T& t, const Descriptor& descriptor){
     }else if constexpr (has_subscript_operator<T>::value){
         using indexer_type = gtensor::basic_indexer<T&>;
         return gtensor::walker<Config, indexer_type>{descriptor.adapted_strides(),descriptor.reset_strides(),descriptor.offset(),indexer_type{t},descriptor.dim()};
-    }else if constexpr (has_iterator_v<T>){
-        //need iterator indexer adapter
-        //return...
+    }else if constexpr (has_iterator<T>::value){
+        using indexer_type = gtensor::iterator_indexer<decltype(t.begin())>;
+        return gtensor::walker<Config, indexer_type>{descriptor.adapted_strides(),descriptor.reset_strides(),descriptor.offset(),indexer_type{t.begin()},descriptor.dim()};
     }else{
         return;
     }
@@ -123,22 +114,21 @@ inline auto create_const_walker(const T& t, const Descriptor& descriptor){
         return t.create_walker();
     }else if constexpr (has_create_indexer_const<T>::value){
         return gtensor::walker<Config, decltype(t.create_indexer())>{descriptor.adapted_strides(),descriptor.reset_strides(),descriptor.offset(),t.create_indexer(),descriptor.dim()};
-    }else if constexpr (has_subscript_operator_const<T>::value){
+    }else if constexpr (is_subscriptable<T>::value){
         using indexer_type = gtensor::basic_indexer<const T&>;
         return gtensor::walker<Config, indexer_type>{descriptor.adapted_strides(),descriptor.reset_strides(),descriptor.offset(),indexer_type{t},descriptor.dim()};
-    }else if constexpr (has_const_iterator_v<T>){
-        //need iterator indexer adapter
-        //return...
+    }else if constexpr (has_const_iterator<T>::value){
+        using indexer_type = gtensor::iterator_indexer<decltype(t.begin())>;
+        return gtensor::walker<Config, indexer_type>{descriptor.adapted_strides(),descriptor.reset_strides(),descriptor.offset(),indexer_type{t.begin()},descriptor.dim()};
     }else{
         return;
     }
 }
-
 //create iterator using avilable data accessors
 template<typename Config, typename T, typename Descriptor>
 inline auto begin(T& t, const Descriptor& descriptor){
     using index_type = typename Config::index_type;
-    if constexpr (has_iterator_v<T>){
+    if constexpr (has_iterator<T>::value){
         return t.begin();
     }else if constexpr (has_create_indexer<T>::value){
         return gtensor::indexer_iterator<Config, decltype(t.create_indexer())>{t.create_indexer(), index_type{0}};
@@ -153,7 +143,7 @@ inline auto begin(T& t, const Descriptor& descriptor){
 }
 template<typename Config, typename T, typename Descriptor>
 inline auto end(T& t, const Descriptor& descriptor){
-    if constexpr (has_iterator_v<T>){
+    if constexpr (has_iterator<T>::value){
         return t.end();
     }else if constexpr (has_create_indexer<T>::value){
         return gtensor::indexer_iterator<Config, decltype(t.create_indexer())>{t.create_indexer(), descriptor.size()};
@@ -169,11 +159,11 @@ inline auto end(T& t, const Descriptor& descriptor){
 template<typename Config, typename T, typename Descriptor>
 inline auto begin_const(const T& t, const Descriptor& descriptor){
     using index_type = typename Config::index_type;
-    if constexpr (has_const_iterator_v<T>){
+    if constexpr (has_const_iterator<T>::value){
         return t.begin();
     }else if constexpr (has_create_indexer_const<T>::value){
         return gtensor::indexer_iterator<Config, decltype(t.create_indexer())>{t.create_indexer(), index_type{0}};
-    }else if constexpr (has_subscript_operator_const<T>::value){
+    }else if constexpr (is_subscriptable<T>::value){
         using indexer_type = gtensor::basic_indexer<const T&>;
         return gtensor::indexer_iterator<Config, indexer_type>{indexer_type{t}, index_type{0}};
     }else if constexpr(has_create_walker_const<T>::value){
@@ -184,11 +174,11 @@ inline auto begin_const(const T& t, const Descriptor& descriptor){
 }
 template<typename Config, typename T, typename Descriptor>
 inline auto end_const(const T& t, const Descriptor& descriptor){
-    if constexpr (has_const_iterator_v<T>){
+    if constexpr (has_const_iterator<T>::value){
         return t.end();
     }else if constexpr (has_create_indexer_const<T>::value){
         return gtensor::indexer_iterator<Config, decltype(t.create_indexer())>{t.create_indexer(), descriptor.size()};
-    }else if constexpr (has_subscript_operator_const<T>::value){
+    }else if constexpr (is_subscriptable<T>::value){
         using indexer_type = gtensor::basic_indexer<const T&>;
         return gtensor::indexer_iterator<Config, indexer_type>{indexer_type{t}, descriptor.size()};
     }else if constexpr(has_create_walker_const<T>::value){
@@ -197,11 +187,10 @@ inline auto end_const(const T& t, const Descriptor& descriptor){
         return;
     }
 }
-
 //create reverse iterator using avilable data accessors
 template<typename Config, typename T, typename Descriptor>
 inline auto rbegin(T& t, const Descriptor& descriptor){
-    if constexpr (has_reverse_iterator_v<T>){
+    if constexpr (has_reverse_iterator<T>::value){
         return t.rbegin();
     }else if constexpr (has_create_indexer<T>::value){
         return gtensor::reverse_indexer_iterator<Config, decltype(t.create_indexer())>{t.create_indexer(), descriptor.size()};
@@ -217,7 +206,7 @@ inline auto rbegin(T& t, const Descriptor& descriptor){
 template<typename Config, typename T, typename Descriptor>
 inline auto rend(T& t, const Descriptor& descriptor){
     using index_type = typename Config::index_type;
-    if constexpr (has_reverse_iterator_v<T>){
+    if constexpr (has_reverse_iterator<T>::value){
         return t.rend();
     }else if constexpr (has_create_indexer<T>::value){
         return gtensor::reverse_indexer_iterator<Config, decltype(t.create_indexer())>{t.create_indexer(), index_type{0}};
@@ -230,8 +219,37 @@ inline auto rend(T& t, const Descriptor& descriptor){
         return;
     }
 }
-
-
+template<typename Config, typename T, typename Descriptor>
+inline auto rbegin_const(const T& t, const Descriptor& descriptor){
+    if constexpr (has_const_reverse_iterator<T>::value){
+        return t.rbegin();
+    }else if constexpr (has_create_indexer_const<T>::value){
+        return gtensor::reverse_indexer_iterator<Config, decltype(t.create_indexer())>{t.create_indexer(), descriptor.size()};
+    }else if constexpr (is_subscriptable<T>::value){
+        using indexer_type = gtensor::basic_indexer<const T&>;
+        return gtensor::reverse_indexer_iterator<Config, indexer_type>{indexer_type{t}, descriptor.size()};
+    }else if constexpr(has_create_walker_const<T>::value){
+        return gtensor::reverse_walker_iterator<Config, decltype(t.create_walker())>{t.create_walker(), descriptor.shape(), descriptor.strides_div(), descriptor.size()};
+    }else{
+        return;
+    }
+}
+template<typename Config, typename T, typename Descriptor>
+inline auto rend_const(const T& t, const Descriptor& descriptor){
+    using index_type = typename Config::index_type;
+    if constexpr (has_const_reverse_iterator<T>::value){
+        return t.rend();
+    }else if constexpr (has_create_indexer_const<T>::value){
+        return gtensor::reverse_indexer_iterator<Config, decltype(t.create_indexer())>{t.create_indexer(), index_type{0}};
+    }else if constexpr (is_subscriptable<T>::value){
+        using indexer_type = gtensor::basic_indexer<const T&>;
+        return gtensor::reverse_indexer_iterator<Config, indexer_type>{indexer_type{t}, index_type{0}};
+    }else if constexpr(has_create_walker_const<T>::value){
+        return gtensor::reverse_walker_iterator<Config, decltype(t.create_walker())>{t.create_walker(), descriptor.shape(), descriptor.strides_div(), index_type{0}};
+    }else{
+        return;
+    }
+}
 
 }   //end of namespace detail
 
@@ -244,8 +262,20 @@ template<typename Engine>
 class tensor_implementation
 {
     //check meta-data and data access intefaces
-    static_assert(detail::has_descriptor<Engine>::value);
-    //static_assert(detail::has_subscript_operator_v<Engine> || detail::has_indexer_v<Engine> || detail::has_walker_v<Engine> || detail::has_random_access_iterator_v<Engine>);
+    static_assert(detail::has_descriptor<Engine>::value||detail::has_descriptor_const<Engine>::value);
+    using has_data_accessor = std::conjunction<
+        detail::has_subscript_operator<Engine>,
+        detail::has_create_indexer<Engine>,
+        detail::has_create_walker<Engine>,
+        detail::has_iterator<Engine>
+    >;
+    using has_const_data_accessor = std::conjunction<
+        detail::is_subscriptable<Engine>,
+        detail::has_create_indexer_const<Engine>,
+        detail::has_create_walker_const<Engine>,
+        detail::has_const_iterator<Engine>
+    >;
+    static_assert(has_data_accessor::value||has_const_data_accessor::value);
     using engine_type = Engine;
 public:
     using value_type = typename engine_type::value_type;
@@ -254,8 +284,11 @@ public:
     using index_type = typename engine_type::index_type;
     using shape_type = typename engine_type::shape_type;
 
-    template<typename...Args>
-    tensor_implementation(Args&&...args):
+    template<typename...> struct forward_args : std::true_type{};
+    template<typename U> struct forward_args<U> : std::bool_constant<!std::is_same_v<U,tensor_implementation>>{};
+
+    template<typename...Args, std::enable_if_t<forward_args<Args...>::value,int> =0>
+    explicit tensor_implementation(Args&&...args):
         engine_{std::forward<Args>(args)...}
     {}
 
@@ -263,19 +296,34 @@ public:
     tensor_implementation& operator=(const tensor_implementation&) = delete;
     tensor_implementation(tensor_implementation&&) = delete;
     tensor_implementation& operator=(tensor_implementation&&) = delete;
-
+    //meta-data interface
     const auto& descriptor()const{return engine_.descriptor();}
     index_type size()const{return descriptor().size();}
     dim_type dim()const{return descriptor().dim();}
     const shape_type& shape()const{return descriptor().shape();}
     const shape_type& strides()const{return descriptor().strides();}
+    //data interface
+    template<typename H=has_data_accessor, std::enable_if_t<H::value,int> =0> auto begin(){return detail::begin(engine_,descriptor());}
+    template<typename H=has_data_accessor, std::enable_if_t<H::value,int> =0> auto end(){return detail::end(engine_,descriptor());}
+    template<typename H=has_data_accessor, std::enable_if_t<H::value,int> =0> auto rbegin(){return detail::rbegin(engine_,descriptor());}
+    template<typename H=has_data_accessor, std::enable_if_t<H::value,int> =0> auto rend(){return detail::rend(engine_,descriptor());}
+    template<typename H=has_data_accessor, std::enable_if_t<H::value,int> =0> auto create_indexer(){return detail::create_indexer(engine_);}
+    template<typename H=has_data_accessor, std::enable_if_t<H::value,int> =0> auto create_walker(){return detail::create_walker(engine_,descriptor());}
+    //const data interface
+    template<typename H=has_const_data_accessor, std::enable_if_t<H::value,int> =0> auto begin()const{return detail::begin_const(engine_,descriptor());}
+    template<typename H=has_const_data_accessor, std::enable_if_t<H::value,int> =0> auto end()const{return detail::end_const(engine_,descriptor());}
+    template<typename H=has_const_data_accessor, std::enable_if_t<H::value,int> =0> auto rbegin()const{return detail::rbegin_const(engine_,descriptor());}
+    template<typename H=has_const_data_accessor, std::enable_if_t<H::value,int> =0> auto rend()const{return detail::rend_const(engine_,descriptor());}
+    template<typename H=has_const_data_accessor, std::enable_if_t<H::value,int> =0> auto create_indexer()const{return detail::create_const_indexer(engine_);}
+    template<typename H=has_const_data_accessor, std::enable_if_t<H::value,int> =0> auto create_walker()const{return detail::create_const_walker(engine_,descriptor());}
 
 private:
     engine_type engine_;
 };
 
-//storage engine, owns storage of data elements of type T
-//storage type is specialization of Config::storage
+//storage engine combine together data and meta-data
+//owns descriptor
+//owns storage of data elements of type T - Config::storage<T>
 template<typename Config, typename T>
 class storage_engine
 {
@@ -317,21 +365,21 @@ public:
 
     const descriptor_type& descriptor()const{return descriptor_;}
 
-    template<typename Storage_ = storage_type, std::enable_if_t<detail::has_iterator_v<Storage_>,int> =0>
+    template<typename Storage_ = storage_type, std::enable_if_t<detail::has_iterator<Storage_>::value,int> =0>
     auto begin(){return elements_.begin();}
-    template<typename Storage_ = storage_type, std::enable_if_t<detail::has_iterator_v<Storage_>,int> =0>
+    template<typename Storage_ = storage_type, std::enable_if_t<detail::has_iterator<Storage_>::value,int> =0>
     auto end(){return elements_.end();}
-    template<typename Storage_ = storage_type, std::enable_if_t<detail::has_const_iterator_v<Storage_>,int> =0>
+    template<typename Storage_ = storage_type, std::enable_if_t<detail::has_const_iterator<Storage_>::value,int> =0>
     auto begin()const{return elements_.begin();}
-    template<typename Storage_ = storage_type, std::enable_if_t<detail::has_const_iterator_v<Storage_>,int> =0>
+    template<typename Storage_ = storage_type, std::enable_if_t<detail::has_const_iterator<Storage_>::value,int> =0>
     auto end()const{return elements_.end();}
-    template<typename Storage_ = storage_type, std::enable_if_t<detail::has_reverse_iterator_v<Storage_>,int> =0>
+    template<typename Storage_ = storage_type, std::enable_if_t<detail::has_reverse_iterator<Storage_>::value,int> =0>
     auto rbegin(){return elements_.rbegin();}
-    template<typename Storage_ = storage_type, std::enable_if_t<detail::has_reverse_iterator_v<Storage_>,int> =0>
+    template<typename Storage_ = storage_type, std::enable_if_t<detail::has_reverse_iterator<Storage_>::value,int> =0>
     auto rend(){return elements_.rend();}
-    template<typename Storage_ = storage_type, std::enable_if_t<detail::has_const_reverse_iterator_v<Storage_>,int> =0>
+    template<typename Storage_ = storage_type, std::enable_if_t<detail::has_const_reverse_iterator<Storage_>::value,int> =0>
     auto rbegin()const{return elements_.rbegin();}
-    template<typename Storage_ = storage_type, std::enable_if_t<detail::has_const_reverse_iterator_v<Storage_>,int> =0>
+    template<typename Storage_ = storage_type, std::enable_if_t<detail::has_const_reverse_iterator<Storage_>::value,int> =0>
     auto rend()const{return elements_.rend();}
 
     template<typename Storage_ = storage_type, std::enable_if_t<detail::has_subscript_operator<Storage_>::value,int> =0>

@@ -25,35 +25,35 @@ TEST_CASE("test_has_iterator","[test_tensor_implementation]")
 
     SECTION("test_has_iterator_v")
     {
-        using gtensor::detail::has_iterator_v;
-        REQUIRE(!has_iterator_v<void>);
-        REQUIRE(!has_iterator_v<void*>);
-        REQUIRE(!has_iterator_v<int>);
-        REQUIRE(!has_iterator_v<int*>);
-        REQUIRE(!has_iterator_v<int[]>);
-        REQUIRE(!has_iterator_v<const_iterable>);
+        using gtensor::detail::has_iterator;
+        REQUIRE(!has_iterator<void>::value);
+        REQUIRE(!has_iterator<void*>::value);
+        REQUIRE(!has_iterator<int>::value);
+        REQUIRE(!has_iterator<int*>::value);
+        REQUIRE(!has_iterator<int[]>::value);
+        REQUIRE(!has_iterator<const_iterable>::value);
 
-        REQUIRE(has_iterator_v<iterable>);
-        REQUIRE(has_iterator_v<non_const_iterable>);
-        REQUIRE(has_iterator_v<std::list<int>>);
-        REQUIRE(has_iterator_v<std::vector<int>>);
-        REQUIRE(has_iterator_v<std::string>);
+        REQUIRE(has_iterator<iterable>::value);
+        REQUIRE(has_iterator<non_const_iterable>::value);
+        REQUIRE(has_iterator<std::list<int>>::value);
+        REQUIRE(has_iterator<std::vector<int>>::value);
+        REQUIRE(has_iterator<std::string>::value);
     }
     SECTION("test_has_const_iterator_v")
     {
-        using gtensor::detail::has_const_iterator_v;
-        REQUIRE(!has_const_iterator_v<void>);
-        REQUIRE(!has_const_iterator_v<void*>);
-        REQUIRE(!has_const_iterator_v<int>);
-        REQUIRE(!has_const_iterator_v<int*>);
-        REQUIRE(!has_const_iterator_v<int[]>);
-        REQUIRE(!has_const_iterator_v<non_const_iterable>);
+        using gtensor::detail::has_const_iterator;
+        REQUIRE(!has_const_iterator<void>::value);
+        REQUIRE(!has_const_iterator<void*>::value);
+        REQUIRE(!has_const_iterator<int>::value);
+        REQUIRE(!has_const_iterator<int*>::value);
+        REQUIRE(!has_const_iterator<int[]>::value);
+        REQUIRE(!has_const_iterator<non_const_iterable>::value);
 
-        REQUIRE(has_const_iterator_v<iterable>);
-        REQUIRE(has_const_iterator_v<const_iterable>);
-        REQUIRE(has_const_iterator_v<std::list<int>>);
-        REQUIRE(has_const_iterator_v<std::vector<int>>);
-        REQUIRE(has_const_iterator_v<std::string>);
+        REQUIRE(has_const_iterator<iterable>::value);
+        REQUIRE(has_const_iterator<const_iterable>::value);
+        REQUIRE(has_const_iterator<std::list<int>>::value);
+        REQUIRE(has_const_iterator<std::vector<int>>::value);
+        REQUIRE(has_const_iterator<std::string>::value);
     }
 }
 
@@ -113,35 +113,35 @@ TEST_CASE("test_has_reverse_iterator","[test_tensor_implementation]")
 
     SECTION("test_has_reverse_iterator_v")
     {
-        using gtensor::detail::has_reverse_iterator_v;
-        REQUIRE(!has_reverse_iterator_v<void>);
-        REQUIRE(!has_reverse_iterator_v<void*>);
-        REQUIRE(!has_reverse_iterator_v<int>);
-        REQUIRE(!has_reverse_iterator_v<int*>);
-        REQUIRE(!has_reverse_iterator_v<int[]>);
-        REQUIRE(!has_reverse_iterator_v<const_reverse_iterable>);
+        using gtensor::detail::has_reverse_iterator;
+        REQUIRE(!has_reverse_iterator<void>::value);
+        REQUIRE(!has_reverse_iterator<void*>::value);
+        REQUIRE(!has_reverse_iterator<int>::value);
+        REQUIRE(!has_reverse_iterator<int*>::value);
+        REQUIRE(!has_reverse_iterator<int[]>::value);
+        REQUIRE(!has_reverse_iterator<const_reverse_iterable>::value);
 
-        REQUIRE(has_reverse_iterator_v<reverse_iterable>);
-        REQUIRE(has_reverse_iterator_v<non_const_reverse_iterable>);
-        REQUIRE(has_reverse_iterator_v<std::list<int>>);
-        REQUIRE(has_reverse_iterator_v<std::vector<int>>);
-        REQUIRE(has_reverse_iterator_v<std::string>);
+        REQUIRE(has_reverse_iterator<reverse_iterable>::value);
+        REQUIRE(has_reverse_iterator<non_const_reverse_iterable>::value);
+        REQUIRE(has_reverse_iterator<std::list<int>>::value);
+        REQUIRE(has_reverse_iterator<std::vector<int>>::value);
+        REQUIRE(has_reverse_iterator<std::string>::value);
     }
     SECTION("test_has_const_reverse_iterator_v")
     {
-        using gtensor::detail::has_const_reverse_iterator_v;
-        REQUIRE(!has_const_reverse_iterator_v<void>);
-        REQUIRE(!has_const_reverse_iterator_v<void*>);
-        REQUIRE(!has_const_reverse_iterator_v<int>);
-        REQUIRE(!has_const_reverse_iterator_v<int*>);
-        REQUIRE(!has_const_reverse_iterator_v<int[]>);
-        REQUIRE(!has_const_reverse_iterator_v<non_const_reverse_iterable>);
+        using gtensor::detail::has_const_reverse_iterator;
+        REQUIRE(!has_const_reverse_iterator<void>::value);
+        REQUIRE(!has_const_reverse_iterator<void*>::value);
+        REQUIRE(!has_const_reverse_iterator<int>::value);
+        REQUIRE(!has_const_reverse_iterator<int*>::value);
+        REQUIRE(!has_const_reverse_iterator<int[]>::value);
+        REQUIRE(!has_const_reverse_iterator<non_const_reverse_iterable>::value);
 
-        REQUIRE(has_const_reverse_iterator_v<reverse_iterable>);
-        REQUIRE(has_const_reverse_iterator_v<const_reverse_iterable>);
-        REQUIRE(has_const_reverse_iterator_v<std::list<int>>);
-        REQUIRE(has_const_reverse_iterator_v<std::vector<int>>);
-        REQUIRE(has_const_reverse_iterator_v<std::string>);
+        REQUIRE(has_const_reverse_iterator<reverse_iterable>::value);
+        REQUIRE(has_const_reverse_iterator<const_reverse_iterable>::value);
+        REQUIRE(has_const_reverse_iterator<std::list<int>>::value);
+        REQUIRE(has_const_reverse_iterator<std::vector<int>>::value);
+        REQUIRE(has_const_reverse_iterator<std::string>::value);
     }
 }
 
@@ -278,12 +278,12 @@ TEMPLATE_TEST_CASE("test_storage_engine","[test_tensor_implementation]",
     constexpr static bool has_subscript_operator_expected = std::tuple_element_t<5, TestType>::value;
     constexpr static bool has_subscript_operator_const_expected = std::tuple_element_t<6, TestType>::value;
 
-    constexpr static bool has_iterator_result = gtensor::detail::has_iterator_v<engine_type>;
-    constexpr static bool has_const_iterator_result = gtensor::detail::has_const_iterator_v<engine_type>;
-    constexpr static bool has_reverse_iterator_result = gtensor::detail::has_reverse_iterator_v<engine_type>;
-    constexpr static bool has_const_reverse_iterator_result = gtensor::detail::has_const_reverse_iterator_v<engine_type>;
-    constexpr static bool has_subscript_operator_result = gtensor::detail::has_subscript_operator<engine_type>();
-    constexpr static bool has_subscript_operator_const_result = gtensor::detail::has_subscript_operator_const<engine_type>();
+    constexpr static bool has_iterator_result = gtensor::detail::has_iterator<engine_type>::value;
+    constexpr static bool has_const_iterator_result = gtensor::detail::has_const_iterator<engine_type>::value;
+    constexpr static bool has_reverse_iterator_result = gtensor::detail::has_reverse_iterator<engine_type>::value;
+    constexpr static bool has_const_reverse_iterator_result = gtensor::detail::has_const_reverse_iterator<engine_type>::value;
+    constexpr static bool has_subscript_operator_result = gtensor::detail::has_subscript_operator<engine_type>::value;
+    constexpr static bool has_subscript_operator_const_result = gtensor::detail::has_subscript_operator_const<engine_type>::value;
 
     REQUIRE(gtensor::detail::has_descriptor_const<engine_type>::value);
     REQUIRE(has_iterator_result == has_iterator_expected);
