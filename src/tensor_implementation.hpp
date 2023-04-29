@@ -2,10 +2,11 @@
 #define TENSOR_IMPLEMENTATION_HPP_
 
 #include <type_traits>
+#include "common.hpp"
 #include "tensor_init_list.hpp"
 #include "descriptor.hpp"
+#include "data_accessor.hpp"
 #include "iterator.hpp"
-#include "common.hpp"
 
 namespace gtensor{
 
@@ -65,37 +66,166 @@ template<typename T> struct subscript_operator_const_result{
 template<typename T> using subscript_operator_const_result_t = typename subscript_operator_const_result<T>::type;
 
 
-//create indexer
-
-
-
-//create random access iterator
-template<typename Config, typename T, typename Descriptor>
-inline auto begin(T& t, const Descriptor& descriptor){
-    using index_type = typename Config::index_type;
-    if constexpr (has_iterator_v<T> && is_random_access_iterator_v<decltype(t.begin())>){
-        return t.begin();
-    }else if constexpr (has_create_indexer<T>()){
-        return gtensor::indexer_iterator<Config, decltype(t.create_indexer())>{t.create_indexer(), index_type{0}};
-    }else if constexpr (has_subscript_operator<T>()){
-        return gtensor::indexer_iterator<Config, gtensor::basic_indexer<T&>>{gtensor::basic_indexer<T&>{t}, index_type{0}};
-    }else if constexpr(has_create_walker<T>()){
-        return gtensor::walker_iterator<Config, decltype(t.create_walker())>{t.create_walker(), descriptor.shape(), descriptor.strides_div(), index_type{0}};
+//create indexer using available data accessors
+template<typename T>
+inline auto create_indexer(T& t){
+    if constexpr (has_create_indexer<T>::value){
+        return t.create_indexer();
+    }else if constexpr (has_subscript_operator<T>::value){
+        return gtensor::basic_indexer<T&>{t};
+    }else if constexpr (has_create_walker<T>::value){
+        //need walker indexer adapter
+        //return ...
+    }else if constexpr (has_iterator_v<T>){
+        //need iterator indexer adapter
+        //retrun ...
+    }else{
+        return;
+    }
+}
+template<typename T>
+inline auto create_const_indexer(const T& t){
+    if constexpr (has_create_indexer_const<T>::value){
+        return t.create_indexer();
+    }else if constexpr (has_subscript_operator_const<T>::value){
+        return gtensor::basic_indexer<const T&>{t};
+    }else if constexpr (has_create_walker_const<T>::value){
+        //need walker indexer adapter
+        //return ...
+    }else if constexpr (has_const_iterator_v<T>){
+        //need iterator indexer adapter
+        //retrun ...
     }else{
         return;
     }
 }
 
+//create walker using avilable data accessors
+template<typename Config, typename T, typename Descriptor>
+inline auto create_walker(T& t, const Descriptor& descriptor){
+    if constexpr(has_create_walker<T>::value){
+        return t.create_walker();
+    }else if constexpr (has_create_indexer<T>::value){
+        return gtensor::walker<Config, decltype(t.create_indexer())>{descriptor.adapted_strides(),descriptor.reset_strides(),descriptor.offset(),t.create_indexer(),descriptor.dim()};
+    }else if constexpr (has_subscript_operator<T>::value){
+        using indexer_type = gtensor::basic_indexer<T&>;
+        return gtensor::walker<Config, indexer_type>{descriptor.adapted_strides(),descriptor.reset_strides(),descriptor.offset(),indexer_type{t},descriptor.dim()};
+    }else if constexpr (has_iterator_v<T>){
+        //need iterator indexer adapter
+        //return...
+    }else{
+        return;
+    }
+}
+template<typename Config, typename T, typename Descriptor>
+inline auto create_const_walker(const T& t, const Descriptor& descriptor){
+    if constexpr(has_create_walker_const<T>::value){
+        return t.create_walker();
+    }else if constexpr (has_create_indexer_const<T>::value){
+        return gtensor::walker<Config, decltype(t.create_indexer())>{descriptor.adapted_strides(),descriptor.reset_strides(),descriptor.offset(),t.create_indexer(),descriptor.dim()};
+    }else if constexpr (has_subscript_operator_const<T>::value){
+        using indexer_type = gtensor::basic_indexer<const T&>;
+        return gtensor::walker<Config, indexer_type>{descriptor.adapted_strides(),descriptor.reset_strides(),descriptor.offset(),indexer_type{t},descriptor.dim()};
+    }else if constexpr (has_const_iterator_v<T>){
+        //need iterator indexer adapter
+        //return...
+    }else{
+        return;
+    }
+}
+
+//create iterator using avilable data accessors
+template<typename Config, typename T, typename Descriptor>
+inline auto begin(T& t, const Descriptor& descriptor){
+    using index_type = typename Config::index_type;
+    if constexpr (has_iterator_v<T>){
+        return t.begin();
+    }else if constexpr (has_create_indexer<T>::value){
+        return gtensor::indexer_iterator<Config, decltype(t.create_indexer())>{t.create_indexer(), index_type{0}};
+    }else if constexpr (has_subscript_operator<T>::value){
+        using indexer_type = gtensor::basic_indexer<T&>;
+        return gtensor::indexer_iterator<Config, indexer_type>{indexer_type{t}, index_type{0}};
+    }else if constexpr(has_create_walker<T>::value){
+        return gtensor::walker_iterator<Config, decltype(t.create_walker())>{t.create_walker(), descriptor.shape(), descriptor.strides_div(), index_type{0}};
+    }else{
+        return;
+    }
+}
 template<typename Config, typename T, typename Descriptor>
 inline auto end(T& t, const Descriptor& descriptor){
-    if constexpr (has_iterator_v<T> && is_random_access_iterator_v<decltype(t.end())>){
+    if constexpr (has_iterator_v<T>){
         return t.end();
-    }else if constexpr (has_create_indexer<T>()){
+    }else if constexpr (has_create_indexer<T>::value){
         return gtensor::indexer_iterator<Config, decltype(t.create_indexer())>{t.create_indexer(), descriptor.size()};
-    }else if constexpr (has_subscript_operator<T>()){
-        return gtensor::indexer_iterator<Config, gtensor::basic_indexer<T&>>{gtensor::basic_indexer<T&>{t}, descriptor.size()};
-    }else if constexpr(has_create_walker<T>()){
+    }else if constexpr (has_subscript_operator<T>::value){
+        using indexer_type = gtensor::basic_indexer<T&>;
+        return gtensor::indexer_iterator<Config, indexer_type>{indexer_type{t}, descriptor.size()};
+    }else if constexpr(has_create_walker<T>::value){
         return gtensor::walker_iterator<Config, decltype(t.create_walker())>{t.create_walker(), descriptor.shape(), descriptor.strides_div(), descriptor.size()};
+    }else{
+        return;
+    }
+}
+template<typename Config, typename T, typename Descriptor>
+inline auto begin_const(const T& t, const Descriptor& descriptor){
+    using index_type = typename Config::index_type;
+    if constexpr (has_const_iterator_v<T>){
+        return t.begin();
+    }else if constexpr (has_create_indexer_const<T>::value){
+        return gtensor::indexer_iterator<Config, decltype(t.create_indexer())>{t.create_indexer(), index_type{0}};
+    }else if constexpr (has_subscript_operator_const<T>::value){
+        using indexer_type = gtensor::basic_indexer<const T&>;
+        return gtensor::indexer_iterator<Config, indexer_type>{indexer_type{t}, index_type{0}};
+    }else if constexpr(has_create_walker_const<T>::value){
+        return gtensor::walker_iterator<Config, decltype(t.create_walker())>{t.create_walker(), descriptor.shape(), descriptor.strides_div(), index_type{0}};
+    }else{
+        return;
+    }
+}
+template<typename Config, typename T, typename Descriptor>
+inline auto end_const(const T& t, const Descriptor& descriptor){
+    if constexpr (has_const_iterator_v<T>){
+        return t.end();
+    }else if constexpr (has_create_indexer_const<T>::value){
+        return gtensor::indexer_iterator<Config, decltype(t.create_indexer())>{t.create_indexer(), descriptor.size()};
+    }else if constexpr (has_subscript_operator_const<T>::value){
+        using indexer_type = gtensor::basic_indexer<const T&>;
+        return gtensor::indexer_iterator<Config, indexer_type>{indexer_type{t}, descriptor.size()};
+    }else if constexpr(has_create_walker_const<T>::value){
+        return gtensor::walker_iterator<Config, decltype(t.create_walker())>{t.create_walker(), descriptor.shape(), descriptor.strides_div(), descriptor.size()};
+    }else{
+        return;
+    }
+}
+
+//create reverse iterator using avilable data accessors
+template<typename Config, typename T, typename Descriptor>
+inline auto rbegin(T& t, const Descriptor& descriptor){
+    if constexpr (has_reverse_iterator_v<T>){
+        return t.rbegin();
+    }else if constexpr (has_create_indexer<T>::value){
+        return gtensor::reverse_indexer_iterator<Config, decltype(t.create_indexer())>{t.create_indexer(), descriptor.size()};
+    }else if constexpr (has_subscript_operator<T>::value){
+        using indexer_type = gtensor::basic_indexer<T&>;
+        return gtensor::reverse_indexer_iterator<Config, indexer_type>{indexer_type{t}, descriptor.size()};
+    }else if constexpr(has_create_walker<T>::value){
+        return gtensor::reverse_walker_iterator<Config, decltype(t.create_walker())>{t.create_walker(), descriptor.shape(), descriptor.strides_div(), descriptor.size()};
+    }else{
+        return;
+    }
+}
+template<typename Config, typename T, typename Descriptor>
+inline auto rend(T& t, const Descriptor& descriptor){
+    using index_type = typename Config::index_type;
+    if constexpr (has_reverse_iterator_v<T>){
+        return t.rend();
+    }else if constexpr (has_create_indexer<T>::value){
+        return gtensor::reverse_indexer_iterator<Config, decltype(t.create_indexer())>{t.create_indexer(), index_type{0}};
+    }else if constexpr (has_subscript_operator<T>::value){
+        using indexer_type = gtensor::basic_indexer<T&>;
+        return gtensor::reverse_indexer_iterator<Config, indexer_type>{indexer_type{t}, index_type{0}};
+    }else if constexpr(has_create_walker<T>::value){
+        return gtensor::reverse_walker_iterator<Config, decltype(t.create_walker())>{t.create_walker(), descriptor.shape(), descriptor.strides_div(), index_type{0}};
     }else{
         return;
     }
@@ -114,7 +244,7 @@ template<typename Engine>
 class tensor_implementation
 {
     //check meta-data and data access intefaces
-    static_assert(detail::has_descriptor<Engine>());
+    static_assert(detail::has_descriptor<Engine>::value);
     //static_assert(detail::has_subscript_operator_v<Engine> || detail::has_indexer_v<Engine> || detail::has_walker_v<Engine> || detail::has_random_access_iterator_v<Engine>);
     using engine_type = Engine;
 public:
@@ -128,9 +258,6 @@ public:
     tensor_implementation(Args&&...args):
         engine_{std::forward<Args>(args)...}
     {}
-    //implementation accessor
-    //result_type
-    //create_walker, check what interface is provided by implementation, need some helpers
 
     tensor_implementation(const tensor_implementation&) = delete;
     tensor_implementation& operator=(const tensor_implementation&) = delete;

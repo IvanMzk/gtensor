@@ -8,13 +8,11 @@
 namespace gtensor{
 namespace detail{
 
-#define GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(name,signature,postfix)\
+#define GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(function_name,function_signature,trait_name)\
 template<typename T, typename = void>\
-struct has_member_function_##postfix : std::false_type{};\
+struct trait_name : std::false_type{};\
 template<typename T>\
-struct has_member_function_##postfix<T, std::void_t<std::integral_constant<signature,&T::name>>> : std::true_type{};
-
-
+struct trait_name<T, std::void_t<std::integral_constant<function_signature,&T::function_name>>> : std::true_type{};
 
 
 template<typename T, typename = void> constexpr inline bool is_container_v = false;
@@ -32,8 +30,11 @@ template<typename T, typename U> constexpr inline bool is_tensor_of_type_v<T,U,s
 template<typename T, typename=void> constexpr inline bool is_bool_tensor_v = false;
 template<typename T> constexpr inline bool is_bool_tensor_v<T,std::void_t<std::enable_if_t<is_tensor_v<T>>>> = std::is_same_v<typename T::value_type, bool>;
 
-template<typename, typename = void> constexpr bool is_iterator = false;
-template<typename T> constexpr bool is_iterator<T,std::void_t<typename std::iterator_traits<T>::iterator_category>> = true;
+template<typename, typename = void> constexpr bool is_iterator_v = false;
+template<typename T> constexpr bool is_iterator_v<T,std::void_t<typename std::iterator_traits<T>::iterator_category>> = true;
+
+template<typename From, typename To, typename=void> constexpr bool is_static_castable_v = false;
+template<typename From, typename To> constexpr bool is_static_castable_v<From,To,std::void_t<decltype(static_cast<To>(std::declval<From>()))>> = true;
 
 }   //end of namespace detail
 }   //end of namespace gtensor

@@ -9,16 +9,16 @@
 TEST_CASE("test_has_iterator","[test_tensor_implementation]")
 {
     struct const_iterable{
-        int* begin()const{return nullptr;}
-        int* end()const{return nullptr;}
+        const int* begin()const{return nullptr;}
+        const int* end()const{return nullptr;}
     };
     struct non_const_iterable{
         int* begin(){return nullptr;}
         int* end(){return nullptr;}
     };
     struct iterable{
-        int* begin()const{return nullptr;}
-        int* end()const{return nullptr;}
+        const int* begin()const{return nullptr;}
+        const int* end()const{return nullptr;}
         int* begin(){return nullptr;}
         int* end(){return nullptr;}
     };
@@ -32,9 +32,6 @@ TEST_CASE("test_has_iterator","[test_tensor_implementation]")
         REQUIRE(!has_iterator_v<int*>);
         REQUIRE(!has_iterator_v<int[]>);
         REQUIRE(!has_iterator_v<const_iterable>);
-        REQUIRE(!has_iterator_v<const std::list<int>>);
-        REQUIRE(!has_iterator_v<const std::vector<int>>);
-        REQUIRE(!has_iterator_v<const std::string>);
 
         REQUIRE(has_iterator_v<iterable>);
         REQUIRE(has_iterator_v<non_const_iterable>);
@@ -52,9 +49,6 @@ TEST_CASE("test_has_iterator","[test_tensor_implementation]")
         REQUIRE(!has_const_iterator_v<int[]>);
         REQUIRE(!has_const_iterator_v<non_const_iterable>);
 
-        REQUIRE(has_const_iterator_v<const std::list<int>>);
-        REQUIRE(has_const_iterator_v<const std::vector<int>>);
-        REQUIRE(has_const_iterator_v<const std::string>);
         REQUIRE(has_const_iterator_v<iterable>);
         REQUIRE(has_const_iterator_v<const_iterable>);
         REQUIRE(has_const_iterator_v<std::list<int>>);
@@ -103,16 +97,16 @@ TEST_CASE("test_has_mutating_iterator","[test_tensor_implementation]")
 TEST_CASE("test_has_reverse_iterator","[test_tensor_implementation]")
 {
     struct const_reverse_iterable{
-        int* rbegin()const{return nullptr;}
-        int* rend()const{return nullptr;}
+        const int* rbegin()const{return nullptr;}
+        const int* rend()const{return nullptr;}
     };
     struct non_const_reverse_iterable{
         int* rbegin(){return nullptr;}
         int* rend(){return nullptr;}
     };
     struct reverse_iterable{
-        int* rbegin()const{return nullptr;}
-        int* rend()const{return nullptr;}
+        const int* rbegin()const{return nullptr;}
+        const int* rend()const{return nullptr;}
         int* rbegin(){return nullptr;}
         int* rend(){return nullptr;}
     };
@@ -126,9 +120,6 @@ TEST_CASE("test_has_reverse_iterator","[test_tensor_implementation]")
         REQUIRE(!has_reverse_iterator_v<int*>);
         REQUIRE(!has_reverse_iterator_v<int[]>);
         REQUIRE(!has_reverse_iterator_v<const_reverse_iterable>);
-        REQUIRE(!has_reverse_iterator_v<const std::list<int>>);
-        REQUIRE(!has_reverse_iterator_v<const std::vector<int>>);
-        REQUIRE(!has_reverse_iterator_v<const std::string>);
 
         REQUIRE(has_reverse_iterator_v<reverse_iterable>);
         REQUIRE(has_reverse_iterator_v<non_const_reverse_iterable>);
@@ -146,9 +137,6 @@ TEST_CASE("test_has_reverse_iterator","[test_tensor_implementation]")
         REQUIRE(!has_const_reverse_iterator_v<int[]>);
         REQUIRE(!has_const_reverse_iterator_v<non_const_reverse_iterable>);
 
-        REQUIRE(has_const_reverse_iterator_v<const std::list<int>>);
-        REQUIRE(has_const_reverse_iterator_v<const std::vector<int>>);
-        REQUIRE(has_const_reverse_iterator_v<const std::string>);
         REQUIRE(has_const_reverse_iterator_v<reverse_iterable>);
         REQUIRE(has_const_reverse_iterator_v<const_reverse_iterable>);
         REQUIRE(has_const_reverse_iterator_v<std::list<int>>);
@@ -161,16 +149,19 @@ TEST_CASE("test_has_subscript_operator","[test_tensor_implementation]")
 {
     struct const_subscriptable{
         using size_type = std::size_t;
-        void operator[](size_type)const{}
+        int* p{};
+        int operator[](size_type)const{return *p;}
     };
     struct non_const_subscriptable{
         using size_type = std::size_t;
-        void operator[](size_type){}
+        int* p{};
+        int& operator[](size_type){return *p;}
     };
     struct subscriptable{
         using size_type = std::size_t;
-        void operator[](size_type)const{}
-        void operator[](size_type){}
+        int* p{};
+        const int& operator[](size_type)const{return *p;}
+        int& operator[](size_type){return *p;}
     };
 
     SECTION("test_has_subscript_operator")
@@ -182,9 +173,6 @@ TEST_CASE("test_has_subscript_operator","[test_tensor_implementation]")
         REQUIRE(!has_subscript_operator<int*>());
         REQUIRE(!has_subscript_operator<int[]>());
         REQUIRE(!has_subscript_operator<const_subscriptable>());
-        REQUIRE(!has_subscript_operator<const std::list<int>>());
-        REQUIRE(!has_subscript_operator<const std::vector<int>>());
-        REQUIRE(!has_subscript_operator<const std::string>());
         REQUIRE(!has_subscript_operator<std::list<int>>());
 
         REQUIRE(has_subscript_operator<subscriptable>());
@@ -202,10 +190,7 @@ TEST_CASE("test_has_subscript_operator","[test_tensor_implementation]")
         REQUIRE(!has_subscript_operator_const<int[]>());
         REQUIRE(!has_subscript_operator_const<non_const_subscriptable>());
         REQUIRE(!has_subscript_operator_const<std::list<int>>());
-        REQUIRE(!has_subscript_operator_const<const std::list<int>>());
 
-        REQUIRE(has_subscript_operator_const<const std::vector<int>>());
-        REQUIRE(has_subscript_operator_const<const std::string>());
         REQUIRE(has_subscript_operator_const<subscriptable>());
         REQUIRE(has_subscript_operator_const<const_subscriptable>());
         REQUIRE(has_subscript_operator_const<std::vector<int>>());
@@ -271,7 +256,7 @@ public:
 };
 }   //end of namespace test_storage_engine
 
-TEMPLATE_TEST_CASE("test_storage_engine_","[test_tensor_implementation]",
+TEMPLATE_TEST_CASE("test_storage_engine","[test_tensor_implementation]",
     //0config_selector,1has_iter,2has_const_iter,3has_reverse_iter,4has_const_reverse_iter,5has_subscript_operator,6has_subscript_operator_const
     (std::tuple<test_config::config_storage_selector<std::vector>, std::true_type,std::true_type,std::true_type,std::true_type,std::true_type,std::true_type>),
     (std::tuple<test_config::config_storage_selector<std::list>, std::true_type,std::true_type,std::true_type,std::true_type,std::false_type,std::false_type>),

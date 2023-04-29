@@ -1,3 +1,4 @@
+#include <iostream>
 #include "catch.hpp"
 #include "forward_decl.hpp"
 #include "common.hpp"
@@ -49,6 +50,10 @@ namespace test_has_member_function{
         int h(double) const;
         double h(int);
 
+        int* begin();
+
+        const int* rbegin()const;
+
         using size_type = std::size_t;
         int operator[](size_type);
     };
@@ -64,8 +69,14 @@ namespace test_has_member_function{
     GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(h,decltype(std::declval<T>().h(std::declval<int>()))(T::*)(int),has_h_int);
     GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(h,decltype(std::declval<T>().h(std::declval<std::int64_t>()))(T::*)(std::int64_t),has_h_int64);
 
-    GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(operator[],decltype(std::declval<T>()[std::declval<typename T::size_type>()])(T::*)(typename T::size_type),has_subscript_operator);
 
+    GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(begin,decltype(std::declval<T&>().begin())(T::*)(),has_begin);
+    GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(begin,decltype(std::declval<const T&>().begin())(T::*)()const,has_begin_const);
+
+    GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(rbegin,decltype(std::declval<T&>().rbegin())(T::*)(),has_rbegin);
+    GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(rbegin,decltype(std::declval<const T&>().rbegin())(T::*)()const,has_rbegin_const);
+
+    GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(operator[],decltype(std::declval<T>()[std::declval<typename T::size_type>()])(T::*)(typename T::size_type),has_subscript_operator);
 }
 
 TEST_CASE("test_has_member_function","[test_common]")
@@ -84,6 +95,13 @@ TEST_CASE("test_has_member_function","[test_common]")
     REQUIRE(!test_has_member_function::has_h_int64<test_type>{}());
 
     REQUIRE(test_has_member_function::has_subscript_operator<test_type>{}());
+
+    REQUIRE(test_has_member_function::has_begin<test_type>{}());
+    REQUIRE(!test_has_member_function::has_begin_const<test_type>{}());
+
+    REQUIRE(!test_has_member_function::has_rbegin<test_type>{}());
+    REQUIRE(test_has_member_function::has_rbegin_const<test_type>{}());
+
 }
 
 TEST_CASE("test_is_static_castable","[test_common]")

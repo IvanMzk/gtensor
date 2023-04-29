@@ -4,15 +4,32 @@
 #include "config.hpp"
 #include "tensor_init_list.hpp"
 #include "descriptor.hpp"
-#include "broadcast.hpp"
+#include "data_accessor.hpp"
 
 namespace gtensor{
+
+namespace detail{
+
+template<typename T, typename = void>
+inline constexpr bool has_random_access_iterator_v = false;
+template<typename T> inline constexpr bool has_random_access_iterator_v<T,std::void_t<decltype(std::declval<T>().begin()),decltype(std::declval<T>().end())> > =
+    std::is_convertible_v<typename std::iterator_traits<decltype(std::declval<T>().begin())>::iterator_category,std::random_access_iterator_tag>;
+
+template<typename T, typename = void> inline constexpr bool has_reverse_iterator_v = false;
+template<typename T> inline constexpr bool has_reverse_iterator_v<T,std::void_t<decltype(std::declval<T>().rbegin()),decltype(std::declval<T>().rend())> > = true;
+
+template<typename T, typename = void> inline constexpr bool has_subscript_operator_v = false;
+template<typename T> inline constexpr bool has_subscript_operator_v<T,std::void_t<decltype(std::declval<T>().operator[](std::declval<typename T::difference_type>()))> > = true;
+
+}   //end of namespace detail
+
 
 //base type for all tensor implementations
 //Impl - tensor implementation type
 //Descriptor - descriptor type used by tensor implementation
 //Impl must provide interface to make data accessor:
 //create_indexer() or create_walker() or both, if both is proveded type alias tag Impl::data_accessor_tag is used to select accessor
+//if Impl provide iterators they are used, if not iterators are made using selected data accessor
 template<typename Impl, typename Descriptor>
 class tensor_crtp_base
 {
@@ -51,6 +68,8 @@ public:
     const shape_type& shape()const{return descriptor_.shape();}
     const shape_type& strides()const{return descriptor_.strides();}
 
+
+
 private:
     descriptor_type descriptor_;
 };
@@ -61,13 +80,20 @@ template<typename CfgT, typename ValT>
 class storage_tensor : public tensor_crtp_base<storage_tensor<CfgT,ValT>,basic_descriptor<CfgT>>
 {
     using tensor_crtp_base_type = tensor_crtp_base<storage_tensor<CfgT,ValT>,basic_descriptor<CfgT>>;
+    using typename tensor_crtp_base_type::descriptor_type;
 public:
     using value_type = ValT;
     using config_type = config::extend_config_t<CfgT, ValT>;
-    using storage_type = typename config_type::storage_type
+    using storage_type = typename config_type::storage_type;
     using dim_type = typename config_type::dim_type;
     using index_type = typename config_type::index_type;
     using shape_type = typename config_type::shape_type;
+    using tensor_crtp_base_type::size;
+    static_assert(detail::has_subscript_operator_v<storage_type> || detail::has_random_access_iterator_v<storage_type>);
+
+
+    //static_assert: storage_type must provide non const operator[] or non const random access iterator to make indexer
+    //
 
     //make protected interface for crtp_base accessor
     //add operator[]
@@ -77,22 +103,22 @@ public:
     template<typename Nested>
     storage_tensor(std::initializer_list<Nested> init_data):
         tensor_crtp_base_type{detail::list_parse<dim_type,shape_type>(init_data)},
-        elements_(descriptor_.size())
+        elements_(size())
     {
         detail::fill_from_list(init_data, elements_.begin());
     }
     template<typename ShT>
     storage_tensor(ShT&& shape, const value_type& v):
         tensor_crtp_base_type{std::forward<ShT>(shape)},
-        elements_(descriptor_.size(),v)
+        elements_(size(),v)
     {}
     template<typename ShT, typename ItT>
     storage_tensor(ShT&& shape, ItT begin, ItT end):
         tensor_crtp_base_type{std::forward<ShT>(shape)},
-        elements_(descriptor_.size())
+        elements_(size())
     {
         index_type n = std::distance(begin,end);
-        if (descriptor_.size() < n){
+        if (size() < n){
             for(auto elements_it = elements_.begin(), elements_end = elements_.end(); elements_it!=elements_end; ++elements_it,++begin){
                 *elements_it = *begin;
             }
@@ -101,13 +127,21 @@ public:
         }
     }
 
+    template<typename Storage_ = storage_type, std::enable_if_t<detail::has_random_access_iterator_v<storage_type>,int> =0>
+    auto begin(){return elements_.begin();}
+    template<typename Storage_ = storage_type, std::enable_if_t<detail::has_random_access_iterator_v<storage_type>,int> =0>
+    auto end(){return elements_.end();}
+    template<typename Storage_ = storage_type, std::enable_if_t<detail::has_random_access_iterator_v<const storage_type>,int> =0>
+    auto begin()const{return elements_.begin();}
+    template<typename Storage_ = storage_type, std::enable_if_t<detail::has_random_access_iterator_v<const storage_type>,int> =0>
+    auto end()const{return elements_.end();}
+
 
     //inplace
     template<typename ShT>
     void resize(ShT&& shape){
-        using typename tensor_crtp_base_type::descriptor_type;
         tensor_crtp_base_type::descriptor() = descriptor_type{std::forward<ShT>(shape)};
-        elements_.resize(descriptor_.size());
+        elements_.resize(size());
         elements_.shrink_to_fit();
     }
 private:
@@ -158,49 +192,50 @@ private:
 //     }
 // };
 
-template<typename EngineT>
-class evaluating_tensor : public basic_tensor<basic_descriptor<typename EngineT::config_type>, EngineT>
-{
-    using basic_tensor_base = basic_tensor<basic_descriptor<typename EngineT::config_type>, EngineT>;
-public:
-    using typename basic_tensor_base::config_type;
-    using typename basic_tensor_base::value_type;
-    using typename basic_tensor_base::dim_type;
-    using typename basic_tensor_base::index_type;
-    using typename basic_tensor_base::shape_type;
-private:
-    using typename basic_tensor_base::engine_type;
-    using typename basic_tensor_base::descriptor_type;
+// template<typename EngineT>
+// class evaluating_tensor : public basic_tensor<basic_descriptor<typename EngineT::config_type>, EngineT>
+// {
+//     using basic_tensor_base = basic_tensor<basic_descriptor<typename EngineT::config_type>, EngineT>;
+// public:
+//     using typename basic_tensor_base::config_type;
+//     using typename basic_tensor_base::value_type;
+//     using typename basic_tensor_base::dim_type;
+//     using typename basic_tensor_base::index_type;
+//     using typename basic_tensor_base::shape_type;
+// private:
+//     using typename basic_tensor_base::engine_type;
+//     using typename basic_tensor_base::descriptor_type;
 
-    template<typename F, typename...Operands>
-    evaluating_tensor(shape_type&& shape, F&& f, Operands&&...operands):
-        basic_tensor_base{engine_type{this, std::forward<F>(f),std::forward<Operands>(operands)...}, descriptor_type{std::move(shape)}}
-    {}
-public:
-    template<typename F, typename...Operands>
-    evaluating_tensor(F&& f, Operands&&...operands):
-        evaluating_tensor{detail::broadcast_shape<shape_type>(operands->shape()...),std::forward<F>(f),std::forward<Operands>(operands)...}
-    {}
-};
+//     template<typename F, typename...Operands>
+//     evaluating_tensor(shape_type&& shape, F&& f, Operands&&...operands):
+//         basic_tensor_base{engine_type{this, std::forward<F>(f),std::forward<Operands>(operands)...}, descriptor_type{std::move(shape)}}
+//     {}
+// public:
+//     template<typename F, typename...Operands>
+//     evaluating_tensor(F&& f, Operands&&...operands):
+//         evaluating_tensor{detail::broadcast_shape<shape_type>(operands->shape()...),std::forward<F>(f),std::forward<Operands>(operands)...}
+//     {}
+// };
 
-template<typename DescT, typename EngineT>
-class viewing_tensor : public basic_tensor<DescT, EngineT>
-{
-    using basic_tensor_base = basic_tensor<DescT, EngineT>;
-    using typename basic_tensor_base::engine_type;
-    using typename basic_tensor_base::descriptor_type;
-public:
-    using typename basic_tensor_base::config_type;
-    using typename basic_tensor_base::value_type;
-    using typename basic_tensor_base::dim_type;
-    using typename basic_tensor_base::index_type;
-    using typename basic_tensor_base::shape_type;
-public:
-    template<typename U>
-    viewing_tensor(descriptor_type&& descriptor, U&& parent):
-        basic_tensor_base{engine_type{this,std::forward<U>(parent)},std::move(descriptor)}
-    {}
-};
+// template<typename DescT, typename EngineT>
+// class viewing_tensor : public basic_tensor<DescT, EngineT>
+// {
+//     using basic_tensor_base = basic_tensor<DescT, EngineT>;
+//     using typename basic_tensor_base::engine_type;
+//     using typename basic_tensor_base::descriptor_type;
+// public:
+//     using typename basic_tensor_base::config_type;
+//     using typename basic_tensor_base::value_type;
+//     using typename basic_tensor_base::dim_type;
+//     using typename basic_tensor_base::index_type;
+//     using typename basic_tensor_base::shape_type;
+// public:
+//     template<typename U>
+//     viewing_tensor(descriptor_type&& descriptor, U&& parent):
+//         basic_tensor_base{engine_type{this,std::forward<U>(parent)},std::move(descriptor)}
+//     {}
+// };
+
 
 }   //end of namespace gtensor
 

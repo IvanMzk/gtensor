@@ -4,7 +4,6 @@
 #include <tuple>
 #include <array>
 #include <functional>
-#include "tuple_for_testing.hpp"
 
 namespace helpers_for_testing{
 
@@ -35,36 +34,17 @@ struct cross_product<PairT, L<>, L<Vs...>>{
 };
 
 //apply f to each element of t
-namespace details{
-
-template<typename> struct tuple_size;
-template<typename...Ts> struct tuple_size<std::tuple<Ts...>>{static constexpr std::size_t value = std::tuple_size_v<std::tuple<Ts...>>;};
-template<typename...Ts> struct tuple_size<helpers_for_testing::tuple<Ts...>>{static constexpr std::size_t value = helpers_for_testing::tuple_size_v<tuple<Ts...>>;};
-template<typename T> inline constexpr std::size_t tuple_size_v = tuple_size<T>::value;
-
-template<typename> struct tuple_maker;
-template<typename...Ts> struct tuple_maker<std::tuple<Ts...>>{
-    template<typename...Args>
-    static auto make_tuple(Args&&...args){return std::make_tuple(std::forward<Args>(args)...);}
-};
-template<typename...Ts> struct tuple_maker<helpers_for_testing::tuple<Ts...>>{
-    template<typename...Args>
-    static auto make_tuple(Args&&...args){return helpers_for_testing::create_tuple(std::forward<Args>(args)...);}
-};
-
-}   //end of namespace details
-
 template<typename F, typename Tuple, std::size_t...I>
 inline auto apply_by_element(F&& f, Tuple&& t, std::index_sequence<I...>){
-    if constexpr(std::disjunction_v<std::is_void<decltype(std::invoke(std::forward<F>(f), get<I>(std::forward<Tuple>(t))))>...>){
-        (std::invoke(std::forward<F>(f), get<I>(std::forward<Tuple>(t))),...);
+    if constexpr(std::disjunction_v<std::is_void<decltype(std::invoke(std::forward<F>(f), std::get<I>(std::forward<Tuple>(t))))>...>){
+        (std::invoke(std::forward<F>(f), std::get<I>(std::forward<Tuple>(t))),...);
     }else{
-        return details::tuple_maker<std::decay_t<Tuple>>::make_tuple(std::invoke(std::forward<F>(f), get<I>(std::forward<Tuple>(t)))...);
+        return std::make_tuple(std::invoke(std::forward<F>(f), std::get<I>(std::forward<Tuple>(t)))...);
     }
 }
 template<typename F, typename Tuple>
 inline auto apply_by_element(F&& f, Tuple&& t){
-    return apply_by_element(std::forward<F>(f), std::forward<Tuple>(t), std::make_index_sequence<details::tuple_size_v<std::decay_t<Tuple>>>{});
+    return apply_by_element(std::forward<F>(f), std::forward<Tuple>(t), std::make_index_sequence<std::tuple_size_v<std::decay_t<Tuple>>>{});
 }
 
 //safe cmp of signed,unsigned integrals
