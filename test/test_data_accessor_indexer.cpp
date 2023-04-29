@@ -1,3 +1,5 @@
+#include <vector>
+#include <list>
 #include "catch.hpp"
 #include "descriptor.hpp"
 #include "data_accessor.hpp"
@@ -155,6 +157,42 @@ TEMPLATE_TEST_CASE("test_walker_indexer","test_data_accessor",
         walker_indexer_type walker_indexer{strides_div, walker};
         auto result_1 = walker_indexer[index_1];
         auto result_2 = walker_indexer[index_2];
+        REQUIRE(result_1 == expected_1);
+        REQUIRE(result_2 == expected_2);
+    };
+    apply_by_element(test,test_data);
+}
+
+TEMPLATE_TEST_CASE("test_iterator_indexer","test_data_accessor",
+    std::vector<int>,
+    std::list<int>
+)
+{
+    using container_type = TestType;
+    using value_type = typename container_type::value_type;
+    using index_type = typename container_type::difference_type;
+    using gtensor::iterator_indexer;
+    using helpers_for_testing::apply_by_element;
+
+    //0elements,1index_1,2expected_1,3index_2,4expected_2
+    auto test_data = std::make_tuple(
+        std::make_tuple(container_type{2}, 0,2, 0,2),
+        std::make_tuple(container_type{1,2,3,4,5}, index_type{0},value_type{1}, index_type{4},value_type{5}),
+        std::make_tuple(container_type{1,2,3,4,5}, index_type{1},value_type{2}, index_type{2},value_type{3}),
+        std::make_tuple(container_type{1,2,3,4,5}, index_type{2},value_type{3}, index_type{1},value_type{2}),
+        std::make_tuple(container_type{1,2,3,4,5}, index_type{3},value_type{4}, index_type{3},value_type{4}),
+        std::make_tuple(container_type{1,2,3,4,5}, index_type{4},value_type{5}, index_type{0},value_type{1})
+    );
+    auto test = [](const auto& t){
+        auto container = std::get<0>(t);
+        auto index_1 = std::get<1>(t);
+        auto expected_1 = std::get<2>(t);
+        auto index_2 = std::get<3>(t);
+        auto expected_2 = std::get<4>(t);
+        using indexer_type = iterator_indexer<decltype(container.begin())>;
+        indexer_type indexer{container.begin()};
+        auto result_1 = indexer[index_1];
+        auto result_2 = indexer[index_2];
         REQUIRE(result_1 == expected_1);
         REQUIRE(result_2 == expected_2);
     };
