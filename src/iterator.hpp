@@ -226,9 +226,18 @@ public:
     using typename iterator_base::const_reference;
     using iterator_base::operator*;
 
-    template<typename Arg, typename...Args, std::enable_if_t<!(sizeof...(Args)==0 && std::is_convertible_v<Arg,reverse_iterator_generic>) ,int> =0>
-    explicit reverse_iterator_generic(Arg&& arg, Args&&...args):
-        iterator_base{std::forward<Arg>(arg), std::forward<Args>(args)...}
+    explicit reverse_iterator_generic(Iterator it):
+        iterator_base{std::move(it)}
+    {
+        ++(*this);
+    }
+
+    template<typename...> struct forward_args : std::true_type{};
+    template<typename U> struct forward_args<U> : std::bool_constant<!std::is_same_v<U,Iterator>&&!std::is_same_v<U,reverse_iterator_generic>>{};
+
+    template<typename...Args, std::enable_if_t<forward_args<Args...>::value ,int> =0>
+    explicit reverse_iterator_generic(Args&&...args):
+        iterator_base{std::forward<Args>(args)...}
     {
         ++(*this);
     }
