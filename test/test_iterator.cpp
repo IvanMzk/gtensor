@@ -4,6 +4,25 @@
 #include "helpers_for_testing.hpp"
 #include "test_config.hpp"
 
+namespace test_iterator_{
+
+template<typename T>
+class test_storage
+{
+    using inner_storage_type = std::vector<T>;
+    inner_storage_type impl_;
+public:
+    using value_type = T;
+    using size_type = typename inner_storage_type::size_type;
+    using difference_type = typename inner_storage_type::difference_type;
+    test_storage(std::initializer_list<value_type> init_list):
+        impl_(init_list)
+    {}
+    value_type operator[](size_type i)const{return impl_[i];}
+};
+
+}   //end of namespace test_iterator_
+
 TEMPLATE_TEST_CASE("test_random_access_iterator_difference","[test_iterator]",
     test_config::config_storage_selector<std::vector>::config_type,
     test_config::config_storage_selector<gtensor::storage_vector>::config_type
@@ -285,7 +304,8 @@ TEMPLATE_TEST_CASE("test_random_access_iterator_compare","[test_iterator]",
 
 TEMPLATE_TEST_CASE("test_random_access_iterator_dereference","[test_iterator]",
     test_config::config_storage_selector<std::vector>::config_type,
-    test_config::config_storage_selector<gtensor::storage_vector>::config_type
+    test_config::config_storage_selector<gtensor::storage_vector>::config_type,
+    test_config::config_storage_selector<test_iterator_::test_storage>::config_type
 )
 {
     using value_type = int;
@@ -420,5 +440,74 @@ TEMPLATE_TEST_CASE("test_random_access_iterator_dereference","[test_iterator]",
             REQUIRE(result == reverse_expected);
         };
         apply_by_element(test,test_data);
+    }
+}
+
+TEMPLATE_TEST_CASE("test_gtensor_iterator_std_reverse_adapter","[test_iterator]",
+    test_config::config_storage_selector<std::vector>::config_type,
+    test_config::config_storage_selector<gtensor::storage_vector>::config_type,
+    test_config::config_storage_selector<test_iterator_::test_storage>::config_type
+)
+{
+    using value_type = int;
+    using config_type = gtensor::config::extend_config_t<TestType,value_type>;
+    using index_type = typename config_type::index_type;
+    using storage_type = typename config_type::template storage<value_type>;
+    using indexer_type = gtensor::basic_indexer<const storage_type&>;
+    using gtensor::indexer_iterator;
+    using gtensor::walker_iterator;
+    using gtensor::reverse_iterator_generic;
+    using helpers_for_testing::apply_by_element;
+
+    const storage_type elements{1,2,3,4,5,6};
+    const index_type size{6};
+    const indexer_type indexer{elements};
+
+    SECTION("test_indexer_iterator_std_reverse_adapter")
+    {
+        using iterator_type = indexer_iterator<config_type,indexer_type>;
+        using reverse_iterator_type = reverse_iterator_generic<iterator_type>;
+        reverse_iterator_type rfirst{indexer, size};
+        reverse_iterator_type rlast{indexer, 0};
+        auto std_rfirst = std::make_reverse_iterator(iterator_type{indexer, size});
+        auto std_rlast = std::make_reverse_iterator(iterator_type{indexer, 0});
+        REQUIRE(std::equal(std_rfirst,std_rlast,rfirst,rlast));
+    }
+    SECTION("test_walker_iterator_std_reverse_adapter")
+    {
+        using walker_type = gtensor::walker<config_type, indexer_type>;
+        using iterator_type = walker_iterator<config_type,walker_type>;
+        using reverse_iterator_type = reverse_iterator_generic<iterator_type>;
+        using dim_type = typename config_type::dim_type;
+        using shape_type = typename config_type::shape_type;
+        auto shape = shape_type{size};
+        auto strides = gtensor::detail::make_strides(shape);
+        auto strides_div = gtensor::detail::make_strides_div<config_type>(shape);
+        auto adapted_strides = gtensor::detail::make_adapted_strides(shape, strides);
+        auto reset_strides = gtensor::detail::make_reset_strides(shape, strides);
+        index_type offset{0};
+        dim_type max_dim = shape.size();
+        indexer_type indexer{elements};
+        walker_type walker{adapted_strides,reset_strides,offset,indexer,max_dim};
+        auto first = iterator_type{walker, shape, strides_div, 0};
+        auto last = iterator_type{walker, shape, strides_div, size};
+        auto rfirst = reverse_iterator_type{last};
+        auto rlast = reverse_iterator_type{first};
+        auto std_rfirst = std::make_reverse_iterator(last);
+        auto std_rlast = std::make_reverse_iterator(first);
+        REQUIRE(std::equal(std_rfirst,std_rlast,rfirst,rlast));
+    }
+    SECTION("test_reverse_reverse_indexer_iterator")
+    {
+        using iterator_type = indexer_iterator<config_type,indexer_type>;
+        using reverse_iterator_type = reverse_iterator_generic<iterator_type>;
+        using reverse_reverse_iterator_type = reverse_iterator_generic<reverse_iterator_type>;
+        iterator_type first{indexer, 0};
+        iterator_type last{indexer, size};
+        reverse_iterator_type rfirst{last};
+        reverse_iterator_type rlast{first};
+        reverse_reverse_iterator_type rrfirst{rlast};
+        reverse_reverse_iterator_type rrlast{rfirst};
+        REQUIRE(std::equal(first,last,rrfirst,rrlast));
     }
 }

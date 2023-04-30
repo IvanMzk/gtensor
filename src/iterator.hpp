@@ -36,11 +36,17 @@ template<typename...Ts> inline bool operator>=(const ITERATOR<Ts...>& lhs, const
 template<typename...Ts> inline bool operator<=(const ITERATOR<Ts...>& lhs, const ITERATOR<Ts...>& rhs){return !(lhs > rhs);}
 
 namespace detail{
-    template<typename ValT> struct iterator_internals_selector{
-        using value_type = ValT;
+    template<typename ResT> struct iterator_internals_selector{
+        using value_type = std::remove_cv_t<ResT>;
         using pointer = value_type*;
-        using reference = value_type&;
-        using const_reference = const value_type&;
+        using reference = ResT;
+        using const_reference = const ResT;
+    };
+    template<typename ResT> struct iterator_internals_selector<ResT&>{
+        using value_type = std::remove_cv_t<ResT>;
+        using pointer = value_type*;
+        using reference = ResT&;
+        using const_reference = const ResT&;
     };
     template<> struct iterator_internals_selector<void>{
         using value_type = void;
@@ -77,13 +83,13 @@ protected:
     using result_type = decltype(std::declval<indexer_type>()[std::declval<index_type>()]);
 public:
     using iterator_category = std::random_access_iterator_tag;
-    using value_type = std::decay_t<result_type>;
     using difference_type = index_type;
-    using pointer = typename detail::iterator_internals_selector<value_type>::pointer;
-    using reference = typename detail::iterator_internals_selector<value_type>::reference;
-    using const_reference = typename detail::iterator_internals_selector<value_type>::const_reference;
+    using value_type = typename detail::iterator_internals_selector<result_type>::value_type;
+    using pointer = typename detail::iterator_internals_selector<result_type>::pointer;
+    using reference = typename detail::iterator_internals_selector<result_type>::reference;
+    using const_reference = typename detail::iterator_internals_selector<result_type>::const_reference;
 
-    //assuming ussual stoarge subscript operator semantic i.e. subscript index in range [0,size()-1]:
+    //assuming usual stoarge subscript operator semantic i.e. subscript index in range [0,size()-1]:
     //begin should be constructed with zero flat_index_ argument, end with size() flat_index_argument
     template<typename Indexer_, std::enable_if_t<!std::is_convertible_v<Indexer_,indexer_iterator> ,int> =0>
     indexer_iterator(Indexer_&& indexer_, const difference_type& flat_index_):
@@ -131,11 +137,11 @@ protected:
     using traverser_type = walker_random_access_traverser<config_type, walker_type>;
 public:
     using iterator_category = std::random_access_iterator_tag;
-    using value_type = std::decay_t<result_type>;
     using difference_type = typename config_type::index_type;
-    using pointer = typename detail::iterator_internals_selector<value_type>::pointer;
-    using reference = typename detail::iterator_internals_selector<value_type>::reference;
-    using const_reference = typename detail::iterator_internals_selector<value_type>::const_reference;
+    using value_type = typename detail::iterator_internals_selector<result_type>::value_type;
+    using pointer = typename detail::iterator_internals_selector<result_type>::pointer;
+    using reference = typename detail::iterator_internals_selector<result_type>::reference;
+    using const_reference = typename detail::iterator_internals_selector<result_type>::const_reference;
 
     //begin should be constructed with zero flat_index_ argument, end with size() flat_index_argument
     template<typename Walker_, std::enable_if_t<!std::is_convertible_v<Walker_,walker_iterator> ,int> =0>
