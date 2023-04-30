@@ -398,3 +398,264 @@ TEMPLATE_TEST_CASE("test_storage_engine","[test_tensor_implementation]",
         apply_by_element(test,test_data);
     }
 }
+
+namespace test_tensor_implementation_{
+
+template<typename Config, typename T>
+class test_engine_base{
+protected:
+    using extended_config_type = gtensor::config::extend_config_t<Config,T>;
+    using descriptor_type = gtensor::basic_descriptor<extended_config_type>;
+    using storage_type = typename extended_config_type::template storage<T>;
+public:
+    using config_type = extended_config_type;
+    using value_type = T;
+    using shape_type = typename config_type::shape_type;
+    using dim_type = typename config_type::dim_type;
+    using index_type = typename config_type::index_type;
+    template<typename It>
+    test_engine_base(const shape_type& shape__, It first, It last):
+        descriptor_{shape__},
+        elements_{first,last}
+    {}
+    const auto& descriptor()const{return descriptor_;}
+protected:
+    descriptor_type descriptor_;
+    storage_type elements_;
+};
+
+template<typename Config, typename T>
+class test_engine_subscriptable : public test_engine_base<Config,T>{
+    using test_engine_base_type = test_engine_base<Config,T>;
+public:
+    using typename test_engine_base_type::config_type;
+    using typename test_engine_base_type::value_type;
+    using typename test_engine_base_type::shape_type;
+    using typename test_engine_base_type::dim_type;
+    using typename test_engine_base_type::index_type;
+    using typename test_engine_base_type::storage_type;
+    using test_engine_base_type::test_engine_base_type;
+    using test_engine_base_type::descriptor;
+    using test_engine_base_type::elements_;
+    gtensor::detail::subscript_operator_result_t<storage_type> operator[](index_type i){return elements_[i];}
+};
+template<typename Config, typename T>
+class test_engine_indexible : public test_engine_base<Config,T>{
+    using test_engine_base_type = test_engine_base<Config,T>;
+public:
+    using typename test_engine_base_type::config_type;
+    using typename test_engine_base_type::value_type;
+    using typename test_engine_base_type::shape_type;
+    using typename test_engine_base_type::dim_type;
+    using typename test_engine_base_type::index_type;
+    using typename test_engine_base_type::storage_type;
+    using test_engine_base_type::test_engine_base_type;
+    using test_engine_base_type::descriptor;
+    using test_engine_base_type::elements_;
+    auto create_indexer(){return gtensor::basic_indexer<storage_type&>{elements_};}
+};
+template<typename Config, typename T>
+class test_engine_walkable : public test_engine_base<Config,T>{
+    using test_engine_base_type = test_engine_base<Config,T>;
+public:
+    using typename test_engine_base_type::config_type;
+    using typename test_engine_base_type::value_type;
+    using typename test_engine_base_type::shape_type;
+    using typename test_engine_base_type::dim_type;
+    using typename test_engine_base_type::index_type;
+    using typename test_engine_base_type::storage_type;
+    using test_engine_base_type::test_engine_base_type;
+    using test_engine_base_type::descriptor;
+    using test_engine_base_type::elements_;
+    auto create_walker(){
+        using indexer_type = gtensor::basic_indexer<storage_type&>;
+        return gtensor::walker<config_type,indexer_type>{descriptor().adapted_strides(),descriptor().reset_strides(),descriptor().offset(),indexer_type{elements_},descriptor().dim()};
+    }
+};
+template<typename Config, typename T>
+class test_engine_iterable : public test_engine_base<Config,T>{
+    using test_engine_base_type = test_engine_base<Config,T>;
+public:
+    using typename test_engine_base_type::config_type;
+    using typename test_engine_base_type::value_type;
+    using typename test_engine_base_type::shape_type;
+    using typename test_engine_base_type::dim_type;
+    using typename test_engine_base_type::index_type;
+    using typename test_engine_base_type::storage_type;
+    using test_engine_base_type::test_engine_base_type;
+    using test_engine_base_type::descriptor;
+    using test_engine_base_type::elements_;
+    auto begin(){return elements_.begin();}
+    auto end(){return elements_.end();}
+};
+
+template<typename Config, typename T>
+class test_engine_const_subscriptable : public test_engine_base<Config,T>{
+    using test_engine_base_type = test_engine_base<Config,T>;
+public:
+    using typename test_engine_base_type::config_type;
+    using typename test_engine_base_type::value_type;
+    using typename test_engine_base_type::shape_type;
+    using typename test_engine_base_type::dim_type;
+    using typename test_engine_base_type::index_type;
+    using typename test_engine_base_type::storage_type;
+    using test_engine_base_type::test_engine_base_type;
+    using test_engine_base_type::descriptor;
+    using test_engine_base_type::elements_;
+    gtensor::detail::subscript_operator_const_result_t<storage_type> operator[](index_type i)const{return elements_[i];}
+};
+template<typename Config, typename T>
+class test_engine_const_indexible : public test_engine_base<Config,T>{
+    using test_engine_base_type = test_engine_base<Config,T>;
+public:
+    using typename test_engine_base_type::config_type;
+    using typename test_engine_base_type::value_type;
+    using typename test_engine_base_type::shape_type;
+    using typename test_engine_base_type::dim_type;
+    using typename test_engine_base_type::index_type;
+    using typename test_engine_base_type::storage_type;
+    using test_engine_base_type::test_engine_base_type;
+    using test_engine_base_type::descriptor;
+    using test_engine_base_type::elements_;
+    auto create_indexer()const{return gtensor::basic_indexer<const storage_type&>{elements_};}
+};
+template<typename Config, typename T>
+class test_engine_const_walkable : public test_engine_base<Config,T>{
+    using test_engine_base_type = test_engine_base<Config,T>;
+public:
+    using typename test_engine_base_type::config_type;
+    using typename test_engine_base_type::value_type;
+    using typename test_engine_base_type::shape_type;
+    using typename test_engine_base_type::dim_type;
+    using typename test_engine_base_type::index_type;
+    using typename test_engine_base_type::storage_type;
+    using test_engine_base_type::test_engine_base_type;
+    using test_engine_base_type::descriptor;
+    using test_engine_base_type::elements_;
+    auto create_walker()const{
+        using indexer_type = gtensor::basic_indexer<const storage_type&>;
+        return gtensor::walker<config_type,indexer_type>{descriptor().adapted_strides(),descriptor().reset_strides(),descriptor().offset(),indexer_type{elements_},descriptor().dim()};
+    }
+};
+template<typename Config, typename T>
+class test_engine_const_iterable : public test_engine_base<Config,T>{
+    using test_engine_base_type = test_engine_base<Config,T>;
+public:
+    using typename test_engine_base_type::config_type;
+    using typename test_engine_base_type::value_type;
+    using typename test_engine_base_type::shape_type;
+    using typename test_engine_base_type::dim_type;
+    using typename test_engine_base_type::index_type;
+    using typename test_engine_base_type::storage_type;
+    using test_engine_base_type::test_engine_base_type;
+    using test_engine_base_type::descriptor;
+    using test_engine_base_type::elements_;
+    auto begin()const{return elements_.begin();}
+    auto end()const{return elements_.end();}
+};
+
+}   //end of namespace test_tensor_implementation_
+
+TEMPLATE_TEST_CASE("test_tensor_implementation","[test_tensor_implementation]",
+    //0config_selector,1has_data_accessor,2has_const_data_accessor
+    (std::tuple<test_tensor_implementation_::test_engine_subscriptable<test_config::config_storage_selector<std::vector>::config_type,int> ,std::true_type,std::false_type>),
+    (std::tuple<test_tensor_implementation_::test_engine_indexible<test_config::config_storage_selector<std::vector>::config_type,int> ,std::true_type,std::false_type>),
+    (std::tuple<test_tensor_implementation_::test_engine_walkable<test_config::config_storage_selector<std::vector>::config_type,int> ,std::true_type,std::false_type>),
+    (std::tuple<test_tensor_implementation_::test_engine_iterable<test_config::config_storage_selector<std::vector>::config_type,int> ,std::true_type,std::false_type>),
+
+    (std::tuple<test_tensor_implementation_::test_engine_const_subscriptable<test_config::config_storage_selector<std::vector>::config_type,int> ,std::false_type,std::true_type>),
+    (std::tuple<test_tensor_implementation_::test_engine_const_indexible<test_config::config_storage_selector<std::vector>::config_type,int> ,std::false_type,std::true_type>),
+    (std::tuple<test_tensor_implementation_::test_engine_const_walkable<test_config::config_storage_selector<std::vector>::config_type,int> ,std::false_type,std::true_type>),
+    (std::tuple<test_tensor_implementation_::test_engine_const_iterable<test_config::config_storage_selector<std::vector>::config_type,int> ,std::false_type,std::true_type>)
+)
+{
+    using engine_type = std::tuple_element_t<0, TestType>;
+    using config_type = typename engine_type::config_type;
+    using value_type = typename engine_type::value_type;
+    using shape_type = typename config_type::shape_type;
+    using index_type = typename config_type::index_type;
+    using tensor_implementation_type = gtensor::tensor_implementation<engine_type>;
+    using helpers_for_testing::apply_by_element;
+
+    constexpr static bool has_data_accessor_v = std::tuple_element_t<1, TestType>::value;
+    constexpr static bool has_const_data_accessor_v = std::tuple_element_t<2, TestType>::value;
+
+    REQUIRE(has_data_accessor_v == gtensor::detail::has_iterator<tensor_implementation_type>::value);
+    REQUIRE(has_data_accessor_v == gtensor::detail::has_reverse_iterator<tensor_implementation_type>::value);
+    REQUIRE(has_data_accessor_v == gtensor::detail::has_create_indexer<tensor_implementation_type>::value);
+    REQUIRE(has_data_accessor_v == gtensor::detail::has_create_walker<tensor_implementation_type>::value);
+
+    REQUIRE(has_const_data_accessor_v == gtensor::detail::has_const_iterator<tensor_implementation_type>::value);
+    REQUIRE(has_const_data_accessor_v == gtensor::detail::has_const_reverse_iterator<tensor_implementation_type>::value);
+    REQUIRE(has_const_data_accessor_v == gtensor::detail::has_create_indexer_const<tensor_implementation_type>::value);
+    REQUIRE(has_const_data_accessor_v == gtensor::detail::has_create_walker_const<tensor_implementation_type>::value);
+    //0shape,1expected_elements
+    auto test_data = std::make_tuple(
+        std::make_tuple(shape_type{0}, std::vector<value_type>{}),
+        std::make_tuple(shape_type{5}, std::vector<value_type>{1,2,3,4,5}),
+        std::make_tuple(shape_type{2,3}, std::vector<value_type>{1,2,3,4,5,6}),
+        std::make_tuple(shape_type{2,2,2}, std::vector<value_type>{1,2,3,4,5,6,7,8})
+    );
+    SECTION("test_iterator")
+    {
+        auto test = [](const auto& t){
+            const auto shape = std::get<0>(t);
+            const auto expected_elements = std::get<1>(t);
+            const auto expected_shape = shape;
+            tensor_implementation_type result_tensor_implementation{shape, expected_elements.begin(), expected_elements.end()};
+            auto result_shape = result_tensor_implementation.shape();
+            REQUIRE(result_shape == expected_shape);
+            REQUIRE(std::equal(result_tensor_implementation.begin(),result_tensor_implementation.end(),expected_elements.begin(),expected_elements.end()));
+            REQUIRE(std::equal(result_tensor_implementation.rbegin(),result_tensor_implementation.rend(),expected_elements.rbegin(),expected_elements.rend()));
+        };
+        apply_by_element(test,test_data);
+    }
+    SECTION("test_indexer")
+    {
+        auto test = [](const auto& t){
+            const auto shape = std::get<0>(t);
+            const auto expected_elements = std::get<1>(t);
+            const auto expected_shape = shape;
+            tensor_implementation_type result_tensor_implementation{shape, expected_elements.begin(), expected_elements.end()};
+            auto result_shape = result_tensor_implementation.shape();
+            REQUIRE(result_shape == expected_shape);
+            using indexer_iterator_type = gtensor::indexer_iterator<config_type,decltype(result_tensor_implementation.create_indexer())>;
+            indexer_iterator_type result_first{
+                result_tensor_implementation.create_indexer(),
+                index_type{0}
+            };
+            indexer_iterator_type result_last{
+                result_tensor_implementation.create_indexer(),
+                result_tensor_implementation.size()
+            };
+            REQUIRE(std::equal(result_first,result_last,expected_elements.begin(),expected_elements.end()));
+        };
+        apply_by_element(test,test_data);
+    }
+    SECTION("test_walker")
+    {
+        auto test = [](const auto& t){
+            const auto shape = std::get<0>(t);
+            const auto expected_elements = std::get<1>(t);
+            const auto expected_shape = shape;
+            tensor_implementation_type result_tensor_implementation{shape, expected_elements.begin(), expected_elements.end()};
+            auto result_shape = result_tensor_implementation.shape();
+            REQUIRE(result_shape == expected_shape);
+            using walker_iterator_type = gtensor::walker_iterator<config_type,decltype(result_tensor_implementation.create_walker())>;
+            walker_iterator_type result_first{
+                result_tensor_implementation.create_walker(),
+                result_tensor_implementation.shape(),
+                result_tensor_implementation.descriptor().strides_div(),
+                index_type{0}
+            };
+            walker_iterator_type result_last{
+                result_tensor_implementation.create_walker(),
+                result_tensor_implementation.shape(),
+                result_tensor_implementation.descriptor().strides_div(),
+                result_tensor_implementation.size()
+            };
+            REQUIRE(std::equal(result_first,result_last,expected_elements.begin(),expected_elements.end()));
+        };
+        apply_by_element(test,test_data);
+    }
+}
