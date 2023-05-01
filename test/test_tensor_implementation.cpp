@@ -239,7 +239,7 @@ TEST_CASE("test_has_mutating_subscript_operator","[test_tensor_implementation]")
     REQUIRE(has_mutating_subscript_operator_v<std::string>);
 }
 
-namespace test_storage_engine{
+namespace test_storage_core{
 template<typename T>
 class minimal_storage
 {
@@ -254,13 +254,13 @@ public:
     {}
     decltype(std::declval<inner_storage_type&>()[std::declval<size_type&>()]) operator[](size_type i){return impl_[i];}
 };
-}   //end of namespace test_storage_engine
+}   //end of namespace test_storage_core
 
-TEMPLATE_TEST_CASE("test_storage_engine","[test_tensor_implementation]",
+TEMPLATE_TEST_CASE("test_storage_core","[test_tensor_implementation]",
     //0config_selector,1has_iter,2has_const_iter,3has_reverse_iter,4has_const_reverse_iter,5has_subscript_operator,6has_subscript_operator_const
     (std::tuple<test_config::config_storage_selector<std::vector>, std::true_type,std::true_type,std::true_type,std::true_type,std::true_type,std::true_type>),
     (std::tuple<test_config::config_storage_selector<std::list>, std::true_type,std::true_type,std::true_type,std::true_type,std::false_type,std::false_type>),
-    (std::tuple<test_config::config_storage_selector<test_storage_engine::minimal_storage>, std::false_type,std::false_type,std::false_type,std::false_type,std::true_type,std::false_type>)
+    (std::tuple<test_config::config_storage_selector<test_storage_core::minimal_storage>, std::false_type,std::false_type,std::false_type,std::false_type,std::true_type,std::false_type>)
 )
 {
     using value_type = int;
@@ -268,7 +268,7 @@ TEMPLATE_TEST_CASE("test_storage_engine","[test_tensor_implementation]",
     using config_type = gtensor::config::extend_config_t<typename config_selector::config_type,value_type>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
-    using engine_type = gtensor::storage_engine<config_type,value_type>;
+    using engine_type = gtensor::storage_core<config_type,value_type>;
     using helpers_for_testing::apply_by_element;
 
     constexpr static bool has_iterator_expected = std::tuple_element_t<1, TestType>::value;
@@ -293,7 +293,7 @@ TEMPLATE_TEST_CASE("test_storage_engine","[test_tensor_implementation]",
     REQUIRE(has_subscript_operator_result == has_subscript_operator_expected);
     REQUIRE(has_subscript_operator_const_result == has_subscript_operator_const_expected);
 
-    SECTION("test_storage_engine_size_value_constructor"){
+    SECTION("test_storage_core_size_value_constructor"){
         //0shape,1value,2expected_shape,3expected_elements
         auto test_data = std::make_tuple(
             std::make_tuple(shape_type{0},0,shape_type{0},std::vector<value_type>{}),
@@ -325,7 +325,7 @@ TEMPLATE_TEST_CASE("test_storage_engine","[test_tensor_implementation]",
         };
         apply_by_element(test,test_data);
     }
-    SECTION("test_storage_engine_init_list_constructor"){
+    SECTION("test_storage_core_init_list_constructor"){
         //0engine,1expected_shape,2expected_elements
         auto test_data = std::make_tuple(
             std::make_tuple(engine_type(std::initializer_list<value_type>{}),shape_type{0},std::vector<value_type>{}),
@@ -359,7 +359,7 @@ TEMPLATE_TEST_CASE("test_storage_engine","[test_tensor_implementation]",
         };
         apply_by_element(test,test_data);
     }
-    SECTION("test_storage_engine_range_constructor"){
+    SECTION("test_storage_core_range_constructor"){
         //0shape,1elements,2expected_shape,3expected_elements
         auto test_data = std::make_tuple(
             std::make_tuple(shape_type{0},std::vector<value_type>{},shape_type{0},std::vector<value_type>{}),
