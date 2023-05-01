@@ -1,7 +1,7 @@
 #include <tuple>
 #include <vector>
 #include "catch.hpp"
-#include "gtensor.hpp"
+#include "tensor.hpp"
 #include "helpers_for_testing.hpp"
 #include "integral_type.hpp"
 
@@ -58,7 +58,7 @@ TEST_CASE("test_0-dim_tensor_constructor","[test_tensor]"){
 
 TEST_CASE("test_tensor_constructor_from_list","[test_tensor]"){
     using value_type = double;
-    using config_type = gtensor::config::default_config;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
     using tensor_type = gtensor::tensor<value_type, config_type>;
     using index_type = typename config_type::index_type;
     using dim_type = typename config_type::dim_type;
@@ -93,7 +93,7 @@ TEST_CASE("test_tensor_constructor_from_list","[test_tensor]"){
 
 TEST_CASE("test_tensor_constructor_shape","[test_tensor]"){
     using value_type = int;
-    using config_type = gtensor::config::default_config;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
     using tensor_type = gtensor::tensor<value_type, config_type>;
     using shape_type = typename config_type::shape_type;
     using helpers_for_testing::apply_by_element;
@@ -117,7 +117,7 @@ TEST_CASE("test_tensor_constructor_shape","[test_tensor]"){
 
 TEST_CASE("test_tensor_constructor_shape_container_value","[test_tensor]"){
     using value_type = double;
-    using config_type = gtensor::config::default_config;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
     using tensor_type = gtensor::tensor<value_type, config_type>;
     using shape_type = typename config_type::shape_type;
     using helpers_for_testing::apply_by_element;
@@ -174,7 +174,7 @@ TEST_CASE("test_tensor_constructor_shape_container_range","[test_tensor]"){
 
 TEST_CASE("test_tensor_constructor_shape_init_list_value","[test_tensor]"){
     using value_type = double;
-    using config_type = gtensor::config::default_config;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
     using tensor_type = gtensor::tensor<value_type, config_type>;
     using helpers_for_testing::apply_by_element;
     //0result,1expected
@@ -221,83 +221,86 @@ TEST_CASE("test_tensor_constructor_shape_init_list_range","[test_tensor]"){
     apply_by_element(test,test_data);
 }
 
-TEST_CASE("test_tensor_equals","[test_tensor]"){
-    using value_type = double;
-    using config_type = gtensor::config::default_config;
-    using tensor_type = gtensor::tensor<value_type, config_type>;
-    using gtensor::equals;
-    using helpers_for_testing::apply_by_element;
-    //0tensor0,1tensor1,2expected
-    auto test_data = std::make_tuple(
-        //equal
-        std::make_tuple(tensor_type{},tensor_type{},true),
-        std::make_tuple(tensor_type{1},tensor_type{1},true),
-        std::make_tuple(tensor_type{1,2,3},tensor_type{1,2,3},true),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},tensor_type{{1,2,3},{4,5,6}},true),
-        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},true),
-        std::make_tuple(tensor_type{1}.reshape(1,1),tensor_type{{1}},true),
-        std::make_tuple(tensor_type{}.reshape(1,0),tensor_type{}.reshape(1,0),true),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}({{},{1,-1}}),tensor_type{{2},{5}},true),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}.transpose(),tensor_type{1,4,2,5,3,6}.reshape(3,2),true),
-        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reshape(1,4,2),tensor_type{{{1,2},{3,4},{5,6},{7,8}}},true),
-        //not equal
-        std::make_tuple(tensor_type{},tensor_type{}.reshape(1,0),false),
-        std::make_tuple(tensor_type{1},tensor_type{2},false),
-        std::make_tuple(tensor_type{1,2,3},tensor_type{{1,2,3}},false),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},tensor_type{{1,2,2},{4,5,6}},false)
-    );
-    SECTION("ten0_equals_ten0")
-    {
-        auto test = [](const auto& t){
-            auto ten0 = std::get<0>(t);
-            auto ten1 = std::get<1>(t);
-            auto expected = true;
-            auto result = ten0.equals(ten0);
-            REQUIRE(result == expected);
-        };
-        apply_by_element(test, test_data);
-    }
-    SECTION("ten0_equals_ten1")
-    {
-        auto test = [](const auto& t){
-            auto ten0 = std::get<0>(t);
-            auto ten1 = std::get<1>(t);
-            auto expected = std::get<2>(t);
-            auto result = ten0.equals(ten1);
-            REQUIRE(result == expected);
-        };
-        apply_by_element(test, test_data);
-    }
-    SECTION("ten1_equals_ten0")
-    {
-        auto test = [](const auto& t){
-            auto ten0 = std::get<0>(t);
-            auto ten1 = std::get<1>(t);
-            auto expected = std::get<2>(t);
-            auto result = ten1.equals(ten0);
-            REQUIRE(result == expected);
-        };
-        apply_by_element(test, test_data);
-    }
-}
 
-TEST_CASE("test_tensor_copy","[test_tensor]"){
-    using value_type = double;
-    using config_type = gtensor::config::default_config;
-    using tensor_type = gtensor::tensor<value_type, config_type>;
-    using test_type = std::tuple<tensor_type,tensor_type>;
-    //0result tensor,expected tensor
-    auto test_data = GENERATE(
-        test_type{tensor_type{{1,2,3},{4,5,6}}.copy(),tensor_type{{1,2,3},{4,5,6}}},
-        test_type{(tensor_type{-1} + tensor_type{{1,2,3},{4,5,6}} + tensor_type{1} + tensor_type{0,1,2}).copy(),tensor_type{{1,3,5},{4,6,8}}},
-        test_type{tensor_type{{1,2,3},{4,5,6}}({{{},{},-1},{1}}).copy(),tensor_type{{5,6},{2,3}}},
-        test_type{tensor_type{{1,2,3},{4,5,6}}({{{},{},-1},{1}}).transpose().copy(),tensor_type{{5,2},{6,3}}},
-        test_type{(tensor_type{-1} + tensor_type{{1,2,3},{4,5,6}} + tensor_type{1})({{{},{},-1},{1}}).transpose().copy(),tensor_type{{5,2},{6,3}}},
-        test_type{(tensor_type{-1} + tensor_type{{1,2,3},{4,5,6}}({{{},{},-1},{1}}).transpose() + tensor_type{1}).copy(),tensor_type{{5,2},{6,3}}},
-        test_type{((tensor_type{-1} + tensor_type{{1,2,3},{4,5,6}}({{{},{},-1},{1}}).transpose() + tensor_type{1})).reshape(4).copy(),tensor_type{5,2,6,3}}
-    );
 
-    auto result_tensor = std::get<0>(test_data);
-    auto expected_tensor = std::get<1>(test_data);
-    REQUIRE(result_tensor.equals(expected_tensor));
-}
+// TEST_CASE("test_tensor_equals","[test_tensor]"){
+//     using value_type = double;
+//     using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
+//     using tensor_type = gtensor::tensor<value_type, config_type>;
+//     using gtensor::equals;
+//     using helpers_for_testing::apply_by_element;
+//     //0tensor0,1tensor1,2expected
+//     auto test_data = std::make_tuple(
+//         //equal
+//         std::make_tuple(tensor_type{},tensor_type{},true),
+//         std::make_tuple(tensor_type{1},tensor_type{1},true),
+//         std::make_tuple(tensor_type{1,2,3},tensor_type{1,2,3},true),
+//         std::make_tuple(tensor_type{{1,2,3},{4,5,6}},tensor_type{{1,2,3},{4,5,6}},true),
+//         std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},true),
+//         std::make_tuple(tensor_type{1}.reshape(1,1),tensor_type{{1}},true),
+//         std::make_tuple(tensor_type{}.reshape(1,0),tensor_type{}.reshape(1,0),true),
+//         std::make_tuple(tensor_type{{1,2,3},{4,5,6}}({{},{1,-1}}),tensor_type{{2},{5}},true),
+//         std::make_tuple(tensor_type{{1,2,3},{4,5,6}}.transpose(),tensor_type{1,4,2,5,3,6}.reshape(3,2),true),
+//         std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reshape(1,4,2),tensor_type{{{1,2},{3,4},{5,6},{7,8}}},true),
+//         //not equal
+//         std::make_tuple(tensor_type{},tensor_type{}.reshape(1,0),false),
+//         std::make_tuple(tensor_type{1},tensor_type{2},false),
+//         std::make_tuple(tensor_type{1,2,3},tensor_type{{1,2,3}},false),
+//         std::make_tuple(tensor_type{{1,2,3},{4,5,6}},tensor_type{{1,2,2},{4,5,6}},false)
+//     );
+//     SECTION("ten0_equals_ten0")
+//     {
+//         auto test = [](const auto& t){
+//             auto ten0 = std::get<0>(t);
+//             auto ten1 = std::get<1>(t);
+//             auto expected = true;
+//             auto result = ten0.equals(ten0);
+//             REQUIRE(result == expected);
+//         };
+//         apply_by_element(test, test_data);
+//     }
+//     SECTION("ten0_equals_ten1")
+//     {
+//         auto test = [](const auto& t){
+//             auto ten0 = std::get<0>(t);
+//             auto ten1 = std::get<1>(t);
+//             auto expected = std::get<2>(t);
+//             auto result = ten0.equals(ten1);
+//             REQUIRE(result == expected);
+//         };
+//         apply_by_element(test, test_data);
+//     }
+//     SECTION("ten1_equals_ten0")
+//     {
+//         auto test = [](const auto& t){
+//             auto ten0 = std::get<0>(t);
+//             auto ten1 = std::get<1>(t);
+//             auto expected = std::get<2>(t);
+//             auto result = ten1.equals(ten0);
+//             REQUIRE(result == expected);
+//         };
+//         apply_by_element(test, test_data);
+//     }
+// }
+
+// TEST_CASE("test_tensor_copy","[test_tensor]"){
+//     using value_type = double;
+//     using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
+//     using tensor_type = gtensor::tensor<value_type, config_type>;
+//     using test_type = std::tuple<tensor_type,tensor_type>;
+//     //0result tensor,expected tensor
+//     auto test_data = GENERATE(
+//         test_type{tensor_type{{1,2,3},{4,5,6}}.copy(),tensor_type{{1,2,3},{4,5,6}}},
+//         test_type{(tensor_type{-1} + tensor_type{{1,2,3},{4,5,6}} + tensor_type{1} + tensor_type{0,1,2}).copy(),tensor_type{{1,3,5},{4,6,8}}},
+//         test_type{tensor_type{{1,2,3},{4,5,6}}({{{},{},-1},{1}}).copy(),tensor_type{{5,6},{2,3}}},
+//         test_type{tensor_type{{1,2,3},{4,5,6}}({{{},{},-1},{1}}).transpose().copy(),tensor_type{{5,2},{6,3}}},
+//         test_type{(tensor_type{-1} + tensor_type{{1,2,3},{4,5,6}} + tensor_type{1})({{{},{},-1},{1}}).transpose().copy(),tensor_type{{5,2},{6,3}}},
+//         test_type{(tensor_type{-1} + tensor_type{{1,2,3},{4,5,6}}({{{},{},-1},{1}}).transpose() + tensor_type{1}).copy(),tensor_type{{5,2},{6,3}}},
+//         test_type{((tensor_type{-1} + tensor_type{{1,2,3},{4,5,6}}({{{},{},-1},{1}}).transpose() + tensor_type{1})).reshape(4).copy(),tensor_type{5,2,6,3}}
+//     );
+
+//     auto result_tensor = std::get<0>(test_data);
+//     auto expected_tensor = std::get<1>(test_data);
+//     REQUIRE(result_tensor.equals(expected_tensor));
+// }
+

@@ -2,10 +2,13 @@
 #define COMMON_HPP_
 
 #include <type_traits>
-#include "forward_decl.hpp"
 #include "config.hpp"
 
 namespace gtensor{
+
+template<typename Impl> class basic_tensor;
+template<typename T, typename Config> class tensor;
+
 namespace detail{
 
 #define GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(function_name,function_signature,trait_name)\
@@ -19,6 +22,7 @@ template<typename T> constexpr inline bool is_container_v<T, std::void_t<decltyp
 
 template<typename T> constexpr inline bool is_tensor_v = false;
 template<typename...Ts> constexpr inline bool is_tensor_v<gtensor::tensor<Ts...>> = true;
+template<typename...Ts> constexpr inline bool is_tensor_v<gtensor::basic_tensor<Ts...>> = true;
 
 template<typename T, typename IdxT, typename = void> constexpr inline bool is_container_of_type_v = false;
 template<typename T, typename IdxT> constexpr inline bool is_container_of_type_v<T, IdxT, std::void_t<std::enable_if_t<is_container_v<T>>>> = std::is_convertible_v<typename T::value_type,IdxT>;

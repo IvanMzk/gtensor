@@ -316,7 +316,7 @@ inline auto rend_const(const Core& t, const Descriptor& descriptor){
 
 //Core must provide interface to access data and meta-data:
 //descriptor() method for meta-data
-//create_indexer() or create_walker() or both for data, if both is proveded type alias tag Core::data_accessor_tag is used to select accessor
+//create_indexer() or create_walker() or both for data
 //if Core provide iterators they are used, if not iterators are made using selected data accessor i.e. indexer or walker
 template<typename Core>
 class tensor_implementation
@@ -339,7 +339,7 @@ public:
 
     template<typename...Args, std::enable_if_t<forward_args<Args...>::value,int> =0>
     explicit tensor_implementation(Args&&...args):
-        core_{std::forward<Args>(args)...}
+        core_(std::forward<Args>(args)...)
     {}
 
     tensor_implementation(const tensor_implementation&) = delete;
@@ -391,7 +391,7 @@ public:
     //if value_type is trivially copiable elements_ may be not initialized, depends on storage_type implementation
     template<typename ShT>
     explicit storage_core(ShT&& shape):
-        descriptor_{std::forward<ShT>(shape)},
+        descriptor_(std::forward<ShT>(shape)),
         elements_(descriptor_.size())
     {}
 
@@ -401,8 +401,8 @@ public:
     {}
 
     template<typename Nested>
-    storage_core(std::initializer_list<Nested> init_data):
-        descriptor_{detail::list_parse<dim_type,shape_type>(init_data)},
+    explicit storage_core(std::initializer_list<Nested> init_data):
+        descriptor_(detail::list_parse<dim_type,shape_type>(init_data)),
         elements_(descriptor_.size())
     {
         detail::fill_from_list(init_data, begin_());
@@ -449,13 +449,13 @@ private:
     //direct construction
     template<typename ShT>
     storage_core(ShT&& shape, const value_type& v, std::true_type):
-        descriptor_{std::forward<ShT>(shape)},
+        descriptor_(std::forward<ShT>(shape)),
         elements_(descriptor_.size(),v)
     {}
     //use fill
     template<typename ShT>
     storage_core(ShT&& shape, const value_type& v, std::false_type):
-        descriptor_{std::forward<ShT>(shape)},
+        descriptor_(std::forward<ShT>(shape)),
         elements_(descriptor_.size())
     {
         std::fill(begin_(),end_(),v);
@@ -464,13 +464,13 @@ private:
     //try to construct directly from range
     template<typename ShT, typename It>
     storage_core(ShT&& shape, It first, It last, std::true_type):
-        descriptor_{std::forward<ShT>(shape)},
+        descriptor_(std::forward<ShT>(shape)),
         elements_(construct_from_range(descriptor_.size(), first, last, typename std::iterator_traits<It>::iterator_category{}))
     {}
     //no from range constructor, use fill
     template<typename ShT, typename It>
     storage_core(ShT&& shape, It& first, It& last, std::false_type):
-        descriptor_{std::forward<ShT>(shape)},
+        descriptor_(std::forward<ShT>(shape)),
         elements_(descriptor_.size())
     {
         fill_from_range(descriptor_.size(), first, last, begin_(), end_(), typename std::iterator_traits<It>::iterator_category{});
@@ -537,7 +537,6 @@ private:
     descriptor_type descriptor_;
     storage_type elements_;
 };
-
 
 }   //end of namespace gtensor
 
