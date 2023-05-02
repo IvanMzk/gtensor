@@ -2,7 +2,6 @@
 #define EVALUATING_WALKER_HPP_
 
 #include "libdivide_helper.hpp"
-#include "broadcast.hpp"
 
 namespace gtensor{
 
