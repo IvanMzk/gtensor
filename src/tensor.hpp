@@ -4,6 +4,8 @@
 #include "type_selector.hpp"
 #include "tensor_factory.hpp"
 #include "tensor_operators.hpp"
+#include "slice.hpp"
+#include "view_factory.hpp"
 
 namespace gtensor{
 template<typename T, typename Config> class tensor;
@@ -21,6 +23,8 @@ public:
     using shape_type = typename impl_type::shape_type;
     using size_type = index_type;
     using difference_type = index_type;
+    using slice_type = slice<index_type>;
+    using slice_item_type = typename slice_type::slice_item_type;
 
     basic_tensor(const basic_tensor&) = default;
     basic_tensor& operator=(const basic_tensor&) = default;
@@ -45,6 +49,7 @@ public:
     dim_type dim()const{return impl_->dim();}
     const shape_type& shape()const{return impl_->shape();}
     const shape_type& strides()const{return impl_->strides();}
+    bool empty()const{return impl_->empty();}
     //data interface
     auto begin(){return impl_->begin();}
     auto end(){return impl_->end();}
@@ -59,6 +64,73 @@ public:
     auto rend()const{return impl_->rend();}
     auto create_indexer()const{return impl_->create_indexer();}
     auto create_walker()const{return impl_->create_walker();}
+    //view construction operators and methods
+    //slice view
+    auto operator()(std::initializer_list<std::initializer_list<slice_item_type>> subs)const{
+        return create_view(std::integral_constant<view_kind_type,view_kind_type::slice_view>{}, *this, subs);
+    }
+    template<typename...Subs, std::enable_if_t<((std::is_convertible_v<Subs,slice_type>||std::is_convertible_v<Subs,index_type>)&&...),int> = 0 >
+    auto operator()(const Subs&...subs)const{
+        return create_view(std::integral_constant<view_kind_type,view_kind_type::slice_view>{}, *this, subs...);
+    }
+    template<typename Container, std::enable_if_t<detail::is_container_of_type_v<Container,slice_type>,int> = 0>
+    auto operator()(const Container& subs)const{
+        return create_view(std::integral_constant<view_kind_type,view_kind_type::slice_view>{}, *this, subs);
+    }
+    //transpose view
+    template<typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs,dim_type>&&...),int> = 0 >
+    auto transpose(const Subs&...subs)const{
+        return create_view(std::integral_constant<view_kind_type,view_kind_type::transpose_view>{}, *this, subs...);
+    }
+    template<typename Container, std::enable_if_t<detail::is_container_of_type_v<Container,dim_type>,int> = 0>
+    auto transpose(const Container& subs)const{
+        return create_view(std::integral_constant<view_kind_type,view_kind_type::transpose_view>{}, *this, subs);
+    }
+    //reshape view
+    template<typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs,index_type>&&...),int> = 0 >
+    auto reshape(const Subs&...subs)const{
+        return create_view(std::integral_constant<view_kind_type,view_kind_type::reshape_view>{}, *this, subs...);
+    }
+    template<typename Container, std::enable_if_t<detail::is_container_of_type_v<Container,index_type>,int> = 0 >
+    auto reshape(const Container& subs)const{
+        return create_view(std::integral_constant<view_kind_type,view_kind_type::reshape_view>{}, *this, subs);
+    }
+    auto reshape(std::initializer_list<index_type> subs)const{
+        return create_view(std::integral_constant<view_kind_type,view_kind_type::reshape_view>{}, *this, subs);
+    }
+    //mapping view
+    template<typename...Subs, std::enable_if_t<(detail::is_tensor_of_type_v<Subs,index_type>&&...),int> = 0 >
+    auto operator()(const Subs&...subs)const{
+        return create_view(std::integral_constant<view_kind_type,view_kind_type::index_mapping_view>{}, *this, subs...);
+    }
+    template<typename Subs, std::enable_if_t<detail::is_bool_tensor_v<Subs> ,int> = 0 >
+    auto operator()(const Subs& subs)const{
+        return create_view(std::integral_constant<view_kind_type,view_kind_type::bool_mapping_view>{}, *this, subs);
+    }
+private:
+    enum class view_kind_type{slice_view, transpose_view, reshape_view, index_mapping_view, bool_mapping_view};
+    template<typename Impl_>
+    auto create_view(std::shared_ptr<Impl_>&& impl__)const{
+        return basic_tensor<Impl_>{std::move(impl__)};
+    }
+    template<typename ViewKind, typename...Args>
+    auto create_view(ViewKind, Args&&...args)const{
+        using view_factory_type = view_factory_selector_t<config_type>;
+        if constexpr (ViewKind::value == view_kind_type::slice_view){
+            return create_view(view_factory_type::create_slice_view(std::forward<Args>(args)...));
+        }else if constexpr (ViewKind::value == view_kind_type::transpose_view){
+            return create_view(view_factory_type::create_transpose_view(std::forward<Args>(args)...));
+        }else if constexpr (ViewKind::value == view_kind_type::reshape_view){
+            return create_view(view_factory_type::create_reshape_view(std::forward<Args>(args)...));
+        }else if constexpr (ViewKind::value == view_kind_type::index_mapping_view){
+            return create_view(view_factory_type::create_index_mapping_view(std::forward<Args>(args)...));
+        }else if constexpr (ViewKind::value == view_kind_type::bool_mapping_view){
+            return create_view(view_factory_type::create_bool_mapping_view(std::forward<Args>(args)...));
+        }else{
+            return;
+        }
+    }
+
 };
 
 //tensor is basic_tensor with storage implementation and constructors

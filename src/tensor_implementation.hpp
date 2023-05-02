@@ -349,6 +349,7 @@ public:
     //meta-data interface
     const auto& descriptor()const{return core_.descriptor();}
     index_type size()const{return descriptor().size();}
+    bool empty()const{return size() == index_type{0};}
     dim_type dim()const{return descriptor().dim();}
     const shape_type& shape()const{return descriptor().shape();}
     const shape_type& strides()const{return descriptor().strides();}
@@ -536,6 +537,39 @@ private:
 
     descriptor_type descriptor_;
     storage_type elements_;
+};
+
+//view core owns its parent and provide data accessor to its data
+//Descriptor depends on kind of view
+//Parent is type of view parent(origin) i.e. it is basic_tensor specialization
+template<typename Config, typename Descriptor, typename Parent>
+class view_core
+{
+    using descriptor_type = Descriptor;
+    using parent_type = Parent;
+public:
+    using config_type = Config;
+    using value_type = typename Parent::value_type;
+
+    template<typename Descriptor_, typename Parent_>
+    view_core(Descriptor_&& descriptor__, Parent_&& parent__):
+        descriptor_{std::forward<Descriptor_>(descriptor__)},
+        parent_{std::forward<Parent_>(parent__)}
+    {}
+
+    const descriptor_type& descriptor()const{return descriptor_;}
+    auto create_indexer()const{return create_indexer_helper(*this);}
+    auto create_indexer(){return create_indexer_helper(*this);}
+private:
+    template<typename U>
+    static auto create_indexer_helper(U& instance){
+        return basic_indexer<decltype(instance.parent_.create_indexer()), descriptor_type>{
+            instance.parent_.create_indexer(),
+            static_cast<const descriptor_type&>(instance.descriptor_)
+        };
+    }
+    descriptor_type descriptor_;
+    parent_type parent_;
 };
 
 }   //end of namespace gtensor
