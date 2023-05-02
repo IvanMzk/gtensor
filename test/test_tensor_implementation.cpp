@@ -467,9 +467,9 @@ public:
     using test_engine_base_type::test_engine_base_type;
     using test_engine_base_type::descriptor;
     using test_engine_base_type::elements_;
-    auto create_walker(){
+    auto create_walker(dim_type max_dim){
         using indexer_type = gtensor::basic_indexer<storage_type&>;
-        return gtensor::walker<config_type,indexer_type>{descriptor().adapted_strides(),descriptor().reset_strides(),descriptor().offset(),indexer_type{elements_},descriptor().dim()};
+        return gtensor::walker<config_type,indexer_type>{descriptor().adapted_strides(),descriptor().reset_strides(),descriptor().offset(),indexer_type{elements_},max_dim};
     }
 };
 template<typename Config, typename T>
@@ -532,9 +532,9 @@ public:
     using test_engine_base_type::test_engine_base_type;
     using test_engine_base_type::descriptor;
     using test_engine_base_type::elements_;
-    auto create_walker()const{
+    auto create_walker(dim_type max_dim)const{
         using indexer_type = gtensor::basic_indexer<const storage_type&>;
-        return gtensor::walker<config_type,indexer_type>{descriptor().adapted_strides(),descriptor().reset_strides(),descriptor().offset(),indexer_type{elements_},descriptor().dim()};
+        return gtensor::walker<config_type,indexer_type>{descriptor().adapted_strides(),descriptor().reset_strides(),descriptor().offset(),indexer_type{elements_},max_dim};
     }
 };
 template<typename Config, typename T>

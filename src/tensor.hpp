@@ -56,6 +56,7 @@ public:
     auto rbegin(){return impl_->rbegin();}
     auto rend(){return impl_->rend();}
     auto create_indexer(){return impl_->create_indexer();}
+    auto create_walker(dim_type max_dim){return impl_->create_walker(max_dim);}
     auto create_walker(){return impl_->create_walker();}
     //const data interface
     auto begin()const{return impl_->begin();}
@@ -63,6 +64,7 @@ public:
     auto rbegin()const{return impl_->rbegin();}
     auto rend()const{return impl_->rend();}
     auto create_indexer()const{return impl_->create_indexer();}
+    auto create_walker(dim_type max_dim)const{return impl_->create_walker(max_dim);}
     auto create_walker()const{return impl_->create_walker();}
     //view construction operators and methods
     //slice view
