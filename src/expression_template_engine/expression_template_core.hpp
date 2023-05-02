@@ -32,9 +32,9 @@ public:
 private:
     template<typename U, std::size_t...I>
     static auto create_walker_helper(U& instance, dim_type max_dim, std::index_sequence<I...>){
-        return expression_template_walker<Config,F,decltype(get<I>(instance.operands_).create_walker(max_dim))...>{
+        return expression_template_walker<Config,F,decltype(std::get<I>(instance.operands_).create_walker(max_dim))...>{
             instance.f_,
-            get<I>(instance.operands_).create_walker(max_dim)...
+            std::get<I>(instance.operands_).create_walker(max_dim)...
         };
     }
     descriptor_type descriptor_;

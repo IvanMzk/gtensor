@@ -4,7 +4,6 @@
 #include <type_traits>
 
 namespace gtensor{
-
 //expression template evaluator
 template<typename Config, typename F, typename...Walkers>
 class expression_template_walker
@@ -48,38 +47,36 @@ public:
 private:
     template<std::size_t...I>
     void walk_helper(const dim_type& direction, const index_type& steps, std::index_sequence<I...>){
-        (get<I>(walkers_).walk(direction,steps),...);
+        (std::get<I>(walkers_).walk(direction,steps),...);
     }
     template<std::size_t...I>
     void step_helper(const dim_type& direction, std::index_sequence<I...>){
-        (get<I>(walkers_).step(direction),...);
+        (std::get<I>(walkers_).step(direction),...);
     }
     template<std::size_t...I>
     void step_back_helper(const dim_type& direction, std::index_sequence<I...>){
-        (get<I>(walkers_).step_back(direction),...);
+        (std::get<I>(walkers_).step_back(direction),...);
     }
     template<std::size_t...I>
     void reset_helper(const dim_type& direction, std::index_sequence<I...>){
-        (get<I>(walkers_).reset(direction),...);
+        (std::get<I>(walkers_).reset(direction),...);
     }
     template<std::size_t...I>
     void reset_back_helper(const dim_type& direction, std::index_sequence<I...>){
-        (get<I>(walkers_).reset_back(direction),...);
+        (std::get<I>(walkers_).reset_back(direction),...);
     }
     template<std::size_t...I>
     void reset_back_helper(std::index_sequence<I...>){
-        (get<I>(walkers_).reset_back(),...);
+        (std::get<I>(walkers_).reset_back(),...);
     }
     template<std::size_t...I>
     result_type deref_helper(std::index_sequence<I...>)const{
-        return f_(*get<I>(walkers_)...);
+        return f_(*std::get<I>(walkers_)...);
     }
 
     F f_;
     tuple_type<Walkers...> walkers_;
 };
-
-
 
 }   //end of namespace gtensor
 #endif
