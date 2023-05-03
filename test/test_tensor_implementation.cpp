@@ -268,7 +268,7 @@ TEMPLATE_TEST_CASE("test_storage_core","[test_tensor_implementation]",
     using config_type = gtensor::config::extend_config_t<typename config_selector::config_type,value_type>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
-    using engine_type = gtensor::storage_core<config_type,value_type>;
+    using core_type = gtensor::storage_core<config_type,value_type>;
     using helpers_for_testing::apply_by_element;
 
     constexpr static bool has_iterator_expected = std::tuple_element_t<1, TestType>::value;
@@ -278,14 +278,14 @@ TEMPLATE_TEST_CASE("test_storage_core","[test_tensor_implementation]",
     constexpr static bool has_subscript_operator_expected = std::tuple_element_t<5, TestType>::value;
     constexpr static bool has_subscript_operator_const_expected = std::tuple_element_t<6, TestType>::value;
 
-    constexpr static bool has_iterator_result = gtensor::detail::has_iterator<engine_type>::value;
-    constexpr static bool has_const_iterator_result = gtensor::detail::has_const_iterator<engine_type>::value;
-    constexpr static bool has_reverse_iterator_result = gtensor::detail::has_reverse_iterator<engine_type>::value;
-    constexpr static bool has_const_reverse_iterator_result = gtensor::detail::has_const_reverse_iterator<engine_type>::value;
-    constexpr static bool has_subscript_operator_result = gtensor::detail::has_subscript_operator<engine_type>::value;
-    constexpr static bool has_subscript_operator_const_result = gtensor::detail::has_subscript_operator_const<engine_type>::value;
+    constexpr static bool has_iterator_result = gtensor::detail::has_iterator<core_type>::value;
+    constexpr static bool has_const_iterator_result = gtensor::detail::has_const_iterator<core_type>::value;
+    constexpr static bool has_reverse_iterator_result = gtensor::detail::has_reverse_iterator<core_type>::value;
+    constexpr static bool has_const_reverse_iterator_result = gtensor::detail::has_const_reverse_iterator<core_type>::value;
+    constexpr static bool has_subscript_operator_result = gtensor::detail::has_subscript_operator<core_type>::value;
+    constexpr static bool has_subscript_operator_const_result = gtensor::detail::has_subscript_operator_const<core_type>::value;
 
-    REQUIRE(gtensor::detail::has_descriptor_const<engine_type>::value);
+    REQUIRE(gtensor::detail::has_descriptor_const<core_type>::value);
     REQUIRE(has_iterator_result == has_iterator_expected);
     REQUIRE(has_const_iterator_result == has_const_iterator_expected);
     REQUIRE(has_reverse_iterator_result == has_reverse_iterator_expected);
@@ -293,7 +293,7 @@ TEMPLATE_TEST_CASE("test_storage_core","[test_tensor_implementation]",
     REQUIRE(has_subscript_operator_result == has_subscript_operator_expected);
     REQUIRE(has_subscript_operator_const_result == has_subscript_operator_const_expected);
 
-    SECTION("test_storage_core_size_value_constructor"){
+    SECTION("test_storage_core_shape_value_constructor"){
         //0shape,1value,2expected_shape,3expected_elements
         auto test_data = std::make_tuple(
             std::make_tuple(shape_type{0},0,shape_type{0},std::vector<value_type>{}),
@@ -307,18 +307,18 @@ TEMPLATE_TEST_CASE("test_storage_core","[test_tensor_implementation]",
             auto value = std::get<1>(t);
             auto expected_elements = std::get<3>(t);
             auto expected_shape = std::get<2>(t);
-            engine_type engine(shape,value);
-            auto result_shape = engine.descriptor().shape();
+            core_type core(shape,value);
+            auto result_shape = core.descriptor().shape();
             REQUIRE(result_shape == expected_shape);
             if constexpr (has_iterator_expected || has_const_iterator_expected){
-                std::vector<value_type> result_elements(engine.begin(),engine.end());
+                std::vector<value_type> result_elements(core.begin(),core.end());
                 REQUIRE(result_elements == expected_elements);
             }
             if constexpr (has_subscript_operator_expected || has_subscript_operator_const_expected){
                 std::vector<value_type> result_elements{};
-                const index_type result_size = engine.descriptor().size();
+                const index_type result_size = core.descriptor().size();
                 for (index_type i{0}; i!=result_size; ++i){
-                    result_elements.push_back(engine[i]);
+                    result_elements.push_back(core[i]);
                 }
                 REQUIRE(result_elements == expected_elements);
             }
@@ -326,33 +326,33 @@ TEMPLATE_TEST_CASE("test_storage_core","[test_tensor_implementation]",
         apply_by_element(test,test_data);
     }
     SECTION("test_storage_core_init_list_constructor"){
-        //0engine,1expected_shape,2expected_elements
+        //0core,1expected_shape,2expected_elements
         auto test_data = std::make_tuple(
-            std::make_tuple(engine_type(std::initializer_list<value_type>{}),shape_type{0},std::vector<value_type>{}),
-            std::make_tuple(engine_type(std::initializer_list<value_type>{1}),shape_type{1},std::vector<value_type>{1}),
-            std::make_tuple(engine_type(std::initializer_list<value_type>{1,2,3,4,5}),shape_type{5},std::vector<value_type>{1,2,3,4,5}),
-            std::make_tuple(engine_type(std::initializer_list<std::initializer_list<value_type>>{{1,2,3},{4,5,6}}),shape_type{2,3},std::vector<value_type>{1,2,3,4,5,6}),
+            std::make_tuple(core_type(std::initializer_list<value_type>{}),shape_type{0},std::vector<value_type>{}),
+            std::make_tuple(core_type(std::initializer_list<value_type>{1}),shape_type{1},std::vector<value_type>{1}),
+            std::make_tuple(core_type(std::initializer_list<value_type>{1,2,3,4,5}),shape_type{5},std::vector<value_type>{1,2,3,4,5}),
+            std::make_tuple(core_type(std::initializer_list<std::initializer_list<value_type>>{{1,2,3},{4,5,6}}),shape_type{2,3},std::vector<value_type>{1,2,3,4,5,6}),
             std::make_tuple(
-                engine_type(std::initializer_list<std::initializer_list<std::initializer_list<value_type>>>{{{1},{2},{3}},{{4},{5},{6}}}),
+                core_type(std::initializer_list<std::initializer_list<std::initializer_list<value_type>>>{{{1},{2},{3}},{{4},{5},{6}}}),
                 shape_type{2,3,1},
                 std::vector<value_type>{1,2,3,4,5,6}
             )
         );
         auto test = [](const auto& t){
-            auto engine = std::get<0>(t);
+            auto core = std::get<0>(t);
             auto expected_shape = std::get<1>(t);
             auto expected_elements = std::get<2>(t);
-            auto result_shape = engine.descriptor().shape();
+            auto result_shape = core.descriptor().shape();
             REQUIRE(result_shape == expected_shape);
             if constexpr (has_iterator_expected || has_const_iterator_expected){
-                std::vector<value_type> result_elements(engine.begin(),engine.end());
+                std::vector<value_type> result_elements(core.begin(),core.end());
                 REQUIRE(result_elements == expected_elements);
             }
             if constexpr (has_subscript_operator_expected || has_subscript_operator_const_expected){
                 std::vector<value_type> result_elements{};
-                const index_type result_size = engine.descriptor().size();
+                const index_type result_size = core.descriptor().size();
                 for (index_type i{0}; i!=result_size; ++i){
-                    result_elements.push_back(engine[i]);
+                    result_elements.push_back(core[i]);
                 }
                 REQUIRE(result_elements == expected_elements);
             }
@@ -379,18 +379,18 @@ TEMPLATE_TEST_CASE("test_storage_core","[test_tensor_implementation]",
             auto elements = std::get<1>(t);
             auto expected_shape = std::get<2>(t);
             auto expected_elements = std::get<3>(t);
-            engine_type engine(shape,elements.begin(),elements.end());
-            auto result_shape = engine.descriptor().shape();
+            core_type core(shape,elements.begin(),elements.end());
+            auto result_shape = core.descriptor().shape();
             REQUIRE(result_shape == expected_shape);
             if constexpr (has_iterator_expected || has_const_iterator_expected){
-                std::vector<value_type> result_elements(engine.begin(),engine.end());
+                std::vector<value_type> result_elements(core.begin(),core.end());
                 REQUIRE(result_elements == expected_elements);
             }
             if constexpr (has_subscript_operator_expected || has_subscript_operator_const_expected){
                 std::vector<value_type> result_elements{};
-                const index_type result_size = engine.descriptor().size();
+                const index_type result_size = core.descriptor().size();
                 for (index_type i{0}; i!=result_size; ++i){
-                    result_elements.push_back(engine[i]);
+                    result_elements.push_back(core[i]);
                 }
                 REQUIRE(result_elements == expected_elements);
             }
@@ -402,7 +402,7 @@ TEMPLATE_TEST_CASE("test_storage_core","[test_tensor_implementation]",
 namespace test_tensor_implementation_{
 
 template<typename Config, typename T>
-class test_engine_base{
+class test_core_base{
 protected:
     using extended_config_type = gtensor::config::extend_config_t<Config,T>;
     using descriptor_type = gtensor::basic_descriptor<extended_config_type>;
@@ -414,7 +414,7 @@ public:
     using dim_type = typename config_type::dim_type;
     using index_type = typename config_type::index_type;
     template<typename It>
-    test_engine_base(const shape_type& shape__, It first, It last):
+    test_core_base(const shape_type& shape__, It first, It last):
         descriptor_{shape__},
         elements_{first,last}
     {}
@@ -425,131 +425,131 @@ protected:
 };
 
 template<typename Config, typename T>
-class test_engine_subscriptable : public test_engine_base<Config,T>{
-    using test_engine_base_type = test_engine_base<Config,T>;
+class test_core_subscriptable : public test_core_base<Config,T>{
+    using test_core_base_type = test_core_base<Config,T>;
 public:
-    using typename test_engine_base_type::config_type;
-    using typename test_engine_base_type::value_type;
-    using typename test_engine_base_type::shape_type;
-    using typename test_engine_base_type::dim_type;
-    using typename test_engine_base_type::index_type;
-    using typename test_engine_base_type::storage_type;
-    using test_engine_base_type::test_engine_base_type;
-    using test_engine_base_type::descriptor;
-    using test_engine_base_type::elements_;
+    using typename test_core_base_type::config_type;
+    using typename test_core_base_type::value_type;
+    using typename test_core_base_type::shape_type;
+    using typename test_core_base_type::dim_type;
+    using typename test_core_base_type::index_type;
+    using typename test_core_base_type::storage_type;
+    using test_core_base_type::test_core_base_type;
+    using test_core_base_type::descriptor;
+    using test_core_base_type::elements_;
     gtensor::detail::subscript_operator_result_t<storage_type> operator[](index_type i){return elements_[i];}
 };
 template<typename Config, typename T>
-class test_engine_indexible : public test_engine_base<Config,T>{
-    using test_engine_base_type = test_engine_base<Config,T>;
+class test_core_indexible : public test_core_base<Config,T>{
+    using test_core_base_type = test_core_base<Config,T>;
 public:
-    using typename test_engine_base_type::config_type;
-    using typename test_engine_base_type::value_type;
-    using typename test_engine_base_type::shape_type;
-    using typename test_engine_base_type::dim_type;
-    using typename test_engine_base_type::index_type;
-    using typename test_engine_base_type::storage_type;
-    using test_engine_base_type::test_engine_base_type;
-    using test_engine_base_type::descriptor;
-    using test_engine_base_type::elements_;
+    using typename test_core_base_type::config_type;
+    using typename test_core_base_type::value_type;
+    using typename test_core_base_type::shape_type;
+    using typename test_core_base_type::dim_type;
+    using typename test_core_base_type::index_type;
+    using typename test_core_base_type::storage_type;
+    using test_core_base_type::test_core_base_type;
+    using test_core_base_type::descriptor;
+    using test_core_base_type::elements_;
     auto create_indexer(){return gtensor::basic_indexer<storage_type&>{elements_};}
 };
 template<typename Config, typename T>
-class test_engine_walkable : public test_engine_base<Config,T>{
-    using test_engine_base_type = test_engine_base<Config,T>;
+class test_core_walkable : public test_core_base<Config,T>{
+    using test_core_base_type = test_core_base<Config,T>;
 public:
-    using typename test_engine_base_type::config_type;
-    using typename test_engine_base_type::value_type;
-    using typename test_engine_base_type::shape_type;
-    using typename test_engine_base_type::dim_type;
-    using typename test_engine_base_type::index_type;
-    using typename test_engine_base_type::storage_type;
-    using test_engine_base_type::test_engine_base_type;
-    using test_engine_base_type::descriptor;
-    using test_engine_base_type::elements_;
+    using typename test_core_base_type::config_type;
+    using typename test_core_base_type::value_type;
+    using typename test_core_base_type::shape_type;
+    using typename test_core_base_type::dim_type;
+    using typename test_core_base_type::index_type;
+    using typename test_core_base_type::storage_type;
+    using test_core_base_type::test_core_base_type;
+    using test_core_base_type::descriptor;
+    using test_core_base_type::elements_;
     auto create_walker(dim_type max_dim){
         using indexer_type = gtensor::basic_indexer<storage_type&>;
         return gtensor::walker<config_type,indexer_type>{descriptor().adapted_strides(),descriptor().reset_strides(),descriptor().offset(),indexer_type{elements_},max_dim};
     }
 };
 template<typename Config, typename T>
-class test_engine_iterable : public test_engine_base<Config,T>{
-    using test_engine_base_type = test_engine_base<Config,T>;
+class test_core_iterable : public test_core_base<Config,T>{
+    using test_core_base_type = test_core_base<Config,T>;
 public:
-    using typename test_engine_base_type::config_type;
-    using typename test_engine_base_type::value_type;
-    using typename test_engine_base_type::shape_type;
-    using typename test_engine_base_type::dim_type;
-    using typename test_engine_base_type::index_type;
-    using typename test_engine_base_type::storage_type;
-    using test_engine_base_type::test_engine_base_type;
-    using test_engine_base_type::descriptor;
-    using test_engine_base_type::elements_;
+    using typename test_core_base_type::config_type;
+    using typename test_core_base_type::value_type;
+    using typename test_core_base_type::shape_type;
+    using typename test_core_base_type::dim_type;
+    using typename test_core_base_type::index_type;
+    using typename test_core_base_type::storage_type;
+    using test_core_base_type::test_core_base_type;
+    using test_core_base_type::descriptor;
+    using test_core_base_type::elements_;
     auto begin(){return elements_.begin();}
     auto end(){return elements_.end();}
 };
 
 template<typename Config, typename T>
-class test_engine_const_subscriptable : public test_engine_base<Config,T>{
-    using test_engine_base_type = test_engine_base<Config,T>;
+class test_core_const_subscriptable : public test_core_base<Config,T>{
+    using test_core_base_type = test_core_base<Config,T>;
 public:
-    using typename test_engine_base_type::config_type;
-    using typename test_engine_base_type::value_type;
-    using typename test_engine_base_type::shape_type;
-    using typename test_engine_base_type::dim_type;
-    using typename test_engine_base_type::index_type;
-    using typename test_engine_base_type::storage_type;
-    using test_engine_base_type::test_engine_base_type;
-    using test_engine_base_type::descriptor;
-    using test_engine_base_type::elements_;
+    using typename test_core_base_type::config_type;
+    using typename test_core_base_type::value_type;
+    using typename test_core_base_type::shape_type;
+    using typename test_core_base_type::dim_type;
+    using typename test_core_base_type::index_type;
+    using typename test_core_base_type::storage_type;
+    using test_core_base_type::test_core_base_type;
+    using test_core_base_type::descriptor;
+    using test_core_base_type::elements_;
     gtensor::detail::subscript_operator_const_result_t<storage_type> operator[](index_type i)const{return elements_[i];}
 };
 template<typename Config, typename T>
-class test_engine_const_indexible : public test_engine_base<Config,T>{
-    using test_engine_base_type = test_engine_base<Config,T>;
+class test_core_const_indexible : public test_core_base<Config,T>{
+    using test_core_base_type = test_core_base<Config,T>;
 public:
-    using typename test_engine_base_type::config_type;
-    using typename test_engine_base_type::value_type;
-    using typename test_engine_base_type::shape_type;
-    using typename test_engine_base_type::dim_type;
-    using typename test_engine_base_type::index_type;
-    using typename test_engine_base_type::storage_type;
-    using test_engine_base_type::test_engine_base_type;
-    using test_engine_base_type::descriptor;
-    using test_engine_base_type::elements_;
+    using typename test_core_base_type::config_type;
+    using typename test_core_base_type::value_type;
+    using typename test_core_base_type::shape_type;
+    using typename test_core_base_type::dim_type;
+    using typename test_core_base_type::index_type;
+    using typename test_core_base_type::storage_type;
+    using test_core_base_type::test_core_base_type;
+    using test_core_base_type::descriptor;
+    using test_core_base_type::elements_;
     auto create_indexer()const{return gtensor::basic_indexer<const storage_type&>{elements_};}
 };
 template<typename Config, typename T>
-class test_engine_const_walkable : public test_engine_base<Config,T>{
-    using test_engine_base_type = test_engine_base<Config,T>;
+class test_core_const_walkable : public test_core_base<Config,T>{
+    using test_core_base_type = test_core_base<Config,T>;
 public:
-    using typename test_engine_base_type::config_type;
-    using typename test_engine_base_type::value_type;
-    using typename test_engine_base_type::shape_type;
-    using typename test_engine_base_type::dim_type;
-    using typename test_engine_base_type::index_type;
-    using typename test_engine_base_type::storage_type;
-    using test_engine_base_type::test_engine_base_type;
-    using test_engine_base_type::descriptor;
-    using test_engine_base_type::elements_;
+    using typename test_core_base_type::config_type;
+    using typename test_core_base_type::value_type;
+    using typename test_core_base_type::shape_type;
+    using typename test_core_base_type::dim_type;
+    using typename test_core_base_type::index_type;
+    using typename test_core_base_type::storage_type;
+    using test_core_base_type::test_core_base_type;
+    using test_core_base_type::descriptor;
+    using test_core_base_type::elements_;
     auto create_walker(dim_type max_dim)const{
         using indexer_type = gtensor::basic_indexer<const storage_type&>;
         return gtensor::walker<config_type,indexer_type>{descriptor().adapted_strides(),descriptor().reset_strides(),descriptor().offset(),indexer_type{elements_},max_dim};
     }
 };
 template<typename Config, typename T>
-class test_engine_const_iterable : public test_engine_base<Config,T>{
-    using test_engine_base_type = test_engine_base<Config,T>;
+class test_core_const_iterable : public test_core_base<Config,T>{
+    using test_core_base_type = test_core_base<Config,T>;
 public:
-    using typename test_engine_base_type::config_type;
-    using typename test_engine_base_type::value_type;
-    using typename test_engine_base_type::shape_type;
-    using typename test_engine_base_type::dim_type;
-    using typename test_engine_base_type::index_type;
-    using typename test_engine_base_type::storage_type;
-    using test_engine_base_type::test_engine_base_type;
-    using test_engine_base_type::descriptor;
-    using test_engine_base_type::elements_;
+    using typename test_core_base_type::config_type;
+    using typename test_core_base_type::value_type;
+    using typename test_core_base_type::shape_type;
+    using typename test_core_base_type::dim_type;
+    using typename test_core_base_type::index_type;
+    using typename test_core_base_type::storage_type;
+    using test_core_base_type::test_core_base_type;
+    using test_core_base_type::descriptor;
+    using test_core_base_type::elements_;
     auto begin()const{return elements_.begin();}
     auto end()const{return elements_.end();}
 };
@@ -558,23 +558,23 @@ public:
 
 TEMPLATE_TEST_CASE("test_tensor_implementation","[test_tensor_implementation]",
     //0config_selector,1has_data_accessor,2has_const_data_accessor
-    (std::tuple<test_tensor_implementation_::test_engine_subscriptable<test_config::config_storage_selector<std::vector>::config_type,int> ,std::true_type,std::false_type>),
-    (std::tuple<test_tensor_implementation_::test_engine_indexible<test_config::config_storage_selector<std::vector>::config_type,int> ,std::true_type,std::false_type>),
-    (std::tuple<test_tensor_implementation_::test_engine_walkable<test_config::config_storage_selector<std::vector>::config_type,int> ,std::true_type,std::false_type>),
-    (std::tuple<test_tensor_implementation_::test_engine_iterable<test_config::config_storage_selector<std::vector>::config_type,int> ,std::true_type,std::false_type>),
+    (std::tuple<test_tensor_implementation_::test_core_subscriptable<test_config::config_storage_selector<std::vector>::config_type,int> ,std::true_type,std::false_type>),
+    (std::tuple<test_tensor_implementation_::test_core_indexible<test_config::config_storage_selector<std::vector>::config_type,int> ,std::true_type,std::false_type>),
+    (std::tuple<test_tensor_implementation_::test_core_walkable<test_config::config_storage_selector<std::vector>::config_type,int> ,std::true_type,std::false_type>),
+    (std::tuple<test_tensor_implementation_::test_core_iterable<test_config::config_storage_selector<std::vector>::config_type,int> ,std::true_type,std::false_type>),
 
-    (std::tuple<test_tensor_implementation_::test_engine_const_subscriptable<test_config::config_storage_selector<std::vector>::config_type,int> ,std::false_type,std::true_type>),
-    (std::tuple<test_tensor_implementation_::test_engine_const_indexible<test_config::config_storage_selector<std::vector>::config_type,int> ,std::false_type,std::true_type>),
-    (std::tuple<test_tensor_implementation_::test_engine_const_walkable<test_config::config_storage_selector<std::vector>::config_type,int> ,std::false_type,std::true_type>),
-    (std::tuple<test_tensor_implementation_::test_engine_const_iterable<test_config::config_storage_selector<std::vector>::config_type,int> ,std::false_type,std::true_type>)
+    (std::tuple<test_tensor_implementation_::test_core_const_subscriptable<test_config::config_storage_selector<std::vector>::config_type,int> ,std::false_type,std::true_type>),
+    (std::tuple<test_tensor_implementation_::test_core_const_indexible<test_config::config_storage_selector<std::vector>::config_type,int> ,std::false_type,std::true_type>),
+    (std::tuple<test_tensor_implementation_::test_core_const_walkable<test_config::config_storage_selector<std::vector>::config_type,int> ,std::false_type,std::true_type>),
+    (std::tuple<test_tensor_implementation_::test_core_const_iterable<test_config::config_storage_selector<std::vector>::config_type,int> ,std::false_type,std::true_type>)
 )
 {
-    using engine_type = std::tuple_element_t<0, TestType>;
-    using config_type = typename engine_type::config_type;
-    using value_type = typename engine_type::value_type;
+    using core_type = std::tuple_element_t<0, TestType>;
+    using config_type = typename core_type::config_type;
+    using value_type = typename core_type::value_type;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
-    using tensor_implementation_type = gtensor::tensor_implementation<engine_type>;
+    using tensor_implementation_type = gtensor::tensor_implementation<core_type>;
     using helpers_for_testing::apply_by_element;
 
     constexpr static bool has_data_accessor_v = std::tuple_element_t<1, TestType>::value;
@@ -596,6 +596,7 @@ TEMPLATE_TEST_CASE("test_tensor_implementation","[test_tensor_implementation]",
         std::make_tuple(shape_type{2,3}, std::vector<value_type>{1,2,3,4,5,6}),
         std::make_tuple(shape_type{2,2,2}, std::vector<value_type>{1,2,3,4,5,6,7,8})
     );
+
     SECTION("test_iterator")
     {
         auto test = [](const auto& t){

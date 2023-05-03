@@ -26,8 +26,8 @@ GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(operator[], decltype(std::declval<const T
 GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(create_indexer, decltype(std::declval<T&>().create_indexer())(T::*)(), has_create_indexer);
 GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(create_indexer, decltype(std::declval<const T&>().create_indexer())(T::*)()const, has_create_indexer_const);
 
-GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(create_walker, decltype(std::declval<T&>().create_walker())(T::*)(typename T::dim_type), has_create_walker);
-GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(create_walker, decltype(std::declval<const T&>().create_walker())(T::*)(typename T::dim_type)const, has_create_walker_const);
+GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(create_walker, decltype(std::declval<T&>().create_walker(std::declval<typename T::dim_type>()))(T::*)(typename T::dim_type), has_create_walker);
+GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(create_walker, decltype(std::declval<const T&>().create_walker(std::declval<typename T::dim_type>()))(T::*)(typename T::dim_type)const, has_create_walker_const);
 // GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(create_walker, decltype(std::declval<T&>().create_walker())(T::*)(), has_create_walker);
 // GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(create_walker, decltype(std::declval<const T&>().create_walker())(T::*)()const, has_create_walker_const);
 
