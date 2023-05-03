@@ -591,6 +591,8 @@ TEMPLATE_TEST_CASE("test_tensor_implementation","[test_tensor_implementation]",
     REQUIRE(has_const_data_accessor_v == gtensor::detail::has_create_walker_const<tensor_implementation_type>::value);
     //0shape,1expected_elements
     auto test_data = std::make_tuple(
+        std::make_tuple(shape_type{}, std::vector<value_type>{1}),
+        std::make_tuple(shape_type{}, std::vector<value_type>{2}),
         std::make_tuple(shape_type{0}, std::vector<value_type>{}),
         std::make_tuple(shape_type{5}, std::vector<value_type>{1,2,3,4,5}),
         std::make_tuple(shape_type{2,3}, std::vector<value_type>{1,2,3,4,5,6}),

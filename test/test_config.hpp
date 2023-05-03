@@ -26,6 +26,7 @@ struct config_engine_selector{
         gtensor::config::default_config::template storage
     >;
 };
+template<typename Engine> using config_engine_selector_t = typename config_engine_selector<Engine>::config_type;
 
 template<typename Div>
 struct config_div_mode_selector{

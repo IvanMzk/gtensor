@@ -1,6 +1,7 @@
 #ifndef TENSOR_HPP_
 #define TENSOR_HPP_
 
+#include <sstream>
 #include "type_selector.hpp"
 #include "tensor_factory.hpp"
 #include "tensor_operators.hpp"
@@ -190,10 +191,15 @@ public:
     tensor(std::initializer_list<index_type> shape__, It begin__, It end__):
         tensor(forward_tag::tag(), shape__, begin__, end__)
     {}
-    //container shape, disambiguate with 0-dim constructor
-    template<typename Container, std::enable_if_t<detail::is_container_of_type_v<std::remove_reference_t<Container>,index_type>,int> =0>
+
+    template<typename U> struct disable_forward_arg : std::disjunction<
+        std::is_convertible<U,value_type>,
+        std::is_convertible<U,tensor>
+    >{};
+    //container shape, disambiguate with 0-dim constructor, copy,move constructor
+    template<typename Container, std::enable_if_t<!disable_forward_arg<Container>::value,int> =0>
     explicit tensor(Container&& shape__):
-        tensor(forward_tag::tag(), std::forward<Container>(shape__), value_type{})
+        tensor(forward_tag::tag(), std::forward<Container>(shape__))
     {}
     //container shape and value
     template<typename Container>
@@ -206,6 +212,13 @@ public:
         tensor(forward_tag::tag(), std::forward<Container>(shape__), begin__, end__)
     {}
 };
+
+template<typename...Ts>
+auto str(const basic_tensor<Ts...>& t){
+    std::stringstream ss{};
+    ss<<"{"<<detail::shape_to_str(t.shape())<<[&]{for(const auto& i:t){ss<<i<<" ";}; return "}";}();
+    return ss.str();
+}
 
 }   //end of namespace gtensor
 #endif

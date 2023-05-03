@@ -17,7 +17,9 @@ public:
     using index_type = typename Config::index_type;
     using shape_type = typename Config::shape_type;
 
-    template<typename F_, typename...Walkers_>
+    template<typename F_> struct forward_args : std::bool_constant<!std::is_same_v<std::remove_cv_t<std::remove_reference_t<F_>>,expression_template_walker>>{};
+
+    template<typename F_, typename...Walkers_, std::enable_if_t<forward_args<F_>::value,int> =0>
     explicit expression_template_walker(F_&& f__, Walkers_&&...walkers__):
         f_{std::forward<F_>(f__)},
         walkers_{std::forward<Walkers_>(walkers__)...}

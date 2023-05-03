@@ -14,7 +14,7 @@ public:
         static_assert(std::is_same_v<F,std::decay_t<F_>>);
         using config_type = typename std::decay_t<Operand>::config_type;
         using implementation_type = tensor_implementation<
-            expression_template_core<config_type, F, std::decay_t<Operand>, std::decay_t<Operands>...>
+            expression_template_core<config_type, F, std::remove_reference_t<Operand>, std::remove_reference_t<Operands>...>
         >;
         return basic_tensor<implementation_type>{
             std::make_shared<implementation_type>(

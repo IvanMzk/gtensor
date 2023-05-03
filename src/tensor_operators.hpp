@@ -56,6 +56,8 @@ static inline auto equals(const basic_tensor<Impl1>& t1, const basic_tensor<Impl
     return t1.shape() == t2.shape() && std::equal(t1.begin(), t1.end(), t2.begin());
 }
 
+template<typename...Ts>
+std::ostream& operator<<(std::ostream& os, const basic_tensor<Ts...>& t){return os<<str(t);}
 
 // add,+);
 // sub,-);

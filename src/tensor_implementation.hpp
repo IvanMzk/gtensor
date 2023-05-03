@@ -434,7 +434,7 @@ public:
     using difference_type = index_type;
 
     //if value_type is trivially copiable elements_ may be not initialized, depends on storage_type implementation
-    template<typename ShT>
+    template<typename ShT, std::enable_if_t<!std::is_same_v<ShT,storage_core>,int> =0>
     explicit storage_core(ShT&& shape):
         descriptor_(std::forward<ShT>(shape)),
         elements_(descriptor_.size())
