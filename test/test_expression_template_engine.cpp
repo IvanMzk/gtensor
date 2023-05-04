@@ -6,6 +6,18 @@
 
 namespace test_expression_template_engine_{
 
+struct unary_ident_ref{
+    template<typename T>
+    T& operator()(T& t)const{
+        return t;
+    }
+};
+struct unary_ident_const_ref{
+    template<typename T>
+    const T& operator()(const T& t)const{
+        return t;
+    }
+};
 struct unary_square{
     template<typename T>
     auto operator()(const T& t)const{
@@ -75,6 +87,33 @@ TEMPLATE_TEST_CASE("test_expression_template_walker","[test_expression_template_
         REQUIRE(result == expected);
     };
     apply_by_element(test,test_data);
+}
+
+TEMPLATE_TEST_CASE("test_expression_template_walker_result_type","[test_expression_template_engine]",
+    test_config::config_engine_selector_t<gtensor::config::engine_expression_template>
+)
+{
+    using gtensor::tensor;
+    using gtensor::config::extend_config_t;
+    using test_expression_template_engine_::unary_ident_ref;
+    using test_expression_template_engine_::unary_ident_const_ref;
+    using test_expression_template_engine_::unary_square;
+    using test_expression_template_engine_::binary_mul;
+    using gtensor::expression_template_walker;
+
+    using config_type_int = extend_config_t<TestType,int>;
+    using config_type_double = extend_config_t<TestType,double>;
+    using tensor_int_walker_type = decltype(std::declval<tensor<int,TestType>>().create_walker());
+    using tensor_double_walker_type = decltype(std::declval<tensor<double,TestType>>().create_walker());
+
+    REQUIRE(std::is_same_v<int, decltype(*std::declval<expression_template_walker<config_type_int, unary_square, tensor_int_walker_type>>())>);
+    REQUIRE(std::is_same_v<double, decltype(*std::declval<expression_template_walker<config_type_double, unary_square, tensor_double_walker_type>>())>);
+    REQUIRE(std::is_same_v<int&, decltype(*std::declval<expression_template_walker<config_type_int, unary_ident_ref, tensor_int_walker_type>>())>);
+    REQUIRE(std::is_same_v<const int&, decltype(*std::declval<expression_template_walker<config_type_int, unary_ident_const_ref, tensor_int_walker_type>>())>);
+    REQUIRE(std::is_same_v<const double&, decltype(*std::declval<expression_template_walker<config_type_double, unary_ident_const_ref, tensor_double_walker_type>>())>);
+    REQUIRE(std::is_same_v<int, decltype(*std::declval<expression_template_walker<config_type_int, binary_mul, tensor_int_walker_type, tensor_int_walker_type>>())>);
+    REQUIRE(std::is_same_v<double, decltype(*std::declval<expression_template_walker<config_type_double, binary_mul, tensor_double_walker_type, tensor_int_walker_type>>())>);
+    REQUIRE(std::is_same_v<double, decltype(*std::declval<expression_template_walker<config_type_double, binary_mul, tensor_int_walker_type, tensor_double_walker_type>>())>);
 }
 
 TEMPLATE_TEST_CASE("test_expression_template_core","[test_expression_template_engine]",
