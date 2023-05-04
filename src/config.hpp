@@ -24,10 +24,10 @@ struct default_config
 
     //data elements storage template
     //must provide random access interface
-    template<typename ValT> using storage = std::vector<ValT>;
+    template<typename T> using storage = std::vector<T>;
     //meta-data elements storage template i.e. shape, strides are specialization of shape
     //must provide random access interface
-    template<typename IdxT> using shape = std::vector<IdxT>;
+    template<typename T> using shape = std::vector<T>;
     //generally when public interface expected container parameter it may be any type providig usual container semantic and interface: iterators, aliases...
     //specialization of config_type::container uses as return type in public interface
     //it may be used by implementation as general purpose container
@@ -35,22 +35,34 @@ struct default_config
 };
 
 template<typename Config, typename IdxT>
-struct extended_config : Config{
-    //using storage_type = typename CfgT::template storage<ValT>;
+struct extended_config{
+
+    using config_type = Config;
+    using engine = typename config_type::engine;
+    using div_mode = typename config_type::div_mode;
+    template<typename T> using storage = typename config_type::template storage<T>;
+    template<typename T> using shape = typename config_type::template shape<T>;
+    template<typename T> using container = typename config_type::template container<T>;
 
     //index_type defines data elements address space:
     //e.g. shape and strides elements are of index_type
     //slice, reshape view subscripts are of index_type
     //must have semantic of signed integral type
     using index_type = IdxT;
-    using shape_type = typename Config::template shape<index_type>;
+    using shape_type = shape<index_type>;
     //used in indexed access to meta-data elements:
     //e.g. index of direction, dimensions number
     //transpose view subscripts are of dim_type, since they are directions indexes
     //must have semantic of integral type
     using dim_type = typename shape_type::size_type;
 };
-template<typename Config, typename ValT> using extend_config_t = extended_config<Config, typename Config::template storage<ValT>::difference_type>;
+template<typename Config, typename T, typename=void> struct extend_config{
+    using type = extended_config<Config, typename Config::template storage<T>::difference_type>;
+};
+template<typename Config, typename T> struct extend_config<Config,T,std::void_t<typename Config::config_type>>{
+    using type = extended_config<typename Config::config_type, typename Config::template storage<T>::difference_type>;
+};
+template<typename Config, typename T> using extend_config_t = typename extend_config<Config,T>::type;
 
 }   //end of namespace config
 }   //end of namespace gtensor
