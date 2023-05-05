@@ -214,7 +214,7 @@ TEMPLATE_TEST_CASE("test_expression_template_n_operator","[test_expression_templ
             return expression_template_n_operator<F>{}(f,operands...);
         };
         auto result = std::apply(apply_n_operator, operands);
-        REQUIRE(result.equals(expected));
+        REQUIRE(result == expected);
     };
     apply_by_element(test, test_data);
 }

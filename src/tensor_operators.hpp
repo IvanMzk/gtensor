@@ -47,7 +47,7 @@ inline auto n_operator(F&& f, Operand&& operand, Operands&&...operands){
 }
 
 template<typename Impl1, typename Impl2>
-static inline auto equals(const basic_tensor<Impl1>& t1, const basic_tensor<Impl2>& t2){
+static inline auto operator==(const basic_tensor<Impl1>& t1, const basic_tensor<Impl2>& t2){
     if constexpr (std::is_same_v<Impl1,Impl2>){
         if (static_cast<const void*>(&t1) == static_cast<const void*>(&t2)){
             return true;
@@ -55,6 +55,16 @@ static inline auto equals(const basic_tensor<Impl1>& t1, const basic_tensor<Impl
     }
     return t1.shape() == t2.shape() && std::equal(t1.begin(), t1.end(), t2.begin());
 }
+
+// template<typename Impl1, typename Impl2>
+// static inline auto equals(const basic_tensor<Impl1>& t1, const basic_tensor<Impl2>& t2){
+//     if constexpr (std::is_same_v<Impl1,Impl2>){
+//         if (static_cast<const void*>(&t1) == static_cast<const void*>(&t2)){
+//             return true;
+//         }
+//     }
+//     return t1.shape() == t2.shape() && std::equal(t1.begin(), t1.end(), t2.begin());
+// }
 
 template<typename...Ts>
 std::ostream& operator<<(std::ostream& os, const basic_tensor<Ts...>& t){return os<<str(t);}
@@ -79,7 +89,7 @@ GTENSOR_BINARY_TENSOR_OPERATOR(operator*,operations::mul);
 GTENSOR_BINARY_TENSOR_OPERATOR(operator/,operations::div);
 GTENSOR_BINARY_TENSOR_OPERATOR(operator>,operations::greater);
 GTENSOR_BINARY_TENSOR_OPERATOR(operator<,operations::less);
-GTENSOR_BINARY_TENSOR_OPERATOR(operator==,operations::equal);
+//GTENSOR_BINARY_TENSOR_OPERATOR(operator==,operations::equal);
 GTENSOR_BINARY_TENSOR_OPERATOR(operator&&,operations::logic_and);
 GTENSOR_BINARY_TENSOR_OPERATOR(operator||,operations::logic_or);
 

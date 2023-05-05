@@ -84,9 +84,9 @@ TEST_CASE("test_reduce","[test_reduce]")
         auto functor = std::get<2>(t);
         auto expected = std::get<3>(t);
         auto result = reduce(tensor, direction, functor);
-        REQUIRE(result.equals(expected));
+        REQUIRE(result == expected);
         auto result1 = reduce(tensor, direction, functor);
-        REQUIRE(result1.equals(expected));
+        REQUIRE(result1 == expected);
     };
     apply_by_element(test, test_data);
 }

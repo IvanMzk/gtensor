@@ -441,7 +441,7 @@ TEST_CASE("test_stack_nothrow","[test_combine]")
                 return stack(direction, tensors_...);
             };
             auto result = std::apply(apply_tensors, tensors);
-            REQUIRE(result.equals(expected));
+            REQUIRE(result == expected);
         };
         apply_by_element(test, test_data);
     }
@@ -454,7 +454,7 @@ TEST_CASE("test_stack_nothrow","[test_combine]")
             auto expected = std::get<2>(t);
             auto container = std::apply([](const auto&...ts){return container_type{ts.copy()...};}, tensors);
             auto result = stack(direction, container);
-            REQUIRE(result.equals(expected));
+            REQUIRE(result == expected);
         };
         apply_by_element(test_concatenate_container, test_data);
     }
@@ -531,7 +531,7 @@ TEST_CASE("test_stack_common_type","[test_combine]")
         };
         auto result = std::apply(apply_tensors, tensors);
         REQUIRE(std::is_same_v<typename decltype(result)::value_type, typename decltype(expected)::value_type>);
-        REQUIRE(result.equals(expected));
+        REQUIRE(result == expected);
     };
     apply_by_element(test, test_data);
 }
@@ -616,7 +616,7 @@ TEST_CASE("test_concatenate","[test_combine]")
                 return concatenate(direction, tensors_...);
             };
             auto result = std::apply(apply_tensors, tensors);
-            REQUIRE(result.equals(expected));
+            REQUIRE(result == expected);
         };
         apply_by_element(test_concatenate_variadic, test_data);
     }
@@ -629,7 +629,7 @@ TEST_CASE("test_concatenate","[test_combine]")
             auto expected = std::get<2>(t);
             auto container = std::apply([](const auto&...ts){return container_type{ts.copy()...};}, tensors);
             auto result = concatenate(direction, container);
-            REQUIRE(result.equals(expected));
+            REQUIRE(result == expected);
         };
         apply_by_element(test_concatenate_container, test_data);
     }
@@ -706,7 +706,7 @@ TEST_CASE("test_concatenate_common_type","[test_combine]")
         };
         auto result = std::apply(apply_tensors, tensors);
         REQUIRE(std::is_same_v<typename decltype(result)::value_type, typename decltype(expected)::value_type>);
-        REQUIRE(result.equals(expected));
+        REQUIRE(result == expected);
     };
     apply_by_element(test, test_data);
 }
@@ -752,7 +752,7 @@ TEST_CASE("test_vstack","[test_combine]")
                 return vstack(tensors_...);
             };
             auto result = std::apply(apply_tensors, tensors);
-            REQUIRE(result.equals(expected));
+            REQUIRE(result == expected);
         };
         apply_by_element(test, test_data);
     }
@@ -764,7 +764,7 @@ TEST_CASE("test_vstack","[test_combine]")
             auto expected = std::get<1>(t);
             auto container = std::apply([](const auto&...ts){return container_type{ts.copy()...};}, tensors);
             auto result = vstack(container);
-            REQUIRE(result.equals(expected));
+            REQUIRE(result == expected);
         };
         apply_by_element(test, test_data);
     }
@@ -833,7 +833,7 @@ TEST_CASE("test_hstack","[test_combine]")
                 return hstack(tensors_...);
             };
             auto result = std::apply(apply_tensors, tensors);
-            REQUIRE(result.equals(expected));
+            REQUIRE(result == expected);
         };
         apply_by_element(test, test_data);
     }
@@ -845,7 +845,7 @@ TEST_CASE("test_hstack","[test_combine]")
             auto expected = std::get<1>(t);
             auto container = std::apply([](const auto&...ts){return container_type{ts.copy()...};}, tensors);
             auto result = hstack(container);
-            REQUIRE(result.equals(expected));
+            REQUIRE(result == expected);
         };
         apply_by_element(test, test_data);
     }
@@ -966,7 +966,7 @@ TEST_CASE("test_block_tuple","[test_combine]")
         auto blocks = std::get<0>(t);
         auto expected = std::get<1>(t);
         auto result = block(blocks);
-        REQUIRE(result.equals(expected));
+        REQUIRE(result == expected);
     };
     apply_by_element(test, test_data);
 }
@@ -1054,7 +1054,7 @@ TEST_CASE("test_block_init_list","[test_combine]")
     auto test = [](const auto& t){
         auto result = std::get<0>(t);
         auto expected = std::get<1>(t);
-        REQUIRE(result.equals(expected));
+        REQUIRE(result == expected);
     };
 
     apply_by_element(test, test_data);
@@ -1162,7 +1162,7 @@ TEST_CASE("test_split_split_points","[test_combine]")
         REQUIRE(expected.size() == result.size());
         auto result_it = result.begin();
         for (auto expected_it = expected.begin(); expected_it!=expected.end(); ++expected_it, ++result_it){
-            REQUIRE((*result_it).equals(*expected_it));
+            REQUIRE(*result_it == *expected_it);
         }
     };
     apply_by_element(test, test_data);
@@ -1230,7 +1230,7 @@ TEST_CASE("test_split_equal_parts","[test_combine]")
         REQUIRE(expected.size() == result.size());
         auto result_it = result.begin();
         for (auto expected_it = expected.begin(); expected_it!=expected.end(); ++expected_it, ++result_it){
-            REQUIRE((*result_it).equals(*expected_it));
+            REQUIRE(*result_it == *expected_it);
         }
     };
     apply_by_element(test, test_data);
@@ -1312,7 +1312,7 @@ TEST_CASE("test_vsplit","[test_combine]")
             REQUIRE(expected.size() == result.size());
             auto result_it = result.begin();
             for (auto expected_it = expected.begin(); expected_it!=expected.end(); ++expected_it, ++result_it){
-                REQUIRE((*result_it).equals(*expected_it));
+                REQUIRE(*result_it == *expected_it);
             }
         };
         apply_by_element(test, test_data);
@@ -1379,7 +1379,7 @@ TEST_CASE("test_hsplit","[test_combine]")
             REQUIRE(expected.size() == result.size());
             auto result_it = result.begin();
             for (auto expected_it = expected.begin(); expected_it!=expected.end(); ++expected_it, ++result_it){
-                REQUIRE((*result_it).equals(*expected_it));
+                REQUIRE(*result_it == *expected_it);
             }
         };
         apply_by_element(test, test_data);
@@ -1432,7 +1432,7 @@ TEST_CASE("test_hsplit_hstack","[test_combine]")
             auto split_arg = std::get<1>(t);
             auto expected = ten;
             auto result = hstack(hsplit(ten, split_arg));
-            REQUIRE(result.equals(expected));
+            REQUIRE(result == expected);
         };
         apply_by_element(test, test_data);
     }
@@ -1459,7 +1459,7 @@ TEST_CASE("test_hsplit_hstack","[test_combine]")
             REQUIRE(expected.size() == result.size());
             auto result_it = result.begin();
             for (auto expected_it = expected.begin(); expected_it!=expected.end(); ++expected_it, ++result_it){
-                REQUIRE((*result_it).equals(*expected_it));
+                REQUIRE(*result_it == *expected_it);
             }
         };
         apply_by_element(test, test_data);
@@ -1497,7 +1497,7 @@ TEST_CASE("test_vsplit_vstack","[test_combine]")
             auto split_arg = std::get<1>(t);
             auto expected = ten;
             auto result = vstack(vsplit(ten, split_arg));
-            REQUIRE(result.equals(expected));
+            REQUIRE(result == expected);
         };
         apply_by_element(test, test_data);
     }
@@ -1525,7 +1525,7 @@ TEST_CASE("test_vsplit_vstack","[test_combine]")
             REQUIRE(expected.size() == result.size());
             auto result_it = result.begin();
             for (auto expected_it = expected.begin(); expected_it!=expected.end(); ++expected_it, ++result_it){
-                REQUIRE((*result_it).equals(*expected_it));
+                REQUIRE(*result_it == *expected_it);
             }
         };
         apply_by_element(test, test_data);

@@ -973,7 +973,7 @@ TEMPLATE_TEST_CASE("test_fill_index_mapping_view","[test_view_factory]",
             );
         };
         std::apply(result_filler, subs);
-        REQUIRE(result.equals(expected));
+        REQUIRE(result == expected);
     };
 
     apply_by_element(test, test_data);
@@ -1283,7 +1283,7 @@ TEMPLATE_TEST_CASE("test_create_reshape_view","[test_view_factory]",
                 return basic_tensor{view_factory_type::create_reshape_view(parent, subs_...)};
             };
             auto result = std::apply(apply_subs, subs);
-            REQUIRE(result.equals(expected));
+            REQUIRE(result == expected);
         };
         apply_by_element(test,test_data);
     }
@@ -1299,7 +1299,7 @@ TEMPLATE_TEST_CASE("test_create_reshape_view","[test_view_factory]",
             };
             auto container = std::apply(make_container, subs);
             auto result = basic_tensor{view_factory_type::create_reshape_view(parent, container)};
-            REQUIRE(result.equals(expected));
+            REQUIRE(result == expected);
         };
         apply_by_element(test,test_data);
     }
@@ -1392,7 +1392,7 @@ TEMPLATE_TEST_CASE("test_create_transpose_view","[test_view_factory]",
                 return basic_tensor{view_factory_type::create_transpose_view(parent, subs_...)};
             };
             auto result = std::apply(apply_subs, subs);
-            REQUIRE(result.equals(expected));
+            REQUIRE(result == expected);
         };
         apply_by_element(test,test_data);
     }
@@ -1408,7 +1408,7 @@ TEMPLATE_TEST_CASE("test_create_transpose_view","[test_view_factory]",
             };
             auto container = std::apply(make_container, subs);
             auto result = basic_tensor{view_factory_type::create_transpose_view(parent, container)};
-            REQUIRE(result.equals(expected));
+            REQUIRE(result == expected);
         };
         apply_by_element(test,test_data);
     }
@@ -1645,7 +1645,7 @@ TEMPLATE_TEST_CASE("test_create_slice_view","[test_view_factory]",
                 return basic_tensor{view_factory_type::create_slice_view(parent, subs_...)};
             };
             auto result = std::apply(apply_subs, subs);
-            REQUIRE(result.equals(expected));
+            REQUIRE(result == expected);
         };
         apply_by_element(test, test_data);
     }
@@ -1661,7 +1661,7 @@ TEMPLATE_TEST_CASE("test_create_slice_view","[test_view_factory]",
             };
             auto container = std::apply(make_container, subs);
             auto result = basic_tensor{view_factory_type::create_slice_view(parent, container)};
-            REQUIRE(result.equals(expected));
+            REQUIRE(result == expected);
         };
         apply_by_element(test, test_data);
     }
@@ -1713,7 +1713,7 @@ TEMPLATE_TEST_CASE("test_create_slice_view","[test_view_factory]",
                 return basic_tensor{view_factory_type::create_slice_view(parent, subs_...)};
             };
             auto result = std::apply(apply_subs, subs);
-            REQUIRE(result.equals(expected));
+            REQUIRE(result == expected);
         };
         apply_by_element(test, test_data);
     }
@@ -1745,7 +1745,7 @@ TEMPLATE_TEST_CASE("test_create_slice_view","[test_view_factory]",
         auto test = [](const auto& t){
             auto result = std::get<0>(t);
             auto expected = std::get<1>(t);
-            REQUIRE(result.equals(expected));
+            REQUIRE(result == expected);
         };
         apply_by_element(test, test_data);
     }
@@ -1864,7 +1864,7 @@ TEMPLATE_TEST_CASE("test_create_index_mapping_view","[test_view_factory]",
                 return basic_tensor{view_factory_type::create_index_mapping_view(parent, subs_...)};
             };
             auto result = std::apply(apply_subs, subs);
-            REQUIRE(result.equals(expected));
+            REQUIRE(result == expected);
         };
         apply_by_element(test,test_data);
     }
@@ -1947,7 +1947,7 @@ TEMPLATE_TEST_CASE("test_create_bool_mapping_view","[test_view_factory]",
             auto subs = std::get<1>(t);
             auto expected = std::get<2>(t);
             auto result = basic_tensor{view_factory_type::create_bool_mapping_view(parent, subs)};
-            REQUIRE(result.equals(expected));
+            REQUIRE(result == expected);
         };
         apply_by_element(test,test_data);
     }

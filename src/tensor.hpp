@@ -41,10 +41,10 @@ public:
         return tensor<value_type,config_type>{shape(),begin(),end()};
     }
     //compare content of this tensor and other
-    template<typename OtherImpl>
-    auto equals(const basic_tensor<OtherImpl>& other)const{
-        return gtensor::equals(*this, other);
-    }
+    // template<typename OtherImpl>
+    // auto equals(const basic_tensor<OtherImpl>& other)const{
+    //     return gtensor::equals(*this, other);
+    // }
     //meta-data interface
     const auto& descriptor()const{return impl_->descriptor();}
     index_type size()const{return impl_->size();}

@@ -110,7 +110,7 @@ TEST_CASE("test_tensor_constructor_shape","[test_tensor]"){
         auto shape = std::get<0>(t);
         auto expected = std::get<1>(t);
         tensor_type result(shape);
-        REQUIRE(result.equals(expected));
+        REQUIRE(result == expected);
     };
     apply_by_element(test, test_data);
 }
@@ -138,7 +138,7 @@ TEST_CASE("test_tensor_constructor_shape_container_value","[test_tensor]"){
         auto value = std::get<1>(t);
         auto expected = std::get<2>(t);
         auto result = tensor_type{shape, value};
-        REQUIRE(result.equals(expected));
+        REQUIRE(result == expected);
     };
     apply_by_element(test,test_data);
 }
@@ -167,7 +167,7 @@ TEST_CASE("test_tensor_constructor_shape_container_range","[test_tensor]"){
         auto elements = std::get<1>(t);
         auto expected = std::get<2>(t);
         auto result = tensor_type{shape, elements.begin(), elements.end()};
-        REQUIRE(result.equals(expected));
+        REQUIRE(result == expected);
     };
     apply_by_element(test,test_data);
 }
@@ -192,7 +192,7 @@ TEST_CASE("test_tensor_constructor_shape_init_list_value","[test_tensor]"){
     auto test = [](auto& t){
         auto result = std::get<0>(t);
         auto expected = std::get<1>(t);
-        REQUIRE(result.equals(expected));
+        REQUIRE(result == expected);
     };
     apply_by_element(test,test_data);
 }
@@ -216,7 +216,7 @@ TEST_CASE("test_tensor_constructor_shape_init_list_range","[test_tensor]"){
     auto test = [](auto& t){
         auto result = std::get<0>(t);
         auto expected = std::get<1>(t);
-        REQUIRE(result.equals(expected));
+        REQUIRE(result == expected);
     };
     apply_by_element(test,test_data);
 }
