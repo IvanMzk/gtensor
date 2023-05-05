@@ -30,6 +30,18 @@ struct binary_mul{
         return t1*t2;
     }
 };
+struct binary_sub{
+    template<typename T1, typename T2>
+    auto operator()(const T1& t1, const T2& t2)const{
+        return t1-t2;
+    }
+};
+struct ternary_add_mul{
+    template<typename T1, typename T2, typename T3>
+    auto operator()(const T1& t1, const T2& t2, const T3& t3)const{
+        return (t1+t2)*t3;
+    }
+};
 
 }
 
@@ -193,17 +205,31 @@ TEMPLATE_TEST_CASE("test_expression_template_n_operator","[test_expression_templ
     using gtensor::expression_template_n_operator;
     using test_expression_template_engine_::unary_square;
     using test_expression_template_engine_::binary_mul;
+    using test_expression_template_engine_::binary_sub;
+    using test_expression_template_engine_::ternary_add_mul;
     using helpers_for_testing::apply_by_element;
     //0operation,1operands,2expected
     auto test_data = std::make_tuple(
         std::make_tuple(unary_square{},std::make_tuple(tensor_type{}),tensor_type{}),
         std::make_tuple(unary_square{},std::make_tuple(tensor_type(2)),tensor_type(4)),
         std::make_tuple(unary_square{},std::make_tuple(tensor_type{1,2,3,4,5}),tensor_type{1,4,9,16,25}),
+        std::make_tuple(binary_mul{},std::make_tuple(tensor_type(5),2),tensor_type(10)),
+        std::make_tuple(binary_mul{},std::make_tuple(3,tensor_type(5)),tensor_type(15)),
+        std::make_tuple(binary_mul{},std::make_tuple(tensor_type(5),tensor_type(4)),tensor_type(20)),
+        std::make_tuple(binary_mul{},std::make_tuple(tensor_type{1,2,3,4,5},2),tensor_type{2,4,6,8,10}),
+        std::make_tuple(binary_mul{},std::make_tuple(3,tensor_type{1,2,3,4,5}),tensor_type{3,6,9,12,15}),
+        std::make_tuple(binary_sub{},std::make_tuple(3,tensor_type{1,2,3,4,5}),tensor_type{2,1,0,-1,-2}),
+        std::make_tuple(binary_sub{},std::make_tuple(tensor_type{1,2,3,4,5},3),tensor_type{-2,-1,0,1,2}),
         std::make_tuple(binary_mul{},std::make_tuple(tensor_type{1,2,3,4,5},tensor_type(2)),tensor_type{2,4,6,8,10}),
         std::make_tuple(binary_mul{},std::make_tuple(tensor_type{1,2,3,4,5},tensor_type{2}),tensor_type{2,4,6,8,10}),
         std::make_tuple(binary_mul{},std::make_tuple(tensor_type{1,2,3,4,5},tensor_type{5,4,3,2,1}),tensor_type{5,8,9,8,5}),
+        std::make_tuple(binary_mul{},std::make_tuple(4,tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}),tensor_type{{{4,8},{12,16}},{{20,24},{28,32}}}),
+        std::make_tuple(binary_mul{},std::make_tuple(tensor_type(4), tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}),tensor_type{{{4,8},{12,16}},{{20,24},{28,32}}}),
         std::make_tuple(binary_mul{},std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},tensor_type{-1,2}),tensor_type{{{-1,4},{-3,8}},{{-5,12},{-7,16}}}),
-        std::make_tuple(binary_mul{},std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},tensor_type{{-1},{2}}),tensor_type{{{-1,-2},{6,8}},{{-5,-6},{14,16}}})
+        std::make_tuple(binary_mul{},std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},tensor_type{{-1},{2}}),tensor_type{{{-1,-2},{6,8}},{{-5,-6},{14,16}}}),
+        std::make_tuple(ternary_add_mul{},std::make_tuple(tensor_type(1),tensor_type(2),tensor_type(3)),tensor_type(9)),
+        std::make_tuple(ternary_add_mul{},std::make_tuple(tensor_type(1),tensor_type{1,2,3,4,5},tensor_type(3)),tensor_type{6,9,12,15,18}),
+        std::make_tuple(ternary_add_mul{},std::make_tuple(tensor_type(1),tensor_type{1,2,3},tensor_type{{1},{2},{3}}),tensor_type{{2,3,4},{4,6,8},{6,9,12}})
     );
     auto test = [](const auto& t){
         auto f = std::get<0>(t);
