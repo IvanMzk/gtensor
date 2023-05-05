@@ -510,9 +510,9 @@ TEST_CASE("test_stack_exception","[test_combine]")
 
 TEST_CASE("test_stack_common_type","[test_combine]")
 {
-    using tensor_int32_type = gtensor::tensor<int, gtensor::config::default_config>;
-    using tensor_int64_type = gtensor::tensor<std::int64_t, gtensor::config::default_config>;
-    using tensor_double_type = gtensor::tensor<double, gtensor::config::default_config>;
+    using tensor_int32_type = gtensor::tensor<int>;
+    using tensor_int64_type = gtensor::tensor<std::int64_t>;
+    using tensor_double_type = gtensor::tensor<double>;
     using dim_type = std::common_type_t<typename tensor_int32_type::dim_type, typename tensor_int64_type::dim_type, typename tensor_double_type::dim_type>;
     using helpers_for_testing::apply_by_element;
     using gtensor::stack;
@@ -685,9 +685,9 @@ TEST_CASE("test_concatenate_exception","[test_combine]")
 
 TEST_CASE("test_concatenate_common_type","[test_combine]")
 {
-    using tensor_int32_type = gtensor::tensor<int, gtensor::config::default_config>;
-    using tensor_int64_type = gtensor::tensor<std::int64_t, gtensor::config::default_config>;
-    using tensor_double_type = gtensor::tensor<double, gtensor::config::default_config>;
+    using tensor_int32_type = gtensor::tensor<int>;
+    using tensor_int64_type = gtensor::tensor<std::int64_t>;
+    using tensor_double_type = gtensor::tensor<double>;
     using dim_type = std::common_type_t<typename tensor_int32_type::dim_type, typename tensor_int64_type::dim_type, typename tensor_double_type::dim_type>;
     using helpers_for_testing::apply_by_element;
     using gtensor::concatenate;
@@ -1529,5 +1529,45 @@ TEST_CASE("test_vsplit_vstack","[test_combine]")
             }
         };
         apply_by_element(test, test_data);
+    }
+}
+
+//tensor of tensors variadic arg should be treated by combine routines as basic_tensor not as container of tensors
+TEST_CASE("test_tensor_of_tensors_variadic_arg","[test_combine]")
+{
+    using gtensor::tensor;
+    using value_type = tensor<double>;
+    using tensor_type = tensor<value_type>;
+    using helpers_for_testing::apply_by_element;
+    using gtensor::concatenate;
+    using gtensor::vstack;
+    using gtensor::hstack;
+    SECTION("stack")
+    {
+        using gtensor::stack;
+        REQUIRE(std::is_same_v<decltype(stack(0,tensor_type{value_type{1}})),tensor_type>);
+        REQUIRE(stack(0,tensor_type{value_type{1}}) == tensor_type{{value_type{1}}});
+        REQUIRE(stack(0,tensor_type{value_type{1},value_type{2,3},value_type{4,5,6}}) == tensor_type{{value_type{1},value_type{2,3},value_type{4,5,6}}});
+    }
+    SECTION("concatenate")
+    {
+        using gtensor::concatenate;
+        REQUIRE(std::is_same_v<decltype(concatenate(0,tensor_type{value_type{1}})),tensor_type>);
+        REQUIRE(concatenate(0,tensor_type{value_type{1}}) == tensor_type{value_type{1}});
+        REQUIRE(concatenate(0,tensor_type{value_type{1},value_type{2,3},value_type{4,5,6}}) == tensor_type{value_type{1},value_type{2,3},value_type{4,5,6}});
+    }
+    SECTION("vstack")
+    {
+        using gtensor::vstack;
+        REQUIRE(std::is_same_v<decltype(vstack(tensor_type{value_type{1}})),tensor_type>);
+        REQUIRE(vstack(tensor_type{value_type{1}}) == tensor_type{{value_type{1}}});
+        REQUIRE(vstack(tensor_type{value_type{1},value_type{2,3},value_type{4,5,6}}) == tensor_type{{value_type{1},value_type{2,3},value_type{4,5,6}}});
+    }
+    SECTION("hstack")
+    {
+        using gtensor::hstack;
+        REQUIRE(std::is_same_v<decltype(hstack(tensor_type{value_type{1}})),tensor_type>);
+        REQUIRE(hstack(tensor_type{value_type{1}}) == tensor_type{value_type{1}});
+        REQUIRE(hstack(tensor_type{value_type{1},value_type{2,3},value_type{4,5,6}}) == tensor_type{value_type{1},value_type{2,3},value_type{4,5,6}});
     }
 }

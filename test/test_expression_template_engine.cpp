@@ -103,8 +103,8 @@ TEMPLATE_TEST_CASE("test_expression_template_walker_result_type","[test_expressi
 
     using config_type_int = extend_config_t<TestType,int>;
     using config_type_double = extend_config_t<TestType,double>;
-    using tensor_int_walker_type = decltype(std::declval<tensor<int,TestType>>().create_walker());
-    using tensor_double_walker_type = decltype(std::declval<tensor<double,TestType>>().create_walker());
+    using tensor_int_walker_type = decltype(std::declval<tensor<int,config_type_int>>().create_walker());
+    using tensor_double_walker_type = decltype(std::declval<tensor<double,config_type_double>>().create_walker());
 
     REQUIRE(std::is_same_v<int, decltype(*std::declval<expression_template_walker<config_type_int, unary_square, tensor_int_walker_type>>())>);
     REQUIRE(std::is_same_v<double, decltype(*std::declval<expression_template_walker<config_type_double, unary_square, tensor_double_walker_type>>())>);

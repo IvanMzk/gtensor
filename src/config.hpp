@@ -63,6 +63,8 @@ template<typename Config, typename T> struct extend_config<Config,T,std::void_t<
     using type = extended_config<typename Config::config_type, typename Config::template storage<T>::difference_type>;
 };
 template<typename Config, typename T> using extend_config_t = typename extend_config<Config,T>::type;
+template<typename T, typename=void> constexpr bool is_extended_config_v = false;
+template<typename T> constexpr bool is_extended_config_v<T,std::void_t<typename T::index_type, typename T::shape_type, typename T::dim_type>> = true;
 
 }   //end of namespace config
 }   //end of namespace gtensor

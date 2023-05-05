@@ -143,9 +143,10 @@ private:
 };
 
 //tensor is basic_tensor with storage implementation and constructors
-template<typename T, typename Config = config::default_config>
+template<typename T, typename Config = config::extend_config_t<config::default_config,T>>
 class tensor : public basic_tensor<typename tensor_factory_selector_t<Config,T>::result_type>
 {
+    static_assert(config::is_extended_config_v<Config>);
     using tensor_factory_type = tensor_factory_selector_t<Config,T>;
     using basic_tensor_base = basic_tensor<typename tensor_factory_type::result_type>;
 

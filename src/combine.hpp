@@ -21,7 +21,7 @@ public:
 namespace detail{
 
 template<typename T, typename = void> constexpr inline bool is_tensor_container_v = false;
-template<typename T> constexpr inline bool is_tensor_container_v<T, std::void_t<std::enable_if_t<is_container_v<T>>>> = is_tensor_v<typename T::value_type>;
+template<typename T> constexpr inline bool is_tensor_container_v<T, std::void_t<std::enable_if_t<is_container_v<T>>>> = !is_tensor_v<T> && is_tensor_v<typename T::value_type>;
 
 template<typename> constexpr inline std::size_t nested_tuple_depth_v = 0;
 template<typename T, typename...Ts> constexpr inline std::size_t nested_tuple_depth_v<std::tuple<T,Ts...>> = nested_tuple_depth_v<T>+1;
@@ -381,7 +381,6 @@ static auto stack_variadic(const SizeT& direction, const basic_tensor<Us...>& t,
         return res;
     }
 }
-
 template<typename SizeT, typename Container>
 static auto stack_container(const SizeT& direction, const Container& ts){
     using tensor_type = typename Container::value_type;
@@ -418,12 +417,13 @@ static auto concatenate_variadic(const SizeT& direction, const basic_tensor<Us..
     auto shapes = std::make_tuple(t.shape(), ts.shape()...);
     detail::check_concatenate_variadic_args(direction, shapes);
     auto res_shape = detail::make_concatenate_variadic_shape(direction, shapes);
-    if constexpr (sizeof...(Ts) == 0){
+    constexpr auto tensors_number = sizeof...(Ts) + 1;
+    if constexpr (tensors_number == 1){
         return tensor<res_value_type, config_type>(std::move(res_shape),t.begin(),t.end());
     }else{
         auto res = tensor<res_value_type, config_type>(std::move(res_shape), res_value_type{});
         if (!res.empty()){
-            detail::fill_concatenate(direction, shapes, res.begin(), std::make_index_sequence<sizeof...(Ts) + 1>{}, t.begin(), ts.begin()...);
+            detail::fill_concatenate(direction, shapes, res.begin(), std::make_index_sequence<tensors_number>{}, t.begin(), ts.begin()...);
         }
         return res;
     }
@@ -685,7 +685,7 @@ template<typename...Us, typename...Ts>
 static auto stack(const typename basic_tensor<Us...>::dim_type& direction, const basic_tensor<Us...>& t, const Ts&...ts){
     return stack_variadic(direction, t, ts...);
 }
-template<typename Container>
+template<typename Container, std::enable_if_t<detail::is_tensor_container_v<Container>,int> =0>
 static auto stack(const typename Container::value_type::dim_type& direction, const Container& ts){
     return stack_container(direction, ts);
 }
@@ -693,7 +693,7 @@ template<typename...Us, typename...Ts>
 static auto concatenate(const typename basic_tensor<Us...>::dim_type& direction, const basic_tensor<Us...>& t, const Ts&...ts){
     return concatenate_variadic(direction, t, ts...);
 }
-template<typename Container>
+template<typename Container, std::enable_if_t<detail::is_tensor_container_v<Container>,int> =0>
 static auto concatenate(const typename Container::value_type::dim_type& direction, const Container& ts){
     return concatenate_container(direction, ts);
 }
@@ -701,7 +701,7 @@ template<typename...Us, typename...Ts>
 static auto vstack(const basic_tensor<Us...>& t, const Ts&...ts){
     return vstack_variadic(t, ts...);
 }
-template<typename Container>
+template<typename Container, std::enable_if_t<detail::is_tensor_container_v<Container>,int> =0>
 static auto vstack(const Container& ts){
     return vstack_container(ts);
 }
@@ -709,7 +709,7 @@ template<typename...Us, typename...Ts>
 static auto hstack(const basic_tensor<Us...>& t, const Ts&...ts){
     return hstack_variadic(t, ts...);
 }
-template<typename Container>
+template<typename Container, std::enable_if_t<detail::is_tensor_container_v<Container>,int> =0>
 static auto hstack(const Container& ts){
     return hstack_container(ts);
 }
@@ -771,7 +771,7 @@ auto stack(const typename basic_tensor<Us...>::dim_type& direction, const basic_
     using config_type = typename basic_tensor<Us...>::config_type;
     return combiner_selector_t<config_type>::stack(direction, t, ts...);
 }
-template<typename Container>
+template<typename Container, std::enable_if_t<detail::is_tensor_container_v<Container>,int> =0>
 auto stack(const typename Container::value_type::dim_type& direction, const Container& ts){
     static_assert(detail::is_tensor_container_v<Container>);
     using config_type = typename Container::value_type::config_type;
@@ -783,7 +783,7 @@ auto concatenate(const typename basic_tensor<Us...>::dim_type& direction, const 
     using config_type = typename basic_tensor<Us...>::config_type;
     return combiner_selector_t<config_type>::concatenate(direction, t, ts...);
 }
-template<typename Container>
+template<typename Container, std::enable_if_t<detail::is_tensor_container_v<Container>,int> =0>
 auto concatenate(const typename Container::value_type::dim_type& direction, const Container& ts){
     static_assert(detail::is_tensor_container_v<Container>);
     using config_type = typename Container::value_type::config_type;
