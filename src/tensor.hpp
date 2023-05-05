@@ -7,6 +7,7 @@
 #include "tensor_operators.hpp"
 #include "slice.hpp"
 #include "view_factory.hpp"
+#include "reduce.hpp"
 
 namespace gtensor{
 template<typename T, typename Config> class tensor;
@@ -67,6 +68,11 @@ public:
     auto create_indexer()const{return impl_->create_indexer();}
     auto create_walker(dim_type max_dim)const{return impl_->create_walker(max_dim);}
     auto create_walker()const{return impl_->create_walker();}
+    //reduce
+    template<typename BinaryOp>
+    auto reduce(const dim_type& direction, BinaryOp op)const{
+        return reduce(*this, direction, op);
+    }
     //view construction operators and methods
     //slice view
     auto operator()(std::initializer_list<std::initializer_list<slice_item_type>> subs)const{

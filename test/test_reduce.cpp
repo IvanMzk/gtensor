@@ -1,12 +1,11 @@
 #include "catch.hpp"
-#include "gtensor.hpp"
 #include "reduce.hpp"
 #include "helpers_for_testing.hpp"
 #include "test_config.hpp"
 
 TEST_CASE("test_check_reduce_args","[test_reduce]")
 {
-    using config_type = gtensor::config::default_config;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using dim_type = config_type::dim_type;
     using shape_type = config_type::shape_type;
     using gtensor::reduce_exception;
@@ -30,7 +29,7 @@ TEST_CASE("test_check_reduce_args","[test_reduce]")
 
 TEST_CASE("test_make_reduce_shape","[test_reduce]")
 {
-    using config_type = gtensor::config::default_config;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using dim_type = config_type::dim_type;
     using shape_type = config_type::shape_type;
     using gtensor::detail::make_reduce_shape;
@@ -50,17 +49,16 @@ TEST_CASE("test_make_reduce_shape","[test_reduce]")
     REQUIRE(result == expected);
 }
 
-TEMPLATE_TEST_CASE("test_reduce","[test_reduce]",
-    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-)
+TEST_CASE("test_reduce","[test_reduce]")
 {
     using value_type = double;
-    using config_type = TestType;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
     using dim_type = typename config_type::dim_type;
     using tensor_type = gtensor::tensor<value_type,config_type>;
-    using helpers_for_testing::apply_by_element;
     using gtensor::reduce_operations::max;
     using gtensor::reduce_operations::min;
+    using gtensor::reduce;
+    using helpers_for_testing::apply_by_element;
     //0tensor,1direction,2functor,3expected
     auto test_data = std::make_tuple(
         std::make_tuple(tensor_type{}.reshape(1,0), dim_type{0}, std::plus{}, tensor_type{}),
@@ -85,7 +83,7 @@ TEMPLATE_TEST_CASE("test_reduce","[test_reduce]",
         auto direction = std::get<1>(t);
         auto functor = std::get<2>(t);
         auto expected = std::get<3>(t);
-        auto result = tensor.reduce(direction, functor);
+        auto result = reduce(tensor, direction, functor);
         REQUIRE(result.equals(expected));
         auto result1 = reduce(tensor, direction, functor);
         REQUIRE(result1.equals(expected));
@@ -93,14 +91,13 @@ TEMPLATE_TEST_CASE("test_reduce","[test_reduce]",
     apply_by_element(test, test_data);
 }
 
-TEMPLATE_TEST_CASE("test_reduce_ecxeption","[test_reduce]",
-    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-)
+TEST_CASE("test_reduce_ecxeption","[test_reduce]")
 {
     using value_type = double;
-    using config_type = TestType;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
     using dim_type = typename config_type::dim_type;
     using tensor_type = gtensor::tensor<value_type,config_type>;
+    using gtensor::reduce;
     using helpers_for_testing::apply_by_element;
     using gtensor::reduce_exception;
 
@@ -118,7 +115,7 @@ TEMPLATE_TEST_CASE("test_reduce_ecxeption","[test_reduce]",
         auto tensor = std::get<0>(t);
         auto direction = std::get<1>(t);
         auto functor = std::get<2>(t);
-        REQUIRE_THROWS_AS(tensor.reduce(direction, functor), reduce_exception);
+        REQUIRE_THROWS_AS(reduce(tensor, direction, functor), reduce_exception);
     };
     apply_by_element(test, test_data);
 }
