@@ -1,15 +1,13 @@
 #include "catch.hpp"
-#include "gtensor.hpp"
+#include "tensor.hpp"
 #include "combine.hpp"
 #include "helpers_for_testing.hpp"
 #include "test_config.hpp"
 
 //test helpers
-TEMPLATE_TEST_CASE("test_check_stack_args_nothrow","[test_combine]",
-    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-)
+TEST_CASE("test_check_stack_args_nothrow","[test_combine]")
 {
-    using config_type = TestType;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using dim_type = typename config_type::dim_type;
     using shape_type = typename config_type::shape_type;
     using gtensor::combine_exception;
@@ -65,11 +63,9 @@ TEMPLATE_TEST_CASE("test_check_stack_args_nothrow","[test_combine]",
     }
 }
 
-TEMPLATE_TEST_CASE("test_check_stack_args_exception","[test_combine]",
-    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-)
+TEST_CASE("test_check_stack_args_exception","[test_combine]")
 {
-    using config_type = TestType;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using dim_type = typename config_type::dim_type;
     using shape_type = typename config_type::shape_type;
     using gtensor::combine_exception;
@@ -118,11 +114,9 @@ TEMPLATE_TEST_CASE("test_check_stack_args_exception","[test_combine]",
     }
 }
 
-TEMPLATE_TEST_CASE("test_check_concatenate_args_nothrow","[test_combine]",
-    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-)
+TEST_CASE("test_check_concatenate_args_nothrow","[test_combine]")
 {
-    using config_type = TestType;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using dim_type = typename config_type::dim_type;
     using shape_type = typename config_type::shape_type;
     using gtensor::combine_exception;
@@ -181,11 +175,9 @@ TEMPLATE_TEST_CASE("test_check_concatenate_args_nothrow","[test_combine]",
     }
 }
 
-TEMPLATE_TEST_CASE("test_check_concatenate_args_exception","[test_combine]",
-    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-)
+TEST_CASE("test_check_concatenate_args_exception","[test_combine]")
 {
-    using config_type = TestType;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using dim_type = typename config_type::dim_type;
     using shape_type = typename config_type::shape_type;
     using gtensor::combine_exception;
@@ -237,11 +229,9 @@ TEMPLATE_TEST_CASE("test_check_concatenate_args_exception","[test_combine]",
     }
 }
 
-TEMPLATE_TEST_CASE("test_make_stack_shape","[test_combine]",
-    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-)
+TEST_CASE("test_make_stack_shape","[test_combine]")
 {
-    using config_type = TestType;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using dim_type = typename config_type::dim_type;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
@@ -269,11 +259,9 @@ TEMPLATE_TEST_CASE("test_make_stack_shape","[test_combine]",
     REQUIRE(result == expected);
 }
 
-TEMPLATE_TEST_CASE("test_make_concatenate_shape","[test_combine]",
-    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-)
+TEST_CASE("test_make_concatenate_shape","[test_combine]")
 {
-    using config_type = TestType;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using dim_type = typename config_type::dim_type;
     using shape_type = typename config_type::shape_type;
     using gtensor::detail::make_concatenate_variadic_shape;
@@ -380,7 +368,7 @@ TEST_CASE("test_is_tensor_nested_tuple", "[test_combine]"){
 }
 
 TEST_CASE("test_widen_shape", "[test_combine]"){
-    using config_type = gtensor::config::default_config;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using shape_type = config_type::shape_type;
     using dim_type = config_type::dim_type;
     using gtensor::detail::widen_shape;
@@ -403,12 +391,10 @@ TEST_CASE("test_widen_shape", "[test_combine]"){
 }
 
 //test interface
-TEMPLATE_TEST_CASE("test_stack_nothrow","[test_combine]",
-    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-)
+TEST_CASE("test_stack_nothrow","[test_combine]")
 {
     using value_type = double;
-    using config_type = TestType;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
     using dim_type = typename config_type::dim_type;
     using tensor_type = gtensor::tensor<value_type, config_type>;
     using helpers_for_testing::apply_by_element;
@@ -474,12 +460,10 @@ TEMPLATE_TEST_CASE("test_stack_nothrow","[test_combine]",
     }
 }
 
-TEMPLATE_TEST_CASE("test_stack_exception","[test_combine]",
-    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-)
+TEST_CASE("test_stack_exception","[test_combine]")
 {
     using value_type = double;
-    using config_type = TestType;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
     using dim_type = typename config_type::dim_type;
     using tensor_type = gtensor::tensor<value_type, config_type>;
     using gtensor::combine_exception;
@@ -524,15 +508,12 @@ TEMPLATE_TEST_CASE("test_stack_exception","[test_combine]",
     }
 }
 
-TEMPLATE_TEST_CASE("test_stack_common_type","[test_combine]",
-    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-)
+TEST_CASE("test_stack_common_type","[test_combine]")
 {
-    using config_type = TestType;
-    using dim_type = typename config_type::dim_type;
-    using tensor_int32_type = gtensor::tensor<int, config_type>;
-    using tensor_int64_type = gtensor::tensor<std::int64_t, config_type>;
-    using tensor_double_type = gtensor::tensor<double, config_type>;
+    using tensor_int32_type = gtensor::tensor<int, gtensor::config::default_config>;
+    using tensor_int64_type = gtensor::tensor<std::int64_t, gtensor::config::default_config>;
+    using tensor_double_type = gtensor::tensor<double, gtensor::config::default_config>;
+    using dim_type = std::common_type_t<typename tensor_int32_type::dim_type, typename tensor_int64_type::dim_type, typename tensor_double_type::dim_type>;
     using helpers_for_testing::apply_by_element;
     using gtensor::stack;
     //0direction,1tensors,2expected
@@ -555,12 +536,10 @@ TEMPLATE_TEST_CASE("test_stack_common_type","[test_combine]",
     apply_by_element(test, test_data);
 }
 
-TEMPLATE_TEST_CASE("test_concatenate","[test_combine]",
-    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-)
+TEST_CASE("test_concatenate","[test_combine]")
 {
     using value_type = double;
-    using config_type = TestType;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
     using dim_type = typename config_type::dim_type;
     using tensor_type = gtensor::tensor<value_type, config_type>;
     using helpers_for_testing::apply_by_element;
@@ -656,12 +635,10 @@ TEMPLATE_TEST_CASE("test_concatenate","[test_combine]",
     }
 }
 
-TEMPLATE_TEST_CASE("test_concatenate_exception","[test_combine]",
-    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-)
+TEST_CASE("test_concatenate_exception","[test_combine]")
 {
     using value_type = double;
-    using config_type = TestType;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
     using dim_type = typename config_type::dim_type;
     using tensor_type = gtensor::tensor<value_type, config_type>;
     using gtensor::combine_exception;
@@ -706,15 +683,12 @@ TEMPLATE_TEST_CASE("test_concatenate_exception","[test_combine]",
     }
 }
 
-TEMPLATE_TEST_CASE("test_concatenate_common_type","[test_combine]",
-    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-)
+TEST_CASE("test_concatenate_common_type","[test_combine]")
 {
-    using config_type = TestType;
-    using dim_type = typename config_type::dim_type;
-    using tensor_int32_type = gtensor::tensor<int, config_type>;
-    using tensor_int64_type = gtensor::tensor<std::int64_t, config_type>;
-    using tensor_double_type = gtensor::tensor<double, config_type>;
+    using tensor_int32_type = gtensor::tensor<int, gtensor::config::default_config>;
+    using tensor_int64_type = gtensor::tensor<std::int64_t, gtensor::config::default_config>;
+    using tensor_double_type = gtensor::tensor<double, gtensor::config::default_config>;
+    using dim_type = std::common_type_t<typename tensor_int32_type::dim_type, typename tensor_int64_type::dim_type, typename tensor_double_type::dim_type>;
     using helpers_for_testing::apply_by_element;
     using gtensor::concatenate;
     //0direction,1tensors,2expected
@@ -737,12 +711,10 @@ TEMPLATE_TEST_CASE("test_concatenate_common_type","[test_combine]",
     apply_by_element(test, test_data);
 }
 
-TEMPLATE_TEST_CASE("test_vstack","[test_combine]",
-    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-)
+TEST_CASE("test_vstack","[test_combine]")
 {
     using value_type = double;
-    using config_type = TestType;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
     using tensor_type = gtensor::tensor<value_type, config_type>;
     using helpers_for_testing::apply_by_element;
     using gtensor::vstack;
@@ -798,12 +770,10 @@ TEMPLATE_TEST_CASE("test_vstack","[test_combine]",
     }
 }
 
-TEMPLATE_TEST_CASE("test_vstack_exception","[test_combine]",
-    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-)
+TEST_CASE("test_vstack_exception","[test_combine]")
 {
     using value_type = double;
-    using config_type = TestType;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
     using tensor_type = gtensor::tensor<value_type, config_type>;
     using helpers_for_testing::apply_by_element;
     using gtensor::combine_exception;
@@ -839,12 +809,10 @@ TEMPLATE_TEST_CASE("test_vstack_exception","[test_combine]",
     }
 }
 
-TEMPLATE_TEST_CASE("test_hstack","[test_combine]",
-    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-)
+TEST_CASE("test_hstack","[test_combine]")
 {
     using value_type = double;
-    using config_type = TestType;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
     using tensor_type = gtensor::tensor<value_type, config_type>;
     using helpers_for_testing::apply_by_element;
     using gtensor::hstack;
@@ -883,12 +851,10 @@ TEMPLATE_TEST_CASE("test_hstack","[test_combine]",
     }
 }
 
-TEMPLATE_TEST_CASE("test_hstack_exception","[test_combine]",
-    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-)
+TEST_CASE("test_hstack_exception","[test_combine]")
 {
     using value_type = double;
-    using config_type = TestType;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
     using tensor_type = gtensor::tensor<value_type, config_type>;
     using helpers_for_testing::apply_by_element;
     using gtensor::combine_exception;
@@ -923,12 +889,10 @@ TEMPLATE_TEST_CASE("test_hstack_exception","[test_combine]",
     }
 }
 
-TEMPLATE_TEST_CASE("test_block_tuple","[test_combine]",
-    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-)
+TEST_CASE("test_block_tuple","[test_combine]")
 {
     using value_type = double;
-    using config_type = TestType;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
     using tensor_type = gtensor::tensor<value_type, config_type>;
     using gtensor::block;
     using helpers_for_testing::apply_by_element;
@@ -1007,12 +971,10 @@ TEMPLATE_TEST_CASE("test_block_tuple","[test_combine]",
     apply_by_element(test, test_data);
 }
 
-TEMPLATE_TEST_CASE("test_block_tuple_exception","[test_combine]",
-    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-)
+TEST_CASE("test_block_tuple_exception","[test_combine]")
 {
     using value_type = double;
-    using config_type = TestType;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
     using tensor_type = gtensor::tensor<value_type, config_type>;
     using gtensor::combine_exception;
     using gtensor::block;
@@ -1035,12 +997,10 @@ TEMPLATE_TEST_CASE("test_block_tuple_exception","[test_combine]",
     apply_by_element(test, test_data);
 }
 
-TEMPLATE_TEST_CASE("test_block_init_list","[test_combine]",
-    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-)
+TEST_CASE("test_block_init_list","[test_combine]")
 {
     using value_type = double;
-    using config_type = TestType;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
     using tensor_type = gtensor::tensor<value_type, config_type>;
     using gtensor::detail::nested_init_list1;
     using gtensor::detail::nested_init_list2;
@@ -1100,12 +1060,10 @@ TEMPLATE_TEST_CASE("test_block_init_list","[test_combine]",
     apply_by_element(test, test_data);
 }
 
-TEMPLATE_TEST_CASE("test_block_exception","[test_combine]",
-    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-)
+TEST_CASE("test_block_exception","[test_combine]")
 {
     using value_type = double;
-    using config_type = TestType;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
     using tensor_type = gtensor::tensor<value_type, config_type>;
     using gtensor::combine_exception;
     using gtensor::detail::nested_init_list1;
@@ -1124,12 +1082,10 @@ TEMPLATE_TEST_CASE("test_block_exception","[test_combine]",
     REQUIRE_THROWS_AS(block(nested_init_list3<tensor_type>{{{tensor_type{},tensor_type{}},{tensor_type{}}}, {{tensor_type{}}}}), combine_exception);
 }
 
-TEMPLATE_TEST_CASE("test_split_split_points","[test_combine]",
-    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-)
+TEST_CASE("test_split_split_points","[test_combine]")
 {
     using value_type = double;
-    using config_type = TestType;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
     using tensor_type = gtensor::tensor<value_type, config_type>;
     using dim_type = typename tensor_type::dim_type;
     using index_type = typename tensor_type::index_type;
@@ -1212,12 +1168,10 @@ TEMPLATE_TEST_CASE("test_split_split_points","[test_combine]",
     apply_by_element(test, test_data);
 }
 
-TEMPLATE_TEST_CASE("test_split_equal_parts","[test_combine]",
-    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-)
+TEST_CASE("test_split_equal_parts","[test_combine]")
 {
     using value_type = double;
-    using config_type = TestType;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
     using tensor_type = gtensor::tensor<value_type, config_type>;
     using dim_type = typename tensor_type::dim_type;
     using index_type = typename tensor_type::index_type;
@@ -1282,12 +1236,10 @@ TEMPLATE_TEST_CASE("test_split_equal_parts","[test_combine]",
     apply_by_element(test, test_data);
 }
 
-TEMPLATE_TEST_CASE("test_split_exception","[test_combine]",
-    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-)
+TEST_CASE("test_split_exception","[test_combine]")
 {
     using value_type = double;
-    using config_type = TestType;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
     using tensor_type = gtensor::tensor<value_type, config_type>;
     using gtensor::combine_exception;
     using gtensor::split;
@@ -1315,12 +1267,10 @@ TEMPLATE_TEST_CASE("test_split_exception","[test_combine]",
     apply_by_element(test, test_data);
 }
 
-TEMPLATE_TEST_CASE("test_vsplit","[test_combine]",
-    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-)
+TEST_CASE("test_vsplit","[test_combine]")
 {
     using value_type = double;
-    using config_type = TestType;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
     using tensor_type = gtensor::tensor<value_type, config_type>;
     using result_type = typename config_type::template container<tensor_type>;
     using gtensor::vsplit;
@@ -1385,12 +1335,10 @@ TEMPLATE_TEST_CASE("test_vsplit","[test_combine]",
     }
 }
 
-TEMPLATE_TEST_CASE("test_hsplit","[test_combine]",
-    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-)
+TEST_CASE("test_hsplit","[test_combine]")
 {
     using value_type = double;
-    using config_type = TestType;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
     using tensor_type = gtensor::tensor<value_type, config_type>;
     using result_type = typename config_type::template container<tensor_type>;
     using gtensor::hsplit;
@@ -1454,12 +1402,10 @@ TEMPLATE_TEST_CASE("test_hsplit","[test_combine]",
     }
 }
 
-TEMPLATE_TEST_CASE("test_hsplit_hstack","[test_combine]",
-    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-)
+TEST_CASE("test_hsplit_hstack","[test_combine]")
 {
     using value_type = double;
-    using config_type = TestType;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
     using tensor_type = gtensor::tensor<value_type, config_type>;
     using result_type = typename config_type::template container<tensor_type>;
     using gtensor::hsplit;
@@ -1520,12 +1466,10 @@ TEMPLATE_TEST_CASE("test_hsplit_hstack","[test_combine]",
     }
 }
 
-TEMPLATE_TEST_CASE("test_vsplit_vstack","[test_combine]",
-    test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type
-)
+TEST_CASE("test_vsplit_vstack","[test_combine]")
 {
     using value_type = double;
-    using config_type = TestType;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
     using tensor_type = gtensor::tensor<value_type, config_type>;
     using result_type = typename config_type::template container<tensor_type>;
     using gtensor::vstack;

@@ -9,6 +9,7 @@ template<typename Config, typename T> class tensor_factory;
 class view_factory;
 template<typename F> class expression_template_n_operator;
 class reducer;
+class combiner;
 
 
 //storage implementation factory selector
@@ -71,6 +72,20 @@ public:
 };
 template<typename...Ts> using reducer_selector_t = typename reducer_selector<Ts...>::type;
 
+//combiner selector
+template<typename Config, typename...Ts>
+class combiner_selector
+{
+    using config_type = Config;
+    template<typename...> struct selector_;
+    template<typename Dummy> struct selector_<config::engine_expression_template,Dummy>
+    {
+        using type = combiner;
+    };
+public:
+    using type = typename selector_<typename config_type::engine, void, Ts...>::type;
+};
+template<typename...Ts> using combiner_selector_t = typename combiner_selector<Ts...>::type;
 
 }   //end of namespace gtensor
 #endif
