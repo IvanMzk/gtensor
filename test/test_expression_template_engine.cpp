@@ -43,6 +43,19 @@ struct ternary_add_mul{
     }
 };
 
+struct assign{
+    template<typename T1, typename T2>
+    void operator()(T1& t1, const T2& t2)const{
+        t1 = t2;
+    }
+};
+struct assign_add{
+    template<typename T1, typename T2>
+    void operator()(T1& t1, const T2& t2)const{
+        t1 += t2;
+    }
+};
+
 }
 
 TEMPLATE_TEST_CASE("test_expression_template_walker","[test_expression_template_engine]",
@@ -195,14 +208,14 @@ TEMPLATE_TEST_CASE("test_expression_template_core","[test_expression_template_en
     apply_by_element(test,test_data);
 }
 
-TEMPLATE_TEST_CASE("test_expression_template_n_operator","[test_expression_template_engine]",
+TEMPLATE_TEST_CASE("test_expression_template_operator_n_operator","[test_expression_template_engine]",
     test_config::config_engine_selector_t<gtensor::config::engine_expression_template>
 )
 {
     using value_type = double;
     using config_type = gtensor::config::extend_config_t<TestType,value_type>;
     using tensor_type = gtensor::tensor<value_type,config_type>;
-    using gtensor::expression_template_n_operator;
+    using gtensor::expression_template_operator;
     using test_expression_template_engine_::unary_square;
     using test_expression_template_engine_::binary_mul;
     using test_expression_template_engine_::binary_sub;
@@ -237,9 +250,69 @@ TEMPLATE_TEST_CASE("test_expression_template_n_operator","[test_expression_templ
         auto operands = std::get<1>(t);
         auto expected = std::get<2>(t);
         auto apply_n_operator = [f](auto&&...operands){
-            return expression_template_n_operator<F>{}(f,operands...);
+            return expression_template_operator<F>::n_operator(f,operands...);
         };
         auto result = std::apply(apply_n_operator, operands);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test, test_data);
+}
+
+TEMPLATE_TEST_CASE("test_expression_template_operator_a_operator","[test_expression_template_engine]",
+    test_config::config_engine_selector_t<gtensor::config::engine_expression_template>
+)
+{
+    using value_type = double;
+    using config_type = gtensor::config::extend_config_t<TestType,value_type>;
+    using tensor_type = gtensor::tensor<value_type,config_type>;
+    using gtensor::expression_template_operator;
+    using test_expression_template_engine_::assign;
+    using test_expression_template_engine_::assign_add;
+    using helpers_for_testing::apply_by_element;
+    //0operation,1lhs,2rhs,3expected
+    auto test_data = std::make_tuple(
+        //rhs scalar
+        std::make_tuple(assign{},tensor_type{},2,tensor_type{}),
+        std::make_tuple(assign{},tensor_type(2),1,tensor_type(1)),
+        std::make_tuple(assign{},tensor_type{1,2,3,4,5},3,tensor_type{3,3,3,3,3}),
+        std::make_tuple(assign{},tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},4,tensor_type{{{4,4},{4,4}},{{4,4},{4,4}}}),
+        std::make_tuple(assign_add{},tensor_type{},2,tensor_type{}),
+        std::make_tuple(assign_add{},tensor_type(2),1,tensor_type(3)),
+        std::make_tuple(assign_add{},tensor_type{1,2,3,4,5},3,tensor_type{4,5,6,7,8}),
+        std::make_tuple(assign_add{},tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},4,tensor_type{{{5,6},{7,8}},{{9,10},{11,12}}}),
+        //rhs tensor
+        std::make_tuple(assign{},tensor_type{},tensor_type{},tensor_type{}),
+        std::make_tuple(assign{},tensor_type{},tensor_type(1),tensor_type{}),
+        std::make_tuple(assign{},tensor_type{},tensor_type{1},tensor_type{}),
+        std::make_tuple(assign{},tensor_type(1),tensor_type{},tensor_type(1)),
+        std::make_tuple(assign{},tensor_type(1),tensor_type(2),tensor_type(2)),
+        std::make_tuple(assign{},tensor_type(2),tensor_type{3},tensor_type(3)),
+        std::make_tuple(assign{},tensor_type{1,2,3,4,5},tensor_type{6},tensor_type{6,6,6,6,6}),
+        std::make_tuple(assign{},tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},tensor_type{{-1},{1}},tensor_type{{{-1,-1},{1,1}},{{-1,-1},{1,1}}}),
+        std::make_tuple(assign_add{},tensor_type{},tensor_type{},tensor_type{}),
+        std::make_tuple(assign_add{},tensor_type{},tensor_type(1),tensor_type{}),
+        std::make_tuple(assign_add{},tensor_type{},tensor_type{1},tensor_type{}),
+        std::make_tuple(assign_add{},tensor_type(1),tensor_type{},tensor_type(1)),
+        std::make_tuple(assign_add{},tensor_type(1),tensor_type(2),tensor_type(3)),
+        std::make_tuple(assign_add{},tensor_type(2),tensor_type{3},tensor_type(5)),
+        std::make_tuple(assign_add{},tensor_type{1,2,3,4,5},tensor_type{6},tensor_type{7,8,9,10,11}),
+        std::make_tuple(assign_add{},tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},tensor_type{{-1},{1}},tensor_type{{{0,1},{4,5}},{{4,5},{8,9}}}),
+        //assign multiple times to lhs
+        std::make_tuple(assign{},tensor_type(3),tensor_type{1,2,3,4,5},tensor_type(5)),
+        std::make_tuple(assign{},tensor_type{0},tensor_type{1,2,3,4,5},tensor_type{5}),
+        std::make_tuple(assign{},tensor_type{0,0},tensor_type{{1,2},{3,4},{5,6}},tensor_type{5,6}),
+        std::make_tuple(assign_add{},tensor_type(3),tensor_type{1,2,3,4,5},tensor_type(18)),
+        std::make_tuple(assign_add{},tensor_type{0},tensor_type{1,2,3,4,5},tensor_type{15}),
+        std::make_tuple(assign_add{},tensor_type{-1,1},tensor_type{{1,2},{3,4},{5,6}},tensor_type{8,13})
+    );
+    auto test = [](const auto& t){
+        auto f = std::get<0>(t);
+        using F = decltype(f);
+        auto lhs = std::get<1>(t);
+        auto rhs = std::get<2>(t);
+        auto expected = std::get<3>(t);
+        auto& result = expression_template_operator<F>::a_operator(f,lhs,rhs);
+        REQUIRE(&result == &lhs);
         REQUIRE(result == expected);
     };
     apply_by_element(test, test_data);

@@ -7,7 +7,7 @@ namespace gtensor{
 //forward declarations
 template<typename Config, typename T> class tensor_factory;
 class view_factory;
-template<typename F> class expression_template_n_operator;
+template<typename F> class expression_template_operator;
 class reducer;
 class combiner;
 
@@ -42,20 +42,20 @@ public:
 };
 template<typename...Ts> using view_factory_selector_t = typename view_factory_selector<Ts...>::type;
 
-//n_operator selector
+//operator selector
 template<typename Config, typename...Ts>
-class n_operator_selector
+class operator_selector
 {
     using config_type = Config;
     template<typename...> struct selector_;
     template<typename F> struct selector_<config::engine_expression_template,F>
     {
-        using type = expression_template_n_operator<F>;
+        using type = expression_template_operator<F>;
     };
 public:
     using type = typename selector_<typename config_type::engine, void, Ts...>::type;
 };
-template<typename...Ts> using n_operator_selector_t = typename n_operator_selector<Ts...>::type;
+template<typename...Ts> using operator_selector_t = typename operator_selector<Ts...>::type;
 
 //reducer selector
 template<typename Config, typename...Ts>

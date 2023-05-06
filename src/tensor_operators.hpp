@@ -24,45 +24,26 @@ template<typename...Ts, typename Other>\
 inline auto NAME(basic_tensor<Ts...>&& t, Other&& other){\
     return n_operator(F{},std::move(t),std::forward<Other>(other));\
 }\
-template<typename...Us, typename...Ts>\
-inline auto NAME(const basic_tensor<Us...>& t1, const basic_tensor<Ts...>& t2){\
-    return n_operator(F{},t1,t2);\
+template<typename Other, typename...Ts, std::enable_if_t<detail::lhs_other_v<std::decay_t<Other>,typename basic_tensor<Ts...>::value_type>,int> =0>\
+inline auto NAME(Other&& other, const basic_tensor<Ts...>& t){\
+    return n_operator(F{},std::forward<Other>(other),t);\
 }\
-template<typename...Us, typename...Ts>\
-inline auto NAME(const basic_tensor<Us...>& t1, basic_tensor<Ts...>&& t2){\
-    return n_operator(F{},t1,std::move(t2));\
-}\
-template<typename...Us, typename...Ts>\
-inline auto NAME(basic_tensor<Us...>&& t1, const basic_tensor<Ts...>& t2){\
-    return n_operator(F{},std::move(t1),t2);\
-}\
-template<typename...Us, typename...Ts>\
-inline auto NAME(basic_tensor<Us...>&& t1, basic_tensor<Ts...>&& t2){\
-    return n_operator(F{},std::move(t1),std::move(t2));\
+template<typename Other, typename...Ts, std::enable_if_t<detail::lhs_other_v<std::decay_t<Other>,typename basic_tensor<Ts...>::value_type>,int> =0>\
+inline auto NAME(Other&& other, basic_tensor<Ts...>&& t){\
+    return n_operator(F{},std::forward<Other>(other),std::move(t));\
 }
 
-//restrict left Other if  is_tensor_v<Other> || is_convertible<Other,right::value_type> || is_convertible<right::value_type, Other>
-
-// template<typename Other, typename...Ts>\
-// inline auto NAME(Other&& other, const basic_tensor<Ts...>& t){\
-//     return n_operator(F{},std::forward<Other>(other),t);\
-// }\
-// template<typename Other, typename...Ts>\
-// inline auto NAME(Other&& other, basic_tensor<Ts...>&& t){\
-//     return n_operator(F{},std::forward<Other>(other),std::move(t));\
-// }
+#define GTENSOR_ASSIGNMENT_TENSOR_OPERATOR(NAME,F)\
+template<typename...Ts, typename Other>\
+inline auto& NAME(basic_tensor<Ts...>& t, Other&& other){\
+    return a_operator(F{},t,std::forward<Other>(other));\
+}\
 
 namespace gtensor{
 
 namespace detail{
 
-template<typename F, typename E1, typename E2, typename=void> constexpr bool is_defined_operation = false;
-template<typename F, typename E1, typename E2> constexpr bool is_defined_operation<F,E1,E2,std::void_t<decltype(n_operator(std::declval<F>(),std::declval<E1>(),std::declval<E2>()))>> = true;
-
-// template<typename F, typename E1, typename E2, typename=void> constexpr bool is_defined_operation = false;
-// template<typename F, typename E1, typename E2> constexpr bool is_defined_operation<F,E1,E2,std::void_t<decltype(n_operator(std::declval<F>(),std::declval<E1>(),std::declval<E2>()))>> = true;
-// template<typename F, typename E1, typename E2, typename=void> constexpr bool is_defined_operation = false;
-// template<typename F, typename E1, typename E2> constexpr bool is_defined_operation<F,E1,E2,std::void_t<decltype(std::declval<F>()(std::declval<E1>(),std::declval<E2>()))>> = true;
+template<typename Other, typename T> constexpr bool lhs_other_v = detail::is_tensor_v<Other>||std::is_convertible_v<Other,T>||std::is_convertible_v<T,Other>;
 
 template<typename...Ts> struct first_tensor_type;
 template<typename...Ts> struct first_tensor_type_helper;
@@ -77,28 +58,21 @@ template<typename T, typename...Ts> struct first_tensor_type<T,Ts...>{
 };
 template<typename...Ts> using first_tensor_type_t = typename first_tensor_type<Ts...>::type;
 
-}
+}   //end of namespace detail
 
 template<typename F, typename...Operands>
 inline auto n_operator(F&& f, Operands&&...operands){
     using config_type = typename detail::first_tensor_type_t<Operands...>::config_type;
     using operation_type = std::decay_t<F>;
-    return n_operator_selector_t<config_type, operation_type>{}(
-        std::forward<F>(f),
-        std::forward<Operands>(operands)...
-    );
+    return operator_selector_t<config_type, operation_type>::n_operator(std::forward<F>(f),std::forward<Operands>(operands)...);
 }
 
-// template<typename F, typename Operand, typename...Operands>
-// inline auto n_operator(F&& f, Operand&& operand, Operands&&...operands){
-//     using config_type = typename std::decay_t<Operand>::config_type;
-//     using operation_type = std::decay_t<F>;
-//     return n_operator_selector_t<config_type, operation_type>{}(
-//         std::forward<F>(f),
-//         std::forward<Operand>(operand),
-//         std::forward<Operands>(operands)...
-//     );
-// }
+template<typename F, typename Rhs, typename...Ts>
+inline auto& a_operator(F&& f, basic_tensor<Ts...>& lhs, Rhs&& rhs){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    using operation_type = std::decay_t<F>;
+    return operator_selector_t<config_type, operation_type>::a_operator(std::forward<F>(f),lhs,std::forward<Rhs>(rhs));
+}
 
 template<typename...Us, typename...Vs>
 static inline auto operator==(const basic_tensor<Us...>& t1, const basic_tensor<Vs...>& t2){
@@ -112,14 +86,6 @@ static inline auto operator==(const basic_tensor<Us...>& t1, const basic_tensor<
 
 template<typename...Ts>
 std::ostream& operator<<(std::ostream& os, const basic_tensor<Ts...>& t){
-    return os<<str(t);
-}
-template<typename...Ts>
-std::ostream& operator<<(std::ostream& os, basic_tensor<Ts...>& t){
-    return os<<str(t);
-}
-template<typename...Ts>
-std::ostream& operator<<(std::ostream& os, basic_tensor<Ts...>&& t){
     return os<<str(t);
 }
 
@@ -153,20 +119,18 @@ GTENSOR_UNARY_TENSOR_OPERATOR(operator!,operations::logic_not);
 GTENSOR_BINARY_TENSOR_OPERATOR(operator&&,operations::logic_and);
 GTENSOR_BINARY_TENSOR_OPERATOR(operator||,operations::logic_or);
 
-
-// GTENSOR_UNARY_TENSOR_OPERATOR(operator+,operations::unary_plus);
-// GTENSOR_UNARY_TENSOR_OPERATOR(operator-,operations::unary_minus);
-
-// GTENSOR_BINARY_TENSOR_OPERATOR(operator+,operations::add);
-// GTENSOR_BINARY_TENSOR_OPERATOR(operator-,operations::sub);
-// GTENSOR_BINARY_TENSOR_OPERATOR(operator*,operations::mul);
-// GTENSOR_BINARY_TENSOR_OPERATOR(operator/,operations::div);
-// GTENSOR_BINARY_TENSOR_OPERATOR(equal,operations::equal);
-// GTENSOR_BINARY_TENSOR_OPERATOR(operator>,operations::greater);
-// GTENSOR_BINARY_TENSOR_OPERATOR(operator<,operations::less);
-// GTENSOR_BINARY_TENSOR_OPERATOR(operator&&,operations::logic_and);
-// GTENSOR_BINARY_TENSOR_OPERATOR(operator||,operations::logic_or);
-
+//asignment
+GTENSOR_ASSIGNMENT_TENSOR_OPERATOR(assign, operations::assign);
+GTENSOR_ASSIGNMENT_TENSOR_OPERATOR(operator+=, operations::assign_add);
+GTENSOR_ASSIGNMENT_TENSOR_OPERATOR(operator-=, operations::assign_sub);
+GTENSOR_ASSIGNMENT_TENSOR_OPERATOR(operator*=, operations::assign_mul);
+GTENSOR_ASSIGNMENT_TENSOR_OPERATOR(operator/=, operations::assign_div);
+GTENSOR_ASSIGNMENT_TENSOR_OPERATOR(operator%=, operations::assign_mod);
+GTENSOR_ASSIGNMENT_TENSOR_OPERATOR(operator&=, operations::assign_bitwise_and);
+GTENSOR_ASSIGNMENT_TENSOR_OPERATOR(operator|=, operations::assign_bitwise_or);
+GTENSOR_ASSIGNMENT_TENSOR_OPERATOR(operator^=, operations::assign_bitwise_xor);
+GTENSOR_ASSIGNMENT_TENSOR_OPERATOR(operator<<=, operations::assign_bitwise_lshift);
+GTENSOR_ASSIGNMENT_TENSOR_OPERATOR(operator>>=, operations::assign_bitwise_rshift);
 
 }   //end of namespace gtensor
 
