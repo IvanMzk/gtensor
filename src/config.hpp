@@ -57,10 +57,18 @@ struct extended_config{
     using dim_type = typename shape_type::size_type;
 };
 template<typename Config, typename T, typename=void> struct extend_config{
+    static_assert(!std::is_void_v<T>);
     using type = extended_config<Config, typename Config::template storage<T>::difference_type>;
 };
 template<typename Config, typename T> struct extend_config<Config,T,std::void_t<typename Config::config_type>>{
-    using type = extended_config<typename Config::config_type, typename Config::template storage<T>::difference_type>;
+    template<typename, typename> struct selector_;
+    template<typename Dummy> struct selector_<std::true_type,Dummy>{
+        using type = Config;
+    };
+    template<typename Dummy> struct selector_<std::false_type,Dummy>{
+        using type = extended_config<typename Config::config_type, typename Config::template storage<T>::difference_type>;
+    };
+    using type = typename selector_<typename std::is_void<T>::type,void>::type;
 };
 template<typename Config, typename T> using extend_config_t = typename extend_config<Config,T>::type;
 template<typename T, typename=void> constexpr bool is_extended_config_v = false;
