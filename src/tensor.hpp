@@ -15,6 +15,7 @@ template<typename T, typename Config> class tensor;
 template<typename Impl>
 class basic_tensor
 {
+    using tensor_factory_type = tensor_factory_selector_t<typename Impl::config_type,typename Impl::value_type>;
     using impl_type = Impl;
     std::shared_ptr<impl_type> impl_;
 public:
@@ -29,29 +30,96 @@ public:
     using slice_item_type = typename slice_type::slice_item_type;
 
     basic_tensor(const basic_tensor&) = default;
-    basic_tensor& operator=(const basic_tensor&) = default;
     basic_tensor(basic_tensor&&) = default;
-    basic_tensor& operator=(basic_tensor&&) = default;
 
     basic_tensor(std::shared_ptr<impl_type>&& impl__):
         impl_{std::move(impl__)}
     {}
-    //makes tensor by copying shape and elements from this
-    auto copy()const{
-        return tensor<value_type,config_type>{shape(),begin(),end()};
+    //assignment
+    basic_tensor& operator=(const basic_tensor& rhs){
+        if constexpr (std::is_convertible_v<decltype(copy()),basic_tensor>){  //value assignment
+            swap(rhs.copy());
+        }else{  //broadcast assignment, if possible, will not compile otherwise
+            assign(rhs);
+        }
+        return *this;
     }
-    //compare content of this tensor and other
-    // template<typename OtherImpl>
-    // auto equals(const basic_tensor<OtherImpl>& other)const{
-    //     return gtensor::equals(*this, other);
+    basic_tensor& operator=(basic_tensor&& rhs){
+        if constexpr (std::is_convertible_v<decltype(copy()),basic_tensor>){  //value assignment
+            swap(rhs);
+        }else{  //broadcast assignment, if possible, will not compile otherwise
+            assign(rhs);
+        }
+        return *this;
+    }
+    //converting assignment
+    template<typename U>
+    basic_tensor& operator=(const basic_tensor<U>& rhs){
+        if constexpr (std::is_convertible_v<decltype(copy()),basic_tensor>){  //value assignment
+            swap(rhs.template copy<value_type,config_type>());
+        }else{  //broadcast assignment, if possible, will not compile otherwise
+            assign(rhs);
+        }
+        return *this;
+    }
+    template<typename U>
+    basic_tensor& operator=(basic_tensor<U>&& rhs){
+        if constexpr (std::is_convertible_v<decltype(copy()),basic_tensor>){  //value assignment
+            swap(rhs.template copy<value_type,config_type>());
+        }else{  //broadcast assignment, if possible, will not compile otherwise
+            assign(rhs);
+        }
+        return *this;
+    }
+
+    //resize, elements are preserved
+    //makes sence only for storage implementation
+    // template<typename Container>
+    // void resize(Container&& new_shape){
+    //     //makes stor impl and swap it with impl_
+    //     //will only compiles if is_same<decltype(tensor_factory_type::create(...)), decltype(impl_)>
+    //     tensor_factory_type::create(std::forward<Container>(new_shape),begin(),end()).swap(impl_);
     // }
+    // template<typename Container>
+    // void resize(Container&& new_shape){
+    //     //if shape == new_shape do nothing, else
+    //     //makes basic_tensor with stor impl and swap it with *this
+    //     //will only compile if is_convertible<tensor<value_type,config_type>, basic_tensor>
+    //     tensor<value_type,config_type>(std::forward<Container>(new_shape),begin(),end()).swap(*this);
+    // }
+
+    void swap(basic_tensor& other){
+        impl_.swap(other.impl_);
+    }
+    void swap(basic_tensor&& other){
+        swap(other);
+    }
+    //makes tensor by copying shape and elements from this
+    template<typename V, typename C>
+    auto copy()const{
+        return tensor<V,C>(shape(),begin(),end());
+    }
+    auto copy()const{
+        return copy<value_type,config_type>();
+    }
+    //broadcast equality, returns basic_tensor of results of broadcast element-wise comparisons, shapes of this and other must be broadcastable
+    template<typename U>
+    auto equal(const basic_tensor<U>& other)const{
+        return gtensor::equal(*this, other);
+    }
+    //broadcast assignment, shape of lhs never changes, shapes of this and rhs must be broadcastable
+    template<typename U>
+    auto assign(const basic_tensor<U>& rhs){
+        return gtensor::assign(*this, rhs);
+    }
     //meta-data interface
     const auto& descriptor()const{return impl_->descriptor();}
     index_type size()const{return impl_->size();}
     dim_type dim()const{return impl_->dim();}
     const shape_type& shape()const{return impl_->shape();}
     const shape_type& strides()const{return impl_->strides();}
-    bool empty()const{return impl_->empty();}
+    //guaranteed to be empty after move construct from this
+    bool empty()const{return static_cast<bool>(impl_) ? impl_->empty() : true;}
     //data interface
     auto begin(){return impl_->begin();}
     auto end(){return impl_->end();}
@@ -169,6 +237,7 @@ public:
     using shape_type = typename basic_tensor_base::shape_type;
     using size_type = typename basic_tensor_base::size_type;
     using difference_type = typename basic_tensor_base::difference_type;
+    using basic_tensor_base::operator=;
 
     tensor(const tensor&) = default;
     tensor& operator=(const tensor&) = default;
@@ -183,7 +252,8 @@ public:
     template<typename U, std::enable_if_t<std::is_convertible_v<U,value_type>,int> =0> tensor(std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<U>>>>> init_data):tensor(forward_tag::tag(), init_data){}
     //default constructor makes empty 1-d tensor
     tensor():
-        tensor(forward_tag::tag(), std::initializer_list<value_type>{})
+        tensor(forward_tag::tag(), shape_type{0})
+        //tensor(forward_tag::tag(), std::initializer_list<value_type>{})
     {}
     //0-dim tensor constructor (aka tensor-scalar)
     explicit tensor(const value_type& value__):
@@ -225,6 +295,11 @@ auto str(const basic_tensor<Ts...>& t){
     std::stringstream ss{};
     ss<<"{"<<detail::shape_to_str(t.shape())<<[&]{for(const auto& i:t){ss<<i<<" ";}; return "}";}();
     return ss.str();
+}
+
+template<typename T>
+void swap(basic_tensor<T>& u, basic_tensor<T>& v){
+    u.swap(v);
 }
 
 }   //end of namespace gtensor
