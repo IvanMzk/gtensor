@@ -15,7 +15,6 @@ template<typename T, typename Config> class tensor;
 template<typename Impl>
 class basic_tensor
 {
-    using tensor_factory_type = tensor_factory_selector_t<typename Impl::config_type,typename Impl::value_type>;
     using impl_type = Impl;
     std::shared_ptr<impl_type> impl_;
 public:
@@ -71,23 +70,15 @@ public:
         }
         return *this;
     }
-
-    //resize, elements are preserved
-    //makes sence only for storage implementation
-    // template<typename Container>
-    // void resize(Container&& new_shape){
-    //     //makes stor impl and swap it with impl_
-    //     //will only compiles if is_same<decltype(tensor_factory_type::create(...)), decltype(impl_)>
-    //     tensor_factory_type::create(std::forward<Container>(new_shape),begin(),end()).swap(impl_);
-    // }
-    // template<typename Container>
-    // void resize(Container&& new_shape){
-    //     //if shape == new_shape do nothing, else
-    //     //makes basic_tensor with stor impl and swap it with *this
-    //     //will only compile if is_convertible<tensor<value_type,config_type>, basic_tensor>
-    //     tensor<value_type,config_type>(std::forward<Container>(new_shape),begin(),end()).swap(*this);
-    // }
-
+    //resize
+    template<typename Container>
+    void resize(Container&& new_shape){
+        resize_(std::forward<Container>(new_shape));
+    }
+    void resize(std::initializer_list<index_type> new_shape){
+        resize_(new_shape);
+    }
+    //swap
     void swap(basic_tensor& other){
         impl_.swap(other.impl_);
     }
@@ -207,7 +198,14 @@ private:
             return;
         }
     }
-
+    template<typename Container>
+    void resize_(Container&& new_shape){
+        static_assert(std::is_convertible_v<decltype(copy()),basic_tensor>,"can't resize view");
+        const auto& shape_ = shape();
+        if (!std::equal(shape_.begin(),shape_.end(),new_shape.begin(),new_shape.end())){
+            swap(tensor<value_type,config_type>{std::forward<Container>(new_shape),begin(),end()});
+        }
+    }
 };
 
 //tensor is basic_tensor with storage implementation and constructors

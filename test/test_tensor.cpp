@@ -438,6 +438,80 @@ TEMPLATE_TEST_CASE("test_tensor_converting_move_assignment_result","[test_tensor
     apply_by_element(test,test_data);
 }
 
+TEST_CASE("test_tensor_resize_to_not_bigger","[test_tensor]")
+{
+    using value_type = int;
+    using tensor_type = gtensor::tensor<value_type>;
+    using helpers_for_testing::apply_by_element;
+    //0tensor,1new_shape,2expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(tensor_type{},std::vector<int>{0},tensor_type{}),
+        std::make_tuple(tensor_type{},std::array<int,3>{0,2,3},tensor_type{}.reshape(0,2,3)),
+        std::make_tuple(tensor_type(1),std::vector<int>{0},tensor_type{}),
+        std::make_tuple(tensor_type(2),std::vector<int>{},tensor_type(2)),
+        std::make_tuple(tensor_type(1),std::vector<int>{1,1},tensor_type{{1}}),
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},std::vector<int>{0},tensor_type{}),
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},std::vector<int>{},tensor_type(1)),
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},std::vector<int>{3},tensor_type{1,2,3}),
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},std::vector<int>{2,3},tensor_type{{1,2,3},{4,5,6}}),
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},std::vector<int>{2,2,2},tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}})
+    );
+    auto test = [](const auto& t){
+        auto ten = std::get<0>(t);
+        auto new_shape = std::get<1>(t);
+        auto expected = std::get<2>(t);
+        auto ten_size = ten.size();
+        auto expected_size = expected.size();
+        REQUIRE(ten_size >= expected_size);
+        ten.resize(new_shape);
+        REQUIRE(ten == expected);
+    };
+    apply_by_element(test,test_data);
+}
+
+TEST_CASE("test_tensor_resize_to_bigger","[test_tensor]")
+{
+    using value_type = int;
+    using tensor_type = gtensor::tensor<value_type>;
+    using index_type = typename tensor_type::index_type;
+    using helpers_for_testing::apply_by_element;
+    const value_type any{-1};
+    //0tensor,1size,2new_shape,3expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(tensor_type{},index_type{0},std::vector<int>{1},tensor_type{any}),
+        std::make_tuple(tensor_type{},index_type{0},std::vector<int>{5},tensor_type{any,any,any,any,any}),
+        std::make_tuple(tensor_type{},index_type{0},std::vector<int>{2,3},tensor_type{{any,any,any},{any,any,any}}),
+        std::make_tuple(tensor_type(3),index_type{1},std::vector<int>{5},tensor_type{3,any,any,any,any}),
+        std::make_tuple(tensor_type(3),index_type{1},std::vector<int>{3,2},tensor_type{{3,any},{any,any},{any,any}}),
+        std::make_tuple(tensor_type{4},index_type{1},std::vector<int>{5},tensor_type{4,any,any,any,any}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},index_type{6},std::vector<int>{2,2,2},tensor_type{{{1,2},{3,4}},{{5,6},{any,any}}})
+    );
+    auto test = [](const auto& t){
+        auto ten = std::get<0>(t);
+        auto ten_size = std::get<1>(t);
+        auto new_shape = std::get<2>(t);
+        auto expected = std::get<3>(t);
+        auto expected_size = expected.size();
+        auto expected_shape = expected.shape();
+        REQUIRE(ten_size == ten.size());
+        REQUIRE(expected_size > ten_size);
+        ten.resize(new_shape);
+        auto result_shape = ten.shape();
+        REQUIRE(result_shape == expected_shape);
+        REQUIRE(std::equal(ten.begin(),ten.begin()+ten_size,expected.begin()));
+    };
+    apply_by_element(test,test_data);
+}
+
+TEST_CASE("test_tensor_resize_init_list_interface","[test_tensor]")
+{
+    using value_type = int;
+    using tensor_type = gtensor::tensor<value_type>;
+    tensor_type t0{{1,2,3},{4,5,6}};
+    t0.resize({2,2});
+    REQUIRE(t0 == tensor_type{{1,2},{3,4}});
+    //t0.transpose().resize({2,2}); //can't resize view
+}
 
 // TEST_CASE("test_tensor_copy","[test_tensor]"){
 //     using value_type = double;
