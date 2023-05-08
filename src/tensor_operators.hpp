@@ -43,7 +43,7 @@ namespace gtensor{
 
 namespace detail{
 
-template<typename Other, typename T> constexpr bool lhs_other_v = detail::is_tensor_v<Other>||std::is_convertible_v<Other,T>||std::is_convertible_v<T,Other>;
+template<typename Other, typename T> constexpr bool lhs_other_v = std::is_convertible_v<Other,T>||std::is_convertible_v<T,Other>;
 
 template<typename...Ts> struct first_tensor_type;
 template<typename...Ts> struct first_tensor_type_helper;
@@ -62,7 +62,7 @@ template<typename...Ts> using first_tensor_type_t = typename first_tensor_type<T
 
 template<typename F, typename...Operands>
 inline auto n_operator(F&& f, Operands&&...operands){
-    using config_type = typename detail::first_tensor_type_t<Operands...>::config_type;
+    using config_type = typename detail::first_tensor_type_t<std::remove_cv_t<std::remove_reference_t<Operands>>...>::config_type;
     using operation_type = std::decay_t<F>;
     return operator_selector_t<config_type, operation_type>::n_operator(std::forward<F>(f),std::forward<Operands>(operands)...);
 }

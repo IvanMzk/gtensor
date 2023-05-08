@@ -53,7 +53,7 @@ class operator_selector
         using type = expression_template_operator<F>;
     };
 public:
-    using type = typename selector_<typename config_type::engine, void, Ts...>::type;
+    using type = typename selector_<typename config_type::engine, Ts...>::type;
 };
 template<typename...Ts> using operator_selector_t = typename operator_selector<Ts...>::type;
 
