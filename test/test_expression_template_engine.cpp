@@ -1,7 +1,7 @@
 #include "catch.hpp"
 #include "test_config.hpp"
 #include "helpers_for_testing.hpp"
-#include "expression_template_operators.hpp"
+#include "expression_template_operator.hpp"
 #include "tensor.hpp"
 
 namespace test_expression_template_engine_{

@@ -3,7 +3,7 @@
 
 #include "type_selector.hpp"
 #include "operation.hpp"
-#include "expression_template_operators.hpp"
+#include "expression_template_operator.hpp"
 
 #define GTENSOR_UNARY_TENSOR_OPERATOR(NAME,F)\
 template<typename Impl>\
