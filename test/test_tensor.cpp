@@ -300,6 +300,10 @@ TEMPLATE_TEST_CASE("test_tensor_copy_assignment_converting_copy_assignment_resul
     using helpers_for_testing::apply_by_element;
     //0lhs,1rhs,2expected_lhs,3expected_rhs
     auto test_data = std::make_tuple(
+        //rhs scalar
+        std::make_tuple(lhs_tensor_type{},1,lhs_tensor_type(1),1),
+        std::make_tuple(lhs_tensor_type(1),2,lhs_tensor_type(2),2),
+        std::make_tuple(lhs_tensor_type{1,2,3},4,lhs_tensor_type(4),4),
         //rhs tensor
         std::make_tuple(lhs_tensor_type{},rhs_tensor_type{},lhs_tensor_type{},rhs_tensor_type{}),
         std::make_tuple(lhs_tensor_type{},rhs_tensor_type(1),lhs_tensor_type(1),rhs_tensor_type(1)),

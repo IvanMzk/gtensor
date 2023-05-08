@@ -36,38 +36,22 @@ public:
     {}
     //assignment
     basic_tensor& operator=(const basic_tensor& rhs){
-        if constexpr (std::is_convertible_v<decltype(copy()),basic_tensor>){  //value assignment
-            swap(rhs.copy());
-        }else{  //broadcast assignment, if possible, will not compile otherwise
-            assign(rhs);
-        }
+        copy_assign_(rhs);
         return *this;
     }
     basic_tensor& operator=(basic_tensor&& rhs){
-        if constexpr (std::is_convertible_v<decltype(copy()),basic_tensor>){  //value assignment
-            swap(rhs);
-        }else{  //broadcast assignment, if possible, will not compile otherwise
-            assign(rhs);
-        }
+        move_assign_(std::move(rhs));
         return *this;
     }
     //converting assignment
-    template<typename U>
-    basic_tensor& operator=(const basic_tensor<U>& rhs){
-        if constexpr (std::is_convertible_v<decltype(copy()),basic_tensor>){  //value assignment
-            swap(rhs.template copy<value_type,config_type>());
-        }else{  //broadcast assignment, if possible, will not compile otherwise
-            assign(rhs);
-        }
-        return *this;
-    }
-    template<typename U>
-    basic_tensor& operator=(basic_tensor<U>&& rhs){
-        if constexpr (std::is_convertible_v<decltype(copy()),basic_tensor>){  //value assignment
-            swap(rhs.template copy<value_type,config_type>());
-        }else{  //broadcast assignment, if possible, will not compile otherwise
-            assign(rhs);
-        }
+    template<typename,typename> struct disable_forward_rhs0;
+    template<typename Rhs> struct disable_forward_rhs0<std::false_type, Rhs> : std::negation<std::is_convertible<Rhs,value_type>>{};
+    template<typename Rhs> struct disable_forward_rhs0<std::true_type, Rhs> : std::is_convertible<Rhs,basic_tensor>{};
+    template<typename Rhs> struct disable_forward_rhs : disable_forward_rhs0<std::bool_constant<detail::is_tensor_v<Rhs>>, Rhs>{};
+
+    template<typename Rhs, std::enable_if_t<!disable_forward_rhs<std::remove_cv_t<std::remove_reference_t<Rhs>>>::value,int> =0>
+    basic_tensor& operator=(Rhs&& rhs){
+        copy_assign_(std::forward<Rhs>(rhs));
         return *this;
     }
     //resize
@@ -206,6 +190,26 @@ private:
             swap(tensor<value_type,config_type>{std::forward<Container>(new_shape),begin(),end()});
         }
     }
+
+    template<typename Rhs>
+    void copy_assign_(Rhs&& rhs){
+        if constexpr (std::is_convertible_v<tensor<value_type,config_type>,basic_tensor>){  //value assignment
+            if constexpr (detail::is_tensor_v<std::remove_cv_t<std::remove_reference_t<Rhs>>>){
+                swap(tensor<value_type,config_type>(rhs.shape(),rhs.begin(),rhs.end()));
+            }else{
+                swap(tensor<value_type,config_type>(rhs));
+            }
+        }else{  //broadcast assignment if possible, not compile otherwise
+            assign(std::forward<Rhs>(rhs));
+        }
+    }
+    void move_assign_(basic_tensor&& rhs){
+        if constexpr (std::is_convertible_v<tensor<value_type,config_type>,basic_tensor>){  //value assignment
+            swap(rhs);
+        }else{  //broadcast assignment if possible, not compile otherwise
+            assign(std::move(rhs));
+        }
+    }
 };
 
 //tensor is basic_tensor with storage implementation and constructors
@@ -267,12 +271,12 @@ public:
         tensor(forward_tag::tag(), shape__, begin__, end__)
     {}
 
-    template<typename U> struct disable_forward_arg : std::disjunction<
-        std::is_convertible<U,value_type>,
-        std::is_convertible<U,tensor>
+    template<typename Container> struct disable_forward_container : std::disjunction<
+        std::is_convertible<Container,value_type>,
+        std::is_convertible<Container,tensor>
     >{};
     //container shape, disambiguate with 0-dim constructor, copy,move constructor
-    template<typename Container, std::enable_if_t<!disable_forward_arg<Container>::value,int> =0>
+    template<typename Container, std::enable_if_t<!disable_forward_container<std::remove_cv_t<std::remove_reference_t<Container>>>::value,int> =0>
     explicit tensor(Container&& shape__):
         tensor(forward_tag::tag(), std::forward<Container>(shape__))
     {}
