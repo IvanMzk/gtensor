@@ -82,10 +82,19 @@ public:
     auto equal(const basic_tensor<U>& other)const{
         return gtensor::equal(*this, other);
     }
-    //broadcast assignment, shape of lhs never changes, shapes of this and rhs must be broadcastable
-    template<typename U>
-    auto assign(const basic_tensor<U>& rhs){
-        return gtensor::assign(*this, rhs);
+    //broadcast assignment, shape of lhs never changes, shapes of this and rhs must be broadcastable, or rhs convertible to value_type
+    template<typename Rhs>
+    auto assign(Rhs&& rhs){
+        return gtensor::assign(*this, std::forward<Rhs>(rhs));
+    }
+    //check is this and other are tensors and have the same implementation
+    template<typename Other>
+    bool is_same(const Other& other)const{
+        if constexpr (std::is_convertible_v<Other*, basic_tensor*>){
+            return impl_ == other.impl_;
+        }else{
+            return false;
+        }
     }
     //meta-data interface
     const auto& descriptor()const{return impl_->descriptor();}
@@ -151,7 +160,7 @@ public:
         return create_view(std::integral_constant<view_kind_type,view_kind_type::reshape_view>{}, *this, subs);
     }
     //mapping view
-    template<typename...Subs, std::enable_if_t<(detail::is_tensor_of_type_v<Subs,index_type>&&...),int> = 0 >
+    template<typename...Subs, std::enable_if_t<(sizeof...(Subs)>0) && (detail::is_tensor_of_type_v<Subs,index_type>&&...),int> = 0 >
     auto operator()(const Subs&...subs)const{
         return create_view(std::integral_constant<view_kind_type,view_kind_type::index_mapping_view>{}, *this, subs...);
     }
@@ -193,17 +202,33 @@ private:
 
     template<typename Rhs>
     void copy_assign_(Rhs&& rhs){
-        if constexpr (std::is_convertible_v<tensor<value_type,config_type>,basic_tensor>){  //value assignment
-            if constexpr (detail::is_tensor_v<std::remove_cv_t<std::remove_reference_t<Rhs>>>){
-                swap(tensor<value_type,config_type>(rhs.shape(),rhs.begin(),rhs.end()));
+        using RhsT = std::remove_cv_t<std::remove_reference_t<Rhs>>;
+        if (is_same(rhs)){  //self assignment
+            return;
+        }
+        if constexpr (std::is_convertible_v<tensor<value_type,config_type>*,basic_tensor*>){  //value assignment
+            if constexpr (detail::is_tensor_v<RhsT>){
+                const auto& rhs_shape = rhs.shape();
+                if (shape() == rhs_shape){
+                    std::copy(rhs.begin(),rhs.end(),begin());
+                }else{
+                    swap(tensor<value_type,config_type>(rhs_shape,rhs.begin(),rhs.end()));
+                }
             }else{
-                swap(tensor<value_type,config_type>(rhs));
+                if (size() == index_type{1}){
+                    *begin() = std::forward<Rhs>(rhs);
+                }else{
+                    swap(tensor<value_type,config_type>(rhs));
+                }
             }
         }else{  //broadcast assignment if possible, not compile otherwise
             assign(std::forward<Rhs>(rhs));
         }
     }
     void move_assign_(basic_tensor&& rhs){
+        if (is_same(rhs)){  //self assignment
+            return;
+        }
         if constexpr (std::is_convertible_v<tensor<value_type,config_type>,basic_tensor>){  //value assignment
             swap(rhs);
         }else{  //broadcast assignment if possible, not compile otherwise
@@ -255,7 +280,6 @@ public:
     //default constructor makes empty 1-d tensor
     tensor():
         tensor(forward_tag::tag(), shape_type{0})
-        //tensor(forward_tag::tag(), std::initializer_list<value_type>{})
     {}
     //0-dim tensor constructor (aka tensor-scalar)
     explicit tensor(const value_type& value__):

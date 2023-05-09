@@ -74,6 +74,7 @@
         "xutility": "cpp",
         "typeindex": "cpp",
         "*.rh": "cpp",
-        "compare": "cpp"
+        "compare": "cpp",
+        "any": "cpp"
     }
 }

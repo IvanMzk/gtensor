@@ -126,16 +126,17 @@ inline auto create_const_indexer(const Core& t, const Descriptor& descriptor){
 template<typename Core, typename Descriptor, typename DimT>
 inline auto create_walker(Core& t, const Descriptor& descriptor, const DimT& max_dim){
     using config_type = typename Core::config_type;
+    using index_type = typename config_type::index_type;
     if constexpr(has_create_walker<Core>::value){
         return t.create_walker(max_dim);
     }else if constexpr (has_create_indexer<Core>::value){
-        return gtensor::walker<config_type, decltype(t.create_indexer())>{descriptor.adapted_strides(),descriptor.reset_strides(),descriptor.offset(),t.create_indexer(),max_dim};
+        return gtensor::walker<config_type, decltype(t.create_indexer())>{descriptor.adapted_strides(),descriptor.reset_strides(),index_type{0},t.create_indexer(),max_dim};
     }else if constexpr (has_subscript_operator<Core>::value){
         using indexer_type = gtensor::basic_indexer<Core&>;
-        return gtensor::walker<config_type, indexer_type>{descriptor.adapted_strides(),descriptor.reset_strides(),descriptor.offset(),indexer_type{t},max_dim};
+        return gtensor::walker<config_type, indexer_type>{descriptor.adapted_strides(),descriptor.reset_strides(),index_type{0},indexer_type{t},max_dim};
     }else if constexpr (has_iterator<Core>::value){
         using indexer_type = gtensor::iterator_indexer<decltype(t.begin())>;
-        return gtensor::walker<config_type, indexer_type>{descriptor.adapted_strides(),descriptor.reset_strides(),descriptor.offset(),indexer_type{t.begin()},max_dim};
+        return gtensor::walker<config_type, indexer_type>{descriptor.adapted_strides(),descriptor.reset_strides(),index_type{0},indexer_type{t.begin()},max_dim};
     }else{
         return;
     }

@@ -33,11 +33,11 @@ inline auto NAME(Other&& other, basic_tensor<Ts...>&& t){\
     return n_operator(F{},std::forward<Other>(other),std::move(t));\
 }
 
-#define GTENSOR_ASSIGNMENT_TENSOR_OPERATOR(NAME,F)\
+#define GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(NAME,F)\
 template<typename...Ts, typename Other>\
 inline auto& NAME(basic_tensor<Ts...>& t, Other&& other){\
     return a_operator(F{},t,std::forward<Other>(other));\
-}\
+}
 
 namespace gtensor{
 
@@ -76,12 +76,11 @@ inline auto& a_operator(F&& f, basic_tensor<Ts...>& lhs, Rhs&& rhs){
 
 template<typename...Us, typename...Vs>
 static inline auto operator==(const basic_tensor<Us...>& t1, const basic_tensor<Vs...>& t2){
-    if constexpr (std::is_same_v<basic_tensor<Us...>,basic_tensor<Vs...>>){
-        if (static_cast<const void*>(&t1) == static_cast<const void*>(&t2)){
-            return true;
-        }
+    if (t1.is_same(t2)){
+        return true;
+    }else{
+        return t1.shape() == t2.shape() && std::equal(t1.begin(), t1.end(), t2.begin());
     }
-    return t1.shape() == t2.shape() && std::equal(t1.begin(), t1.end(), t2.begin());
 }
 
 template<typename...Ts>
@@ -120,17 +119,26 @@ GTENSOR_BINARY_TENSOR_OPERATOR(operator&&,operations::logic_and);
 GTENSOR_BINARY_TENSOR_OPERATOR(operator||,operations::logic_or);
 
 //asignment
-GTENSOR_ASSIGNMENT_TENSOR_OPERATOR(assign, operations::assign);
-GTENSOR_ASSIGNMENT_TENSOR_OPERATOR(operator+=, operations::assign_add);
-GTENSOR_ASSIGNMENT_TENSOR_OPERATOR(operator-=, operations::assign_sub);
-GTENSOR_ASSIGNMENT_TENSOR_OPERATOR(operator*=, operations::assign_mul);
-GTENSOR_ASSIGNMENT_TENSOR_OPERATOR(operator/=, operations::assign_div);
-GTENSOR_ASSIGNMENT_TENSOR_OPERATOR(operator%=, operations::assign_mod);
-GTENSOR_ASSIGNMENT_TENSOR_OPERATOR(operator&=, operations::assign_bitwise_and);
-GTENSOR_ASSIGNMENT_TENSOR_OPERATOR(operator|=, operations::assign_bitwise_or);
-GTENSOR_ASSIGNMENT_TENSOR_OPERATOR(operator^=, operations::assign_bitwise_xor);
-GTENSOR_ASSIGNMENT_TENSOR_OPERATOR(operator<<=, operations::assign_bitwise_lshift);
-GTENSOR_ASSIGNMENT_TENSOR_OPERATOR(operator>>=, operations::assign_bitwise_rshift);
+template<typename...Ts, typename Other>
+inline auto& assign(basic_tensor<Ts...>& t, Other&& other){
+    using OtherT = std::remove_cv_t<std::remove_reference_t<Other>>;
+    static_assert(detail::is_tensor_v<OtherT>||std::is_convertible_v<OtherT,typename basic_tensor<Ts...>::value_type>);
+    if (t.is_same(other)){
+        return t;
+    }
+    return a_operator(operations::assign{},t,std::forward<Other>(other));
+}
+//compound assignment
+GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator+=, operations::assign_add);
+GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator-=, operations::assign_sub);
+GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator*=, operations::assign_mul);
+GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator/=, operations::assign_div);
+GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator%=, operations::assign_mod);
+GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator&=, operations::assign_bitwise_and);
+GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator|=, operations::assign_bitwise_or);
+GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator^=, operations::assign_bitwise_xor);
+GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator<<=, operations::assign_bitwise_lshift);
+GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator>>=, operations::assign_bitwise_rshift);
 
 }   //end of namespace gtensor
 
