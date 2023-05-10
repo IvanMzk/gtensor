@@ -89,7 +89,10 @@ TEST_CASE("test_n_operator","[test_tensor_operators]")
         std::make_tuple(binary_mul{},std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},tensor_type{{-1},{2}}),tensor_type{{{-1,-2},{6,8}},{{-5,-6},{14,16}}}),
         std::make_tuple(ternary_add_mul{},std::make_tuple(tensor_type(1),tensor_type(2),tensor_type(3)),tensor_type(9)),
         std::make_tuple(ternary_add_mul{},std::make_tuple(tensor_type(1),tensor_type{1,2,3,4,5},tensor_type(3)),tensor_type{6,9,12,15,18}),
-        std::make_tuple(ternary_add_mul{},std::make_tuple(tensor_type(1),tensor_type{1,2,3},tensor_type{{1},{2},{3}}),tensor_type{{2,3,4},{4,6,8},{6,9,12}})
+        std::make_tuple(ternary_add_mul{},std::make_tuple(tensor_type(1),tensor_type{1,2,3},tensor_type{{1},{2},{3}}),tensor_type{{2,3,4},{4,6,8},{6,9,12}}),
+        std::make_tuple(ternary_add_mul{},std::make_tuple(-1,tensor_type{1,2,3},tensor_type{{1},{2},{3}}),tensor_type{{0,1,2},{0,2,4},{0,3,6}}),
+        std::make_tuple(ternary_add_mul{},std::make_tuple(tensor_type{{4,5,6},{7,8,9}},tensor_type{1,2,3},2),tensor_type{{10,14,18},{16,20,24}}),
+        std::make_tuple(ternary_add_mul{},std::make_tuple(-1,tensor_type{{1,2,3},{4,5,6}},2),tensor_type{{0,2,4},{6,8,10}})
     );
     auto test = [](const auto& t){
         auto f = std::get<0>(t);

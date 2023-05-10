@@ -32,6 +32,16 @@ public:
     }
 };
 
+template<typename, typename T, std::enable_if_t<is_tensor_v<std::remove_cv_t<std::remove_reference_t<T>>>,int> =0>
+inline auto&& forward_as_tensor(T&& t){
+    return std::forward<T>(t);
+}
+template<typename Config, typename T, std::enable_if_t<!is_tensor_v<std::remove_cv_t<std::remove_reference_t<T>>>,int> =0>
+inline auto forward_as_tensor(T&& t){
+    using value_type = std::remove_cv_t<std::remove_reference_t<T>>;
+    return tensor<value_type,Config>(t);
+}
+
 }   //end of namespace detail
 
 template<typename F>
@@ -53,6 +63,7 @@ class expression_template_operator{
     }
 
 public:
+    //optimized binary n_operator
     template<typename F_, typename Operand1, typename Operand2>
     static auto n_operator(F_&& f, Operand1&& operand1, Operand2&& operand2){
         static_assert(std::is_same_v<F,std::decay_t<F_>>);
@@ -70,12 +81,22 @@ public:
         }
     }
 
-    template<typename F_, typename Operand, typename...Operands>
-    static auto n_operator(F_&& f, Operand&& operand, Operands&&...operands){
+    //generalized broadcast operator
+    //makes tensor that represents applying operation F on operands element-wise
+    //operands shapes must be broadcastable
+    //scalar operands is allowed
+    //actual evaluation happens only when result tensor is iterated
+    template<typename F_, typename...Operands>
+    static auto n_operator(F_&& f, Operands&&...operands){
         static_assert(std::is_same_v<F,std::decay_t<F_>>);
-        return n_operator_(std::forward<F_>(f), std::forward<Operand>(operand), std::forward<Operands>(operands)...);
+        using config_type = typename detail::first_tensor_type_t<std::remove_cv_t<std::remove_reference_t<Operands>>...>::config_type;
+        return n_operator_(std::forward<F_>(f), detail::forward_as_tensor<config_type>(std::forward<Operands>(operands))...);
     }
 
+    //generalized broadcast assign
+    //shapes of lhs and rhs must be broadcastable, scalar rhs is allowed
+    //assign operation is defined by F
+    //not lazys
     template<typename F_, typename Rhs, typename...Ts>
     static basic_tensor<Ts...>& a_operator(F_&& f, basic_tensor<Ts...>& lhs, Rhs&& rhs){
         static_assert(std::is_same_v<F,std::decay_t<F_>>);

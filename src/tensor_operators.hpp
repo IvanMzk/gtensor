@@ -50,20 +50,6 @@ namespace gtensor{
 namespace detail{
 
 template<typename Other, typename T> constexpr bool lhs_other_v = std::is_convertible_v<Other,T>||std::is_convertible_v<T,Other>;
-
-template<typename...Ts> struct first_tensor_type;
-template<typename...Ts> struct first_tensor_type_helper;
-template<typename T, typename...Ts> struct first_tensor_type_helper<std::true_type,T,Ts...>{
-    using type = T;
-};
-template<typename T, typename...Ts> struct first_tensor_type_helper<std::false_type,T,Ts...>{
-    using type = typename first_tensor_type<Ts...>::type;
-};
-template<typename T, typename...Ts> struct first_tensor_type<T,Ts...>{
-    using type = typename first_tensor_type_helper<std::bool_constant<is_tensor_v<T>>,T,Ts...>::type;
-};
-template<typename...Ts> using first_tensor_type_t = typename first_tensor_type<Ts...>::type;
-
 template<typename...Ts>
 inline basic_tensor<Ts...>& as_basic_tensor(basic_tensor<Ts...>& t){
     return t;

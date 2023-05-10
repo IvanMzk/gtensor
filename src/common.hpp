@@ -39,6 +39,20 @@ template<typename T> inline constexpr bool is_iterator_v<T,std::void_t<typename 
 template<typename From, typename To, typename=void> inline constexpr bool is_static_castable_v = false;
 template<typename From, typename To> inline constexpr bool is_static_castable_v<From,To,std::void_t<decltype(static_cast<To>(std::declval<From>()))>> = true;
 
+//find first type in pack fo which is_tensor_v is true
+template<typename...Ts> struct first_tensor_type;
+template<typename...Ts> struct first_tensor_type_helper;
+template<typename T, typename...Ts> struct first_tensor_type_helper<std::true_type,T,Ts...>{
+    using type = T;
+};
+template<typename T, typename...Ts> struct first_tensor_type_helper<std::false_type,T,Ts...>{
+    using type = typename first_tensor_type<Ts...>::type;
+};
+template<typename T, typename...Ts> struct first_tensor_type<T,Ts...>{
+    using type = typename first_tensor_type_helper<std::bool_constant<is_tensor_v<T>>,T,Ts...>::type;
+};
+template<typename...Ts> using first_tensor_type_t = typename first_tensor_type<Ts...>::type;
+
 }   //end of namespace detail
 }   //end of namespace gtensor
 
