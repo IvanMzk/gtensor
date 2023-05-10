@@ -392,6 +392,7 @@ TEMPLATE_TEST_CASE("test_tensor_copy_assignment_converting_copy_assignment_resul
         auto expected_lhs = std::get<2>(t);
         auto expected_rhs = std::get<3>(t);
         auto& result = lhs = rhs;
+        REQUIRE(std::is_same_v<decltype(lhs),std::remove_reference_t<decltype(result)>>);
         REQUIRE(&result == &lhs);
         REQUIRE(result == expected_lhs);
         REQUIRE(rhs == expected_rhs);
@@ -460,6 +461,7 @@ TEMPLATE_TEST_CASE("test_tensor_move_assignment_result","[test_tensor]",
         auto expected_lhs = std::get<2>(t);
         auto expected_rhs = std::get<3>(t);
         auto& result = lhs = std::move(rhs);
+        REQUIRE(std::is_same_v<decltype(lhs),std::remove_reference_t<decltype(result)>>);
         REQUIRE(&result == &lhs);
         REQUIRE(result == expected_lhs);
         REQUIRE(rhs == expected_rhs);
@@ -503,9 +505,135 @@ TEMPLATE_TEST_CASE("test_tensor_converting_move_assignment_result","[test_tensor
         auto expected_lhs = std::get<2>(t);
         auto expected_rhs = std::get<3>(t);
         auto& result = lhs = std::move(rhs);
+        REQUIRE(std::is_same_v<decltype(lhs),std::remove_reference_t<decltype(result)>>);
         REQUIRE(&result == &lhs);
         REQUIRE(result == expected_lhs);
         REQUIRE(rhs == expected_rhs);
+    };
+    apply_by_element(test,test_data);
+}
+
+TEMPLATE_TEST_CASE("test_tensor_copy_assignment_converting_copy_assignment_lhs_is_view","[test_tensor]",
+    (std::tuple<int,int>),
+    (std::tuple<double,int>)
+)
+{
+    using lhs_value_type = std::tuple_element_t<0,TestType>;
+    using rhs_value_type = std::tuple_element_t<1,TestType>;
+    using lhs_tensor_type = gtensor::tensor<lhs_value_type>;
+    using rhs_tensor_type = gtensor::tensor<rhs_value_type>;
+    using helpers_for_testing::apply_by_element;
+    //0parent,1lhs_view_maker,2rhs,3expected_parent,4expected_lhs,5expected_rhs
+    auto test_data = std::make_tuple(
+        //rhs scalar
+        std::make_tuple(lhs_tensor_type{},[](const auto& t){return t();},1,lhs_tensor_type{},lhs_tensor_type{},1),
+        std::make_tuple(lhs_tensor_type(1),[](const auto& t){return t.transpose();},2,lhs_tensor_type(2),lhs_tensor_type(2),2),
+        std::make_tuple(lhs_tensor_type{1,2,3,4,5,6},[](const auto& t){return t({{1,-1}});},7,lhs_tensor_type{1,7,7,7,7,6},lhs_tensor_type{7,7,7,7},7),
+        //rhs 0-dim
+        std::make_tuple(lhs_tensor_type{},[](const auto& t){return t();},rhs_tensor_type(1),lhs_tensor_type{},lhs_tensor_type{},rhs_tensor_type(1)),
+        std::make_tuple(lhs_tensor_type(1),[](const auto& t){return t.transpose();},rhs_tensor_type(2),lhs_tensor_type(2),lhs_tensor_type(2),rhs_tensor_type(2)),
+        std::make_tuple(lhs_tensor_type{1,2,3,4,5,6},[](const auto& t){return t({{1,-1}});},rhs_tensor_type(7),lhs_tensor_type{1,7,7,7,7,6},lhs_tensor_type{7,7,7,7},rhs_tensor_type(7)),
+        //rhs n-dim
+        std::make_tuple(lhs_tensor_type{},[](const auto& t){return t();},rhs_tensor_type{1},lhs_tensor_type{},lhs_tensor_type{},rhs_tensor_type{1}),
+        std::make_tuple(lhs_tensor_type(1),[](const auto& t){return t.transpose();},rhs_tensor_type{2},lhs_tensor_type(2),lhs_tensor_type(2),rhs_tensor_type{2}),
+        std::make_tuple(
+            lhs_tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},
+            [](const auto& t){return t({{},{1}});},
+            rhs_tensor_type{-1,1},
+            lhs_tensor_type{{{1,2},{-1,1}},{{5,6},{-1,1}}},
+            lhs_tensor_type{{{-1,1}},{{-1,1}}},
+            rhs_tensor_type{-1,1}
+        ),
+        std::make_tuple(
+            lhs_tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.transpose(),
+            [](const auto& t){return t({{},{1}});},
+            rhs_tensor_type{-1,1},
+            lhs_tensor_type{{{1,5},{-1,1}},{{2,6},{-1,1}}},
+            lhs_tensor_type{{{-1,1}},{{-1,1}}},
+            rhs_tensor_type{-1,1}
+        ),
+        std::make_tuple(
+            lhs_tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.transpose(),
+            [](const auto& t){return t({{},{1}});},
+            rhs_tensor_type{-1,1} + rhs_tensor_type{{1},{2}},
+            lhs_tensor_type{{{1,5},{1,3}},{{2,6},{1,3}}},
+            lhs_tensor_type{{{1,3}},{{1,3}}},
+            rhs_tensor_type{{0,2},{1,3}}
+        )
+    );
+    auto test = [](const auto& t){
+        auto parent = std::get<0>(t);
+        auto lhs_view_maker = std::get<1>(t);
+        auto rhs = std::get<2>(t);
+        auto expected_parent = std::get<3>(t);
+        auto expected_lhs = std::get<4>(t);
+        auto expected_rhs = std::get<5>(t);
+        auto lhs = lhs_view_maker(parent);
+        auto& result = lhs = rhs;
+        REQUIRE(std::is_same_v<decltype(lhs),std::remove_reference_t<decltype(result)>>);
+        REQUIRE(&result == &lhs);
+        REQUIRE(result == expected_lhs);
+        REQUIRE(parent == expected_parent);
+        REQUIRE(rhs == expected_rhs);
+    };
+    apply_by_element(test,test_data);
+}
+
+TEMPLATE_TEST_CASE("test_tensor_move_assignment_converting_move_assignment_lhs_is_view","[test_tensor]",
+    (std::tuple<int,int>),
+    (std::tuple<double,int>)
+)
+{
+    using lhs_value_type = std::tuple_element_t<0,TestType>;
+    using rhs_value_type = std::tuple_element_t<1,TestType>;
+    using lhs_tensor_type = gtensor::tensor<lhs_value_type>;
+    using rhs_tensor_type = gtensor::tensor<rhs_value_type>;
+    using gtensor::assign;
+    using helpers_for_testing::apply_by_element;
+    //0parent,1lhs_view_maker,2rhs,3expected_parent,4expected_lhs
+    auto test_data = std::make_tuple(
+        //rhs 0-dim
+        std::make_tuple(lhs_tensor_type{},[](const auto& t){return t();},rhs_tensor_type(1),lhs_tensor_type{},lhs_tensor_type{}),
+        std::make_tuple(lhs_tensor_type(1),[](const auto& t){return t.transpose();},rhs_tensor_type(2),lhs_tensor_type(2),lhs_tensor_type(2)),
+        std::make_tuple(lhs_tensor_type{1,2,3,4,5,6},[](const auto& t){return t({{1,-1}});},rhs_tensor_type(7),lhs_tensor_type{1,7,7,7,7,6},lhs_tensor_type{7,7,7,7}),
+        //rhs n-dim
+        std::make_tuple(lhs_tensor_type{},[](const auto& t){return t();},rhs_tensor_type{1},lhs_tensor_type{},lhs_tensor_type{}),
+        std::make_tuple(lhs_tensor_type(1),[](const auto& t){return t.transpose();},rhs_tensor_type{2},lhs_tensor_type(2),lhs_tensor_type(2)),
+        std::make_tuple(
+            lhs_tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},
+            [](const auto& t){return t({{},{1}});},
+            rhs_tensor_type{-1,1},
+            lhs_tensor_type{{{1,2},{-1,1}},{{5,6},{-1,1}}},
+            lhs_tensor_type{{{-1,1}},{{-1,1}}}
+        ),
+        std::make_tuple(
+            lhs_tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.transpose(),
+            [](const auto& t){return t({{},{1}});},
+            rhs_tensor_type{-1,1},
+            lhs_tensor_type{{{1,5},{-1,1}},{{2,6},{-1,1}}},
+            lhs_tensor_type{{{-1,1}},{{-1,1}}}
+        ),
+        std::make_tuple(
+            lhs_tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.transpose(),
+            [](const auto& t){return t({{},{1}});},
+            rhs_tensor_type{-1,1} + rhs_tensor_type{{1},{2}},
+            lhs_tensor_type{{{1,5},{1,3}},{{2,6},{1,3}}},
+            lhs_tensor_type{{{1,3}},{{1,3}}}
+        )
+    );
+    auto test = [](const auto& t){
+        auto parent = std::get<0>(t);
+        auto lhs_view_maker = std::get<1>(t);
+        auto rhs = std::get<2>(t);
+        auto expected_parent = std::get<3>(t);
+        auto expected_lhs = std::get<4>(t);
+        auto lhs = lhs_view_maker(parent);
+        auto& result = lhs = std::move(rhs);
+        REQUIRE(std::is_same_v<decltype(lhs),std::remove_reference_t<decltype(result)>>);
+        REQUIRE(&result == &lhs);
+        REQUIRE(result == expected_lhs);
+        REQUIRE(parent == expected_parent);
+        REQUIRE(rhs.empty());
     };
     apply_by_element(test,test_data);
 }
@@ -614,127 +742,86 @@ TEST_CASE("test_tensor_assignment_corner_cases","[test_tensor]")
     }
 }
 
-TEMPLATE_TEST_CASE("test_tensor_copy_assignment_converting_copy_assignment_lhs_is_view","[test_tensor]",
-    (std::tuple<int,int>),
-    (std::tuple<double,int>)
-)
+TEST_CASE("test_tensor_assignment_exception","[test_tensor]")
 {
-    using lhs_value_type = std::tuple_element_t<0,TestType>;
-    using rhs_value_type = std::tuple_element_t<1,TestType>;
-    using lhs_tensor_type = gtensor::tensor<lhs_value_type>;
-    using rhs_tensor_type = gtensor::tensor<rhs_value_type>;
-    using helpers_for_testing::apply_by_element;
-    //0parent,1lhs_view_maker,2rhs,3expected_parent,4expected_lhs,5expected_rhs
-    auto test_data = std::make_tuple(
-        //rhs scalar
-        std::make_tuple(lhs_tensor_type{},[](const auto& t){return t();},1,lhs_tensor_type{},lhs_tensor_type{},1),
-        std::make_tuple(lhs_tensor_type(1),[](const auto& t){return t.transpose();},2,lhs_tensor_type(2),lhs_tensor_type(2),2),
-        std::make_tuple(lhs_tensor_type{1,2,3,4,5,6},[](const auto& t){return t({{1,-1}});},7,lhs_tensor_type{1,7,7,7,7,6},lhs_tensor_type{7,7,7,7},7),
-        //rhs 0-dim
-        std::make_tuple(lhs_tensor_type{},[](const auto& t){return t();},rhs_tensor_type(1),lhs_tensor_type{},lhs_tensor_type{},rhs_tensor_type(1)),
-        std::make_tuple(lhs_tensor_type(1),[](const auto& t){return t.transpose();},rhs_tensor_type(2),lhs_tensor_type(2),lhs_tensor_type(2),rhs_tensor_type(2)),
-        std::make_tuple(lhs_tensor_type{1,2,3,4,5,6},[](const auto& t){return t({{1,-1}});},rhs_tensor_type(7),lhs_tensor_type{1,7,7,7,7,6},lhs_tensor_type{7,7,7,7},rhs_tensor_type(7)),
-        //rhs n-dim
-        std::make_tuple(lhs_tensor_type{},[](const auto& t){return t();},rhs_tensor_type{1},lhs_tensor_type{},lhs_tensor_type{},rhs_tensor_type{1}),
-        std::make_tuple(lhs_tensor_type(1),[](const auto& t){return t.transpose();},rhs_tensor_type{2},lhs_tensor_type(2),lhs_tensor_type(2),rhs_tensor_type{2}),
-        std::make_tuple(
-            lhs_tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},
-            [](const auto& t){return t({{},{1}});},
-            rhs_tensor_type{-1,1},
-            lhs_tensor_type{{{1,2},{-1,1}},{{5,6},{-1,1}}},
-            lhs_tensor_type{{{-1,1}},{{-1,1}}},
-            rhs_tensor_type{-1,1}
-        ),
-        std::make_tuple(
-            lhs_tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.transpose(),
-            [](const auto& t){return t({{},{1}});},
-            rhs_tensor_type{-1,1},
-            lhs_tensor_type{{{1,5},{-1,1}},{{2,6},{-1,1}}},
-            lhs_tensor_type{{{-1,1}},{{-1,1}}},
-            rhs_tensor_type{-1,1}
-        ),
-        std::make_tuple(
-            lhs_tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.transpose(),
-            [](const auto& t){return t({{},{1}});},
-            rhs_tensor_type{-1,1} + rhs_tensor_type{{1},{2}},
-            lhs_tensor_type{{{1,5},{1,3}},{{2,6},{1,3}}},
-            lhs_tensor_type{{{1,3}},{{1,3}}},
-            rhs_tensor_type{{0,2},{1,3}}
-        )
-    );
-    auto test = [](const auto& t){
-        auto parent = std::get<0>(t);
-        auto lhs_view_maker = std::get<1>(t);
-        auto rhs = std::get<2>(t);
-        auto expected_parent = std::get<3>(t);
-        auto expected_lhs = std::get<4>(t);
-        auto expected_rhs = std::get<5>(t);
-        auto lhs = lhs_view_maker(parent);
-        auto& result = lhs = rhs;
-        REQUIRE(&result == &lhs);
-        REQUIRE(result == expected_lhs);
-        REQUIRE(parent == expected_parent);
-        REQUIRE(rhs == expected_rhs);
-    };
-    apply_by_element(test,test_data);
+    using tensor_type = gtensor::tensor<int>;
+    using gtensor::broadcast_exception;
+    auto lhs = tensor_type{{1,2,3},{4,5,6}}(1);
+    tensor_type rhs{1,2};
+    REQUIRE_THROWS_AS(lhs = rhs, broadcast_exception);
 }
 
-TEMPLATE_TEST_CASE("test_tensor_move_assignment_converting_move_assignment_lhs_is_view","[test_tensor]",
-    (std::tuple<int,int>),
-    (std::tuple<double,int>)
-)
+//test broadcast assign
+TEST_CASE("test_tensor_assign","[test_tensor]")
 {
-    using lhs_value_type = std::tuple_element_t<0,TestType>;
-    using rhs_value_type = std::tuple_element_t<1,TestType>;
-    using lhs_tensor_type = gtensor::tensor<lhs_value_type>;
-    using rhs_tensor_type = gtensor::tensor<rhs_value_type>;
-    using gtensor::assign;
+    using value_type = double;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
+    using tensor_type = gtensor::tensor<value_type, config_type>;
     using helpers_for_testing::apply_by_element;
-    //0parent,1lhs_view_maker,2rhs,3expected_parent,4expected_lhs
-    auto test_data = std::make_tuple(
-        //rhs 0-dim
-        std::make_tuple(lhs_tensor_type{},[](const auto& t){return t();},rhs_tensor_type(1),lhs_tensor_type{},lhs_tensor_type{}),
-        std::make_tuple(lhs_tensor_type(1),[](const auto& t){return t.transpose();},rhs_tensor_type(2),lhs_tensor_type(2),lhs_tensor_type(2)),
-        std::make_tuple(lhs_tensor_type{1,2,3,4,5,6},[](const auto& t){return t({{1,-1}});},rhs_tensor_type(7),lhs_tensor_type{1,7,7,7,7,6},lhs_tensor_type{7,7,7,7}),
-        //rhs n-dim
-        std::make_tuple(lhs_tensor_type{},[](const auto& t){return t();},rhs_tensor_type{1},lhs_tensor_type{},lhs_tensor_type{}),
-        std::make_tuple(lhs_tensor_type(1),[](const auto& t){return t.transpose();},rhs_tensor_type{2},lhs_tensor_type(2),lhs_tensor_type(2)),
-        std::make_tuple(
-            lhs_tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},
-            [](const auto& t){return t({{},{1}});},
-            rhs_tensor_type{-1,1},
-            lhs_tensor_type{{{1,2},{-1,1}},{{5,6},{-1,1}}},
-            lhs_tensor_type{{{-1,1}},{{-1,1}}}
-        ),
-        std::make_tuple(
-            lhs_tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.transpose(),
-            [](const auto& t){return t({{},{1}});},
-            rhs_tensor_type{-1,1},
-            lhs_tensor_type{{{1,5},{-1,1}},{{2,6},{-1,1}}},
-            lhs_tensor_type{{{-1,1}},{{-1,1}}}
-        ),
-        std::make_tuple(
-            lhs_tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.transpose(),
-            [](const auto& t){return t({{},{1}});},
-            rhs_tensor_type{-1,1} + rhs_tensor_type{{1},{2}},
-            lhs_tensor_type{{{1,5},{1,3}},{{2,6},{1,3}}},
-            lhs_tensor_type{{{1,3}},{{1,3}}}
-        )
-    );
-    auto test = [](const auto& t){
-        auto parent = std::get<0>(t);
-        auto lhs_view_maker = std::get<1>(t);
-        auto rhs = std::get<2>(t);
-        auto expected_parent = std::get<3>(t);
-        auto expected_lhs = std::get<4>(t);
-        auto lhs = lhs_view_maker(parent);
-        auto& result = lhs = std::move(rhs);
-        REQUIRE(&result == &lhs);
-        REQUIRE(result == expected_lhs);
-        REQUIRE(parent == expected_parent);
-        REQUIRE(rhs.empty());
-    };
-    apply_by_element(test,test_data);
+    SECTION("lvalue_rhs")
+    {
+        //0lhs,1rhs,2expected_lhs,3expected_rhs
+        auto test_data = std::make_tuple(
+            //rhs scalar
+            std::make_tuple(tensor_type{},1,tensor_type{},1),
+            std::make_tuple(tensor_type(1),2,tensor_type(2),2),
+            std::make_tuple(tensor_type{{1,2,3},{4,5,6}},7,tensor_type{{7,7,7},{7,7,7}},7),
+            //rhs 0-dim
+            std::make_tuple(tensor_type{},tensor_type(2),tensor_type{},tensor_type(2)),
+            std::make_tuple(tensor_type(1),tensor_type(2),tensor_type(2),tensor_type(2)),
+            std::make_tuple(tensor_type{{1,2,3},{4,5,6}},tensor_type(7),tensor_type{{7,7,7},{7,7,7}},tensor_type(7)),
+            //rhs n-dim
+            std::make_tuple(tensor_type{},tensor_type{},tensor_type{},tensor_type{}),
+            std::make_tuple(tensor_type(1),tensor_type{},tensor_type(1),tensor_type{}),
+            std::make_tuple(tensor_type(1),tensor_type{2},tensor_type(2),tensor_type{2}),
+            std::make_tuple(tensor_type(1),tensor_type{{1,2},{3,4}},tensor_type(4),tensor_type{{1,2},{3,4}}),
+            std::make_tuple(tensor_type{2},tensor_type{},tensor_type{2},tensor_type{}),
+            std::make_tuple(tensor_type{{3}},tensor_type{},tensor_type{{3}},tensor_type{}),
+            std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},tensor_type{{9},{10}},tensor_type{{{9,9},{10,10}},{{9,9},{10,10}}},tensor_type{{9},{10}})
+        );
+        auto test = [](const auto& t){
+            auto lhs = std::get<0>(t);
+            auto rhs = std::get<1>(t);
+            auto expected_lhs = std::get<2>(t);
+            auto expected_rhs = std::get<3>(t);
+            auto& result = lhs.assign(rhs);
+            REQUIRE(std::is_same_v<decltype(lhs),std::remove_reference_t<decltype(result)>>);
+            REQUIRE(&result == &lhs);
+            REQUIRE(result == expected_lhs);
+            REQUIRE(rhs == expected_rhs);
+        };
+        apply_by_element(test,test_data);
+    }
+    SECTION("rvalue_rhs")
+    {
+        //0lhs,1rhs,2expected_lhs,3expected_rhs
+        auto test_data = std::make_tuple(
+            //rhs 0-dim
+            std::make_tuple(tensor_type{},tensor_type(2),tensor_type{},tensor_type(2)),
+            std::make_tuple(tensor_type(1),tensor_type(2),tensor_type(2),tensor_type(2)),
+            std::make_tuple(tensor_type{{1,2,3},{4,5,6}},tensor_type(7),tensor_type{{7,7,7},{7,7,7}},tensor_type(7)),
+            //rhs n-dim
+            std::make_tuple(tensor_type{},tensor_type{},tensor_type{},tensor_type{}),
+            std::make_tuple(tensor_type(1),tensor_type{},tensor_type(1),tensor_type{}),
+            std::make_tuple(tensor_type(1),tensor_type{2},tensor_type(2),tensor_type{2}),
+            std::make_tuple(tensor_type(1),tensor_type{{1,2},{3,4}},tensor_type(4),tensor_type{{1,2},{3,4}}),
+            std::make_tuple(tensor_type{2},tensor_type{},tensor_type{2},tensor_type{}),
+            std::make_tuple(tensor_type{{3}},tensor_type{},tensor_type{{3}},tensor_type{}),
+            std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},tensor_type{{9},{10}},tensor_type{{{9,9},{10,10}},{{9,9},{10,10}}},tensor_type{{9},{10}})
+        );
+        auto test = [](const auto& t){
+            auto lhs = std::get<0>(t);
+            auto rhs = std::get<1>(t);
+            auto expected_lhs = std::get<2>(t);
+            auto expected_rhs = std::get<3>(t);
+            auto& result = lhs.assign(std::move(rhs));
+            REQUIRE(std::is_same_v<decltype(lhs),std::remove_reference_t<decltype(result)>>);
+            REQUIRE(&result == &lhs);
+            REQUIRE(result == expected_lhs);
+            REQUIRE(rhs.empty());
+        };
+        apply_by_element(test,test_data);
+    }
 }
 
 TEST_CASE("test_tensor_is_same","[test_tensor]")
@@ -857,25 +944,87 @@ TEST_CASE("test_tensor_resize","[test_tensor]")
     }
 }
 
+TEST_CASE("test_tensor_copy","[test_tensor]"){
+    using value_type = double;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
+    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using helpers_for_testing::apply_by_element;
+    //0tensor,1expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, tensor_type{{1,2,3},{4,5,6}}),
+        std::make_tuple(tensor_type{-1} + tensor_type{{1,2,3},{4,5,6}} + tensor_type{1} + tensor_type{0,1,2}, tensor_type{{1,3,5},{4,6,8}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}({{{},{},-1},{1}}), tensor_type{{5,6},{2,3}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}({{{},{},-1},{1}}).transpose(), tensor_type{{5,2},{6,3}}),
+        std::make_tuple((tensor_type{-1} + tensor_type{{1,2,3},{4,5,6}} + tensor_type{1})({{{},{},-1},{1}}).transpose(), tensor_type{{5,2},{6,3}}),
+        std::make_tuple(tensor_type{-1} + tensor_type{{1,2,3},{4,5,6}}({{{},{},-1},{1}}).transpose() + tensor_type{1}, tensor_type{{5,2},{6,3}}),
+        std::make_tuple(((tensor_type{-1} + tensor_type{{1,2,3},{4,5,6}}({{{},{},-1},{1}}).transpose() + tensor_type{1})).reshape(4),tensor_type{5,2,6,3})
+    );
+    auto test = [](const auto& t){
+        auto ten = std::get<0>(t);
+        auto expected = std::get<1>(t);
+        auto result = ten.copy();
+        REQUIRE(result == expected);
+        REQUIRE(std::is_same_v<tensor_type,decltype(result)>);
+    };
+    apply_by_element(test, test_data);
+}
 
+TEST_CASE("test_tensor_equal","[test_tensor]"){
+    using value_type = double;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
+    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using bool_tensor_type = gtensor::tensor<bool, config_type>;
+    using helpers_for_testing::apply_by_element;
+    //0operand1,1operand2,2expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(tensor_type{},tensor_type{},bool_tensor_type{}),
+        std::make_tuple(tensor_type{},tensor_type(1),bool_tensor_type{}),
+        std::make_tuple(tensor_type(1),tensor_type{},bool_tensor_type{}),
+        std::make_tuple(tensor_type(1),tensor_type(1),bool_tensor_type(true)),
+        std::make_tuple(tensor_type(1),tensor_type(2),bool_tensor_type(false)),
+        std::make_tuple(tensor_type(1),tensor_type{{1,2},{3,1}},bool_tensor_type{{true,false},{false,true}}),
+        std::make_tuple(tensor_type{{1,2},{3,1}},tensor_type(1),bool_tensor_type{{true,false},{false,true}}),
+        std::make_tuple(tensor_type{{1,2},{3,1}},tensor_type{2},bool_tensor_type{{false,true},{false,false}}),
+        std::make_tuple(tensor_type{2},tensor_type{{1,2},{3,1}},bool_tensor_type{{false,true},{false,false}}),
+        std::make_tuple(tensor_type{{1},{5}},tensor_type{{{1,2},{3,1}},{{4,5},{5,6}}},bool_tensor_type{{{true,false},{false,false}},{{false,false},{true,false}}})
+    );
+    auto test = [](const auto& t){
+        auto operand1 = std::get<0>(t);
+        auto operand2 = std::get<1>(t);
+        auto expected = std::get<2>(t);
+        auto result = operand1.equal(operand2);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test, test_data);
+}
 
-// TEST_CASE("test_tensor_copy","[test_tensor]"){
-//     using value_type = double;
-//     using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
-//     using tensor_type = gtensor::tensor<value_type, config_type>;
-//     using test_type = std::tuple<tensor_type,tensor_type>;
-//     //0result tensor,expected tensor
-//     auto test_data = GENERATE(
-//         test_type{tensor_type{{1,2,3},{4,5,6}}.copy(),tensor_type{{1,2,3},{4,5,6}}},
-//         test_type{(tensor_type{-1} + tensor_type{{1,2,3},{4,5,6}} + tensor_type{1} + tensor_type{0,1,2}).copy(),tensor_type{{1,3,5},{4,6,8}}},
-//         test_type{tensor_type{{1,2,3},{4,5,6}}({{{},{},-1},{1}}).copy(),tensor_type{{5,6},{2,3}}},
-//         test_type{tensor_type{{1,2,3},{4,5,6}}({{{},{},-1},{1}}).transpose().copy(),tensor_type{{5,2},{6,3}}},
-//         test_type{(tensor_type{-1} + tensor_type{{1,2,3},{4,5,6}} + tensor_type{1})({{{},{},-1},{1}}).transpose().copy(),tensor_type{{5,2},{6,3}}},
-//         test_type{(tensor_type{-1} + tensor_type{{1,2,3},{4,5,6}}({{{},{},-1},{1}}).transpose() + tensor_type{1}).copy(),tensor_type{{5,2},{6,3}}},
-//         test_type{((tensor_type{-1} + tensor_type{{1,2,3},{4,5,6}}({{{},{},-1},{1}}).transpose() + tensor_type{1})).reshape(4).copy(),tensor_type{5,2,6,3}}
-//     );
-
-//     auto result_tensor = std::get<0>(test_data);
-//     auto expected_tensor = std::get<1>(test_data);
-//     REQUIRE(result_tensor.equals(expected_tensor));
-// }
+TEST_CASE("test_tensor_swap","[test_tensor]")
+{
+    using value_type = double;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
+    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using helpers_for_testing::apply_by_element;
+    //0tensor0,1tensor1,2expected_tensor0,3expected_tensor1
+    auto test_data = std::make_tuple(
+        std::make_tuple(tensor_type{},tensor_type{},tensor_type{},tensor_type{}),
+        std::make_tuple(tensor_type{1,2,3},tensor_type{{4},{5}},tensor_type{{4},{5}},tensor_type{1,2,3}),
+        std::make_tuple(tensor_type{1,2,3}+1,tensor_type{{4},{5}}+1,tensor_type{{5},{6}},tensor_type{2,3,4}),
+        std::make_tuple(tensor_type{{1,2,3}}.transpose(),tensor_type{{4},{5}}.transpose(),tensor_type{{4,5}},tensor_type{{1},{2},{3}})
+    );
+    auto test = [](const auto& t){
+        auto ten1 = std::get<0>(t);
+        auto ten2 = std::get<1>(t);
+        auto expected_ten1 = std::get<2>(t);
+        auto expected_ten2 = std::get<3>(t);
+        auto ten1_copy{ten1};
+        auto ten2_copy{ten2};
+        REQUIRE(ten1_copy.is_same(ten1));
+        REQUIRE(ten2_copy.is_same(ten2));
+        swap(ten1,ten2);
+        REQUIRE(ten1.is_same(ten2_copy));
+        REQUIRE(ten2.is_same(ten1_copy));
+        REQUIRE(ten1 == expected_ten1);
+        REQUIRE(ten2 == expected_ten2);
+    };
+    apply_by_element(test,test_data);
+}

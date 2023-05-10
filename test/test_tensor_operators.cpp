@@ -290,6 +290,7 @@ TEST_CASE("test_gtensor_assign_operator","[test_tensor_operators]")
         auto expected_lhs = std::get<2>(t);
         auto expected_rhs = std::get<3>(t);
         auto& result = assign(lhs,rhs);
+        REQUIRE(std::is_same_v<decltype(lhs),std::remove_reference_t<decltype(result)>>);
         REQUIRE(&result == &lhs);
         REQUIRE(result == expected_lhs);
         REQUIRE(rhs == expected_rhs);
@@ -329,6 +330,7 @@ TEST_CASE("test_gtensor_compound_assign_operator","[test_tensor_operators]")
         auto expected_lhs = std::get<2>(t);
         auto expected_rhs = std::get<3>(t);
         auto& result = lhs+=rhs;
+        REQUIRE(std::is_same_v<decltype(lhs),std::remove_reference_t<decltype(result)>>);
         REQUIRE(&result == &lhs);
         REQUIRE(result == expected_lhs);
         REQUIRE(rhs == expected_rhs);

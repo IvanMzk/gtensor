@@ -54,6 +54,17 @@ public:
         copy_assign_(std::forward<Rhs>(rhs));
         return *this;
     }
+    //broadcast assignment, impl of this never changes, shapes of this and rhs must be broadcastable, or rhs convertible to value_type
+    template<typename Rhs>
+    basic_tensor& assign(Rhs&& rhs){
+        gtensor::assign(*this, std::forward<Rhs>(rhs));
+        return *this;
+    }
+    //broadcast equality, returns basic_tensor of results of broadcast element-wise comparisons, shapes of this and other must be broadcastable
+    template<typename U>
+    auto equal(const basic_tensor<U>& other)const{
+        return gtensor::equal(*this, other);
+    }
     //resize
     template<typename Container>
     void resize(Container&& new_shape){
@@ -70,22 +81,8 @@ public:
         swap(other);
     }
     //makes tensor by copying shape and elements from this
-    template<typename V, typename C>
     auto copy()const{
-        return tensor<V,C>(shape(),begin(),end());
-    }
-    auto copy()const{
-        return copy<value_type,config_type>();
-    }
-    //broadcast equality, returns basic_tensor of results of broadcast element-wise comparisons, shapes of this and other must be broadcastable
-    template<typename U>
-    auto equal(const basic_tensor<U>& other)const{
-        return gtensor::equal(*this, other);
-    }
-    //broadcast assignment, shape of lhs never changes, shapes of this and rhs must be broadcastable, or rhs convertible to value_type
-    template<typename Rhs>
-    auto assign(Rhs&& rhs){
-        return gtensor::assign(*this, std::forward<Rhs>(rhs));
+        return tensor<value_type,config_type>(shape(),begin(),end());
     }
     //check is this and other are tensors and have the same implementation
     template<typename Other>
@@ -264,13 +261,36 @@ public:
     using shape_type = typename basic_tensor_base::shape_type;
     using size_type = typename basic_tensor_base::size_type;
     using difference_type = typename basic_tensor_base::difference_type;
-    using basic_tensor_base::operator=;
 
     tensor(const tensor&) = default;
-    tensor& operator=(const tensor&) = default;
     tensor(tensor&&) = default;
-    tensor& operator=(tensor&&) = default;
 
+    //assignment
+    tensor& operator=(const tensor& rhs){
+        basic_tensor_base::operator=(rhs);
+        return *this;
+    }
+    tensor& operator=(tensor&& rhs){
+        basic_tensor_base::operator=(std::move(rhs));
+        return *this;
+    }
+    //converting assignment
+    template<typename,typename> struct disable_forward_rhs0;
+    template<typename Rhs> struct disable_forward_rhs0<std::false_type, Rhs> : std::negation<std::is_convertible<Rhs,value_type>>{};
+    template<typename Rhs> struct disable_forward_rhs0<std::true_type, Rhs> : std::is_convertible<Rhs,tensor>{};
+    template<typename Rhs> struct disable_forward_rhs : disable_forward_rhs0<std::bool_constant<detail::is_tensor_v<Rhs>>, Rhs>{};
+
+    template<typename Rhs, std::enable_if_t<!disable_forward_rhs<std::remove_cv_t<std::remove_reference_t<Rhs>>>::value,int> =0>
+    tensor& operator=(Rhs&& rhs){
+        basic_tensor_base::operator=(std::forward<Rhs>(rhs));
+        return *this;
+    }
+    //broadcast assignment, impl of this never changes, shapes of this and rhs must be broadcastable, or rhs convertible to value_type
+    template<typename Rhs>
+    tensor& assign(Rhs&& rhs){
+        basic_tensor_base::assign(std::forward<Rhs>(rhs));
+        return *this;
+    }
     //nested init_list constructors
     template<typename U, std::enable_if_t<std::is_convertible_v<U,value_type>,int> =0> tensor(std::initializer_list<U> init_data):tensor(forward_tag::tag(), init_data){}
     template<typename U, std::enable_if_t<std::is_convertible_v<U,value_type>,int> =0> tensor(std::initializer_list<std::initializer_list<U>> init_data):tensor(forward_tag::tag(), init_data){}

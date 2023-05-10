@@ -34,9 +34,15 @@ inline auto NAME(Other&& other, basic_tensor<Ts...>&& t){\
 }
 
 #define GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(NAME,F)\
-template<typename...Ts, typename Other>\
-inline auto& NAME(basic_tensor<Ts...>& t, Other&& other){\
-    return a_operator(F{},t,std::forward<Other>(other));\
+template<typename...Ts, typename Rhs>\
+inline basic_tensor<Ts...>& NAME(basic_tensor<Ts...>& lhs, Rhs&& rhs){\
+    a_operator(F{},lhs,std::forward<Rhs>(rhs));\
+    return lhs;\
+}\
+template<typename...Ts, typename Rhs>\
+inline tensor<Ts...>& NAME(tensor<Ts...>& lhs, Rhs&& rhs){\
+    NAME(detail::as_basic_tensor(lhs),std::forward<Rhs>(rhs));\
+    return lhs;\
 }
 
 namespace gtensor{
@@ -58,6 +64,11 @@ template<typename T, typename...Ts> struct first_tensor_type<T,Ts...>{
 };
 template<typename...Ts> using first_tensor_type_t = typename first_tensor_type<Ts...>::type;
 
+template<typename...Ts>
+inline basic_tensor<Ts...>& as_basic_tensor(basic_tensor<Ts...>& t){
+    return t;
+}
+
 }   //end of namespace detail
 
 template<typename F, typename...Operands>
@@ -68,10 +79,11 @@ inline auto n_operator(F&& f, Operands&&...operands){
 }
 
 template<typename F, typename Rhs, typename...Ts>
-inline auto& a_operator(F&& f, basic_tensor<Ts...>& lhs, Rhs&& rhs){
+inline basic_tensor<Ts...>& a_operator(F&& f, basic_tensor<Ts...>& lhs, Rhs&& rhs){
     using config_type = typename basic_tensor<Ts...>::config_type;
     using operation_type = std::decay_t<F>;
-    return operator_selector_t<config_type, operation_type>::a_operator(std::forward<F>(f),lhs,std::forward<Rhs>(rhs));
+    operator_selector_t<config_type, operation_type>::a_operator(std::forward<F>(f),lhs,std::forward<Rhs>(rhs));
+    return lhs;
 }
 
 template<typename...Us, typename...Vs>
@@ -119,14 +131,20 @@ GTENSOR_BINARY_TENSOR_OPERATOR(operator&&,operations::logic_and);
 GTENSOR_BINARY_TENSOR_OPERATOR(operator||,operations::logic_or);
 
 //asignment
-template<typename...Ts, typename Other>
-inline auto& assign(basic_tensor<Ts...>& t, Other&& other){
-    using OtherT = std::remove_cv_t<std::remove_reference_t<Other>>;
-    static_assert(detail::is_tensor_v<OtherT>||std::is_convertible_v<OtherT,typename basic_tensor<Ts...>::value_type>);
-    if (t.is_same(other)){
-        return t;
+template<typename...Ts, typename Rhs>
+inline basic_tensor<Ts...>& assign(basic_tensor<Ts...>& lhs, Rhs&& rhs){
+    using RhsT = std::remove_cv_t<std::remove_reference_t<Rhs>>;
+    static_assert(detail::is_tensor_v<RhsT>||std::is_convertible_v<RhsT,typename basic_tensor<Ts...>::value_type>);
+    if (lhs.is_same(rhs)){
+        return lhs;
     }
-    return a_operator(operations::assign{},t,std::forward<Other>(other));
+    a_operator(operations::assign{},lhs,std::forward<Rhs>(rhs));
+    return lhs;
+}
+template<typename...Ts, typename Rhs>
+inline tensor<Ts...>& assign(tensor<Ts...>& lhs, Rhs&& rhs){
+    assign(detail::as_basic_tensor(lhs),std::forward<Rhs>(rhs));
+    return lhs;
 }
 //compound assignment
 GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator+=, operations::assign_add);
