@@ -57,6 +57,7 @@ struct assign_add{
 
 }
 
+//test generalized operators
 TEST_CASE("test_n_operator","[test_tensor_operators]")
 {
     using value_type = double;
@@ -159,6 +160,7 @@ TEST_CASE("test_a_operator","[test_tensor_operators]")
     apply_by_element(test, test_data);
 }
 
+//test operators
 TEST_CASE("test_gtensor_unary_operator","[test_tensor_operators]")
 {
     using value_type = double;
@@ -221,6 +223,40 @@ TEST_CASE("test_gtensor_binary_operator","[test_tensor_operators]")
     apply_by_element(test,test_data);
 }
 
+TEST_CASE("test_gtensor_operator_rvalue_operand","[test_tensor_operators]")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    tensor_type t1{1,2,3};
+    tensor_type t2{4,5,6};
+    SECTION("unary_operator")
+    {
+        auto result = -std::move(t1);
+        REQUIRE(result == tensor_type{-1,-2,-3});
+        REQUIRE(t1.empty());
+    }
+    SECTION("binary_operator_left_rvalue")
+    {
+        auto result = std::move(t1)+t2;
+        REQUIRE(result == tensor_type{5,7,9});
+        REQUIRE(t1.empty());
+    }
+    SECTION("binary_operator_right_rvalue")
+    {
+        auto result = t1+std::move(t2);
+        REQUIRE(result == tensor_type{5,7,9});
+        REQUIRE(t2.empty());
+    }
+    SECTION("binary_operator_both_rvalue")
+    {
+        auto result = std::move(t1)+std::move(t2);
+        REQUIRE(result == tensor_type{5,7,9});
+        REQUIRE(t1.empty());
+        REQUIRE(t2.empty());
+    }
+}
+
+//test assign operators
 TEST_CASE("test_gtensor_assign_operator","[test_tensor_operators]")
 {
     using value_type = double;
@@ -300,17 +336,25 @@ TEST_CASE("test_gtensor_compound_assign_operator","[test_tensor_operators]")
     apply_by_element(test,test_data);
 }
 
-TEST_CASE("test_gtensor_assign_operator_from_rvalue","[test_tensor_operators]")
+TEST_CASE("test_gtensor_assign_operator_compound_assign_operator_rvalue_operand","[test_tensor_operators]")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
     using gtensor::assign;
     tensor_type lhs{1,2,3};
     tensor_type rhs{4,5,6};
-    REQUIRE(!rhs.empty());
-    assign(lhs,std::move(rhs));
-    REQUIRE(rhs.empty());
-    REQUIRE(lhs == tensor_type{4,5,6});
+    SECTION("assign_operator_rvalue_operand")
+    {
+        assign(lhs,std::move(rhs));
+        REQUIRE(lhs == tensor_type{4,5,6});
+        REQUIRE(rhs.empty());
+    }
+    SECTION("compound_assign_operator_rvalue_operand")
+    {
+        lhs+=std::move(rhs);
+        REQUIRE(lhs == tensor_type{5,7,9});
+        REQUIRE(rhs.empty());
+    }
 }
 
 TEST_CASE("test_gtensor_assign_operator_lhs_is_view","[test_tensor_operators]")
@@ -454,6 +498,49 @@ TEST_CASE("test_gtensor_assignment_self_assignment","[test_tensor_operators]")
     auto v = t.transpose();
     REQUIRE_NOTHROW(assign(v,v));
     REQUIRE_THROWS_AS(assign(v,t),assign_exception);
+}
+
+TEST_CASE("test_gtensor_assignment_self_assignment_expression","[test_tensor_operators]")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::assign;
+    using helpers_for_testing::apply_by_element;
+    //0lhs,1rhs,2expected_lhs,3expected_rhs
+    auto test_data = std::make_tuple(
+        std::make_tuple(tensor_type{},tensor_type{},tensor_type{},tensor_type{}),
+        std::make_tuple(tensor_type(1),tensor_type{},tensor_type(1),tensor_type{}),
+        std::make_tuple(tensor_type(1),tensor_type(2),tensor_type(3),tensor_type(2)),
+        std::make_tuple(tensor_type(1),tensor_type{{1,2},{3,4}},tensor_type(11),tensor_type{{1,2},{3,4}}),
+        std::make_tuple(tensor_type{1},tensor_type{{1,2},{3,4}},tensor_type(11),tensor_type{{1,2},{3,4}}),
+        std::make_tuple(tensor_type{5,6},tensor_type{{1,2},{3,4}},tensor_type{9,12},tensor_type{{1,2},{3,4}})
+    );
+    auto test = [](const auto& t){
+        auto lhs = std::get<0>(t);
+        auto rhs = std::get<1>(t);
+        auto expected_lhs = std::get<2>(t);
+        auto expected_rhs = std::get<3>(t);
+        assign(lhs,lhs+rhs);
+    };
+    apply_by_element(test,test_data);
+}
+
+TEST_CASE("test_gtensor_assign_operator_compound_assign_operator_exception","[test_tensor_operators]")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::assign;
+    using gtensor::broadcast_exception;
+    tensor_type lhs{1,2,3};
+    tensor_type rhs{4,5};
+    SECTION("assign_operator_exception")
+    {
+        REQUIRE_THROWS_AS(assign(lhs,rhs), broadcast_exception);
+    }
+    SECTION("compound_assign_operator_rvalue_operand")
+    {
+        REQUIRE_THROWS_AS((lhs+=rhs), broadcast_exception);
+    }
 }
 
 //test operators semantic

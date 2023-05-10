@@ -5,6 +5,7 @@
 #include "helpers_for_testing.hpp"
 #include "integral_type.hpp"
 
+//test tensor constructors
 TEST_CASE("test_tensor_default_constructor","[test_tensor]")
 {
     using value_type = double;
@@ -94,6 +95,204 @@ TEST_CASE("test_tensor_constructor_from_list","[test_tensor]")
     apply_by_element(test, test_data);
 }
 
+TEST_CASE("test_tensor_constructor_shape","[test_tensor]")
+{
+    using value_type = int;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
+    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using shape_type = typename config_type::shape_type;
+    using helpers_for_testing::apply_by_element;
+    //0shape,1expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(shape_type{}, tensor_type(value_type{})),
+        std::make_tuple(shape_type{0}, tensor_type()),
+        std::make_tuple(std::vector<int>{}, tensor_type(value_type{})),
+        std::make_tuple(std::vector<int>{1}, tensor_type{value_type{}}),
+        std::make_tuple(shape_type{3}, tensor_type{value_type{},value_type{},value_type{}}),
+        std::make_tuple(std::vector<int>{2,3}, tensor_type{{value_type{},value_type{},value_type{}},{value_type{},value_type{},value_type{}}})
+    );
+    auto test = [](const auto& t){
+        auto shape = std::get<0>(t);
+        auto expected = std::get<1>(t);
+        tensor_type result(shape);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test, test_data);
+}
+
+TEST_CASE("test_tensor_constructor_shape_container_value","[test_tensor]")
+{
+    using value_type = double;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
+    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using shape_type = typename config_type::shape_type;
+    using helpers_for_testing::apply_by_element;
+    //0shape,1value,2expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(shape_type{},1,tensor_type(1)),
+        std::make_tuple(shape_type{},-1,tensor_type(-1)),
+        std::make_tuple(shape_type{0},1,tensor_type{}),
+        std::make_tuple(shape_type{1},1,tensor_type{1}),
+        std::make_tuple(shape_type{5},2,tensor_type{2,2,2,2,2}),
+        std::make_tuple(shape_type{1,1},2,tensor_type{{2}}),
+        std::make_tuple(shape_type{1,3},0,tensor_type{{0,0,0}}),
+        std::make_tuple(std::vector<std::size_t>{2,3},0,tensor_type{{0,0,0},{0,0,0}}),
+        std::make_tuple(std::vector<int>{1,2,3},3,tensor_type{{{3,3,3},{3,3,3}}})
+    );
+    auto test = [](const auto& t){
+        auto shape = std::get<0>(t);
+        auto value = std::get<1>(t);
+        auto expected = std::get<2>(t);
+        auto result = tensor_type{shape, value};
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test,test_data);
+}
+
+TEST_CASE("test_tensor_constructor_shape_init_list_value","[test_tensor]")
+{
+    using value_type = double;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
+    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using index_type = tensor_type::index_type;
+    using helpers_for_testing::apply_by_element;
+    auto make_result = [](std::initializer_list<index_type> shape, const value_type& v){
+        return tensor_type(shape,v);
+    };
+    //0result,1expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(make_result({},1), tensor_type(value_type{1})),
+        std::make_tuple(make_result({},-1), tensor_type(value_type{-1})),
+        std::make_tuple(make_result({0},1), tensor_type{}),
+        std::make_tuple(make_result({1},1), tensor_type{1}),
+        std::make_tuple(make_result({5},2), tensor_type{2,2,2,2,2}),
+        std::make_tuple(make_result({1,1},2), tensor_type{{2}}),
+        std::make_tuple(make_result({1,3},0), tensor_type{{0,0,0}}),
+        std::make_tuple(make_result({2,3},1), tensor_type{{1,1,1},{1,1,1}}),
+        std::make_tuple(make_result({1,2,3},1), tensor_type{{{1,1,1},{1,1,1}}})
+    );
+    auto test = [](auto& t){
+        auto result = std::get<0>(t);
+        auto expected = std::get<1>(t);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test,test_data);
+}
+
+TEST_CASE("test_tensor_constructor_shape_container_range","[test_tensor]")
+{
+    using value_type = int;
+    using tensor_type = gtensor::tensor<value_type>;
+    using shape_type = typename tensor_type::config_type::shape_type;
+    using helpers_for_testing::apply_by_element;
+    SECTION("range_>=_size")
+    {
+        //0shape,1elements,2expected
+        auto test_data = std::make_tuple(
+            //0-dim
+            std::make_tuple(shape_type{}, std::vector<value_type>{1,2,3,4,5}, tensor_type(value_type{1})),
+            //n-dim
+            std::make_tuple(shape_type{0}, std::vector<value_type>{}, tensor_type{}),
+            std::make_tuple(shape_type{0}, std::vector<value_type>{1,2,3,4,5}, tensor_type{}),
+            std::make_tuple(shape_type{3}, std::vector<value_type>{1,2,3,4,5}, tensor_type{1,2,3}),
+            std::make_tuple(shape_type{5}, std::vector<value_type>{1,2,3,4,5}, tensor_type{1,2,3,4,5}),
+            std::make_tuple(std::vector<std::size_t>{2,2}, std::vector<value_type>{1,2,3,4,5}, tensor_type{{1,2},{3,4}})
+        );
+        auto test = [](auto& t){
+            auto shape = std::get<0>(t);
+            auto elements = std::get<1>(t);
+            auto expected = std::get<2>(t);
+            auto result = tensor_type{shape, elements.begin(), elements.end()};
+            REQUIRE(result == expected);
+        };
+        apply_by_element(test,test_data);
+    }
+    SECTION("range_<_size")
+    {
+        using index_type = typename tensor_type::index_type;
+        const value_type any{-1};
+        //0shape,1elements,2range_size,3expected
+        auto test_data = std::make_tuple(
+            //0-dim
+            std::make_tuple(shape_type{}, std::vector<value_type>{}, index_type{0}, tensor_type(any)),
+            //n-dim
+            std::make_tuple(shape_type{8}, std::vector<value_type>{1,2,3,4,5}, index_type{5}, tensor_type{1,2,3,4,5,any,any,any}),
+            std::make_tuple(std::vector<int>{2,3}, std::vector<value_type>{1,2,3,4,5}, index_type{5}, tensor_type{{1,2,3},{4,5,any}})
+        );
+        auto test = [](auto& t){
+            auto shape = std::get<0>(t);
+            auto elements = std::get<1>(t);
+            auto range_size = std::get<2>(t);
+            auto expected = std::get<3>(t);
+            auto expected_shape = expected.shape();
+            auto result = tensor_type{shape, elements.begin(), elements.end()};
+            auto result_size = result.size();
+            auto result_shape = result.shape();
+            REQUIRE(range_size < result_size);
+            REQUIRE(result_shape == expected_shape);
+            REQUIRE(std::equal(result.begin(),result.begin()+range_size,expected.begin()));
+        };
+        apply_by_element(test,test_data);
+    }
+}
+
+TEST_CASE("test_tensor_constructor_shape_init_list_range","[test_tensor]")
+{
+    using value_type = int;
+    using tensor_type = gtensor::tensor<value_type>;
+    using index_type = typename tensor_type::index_type;
+    using helpers_for_testing::apply_by_element;
+    auto make_result = [](std::initializer_list<index_type> shape, const std::vector<value_type>& elements){
+        return tensor_type(shape,elements.begin(),elements.end());
+    };
+    SECTION("range_>=_size")
+    {
+        //0result,1expected
+        auto test_data = std::make_tuple(
+            //0-dim
+            std::make_tuple(make_result({},std::vector<value_type>{1,2,3,4,5}), tensor_type(value_type{1})),
+            //n-dim
+            std::make_tuple(make_result({0},std::vector<value_type>{}), tensor_type{}),
+            std::make_tuple(make_result({0},std::vector<value_type>{1,2,3,4,5}), tensor_type{}),
+            std::make_tuple(make_result({3},std::vector<value_type>{1,2,3,4,5}), tensor_type{1,2,3}),
+            std::make_tuple(make_result({5},std::vector<value_type>{1,2,3,4,5}), tensor_type{1,2,3,4,5}),
+            std::make_tuple(make_result({2,2},std::vector<value_type>{1,2,3,4,5}), tensor_type{{1,2},{3,4}})
+        );
+        auto test = [](auto& t){
+            auto result = std::get<0>(t);
+            auto expected = std::get<1>(t);
+            REQUIRE(result == expected);
+        };
+        apply_by_element(test,test_data);
+    }
+    SECTION("range_<_size")
+    {
+        using index_type = typename tensor_type::index_type;
+        const value_type any{-1};
+        //0result,1range_size,2expected
+        auto test_data = std::make_tuple(
+            //0-dim
+            std::make_tuple(make_result({},std::vector<value_type>{}), index_type{0}, tensor_type(any)),
+            //n-dim
+            std::make_tuple(make_result({8},std::vector<value_type>{1,2,3,4,5}), index_type{5}, tensor_type{1,2,3,4,5,any,any,any}),
+            std::make_tuple(make_result({2,3},std::vector<value_type>{1,2,3,4,5}), index_type{5}, tensor_type{{1,2,3},{4,5,any}})
+        );
+        auto test = [](auto& t){
+            auto result = std::get<0>(t);
+            auto range_size = std::get<1>(t);
+            auto expected = std::get<2>(t);
+            auto expected_shape = expected.shape();
+            auto result_size = result.size();
+            auto result_shape = result.shape();
+            REQUIRE(range_size < result_size);
+            REQUIRE(result_shape == expected_shape);
+            REQUIRE(std::equal(result.begin(),result.begin()+range_size,expected.begin()));
+        };
+        apply_by_element(test,test_data);
+    }
+}
+
+//test tensor operator==
 TEST_CASE("test_tensor_operator==","[test_tensor]")
 {
     using value_type = double;
@@ -151,142 +350,7 @@ TEST_CASE("test_tensor_operator==","[test_tensor]")
     }
 }
 
-TEST_CASE("test_tensor_constructor_shape","[test_tensor]")
-{
-    using value_type = int;
-    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
-    using tensor_type = gtensor::tensor<value_type, config_type>;
-    using shape_type = typename config_type::shape_type;
-    using helpers_for_testing::apply_by_element;
-    //0shape,1expected
-    auto test_data = std::make_tuple(
-        std::make_tuple(shape_type{}, tensor_type(value_type{})),
-        std::make_tuple(shape_type{0}, tensor_type()),
-        std::make_tuple(std::vector<int>{}, tensor_type(value_type{})),
-        std::make_tuple(std::vector<int>{1}, tensor_type{value_type{}}),
-        std::make_tuple(shape_type{3}, tensor_type{value_type{},value_type{},value_type{}}),
-        std::make_tuple(std::vector<int>{2,3}, tensor_type{{value_type{},value_type{},value_type{}},{value_type{},value_type{},value_type{}}})
-    );
-    auto test = [](const auto& t){
-        auto shape = std::get<0>(t);
-        auto expected = std::get<1>(t);
-        tensor_type result(shape);
-        REQUIRE(result == expected);
-    };
-    apply_by_element(test, test_data);
-}
-
-TEST_CASE("test_tensor_constructor_shape_container_value","[test_tensor]")
-{
-    using value_type = double;
-    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
-    using tensor_type = gtensor::tensor<value_type, config_type>;
-    using shape_type = typename config_type::shape_type;
-    using helpers_for_testing::apply_by_element;
-    //0shape,1value,2expected
-    auto test_data = std::make_tuple(
-        std::make_tuple(shape_type{},1,tensor_type(1)),
-        std::make_tuple(shape_type{},-1,tensor_type(-1)),
-        std::make_tuple(shape_type{0},1,tensor_type{}),
-        std::make_tuple(shape_type{1},1,tensor_type{1}),
-        std::make_tuple(shape_type{5},2,tensor_type{2,2,2,2,2}),
-        std::make_tuple(shape_type{1,1},2,tensor_type{{2}}),
-        std::make_tuple(shape_type{1,3},0,tensor_type{{0,0,0}}),
-        std::make_tuple(std::vector<std::size_t>{2,3},0,tensor_type{{0,0,0},{0,0,0}}),
-        std::make_tuple(std::vector<int>{1,2,3},3,tensor_type{{{3,3,3},{3,3,3}}})
-    );
-    auto test = [](const auto& t){
-        auto shape = std::get<0>(t);
-        auto value = std::get<1>(t);
-        auto expected = std::get<2>(t);
-        auto result = tensor_type{shape, value};
-        REQUIRE(result == expected);
-    };
-    apply_by_element(test,test_data);
-}
-
-TEST_CASE("test_tensor_constructor_shape_container_range","[test_tensor]")
-{
-    using value_type = int;
-    using tensor_type = gtensor::tensor<value_type>;
-    using shape_type = typename tensor_type::config_type::shape_type;
-    using helpers_for_testing::apply_by_element;
-    using helpers_for_testing::cmp_equal;
-    using gtensor::detail::shape_to_str;
-    //0shape,1elements,2expected
-    auto test_data = std::make_tuple(
-        std::make_tuple(shape_type{}, std::vector<value_type>{}, tensor_type(value_type{})),
-        std::make_tuple(shape_type{}, std::vector<value_type>{1,2,3,4,5}, tensor_type(value_type{1})),
-        std::make_tuple(shape_type{0}, std::vector<value_type>{}, tensor_type{}),
-        std::make_tuple(shape_type{0}, std::vector<value_type>{1,2,3,4,5}, tensor_type{}),
-        std::make_tuple(shape_type{3}, std::vector<value_type>{1,2,3,4,5}, tensor_type{1,2,3}),
-        std::make_tuple(shape_type{8}, std::vector<value_type>{1,2,3,4,5}, tensor_type{1,2,3,4,5,value_type{},value_type{},value_type{}}),
-        std::make_tuple(shape_type{5}, std::vector<value_type>{1,2,3,4,5}, tensor_type{1,2,3,4,5}),
-        std::make_tuple(std::vector<int>{2,3}, std::vector<value_type>{1,2,3,4,5}, tensor_type{{1,2,3},{4,5,value_type{}}}),
-        std::make_tuple(std::vector<std::size_t>{2,2}, std::vector<value_type>{1,2,3,4,5}, tensor_type{{1,2},{3,4}})
-    );
-    auto test = [](auto& t){
-        auto shape = std::get<0>(t);
-        auto elements = std::get<1>(t);
-        auto expected = std::get<2>(t);
-        auto result = tensor_type{shape, elements.begin(), elements.end()};
-        REQUIRE(result == expected);
-    };
-    apply_by_element(test,test_data);
-}
-
-TEST_CASE("test_tensor_constructor_shape_init_list_value","[test_tensor]")
-{
-    using value_type = double;
-    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
-    using tensor_type = gtensor::tensor<value_type, config_type>;
-    using helpers_for_testing::apply_by_element;
-    //0result,1expected
-    auto test_data = std::make_tuple(
-        std::make_tuple([](){return tensor_type({},1);}(), tensor_type(value_type{1})),
-        std::make_tuple([](){return tensor_type({},-1);}(), tensor_type(value_type{-1})),
-        std::make_tuple([](){return tensor_type({0},1);}(), tensor_type{}),
-        std::make_tuple([](){return tensor_type({1},1);}(), tensor_type{1}),
-        std::make_tuple([](){return tensor_type({5},2);}(), tensor_type{2,2,2,2,2}),
-        std::make_tuple([](){return tensor_type({1,1},2);}(), tensor_type{{2}}),
-        std::make_tuple([](){return tensor_type({1,3},0);}(), tensor_type{{0,0,0}}),
-        std::make_tuple([](){return tensor_type({2,3},1);}(), tensor_type{{1,1,1},{1,1,1}}),
-        std::make_tuple([](){return tensor_type({1,2,3},1);}(), tensor_type{{{1,1,1},{1,1,1}}})
-    );
-    auto test = [](auto& t){
-        auto result = std::get<0>(t);
-        auto expected = std::get<1>(t);
-        REQUIRE(result == expected);
-    };
-    apply_by_element(test,test_data);
-}
-
-TEST_CASE("test_tensor_constructor_shape_init_list_range","[test_tensor]")
-{
-    using value_type = int;
-    using tensor_type = gtensor::tensor<value_type>;
-    using helpers_for_testing::apply_by_element;
-    //0result,1expected
-    auto test_data = std::make_tuple(
-        std::make_tuple([](){std::vector<value_type> elements{}; return tensor_type{{},elements.begin(),elements.end()};}(), tensor_type(value_type{})),
-        std::make_tuple([](){std::vector<value_type> elements{3,2,1}; return tensor_type({},elements.begin(),elements.end());}(), tensor_type(value_type{3})),
-        std::make_tuple([](){std::vector<value_type> elements{}; return tensor_type{{0},elements.begin(),elements.end()};}(), tensor_type{}),
-        std::make_tuple([](){std::vector<value_type> elements{1,2,3}; return tensor_type({0},elements.begin(),elements.end());}(), tensor_type{}),
-        std::make_tuple([](){std::vector<value_type> elements{1,2,3,4,5}; return tensor_type{{3},elements.begin(),elements.end()};}(), tensor_type{1,2,3}),
-        std::make_tuple([](){std::vector<value_type> elements{1,2,3}; return tensor_type{{5},elements.begin(),elements.end()};}(), tensor_type{1,2,3,value_type{},value_type{}}),
-        std::make_tuple([](){std::vector<value_type> elements{1,2,3,4,5}; return tensor_type{{5},elements.begin(),elements.end()};}(), tensor_type{1,2,3,4,5}),
-        std::make_tuple([](){std::vector<value_type> elements{1,2,3,4,5}; return tensor_type({2,3},elements.begin(),elements.end());}(), tensor_type{{1,2,3},{4,5,value_type{}}}),
-        std::make_tuple([](){std::vector<value_type> elements{1,2,3,4,5}; return tensor_type{{2,2},elements.begin(),elements.end()};}(), tensor_type{{1,2},{3,4}})
-    );
-    auto test = [](auto& t){
-        auto result = std::get<0>(t);
-        auto expected = std::get<1>(t);
-        REQUIRE(result == expected);
-    };
-    apply_by_element(test,test_data);
-}
-
-
+//test tensor operator=
 TEMPLATE_TEST_CASE("test_tensor_copy_assignment_converting_copy_assignment_result","[test_tensor]",
     //0lhs_value_type,1rhs_value_type
     (std::tuple<int,int>),
@@ -723,80 +787,77 @@ TEST_CASE("test_tensor_is_same","[test_tensor]")
     }
 }
 
-TEST_CASE("test_tensor_resize_to_not_bigger","[test_tensor]")
+TEST_CASE("test_tensor_resize","[test_tensor]")
 {
     using value_type = int;
     using tensor_type = gtensor::tensor<value_type>;
     using helpers_for_testing::apply_by_element;
-    //0tensor,1new_shape,2expected
-    auto test_data = std::make_tuple(
-        std::make_tuple(tensor_type{},std::vector<int>{0},tensor_type{}),
-        std::make_tuple(tensor_type{},std::array<int,3>{0,2,3},tensor_type{}.reshape(0,2,3)),
-        std::make_tuple(tensor_type(1),std::vector<int>{0},tensor_type{}),
-        std::make_tuple(tensor_type(2),std::vector<int>{},tensor_type(2)),
-        std::make_tuple(tensor_type(1),std::vector<int>{1,1},tensor_type{{1}}),
-        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},std::vector<int>{0},tensor_type{}),
-        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},std::vector<int>{},tensor_type(1)),
-        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},std::vector<int>{3},tensor_type{1,2,3}),
-        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},std::vector<int>{2,3},tensor_type{{1,2,3},{4,5,6}}),
-        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},std::vector<int>{2,2,2},tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}})
-    );
-    auto test = [](const auto& t){
-        auto ten = std::get<0>(t);
-        auto new_shape = std::get<1>(t);
-        auto expected = std::get<2>(t);
-        auto ten_size = ten.size();
-        auto expected_size = expected.size();
-        REQUIRE(ten_size >= expected_size);
-        ten.resize(new_shape);
-        REQUIRE(ten == expected);
-    };
-    apply_by_element(test,test_data);
+    SECTION("test_tensor_resize_to_not_bigger")
+    {
+        //0tensor,1new_shape,2expected
+        auto test_data = std::make_tuple(
+            std::make_tuple(tensor_type{},std::vector<int>{0},tensor_type{}),
+            std::make_tuple(tensor_type{},std::array<int,3>{0,2,3},tensor_type{}.reshape(0,2,3)),
+            std::make_tuple(tensor_type(1),std::vector<int>{0},tensor_type{}),
+            std::make_tuple(tensor_type(2),std::vector<int>{},tensor_type(2)),
+            std::make_tuple(tensor_type(1),std::vector<int>{1,1},tensor_type{{1}}),
+            std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},std::vector<int>{0},tensor_type{}),
+            std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},std::vector<int>{},tensor_type(1)),
+            std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},std::vector<int>{3},tensor_type{1,2,3}),
+            std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},std::vector<int>{2,3},tensor_type{{1,2,3},{4,5,6}}),
+            std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},std::vector<int>{2,2,2},tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}})
+        );
+        auto test = [](const auto& t){
+            auto ten = std::get<0>(t);
+            auto new_shape = std::get<1>(t);
+            auto expected = std::get<2>(t);
+            auto ten_size = ten.size();
+            auto expected_size = expected.size();
+            REQUIRE(ten_size >= expected_size);
+            ten.resize(new_shape);
+            REQUIRE(ten == expected);
+        };
+        apply_by_element(test,test_data);
+    }
+    SECTION("test_tensor_resize_to_bigger")
+    {
+        using index_type = typename tensor_type::index_type;
+        const value_type any{-1};
+        //0tensor,1size,2new_shape,3expected
+        auto test_data = std::make_tuple(
+            std::make_tuple(tensor_type{},index_type{0},std::vector<int>{1},tensor_type{any}),
+            std::make_tuple(tensor_type{},index_type{0},std::vector<int>{5},tensor_type{any,any,any,any,any}),
+            std::make_tuple(tensor_type{},index_type{0},std::vector<int>{2,3},tensor_type{{any,any,any},{any,any,any}}),
+            std::make_tuple(tensor_type(3),index_type{1},std::vector<int>{5},tensor_type{3,any,any,any,any}),
+            std::make_tuple(tensor_type(3),index_type{1},std::vector<int>{3,2},tensor_type{{3,any},{any,any},{any,any}}),
+            std::make_tuple(tensor_type{4},index_type{1},std::vector<int>{5},tensor_type{4,any,any,any,any}),
+            std::make_tuple(tensor_type{{1,2,3},{4,5,6}},index_type{6},std::vector<int>{2,2,2},tensor_type{{{1,2},{3,4}},{{5,6},{any,any}}})
+        );
+        auto test = [](const auto& t){
+            auto ten = std::get<0>(t);
+            auto ten_size = std::get<1>(t);
+            auto new_shape = std::get<2>(t);
+            auto expected = std::get<3>(t);
+            auto expected_size = expected.size();
+            auto expected_shape = expected.shape();
+            REQUIRE(ten_size == ten.size());
+            REQUIRE(expected_size > ten_size);
+            ten.resize(new_shape);
+            auto result_shape = ten.shape();
+            REQUIRE(result_shape == expected_shape);
+            REQUIRE(std::equal(ten.begin(),ten.begin()+ten_size,expected.begin()));
+        };
+        apply_by_element(test,test_data);
+    }
+    SECTION("test_tensor_resize_init_list_interface")
+    {
+        tensor_type t0{{1,2,3},{4,5,6}};
+        t0.resize({2,2});
+        REQUIRE(t0 == tensor_type{{1,2},{3,4}});
+    }
 }
 
-TEST_CASE("test_tensor_resize_to_bigger","[test_tensor]")
-{
-    using value_type = int;
-    using tensor_type = gtensor::tensor<value_type>;
-    using index_type = typename tensor_type::index_type;
-    using helpers_for_testing::apply_by_element;
-    const value_type any{-1};
-    //0tensor,1size,2new_shape,3expected
-    auto test_data = std::make_tuple(
-        std::make_tuple(tensor_type{},index_type{0},std::vector<int>{1},tensor_type{any}),
-        std::make_tuple(tensor_type{},index_type{0},std::vector<int>{5},tensor_type{any,any,any,any,any}),
-        std::make_tuple(tensor_type{},index_type{0},std::vector<int>{2,3},tensor_type{{any,any,any},{any,any,any}}),
-        std::make_tuple(tensor_type(3),index_type{1},std::vector<int>{5},tensor_type{3,any,any,any,any}),
-        std::make_tuple(tensor_type(3),index_type{1},std::vector<int>{3,2},tensor_type{{3,any},{any,any},{any,any}}),
-        std::make_tuple(tensor_type{4},index_type{1},std::vector<int>{5},tensor_type{4,any,any,any,any}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},index_type{6},std::vector<int>{2,2,2},tensor_type{{{1,2},{3,4}},{{5,6},{any,any}}})
-    );
-    auto test = [](const auto& t){
-        auto ten = std::get<0>(t);
-        auto ten_size = std::get<1>(t);
-        auto new_shape = std::get<2>(t);
-        auto expected = std::get<3>(t);
-        auto expected_size = expected.size();
-        auto expected_shape = expected.shape();
-        REQUIRE(ten_size == ten.size());
-        REQUIRE(expected_size > ten_size);
-        ten.resize(new_shape);
-        auto result_shape = ten.shape();
-        REQUIRE(result_shape == expected_shape);
-        REQUIRE(std::equal(ten.begin(),ten.begin()+ten_size,expected.begin()));
-    };
-    apply_by_element(test,test_data);
-}
 
-TEST_CASE("test_tensor_resize_init_list_interface","[test_tensor]")
-{
-    using value_type = int;
-    using tensor_type = gtensor::tensor<value_type>;
-    tensor_type t0{{1,2,3},{4,5,6}};
-    t0.resize({2,2});
-    REQUIRE(t0 == tensor_type{{1,2},{3,4}});
-    //t0.transpose().resize({2,2}); //can't resize view
-}
 
 // TEST_CASE("test_tensor_copy","[test_tensor]"){
 //     using value_type = double;
