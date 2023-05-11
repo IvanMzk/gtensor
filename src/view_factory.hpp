@@ -198,12 +198,14 @@ inline void check_transpose_args(const SizeT& dim, const Container& subs){
 }
 template<typename...Subs>
 inline void check_transpose_args_variadic(const Subs&...subs){
-    auto is_less_zero = [](const auto& sub){
-        using sub_type = std::remove_reference_t<decltype(sub)>;
-        return sub < sub_type{0} ? true : false;
-    };
-    if ((is_less_zero(subs)||...)){
-        throw subscript_exception("invalid transpose argument");
+    if constexpr (sizeof...(Subs) > 0){
+        auto is_less_zero = [](const auto& sub){
+            using sub_type = std::remove_reference_t<decltype(sub)>;
+            return sub < sub_type{0} ? true : false;
+        };
+        if ((is_less_zero(subs)||...)){
+            throw subscript_exception("invalid transpose argument");
+        }
     }
 }
 //subdim view helpers
@@ -566,7 +568,7 @@ class view_factory
         using index_type = typename parent_type::index_type;
         struct slice_maker{
             auto operator()(const index_type& start){return slice_type{start,reduce_tag_type{}};}
-            auto operator()(std::initializer_list<slice_item_type> slice_init_list){return slice_type{slice_init_list};}
+            auto operator()(std::initializer_list<slice_item_type> slice_init_list){return slice_type(slice_init_list);}
             const auto& operator()(const slice_type& slice){return slice;}
         };
         if constexpr((std::is_convertible_v<Subs,index_type>&&...)){    //can make subdim view

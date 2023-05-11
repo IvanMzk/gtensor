@@ -650,7 +650,7 @@ TEST_CASE("test_tensor_logical_operators_semantic","[test_tensor_operators]")
     using tensor_type = gtensor::tensor<value_type>;
     SECTION("operator!")
     {
-        REQUIRE(!tensor_type{true,false,true,false} == tensor_type{false,true,false,true});
+        REQUIRE((!tensor_type{true,false,true,false}) == tensor_type{false,true,false,true});
     }
     SECTION("operator&&")
     {

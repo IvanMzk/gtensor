@@ -17,6 +17,7 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_mapping_view.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_integral_type.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_helpers_for_testing.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_tmp.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/test_common.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_libdivide_helper.cpp

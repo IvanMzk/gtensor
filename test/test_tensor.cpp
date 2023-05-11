@@ -131,15 +131,15 @@ TEST_CASE("test_tensor_constructor_shape_container_value","[test_tensor]")
     using helpers_for_testing::apply_by_element;
     //0shape,1value,2expected
     auto test_data = std::make_tuple(
-        std::make_tuple(shape_type{},1,tensor_type(1)),
-        std::make_tuple(shape_type{},-1,tensor_type(-1)),
-        std::make_tuple(shape_type{0},1,tensor_type{}),
-        std::make_tuple(shape_type{1},1,tensor_type{1}),
-        std::make_tuple(shape_type{5},2,tensor_type{2,2,2,2,2}),
-        std::make_tuple(shape_type{1,1},2,tensor_type{{2}}),
-        std::make_tuple(shape_type{1,3},0,tensor_type{{0,0,0}}),
-        std::make_tuple(std::vector<std::size_t>{2,3},0,tensor_type{{0,0,0},{0,0,0}}),
-        std::make_tuple(std::vector<int>{1,2,3},3,tensor_type{{{3,3,3},{3,3,3}}})
+        std::make_tuple(shape_type{},value_type{1},tensor_type(1)),
+        std::make_tuple(shape_type{},value_type{-1},tensor_type(-1)),
+        std::make_tuple(shape_type{0},value_type{1},tensor_type{}),
+        std::make_tuple(shape_type{1},value_type{1},tensor_type{1}),
+        std::make_tuple(shape_type{5},value_type{2},tensor_type{2,2,2,2,2}),
+        std::make_tuple(shape_type{1,1},value_type{2},tensor_type{{2}}),
+        std::make_tuple(shape_type{1,3},value_type{0},tensor_type{{0,0,0}}),
+        std::make_tuple(std::vector<std::size_t>{2,3},value_type{0},tensor_type{{0,0,0},{0,0,0}}),
+        std::make_tuple(std::vector<int>{1,2,3},value_type{3},tensor_type{{{3,3,3},{3,3,3}}})
     );
     auto test = [](const auto& t){
         auto shape = std::get<0>(t);
