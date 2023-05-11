@@ -1,12 +1,13 @@
 #include <tuple>
+#include <iostream>
 #include "catch.hpp"
 #include "integral_type.hpp"
 #include "helpers_for_testing.hpp"
 
 TEST_CASE("test_integral_construction", "[test_integral_type]")
 {
-    using gtensor::integral;
-    using gtensor::integral_exception;
+    using integral_type::integral;
+    using integral_type::integral_exception;
     using helpers_for_testing::apply_by_element;
 
     //0denote_value_type,1constructor_parameter
@@ -113,3 +114,4 @@ TEST_CASE("test_integral_construction", "[test_integral_type]")
     apply_by_element(test,test_data);
     apply_by_element(test_exception,test_data_exception);
 }
+

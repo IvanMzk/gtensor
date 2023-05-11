@@ -612,7 +612,7 @@ class view_factory
         const auto& subs_shape = subs.shape();
         detail::check_bool_mapping_view_subs(pshape, subs_shape);
         if (!parent.empty()){
-            auto res_elements = typename config_type::template container<value_type>(parent.size());
+            auto res_elements = tensor<value_type,config_type>{pshape};
             index_type subs_trues_number = detail::fill_bool_mapping_view(
                 pshape,
                 parent.strides(),
@@ -680,65 +680,5 @@ public:
     }
 
 };  //end of class view_factory
-
-
-
-// //view_factory module interface
-// //slice view
-// template<typename...Ts, typename Container, std::enable_if_t<detail::is_container_of_type_v<Container, typename tensor<Ts...>::slice_type>,int> = 0>
-// inline auto create_slice_view(const tensor<Ts...>& parent, const Container& subs){
-//     using config_type = typename tensor<Ts...>::config_type;
-//     return view_factory_selector<config_type>::type::create_slice_view(parent, subs);
-// }
-// template<
-//     typename...Ts,
-//     typename...Subs,
-//     std::enable_if_t<((std::is_convertible_v<Subs, typename tensor<Ts...>::index_type> || std::is_convertible_v<Subs, typename tensor<Ts...>::slice_type>)&&...),int> = 0
-// >
-// inline auto create_slice_view(const tensor<Ts...>& parent, const Subs&...subs){
-//     using config_type = typename tensor<Ts...>::config_type;
-//     return view_factory_selector<config_type>::type::create_slice_view(parent, subs...);
-// }
-// //reshape view
-// template<typename...Ts, typename Container, std::enable_if_t<detail::is_container_of_type_v<Container, typename tensor<Ts...>::index_type>,int> = 0>
-// inline auto create_reshape_view(const tensor<Ts...>& parent, const Container& subs){
-//     using config_type = typename tensor<Ts...>::config_type;
-//     return view_factory_selector<config_type>::type::create_reshape_view(parent, subs);
-// }
-// template<typename...Ts, typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs, typename tensor<Ts...>::index_type>&&...),int> = 0>
-// inline auto create_reshape_view(const tensor<Ts...>& parent, const Subs&...subs){
-//     using config_type = typename tensor<Ts...>::config_type;
-//     return view_factory_selector<config_type>::type::create_reshape_view(parent, subs...);
-// }
-// //transpose view
-// template<typename...Ts, typename Container, std::enable_if_t<detail::is_container_of_type_v<Container, typename tensor<Ts...>::dim_type>,int> = 0>
-// inline auto create_transpose_view(const tensor<Ts...>& parent, const Container& subs){
-//     using config_type = typename tensor<Ts...>::config_type;
-//     return view_factory_selector<config_type>::type::create_transpose_view(parent, subs);
-// }
-// template<typename...Ts, typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs, typename tensor<Ts...>::dim_type>&&...),int> = 0>
-// inline auto create_transpose_view(const tensor<Ts...>& parent, const Subs&...subs){
-//     using config_type = typename tensor<Ts...>::config_type;
-//     return view_factory_selector<config_type>::type::create_transpose_view(parent, subs...);
-// }
-// //index mapping view
-// template<typename...Ts, typename...Subs>
-// inline auto create_index_mapping_view(const tensor<Ts...>& parent, const Subs&...subs){
-//     using config_type = typename tensor<Ts...>::config_type;
-//     using index_type = typename config_type::index_type;
-//     static_assert((detail::is_tensor_of_type_v<Subs,index_type>&&...));
-//     return view_factory_selector<config_type>::type::create_index_mapping_view(parent, subs...);
-// }
-// //bool mapping view
-// template<typename...Ts, typename Subs>
-// inline auto create_bool_mapping_view(const tensor<Ts...>& parent, const Subs& subs){
-//     using config_type = typename tensor<Ts...>::config_type;
-//     static_assert(detail::is_bool_tensor_v<Subs>);
-//     return view_factory_selector<config_type>::type::create_bool_mapping_view(parent, subs);
-// }
-
 }   //end of namespace gtensor
-
-
-
 #endif

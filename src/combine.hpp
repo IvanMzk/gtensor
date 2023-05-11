@@ -600,9 +600,13 @@ static auto split_by_points(const basic_tensor<Ts...>& t, const IdxContainer& sp
     if (std::empty(split_points)){
         return res_type{t(slice_type{})};
     }else{
-        const res_size_type parts_number = static_cast<res_size_type>(split_points.size()) + res_size_type{1};
         res_type res{};
-        res.reserve(parts_number);
+        if constexpr (detail::is_static_castable_v<decltype(split_points.size()),res_size_type>){
+            const res_size_type parts_number = static_cast<res_size_type>(split_points.size()) + res_size_type{1};
+            res.reserve(parts_number);
+        }else{
+            res.reserve(1);
+        }
         auto split_points_it = std::begin(split_points);
         index_type point{0};
         slices_type slices(static_cast<slices_size_type>(t.dim()));
@@ -638,7 +642,11 @@ static auto split_equal_parts(const basic_tensor<Ts...>& t, const typename basic
     const index_type part_size = direction_size/parts_number;
     index_type stop{part_size};
     res_type res{};
-    res.reserve(static_cast<res_size_type>(parts_number));
+    if constexpr (detail::is_static_castable_v<index_type,res_size_type>){
+        res.reserve(static_cast<res_size_type>(parts_number));
+    }else{
+        res.reserve(1);
+    }
     slices_type slices(static_cast<slices_size_type>(t.dim()));
     auto slices_direction_it = std::next(slices.begin(),static_cast<slices_size_type>(direction));
     *slices_direction_it = slice_type{nop_type{},stop};

@@ -11,7 +11,7 @@ class storage_adapter
 {
     using impl_type = Impl;
     using inner_index_type = typename impl_type::difference_type;
-    using index_type = integral<inner_index_type>;
+    using index_type = integral_type::integral<inner_index_type>;
     impl_type impl_;
 public:
     using value_type = typename impl_type::value_type;
@@ -28,11 +28,8 @@ public:
         impl_(init_list)
     {}
 
-    decltype(std::declval<const impl_type&>()[std::declval<inner_index_type>()]) operator[](index_type i)const{return impl_[static_cast<inner_index_type>(i)];}
-    decltype(std::declval<impl_type&>()[std::declval<inner_index_type>()]) operator[](index_type i){return impl_[static_cast<inner_index_type>(i)];}
-
-    auto resize(const index_type& n){return impl_.resize(n.value());}
-    auto shrink_to_fit(){impl_.shrink_to_fit();};
+    decltype(std::declval<const impl_type&>()[std::declval<inner_index_type>()]) operator[](index_type i)const{return impl_[i.value()];}
+    decltype(std::declval<impl_type&>()[std::declval<inner_index_type>()]) operator[](index_type i){return impl_[i.value()];}
 };
 
 template<typename ValT> using storage_vector = storage_adapter<std::vector<ValT>>;

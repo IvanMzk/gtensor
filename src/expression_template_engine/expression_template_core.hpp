@@ -29,9 +29,15 @@ public:
         f_{std::forward<F_>(f__)},
         operands_{std::forward<Operands_>(operands__)...}
     {}
-    const descriptor_type& descriptor()const{return descriptor_;}
-    auto create_walker(dim_type max_dim){return create_walker_helper(*this,max_dim,sequence_type{});}
-    auto create_walker(dim_type max_dim)const{return create_walker_helper(*this,max_dim,sequence_type{});}
+    const descriptor_type& descriptor()const{
+        return descriptor_;
+    }
+    auto create_walker(dim_type max_dim){
+        return create_walker_helper(*this,max_dim,sequence_type{});
+    }
+    auto create_walker(dim_type max_dim)const{
+        return create_walker_helper(*this,max_dim,sequence_type{});
+    }
 private:
     template<typename U, std::size_t...I>
     static auto create_walker_helper(U& instance, dim_type max_dim, std::index_sequence<I...>){

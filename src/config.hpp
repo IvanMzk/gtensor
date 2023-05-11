@@ -24,10 +24,13 @@ struct default_config
 
     //data elements storage template
     //must provide random access interface
-    template<typename T> using storage = std::vector<T>;
+    //template<typename T> using storage = std::vector<T>;
+    template<typename T> using storage = storage_vector<T>;
+
     //meta-data elements storage template i.e. shape, strides are specialization of shape
     //must provide random access interface
     template<typename T> using shape = std::vector<T>;
+
     //generally when public interface expected container parameter it may be any type providig usual container semantic and interface: iterators, aliases...
     //specialization of config_type::container uses as return type in public interface
     //it may be used by implementation as general purpose container

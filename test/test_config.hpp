@@ -44,6 +44,7 @@ struct config_storage_selector{
         Storage
     >;
 };
+template<template<typename...> typename Storage> using config_storage_selector_t = typename config_storage_selector<Storage>::config_type;
 
 }   //end of namespace test_config
 

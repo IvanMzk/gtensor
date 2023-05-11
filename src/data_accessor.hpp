@@ -102,6 +102,7 @@ class iterator_indexer
 {
     static_assert(!std::is_reference_v<Iterator>);
     using iterator_type = Iterator;
+    using difference_type = typename std::iterator_traits<iterator_type>::difference_type;
     iterator_type iterator_;
 public:
     //iterator__ argument should point to the first element
@@ -111,9 +112,31 @@ public:
     {}
     template<typename U>
     decltype(std::declval<iterator_type>().operator*()) operator[](const U& i)const{
+        static_assert(std::is_convertible_v<U,difference_type>);
         iterator_type tmp = iterator_;
-        std::advance(tmp, i);
+        advance(tmp, i, typename std::is_integral<difference_type>{});
         return *tmp;
+    }
+private:
+    void advance(iterator_type& it, difference_type n, std::true_type)const{
+        std::advance(it,n);
+    }
+    void advance(iterator_type& it, difference_type n, std::false_type)const{
+        using it_cat = typename std::iterator_traits<iterator_type>::iterator_category;
+        if constexpr (std::is_convertible_v<it_cat,std::random_access_iterator_tag>){
+            it+=n;
+        }else{
+            const difference_type zero_{0};
+            if (n>=zero_){
+                for (;n!=zero_;--n){
+                    ++it;
+                }
+            }else{
+                for (;n!=zero_;++n){
+                    --it;
+                }
+            }
+        }
     }
 };
 

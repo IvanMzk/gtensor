@@ -1218,7 +1218,7 @@ TEMPLATE_TEST_CASE("test_fill_bool_mapping_view","[test_view_factory]",
         auto subs = std::get<1>(t);
         auto expected_trues_number = std::get<2>(t);
         auto expected_elements = std::get<3>(t);
-        auto result = typename config_type::template container<value_type>(parent.size());
+        auto result = tensor_type{parent.shape()};
         auto result_trues_number = fill_bool_mapping_view(
             parent.shape(),
             parent.strides(),

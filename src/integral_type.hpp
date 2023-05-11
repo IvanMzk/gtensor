@@ -6,31 +6,54 @@
 #include <stdexcept>
 #include <string>
 
-namespace gtensor{
+namespace integral_type{
 
-#define UNARY_INTEGRAL_OPERATOR(NAME,OP)\
+#define INTEGRAL_UNARY_OPERATOR(NAME,OP)\
 template<typename U>\
-inline auto NAME(const integral<U>& u){\
-    return detail::make_integral(OP u.value());\
+inline integral<U> NAME(const integral<U>& u){\
+    return integral<U>{OP u.value()};\
 }
 
-#define BINARY_INTEGRAL_OPERATOR(NAME,OP)\
-template<typename U, typename V>\
-inline auto NAME(const integral<U>& u, const integral<V>& v){\
-    return detail::make_integral(u.value() OP v.value());\
+#define INTEGRAL_BINARY_OPERATOR(NAME,OP)\
+template<typename U>\
+inline integral<U> NAME(const integral<U>& l, const integral<U>& r){\
+    return integral<U>{l.value() OP r.value()};\
+}\
+template<typename U, typename Other, std::enable_if_t<detail::enable_other_v<Other,integral<U>>,int> =0>\
+inline integral<U> NAME(const integral<U>& l, const Other& v){\
+    return l OP integral<U>{v};\
+}\
+template<typename Other, typename U, std::enable_if_t<detail::enable_other_v<Other,integral<U>>,int> =0>\
+inline integral<U> NAME(const Other& v, const integral<U>& r){\
+    return integral<U>{v} OP r;\
 }
 
-#define BINARY_CMP_INTEGRAL_OPERATOR(NAME,OP)\
-template<typename U, typename V>\
-inline bool NAME(const integral<U>& u, const integral<V>& v){\
-    return u.value() OP v.value();\
+#define INTEGRAL_BINARY_COMPARISON_OPERATOR(NAME,OP)\
+template<typename U>\
+inline bool NAME(const integral<U>& l, const integral<U>& r){\
+    return l.value() OP r.value();\
+}\
+template<typename U, typename Other, std::enable_if_t<detail::enable_other_v<Other,integral<U>>,int> =0>\
+inline bool NAME(const integral<U>& l, const Other& v){\
+    return l OP integral<U>{v};\
+}\
+template<typename Other, typename U, std::enable_if_t<detail::enable_other_v<Other,integral<U>>,int> =0>\
+inline bool NAME(const Other& v, const integral<U>& r){\
+    return integral<U>{v} OP r;\
 }
 
 #define INTEGRAL_BINARY_ASSIGNMENT_MEMBER_OPERATOR(NAME,OP)\
-template<typename U>\
-integral& NAME(const integral<U>& u){\
-    value_ OP u.value();\
+integral& NAME(const integral& rhs){\
+    value_ OP rhs.value();\
     return *this;\
+}\
+template<typename Other, std::enable_if_t<detail::enable_other_v<Other,integral>,int> =0>\
+integral& NAME(const Other& rhs){\
+    return *this OP integral{rhs};\
+}\
+template<typename U>\
+integral& NAME(const integral<U>& rhs){\
+    return *this OP integral{rhs};\
 }
 
 #define INTEGRAL_UNARY_PREFIX_MEMBER_OPERATOR(NAME,OP)\
@@ -59,20 +82,20 @@ public:
 
 template<typename T> class integral;
 namespace detail{
-    template<typename T>
-    struct is_signed : public std::is_signed<T>{
-        static_assert(std::is_integral_v<T>);
-    };
-    template<typename T> inline constexpr bool is_signed_v = is_signed<T>::value;
 
-    template<typename T>
-    struct make_unsigned : public std::make_unsigned<T>{
-        static_assert(std::is_integral_v<T>);
-    };
-    template<typename T> using make_unsigned_t = typename make_unsigned<T>::type;
+template<typename Other, typename Integral> inline constexpr bool enable_other_v = std::is_convertible_v<Other,Integral>;
+template<typename U, typename Integral> inline constexpr bool enable_other_v<integral<U>,Integral> = false;
 
-    template<typename T>
-    inline integral<T> make_integral(const T& value){return integral<T>(value);}
+template<typename T>
+struct is_signed : public std::is_signed<T>{
+    static_assert(std::is_integral_v<T>);
+};
+template<typename T> inline constexpr bool is_signed_v = is_signed<T>::value;
+template<typename T>
+struct make_unsigned : public std::make_unsigned<T>{
+    static_assert(std::is_integral_v<T>);
+};
+template<typename T> using make_unsigned_t = typename make_unsigned<T>::type;
 }   //end of namespace detail
 
 template<typename T, typename U>
@@ -123,7 +146,7 @@ public:
     integral() = default;
     template<typename U, std::enable_if_t<std::is_integral_v<U> && std::is_convertible_v<U,value_type>,int> =0>
     integral(U value__):
-        value_(value__)
+        value_(value__) //no strong guarantee
     {
         if constexpr (std::is_unsigned_v<U>){
             if constexpr (cmp_less(std::numeric_limits<value_type>::max(), std::numeric_limits<U>::max())){
@@ -152,11 +175,13 @@ public:
         integral(other.value())
     {}
 
-    template<typename U>
-    explicit operator U()const{
-        //check is safe conversion
-        return static_cast<U>(value_);
-    }
+    // explicit operator T()const{
+    //     return value_;
+    // }
+    // template<typename U>
+    // explicit operator U()const{
+    //     return static_cast<U>(value_);
+    // }
     value_type value()const{return value_;}
 
     INTEGRAL_BINARY_ASSIGNMENT_MEMBER_OPERATOR(operator+=,+=);
@@ -178,33 +203,32 @@ private:
 };
 
 //comparison operators
-BINARY_CMP_INTEGRAL_OPERATOR(operator==,==);
-BINARY_CMP_INTEGRAL_OPERATOR(operator!=,!=);
-BINARY_CMP_INTEGRAL_OPERATOR(operator<,<);
-BINARY_CMP_INTEGRAL_OPERATOR(operator<=,<=);
-BINARY_CMP_INTEGRAL_OPERATOR(operator>,>);
-BINARY_CMP_INTEGRAL_OPERATOR(operator>=,>=);
+INTEGRAL_BINARY_COMPARISON_OPERATOR(operator==,==);
+INTEGRAL_BINARY_COMPARISON_OPERATOR(operator!=,!=);
+INTEGRAL_BINARY_COMPARISON_OPERATOR(operator<,<);
+INTEGRAL_BINARY_COMPARISON_OPERATOR(operator<=,<=);
+INTEGRAL_BINARY_COMPARISON_OPERATOR(operator>,>);
+INTEGRAL_BINARY_COMPARISON_OPERATOR(operator>=,>=);
 //arithmetic operators
-UNARY_INTEGRAL_OPERATOR(operator+,+);
-UNARY_INTEGRAL_OPERATOR(operator-,-);
-BINARY_INTEGRAL_OPERATOR(operator+,+);
-BINARY_INTEGRAL_OPERATOR(operator-,-);
-BINARY_INTEGRAL_OPERATOR(operator*,*);
-BINARY_INTEGRAL_OPERATOR(operator/,/);
-BINARY_INTEGRAL_OPERATOR(operator%,%);
+INTEGRAL_UNARY_OPERATOR(operator+,+);
+INTEGRAL_UNARY_OPERATOR(operator-,-);
+INTEGRAL_BINARY_OPERATOR(operator+,+);
+INTEGRAL_BINARY_OPERATOR(operator-,-);
+INTEGRAL_BINARY_OPERATOR(operator*,*);
+INTEGRAL_BINARY_OPERATOR(operator/,/);
+INTEGRAL_BINARY_OPERATOR(operator%,%);
 //bitwise operators
-UNARY_INTEGRAL_OPERATOR(operator~,~);
-BINARY_INTEGRAL_OPERATOR(operator&,&);
-BINARY_INTEGRAL_OPERATOR(operator|,|);
-BINARY_INTEGRAL_OPERATOR(operator^,^);
-BINARY_INTEGRAL_OPERATOR(operator<<,<<);
-BINARY_INTEGRAL_OPERATOR(operator>>,>>);
+INTEGRAL_UNARY_OPERATOR(operator~,~);
+INTEGRAL_BINARY_OPERATOR(operator&,&);
+INTEGRAL_BINARY_OPERATOR(operator|,|);
+INTEGRAL_BINARY_OPERATOR(operator^,^);
+INTEGRAL_BINARY_OPERATOR(operator<<,<<);
+INTEGRAL_BINARY_OPERATOR(operator>>,>>);
 
 template<typename T>
 std::ostream& operator<<(std::ostream& os, const integral<T>& t){
-    os<<t.value();
-    return os;
+    return os<<t.value();
 }
 
-}   //end of namespace gtensor
+}   //end of namespace integral_type
 #endif

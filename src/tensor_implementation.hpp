@@ -28,8 +28,6 @@ GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(create_indexer, decltype(std::declval<con
 
 GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(create_walker, decltype(std::declval<T&>().create_walker(std::declval<typename T::dim_type>()))(T::*)(typename T::dim_type), has_create_walker);
 GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(create_walker, decltype(std::declval<const T&>().create_walker(std::declval<typename T::dim_type>()))(T::*)(typename T::dim_type)const, has_create_walker_const);
-// GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(create_walker, decltype(std::declval<T&>().create_walker())(T::*)(), has_create_walker);
-// GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(create_walker, decltype(std::declval<const T&>().create_walker())(T::*)()const, has_create_walker_const);
 
 GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(begin, decltype(std::declval<T&>().begin())(T::*)(), has_begin);
 GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(end, decltype(std::declval<T&>().end())(T::*)(), has_end);
@@ -457,7 +455,10 @@ public:
     template<typename ShT, typename It>
     storage_core(ShT&& shape, It first, It last):
         storage_core(std::forward<ShT>(shape), first, last, std::conjunction<std::is_constructible<storage_type,It,It>, std::is_move_constructible<storage_type> >{})
-    {}
+    {
+        using it_difference_type = typename std::iterator_traits<It>::difference_type;
+        static_assert(detail::is_static_castable_v<it_difference_type,index_type>);
+    }
 
     const descriptor_type& descriptor()const{return descriptor_;}
 
@@ -504,22 +505,33 @@ private:
         descriptor_(std::forward<ShT>(shape)),
         elements_(descriptor_.size())
     {
-        std::fill(begin_(),end_(),v);
+        fill(begin_(),end_(),v,typename std::is_integral<index_type>{});
     }
     //from range constructors
-    //try to construct directly from range
+    //try to construct directly from range and move
     template<typename ShT, typename It>
     storage_core(ShT&& shape, It first, It last, std::true_type):
         descriptor_(std::forward<ShT>(shape)),
         elements_(construct_from_range(descriptor_.size(), first, last, typename std::iterator_traits<It>::iterator_category{}))
     {}
-    //no from range constructor, use fill
+    //no from range constructor or no move, use fill_from_range
     template<typename ShT, typename It>
     storage_core(ShT&& shape, It& first, It& last, std::false_type):
         descriptor_(std::forward<ShT>(shape)),
         elements_(descriptor_.size())
     {
         fill_from_range(descriptor_.size(), first, last, begin_(), end_(), typename std::iterator_traits<It>::iterator_category{});
+    }
+
+    template<typename It>
+    void fill(It first, It last, const value_type& v, std::true_type){
+        std::fill(first,last,v);
+    }
+    template<typename It>
+    void fill(It first, It last, const value_type& v, std::false_type){
+        for(;first!=last; ++first){
+            *first = v;
+        }
     }
 
     template<typename It, typename DstIt>
@@ -547,9 +559,13 @@ private:
         auto d = static_cast<index_type>(std::distance(first,last));
         if(size == d){
             return storage_type{first,last};
-        }else if(size<d){
-            return storage_type{first,first+static_cast<it_difference_type>(size)};
-        }else{
+        }else if(size<d){   //range is bigger than size
+            if constexpr (detail::is_static_castable_v<index_type,it_difference_type>){
+                return storage_type{first,first+static_cast<it_difference_type>(size)};
+            }else{
+                return construct_from_range(size, first, last, std::input_iterator_tag{});
+            }
+        }else{  //range is smaller than size
             return construct_from_range(size, first, last, std::input_iterator_tag{});
         }
     }
@@ -557,7 +573,7 @@ private:
     template<typename It>
     storage_type construct_from_range(index_type size, It& first, It& last, std::input_iterator_tag){
         storage_type res(size);
-        fill_from_range(size,first,last,begin_(res),end_(res,size),std::input_iterator_tag{});
+        fill_from_range(size,first,last,begin_(res),end_(res,size),typename std::iterator_traits<It>::iterator_category{});
         return res;
     }
 

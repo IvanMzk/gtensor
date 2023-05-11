@@ -24,13 +24,13 @@ public:
 };
 
 template<typename T>
-class libdivide_divider<integral<T>> : public libdivide::divider<T>
+class libdivide_divider<integral_type::integral<T>> : public libdivide::divider<T>
 {
     using divider_base = libdivide::divider<T>;
-    integral<T> divider_;
+    integral_type::integral<T> divider_;
 public:
     libdivide_divider() = default;
-    explicit libdivide_divider(const integral<T>& divider__):
+    explicit libdivide_divider(const integral_type::integral<T>& divider__):
         divider_base{divider__.value()},
         divider_{divider__}
     {}
@@ -38,8 +38,8 @@ public:
 };
 
 template<typename T>
-auto operator/(const integral<T>& n, const libdivide_divider<integral<T>>& divider){
-    return integral<T>(n.value()/divider);
+auto operator/(const integral_type::integral<T>& n, const libdivide_divider<integral_type::integral<T>>& divider){
+    return integral_type::integral<T>(n.value()/divider);
 }
 
 template<typename CfgT>

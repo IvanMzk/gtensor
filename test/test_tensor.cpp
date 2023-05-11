@@ -54,7 +54,9 @@ TEST_CASE("test_0-dim_tensor_constructor","[test_tensor]")
         REQUIRE(result_size == expected_size);
         REQUIRE(result_dim == expected_dim);
         REQUIRE(result_value == expected_value);
-        REQUIRE(std::next(result_tensor.begin()) == result_tensor.end());
+        auto result_first = result_tensor.begin();
+        auto result_last = result_tensor.end();
+        REQUIRE(++result_first == result_last);
     };
     apply_by_element(test, test_data);
 }

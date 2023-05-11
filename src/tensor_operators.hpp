@@ -49,7 +49,8 @@ namespace gtensor{
 
 namespace detail{
 
-template<typename Other, typename T> constexpr bool lhs_other_v = std::is_convertible_v<Other,T>||std::is_convertible_v<T,Other>;
+template<typename Other, typename T> inline constexpr bool lhs_other_v = std::is_convertible_v<Other,T>||std::is_convertible_v<T,Other>;
+
 template<typename...Ts>
 inline basic_tensor<Ts...>& as_basic_tensor(basic_tensor<Ts...>& t){
     return t;
@@ -57,6 +58,7 @@ inline basic_tensor<Ts...>& as_basic_tensor(basic_tensor<Ts...>& t){
 
 }   //end of namespace detail
 
+//generalized broadcast operator
 template<typename F, typename...Operands>
 inline auto n_operator(F&& f, Operands&&...operands){
     using config_type = typename detail::first_tensor_type_t<std::remove_cv_t<std::remove_reference_t<Operands>>...>::config_type;
@@ -64,6 +66,7 @@ inline auto n_operator(F&& f, Operands&&...operands){
     return operator_selector_t<config_type, operation_type>::n_operator(std::forward<F>(f),std::forward<Operands>(operands)...);
 }
 
+//generalized broadcast assign
 template<typename F, typename Rhs, typename...Ts>
 inline basic_tensor<Ts...>& a_operator(F&& f, basic_tensor<Ts...>& lhs, Rhs&& rhs){
     using config_type = typename basic_tensor<Ts...>::config_type;
@@ -145,5 +148,4 @@ GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator<<=, operations::assign_bitw
 GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator>>=, operations::assign_bitwise_rshift);
 
 }   //end of namespace gtensor
-
 #endif
