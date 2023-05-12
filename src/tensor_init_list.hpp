@@ -127,7 +127,13 @@ inline auto list_parse(std::initializer_list<T> list){
 template<typename Dst_It, typename T>
 void fill_from_list_(const T& v, Dst_It& dst_it, std::size_t& size_){
     using dst_value_type = typename std::iterator_traits<Dst_It>::value_type;
-    *dst_it = static_cast<dst_value_type>(v);
+    if constexpr (std::is_same_v<T,dst_value_type>){
+        *dst_it = v;
+    }else if constexpr (std::is_convertible_v<T,dst_value_type>){
+        *dst_it = static_cast<dst_value_type>(v);
+    }else{
+        *dst_it = v;
+    }
     ++dst_it;
     ++size_;
 }
