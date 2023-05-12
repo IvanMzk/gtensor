@@ -17,7 +17,13 @@ class basic_indexer<Parent&>
     using parent_type = Parent;
     parent_type* parent_;
 public:
-    template<typename Parent_, std::enable_if_t<std::is_lvalue_reference_v<Parent_> && !std::is_convertible_v<std::decay_t<Parent_>, basic_indexer>,int> =0>
+
+    template<typename Parent_> struct enable_parent_ : std::conjunction<
+        std::is_lvalue_reference<Parent_>,
+        std::negation<std::is_same<std::remove_cv_t<std::remove_reference_t<Parent_>>, basic_indexer>>
+    >{};
+
+    template<typename Parent_, std::enable_if_t<enable_parent_<Parent_>::value,int> =0>
     explicit basic_indexer(Parent_&& parent__):
         parent_{&parent__}
     {}
@@ -35,7 +41,7 @@ class basic_indexer<Indexer>
     using indexer_type = Indexer;
     indexer_type indexer_;
 public:
-    template<typename Indexer_, std::enable_if_t<!std::is_convertible_v<std::decay_t<Indexer_>, basic_indexer>,int> =0>
+    template<typename Indexer_, std::enable_if_t<!std::is_same_v<std::remove_cv_t<std::remove_reference_t<Indexer_>>, basic_indexer>,int> =0>
     explicit basic_indexer(Indexer_&& indexer__):
         indexer_{std::forward<Indexer_>(indexer__)}
     {}

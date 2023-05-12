@@ -11,9 +11,9 @@ namespace gtensor{
 #define GTENSOR_ITERATOR_OPERATOR_ASSIGN_MINUS(ITERATOR)\
 template<typename...Ts> inline ITERATOR<Ts...>& operator-=(ITERATOR<Ts...>& lhs, typename ITERATOR<Ts...>::difference_type n){return lhs+=-n;}
 #define GTENSOR_ITERATOR_OPERATOR_PLUS(ITERATOR)\
-template<typename...Ts> inline ITERATOR<Ts...> operator+(const ITERATOR<Ts...>& lhs, typename ITERATOR<Ts...>::difference_type n){auto tmp = lhs; return tmp+=n;}
+template<typename...Ts> inline ITERATOR<Ts...> operator+(const ITERATOR<Ts...>& lhs, typename ITERATOR<Ts...>::difference_type n){auto tmp = lhs; tmp+=n; return tmp;}
 #define GTENSOR_ITERATOR_OPERATOR_MINUS(ITERATOR)\
-template<typename...Ts> inline ITERATOR<Ts...> operator-(const ITERATOR<Ts...>& lhs, typename ITERATOR<Ts...>::difference_type n){auto tmp = lhs; return tmp+=-n;}
+template<typename...Ts> inline ITERATOR<Ts...> operator-(const ITERATOR<Ts...>& lhs, typename ITERATOR<Ts...>::difference_type n){auto tmp = lhs; tmp+=-n; return tmp;}
 #define GTENSOR_ITERATOR_OPERATOR_PREFIX_INC(ITERATOR)\
 template<typename...Ts> inline ITERATOR<Ts...>& operator++(ITERATOR<Ts...>& lhs){return lhs+=typename ITERATOR<Ts...>::difference_type{1};}
 #define GTENSOR_ITERATOR_OPERATOR_PREFIX_DEC(ITERATOR)\
@@ -154,7 +154,7 @@ public:
             traverser.next();
         }
     }
-    auto& operator+=(difference_type n){
+    walker_iterator& operator+=(difference_type n){
         advance(n);
         return *this;
     }

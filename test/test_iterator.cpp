@@ -1,3 +1,4 @@
+#include <vector>
 #include "catch.hpp"
 #include "data_accessor.hpp"
 #include "iterator.hpp"
@@ -7,7 +8,7 @@
 namespace test_iterator_{
 
 template<typename T>
-class test_storage
+class subscriptable_storage_by_value
 {
     using inner_storage_type = std::vector<T>;
     inner_storage_type impl_;
@@ -15,17 +16,35 @@ public:
     using value_type = T;
     using size_type = typename inner_storage_type::size_type;
     using difference_type = typename inner_storage_type::difference_type;
-    test_storage(std::initializer_list<value_type> init_list):
+    subscriptable_storage_by_value(std::initializer_list<value_type> init_list):
         impl_(init_list)
     {}
-    value_type operator[](size_type i)const{return impl_[i];}
+    value_type operator[](size_type i){return impl_[i];}
+};
+
+template<typename T>
+class subscriptable_storage_integral
+{
+    using inner_storage_type = std::vector<T>;
+    using inner_size_type = typename inner_storage_type::size_type;
+    using inner_difference_type = typename inner_storage_type::difference_type;
+    inner_storage_type impl_;
+public:
+    using value_type = T;
+    using size_type = integral_type::integral<inner_size_type>;
+    using difference_type = integral_type::integral<inner_difference_type>;
+    subscriptable_storage_integral(std::initializer_list<value_type> init_list):
+        impl_(init_list)
+    {}
+    decltype(std::declval<inner_storage_type&>()[std::declval<inner_size_type&>()]) operator[](size_type i){return impl_[i.value()];}
 };
 
 }   //end of namespace test_iterator_
 
 TEMPLATE_TEST_CASE("test_random_access_iterator_difference","[test_iterator]",
     test_config::config_storage_selector<std::vector>::config_type,
-    test_config::config_storage_selector<gtensor::storage_vector>::config_type
+    test_config::config_storage_selector<test_iterator_::subscriptable_storage_by_value>::config_type,
+    test_config::config_storage_selector<test_iterator_::subscriptable_storage_integral>::config_type
 )
 {
     using value_type = int;
@@ -73,7 +92,7 @@ TEMPLATE_TEST_CASE("test_random_access_iterator_difference","[test_iterator]",
         std::make_tuple(storage_type{1,2,3,4,5,6}, index_type{6}, [](auto, auto last){auto old_last = last; last-=1; return last - old_last;}, index_type{-1}),
         std::make_tuple(storage_type{1,2,3,4,5,6}, index_type{6}, [](auto first, auto last){last-=6; return last - first;}, index_type{0}),
         //operator+
-        std::make_tuple(storage_type{1,2,3,4,5,6}, index_type{6}, [](auto first, auto){return first+0 - first;}, index_type{0}),
+        std::make_tuple(storage_type{1,2,3,4,5,6}, index_type{6}, [](auto first, auto){auto tmp = first; tmp+=0; return tmp - first;}, index_type{0}),
         std::make_tuple(storage_type{1,2,3,4,5,6}, index_type{6}, [](auto first, auto){return first+1 - first;}, index_type{1}),
         std::make_tuple(storage_type{1,2,3,4,5,6}, index_type{6}, [](auto first, auto last){return first+6 - last;}, index_type{0}),
         //operator-
@@ -81,6 +100,7 @@ TEMPLATE_TEST_CASE("test_random_access_iterator_difference","[test_iterator]",
         std::make_tuple(storage_type{1,2,3,4,5,6}, index_type{6}, [](auto, auto last){return last-1 - last;}, index_type{-1}),
         std::make_tuple(storage_type{1,2,3,4,5,6}, index_type{6}, [](auto first, auto last){return last-6 - first;}, index_type{0})
     );
+
     SECTION("test_indexer_iterator_difference")
     {
         auto test = [](const auto& t){
@@ -171,7 +191,8 @@ TEMPLATE_TEST_CASE("test_random_access_iterator_difference","[test_iterator]",
 
 TEMPLATE_TEST_CASE("test_random_access_iterator_compare","[test_iterator]",
     test_config::config_storage_selector<std::vector>::config_type,
-    test_config::config_storage_selector<gtensor::storage_vector>::config_type
+    test_config::config_storage_selector<test_iterator_::subscriptable_storage_by_value>::config_type,
+    test_config::config_storage_selector<test_iterator_::subscriptable_storage_integral>::config_type
 )
 {
     using value_type = int;
@@ -304,8 +325,8 @@ TEMPLATE_TEST_CASE("test_random_access_iterator_compare","[test_iterator]",
 
 TEMPLATE_TEST_CASE("test_random_access_iterator_dereference","[test_iterator]",
     test_config::config_storage_selector<std::vector>::config_type,
-    test_config::config_storage_selector<gtensor::storage_vector>::config_type,
-    test_config::config_storage_selector<test_iterator_::test_storage>::config_type
+    test_config::config_storage_selector<test_iterator_::subscriptable_storage_by_value>::config_type,
+    test_config::config_storage_selector<test_iterator_::subscriptable_storage_integral>::config_type
 )
 {
     using value_type = int;
@@ -313,11 +334,19 @@ TEMPLATE_TEST_CASE("test_random_access_iterator_dereference","[test_iterator]",
     using index_type = typename config_type::index_type;
     using storage_type = typename config_type::template storage<value_type>;
     using indexer_type = gtensor::basic_indexer<storage_type&>;
-    using gtensor::indexer_iterator;
-    using gtensor::reverse_indexer_iterator;
+    using walker_type = gtensor::walker<config_type, indexer_type>;
+    using indexer_iterator_type = gtensor::indexer_iterator<config_type,indexer_type>;
+    using reverse_indexer_iterator_type = gtensor::reverse_indexer_iterator<config_type,indexer_type>;
+    using walker_iterator_type = gtensor::walker_iterator<config_type,walker_type>;
+    using reverse_walker_iterator_type = gtensor::reverse_walker_iterator<config_type,walker_type>;
     using gtensor::walker_iterator;
     using gtensor::reverse_walker_iterator;
     using helpers_for_testing::apply_by_element;
+
+    REQUIRE(std::is_same_v<decltype(std::declval<storage_type>()[std::declval<index_type>()]),decltype(*std::declval<indexer_iterator_type>())>);
+    REQUIRE(std::is_same_v<decltype(std::declval<storage_type>()[std::declval<index_type>()]),decltype(*std::declval<reverse_indexer_iterator_type>())>);
+    REQUIRE(std::is_same_v<decltype(std::declval<storage_type>()[std::declval<index_type>()]),decltype(*std::declval<walker_iterator_type>())>);
+    REQUIRE(std::is_same_v<decltype(std::declval<storage_type>()[std::declval<index_type>()]),decltype(*std::declval<reverse_walker_iterator_type>())>);
 
     //0storage,1size,2dereference_maker,3forward_expected,4reverse_expected
     auto test_data = std::make_tuple(
@@ -363,7 +392,7 @@ TEMPLATE_TEST_CASE("test_random_access_iterator_dereference","[test_iterator]",
             auto dereference_maker = std::get<2>(t);
             auto forward_expected = std::get<3>(t);
             indexer_type indexer{storage};
-            using iterator_type = indexer_iterator<config_type,indexer_type>;
+            using iterator_type = indexer_iterator_type;
             auto first = iterator_type{indexer, 0};
             auto last = iterator_type{indexer, size};
             auto result = dereference_maker(first, last);
@@ -379,7 +408,7 @@ TEMPLATE_TEST_CASE("test_random_access_iterator_dereference","[test_iterator]",
             auto dereference_maker = std::get<2>(t);
             auto reverse_expected = std::get<4>(t);
             indexer_type indexer{storage};
-            using iterator_type = reverse_indexer_iterator<config_type,indexer_type>;
+            using iterator_type = reverse_indexer_iterator_type;
             auto first = iterator_type{indexer, size};
             auto last = iterator_type{indexer, 0};
             auto result = dereference_maker(first, last);
@@ -394,8 +423,7 @@ TEMPLATE_TEST_CASE("test_random_access_iterator_dereference","[test_iterator]",
             auto size = std::get<1>(t);
             auto dereference_maker = std::get<2>(t);
             auto expected = std::get<3>(t);
-            using walker_type = gtensor::walker<config_type, indexer_type>;
-            using iterator_type = walker_iterator<config_type,walker_type>;
+            using iterator_type = walker_iterator_type;
             using dim_type = typename config_type::dim_type;
             using shape_type = typename config_type::shape_type;
             auto shape = shape_type{size};
@@ -421,8 +449,7 @@ TEMPLATE_TEST_CASE("test_random_access_iterator_dereference","[test_iterator]",
             auto size = std::get<1>(t);
             auto dereference_maker = std::get<2>(t);
             auto reverse_expected = std::get<4>(t);
-            using walker_type = gtensor::walker<config_type, indexer_type>;
-            using iterator_type = reverse_walker_iterator<config_type,walker_type>;
+            using iterator_type = reverse_walker_iterator_type;
             using dim_type = typename config_type::dim_type;
             using shape_type = typename config_type::shape_type;
             auto shape = shape_type{size};
@@ -445,23 +472,23 @@ TEMPLATE_TEST_CASE("test_random_access_iterator_dereference","[test_iterator]",
 
 TEMPLATE_TEST_CASE("test_gtensor_iterator_std_reverse_adapter","[test_iterator]",
     test_config::config_storage_selector<std::vector>::config_type,
-    test_config::config_storage_selector<gtensor::storage_vector>::config_type,
-    test_config::config_storage_selector<test_iterator_::test_storage>::config_type
+    test_config::config_storage_selector<test_iterator_::subscriptable_storage_by_value>::config_type,
+    test_config::config_storage_selector<test_iterator_::subscriptable_storage_integral>::config_type
 )
 {
     using value_type = int;
     using config_type = gtensor::config::extend_config_t<TestType,value_type>;
     using index_type = typename config_type::index_type;
     using storage_type = typename config_type::template storage<value_type>;
-    using indexer_type = gtensor::basic_indexer<const storage_type&>;
+    using indexer_type = gtensor::basic_indexer<storage_type&>;
     using gtensor::indexer_iterator;
     using gtensor::walker_iterator;
     using gtensor::reverse_iterator_generic;
     using helpers_for_testing::apply_by_element;
 
-    const storage_type elements{1,2,3,4,5,6};
-    const index_type size{6};
-    const indexer_type indexer{elements};
+    storage_type elements{1,2,3,4,5,6};
+    index_type size{6};
+    indexer_type indexer{elements};
 
     SECTION("test_indexer_iterator_std_reverse_adapter")
     {
@@ -511,3 +538,4 @@ TEMPLATE_TEST_CASE("test_gtensor_iterator_std_reverse_adapter","[test_iterator]"
         REQUIRE(std::equal(first,last,rrfirst,rrlast));
     }
 }
+
