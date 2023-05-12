@@ -166,8 +166,10 @@ public:
         return create_view_(view_factory_type::create_reshape_view(*this, subs));
     }
     //mapping view
-    template<typename...Subs> struct enable_index_mapping_view_ : std::conjunction<std::bool_constant<detail::is_tensor_of_type_v<Subs,index_type>>...>{};
-    template<> struct enable_index_mapping_view_<> : std::false_type{};
+    template<typename...Subs> struct enable_index_mapping_view_ : std::conjunction<
+        std::bool_constant<(sizeof...(Subs)>0)>,
+        std::bool_constant<detail::is_tensor_of_type_v<Subs,index_type>>...
+    >{};
 
     template<typename...Subs, std::enable_if_t<enable_index_mapping_view_<Subs...>::value,int> = 0 >
     auto operator()(const Subs&...subs)const{
