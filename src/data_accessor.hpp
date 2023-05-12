@@ -54,21 +54,22 @@ public:
 //Indexer is type of previous indexer in the chain or data storage
 //Converter is flat index mapper, must provide operator()() that take index as parameter and return mapped index
 template<typename Indexer, typename Converter>
-class basic_indexer<Indexer, Converter> : public basic_indexer<Indexer>
+class basic_indexer<Indexer, Converter>
 {
-    using basic_indexer_base = basic_indexer<Indexer>;
+    using indexer_type = basic_indexer<Indexer>;
     using Converter_type = Converter;
 public:
     template<typename Indexer_>
     basic_indexer(Indexer_&& indexer__, const Converter_type& converter__):
-        basic_indexer_base{std::forward<Indexer_>(indexer__)},
+        indexer_{std::forward<Indexer_>(indexer__)},
         converter_{&converter__}
     {}
     template<typename U>
-    decltype(std::declval<basic_indexer_base>()[std::declval<Converter_type>().operator()(std::declval<U>())]) operator[](const U& i)const{
-        return basic_indexer_base::operator[](converter_->operator()(i));
+    decltype(std::declval<indexer_type>()[std::declval<Converter_type>().operator()(std::declval<U>())]) operator[](const U& i)const{
+        return indexer_[converter_->operator()(i)];
     }
 private:
+    indexer_type indexer_;
     const Converter_type* converter_;
 };
 //walker-indexer adaptes walker to indexer interface
