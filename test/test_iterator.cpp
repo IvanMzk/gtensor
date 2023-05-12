@@ -514,7 +514,6 @@ TEMPLATE_TEST_CASE("test_gtensor_iterator_std_reverse_adapter","[test_iterator]"
         auto reset_strides = gtensor::detail::make_reset_strides(shape, strides);
         index_type offset{0};
         dim_type max_dim = shape.size();
-        indexer_type indexer{elements};
         walker_type walker{adapted_strides,reset_strides,offset,indexer,max_dim};
         auto first = iterator_type{walker, shape, strides_div, 0};
         auto last = iterator_type{walker, shape, strides_div, size};
@@ -538,4 +537,3 @@ TEMPLATE_TEST_CASE("test_gtensor_iterator_std_reverse_adapter","[test_iterator]"
         REQUIRE(std::equal(first,last,rrfirst,rrlast));
     }
 }
-
