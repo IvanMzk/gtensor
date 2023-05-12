@@ -128,7 +128,15 @@ public:
     auto operator()(std::initializer_list<std::initializer_list<slice_item_type>> subs)const{
         return  create_view_(view_factory_type::create_slice_view(*this, subs));
     }
-    template<typename...Subs, std::enable_if_t<((std::is_convertible_v<Subs,slice_type>||std::is_convertible_v<Subs,index_type>)&&...),int> = 0 >
+
+    template<typename Tensor, typename...Subs> struct enable_slice_view_ : std::conjunction<
+        std::disjunction<
+            std::is_convertible<Subs,typename Tensor::index_type>,
+            std::is_convertible<Subs,typename Tensor::slice_type>
+        >...
+    >{};
+
+    template<typename...Ts, typename...Subs, std::enable_if_t<enable_slice_view_<basic_tensor,Subs...>::value,int> = 0>
     auto operator()(const Subs&...subs)const{
         return create_view_(view_factory_type::create_slice_view(*this, subs...));
     }
@@ -137,7 +145,7 @@ public:
         return create_view_(view_factory_type::create_slice_view(*this, subs));
     }
     //transpose view
-    template<typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs,dim_type>&&...),int> = 0 >
+    template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,dim_type>...>,int> = 0 >
     auto transpose(const Subs&...subs)const{
         return create_view_(view_factory_type::create_transpose_view(*this, subs...));
     }
@@ -146,7 +154,7 @@ public:
         return create_view_(view_factory_type::create_transpose_view(*this, subs));
     }
     //reshape view
-    template<typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs,index_type>&&...),int> = 0 >
+    template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,index_type>...>,int> = 0 >
     auto reshape(const Subs&...subs)const{
         return create_view_(view_factory_type::create_reshape_view(*this, subs...));
     }
@@ -158,7 +166,10 @@ public:
         return create_view_(view_factory_type::create_reshape_view(*this, subs));
     }
     //mapping view
-    template<typename...Subs, std::enable_if_t<(sizeof...(Subs)>0) && (detail::is_tensor_of_type_v<Subs,index_type>&&...),int> = 0 >
+    template<typename...Subs> struct enable_index_mapping_view_ : std::conjunction<std::bool_constant<detail::is_tensor_of_type_v<Subs,index_type>>...>{};
+    template<> struct enable_index_mapping_view_<> : std::false_type{};
+
+    template<typename...Subs, std::enable_if_t<enable_index_mapping_view_<Subs...>::value,int> = 0 >
     auto operator()(const Subs&...subs)const{
         return create_view_(view_factory_type::create_index_mapping_view(*this, subs...));
     }

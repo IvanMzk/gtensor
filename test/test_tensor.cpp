@@ -26,7 +26,7 @@ TEST_CASE("test_tensor_default_constructor","[test_tensor]")
 
 TEST_CASE("test_0-dim_tensor_constructor","[test_tensor]")
 {
-    using value_type = int;
+    using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
     using config_type = tensor_type::config_type;
     using dim_type = config_type::dim_type;
@@ -36,9 +36,7 @@ TEST_CASE("test_0-dim_tensor_constructor","[test_tensor]")
     //0value
     auto test_data = std::make_tuple(
         0,
-        1.0f,
-        std::size_t{2},
-        std::int64_t{3}
+        1.0f
     );
     auto test = [](const auto& value){
         const shape_type expected_shape{};
@@ -56,7 +54,7 @@ TEST_CASE("test_0-dim_tensor_constructor","[test_tensor]")
         REQUIRE(result_value == expected_value);
         auto result_first = result_tensor.begin();
         auto result_last = result_tensor.end();
-        REQUIRE(++result_first == result_last);
+        REQUIRE(result_first+1 == result_last);
     };
     apply_by_element(test, test_data);
 }

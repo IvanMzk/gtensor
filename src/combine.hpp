@@ -233,10 +233,11 @@ auto make_stack_chunk_size(const SizeT& direction, const ShT& shape){
 template<typename SizeT, typename ShT, typename ResultIt, typename...It>
 auto fill_stack(const SizeT& direction, const ShT& shape, const typename ShT::value_type& size, ResultIt res_it, It...it){
     using index_type = typename ShT::value_type;
+    using res_value_type = typename std::iterator_traits<ResultIt>::value_type;
     const index_type chunk_size = make_stack_chunk_size(direction, shape);
     auto filler = [chunk_size, res_it](auto& it) mutable {
         for (index_type i{0}; i!=chunk_size; ++i, ++res_it, ++it){
-            *res_it = *it;
+            *res_it = static_cast<res_value_type>(*it);
         }
     };
     const index_type iterations_number = size/chunk_size;
@@ -288,12 +289,13 @@ template<typename SizeT, typename ShT, typename...ShTs, typename ResultIt, std::
 auto fill_concatenate(const SizeT& direction, const std::tuple<ShT, ShTs...>& shapes, ResultIt res_it, std::index_sequence<I...>, It...it){
     using shape_type = ShT;
     using index_type = typename shape_type::value_type;
+    using res_value_type = typename std::iterator_traits<ResultIt>::value_type;
 
     const auto chunk_size = make_concatenate_chunk_size(direction, shapes);
     const auto first_shape = std::get<0>(shapes);
     auto filler = [res_it](const auto& chunk_size_, auto& it)mutable{
         for (index_type i{0}; i!=chunk_size_; ++i,++it,++res_it){
-            *res_it = *it;
+            *res_it = static_cast<res_value_type>(*it);
         }
     };
     index_type iterations_number = std::accumulate(first_shape.begin(), first_shape.begin()+direction, index_type{1}, std::multiplies{});

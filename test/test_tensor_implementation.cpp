@@ -506,8 +506,8 @@ public:
     using typename test_core_base_type::index_type;
     using typename test_core_base_type::storage_type;
     using test_core_base_type::test_core_base_type;
-    using test_core_base_type::descriptor;
     using test_core_base_type::elements_;
+    const auto& descriptor()const{return test_core_base_type::descriptor();}
     gtensor::detail::subscript_operator_result_t<storage_type> operator[](index_type i){return elements_[i];}
 };
 template<typename Config, typename T>
@@ -521,8 +521,8 @@ public:
     using typename test_core_base_type::index_type;
     using typename test_core_base_type::storage_type;
     using test_core_base_type::test_core_base_type;
-    using test_core_base_type::descriptor;
     using test_core_base_type::elements_;
+    const auto& descriptor()const{return test_core_base_type::descriptor();}
     auto create_indexer(){return gtensor::basic_indexer<storage_type&>{elements_};}
 };
 template<typename Config, typename T>
@@ -536,8 +536,8 @@ public:
     using typename test_core_base_type::index_type;
     using typename test_core_base_type::storage_type;
     using test_core_base_type::test_core_base_type;
-    using test_core_base_type::descriptor;
     using test_core_base_type::elements_;
+    const auto& descriptor()const{return test_core_base_type::descriptor();}
     auto create_walker(dim_type max_dim){
         using indexer_type = gtensor::basic_indexer<storage_type&>;
         return gtensor::walker<config_type,indexer_type>{descriptor().adapted_strides(),descriptor().reset_strides(),descriptor().offset(),indexer_type{elements_},max_dim};
@@ -554,8 +554,8 @@ public:
     using typename test_core_base_type::index_type;
     using typename test_core_base_type::storage_type;
     using test_core_base_type::test_core_base_type;
-    using test_core_base_type::descriptor;
     using test_core_base_type::elements_;
+    const auto& descriptor()const{return test_core_base_type::descriptor();}
     auto begin(){return elements_.begin();}
     auto end(){return elements_.end();}
 };
@@ -571,8 +571,8 @@ public:
     using typename test_core_base_type::index_type;
     using typename test_core_base_type::storage_type;
     using test_core_base_type::test_core_base_type;
-    using test_core_base_type::descriptor;
     using test_core_base_type::elements_;
+    const auto& descriptor()const{return test_core_base_type::descriptor();}
     gtensor::detail::subscript_operator_const_result_t<storage_type> operator[](index_type i)const{return elements_[i];}
 };
 template<typename Config, typename T>
@@ -586,8 +586,8 @@ public:
     using typename test_core_base_type::index_type;
     using typename test_core_base_type::storage_type;
     using test_core_base_type::test_core_base_type;
-    using test_core_base_type::descriptor;
     using test_core_base_type::elements_;
+    const auto& descriptor()const{return test_core_base_type::descriptor();}
     auto create_indexer()const{return gtensor::basic_indexer<const storage_type&>{elements_};}
 };
 template<typename Config, typename T>
@@ -601,8 +601,8 @@ public:
     using typename test_core_base_type::index_type;
     using typename test_core_base_type::storage_type;
     using test_core_base_type::test_core_base_type;
-    using test_core_base_type::descriptor;
     using test_core_base_type::elements_;
+    const auto& descriptor()const{return test_core_base_type::descriptor();}
     auto create_walker(dim_type max_dim)const{
         using indexer_type = gtensor::basic_indexer<const storage_type&>;
         return gtensor::walker<config_type,indexer_type>{descriptor().adapted_strides(),descriptor().reset_strides(),descriptor().offset(),indexer_type{elements_},max_dim};
@@ -619,8 +619,8 @@ public:
     using typename test_core_base_type::index_type;
     using typename test_core_base_type::storage_type;
     using test_core_base_type::test_core_base_type;
-    using test_core_base_type::descriptor;
     using test_core_base_type::elements_;
+    const auto& descriptor()const{return test_core_base_type::descriptor();}
     auto begin()const{return elements_.begin();}
     auto end()const{return elements_.end();}
 };

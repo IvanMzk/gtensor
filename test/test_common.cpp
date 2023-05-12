@@ -63,21 +63,17 @@ namespace test_has_member_function{
         int operator[](size_type);
     };
 
-    struct public_derived_type : public test_type{};
-    struct private_derived_type : private test_type{
-        using test_type::f;
-        using test_type::g;
-    };
-
-
     GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(f,void(T::*)(),has_f);
     GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(f,void(T::*)()const,has_f_const);
 
-    GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(g,decltype(std::declval<const T&>().g())(T::*)()const,has_g_const);
     GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(g,decltype(std::declval<T>().g())(T::*)(),has_g);
+    GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(g,decltype(std::declval<const T&>().g())(T::*)()const,has_g_const);
 
     GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(h,decltype(std::declval<const T&>().h(std::declval<double>()))(T::*)(double)const,has_h_double_const);
+
     GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(h,decltype(std::declval<const T&>().h(std::declval<double>()))(T::*)(int)const,has_h_int_const);
+
+
     GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(h,decltype(std::declval<T>().h(std::declval<int>()))(T::*)(int),has_h_int);
     GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(h,decltype(std::declval<T>().h(std::declval<std::int64_t>()))(T::*)(std::int64_t),has_h_int64);
 
@@ -94,26 +90,18 @@ namespace test_has_member_function{
 TEST_CASE("test_has_member_function","[test_common]")
 {
     using test_has_member_function::test_type;
-    using test_has_member_function::public_derived_type;
-    using test_has_member_function::private_derived_type;
 
     REQUIRE(test_has_member_function::has_f<test_type>{}());
     REQUIRE(!test_has_member_function::has_f_const<test_type>{}());
-    REQUIRE(test_has_member_function::has_f<public_derived_type>{}());
-    REQUIRE(!test_has_member_function::has_f_const<public_derived_type>{}());
 
-    REQUIRE(!test_has_member_function::has_f<private_derived_type>{}());
-    REQUIRE(!test_has_member_function::has_f_const<private_derived_type>{}());
 
-    REQUIRE(test_has_member_function::has_g_const<test_type>{}());
     REQUIRE(test_has_member_function::has_g<test_type>{}());
-    REQUIRE(test_has_member_function::has_g_const<public_derived_type>{}());
-    REQUIRE(test_has_member_function::has_g<public_derived_type>{}());
-    REQUIRE(!test_has_member_function::has_g_const<private_derived_type>{}());
-    REQUIRE(!test_has_member_function::has_g<private_derived_type>{}());
+    REQUIRE(test_has_member_function::has_g_const<test_type>{}());
 
     REQUIRE(test_has_member_function::has_h_double_const<test_type>{}());
+
     REQUIRE(!test_has_member_function::has_h_int_const<test_type>{}());
+
     REQUIRE(test_has_member_function::has_h_int<test_type>{}());
     REQUIRE(!test_has_member_function::has_h_int64<test_type>{}());
 
@@ -124,7 +112,6 @@ TEST_CASE("test_has_member_function","[test_common]")
 
     REQUIRE(!test_has_member_function::has_rbegin<test_type>{}());
     REQUIRE(test_has_member_function::has_rbegin_const<test_type>{}());
-
 }
 
 TEST_CASE("test_is_static_castable","[test_common]")

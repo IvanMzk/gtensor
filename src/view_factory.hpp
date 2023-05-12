@@ -644,7 +644,7 @@ public:
     static auto create_reshape_view(const basic_tensor<Ts...>& parent, const Container& subs){
         return create_reshape_view_container(parent, subs);
     }
-    template<typename...Ts, typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs, typename basic_tensor<Ts...>::index_type>&&...),int> = 0>
+    template<typename...Ts, typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs, typename basic_tensor<Ts...>::index_type>...>,int> = 0>
     static auto create_reshape_view(const basic_tensor<Ts...>& parent, const Subs&...subs){
         return create_reshape_view_variadic(parent, subs...);
     }
@@ -653,7 +653,7 @@ public:
     static auto create_transpose_view(const basic_tensor<Ts...>& parent, const Container& subs){
         return create_transpose_view_container(parent, subs);
     }
-    template<typename...Ts, typename...Subs, std::enable_if_t<(std::is_convertible_v<Subs, typename basic_tensor<Ts...>::dim_type>&&...),int> = 0>
+    template<typename...Ts, typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs, typename basic_tensor<Ts...>::dim_type>...>,int> = 0>
     static auto create_transpose_view(const basic_tensor<Ts...>& parent, const Subs&...subs){
         return create_transpose_view_variadic(parent, subs...);
     }
@@ -662,11 +662,15 @@ public:
     static auto create_slice_view(const basic_tensor<Ts...>& parent, const Container& subs){
         return create_slice_view_container(parent, subs);
     }
-    template<
-        typename...Ts,
-        typename...Subs,
-        std::enable_if_t<((std::is_convertible_v<Subs, typename basic_tensor<Ts...>::index_type> || std::is_convertible_v<Subs, typename basic_tensor<Ts...>::slice_type>)&&...),int> = 0
-    >
+
+    template<typename Tensor, typename...Subs> struct enable_slice_view_ : std::conjunction<
+        std::disjunction<
+            std::is_convertible<Subs,typename Tensor::index_type>,
+            std::is_convertible<Subs,typename Tensor::slice_type>
+        >...
+    >{};
+
+    template<typename...Ts, typename...Subs, std::enable_if_t<enable_slice_view_<basic_tensor<Ts...>,Subs...>::value,int> = 0>
     static auto create_slice_view(const basic_tensor<Ts...>& parent, const Subs&...subs){
         return create_slice_view_variadic(parent, subs...);
     }

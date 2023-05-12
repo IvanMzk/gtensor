@@ -126,7 +126,8 @@ inline auto list_parse(std::initializer_list<T> list){
 //copy init list to Dst
 template<typename Dst_It, typename T>
 void fill_from_list_(const T& v, Dst_It& dst_it, std::size_t& size_){
-    *dst_it = v;
+    using dst_value_type = typename std::iterator_traits<Dst_It>::value_type;
+    *dst_it = static_cast<dst_value_type>(v);
     ++dst_it;
     ++size_;
 }
