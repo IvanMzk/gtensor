@@ -107,6 +107,10 @@ public:
     auto end(){return impl_->end();}
     auto rbegin(){return impl_->rbegin();}
     auto rend(){return impl_->rend();}
+    template<typename Container> auto begin(Container&& shape){return impl_->begin(std::forward<Container>(shape));}
+    template<typename Container> auto end(Container&& shape){return impl_->end(std::forward<Container>(shape));}
+    template<typename Container> auto rbegin(Container&& shape){return impl_->rbegin(std::forward<Container>(shape));}
+    template<typename Container> auto rend(Container&& shape){return impl_->rend(std::forward<Container>(shape));}
     auto create_indexer(){return impl_->create_indexer();}
     auto create_walker(dim_type max_dim){return impl_->create_walker(max_dim);}
     auto create_walker(){return impl_->create_walker();}
@@ -115,6 +119,10 @@ public:
     auto end()const{return impl_->end();}
     auto rbegin()const{return impl_->rbegin();}
     auto rend()const{return impl_->rend();}
+    template<typename Container> auto begin(Container&& shape)const{return impl_->begin(std::forward<Container>(shape));}
+    template<typename Container> auto end(Container&& shape)const{return impl_->end(std::forward<Container>(shape));}
+    template<typename Container> auto rbegin(Container&& shape)const{return impl_->rbegin(std::forward<Container>(shape));}
+    template<typename Container> auto rend(Container&& shape)const{return impl_->rend(std::forward<Container>(shape));}
     auto create_indexer()const{return impl_->create_indexer();}
     auto create_walker(dim_type max_dim)const{return impl_->create_walker(max_dim);}
     auto create_walker()const{return impl_->create_walker();}
