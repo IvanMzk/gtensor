@@ -735,3 +735,61 @@ TEMPLATE_TEST_CASE("test_tensor_implementation","[test_tensor_implementation]",
         apply_by_element(test,test_data);
     }
 }
+
+TEMPLATE_TEST_CASE("test_tensor_implementation_broadcast_iterator","[test_tensor_implementation]",
+    test_config::config_storage_selector_t<std::vector>
+)
+{
+    using value_type = double;
+    using config_type = gtensor::config::extend_config_t<TestType,value_type>;
+    using core_type = gtensor::storage_core<config_type,value_type>;
+    using shape_type = typename config_type::shape_type;
+    using tensor_implementation_type = gtensor::tensor_implementation<core_type>;
+    using helpers_for_testing::apply_by_element;
+
+    //0shape,1elements,2broadcast_shape,3expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(shape_type{}, std::vector<value_type>{1}, shape_type{}, std::vector<value_type>{1}),
+        std::make_tuple(shape_type{}, std::vector<value_type>{2}, shape_type{1}, std::vector<value_type>{2}),
+        std::make_tuple(shape_type{}, std::vector<value_type>{3}, shape_type{5}, std::vector<value_type>{3,3,3,3,3}),
+        std::make_tuple(shape_type{1}, std::vector<value_type>{2}, shape_type{1}, std::vector<value_type>{2}),
+        std::make_tuple(shape_type{1}, std::vector<value_type>{1}, shape_type{5}, std::vector<value_type>{1,1,1,1,1}),
+        std::make_tuple(shape_type{6}, std::vector<value_type>{1,2,3,4,5,6}, shape_type{1}, std::vector<value_type>{1}),
+        std::make_tuple(shape_type{6}, std::vector<value_type>{1,2,3,4,5,6}, shape_type{6}, std::vector<value_type>{1,2,3,4,5,6}),
+        std::make_tuple(shape_type{6}, std::vector<value_type>{1,2,3,4,5,6}, shape_type{1,6}, std::vector<value_type>{1,2,3,4,5,6}),
+        std::make_tuple(shape_type{6}, std::vector<value_type>{1,2,3,4,5,6}, shape_type{6,1}, std::vector<value_type>{1,1,1,1,1,1}),
+        std::make_tuple(shape_type{6}, std::vector<value_type>{1,2,3,4,5,6}, shape_type{2,6}, std::vector<value_type>{1,2,3,4,5,6,1,2,3,4,5,6}),
+        std::make_tuple(shape_type{2,3}, std::vector<value_type>{1,2,3,4,5,6}, shape_type{2,3}, std::vector<value_type>{1,2,3,4,5,6}),
+        std::make_tuple(shape_type{2,3}, std::vector<value_type>{1,2,3,4,5,6}, shape_type{2,2,3}, std::vector<value_type>{1,2,3,4,5,6,1,2,3,4,5,6}),
+        std::make_tuple(shape_type{2,3}, std::vector<value_type>{1,2,3,4,5,6}, shape_type{1,3}, std::vector<value_type>{1,2,3}),
+        std::make_tuple(shape_type{2,3}, std::vector<value_type>{1,2,3,4,5,6}, shape_type{2,1,3}, std::vector<value_type>{1,2,3,1,2,3})
+    );
+
+    SECTION("test_broadcast_iterator")
+    {
+        auto test = [](const auto& t){
+            const auto shape = std::get<0>(t);
+            const auto elements = std::get<1>(t);
+            const auto broadcast_shape = std::get<2>(t);
+            const auto expected = std::get<3>(t);
+            tensor_implementation_type result_tensor_implementation{shape, elements.begin(), elements.end()};
+            REQUIRE(std::equal(result_tensor_implementation.begin(broadcast_shape),result_tensor_implementation.end(broadcast_shape),expected.begin(),expected.end()));
+            REQUIRE(std::equal(result_tensor_implementation.rbegin(broadcast_shape),result_tensor_implementation.rend(broadcast_shape),expected.rbegin(),expected.rend()));
+        };
+        apply_by_element(test,test_data);
+    }
+    SECTION("test_const_broadcast_iterator")
+    {
+        auto test = [](const auto& t){
+            const auto shape = std::get<0>(t);
+            const auto elements = std::get<1>(t);
+            const auto broadcast_shape = std::get<2>(t);
+            const auto expected = std::get<3>(t);
+            const tensor_implementation_type result_tensor_implementation{shape, elements.begin(), elements.end()};
+            REQUIRE(std::equal(result_tensor_implementation.begin(broadcast_shape),result_tensor_implementation.end(broadcast_shape),expected.begin(),expected.end()));
+            REQUIRE(std::equal(result_tensor_implementation.rbegin(broadcast_shape),result_tensor_implementation.rend(broadcast_shape),expected.rbegin(),expected.rend()));
+        };
+        apply_by_element(test,test_data);
+    }
+
+}

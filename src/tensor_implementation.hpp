@@ -352,6 +352,119 @@ inline auto rend_const(const Core& t, const Descriptor& descriptor){
     }
 }
 
+//create broadcast iterator
+//non const
+template<typename Core, typename Descriptor, typename ShT, typename IdxT>
+inline auto create_broadcast_iterator(Core& t, const Descriptor& descriptor, ShT&& shape, const IdxT& pos){
+    using config_type = typename Core::config_type;
+    using dim_type = typename config_type::dim_type;
+    dim_type max_dim = std::max(descriptor.dim(), shape.size());
+    auto strides_div = make_strides_div<config_type>(shape);
+    return broadcast_iterator<config_type, decltype(create_walker(t,descriptor,max_dim))>{
+        create_walker(t,descriptor,max_dim),
+        std::forward<ShT>(shape),
+        std::move(strides_div),
+        pos
+    };
+}
+template<typename Core, typename Descriptor, typename ShT>
+inline auto begin_broadcast(Core& t, const Descriptor& descriptor, ShT&& shape){
+    using config_type = typename Core::config_type;
+    using index_type = typename config_type::index_type;
+    return create_broadcast_iterator(t, descriptor, std::forward<ShT>(shape),index_type{0});
+}
+template<typename Core, typename Descriptor, typename ShT>
+inline auto end_broadcast(Core& t, const Descriptor& descriptor, ShT&& shape){
+    using config_type = typename Core::config_type;
+    using index_type = typename config_type::index_type;
+    index_type size = make_size(shape);
+    return create_broadcast_iterator(t, descriptor, std::forward<ShT>(shape),size);
+}
+//const
+template<typename Core, typename Descriptor, typename ShT, typename IdxT>
+inline auto create_const_broadcast_iterator(const Core& t, const Descriptor& descriptor, ShT&& shape, const IdxT& pos){
+    using config_type = typename Core::config_type;
+    using dim_type = typename config_type::dim_type;
+    dim_type max_dim = std::max(descriptor.dim(), shape.size());
+    auto strides_div = make_strides_div<config_type>(shape);
+    return broadcast_iterator<config_type, decltype(create_const_walker(t,descriptor,max_dim))>{
+        create_const_walker(t,descriptor,max_dim),
+        std::forward<ShT>(shape),
+        std::move(strides_div),
+        pos
+    };
+}
+template<typename Core, typename Descriptor, typename ShT>
+inline auto begin_broadcast_const(const Core& t, const Descriptor& descriptor, ShT&& shape){
+    using config_type = typename Core::config_type;
+    using index_type = typename config_type::index_type;
+    return create_const_broadcast_iterator(t, descriptor, std::forward<ShT>(shape),index_type{0});
+}
+template<typename Core, typename Descriptor, typename ShT>
+inline auto end_broadcast_const(const Core& t, const Descriptor& descriptor, ShT&& shape){
+    using config_type = typename Core::config_type;
+    using index_type = typename config_type::index_type;
+    index_type size = make_size(shape);
+    return create_const_broadcast_iterator(t, descriptor, std::forward<ShT>(shape),size);
+}
+
+//create reverse broadcast iterator
+//non const
+template<typename Core, typename Descriptor, typename ShT, typename IdxT>
+inline auto create_reverse_broadcast_iterator(Core& t, const Descriptor& descriptor, ShT&& shape, const IdxT& pos){
+    using config_type = typename Core::config_type;
+    using dim_type = typename config_type::dim_type;
+    dim_type max_dim = std::max(descriptor.dim(), shape.size());
+    auto strides_div = make_strides_div<config_type>(shape);
+    return reverse_broadcast_iterator<config_type, decltype(create_walker(t,descriptor,max_dim))>{
+        create_walker(t,descriptor,max_dim),
+        std::forward<ShT>(shape),
+        std::move(strides_div),
+        pos
+    };
+}
+template<typename Core, typename Descriptor, typename ShT>
+inline auto rbegin_broadcast(Core& t, const Descriptor& descriptor, ShT&& shape){
+    using config_type = typename Core::config_type;
+    using index_type = typename config_type::index_type;
+    index_type size = make_size(shape);
+    return create_reverse_broadcast_iterator(t, descriptor, std::forward<ShT>(shape),size);
+}
+template<typename Core, typename Descriptor, typename ShT>
+inline auto rend_broadcast(Core& t, const Descriptor& descriptor, ShT&& shape){
+    using config_type = typename Core::config_type;
+    using index_type = typename config_type::index_type;
+    return create_reverse_broadcast_iterator(t, descriptor, std::forward<ShT>(shape),index_type{0});
+}
+//const
+template<typename Core, typename Descriptor, typename ShT, typename IdxT>
+inline auto create_const_reverse_broadcast_iterator(const Core& t, const Descriptor& descriptor, ShT&& shape, const IdxT& pos){
+    using config_type = typename Core::config_type;
+    using dim_type = typename config_type::dim_type;
+    dim_type max_dim = std::max(descriptor.dim(), shape.size());
+    auto strides_div = make_strides_div<config_type>(shape);
+    return reverse_broadcast_iterator<config_type, decltype(create_const_walker(t,descriptor,max_dim))>{
+        create_const_walker(t,descriptor,max_dim),
+        std::forward<ShT>(shape),
+        std::move(strides_div),
+        pos
+    };
+}
+template<typename Core, typename Descriptor, typename ShT>
+inline auto rbegin_broadcast_const(const Core& t, const Descriptor& descriptor, ShT&& shape){
+    using config_type = typename Core::config_type;
+    using index_type = typename config_type::index_type;
+    index_type size = make_size(shape);
+    return create_const_reverse_broadcast_iterator(t, descriptor, std::forward<ShT>(shape),size);
+}
+template<typename Core, typename Descriptor, typename ShT>
+inline auto rend_broadcast_const(const Core& t, const Descriptor& descriptor, ShT&& shape){
+    using config_type = typename Core::config_type;
+    using index_type = typename config_type::index_type;
+    return create_const_reverse_broadcast_iterator(t, descriptor, std::forward<ShT>(shape),index_type{0});
+}
+
+
 }   //end of namespace detail
 
 
@@ -402,6 +515,22 @@ public:
     template<typename H=has_data_accessor, std::enable_if_t<H::value,int> =0> auto create_indexer(){return detail::create_indexer(core_,descriptor());}
     template<typename H=has_data_accessor, std::enable_if_t<H::value,int> =0> auto create_walker(dim_type max_dim){return detail::create_walker(core_,descriptor(),max_dim);}
     template<typename H=has_data_accessor, std::enable_if_t<H::value,int> =0> auto create_walker(){return create_walker(dim());}
+    template<typename H=has_data_accessor, typename Container, std::enable_if_t<H::value,int> =0>
+    auto begin(Container&& shape){
+        return detail::begin_broadcast(core_,descriptor(),detail::make_shape_of_type<shape_type>(std::forward<Container>(shape)));
+    }
+    template<typename H=has_data_accessor, typename Container, std::enable_if_t<H::value,int> =0>
+    auto end(Container&& shape){
+        return detail::end_broadcast(core_,descriptor(),detail::make_shape_of_type<shape_type>(std::forward<Container>(shape)));
+    }
+    template<typename H=has_data_accessor, typename Container, std::enable_if_t<H::value,int> =0>
+    auto rbegin(Container&& shape){
+        return detail::rbegin_broadcast(core_,descriptor(),detail::make_shape_of_type<shape_type>(std::forward<Container>(shape)));
+    }
+    template<typename H=has_data_accessor, typename Container, std::enable_if_t<H::value,int> =0>
+    auto rend(Container&& shape){
+        return detail::rend_broadcast(core_,descriptor(),detail::make_shape_of_type<shape_type>(std::forward<Container>(shape)));
+    }
     //const data interface
     template<typename H=has_const_data_accessor, std::enable_if_t<H::value,int> =0> auto begin()const{return detail::begin_const(core_,descriptor());}
     template<typename H=has_const_data_accessor, std::enable_if_t<H::value,int> =0> auto end()const{return detail::end_const(core_,descriptor());}
@@ -410,6 +539,22 @@ public:
     template<typename H=has_const_data_accessor, std::enable_if_t<H::value,int> =0> auto create_indexer()const{return detail::create_const_indexer(core_,descriptor());}
     template<typename H=has_const_data_accessor, std::enable_if_t<H::value,int> =0> auto create_walker(dim_type max_dim)const{return detail::create_const_walker(core_,descriptor(),max_dim);}
     template<typename H=has_const_data_accessor, std::enable_if_t<H::value,int> =0> auto create_walker()const{return create_walker(dim());}
+    template<typename H=has_data_accessor, typename Container, std::enable_if_t<H::value,int> =0>
+    auto begin(Container&& shape)const{
+        return detail::begin_broadcast_const(core_,descriptor(),detail::make_shape_of_type<shape_type>(std::forward<Container>(shape)));
+    }
+    template<typename H=has_data_accessor, typename Container, std::enable_if_t<H::value,int> =0>
+    auto end(Container&& shape)const{
+        return detail::end_broadcast_const(core_,descriptor(),detail::make_shape_of_type<shape_type>(std::forward<Container>(shape)));
+    }
+    template<typename H=has_data_accessor, typename Container, std::enable_if_t<H::value,int> =0>
+    auto rbegin(Container&& shape)const{
+        return detail::rbegin_broadcast_const(core_,descriptor(),detail::make_shape_of_type<shape_type>(std::forward<Container>(shape)));
+    }
+    template<typename H=has_data_accessor, typename Container, std::enable_if_t<H::value,int> =0>
+    auto rend(Container&& shape)const{
+        return detail::rend_broadcast_const(core_,descriptor(),detail::make_shape_of_type<shape_type>(std::forward<Container>(shape)));
+    }
 
 private:
     core_type core_;
