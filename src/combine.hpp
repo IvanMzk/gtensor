@@ -591,7 +591,7 @@ static auto split_by_points(const basic_tensor<Ts...>& t, const IdxContainer& sp
     using tensor_type = basic_tensor<Ts...>;
     using config_type = typename tensor_type::config_type;
     using index_type = typename tensor_type::index_type;
-    using slice_type = typename slice_traits<config_type>::slice_type;
+    using slice_type = typename tensor_type::slice_type;
     using view_type = decltype(t(slice_type{}));
     using res_type = typename config_type::template container<view_type>;
     using res_size_type = typename res_type::size_type;
@@ -631,8 +631,8 @@ static auto split_equal_parts(const basic_tensor<Ts...>& t, const typename basic
     using tensor_type = basic_tensor<Ts...>;
     using config_type = typename tensor_type::config_type;
     using index_type = typename tensor_type::index_type;
-    using slice_type = typename slice_traits<config_type>::slice_type;
-    using nop_type = typename slice_traits<config_type>::nop_type;
+    using slice_type = typename tensor_type::slice_type;
+    using nop_type = typename slice_type::nop_type;
     using view_type = decltype(t(slice_type{}));
     using res_type = typename config_type::template container<view_type>;
     using res_size_type = typename res_type::size_type;

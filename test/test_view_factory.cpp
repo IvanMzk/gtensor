@@ -11,9 +11,9 @@
 TEST_CASE("test_make_slice_view_shape_element","[test_view_factory]"){
     using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using index_type = config_type::index_type;
-    using slice_type = gtensor::slice_traits<config_type>::slice_type;
-    using nop_type = gtensor::slice_traits<config_type>::nop_type;
-    using rtag_type = gtensor::slice_traits<config_type>::rtag_type;
+    using slice_type = gtensor::slice<index_type>;
+    using nop_type = typename slice_type::nop_type;
+    using rtag_type = typename slice_type::reduce_tag_type;
     using gtensor::detail::make_slice_view_shape_element;
     //0slice,1pshape_element,2expected
     using test_type = std::tuple<index_type, slice_type, index_type>;
@@ -196,10 +196,11 @@ TEST_CASE("test_make_slice_view_shape_element","[test_view_factory]"){
 TEST_CASE("test_make_slice_view_shape","[test_view_factory]"){
     using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using shape_type = config_type::shape_type;
+    using index_type = config_type::index_type;
     using dim_type = config_type::dim_type;
-    using slice_type = gtensor::slice_traits<config_type>::slice_type;
-    using nop_type = gtensor::slice_traits<config_type>::nop_type;
-    using rtag_type = gtensor::slice_traits<config_type>::rtag_type;
+    using slice_type = gtensor::slice<index_type>;
+    using nop_type = typename slice_type::nop_type;
+    using rtag_type = typename slice_type::reduce_tag_type;
     using gtensor::detail::make_slice_view_shape;
     using helpers_for_testing::apply_by_element;
     //0pshape,1res_dim,2subs,3expected
@@ -273,9 +274,9 @@ TEST_CASE("test_make_slice_view_offset","[test_view_factory]"){
     using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using shape_type = config_type::shape_type;
     using index_type = config_type::index_type;
-    using slice_type = gtensor::slice_traits<config_type>::slice_type;
-    using nop_type = gtensor::slice_traits<config_type>::nop_type;
-    using rtag_type = gtensor::slice_traits<config_type>::rtag_type;
+    using slice_type = gtensor::slice<index_type>;
+    using nop_type = typename slice_type::nop_type;
+    using rtag_type = typename slice_type::reduce_tag_type;
     using gtensor::detail::make_slice_view_offset;
     using helpers_for_testing::apply_by_element;
     //0pshape,1pstrides,2subs,3expected
@@ -324,9 +325,10 @@ TEST_CASE("test_make_slice_view_cstrides","[test_view_factory]"){
     using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using shape_type = config_type::shape_type;
     using dim_type = config_type::dim_type;
-    using slice_type = gtensor::slice_traits<config_type>::slice_type;
-    using nop_type = gtensor::slice_traits<config_type>::nop_type;
-    using rtag_type = gtensor::slice_traits<config_type>::rtag_type;
+    using index_type = config_type::index_type;
+    using slice_type = gtensor::slice<index_type>;
+    using nop_type = typename slice_type::nop_type;
+    using rtag_type = typename slice_type::reduce_tag_type;
     using gtensor::detail::make_slice_view_cstrides;
     using helpers_for_testing::apply_by_element;
     //0pstrides,1res_dim,2subs,3expected
@@ -378,8 +380,9 @@ TEST_CASE("test_make_slice_view_cstrides","[test_view_factory]"){
 TEST_CASE("test_check_slice_view_args","[test_view_factory]"){
     using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using shape_type = config_type::shape_type;
-    using slice_type = gtensor::slice_traits<config_type>::slice_type;
-    using rtag_type = gtensor::slice_traits<config_type>::rtag_type;
+    using index_type = config_type::index_type;
+    using slice_type = gtensor::slice<index_type>;
+    using rtag_type = typename slice_type::reduce_tag_type;
     using gtensor::subscript_exception;
     using gtensor::detail::check_slice_view_args;
     using helpers_for_testing::apply_by_element;
