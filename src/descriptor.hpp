@@ -203,18 +203,16 @@ auto flat_to_multi(const StT& strides, const IdxT& idx){
 
 //converts flat index to flat index given strides and converting strides
 template<typename StT, typename CStT, typename IdxT>
-auto flat_to_flat(const StT& strides, const CStT& cstrides, const IdxT& offset, const IdxT& idx){
+auto flat_to_flat(const StT& strides, const CStT& cstrides, IdxT offset, IdxT idx){
     using index_type = IdxT;
-    index_type res{offset};
-    index_type idx_{idx};
     auto st_it = strides.begin();
     auto cst_it = cstrides.begin();
-    while(idx_ != index_type(0)){
-        res += *cst_it*divide(idx_,*st_it);
+    while(idx != index_type(0)){
+        offset += *cst_it*divide(idx,*st_it);
         ++st_it;
         ++cst_it;
     }
-    return res;
+    return offset;
 }
 
 //converts multi index to flat index given converting strides
@@ -317,7 +315,6 @@ public:
     virtual const shape_type& adapted_strides()const = 0;
     virtual const shape_type& reset_strides()const = 0;
     virtual const shape_type& cstrides()const = 0;
-    virtual const shape_type& reset_cstrides()const = 0;
 };
 
 //common staff
@@ -372,7 +369,6 @@ public:
     const shape_type& reset_strides()const override{return impl_.reset_strides();}
     index_type offset()const override{return index_type{0};}
     const shape_type& cstrides()const override{return strides();}
-    const shape_type& reset_cstrides()const override{return reset_strides();}
     index_type convert(const index_type& idx)const override{return idx;}
     index_type convert(const shape_type& idx)const override{return detail::convert_index(cstrides(),offset(),idx);}
 
@@ -417,11 +413,9 @@ public:
     template<typename ShT, typename StT>
     converting_descriptor(ShT&& shape__, StT&& cstrides__,  const index_type& offset__):
         descriptor_with_offset_base{std::forward<ShT>(shape__), offset__},
-        cstrides_{std::forward<StT>(cstrides__)},
-        reset_cstrides_{detail::make_reset_strides(shape(),cstrides_)}
+        cstrides_{std::forward<StT>(cstrides__)}
     {}
     const shape_type& cstrides()const override{return cstrides_;}
-    const shape_type& reset_cstrides()const override{return reset_cstrides_;}
     index_type convert(const shape_type& idx)const override{return detail::convert_index(cstrides(),offset(),idx);}
     index_type convert(const index_type& idx)const override{return detail::flat_to_flat(strides_div(),cstrides(),offset(),idx);}
 
@@ -429,7 +423,6 @@ public:
     index_type operator()(const index_type& idx)const{return detail::flat_to_flat(strides_div(),cstrides(),offset(),idx);}
 private:
     shape_type cstrides_;
-    shape_type reset_cstrides_;
 };
 
 // template<typename CfgT, typename MapT = typename CfgT::shape_type>

@@ -362,7 +362,6 @@ TEST_CASE("test_basic_descriptor","[test_descriptor]"){
     auto expected_cstrides = expected_strides;
     auto expected_adapted_strides = std::get<2>(test_data);
     auto expected_reset_strides = std::get<3>(test_data);
-    auto expected_reset_cstrides = expected_reset_strides;
     auto expected_size = std::get<4>(test_data);
     auto expected_dim = std::get<5>(test_data);
     auto expected_offset = std::get<6>(test_data);
@@ -373,7 +372,6 @@ TEST_CASE("test_basic_descriptor","[test_descriptor]"){
     auto result_adapted_strides = descriptor.adapted_strides();
     auto result_reset_strides = descriptor.reset_strides();
     auto result_cstrides = descriptor.cstrides();
-    auto result_reset_cstrides = descriptor.reset_cstrides();
     auto result_size = descriptor.size();
     auto result_dim = descriptor.dim();
     auto result_offset = descriptor.offset();
@@ -383,7 +381,6 @@ TEST_CASE("test_basic_descriptor","[test_descriptor]"){
     REQUIRE(result_adapted_strides == expected_adapted_strides);
     REQUIRE(result_reset_strides == expected_reset_strides);
     REQUIRE(result_cstrides == expected_cstrides);
-    REQUIRE(result_reset_cstrides == expected_reset_cstrides);
     REQUIRE(result_size == expected_size);
     REQUIRE(result_dim == expected_dim);
     REQUIRE(result_offset == expected_offset);
@@ -476,12 +473,12 @@ TEMPLATE_TEST_CASE("test_converting_descriptor", "[test_descriptor]",
     using index_type = typename config_type::index_type;
     using dim_type = typename config_type::dim_type;
     using gtensor::detail::make_dividers;
-    using test_type = std::tuple<descriptor_type, shape_type, shape_type, shape_type, dim_type, index_type,index_type,shape_type, strides_div_type>;
-    //0descriptor, 1expected_shape, 2expected_strides, 3expected_cstrides, 4expected_dim, 5expected_size, 6expected_offset 7expected_reset_cstrides 8expected_strides_libdivide
+    using test_type = std::tuple<descriptor_type, shape_type, shape_type, shape_type, dim_type, index_type,index_type,strides_div_type>;
+    //0descriptor, 1expected_shape, 2expected_strides, 3expected_cstrides, 4expected_dim, 5expected_size, 6expected_offset 7expected_strides_libdivide
     auto test_data = GENERATE(
-        test_type{descriptor_type{shape_type{15},shape_type{-1},14},shape_type{15},shape_type{1},shape_type{-1},1,15,14, shape_type{-14}, make_dividers<config_type>(shape_type{1})},
-        test_type{descriptor_type{shape_type{3,1,7},shape_type{7,7,1},0},shape_type{3,1,7},shape_type{7,7,1},shape_type{7,7,1},3,21,0, shape_type{14,0,6}, make_dividers<config_type>(shape_type{7,7,1})},
-        test_type{descriptor_type{shape_type{3,1,7},shape_type{7,7,-1},6},shape_type{3,1,7},shape_type{7,7,1},shape_type{7,7,-1},3,21,6, shape_type{14,0,-6}, make_dividers<config_type>(shape_type{7,7,1})}
+        test_type{descriptor_type{shape_type{15},shape_type{-1},14},shape_type{15},shape_type{1},shape_type{-1},1,15,14, make_dividers<config_type>(shape_type{1})},
+        test_type{descriptor_type{shape_type{3,1,7},shape_type{7,7,1},0},shape_type{3,1,7},shape_type{7,7,1},shape_type{7,7,1},3,21,0, make_dividers<config_type>(shape_type{7,7,1})},
+        test_type{descriptor_type{shape_type{3,1,7},shape_type{7,7,-1},6},shape_type{3,1,7},shape_type{7,7,1},shape_type{7,7,-1},3,21,6, make_dividers<config_type>(shape_type{7,7,1})}
     );
     auto descriptor = std::get<0>(test_data);
     auto expected_shape = std::get<1>(test_data);
@@ -490,15 +487,13 @@ TEMPLATE_TEST_CASE("test_converting_descriptor", "[test_descriptor]",
     auto expected_dim = std::get<4>(test_data);
     auto expected_size = std::get<5>(test_data);
     auto expected_offset = std::get<6>(test_data);
-    auto expected_reset_cstrides = std::get<7>(test_data);
-    auto expected_strides_div = std::get<8>(test_data);
+    auto expected_strides_div = std::get<7>(test_data);
     REQUIRE(descriptor.shape() == expected_shape);
     REQUIRE(descriptor.strides() == expected_strides);
     REQUIRE(descriptor.cstrides() == expected_cstrides);
     REQUIRE(descriptor.dim() == expected_dim);
     REQUIRE(descriptor.size() == expected_size);
     REQUIRE(descriptor.offset() == expected_offset);
-    REQUIRE(descriptor.reset_cstrides() == expected_reset_cstrides);
     REQUIRE(descriptor.strides_div() == expected_strides_div);
 }
 
