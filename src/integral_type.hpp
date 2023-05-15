@@ -96,7 +96,7 @@ struct make_unsigned : public std::make_unsigned<T>{
     static_assert(std::is_integral_v<T>);
 };
 template<typename T> using make_unsigned_t = typename make_unsigned<T>::type;
-}   //end of namespace detail
+
 
 template<typename T, typename U>
 inline constexpr bool cmp_equal(T t, U u){
@@ -137,6 +137,8 @@ inline constexpr bool cmp_greater_equal(T t, U u){
     return !cmp_less(t, u);
 }
 
+}   //end of namespace detail
+
 template<typename T>
 class integral
 {
@@ -149,22 +151,31 @@ public:
         value_(value__) //no strong guarantee
     {
         if constexpr (std::is_unsigned_v<U>){
-            if constexpr (cmp_less(std::numeric_limits<value_type>::max(), std::numeric_limits<U>::max())){
-                if (cmp_less(std::numeric_limits<value_type>::max(), value__)){ //max < value_
+            if constexpr (detail::cmp_less(std::numeric_limits<value_type>::max(), std::numeric_limits<U>::max()))
+            {
+                if (detail::cmp_less(std::numeric_limits<value_type>::max(), value__))
+                { //max < value_
                     throw integral_exception("narrowing conversion");
                 }
             }
         }else{
-            if constexpr (cmp_less(std::numeric_limits<value_type>::max(), std::numeric_limits<U>::max()) && cmp_less_equal(std::numeric_limits<value_type>::min(), std::numeric_limits<U>::min())){
-                if (cmp_less(std::numeric_limits<value_type>::max(), value__) ){ //max < value__
+            if constexpr (detail::cmp_less(std::numeric_limits<value_type>::max(), std::numeric_limits<U>::max()) &&
+                detail::cmp_less_equal(std::numeric_limits<value_type>::min(), std::numeric_limits<U>::min()))
+            {
+                if (detail::cmp_less(std::numeric_limits<value_type>::max(), value__) )
+                { //max < value__
                     throw integral_exception("narrowing conversion");
                 }
-            }else if constexpr (cmp_greater_equal(std::numeric_limits<value_type>::max(), std::numeric_limits<U>::max()) && cmp_greater(std::numeric_limits<value_type>::min(), std::numeric_limits<U>::min())){
-                if (cmp_greater(std::numeric_limits<value_type>::min(), value__)){ //min > value__
+            }else if constexpr (detail::cmp_greater_equal(std::numeric_limits<value_type>::max(), std::numeric_limits<U>::max()) &&
+                detail::cmp_greater(std::numeric_limits<value_type>::min(), std::numeric_limits<U>::min()))
+            {
+                if (detail::cmp_greater(std::numeric_limits<value_type>::min(), value__))
+                { //min > value__
                     throw integral_exception("narrowing conversion");
                 }
             }else{
-                if (cmp_less(std::numeric_limits<value_type>::max(), value__) || cmp_greater(std::numeric_limits<value_type>::min(), value__)){ //max < value__ || min > value__
+                if (detail::cmp_less(std::numeric_limits<value_type>::max(), value__) || detail::cmp_greater(std::numeric_limits<value_type>::min(), value__))
+                { //max < value__ || min > value__
                     throw integral_exception("narrowing conversion");
                 }
             }
@@ -175,13 +186,6 @@ public:
         integral(other.value())
     {}
 
-    // explicit operator T()const{
-    //     return value_;
-    // }
-    // template<typename U>
-    // explicit operator U()const{
-    //     return static_cast<U>(value_);
-    // }
     value_type value()const{return value_;}
 
     INTEGRAL_BINARY_ASSIGNMENT_MEMBER_OPERATOR(operator+=,+=);
