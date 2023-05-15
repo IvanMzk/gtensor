@@ -537,3 +537,102 @@ TEMPLATE_TEST_CASE("test_gtensor_iterator_std_reverse_adapter","[test_iterator]"
         REQUIRE(std::equal(first,last,rrfirst,rrlast));
     }
 }
+
+TEMPLATE_TEST_CASE("test_broadcast_iterator_dereference","[test_iterator]",
+    test_config::config_storage_selector<std::vector>::config_type,
+    test_config::config_storage_selector<test_iterator_::subscriptable_storage_by_value>::config_type,
+    test_config::config_storage_selector<test_iterator_::subscriptable_storage_integral>::config_type
+)
+{
+    using value_type = int;
+    using config_type = gtensor::config::extend_config_t<TestType,value_type>;
+    using dim_type = typename config_type::dim_type;
+    using index_type = typename config_type::index_type;
+    using shape_type = typename config_type::shape_type;
+    using storage_type = typename config_type::template storage<value_type>;
+    using indexer_type = gtensor::basic_indexer<storage_type&>;
+    using walker_type = gtensor::walker<config_type, indexer_type>;
+    using broadcast_iterator_type = gtensor::broadcast_iterator<config_type,walker_type>;
+    using reverse_broadcast_iterator_type = gtensor::reverse_broadcast_iterator<config_type,walker_type>;
+
+    REQUIRE(std::is_same_v<decltype(std::declval<storage_type>()[std::declval<index_type>()]),decltype(*std::declval<broadcast_iterator_type>())>);
+    using test_type = std::tuple<storage_type,shape_type,shape_type,std::vector<value_type>>;
+    //0storage,1shape,2broadcast_shape,3expected
+    auto test_data = GENERATE(
+        test_type{storage_type{1,2,3,4,5,6}, shape_type{6}, shape_type{6}, std::vector<value_type>{1,2,3,4,5,6}},
+        test_type{storage_type{1,2,3,4,5,6}, shape_type{6}, shape_type{1,2,6}, std::vector<value_type>{1,2,3,4,5,6,1,2,3,4,5,6}},
+        test_type{storage_type{1,2,3,4,5,6}, shape_type{6}, shape_type{6,1}, std::vector<value_type>{1,1,1,1,1,1}},
+        test_type{storage_type{1,2,3,4,5,6}, shape_type{2,3}, shape_type{2,3}, std::vector<value_type>{1,2,3,4,5,6}},
+        test_type{storage_type{1,2,3,4,5,6}, shape_type{2,3}, shape_type{2,2,3}, std::vector<value_type>{1,2,3,4,5,6,1,2,3,4,5,6}},
+        test_type{storage_type{1,2,3,4,5,6}, shape_type{2,3}, shape_type{1,3}, std::vector<value_type>{1,2,3}},
+        test_type{storage_type{1,2,3,4,5,6}, shape_type{2,3}, shape_type{3,1,3}, std::vector<value_type>{1,2,3,1,2,3,1,2,3}}
+    );
+
+    auto storage = std::get<0>(test_data);
+    auto shape = std::get<1>(test_data);
+    auto broadcast_shape = std::get<2>(test_data);
+    auto expected = std::get<3>(test_data);
+    auto strides = gtensor::detail::make_strides(shape);
+    auto strides_div = gtensor::detail::make_strides_div<config_type>(shape);
+    auto adapted_strides = gtensor::detail::make_adapted_strides(shape, strides);
+    auto reset_strides = gtensor::detail::make_reset_strides(shape, strides);
+    index_type offset{0};
+    dim_type max_dim = std::max(broadcast_shape.size(),shape.size());
+    indexer_type indexer{storage};
+    walker_type walker{adapted_strides,reset_strides,offset,indexer,max_dim};
+    auto broadcast_strides_div = gtensor::detail::make_strides_div<config_type>(broadcast_shape);
+    auto broadcast_size = gtensor::detail::make_size(broadcast_shape);
+
+    SECTION("test_broadcast_iterator")
+    {
+        auto first = broadcast_iterator_type{walker, broadcast_shape, broadcast_strides_div, 0};
+        auto last = broadcast_iterator_type{walker, broadcast_shape, broadcast_strides_div, broadcast_size};
+        SECTION("forward_traverse")
+        {
+            REQUIRE(std::equal(first,last,expected.begin(),expected.end()));
+        }
+        SECTION("backward_traverse")
+        {
+            std::vector<value_type> result;
+            while(last!=first){
+                --last;
+                result.push_back(*last);
+            }
+            REQUIRE(std::equal(result.begin(),result.end(),expected.rbegin(),expected.rend()));
+        }
+        SECTION("subscript")
+        {
+            std::vector<value_type> result;
+            for(index_type i{0}; i!=broadcast_size; ++i){
+                result.push_back(first[i]);
+            }
+            REQUIRE(std::equal(result.begin(),result.end(),expected.begin(),expected.end()));
+        }
+    }
+    SECTION("test_reverse_broadcast_iterator")
+    {
+        auto first = reverse_broadcast_iterator_type{walker, broadcast_shape, broadcast_strides_div, broadcast_size};
+        auto last = reverse_broadcast_iterator_type{walker, broadcast_shape, broadcast_strides_div, 0};
+        SECTION("forward_traverse")
+        {
+            REQUIRE(std::equal(first,last,expected.rbegin(),expected.rend()));
+        }
+        SECTION("backward_traverse")
+        {
+            std::vector<value_type> result;
+            while(last!=first){
+                --last;
+                result.push_back(*last);
+            }
+            REQUIRE(std::equal(result.begin(),result.end(),expected.begin(),expected.end()));
+        }
+        SECTION("subscript")
+        {
+            std::vector<value_type> result;
+            for(index_type i{0}; i!=broadcast_size; ++i){
+                result.push_back(first[i]);
+            }
+            REQUIRE(std::equal(result.begin(),result.end(),expected.rbegin(),expected.rend()));
+        }
+    }
+}

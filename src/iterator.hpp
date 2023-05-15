@@ -55,20 +55,21 @@ namespace detail{
         using const_reference = void;
     };
 
-    template<typename CfgT>
-    class broadcast_shape_iterator_extension
+    template<typename Config>
+    class broadcast_iterator_extension
     {
-        using shape_type = typename CfgT::shape_type;
-        using strides_div_type = typename detail::strides_div_traits<CfgT>::type;
-    protected:
+        using shape_type = typename Config::shape_type;
+        using strides_div_type = typename detail::strides_div_traits<Config>::type;
         shape_type shape_;
         strides_div_type strides_;
     public:
         template<typename ShT, typename StT>
-        broadcast_shape_iterator_extension(ShT&& shape__, StT&& strides__):
+        broadcast_iterator_extension(ShT&& shape__, StT&& strides__):
             shape_{std::forward<ShT>(shape__)},
             strides_{std::forward<StT>(strides__)}
         {}
+        const auto& shape()const{return shape_;}
+        const auto& strides()const{return strides_;}
     };
 
 }   //end of namespace detail
@@ -184,38 +185,57 @@ GTENSOR_ITERATOR_OPERATOR_LESS(walker_iterator);
 GTENSOR_ITERATOR_OPERATOR_GREATER_EQUAL(walker_iterator);
 GTENSOR_ITERATOR_OPERATOR_LESS_EQUAL(walker_iterator);
 
-// template<typename CfgT, typename WalkerT>
-// class broadcast_shape_iterator:
-//     private detail::broadcast_shape_iterator_extension<CfgT>,
-//     public broadcast_iterator<CfgT,WalkerT>
-// {
-//     using extension_base = detail::broadcast_shape_iterator_extension<CfgT>;
-//     using broadcast_iterator_base = broadcast_iterator<CfgT,WalkerT>;
-// protected:
-//     using typename broadcast_iterator_base::walker_type;
-//     using typename broadcast_iterator_base::result_type;
-//     using typename broadcast_iterator_base::shape_type;
-//     using typename broadcast_iterator_base::index_type;
-//     using typename broadcast_iterator_base::strides_div_type;
-// public:
-//     using typename broadcast_iterator_base::iterator_category;
-//     using typename broadcast_iterator_base::value_type;
-//     using typename broadcast_iterator_base::difference_type;
-//     using typename broadcast_iterator_base::pointer;
-//     using typename broadcast_iterator_base::reference;
-//     using typename broadcast_iterator_base::const_reference;
+//random access broadcast iterator
+template<typename Config, typename Walker>
+class broadcast_iterator:
+    private detail::broadcast_iterator_extension<Config>,
+    private walker_iterator<Config,Walker>
+{
+    using extension_base = detail::broadcast_iterator_extension<Config>;
+    using walker_iterator_base = walker_iterator<Config,Walker>;
+protected:
+    using typename walker_iterator_base::walker_type;
+    using typename walker_iterator_base::result_type;
+    using typename walker_iterator_base::shape_type;
+    using typename walker_iterator_base::index_type;
+    using typename walker_iterator_base::strides_div_type;
+public:
+    using typename walker_iterator_base::iterator_category;
+    using typename walker_iterator_base::value_type;
+    using typename walker_iterator_base::difference_type;
+    using typename walker_iterator_base::pointer;
+    using typename walker_iterator_base::reference;
+    using typename walker_iterator_base::const_reference;
+    using walker_iterator_base::operator*;
+    using walker_iterator_base::operator[];
+    broadcast_iterator& operator+=(difference_type n){
+        static_cast<walker_iterator_base&>(*this)+=n;
+        return *this;
+    }
+    inline difference_type friend operator-(const broadcast_iterator& lhs, const broadcast_iterator& rhs){
+        return static_cast<const walker_iterator_base&>(lhs) - static_cast<const walker_iterator_base&>(rhs);
+    }
 
-//     template<typename WalkerT_, typename ShT, typename StT>
-//     broadcast_shape_iterator(WalkerT_&& walker__, ShT&& shape__, StT&& strides__):
-//         extension_base{std::forward<ShT>(shape__), std::forward<StT>(strides__)},
-//         broadcast_iterator_base{std::forward<WalkerT_>(walker__), extension_base::shape_, extension_base::strides_}
-//     {}
-//     template<typename WalkerT_, typename ShT, typename StT, typename IdxT>
-//     broadcast_shape_iterator(WalkerT_&& walker__, ShT&& shape__, StT&& strides__, const IdxT& size__):
-//         extension_base{std::forward<ShT>(shape__), std::forward<StT>(strides__)},
-//         broadcast_iterator_base{std::forward<WalkerT_>(walker__), extension_base::shape_, extension_base::strides_, size__}
-//     {}
-// };
+    template<typename Walker_, typename ShT, typename StT>
+    broadcast_iterator(Walker_&& walker__, ShT&& shape__, StT&& strides__, const difference_type& flat_index_):
+        extension_base{std::forward<ShT>(shape__), std::forward<StT>(strides__)},
+        walker_iterator_base{std::forward<Walker_>(walker__), extension_base::shape(), extension_base::strides(), flat_index_}
+    {}
+};
+
+GTENSOR_ITERATOR_OPERATOR_ASSIGN_MINUS(broadcast_iterator);
+GTENSOR_ITERATOR_OPERATOR_PLUS(broadcast_iterator);
+GTENSOR_ITERATOR_OPERATOR_MINUS(broadcast_iterator);
+GTENSOR_ITERATOR_OPERATOR_PREFIX_INC(broadcast_iterator);
+GTENSOR_ITERATOR_OPERATOR_PREFIX_DEC(broadcast_iterator);
+GTENSOR_ITERATOR_OPERATOR_POSTFIX_INC(broadcast_iterator);
+GTENSOR_ITERATOR_OPERATOR_POSTFIX_DEC(broadcast_iterator);
+GTENSOR_ITERATOR_OPERATOR_EQUAL(broadcast_iterator);
+GTENSOR_ITERATOR_OPERATOR_NOT_EQUAL(broadcast_iterator);
+GTENSOR_ITERATOR_OPERATOR_GREATER(broadcast_iterator);
+GTENSOR_ITERATOR_OPERATOR_LESS(broadcast_iterator);
+GTENSOR_ITERATOR_OPERATOR_GREATER_EQUAL(broadcast_iterator);
+GTENSOR_ITERATOR_OPERATOR_LESS_EQUAL(broadcast_iterator);
 
 template<typename Iterator>
 class reverse_iterator_generic : private Iterator
@@ -273,8 +293,7 @@ GTENSOR_ITERATOR_OPERATOR_LESS_EQUAL(reverse_iterator_generic);
 
 template<typename Config, typename Indexer> using reverse_indexer_iterator = reverse_iterator_generic<indexer_iterator<Config,Indexer>>;
 template<typename Config, typename Walker> using reverse_walker_iterator = reverse_iterator_generic<walker_iterator<Config,Walker>>;
-
-// template<typename CfgT, typename WalkerT> using reverse_broadcast_shape_iterator = reverse_broadcast_iterator_generic<broadcast_shape_iterator<CfgT,WalkerT>>;
+template<typename Config, typename Walker> using reverse_broadcast_iterator = reverse_iterator_generic<broadcast_iterator<Config,Walker>>;
 
 }   //end of namespace gtensor
 
