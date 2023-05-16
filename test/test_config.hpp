@@ -11,6 +11,7 @@ struct config_tmpl_{
     template<typename T> using storage = Storage<T>;
     template<typename T> using shape = typename gtensor::config::default_config::shape<T>;
     template<typename T> using container = typename gtensor::config::default_config::container<T>;
+    template<typename T> using index_map = typename gtensor::config::default_config::index_map<T>;
 };
 
 // template<typename Eng, typename Div>
@@ -36,6 +37,8 @@ struct config_div_mode_selector{
         gtensor::config::default_config::template storage
     >;
 };
+template<typename Div> using config_div_mode_selector_t = typename config_div_mode_selector<Div>::config_type;
+
 template<template<typename...> typename Storage>
 struct config_storage_selector{
     using config_type = config_tmpl_<

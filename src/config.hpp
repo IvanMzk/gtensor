@@ -35,6 +35,14 @@ struct default_config
     //specialization of config_type::container uses as return type in public interface
     //it may be used by implementation as general purpose container
     template<typename T> using container = std::vector<T>;
+
+    //must provide at least index_map(const T& n) constructor, which constructs map of size n
+    //must provide subscript interface such that:
+    //T& operator[](const U&), where T is index_type - type used to address data elements, U is index_map<T>::difference_type and static_assert(std::is_convertible_v<T,U>) must hold
+    //index_type is defined in extended_config as storage<T>::difference_type, where T is data element type (value_type)
+    //it means that static_asert(std::is_convertible_v<storage<T>::difference_type, index_map<storage<T>::difference_type>::difference_type>) must hold
+    //index_map specialization is used in mapping_descriptor that is descriptor type of mapping_view
+    template<typename T> using index_map = std::vector<T>;
 };
 
 template<typename Config, typename IdxT>
@@ -46,6 +54,7 @@ struct extended_config{
     template<typename T> using storage = typename config_type::template storage<T>;
     template<typename T> using shape = typename config_type::template shape<T>;
     template<typename T> using container = typename config_type::template container<T>;
+    template<typename T> using index_map = typename config_type::template index_map<T>;
 
     //index_type defines data elements address space:
     //e.g. shape and strides elements are of index_type
@@ -58,6 +67,8 @@ struct extended_config{
     //transpose view subscripts are of dim_type, since they are directions indexes
     //must have semantic of integral type
     using dim_type = typename shape_type::size_type;
+    //index_map_type is used in mapping_descriptor that is descriptor type of mapping_view
+    using index_map_type = index_map<index_type>;
 };
 template<typename Config, typename T, typename=void> struct extend_config{
     static_assert(!std::is_void_v<T>);
