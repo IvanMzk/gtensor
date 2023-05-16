@@ -316,11 +316,14 @@ template<typename ShT, typename...ShTs>
 inline void check_index_mapping_view_subs(const ShT& pshape, const ShTs&...subs_shapes){
     using dim_type = typename ShT::size_type;
     using index_type = typename ShT::value_type;
-    auto pdim = static_cast<dim_type>(pshape.size());
-    auto subs_number = static_cast<dim_type>(sizeof...(ShTs));
+    const dim_type pdim = pshape.size();
+    const dim_type subs_number = sizeof...(ShTs);
+    if (pdim == dim_type{0}){
+        throw subscript_exception("can't subscript 0-dim tensor");
+    }
     //check subs number not exceed parent dim
     if (subs_number > pdim){
-        throw subscript_exception("invalid index tensor subscript");
+        throw subscript_exception("invalid subscripts number");
     }
     //check zero size parent direction not subscripted with not empty subs
     auto pshape_it = pshape.begin();
@@ -351,34 +354,32 @@ inline auto check_index(const IdxT& idx, const IdxT& shape_element){
     }
 }
 
-template<typename ShT, typename ParentIndexer, typename ResIt,  typename...SubsIt>
-auto fill_index_mapping_view(const ShT& pshape, const ShT& pstrides, ParentIndexer pindexer, ResIt res_it, const ShT& subs_shape, SubsIt...subs_it){
+template<typename ShT, typename IndexMap,  typename...SubsIt>
+auto fill_index_map(const ShT& pshape, const ShT& pstrides, IndexMap& index_map, SubsIt...subs_traverser){
     using dim_type = typename ShT::size_type;
     using index_type = typename ShT::value_type;
 
-    const index_type subs_size = detail::make_size(subs_shape);
-    if (subs_size != index_type{0}){
-        const dim_type subs_number = sizeof...(SubsIt);
-        const index_type chunk_size = mapping_view_chunk_size(pshape, subs_number);
-        if (chunk_size == index_type{1}){
-            do{
-                index_type block_first{0};
-                dim_type n{0};
-                ((block_first+=check_index(static_cast<index_type>(*subs_it.walker()),pshape[n])*pstrides[n],++n),...);
-                *res_it = pindexer[block_first];
-                ++res_it;
-            }while(((subs_it.next()),...));
-        }else{
-            do{
-                index_type block_first{0};
-                dim_type n{0};
-                ((block_first+=check_index(static_cast<index_type>(*subs_it.walker()),pshape[n])*pstrides[n],++n),...);
-                for(index_type i{0}; i!=chunk_size; ++i){
-                    *res_it = pindexer[block_first+i];
-                    ++res_it;
-                }
-            }while(((subs_it.next()),...));
-        }
+    const dim_type subs_number = sizeof...(SubsIt);
+    const index_type chunk_size = mapping_view_chunk_size(pshape, subs_number);
+    index_type i{0};
+    if (chunk_size == index_type{1}){
+        do{
+            index_type block_first{0};
+            dim_type n{0};
+            ((block_first+=check_index(static_cast<index_type>(*subs_traverser.walker()),pshape[n])*pstrides[n],++n),...);
+            index_map[i] = block_first;
+            ++i;
+        }while(((subs_traverser.next()),...));
+    }else{
+        do{
+            index_type block_first{0};
+            dim_type n{0};
+            ((block_first+=check_index(static_cast<index_type>(*subs_traverser.walker()),pshape[n])*pstrides[n],++n),...);
+            for(index_type j{0}; j!=chunk_size; ++j){
+                index_map[i] = block_first+j;
+                ++i;
+            }
+        }while(((subs_traverser.next()),...));
     }
 }
 
@@ -388,10 +389,14 @@ auto check_bool_mapping_view_subs(const ShT& pshape, const ShT& subs_shape){
     using dim_type = typename ShT::size_type;
     dim_type pdim = pshape.size();
     dim_type subs_dim = subs_shape.size();
+    if (pdim == dim_type{0}){
+        throw subscript_exception("can't subscript 0-dim tensor");
+    }
     if (subs_dim > pdim){
         throw subscript_exception("invalid bool tensor subscript");
     }
-    for (auto subs_shape_it = subs_shape.begin(), pshape_it = pshape.begin(); subs_shape_it!=subs_shape.end(); ++subs_shape_it, ++pshape_it){
+    auto pshape_it = pshape.begin();
+    for (auto subs_shape_it = subs_shape.begin(), subs_shape_last = subs_shape.end(); subs_shape_it!=subs_shape_last; ++subs_shape_it, ++pshape_it){
         if (*subs_shape_it > *pshape_it){
             throw subscript_exception("invalid bool tensor subscript");
         }
@@ -411,37 +416,33 @@ inline ShT make_bool_mapping_view_shape(const ShT& pshape, const typename ShT::v
     return res;
 }
 
-template<typename ShT, typename ParentIndexer, typename ResIt, typename Subs, typename SubsIt>
-auto fill_bool_mapping_view(const ShT& pshape, const ShT& pstrides, ParentIndexer pindexer, ResIt res_it, const Subs& subs, SubsIt subs_it){
+template<typename ShT, typename TmpContainer, typename Subs, typename SubsIt>
+auto fill_bool_map(const ShT& pshape, const ShT& pstrides, TmpContainer& tmp_container, const Subs& subs, SubsIt subs_traverser){
     using index_type = typename ShT::value_type;
     using dim_type = typename ShT::size_type;
 
     index_type trues_number{0};
-    if (!subs.empty()){
-        dim_type subs_dim = subs.dim();
-        index_type chunk_size = mapping_view_chunk_size(pshape, subs_dim);
-
-        if (chunk_size == index_type{1}){
-            do{
-                if(*subs_it.walker()){
-                    ++trues_number;
-                    index_type pindex = std::inner_product(subs_it.index().begin(), subs_it.index().end(), pstrides.begin(), index_type{0});
-                    *res_it = pindexer[pindex];
-                    ++res_it;
+    dim_type subs_dim = subs.dim();
+    index_type chunk_size = mapping_view_chunk_size(pshape, subs_dim);
+    if (chunk_size == index_type{1}){
+        do{
+            if(*subs_traverser.walker()){
+                ++trues_number;
+                tmp_container.push_back(
+                    std::inner_product(subs_traverser.index().begin(), subs_traverser.index().end(), pstrides.begin(), index_type{0})
+                );
+            }
+        }while(subs_traverser.next());
+    }else{
+        do{
+            if(*subs_traverser.walker()){
+                ++trues_number;
+                auto block_first = std::inner_product(subs_traverser.index().begin(), subs_traverser.index().end(), pstrides.begin(), index_type{0});
+                for(index_type j{0}; j!=chunk_size; ++j){
+                    tmp_container.push_back(block_first+j);
                 }
-            }while(subs_it.next());
-        }else{
-            do{
-                if(*subs_it.walker()){
-                    ++trues_number;
-                    auto block_first = std::inner_product(subs_it.index().begin(), subs_it.index().end(), pstrides.begin(), index_type{0});
-                    for(index_type i{0}; i!=chunk_size; ++i){
-                        *res_it = pindexer[block_first+i];
-                        ++res_it;
-                    }
-                }
-            }while(subs_it.next());
-        }
+            }
+        }while(subs_traverser.next());
     }
     return trues_number;
 }
@@ -454,10 +455,12 @@ class view_factory
     template<typename Config> using subdim_view_descriptor = descriptor_with_offset<Config>;
     template<typename Config> using slice_view_descriptor = converting_descriptor<Config>;
     template<typename Config> using transpose_view_descriptor = converting_descriptor<Config>;
+    template<typename Config> using mapping_view_descriptor = mapping_descriptor<Config>;
     template<typename Config, typename Parent> using reshape_view = tensor_implementation<view_core<Config,reshape_view_descriptor<Config>,Parent>>;
     template<typename Config, typename Parent> using subdim_view = tensor_implementation<view_core<Config,subdim_view_descriptor<Config>,Parent>>;
     template<typename Config, typename Parent> using slice_view = tensor_implementation<view_core<Config,slice_view_descriptor<Config>,Parent>>;
     template<typename Config, typename Parent> using transpose_view = tensor_implementation<view_core<Config,transpose_view_descriptor<Config>,Parent>>;
+    template<typename Config, typename Parent> using mapping_view = tensor_implementation<view_core<Config,mapping_view_descriptor<Config>,Parent>>;
 
     //subdim view
     template<typename...Ts, typename Container>
@@ -582,65 +585,76 @@ class view_factory
     template<typename...Ts, typename...Subs>
     static auto create_index_mapping_view_(const basic_tensor<Ts...>& parent, const Subs&...subs){
         using parent_type = basic_tensor<Ts...>;
-        using value_type = typename parent_type::value_type;
         using config_type = typename parent_type::config_type;
+        using index_map_type = typename config_type::index_map_type;
         using shape_type = typename parent_type::shape_type;
-        using dim_type = typename parent_type::dim_type;
+        using descriptor_type = mapping_descriptor<config_type>;
+        using view_type = mapping_view<config_type,parent_type>;
         const auto& pshape = parent.shape();
-        detail::check_index_mapping_view_subs(pshape, subs.descriptor().shape()...);
-        auto subs_shape = detail::make_broadcast_shape<shape_type>(subs.descriptor().shape()...);
-        dim_type subs_number = sizeof...(Subs);
-        //auto res = tensor<value_type,config_type>(detail::make_index_mapping_view_shape(pshape, subs_shape, subs_number), value_type{});
-        auto res = tensor_factory<config_type,value_type>::create(detail::make_index_mapping_view_shape(pshape, subs_shape, subs_number), value_type{});
-        if (!res->empty()){
-            detail::fill_index_mapping_view(
+        detail::check_index_mapping_view_subs(pshape, subs.shape()...);
+        auto subs_shape = detail::make_broadcast_shape<shape_type>(subs.shape()...);
+        auto res_shape = detail::make_index_mapping_view_shape(pshape, subs_shape, sizeof...(Subs));
+        auto res_size = detail::make_size(res_shape);
+        index_map_type index_map(res_size);
+        if (res_size!=0){
+            detail::fill_index_map(
                 pshape,
                 parent.strides(),
-                parent.create_indexer(),
-                res->begin(),
-                subs_shape,
+                index_map,
                 walker_forward_traverser<config_type, decltype(subs.create_walker())>{subs_shape, subs.create_walker()}...
             );
         }
-        return res;
+        return std::make_shared<view_type>(
+            descriptor_type{std::move(res_shape),std::move(index_map)},
+            parent
+        );
     }
     //bool mapping view
     template<typename...Ts, typename Subs>
     static auto create_bool_mapping_view_(const basic_tensor<Ts...>& parent, const Subs& subs){
         using parent_type = basic_tensor<Ts...>;
-        using value_type = typename parent_type::value_type;
         using config_type = typename parent_type::config_type;
         using index_type = typename parent_type::index_type;
+        using index_map_type = typename config_type::index_map_type;
+        using index_container_type = typename config_type::template container<index_type>;
+        using descriptor_type = mapping_descriptor<config_type>;
+        using view_type = mapping_view<config_type,parent_type>;
         const auto& pshape = parent.shape();
         const auto& subs_shape = subs.shape();
         detail::check_bool_mapping_view_subs(pshape, subs_shape);
         if (!parent.empty()){
-            auto res_elements = tensor<value_type,config_type>{pshape};
-            index_type subs_trues_number = detail::fill_bool_mapping_view(
-                pshape,
-                parent.strides(),
-                parent.create_indexer(),
-                res_elements.begin(),
-                subs,
-                walker_forward_traverser<config_type, decltype(subs.create_walker())>{subs_shape, subs.create_walker()}
-            );
-            // return tensor<value_type,config_type>(
-            //     detail::make_bool_mapping_view_shape(pshape, subs_trues_number, subs.dim()),
-            //     res_elements.begin(),
-            //     res_elements.end()
-            // );
-            return tensor_factory<config_type,value_type>::create(
-                detail::make_bool_mapping_view_shape(pshape, subs_trues_number, subs.dim()),
-                res_elements.begin(),
-                res_elements.end()
+            index_container_type index_container{};
+            index_type subs_trues_number{0};
+            if (!subs.empty()){
+                index_container.reserve(parent.size());
+                subs_trues_number = detail::fill_bool_map(
+                    pshape,
+                    parent.strides(),
+                    index_container,
+                    subs,
+                    walker_forward_traverser<config_type, decltype(subs.create_walker())>{subs_shape, subs.create_walker()}
+                );
+            }
+            auto res_shape = detail::make_bool_mapping_view_shape(pshape, subs_trues_number, subs.dim());
+            auto res_size = detail::make_size(res_shape);
+            index_map_type index_map(res_size);
+            index_type i{0};
+            for(auto it=index_container.begin(), last=index_container.end(); it!=last; ++it,++i){
+                index_map[i] = *it;
+            }
+            return std::make_shared<view_type>(
+                descriptor_type{std::move(res_shape), std::move(index_map)},
+                parent
             );
         }else{
             index_type subs_trues_number = static_cast<index_type>(std::count(subs.begin(),subs.end(),true));
-            // return tensor<value_type,config_type>(
-            //     detail::make_bool_mapping_view_shape(pshape, subs_trues_number, subs.dim()),
-            //     value_type{}
-            // );
-            return tensor_factory<config_type,value_type>::create(detail::make_bool_mapping_view_shape(pshape, subs_trues_number, subs.dim()));
+            return std::make_shared<view_type>(
+                descriptor_type{
+                    detail::make_bool_mapping_view_shape(pshape, subs_trues_number, subs.dim()),
+                    index_map_type(0)
+                },
+                parent
+            );
         }
     }
 
