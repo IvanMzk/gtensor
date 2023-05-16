@@ -755,8 +755,7 @@ TEST_CASE("test_tensor_assignment_exception","[test_tensor]")
 TEST_CASE("test_tensor_assign","[test_tensor]")
 {
     using value_type = double;
-    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
-    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using tensor_type = gtensor::tensor<value_type>;
     using helpers_for_testing::apply_by_element;
     SECTION("lvalue_rhs")
     {
@@ -946,8 +945,7 @@ TEST_CASE("test_tensor_resize","[test_tensor]")
 
 TEST_CASE("test_tensor_copy","[test_tensor]"){
     using value_type = double;
-    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
-    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using tensor_type = gtensor::tensor<value_type>;
     using helpers_for_testing::apply_by_element;
     //0tensor,1expected
     auto test_data = std::make_tuple(
@@ -971,9 +969,8 @@ TEST_CASE("test_tensor_copy","[test_tensor]"){
 
 TEST_CASE("test_tensor_equal","[test_tensor]"){
     using value_type = double;
-    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
-    using tensor_type = gtensor::tensor<value_type, config_type>;
-    using bool_tensor_type = gtensor::tensor<bool, config_type>;
+    using tensor_type = gtensor::tensor<value_type>;
+    using bool_tensor_type = gtensor::tensor<bool>;
     using helpers_for_testing::apply_by_element;
     //0operand1,1operand2,2expected
     auto test_data = std::make_tuple(
@@ -1001,8 +998,7 @@ TEST_CASE("test_tensor_equal","[test_tensor]"){
 TEST_CASE("test_tensor_swap","[test_tensor]")
 {
     using value_type = double;
-    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
-    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using tensor_type = gtensor::tensor<value_type>;
     using helpers_for_testing::apply_by_element;
     //0tensor0,1tensor1,2expected_tensor0,3expected_tensor1
     auto test_data = std::make_tuple(
@@ -1025,6 +1021,231 @@ TEST_CASE("test_tensor_swap","[test_tensor]")
         REQUIRE(ten2.is_same(ten1_copy));
         REQUIRE(ten1 == expected_ten1);
         REQUIRE(ten2 == expected_ten2);
+    };
+    apply_by_element(test,test_data);
+}
+
+TEST_CASE("test_tensor_meta_data_interface","[test_tensor]")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using dim_type = typename tensor_type::dim_type;
+    using index_type = typename tensor_type::index_type;
+    using shape_type = typename tensor_type::shape_type;
+    using helpers_for_testing::apply_by_element;
+    //0tensor,1expected_dim,2expected_size,3expected_shape,4expected_strides
+    auto test_data = std::make_tuple(
+        std::make_tuple(tensor_type(1),dim_type{0},index_type{1},shape_type{},shape_type{}),
+        std::make_tuple(tensor_type{},dim_type{1},index_type{0},shape_type{0},shape_type{1}),
+        std::make_tuple(tensor_type{1},dim_type{1},index_type{1},shape_type{1},shape_type{1}),
+        std::make_tuple(tensor_type{1,2,3},dim_type{1},index_type{3},shape_type{3},shape_type{1}),
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},dim_type{3},index_type{8},shape_type{2,2,2},shape_type{4,2,1})
+    );
+    auto test = [](const auto& t){
+        auto ten = std::get<0>(t);
+        auto expected_dim = std::get<1>(t);
+        auto expected_size = std::get<2>(t);
+        auto expected_shape = std::get<3>(t);
+        auto expected_strides = std::get<4>(t);
+
+        auto result_dim = ten.dim();
+        auto result_size = ten.size();
+        auto result_shape = ten.shape();
+        auto result_strides = ten.strides();
+
+        REQUIRE(result_dim == expected_dim);
+        REQUIRE(result_size == expected_size);
+        REQUIRE(result_shape == expected_shape);
+        REQUIRE(result_strides == expected_strides);
+    };
+    apply_by_element(test,test_data);
+}
+
+TEMPLATE_TEST_CASE("test_tensor_data_interface","[test_tensor]",
+    (gtensor::tensor<double>),
+    (std::add_const_t<gtensor::tensor<double>>)
+)
+{
+    using tensor_type = TestType;
+    using config_type = typename tensor_type::config_type;
+    using value_type = typename tensor_type::value_type;
+    using index_type = typename tensor_type::index_type;
+    using shape_type = typename tensor_type::shape_type;
+    using helpers_for_testing::apply_by_element;
+    //0shape,1elements
+    auto test_data = std::make_tuple(
+        std::make_tuple(shape_type{},std::vector<value_type>{1}),
+        std::make_tuple(shape_type{0},std::vector<value_type>{}),
+        std::make_tuple(shape_type{1},std::vector<value_type>{2}),
+        std::make_tuple(shape_type{6},std::vector<value_type>{1,2,3,4,5,6}),
+        std::make_tuple(shape_type{2,2,2},std::vector<value_type>{1,2,3,4,5,6,7,8})
+    );
+    SECTION("test_iterator")
+    {
+        auto test = [](const auto& t){
+            shape_type shape = std::get<0>(t);
+            auto elements = std::get<1>(t);
+            auto expected = elements;
+            tensor_type ten{shape,elements.begin(),elements.end()};
+            auto first = ten.begin();
+            auto last = ten.end();
+            REQUIRE(std::is_same_v<decltype(first),decltype(last)>);
+            REQUIRE(std::is_const_v<tensor_type> == std::is_const_v<std::remove_reference_t<decltype(*first)>>);
+            REQUIRE(std::equal(first,last,expected.begin(),expected.end()));
+        };
+        apply_by_element(test,test_data);
+    }
+    SECTION("test_reverse_iterator")
+    {
+        auto test = [](const auto& t){
+            shape_type shape = std::get<0>(t);
+            auto elements = std::get<1>(t);
+            auto expected = elements;
+            tensor_type ten{shape,elements.begin(),elements.end()};
+            auto first = ten.rbegin();
+            auto last = ten.rend();
+            REQUIRE(std::is_same_v<decltype(first),decltype(last)>);
+            REQUIRE(std::is_const_v<tensor_type> == std::is_const_v<std::remove_reference_t<decltype(*first)>>);
+            REQUIRE(std::equal(first,last,expected.rbegin(),expected.rend()));
+        };
+        apply_by_element(test,test_data);
+    }
+    SECTION("test_broadcast_iterator")
+    {
+        auto test = [](const auto& t){
+            shape_type shape = std::get<0>(t);
+            auto elements = std::get<1>(t);
+            auto expected = elements;
+            tensor_type ten{shape,elements.begin(),elements.end()};
+            auto first = ten.begin(shape);
+            auto last = ten.end(shape);
+            REQUIRE(std::is_same_v<decltype(first),decltype(last)>);
+            REQUIRE(std::is_const_v<tensor_type> == std::is_const_v<std::remove_reference_t<decltype(*first)>>);
+            REQUIRE(std::equal(first,last,expected.begin(),expected.end()));
+        };
+        apply_by_element(test,test_data);
+    }
+    SECTION("test_reverse_broadcast_iterator")
+    {
+        auto test = [](const auto& t){
+            shape_type shape = std::get<0>(t);
+            auto elements = std::get<1>(t);
+            auto expected = elements;
+            tensor_type ten{shape,elements.begin(),elements.end()};
+            auto first = ten.rbegin(shape);
+            auto last = ten.rend(shape);
+            REQUIRE(std::is_same_v<decltype(first),decltype(last)>);
+            REQUIRE(std::is_const_v<tensor_type> == std::is_const_v<std::remove_reference_t<decltype(*first)>>);
+            REQUIRE(std::equal(first,last,expected.rbegin(),expected.rend()));
+        };
+        apply_by_element(test,test_data);
+    }
+    SECTION("test_indexer")
+    {
+        auto test = [](const auto& t){
+            shape_type shape = std::get<0>(t);
+            auto elements = std::get<1>(t);
+            auto expected = elements;
+            tensor_type ten{shape,elements.begin(),elements.end()};
+            auto indexer = ten.create_indexer();
+            REQUIRE(std::is_const_v<tensor_type> == std::is_const_v<std::remove_reference_t<decltype(indexer[std::declval<index_type>()])>>);
+            using indexer_iterator_type = gtensor::indexer_iterator<config_type,decltype(indexer)>;
+            indexer_iterator_type first{indexer,index_type{0}};
+            indexer_iterator_type last{indexer,ten.size()};
+            REQUIRE(std::equal(first,last,expected.begin(),expected.end()));
+        };
+        apply_by_element(test,test_data);
+    }
+    SECTION("test_walker")
+    {
+        auto test = [](const auto& t){
+            shape_type shape = std::get<0>(t);
+            auto elements = std::get<1>(t);
+            auto expected = elements;
+            tensor_type ten{shape,elements.begin(),elements.end()};
+            auto walker = ten.create_walker();
+            REQUIRE(std::is_const_v<tensor_type> == std::is_const_v<std::remove_reference_t<decltype(*walker)>>);
+            using walker_iterator_type = gtensor::walker_iterator<config_type,decltype(walker)>;
+            walker_iterator_type first{walker,ten.shape(), ten.descriptor().strides_div(), index_type{0}};
+            walker_iterator_type last{walker,ten.shape(), ten.descriptor().strides_div(), ten.size()};
+            REQUIRE(std::equal(first,last,expected.begin(),expected.end()));
+        };
+        apply_by_element(test,test_data);
+    }
+}
+
+TEST_CASE("test_tensor_view_interface","[test_tensor]")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using slice_type = typename tensor_type::slice_type;
+    using nop_type = typename slice_type::nop_type;
+    using helpers_for_testing::apply_by_element;
+    const nop_type nop;
+    //0result,1expected
+    auto test_data = std::make_tuple(
+        //slice view
+        //init-list subs
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}({{nop,nop,-1},{0,-1}}), tensor_type{{4,5},{1,2}}),
+        //variadic slices subs
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}(slice_type{},slice_type{1}), tensor_type{{2,3},{5,6}}),
+        //variadic mixed subs
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}(slice_type{},1), tensor_type{2,5}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}(1,slice_type{}), tensor_type{4,5,6}),
+        //variadic index subs
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}(0), tensor_type{1,2,3}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}(0,1), tensor_type(2)),
+        //slice container subs
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}(std::vector<slice_type>{slice_type{},slice_type{1,-1}}), tensor_type{{2},{5}}),
+        //transpose view
+        //variadic, no subs
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.transpose(), tensor_type{{{1,5},{3,7}},{{2,6},{4,8}}}),
+        //variadic, index subs
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.transpose(1,0,2), tensor_type{{{1,2},{5,6}},{{3,4},{7,8}}}),
+        //container subs
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.transpose(std::vector<int>{2,0,1}), tensor_type{{{1,3},{5,7}},{{2,4},{6,8}}}),
+        //reshape view
+        //variadic, no subs
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reshape(), tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}),
+        //variadic, index subs
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reshape(-1,1), tensor_type{{1},{2},{3},{4},{5},{6},{7},{8}}),
+        //container subs
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reshape(std::vector<int>{2,-1}), tensor_type{{1,2,3,4},{5,6,7,8}}),
+        //index mapping view
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}(gtensor::tensor<int>{1,0},gtensor::tensor<int>{0,1}), tensor_type{{5,6},{3,4}}),
+        //bool mapping view
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}(gtensor::tensor<bool>{{{true,false},{false,true}}}), tensor_type{1,4})
+    );
+    auto test = [](const auto& t){
+        auto result = std::get<0>(t);
+        auto expected = std::get<1>(t);
+
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test,test_data);
+}
+
+TEST_CASE("test_tensor_reduce","[test_tensor]")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using dim_type = typename tensor_type::dim_type;
+    using helpers_for_testing::apply_by_element;
+    auto sum = [](const auto& v1, const auto& v2){return v1+v2;};
+
+    //0tensor,1direction,2operation,3expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(tensor_type{1,2,3,4,5},dim_type{0},sum,tensor_type(15)),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},dim_type{0},sum,tensor_type{5,7,9}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},dim_type{1},sum,tensor_type{6,15})
+    );
+    auto test = [](const auto& t){
+        auto ten = std::get<0>(t);
+        auto direction = std::get<1>(t);
+        auto operation = std::get<2>(t);
+        auto expected = std::get<3>(t);
+        auto result = ten.reduce(direction,operation);
+        REQUIRE(result == expected);
     };
     apply_by_element(test,test_data);
 }

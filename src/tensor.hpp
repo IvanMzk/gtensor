@@ -95,41 +95,41 @@ public:
         }
     }
     //meta-data interface
-    const auto& descriptor()const{return impl_->descriptor();}
-    index_type size()const{return impl_->size();}
-    dim_type dim()const{return impl_->dim();}
-    const shape_type& shape()const{return impl_->shape();}
-    const shape_type& strides()const{return impl_->strides();}
+    const auto& descriptor()const{return impl().descriptor();}
+    index_type size()const{return impl().size();}
+    dim_type dim()const{return impl().dim();}
+    const shape_type& shape()const{return impl().shape();}
+    const shape_type& strides()const{return impl().strides();}
     //guaranteed to be empty after move construct from this
-    bool empty()const{return static_cast<bool>(impl_) ? impl_->empty() : true;}
+    bool empty()const{return static_cast<bool>(impl_) ? impl().empty() : true;}
     //data interface
-    auto begin(){return impl_->begin();}
-    auto end(){return impl_->end();}
-    auto rbegin(){return impl_->rbegin();}
-    auto rend(){return impl_->rend();}
-    template<typename Container> auto begin(Container&& shape){return impl_->begin(std::forward<Container>(shape));}
-    template<typename Container> auto end(Container&& shape){return impl_->end(std::forward<Container>(shape));}
-    template<typename Container> auto rbegin(Container&& shape){return impl_->rbegin(std::forward<Container>(shape));}
-    template<typename Container> auto rend(Container&& shape){return impl_->rend(std::forward<Container>(shape));}
-    auto create_indexer(){return impl_->create_indexer();}
-    auto create_walker(dim_type max_dim){return impl_->create_walker(max_dim);}
-    auto create_walker(){return impl_->create_walker();}
+    auto begin(){return impl().begin();}
+    auto end(){return impl().end();}
+    auto rbegin(){return impl().rbegin();}
+    auto rend(){return impl().rend();}
+    template<typename Container> auto begin(Container&& shape){return impl().begin(std::forward<Container>(shape));}
+    template<typename Container> auto end(Container&& shape){return impl().end(std::forward<Container>(shape));}
+    template<typename Container> auto rbegin(Container&& shape){return impl().rbegin(std::forward<Container>(shape));}
+    template<typename Container> auto rend(Container&& shape){return impl().rend(std::forward<Container>(shape));}
+    auto create_indexer(){return impl().create_indexer();}
+    auto create_walker(dim_type max_dim){return impl().create_walker(max_dim);}
+    auto create_walker(){return impl().create_walker();}
     //const data interface
-    auto begin()const{return impl_->begin();}
-    auto end()const{return impl_->end();}
-    auto rbegin()const{return impl_->rbegin();}
-    auto rend()const{return impl_->rend();}
-    template<typename Container> auto begin(Container&& shape)const{return impl_->begin(std::forward<Container>(shape));}
-    template<typename Container> auto end(Container&& shape)const{return impl_->end(std::forward<Container>(shape));}
-    template<typename Container> auto rbegin(Container&& shape)const{return impl_->rbegin(std::forward<Container>(shape));}
-    template<typename Container> auto rend(Container&& shape)const{return impl_->rend(std::forward<Container>(shape));}
-    auto create_indexer()const{return impl_->create_indexer();}
-    auto create_walker(dim_type max_dim)const{return impl_->create_walker(max_dim);}
-    auto create_walker()const{return impl_->create_walker();}
+    auto begin()const{return impl().begin();}
+    auto end()const{return impl().end();}
+    auto rbegin()const{return impl().rbegin();}
+    auto rend()const{return impl().rend();}
+    template<typename Container> auto begin(Container&& shape)const{return impl().begin(std::forward<Container>(shape));}
+    template<typename Container> auto end(Container&& shape)const{return impl().end(std::forward<Container>(shape));}
+    template<typename Container> auto rbegin(Container&& shape)const{return impl().rbegin(std::forward<Container>(shape));}
+    template<typename Container> auto rend(Container&& shape)const{return impl().rend(std::forward<Container>(shape));}
+    auto create_indexer()const{return impl().create_indexer();}
+    auto create_walker(dim_type max_dim)const{return impl().create_walker(max_dim);}
+    auto create_walker()const{return impl().create_walker();}
     //reduce
     template<typename BinaryOp>
     auto reduce(const dim_type& direction, BinaryOp op)const{
-        return reduce(*this, direction, op);
+        return gtensor::reduce(*this, direction, op);
     }
     //view construction operators and methods
     //slice view
@@ -137,14 +137,14 @@ public:
         return  create_view_(view_factory_type::create_slice_view(*this, subs));
     }
 
-    template<typename Tensor, typename...Subs> struct enable_slice_view_ : std::conjunction<
+    template<typename Tensor, typename...Subs> struct enable_slice_view_variadic_ : std::conjunction<
         std::disjunction<
             std::is_convertible<Subs,typename Tensor::index_type>,
             std::is_convertible<Subs,typename Tensor::slice_type>
         >...
     >{};
 
-    template<typename...Ts, typename...Subs, std::enable_if_t<enable_slice_view_<basic_tensor,Subs...>::value,int> = 0>
+    template<typename...Ts, typename...Subs, std::enable_if_t<enable_slice_view_variadic_<basic_tensor,Subs...>::value,int> = 0>
     auto operator()(const Subs&...subs)const{
         return create_view_(view_factory_type::create_slice_view(*this, subs...));
     }
@@ -170,16 +170,13 @@ public:
     auto reshape(const Container& subs)const{
         return create_view_(view_factory_type::create_reshape_view(*this, subs));
     }
-    auto reshape(std::initializer_list<index_type> subs)const{
-        return create_view_(view_factory_type::create_reshape_view(*this, subs));
-    }
     //mapping view
-    template<typename...Subs> struct enable_index_mapping_view_ : std::conjunction<
+    template<typename...Subs> struct enable_index_mapping_view_variadic_ : std::conjunction<
         std::bool_constant<(sizeof...(Subs)>0)>,
         std::bool_constant<detail::is_tensor_of_type_v<Subs,index_type>>...
     >{};
 
-    template<typename...Subs, std::enable_if_t<enable_index_mapping_view_<Subs...>::value,int> = 0 >
+    template<typename...Subs, std::enable_if_t<enable_index_mapping_view_variadic_<Subs...>::value,int> = 0 >
     auto operator()(const Subs&...subs)const{
         return create_view_(view_factory_type::create_index_mapping_view(*this, subs...));
     }
@@ -188,6 +185,8 @@ public:
         return create_view_(view_factory_type::create_bool_mapping_view(*this, subs));
     }
 private:
+    auto& impl(){return *impl_.get();}
+    const auto& impl()const{return *impl_.get();}
     template<typename Impl_>
     auto create_view_(std::shared_ptr<Impl_>&& impl__)const{
         return basic_tensor<Impl_>{std::move(impl__)};

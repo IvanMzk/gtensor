@@ -31,17 +31,12 @@ template<typename ShT, typename SizeT>
 auto make_reduce_shape(const ShT& shape, const SizeT& direction){
     using dim_type = SizeT;
     using shape_type = ShT;
-    using index_type = typename shape_type::value_type;
     dim_type dim = shape.size();
-    if (dim == dim_type{1}){
-        return shape_type{index_type{1}};
-    }else{
-        shape_type res(--dim);
-        auto shape_stop = shape.begin()+direction;
-        std::copy(shape.begin(), shape_stop, res.begin());
-        std::copy(++shape_stop, shape.end(), res.begin()+direction);
-        return res;
-    }
+    shape_type res(--dim);
+    auto shape_stop = shape.begin()+direction;
+    std::copy(shape.begin(), shape_stop, res.begin());
+    std::copy(++shape_stop, shape.end(), res.begin()+direction);
+    return res;
 }
 
 template<typename Config, typename Walker>
@@ -140,6 +135,7 @@ class reducer
         const auto& pshape = parent.shape();
         detail::check_reduce_args(pshape, direction);
         auto res = tensor<res_value_type,config_type>{detail::make_reduce_shape(pshape, direction)};
+        auto reduce_direction_size = pshape[direction];
         if (!res.empty()){
             auto pdim = parent.dim();
             if (pdim == dim_type{1}){

@@ -590,13 +590,14 @@ class view_factory
         detail::check_index_mapping_view_subs(pshape, subs.descriptor().shape()...);
         auto subs_shape = detail::make_broadcast_shape<shape_type>(subs.descriptor().shape()...);
         dim_type subs_number = sizeof...(Subs);
-        auto res = tensor<value_type,config_type>(detail::make_index_mapping_view_shape(pshape, subs_shape, subs_number), value_type{});
-        if (!res.empty()){
+        //auto res = tensor<value_type,config_type>(detail::make_index_mapping_view_shape(pshape, subs_shape, subs_number), value_type{});
+        auto res = tensor_factory<config_type,value_type>::create(detail::make_index_mapping_view_shape(pshape, subs_shape, subs_number), value_type{});
+        if (!res->empty()){
             detail::fill_index_mapping_view(
                 pshape,
                 parent.strides(),
                 parent.create_indexer(),
-                res.begin(),
+                res->begin(),
                 subs_shape,
                 walker_forward_traverser<config_type, decltype(subs.create_walker())>{subs_shape, subs.create_walker()}...
             );
@@ -623,17 +624,23 @@ class view_factory
                 subs,
                 walker_forward_traverser<config_type, decltype(subs.create_walker())>{subs_shape, subs.create_walker()}
             );
-            return tensor<value_type,config_type>(
+            // return tensor<value_type,config_type>(
+            //     detail::make_bool_mapping_view_shape(pshape, subs_trues_number, subs.dim()),
+            //     res_elements.begin(),
+            //     res_elements.end()
+            // );
+            return tensor_factory<config_type,value_type>::create(
                 detail::make_bool_mapping_view_shape(pshape, subs_trues_number, subs.dim()),
                 res_elements.begin(),
                 res_elements.end()
             );
         }else{
             index_type subs_trues_number = static_cast<index_type>(std::count(subs.begin(),subs.end(),true));
-            return tensor<value_type,config_type>(
-                detail::make_bool_mapping_view_shape(pshape, subs_trues_number, subs.dim()),
-                value_type{}
-            );
+            // return tensor<value_type,config_type>(
+            //     detail::make_bool_mapping_view_shape(pshape, subs_trues_number, subs.dim()),
+            //     value_type{}
+            // );
+            return tensor_factory<config_type,value_type>::create(detail::make_bool_mapping_view_shape(pshape, subs_trues_number, subs.dim()));
         }
     }
 

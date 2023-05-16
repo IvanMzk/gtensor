@@ -1,5 +1,5 @@
 #include "catch.hpp"
-#include "reduce.hpp"
+#include "tensor.hpp"
 #include "helpers_for_testing.hpp"
 #include "test_config.hpp"
 
@@ -36,8 +36,8 @@ TEST_CASE("test_make_reduce_shape","[test_reduce]")
     //0pshape,1direction,2expected
     using test_type = std::tuple<shape_type,dim_type,shape_type>;
     auto test_data = GENERATE(
-        test_type{shape_type{1},dim_type{0},shape_type{1}},
-        test_type{shape_type{10},dim_type{0},shape_type{1}},
+        test_type{shape_type{1},dim_type{0},shape_type{}},
+        test_type{shape_type{10},dim_type{0},shape_type{}},
         test_type{shape_type{2,3,4},dim_type{0},shape_type{3,4}},
         test_type{shape_type{2,3,4},dim_type{1},shape_type{2,4}},
         test_type{shape_type{2,3,4},dim_type{2},shape_type{2,3}}
@@ -64,7 +64,7 @@ TEST_CASE("test_reduce","[test_reduce]")
         std::make_tuple(tensor_type{}.reshape(1,0), dim_type{0}, std::plus{}, tensor_type{}),
         std::make_tuple(tensor_type{}.reshape(2,3,0), dim_type{0}, std::plus{}, tensor_type{}.reshape(3,0)),
         std::make_tuple(tensor_type{}.reshape(2,3,0), dim_type{1}, std::plus{}, tensor_type{}.reshape(2,0)),
-        std::make_tuple(tensor_type{1,2,3,4,5,6}, dim_type{0}, std::plus{}, tensor_type{21}),
+        std::make_tuple(tensor_type{1,2,3,4,5,6}, dim_type{0}, std::plus{}, tensor_type(21)),
         std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, dim_type{0}, std::plus{}, tensor_type{21}),
         std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, dim_type{1}, std::plus{}, tensor_type{1,2,3,4,5,6}),
         std::make_tuple(tensor_type{{1,2,3,4,5,6}}, dim_type{0}, std::plus{}, tensor_type{1,2,3,4,5,6}),
@@ -119,3 +119,4 @@ TEST_CASE("test_reduce_ecxeption","[test_reduce]")
     };
     apply_by_element(test, test_data);
 }
+
