@@ -18,13 +18,9 @@ namespace detail{
 template<typename ShT, typename SizeT>
 auto check_reduce_args(const ShT& pshape, const SizeT& direction){
     using dim_type = SizeT;
-    using index_type = typename ShT::value_type;
     const dim_type pdim = pshape.size();
     if (direction >= pdim){
         throw reduce_exception("bad reduce direction");
-    }
-    if (pshape[direction] == index_type{0}){
-        throw reduce_exception("reduce on zero size direction");
     }
 }
 template<typename ShT, typename SizeT>
@@ -104,25 +100,6 @@ public:
 
 }   //end of namespace detail
 
-namespace reduce_operations{
-
-struct max
-{
-    template<typename T>
-    auto operator()(const T& u, const T& v){
-        return std::max(u,v);
-    }
-};
-struct min
-{
-    template<typename T>
-    auto operator()(const T& u, const T& v){
-        return std::min(u,v);
-    }
-};
-
-}   //end of namespace reduce_operations
-
 class reducer
 {
     template<typename BinaryOp, typename...Ts>
@@ -131,28 +108,37 @@ class reducer
         using value_type = typename parent_type::value_type;
         using config_type = typename parent_type::config_type;
         using dim_type = typename config_type::dim_type;
+        using index_type = typename config_type::index_type;
         using res_value_type = std::decay_t<decltype(op(std::declval<value_type>(),std::declval<value_type>()))>;
         const auto& pshape = parent.shape();
         detail::check_reduce_args(pshape, direction);
         auto res = tensor<res_value_type,config_type>{detail::make_reduce_shape(pshape, direction)};
-        auto reduce_direction_size = pshape[direction];
+        index_type reduce_direction_size = pshape[direction];
         if (!res.empty()){
-            auto pdim = parent.dim();
-            if (pdim == dim_type{1}){
-                auto pit = parent.begin();
-                auto init = *pit;
-                *res.begin() = std::accumulate(++pit, parent.end(), init, op);
+            if (reduce_direction_size == index_type{0}){    //fill with default
+                if constexpr (std::is_default_constructible_v<value_type>){
+                    detail::fill(res.begin(), res.end(), value_type{});
+                }else{
+                    throw reduce_exception("reduce can't fill result, value_type is not default constructible");
+                }
             }else{
-                auto it = detail::walker_reduce_forward_traverser<config_type, decltype(parent.create_walker())>{pshape, parent.create_walker(), direction};
-                auto res_it = res.begin();
-                do{
-                    auto init = *it.walker();
-                    while(it.next_reduce()){
-                        init = op(init, *it.walker());
-                    }
-                    *res_it = init;
-                    ++res_it;
-                }while(it.next());
+                auto pdim = parent.dim();
+                if (pdim == dim_type{1}){
+                    auto pit = parent.begin();
+                    auto init = *pit;
+                    *res.begin() = std::accumulate(++pit, parent.end(), init, op);
+                }else{
+                    auto it = detail::walker_reduce_forward_traverser<config_type, decltype(parent.create_walker())>{pshape, parent.create_walker(), direction};
+                    auto res_it = res.begin();
+                    do{
+                        auto init = *it.walker();
+                        while(it.next_reduce()){
+                            init = op(init, *it.walker());
+                        }
+                        *res_it = init;
+                        ++res_it;
+                    }while(it.next());
+                }
             }
         }
         return res;

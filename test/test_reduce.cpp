@@ -20,9 +20,8 @@ TEST_CASE("test_check_reduce_args","[test_reduce]")
     REQUIRE_NOTHROW(check_reduce_args(shape_type{2,3,4},dim_type{1}));
     REQUIRE_NOTHROW(check_reduce_args(shape_type{2,3,4},dim_type{2}));
 
-    REQUIRE_THROWS_AS(check_reduce_args(shape_type{0},dim_type{0}), reduce_exception);
+    REQUIRE_THROWS_AS(check_reduce_args(shape_type{},dim_type{0}), reduce_exception);
     REQUIRE_THROWS_AS(check_reduce_args(shape_type{0},dim_type{1}), reduce_exception);
-    REQUIRE_THROWS_AS(check_reduce_args(shape_type{1,0},dim_type{1}), reduce_exception);
     REQUIRE_THROWS_AS(check_reduce_args(shape_type{1,0},dim_type{2}), reduce_exception);
     REQUIRE_THROWS_AS(check_reduce_args(shape_type{2,3,4},dim_type{3}), reduce_exception);
 }
@@ -36,8 +35,12 @@ TEST_CASE("test_make_reduce_shape","[test_reduce]")
     //0pshape,1direction,2expected
     using test_type = std::tuple<shape_type,dim_type,shape_type>;
     auto test_data = GENERATE(
+        test_type{shape_type{0},dim_type{0},shape_type{}},
         test_type{shape_type{1},dim_type{0},shape_type{}},
         test_type{shape_type{10},dim_type{0},shape_type{}},
+        test_type{shape_type{2,3,0},dim_type{0},shape_type{3,0}},
+        test_type{shape_type{2,3,0},dim_type{1},shape_type{2,0}},
+        test_type{shape_type{2,3,0},dim_type{2},shape_type{2,3}},
         test_type{shape_type{2,3,4},dim_type{0},shape_type{3,4}},
         test_type{shape_type{2,3,4},dim_type{1},shape_type{2,4}},
         test_type{shape_type{2,3,4},dim_type{2},shape_type{2,3}}
@@ -49,21 +52,42 @@ TEST_CASE("test_make_reduce_shape","[test_reduce]")
     REQUIRE(result == expected);
 }
 
+namespace test_reduce_{
+
+struct max
+{
+    template<typename T>
+    auto operator()(const T& u, const T& v){
+        return std::max(u,v);
+    }
+};
+struct min
+{
+    template<typename T>
+    auto operator()(const T& u, const T& v){
+        return std::min(u,v);
+    }
+};
+
+}   //end of namespace test_reduce_
+
 TEST_CASE("test_reduce","[test_reduce]")
 {
     using value_type = double;
-    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
-    using dim_type = typename config_type::dim_type;
-    using tensor_type = gtensor::tensor<value_type,config_type>;
-    using gtensor::reduce_operations::max;
-    using gtensor::reduce_operations::min;
+    using tensor_type = gtensor::tensor<value_type>;
+    using dim_type = typename tensor_type::dim_type;
+    using test_reduce_::max;
+    using test_reduce_::min;
     using gtensor::reduce;
     using helpers_for_testing::apply_by_element;
     //0tensor,1direction,2functor,3expected
     auto test_data = std::make_tuple(
+        std::make_tuple(tensor_type{}, dim_type{0}, std::plus{}, tensor_type(value_type{})),
         std::make_tuple(tensor_type{}.reshape(1,0), dim_type{0}, std::plus{}, tensor_type{}),
+        std::make_tuple(tensor_type{}.reshape(1,0), dim_type{1}, std::plus{}, tensor_type{value_type{}}),
         std::make_tuple(tensor_type{}.reshape(2,3,0), dim_type{0}, std::plus{}, tensor_type{}.reshape(3,0)),
         std::make_tuple(tensor_type{}.reshape(2,3,0), dim_type{1}, std::plus{}, tensor_type{}.reshape(2,0)),
+        std::make_tuple(tensor_type{}.reshape(2,3,0), dim_type{2}, std::plus{}, tensor_type{{value_type{},value_type{},value_type{}},{value_type{},value_type{},value_type{}}}),
         std::make_tuple(tensor_type{1,2,3,4,5,6}, dim_type{0}, std::plus{}, tensor_type(21)),
         std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, dim_type{0}, std::plus{}, tensor_type{21}),
         std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, dim_type{1}, std::plus{}, tensor_type{1,2,3,4,5,6}),
@@ -94,17 +118,16 @@ TEST_CASE("test_reduce","[test_reduce]")
 TEST_CASE("test_reduce_ecxeption","[test_reduce]")
 {
     using value_type = double;
-    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
-    using dim_type = typename config_type::dim_type;
-    using tensor_type = gtensor::tensor<value_type,config_type>;
+    using gtensor::tensor;
+    using tensor_type = tensor<value_type>;
+    using dim_type = typename tensor_type::dim_type;
+    using gtensor::reduce_exception;
     using gtensor::reduce;
     using helpers_for_testing::apply_by_element;
-    using gtensor::reduce_exception;
+
 
     //0tensor,1direction,2functor
     auto test_data = std::make_tuple(
-        std::make_tuple(tensor_type{}, dim_type{0}, std::plus{}),
-        std::make_tuple(tensor_type{}.reshape(1,0), dim_type{1}, std::plus{}),
         std::make_tuple(tensor_type{1,2,3,4,5,6}, dim_type{1}, std::plus{}),
         std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, dim_type{2}, std::plus{}),
         std::make_tuple(tensor_type{{1,2,3,4,5,6}}, dim_type{2}, std::plus{}),

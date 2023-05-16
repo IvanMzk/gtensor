@@ -32,7 +32,7 @@ target_sources(Test PRIVATE
 #
     #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_implementation.cpp
 #
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_tensor.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_operators.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_view_factory.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_expression_template_engine.cpp

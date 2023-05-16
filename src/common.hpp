@@ -53,6 +53,18 @@ template<typename T, typename...Ts> struct first_tensor_type<T,Ts...>{
 };
 template<typename...Ts> using first_tensor_type_t = typename first_tensor_type<Ts...>::type;
 
+template<typename It, typename T>
+void fill(It first, It last, const T& v){
+    using difference_type = typename std::iterator_traits<It>::difference_type;
+    if constexpr (std::is_integral_v<difference_type>){
+        std::fill(first,last,v);
+    }else{
+        for(;first!=last; ++first){
+            *first = v;
+        }
+    }
+}
+
 }   //end of namespace detail
 }   //end of namespace gtensor
 
