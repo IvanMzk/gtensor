@@ -516,3 +516,67 @@ TEMPLATE_TEST_CASE("test_converting_descriptor_convert", "[test_descriptor]",
     REQUIRE(result == expected);
 }
 
+TEST_CASE("test_mapping_descriptor","[test_descriptor]"){
+    using config_type = gtensor::config::extend_config_t<test_config::config_index_map_selector_t<std::vector>,int>;
+    using descriptor_type = gtensor::mapping_descriptor<config_type>;
+    using index_map_type = typename config_type::index_map_type;
+    using shape_type = typename config_type::shape_type;
+    using index_type = typename config_type::index_type;
+    using dim_type = typename config_type::dim_type;
+    using test_type = std::tuple<shape_type, index_map_type, shape_type, shape_type, index_type, dim_type, index_type>;
+    //0shape,1index_map,2expected_shape,3expected_strides,4expected_size,5expected_dim,6expected_offset
+    auto test_data = GENERATE(
+        test_type(shape_type{},index_map_type{},shape_type{},shape_type{},1,0,0),
+        test_type(shape_type{1},index_map_type{0},shape_type{1},shape_type{1},1,1,0),
+        test_type(shape_type{5},index_map_type{0,1,2,3,4,5},shape_type{5},shape_type{1},5,1,0),
+        test_type(shape_type{1,1},index_map_type{0},shape_type{1,1},shape_type{1,1},1,2,0),
+        test_type(shape_type{1,5},index_map_type{0,1,2,3,4,5},shape_type{1,5},shape_type{5,1},5,2,0),
+        test_type(shape_type{5,1},index_map_type{0,1,2,3,4,5},shape_type{5,1},shape_type{1,1},5,2,0),
+        test_type(shape_type{2,2,2},index_map_type{0,1,2,3,4,5,6,7},shape_type{2,2,2},shape_type{4,2,1},8,3,0)
+    );
+    auto shape = std::get<0>(test_data);
+    auto index_map = std::get<1>(test_data);
+    auto expected_shape = std::get<2>(test_data);
+    auto expected_strides = std::get<3>(test_data);
+    auto expected_size = std::get<4>(test_data);
+    auto expected_dim = std::get<5>(test_data);
+    auto expected_offset = std::get<6>(test_data);
+    auto descriptor = descriptor_type{shape, index_map};
+
+    auto result_shape = descriptor.shape();
+    auto result_strides = descriptor.strides();
+    auto result_size = descriptor.size();
+    auto result_dim = descriptor.dim();
+    auto result_offset = descriptor.offset();
+
+    REQUIRE(result_shape == expected_shape);
+    REQUIRE(result_strides == expected_strides);
+    REQUIRE(result_size == expected_size);
+    REQUIRE(result_dim == expected_dim);
+    REQUIRE(result_offset == expected_offset);
+}
+
+TEST_CASE("test_mapping_descriptor_convert","[test_descriptor]"){
+    using config_type = gtensor::config::extend_config_t<test_config::config_index_map_selector_t<std::vector>,int>;
+    using descriptor_type = gtensor::mapping_descriptor<config_type>;
+    using index_map_type = typename config_type::index_map_type;
+    using shape_type = typename config_type::shape_type;
+    using index_type = typename config_type::index_type;
+    using test_type = std::tuple<shape_type, index_map_type, index_type, index_type>;
+    //0shape,1index_map,2idx,3expected
+    auto test_data = GENERATE(
+        test_type(shape_type{1},index_map_type{0},0,0),
+        test_type(shape_type{5},index_map_type{1,2,0,3,4},0,1),
+        test_type(shape_type{5},index_map_type{1,2,0,3,4},2,0),
+        test_type(shape_type{2,2,2},index_map_type{11,12,13,17,18,19,1,2},0,11),
+        test_type(shape_type{2,2,2},index_map_type{11,12,13,17,18,19,1,2},7,2)
+    );
+    auto shape = std::get<0>(test_data);
+    auto index_map = std::get<1>(test_data);
+    auto idx = std::get<2>(test_data);
+    auto expected = std::get<3>(test_data);
+    auto descriptor = descriptor_type{shape, index_map};
+
+    auto result = descriptor.convert(idx);
+    REQUIRE(result == expected);
+}
