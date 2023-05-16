@@ -52,16 +52,17 @@ struct config_storage_selector{
 };
 template<template<typename...> typename Storage> using config_storage_selector_t = typename config_storage_selector<Storage>::config_type;
 
-template<template<typename...> typename IndexMap>
-struct config_index_map_selector{
+template<template<typename...> typename Storage, template<typename...> typename IndexMap>
+struct config_storage_index_map_selector{
     using config_type = config_tmpl_<
         gtensor::config::default_config::div_mode,
         gtensor::config::default_config::engine,
-        gtensor::config::default_config::template storage,
+        Storage,
         IndexMap
     >;
 };
-template<template<typename...> typename IndexMap> using config_index_map_selector_t = typename config_index_map_selector<IndexMap>::config_type;
+template<template<typename...> typename Storage ,template<typename...> typename IndexMap>
+using config_storage_index_map_selector_t = typename config_storage_index_map_selector<Storage, IndexMap>::config_type;
 
 }   //end of namespace test_config
 

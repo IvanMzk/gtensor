@@ -42,7 +42,9 @@ struct default_config
     //index_type is defined in extended_config as storage<T>::difference_type, where T is data element type (value_type)
     //it means that static_asert(std::is_convertible_v<storage<T>::difference_type, index_map<storage<T>::difference_type>::difference_type>) must hold
     //index_map specialization is used in mapping_descriptor that is descriptor type of mapping_view
-    template<typename T> using index_map = std::vector<T>;
+    //it is natural to use storage as index_map in general, but if storage is specific e.g. map to file system, these should differ
+    template<typename T> using index_map = storage<T>;
+
 };
 
 template<typename Config, typename IdxT>

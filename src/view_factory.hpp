@@ -416,8 +416,8 @@ inline ShT make_bool_mapping_view_shape(const ShT& pshape, const typename ShT::v
     return res;
 }
 
-template<typename ShT, typename TmpContainer, typename Subs, typename SubsIt>
-auto fill_bool_map(const ShT& pshape, const ShT& pstrides, TmpContainer& tmp_container, const Subs& subs, SubsIt subs_traverser){
+template<typename ShT, typename IndexContainer, typename Subs, typename SubsIt>
+auto fill_bool_map(const ShT& pshape, const ShT& pstrides, IndexContainer& index_container, const Subs& subs, SubsIt subs_traverser){
     using index_type = typename ShT::value_type;
     using dim_type = typename ShT::size_type;
 
@@ -427,20 +427,20 @@ auto fill_bool_map(const ShT& pshape, const ShT& pstrides, TmpContainer& tmp_con
     if (chunk_size == index_type{1}){
         do{
             if(*subs_traverser.walker()){
-                ++trues_number;
-                tmp_container.push_back(
+                index_container.push_back(
                     std::inner_product(subs_traverser.index().begin(), subs_traverser.index().end(), pstrides.begin(), index_type{0})
                 );
+                ++trues_number;
             }
         }while(subs_traverser.next());
     }else{
         do{
             if(*subs_traverser.walker()){
-                ++trues_number;
                 auto block_first = std::inner_product(subs_traverser.index().begin(), subs_traverser.index().end(), pstrides.begin(), index_type{0});
                 for(index_type j{0}; j!=chunk_size; ++j){
-                    tmp_container.push_back(block_first+j);
+                    index_container.push_back(block_first+j);
                 }
+                ++trues_number;
             }
         }while(subs_traverser.next());
     }
@@ -626,7 +626,9 @@ class view_factory
             index_container_type index_container{};
             index_type subs_trues_number{0};
             if (!subs.empty()){
-                index_container.reserve(parent.size());
+                if constexpr (std::is_convertible_v<index_type,typename index_container_type::difference_type>){
+                    index_container.reserve(parent.size());
+                }
                 subs_trues_number = detail::fill_bool_map(
                     pshape,
                     parent.strides(),

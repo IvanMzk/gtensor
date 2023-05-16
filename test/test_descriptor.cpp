@@ -517,7 +517,7 @@ TEMPLATE_TEST_CASE("test_converting_descriptor_convert", "[test_descriptor]",
 }
 
 TEST_CASE("test_mapping_descriptor","[test_descriptor]"){
-    using config_type = gtensor::config::extend_config_t<test_config::config_index_map_selector_t<std::vector>,int>;
+    using config_type = gtensor::config::extend_config_t<test_config::config_storage_index_map_selector_t<std::vector,std::vector>,int>;
     using descriptor_type = gtensor::mapping_descriptor<config_type>;
     using index_map_type = typename config_type::index_map_type;
     using shape_type = typename config_type::shape_type;
@@ -557,7 +557,7 @@ TEST_CASE("test_mapping_descriptor","[test_descriptor]"){
 }
 
 TEST_CASE("test_mapping_descriptor_convert","[test_descriptor]"){
-    using config_type = gtensor::config::extend_config_t<test_config::config_index_map_selector_t<std::vector>,int>;
+    using config_type = gtensor::config::extend_config_t<test_config::config_storage_index_map_selector_t<std::vector, std::vector>,int>;
     using descriptor_type = gtensor::mapping_descriptor<config_type>;
     using index_map_type = typename config_type::index_map_type;
     using shape_type = typename config_type::shape_type;
