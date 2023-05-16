@@ -24,8 +24,8 @@ struct default_config
 
     //data elements storage template
     //must provide random access interface
-    //template<typename T> using storage = std::vector<T>;
-    template<typename T> using storage = storage_vector<T>;
+    template<typename T> using storage = std::vector<T>;
+    //template<typename T> using storage = storage_vector<T>;
 
     //meta-data elements storage template i.e. shape, strides are specialization of shape
     //must provide random access interface

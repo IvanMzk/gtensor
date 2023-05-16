@@ -650,7 +650,7 @@ private:
         descriptor_(std::forward<ShT>(shape)),
         elements_(descriptor_.size())
     {
-        fill(begin_(),end_(),v,typename std::is_integral<index_type>{});
+        detail::fill(begin_(),end_(),v);
     }
     //from range constructors
     //try to construct directly from range and move
@@ -666,17 +666,6 @@ private:
         elements_(descriptor_.size())
     {
         fill_from_range(descriptor_.size(), first, last, begin_(), end_(), typename std::iterator_traits<It>::iterator_category{});
-    }
-
-    template<typename It>
-    void fill(It first, It last, const value_type& v, std::true_type){
-        std::fill(first,last,v);
-    }
-    template<typename It>
-    void fill(It first, It last, const value_type& v, std::false_type){
-        for(;first!=last; ++first){
-            *first = v;
-        }
     }
 
     template<typename It, typename DstIt>

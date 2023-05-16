@@ -53,6 +53,7 @@ template<typename T, typename...Ts> struct first_tensor_type<T,Ts...>{
 };
 template<typename...Ts> using first_tensor_type_t = typename first_tensor_type<Ts...>::type;
 
+//std::fill may require difference_type to be convertible to integral
 template<typename It, typename T>
 void fill(It first, It last, const T& v){
     using difference_type = typename std::iterator_traits<It>::difference_type;
