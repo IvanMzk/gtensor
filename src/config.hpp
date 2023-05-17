@@ -23,7 +23,7 @@ struct default_config
     //using div_mode = mode_div_native;
 
     //data elements storage template
-    //must provide random access interface
+    //must provide at least subscript const operator or const iterator
     template<typename T> using storage = std::vector<T>;
     //template<typename T> using storage = storage_vector<T>;
 
