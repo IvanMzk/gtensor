@@ -17,6 +17,8 @@ struct trait_name : std::false_type{};\
 template<typename T>\
 struct trait_name<T, std::void_t<std::integral_constant<function_signature,&T::function_name>>> : std::true_type{};
 
+template<typename...> inline constexpr bool always_false = false;
+
 template<typename T, typename = void> inline constexpr bool is_container_v = false;
 template<typename T> inline constexpr bool is_container_v<T, std::void_t<decltype(std::begin(std::declval<T&>())), decltype(std::size(std::declval<T&>())), typename T::value_type>> = true;
 

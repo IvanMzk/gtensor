@@ -32,11 +32,22 @@ TEST_CASE("test_tmp","[test_tmp]")
     using tensor_type = tensor<value_type,config_type>;
 
     tensor_type t(std::vector<int>{1,2,3});
+    //std::cout<<std::endl<<t;
     t.begin();
+    t.create_indexer();
+    auto w = t.create_walker();
+    std::cout<<std::endl<<*w;
+
 
     auto v = t.transpose();
+    auto vw = v.create_walker();
+    std::cout<<std::endl<<*vw;
+    v.create_indexer();
     v.begin();
-    auto e = v+v;
+
+    auto e = t+v;
+    e.create_walker();
+    std::cout<<std::endl<<e;
     //e.begin();
 
 
