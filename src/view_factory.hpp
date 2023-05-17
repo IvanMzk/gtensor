@@ -592,7 +592,8 @@ class view_factory
         using view_type = mapping_view<config_type,parent_type>;
         const auto& pshape = parent.shape();
         detail::check_index_mapping_view_subs(pshape, subs.shape()...);
-        auto subs_shape = detail::make_broadcast_shape<shape_type>(subs.shape()...);
+        const auto subs_shape = detail::make_broadcast_shape<shape_type>(subs.shape()...);
+        const auto subs_dim = subs_shape.size();
         auto res_shape = detail::make_index_mapping_view_shape(pshape, subs_shape, sizeof...(Subs));
         auto res_size = detail::make_size(res_shape);
         index_map_type index_map(res_size);
@@ -601,7 +602,7 @@ class view_factory
                 pshape,
                 parent.strides(),
                 index_map,
-                walker_forward_traverser<config_type, decltype(subs.create_walker())>{subs_shape, subs.create_walker()}...
+                walker_forward_traverser<config_type, decltype(subs.create_walker())>{subs_shape, subs.create_walker(subs_dim)}...
             );
         }
         return std::make_shared<view_type>(

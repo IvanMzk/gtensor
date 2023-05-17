@@ -17,7 +17,7 @@ public:
     subscriptable_storage(size_type n):
         impl_(n)
     {}
-    //decltype(auto) operator[](size_type i){return impl_[i];}
+    decltype(auto) operator[](size_type i){return impl_[i];}
     decltype(auto) operator[](size_type i)const{return impl_[i];}
 };
 
@@ -31,31 +31,8 @@ TEST_CASE("test_tmp","[test_tmp]")
     using gtensor::tensor;
     using tensor_type = tensor<value_type,config_type>;
 
-    tensor_type t(std::vector<int>{1,2,3});
-    //std::cout<<std::endl<<t;
-    t.begin();
-    t.create_indexer();
-    auto w = t.create_walker();
-    std::cout<<std::endl<<*w;
 
+    std::cout<<std::endl<<tensor_type{{1,2,3},{4,5,6},{7,8,9}}(tensor_type{1}, tensor_type{{0,2},{2,0}});
+    //std::cout<<std::endl<<tensor_type{{1,2,3},{4,5,6},{7,8,9}}(tensor_type(1), tensor_type{0,2});
 
-    auto v = t.transpose();
-    auto vw = v.create_walker();
-    std::cout<<std::endl<<*vw;
-    v.create_indexer();
-    v.begin();
-
-    auto e = t+v;
-    e.create_walker();
-    std::cout<<std::endl<<e;
-    //e.begin();
-
-
-    //auto e = t+t;
-
-
-    //std::cout<<std::endl<<t;
-
-    // const tensor_type ct(std::vector<int>{2,2,2});
-    // std::cout<<std::endl<<ct;
 }
