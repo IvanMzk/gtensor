@@ -23,20 +23,22 @@ struct default_config
     //using div_mode = mode_div_native;
 
     //data elements storage template
+    //must provide at least storage(const difference_type& n) constructor, which constructs storage of size n
     //must provide at least subscript const operator or const iterator
     template<typename T> using storage = std::vector<T>;
     //template<typename T> using storage = storage_vector<T>;
 
     //meta-data elements storage template i.e. shape, strides are specialization of shape
-    //must provide random access interface
+    //must provide std::vector like interface
     template<typename T> using shape = std::vector<T>;
 
     //generally when public interface expected container parameter it may be any type providig usual container semantic and interface: iterators, aliases...
     //specialization of config_type::container uses as return type in public interface
     //it may be used by implementation as general purpose container
+    //must provide std::vector like interface
     template<typename T> using container = std::vector<T>;
 
-    //must provide at least index_map(const T& n) constructor, which constructs map of size n
+    //must provide at least index_map(const diference_type& n) constructor, which constructs map of size n
     //must provide subscript interface such that:
     //T& operator[](const U&), where T is index_type - type used to address data elements, U is index_map<T>::difference_type and static_assert(std::is_convertible_v<T,U>) must hold
     //index_type is defined in extended_config as storage<T>::difference_type, where T is data element type (value_type)
