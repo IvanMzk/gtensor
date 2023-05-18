@@ -1111,9 +1111,13 @@ TEST_CASE("test_make_bool_mapping_view_shape","[test_view_factory]")
     using test_type = std::tuple<shape_type,index_type,dim_type,shape_type>;
     //0pshape,1trues_number,2subs_dim,3expected
     auto test_data = GENERATE(
+        test_type{shape_type{0},index_type{0},dim_type{0},shape_type{0,0}},
+        test_type{shape_type{0},index_type{1},dim_type{0},shape_type{1,0}},
         test_type{shape_type{0},index_type{0},dim_type{1},shape_type{0}},
         test_type{shape_type{1,0},index_type{0},dim_type{1},shape_type{0,0}},
         test_type{shape_type{1,0},index_type{0},dim_type{2},shape_type{0}},
+        test_type{shape_type{10},index_type{0},dim_type{0},shape_type{0,10}},
+        test_type{shape_type{10},index_type{1},dim_type{0},shape_type{1,10}},
         test_type{shape_type{10},index_type{10},dim_type{1},shape_type{10}},
         test_type{shape_type{10},index_type{3},dim_type{1},shape_type{3}},
         test_type{shape_type{10},index_type{0},dim_type{1},shape_type{0}},
@@ -1966,6 +1970,10 @@ TEST_CASE("test_create_bool_mapping_view","[test_view_factory]")
     //0parent,1subs,2expected
     auto test_data = std::make_tuple(
         std::make_tuple(tensor_type{}, bool_tensor_type{}, tensor_type{}),
+        std::make_tuple(tensor_type{}, bool_tensor_type(false), tensor_type{}.reshape(0,0)),
+        std::make_tuple(tensor_type{}, bool_tensor_type(true), tensor_type{}.reshape(1,0)),
+        std::make_tuple(tensor_type{}.reshape(2,3,0), bool_tensor_type(false), tensor_type{}.reshape(0,2,3,0)),
+        std::make_tuple(tensor_type{}.reshape(2,3,0), bool_tensor_type(true), tensor_type{}.reshape(1,2,3,0)),
         std::make_tuple(tensor_type{}.reshape(2,3,0), bool_tensor_type{}.reshape(2,0), tensor_type{}.reshape(0,0)),
         std::make_tuple(tensor_type{}.reshape(2,3,0), bool_tensor_type{}.reshape(2,3,0), tensor_type{}),
         std::make_tuple(tensor_type{}.reshape(2,3,0), bool_tensor_type{false,false}, tensor_type{}.reshape(0,3,0)),
@@ -1973,9 +1981,13 @@ TEST_CASE("test_create_bool_mapping_view","[test_view_factory]")
         std::make_tuple(tensor_type{}.reshape(2,3,0), bool_tensor_type{true,true}, tensor_type{}.reshape(2,3,0)),
         std::make_tuple(tensor_type{}.reshape(2,3,0), bool_tensor_type{{true,true,false},{false,true,true}}, tensor_type{}.reshape(4,0)),
         std::make_tuple(tensor_type{}.reshape(2,3,0), bool_tensor_type{}.reshape(2,3,0), tensor_type{}),
+        std::make_tuple(tensor_type{1}, bool_tensor_type(false), tensor_type{}.reshape(0,1)),
+        std::make_tuple(tensor_type{1}, bool_tensor_type(true), tensor_type{{1}}),
         std::make_tuple(tensor_type{1}, bool_tensor_type{}, tensor_type{}),
         std::make_tuple(tensor_type{1}, bool_tensor_type{false}, tensor_type{}),
         std::make_tuple(tensor_type{1}, bool_tensor_type{true}, tensor_type{1}),
+        std::make_tuple(tensor_type{1,2,3,4,5}, bool_tensor_type(false), tensor_type{}.reshape(0,5)),
+        std::make_tuple(tensor_type{1,2,3,4,5}, bool_tensor_type(true), tensor_type{{1,2,3,4,5}}),
         std::make_tuple(tensor_type{1,2,3,4,5}, bool_tensor_type{false,true,false,true,false}, tensor_type{2,4}),
         std::make_tuple(tensor_type{1,2,3,4,5}, bool_tensor_type{true,true,true,true,true}, tensor_type{1,2,3,4,5}),
         std::make_tuple(tensor_type{1,2,3,4,5}, bool_tensor_type{false,false,false,false,false}, tensor_type{}),

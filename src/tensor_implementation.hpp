@@ -243,7 +243,6 @@ inline auto rend_broadcast(Core& t, const Descriptor& descriptor, ShT&& shape){
 
 }   //end of namespace detail
 
-
 //Core must provide interface to access data and meta-data:
 //descriptor() method for meta-data
 //create_indexer() or create_walker() or both for data

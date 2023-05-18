@@ -426,7 +426,8 @@ TEST_CASE("test_gtensor_assign_operator_lhs_is_view","[test_tensor_operators]")
 TEST_CASE("test_gtensor_compound_assign_operator_lhs_is_view","[test_tensor_operators]")
 {
     using value_type = double;
-    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::tensor;
+    using tensor_type = tensor<value_type>;
     using helpers_for_testing::apply_by_element;
     //0parent,1lhs_view_maker,2rhs,3expected_parent,4expected_lhs,5expected_rhs
     auto test_data = std::make_tuple(
@@ -434,6 +435,7 @@ TEST_CASE("test_gtensor_compound_assign_operator_lhs_is_view","[test_tensor_oper
         std::make_tuple(tensor_type{},[](const auto& t){return t();},1,tensor_type{},tensor_type{},1),
         std::make_tuple(tensor_type(1),[](const auto& t){return t.transpose();},2,tensor_type(3),tensor_type(3),2),
         std::make_tuple(tensor_type{1,2,3,4,5,6},[](const auto& t){return t({{1,-1}});},7,tensor_type{1,9,10,11,12,6},tensor_type{9,10,11,12},7),
+        std::make_tuple(tensor_type{1,2,3,4,5,6},[](const auto& t){return t(tensor<int>{1,1,3,0,0});},7,tensor_type{15,16,3,11,5,6},tensor_type{16,16,11,15,15},7),
         //rhs 0-dim
         std::make_tuple(tensor_type{},[](const auto& t){return t();},tensor_type(1),tensor_type{},tensor_type{},tensor_type(1)),
         std::make_tuple(tensor_type(1),[](const auto& t){return t.transpose();},tensor_type(2),tensor_type(3),tensor_type(3),tensor_type(2)),

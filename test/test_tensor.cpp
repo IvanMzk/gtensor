@@ -520,8 +520,9 @@ TEMPLATE_TEST_CASE("test_tensor_copy_assignment_converting_copy_assignment_lhs_i
 {
     using lhs_value_type = std::tuple_element_t<0,TestType>;
     using rhs_value_type = std::tuple_element_t<1,TestType>;
-    using lhs_tensor_type = gtensor::tensor<lhs_value_type>;
-    using rhs_tensor_type = gtensor::tensor<rhs_value_type>;
+    using gtensor::tensor;
+    using lhs_tensor_type = tensor<lhs_value_type>;
+    using rhs_tensor_type = tensor<rhs_value_type>;
     using helpers_for_testing::apply_by_element;
     //0parent,1lhs_view_maker,2rhs,3expected_parent,4expected_lhs,5expected_rhs
     auto test_data = std::make_tuple(
@@ -529,10 +530,14 @@ TEMPLATE_TEST_CASE("test_tensor_copy_assignment_converting_copy_assignment_lhs_i
         std::make_tuple(lhs_tensor_type{},[](const auto& t){return t();},1,lhs_tensor_type{},lhs_tensor_type{},1),
         std::make_tuple(lhs_tensor_type(1),[](const auto& t){return t.transpose();},2,lhs_tensor_type(2),lhs_tensor_type(2),2),
         std::make_tuple(lhs_tensor_type{1,2,3,4,5,6},[](const auto& t){return t({{1,-1}});},7,lhs_tensor_type{1,7,7,7,7,6},lhs_tensor_type{7,7,7,7},7),
+        std::make_tuple(lhs_tensor_type{1,2,3,4,5,6},[](const auto& t){return t(tensor<int>{3,4,1});},7,lhs_tensor_type{1,7,3,7,7,6},lhs_tensor_type{7,7,7},7),
+        std::make_tuple(lhs_tensor_type{1,2,3,4,5,6},[](const auto& t){return t(tensor<bool>{true,true,false,true});},7,lhs_tensor_type{7,7,3,7,5,6},lhs_tensor_type{7,7,7},7),
         //rhs 0-dim
         std::make_tuple(lhs_tensor_type{},[](const auto& t){return t();},rhs_tensor_type(1),lhs_tensor_type{},lhs_tensor_type{},rhs_tensor_type(1)),
         std::make_tuple(lhs_tensor_type(1),[](const auto& t){return t.transpose();},rhs_tensor_type(2),lhs_tensor_type(2),lhs_tensor_type(2),rhs_tensor_type(2)),
         std::make_tuple(lhs_tensor_type{1,2,3,4,5,6},[](const auto& t){return t({{1,-1}});},rhs_tensor_type(7),lhs_tensor_type{1,7,7,7,7,6},lhs_tensor_type{7,7,7,7},rhs_tensor_type(7)),
+        std::make_tuple(lhs_tensor_type{{1,2,3},{4,5,6}},[](const auto& t){return t(tensor<int>(1),tensor<int>{0,0,1});},rhs_tensor_type(7),lhs_tensor_type{{1,2,3},{7,7,6}},lhs_tensor_type{7,7,7},rhs_tensor_type(7)),
+        std::make_tuple(lhs_tensor_type{{1,2,3},{4,5,6}},[](const auto& t){return t(tensor<bool>{{false,true},{true,true}});},rhs_tensor_type(7),lhs_tensor_type{{1,7,3},{7,7,6}},lhs_tensor_type{7,7,7},rhs_tensor_type(7)),
         //rhs n-dim
         std::make_tuple(lhs_tensor_type{},[](const auto& t){return t();},rhs_tensor_type{1},lhs_tensor_type{},lhs_tensor_type{},rhs_tensor_type{1}),
         std::make_tuple(lhs_tensor_type(1),[](const auto& t){return t.transpose();},rhs_tensor_type{2},lhs_tensor_type(2),lhs_tensor_type(2),rhs_tensor_type{2}),
@@ -559,6 +564,14 @@ TEMPLATE_TEST_CASE("test_tensor_copy_assignment_converting_copy_assignment_lhs_i
             lhs_tensor_type{{{1,5},{1,3}},{{2,6},{1,3}}},
             lhs_tensor_type{{{1,3}},{{1,3}}},
             rhs_tensor_type{{0,2},{1,3}}
+        ),
+        std::make_tuple(
+            lhs_tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},
+            [](const auto& t){return t(tensor<int>{0,1},tensor<int>(1),tensor<int>(0));},
+            rhs_tensor_type{9,10},
+            lhs_tensor_type{{{1,2},{9,4}},{{5,6},{10,8}}},
+            lhs_tensor_type{9,10},
+            rhs_tensor_type{9,10}
         )
     );
     auto test = [](const auto& t){
@@ -1177,7 +1190,8 @@ TEMPLATE_TEST_CASE("test_tensor_data_interface","[test_tensor]",
 TEST_CASE("test_tensor_view_interface","[test_tensor]")
 {
     using value_type = double;
-    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::tensor;
+    using tensor_type = tensor<value_type>;
     using slice_type = typename tensor_type::slice_type;
     using nop_type = typename slice_type::nop_type;
     using helpers_for_testing::apply_by_element;
@@ -1212,9 +1226,10 @@ TEST_CASE("test_tensor_view_interface","[test_tensor]")
         //container subs
         std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reshape(std::vector<int>{2,-1}), tensor_type{{1,2,3,4},{5,6,7,8}}),
         //index mapping view
-        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}(gtensor::tensor<int>{1,0},gtensor::tensor<int>{0,1}), tensor_type{{5,6},{3,4}}),
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}(tensor<int>{1,0},tensor<int>{0,1}), tensor_type{{5,6},{3,4}}),
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}(tensor<int>(1),tensor<int>{{0,1},{1,0}}), tensor_type{{{5,6},{7,8}},{{7,8},{5,6}}}),
         //bool mapping view
-        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}(gtensor::tensor<bool>{{{true,false},{false,true}}}), tensor_type{1,4})
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}(tensor<bool>{{{true,false},{false,true}}}), tensor_type{1,4})
     );
     auto test = [](const auto& t){
         auto result = std::get<0>(t);
