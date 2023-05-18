@@ -1246,7 +1246,10 @@ TEST_CASE("test_tensor_reduce","[test_tensor]")
     using tensor_type = gtensor::tensor<value_type>;
     using dim_type = typename tensor_type::dim_type;
     using helpers_for_testing::apply_by_element;
-    auto sum = [](const auto& v1, const auto& v2){return v1+v2;};
+    auto sum = [](auto first, auto last){
+        const auto& init = *first;
+        return std::accumulate(++first,last,init,std::plus{});
+    };
 
     //0tensor,1direction,2operation,3expected
     auto test_data = std::make_tuple(

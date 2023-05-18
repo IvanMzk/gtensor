@@ -56,16 +56,34 @@ namespace test_reduce_{
 
 struct max
 {
-    template<typename T>
-    auto operator()(const T& u, const T& v){
-        return std::max(u,v);
+    template<typename It>
+    auto operator()(It first, It last){
+        const auto& init = *first;
+        return std::accumulate(++first,last,init, [](const auto& u, const auto& v){return std::max(u,v);});
     }
 };
 struct min
 {
-    template<typename T>
-    auto operator()(const T& u, const T& v){
-        return std::min(u,v);
+    template<typename It>
+    auto operator()(It first, It last){
+        const auto& init = *first;
+        return std::accumulate(++first,last,init, [](const auto& u, const auto& v){return std::min(u,v);});
+    }
+};
+struct sum
+{
+    template<typename It>
+    auto operator()(It first, It last){
+        const auto& init = *first;
+        return std::accumulate(++first,last,init,std::plus{});
+    }
+};
+struct prod
+{
+    template<typename It>
+    auto operator()(It first, It last){
+        const auto& init = *first;
+        return std::accumulate(++first,last,init,std::multiplies{});
     }
 };
 
@@ -76,31 +94,33 @@ TEST_CASE("test_reduce","[test_reduce]")
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
     using dim_type = typename tensor_type::dim_type;
+    using test_reduce_::sum;
+    using test_reduce_::prod;
     using test_reduce_::max;
     using test_reduce_::min;
     using gtensor::reduce;
     using helpers_for_testing::apply_by_element;
     //0tensor,1direction,2functor,3expected
     auto test_data = std::make_tuple(
-        std::make_tuple(tensor_type{}, dim_type{0}, std::plus{}, tensor_type(value_type{})),
-        std::make_tuple(tensor_type{}.reshape(1,0), dim_type{0}, std::plus{}, tensor_type{}),
-        std::make_tuple(tensor_type{}.reshape(1,0), dim_type{1}, std::plus{}, tensor_type{value_type{}}),
-        std::make_tuple(tensor_type{}.reshape(2,3,0), dim_type{0}, std::plus{}, tensor_type{}.reshape(3,0)),
-        std::make_tuple(tensor_type{}.reshape(2,3,0), dim_type{1}, std::plus{}, tensor_type{}.reshape(2,0)),
-        std::make_tuple(tensor_type{}.reshape(2,3,0), dim_type{2}, std::plus{}, tensor_type{{value_type{},value_type{},value_type{}},{value_type{},value_type{},value_type{}}}),
-        std::make_tuple(tensor_type{1,2,3,4,5,6}, dim_type{0}, std::plus{}, tensor_type(21)),
-        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, dim_type{0}, std::plus{}, tensor_type{21}),
-        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, dim_type{1}, std::plus{}, tensor_type{1,2,3,4,5,6}),
-        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, dim_type{0}, std::plus{}, tensor_type{1,2,3,4,5,6}),
-        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, dim_type{1}, std::plus{}, tensor_type{21}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{0}, std::plus{}, tensor_type{5,7,9}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{1}, std::plus{}, tensor_type{6,15}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{1}, std::multiplies{}, tensor_type{6,120}),
+        std::make_tuple(tensor_type{}, dim_type{0}, sum{}, tensor_type(value_type{})),
+        std::make_tuple(tensor_type{}.reshape(1,0), dim_type{0}, sum{}, tensor_type{}),
+        std::make_tuple(tensor_type{}.reshape(1,0), dim_type{1}, sum{}, tensor_type{value_type{}}),
+        std::make_tuple(tensor_type{}.reshape(2,3,0), dim_type{0}, sum{}, tensor_type{}.reshape(3,0)),
+        std::make_tuple(tensor_type{}.reshape(2,3,0), dim_type{1}, sum{}, tensor_type{}.reshape(2,0)),
+        std::make_tuple(tensor_type{}.reshape(2,3,0), dim_type{2}, sum{}, tensor_type{{value_type{},value_type{},value_type{}},{value_type{},value_type{},value_type{}}}),
+        std::make_tuple(tensor_type{1,2,3,4,5,6}, dim_type{0}, sum{}, tensor_type(21)),
+        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, dim_type{0}, sum{}, tensor_type{21}),
+        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, dim_type{1}, sum{}, tensor_type{1,2,3,4,5,6}),
+        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, dim_type{0}, sum{}, tensor_type{1,2,3,4,5,6}),
+        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, dim_type{1}, sum{}, tensor_type{21}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{0}, sum{}, tensor_type{5,7,9}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{1}, sum{}, tensor_type{6,15}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{1}, prod{}, tensor_type{6,120}),
         std::make_tuple(tensor_type{{1,6,7,9},{4,5,7,0}}, dim_type{0}, max{}, tensor_type{4,6,7,9}),
         std::make_tuple(tensor_type{{1,6,7,9},{4,5,7,0}}, dim_type{1}, min{}, tensor_type{1,0}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{0}, std::plus{}, tensor_type{{4,6},{8,10}}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{1}, std::plus{}, tensor_type{{2,4},{10,12}}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{2}, std::plus{}, tensor_type{{1,5},{9,13}})
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{0}, sum{}, tensor_type{{4,6},{8,10}}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{1}, sum{}, tensor_type{{2,4},{10,12}}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{2}, sum{}, tensor_type{{1,5},{9,13}})
     );
     auto test = [](const auto& t){
         auto tensor = std::get<0>(t);
@@ -121,6 +141,7 @@ TEST_CASE("test_reduce_ecxeption","[test_reduce]")
     using gtensor::tensor;
     using tensor_type = tensor<value_type>;
     using dim_type = typename tensor_type::dim_type;
+    using test_reduce_::sum;
     using gtensor::reduce_exception;
     using gtensor::reduce;
     using helpers_for_testing::apply_by_element;
@@ -128,11 +149,11 @@ TEST_CASE("test_reduce_ecxeption","[test_reduce]")
 
     //0tensor,1direction,2functor
     auto test_data = std::make_tuple(
-        std::make_tuple(tensor_type{1,2,3,4,5,6}, dim_type{1}, std::plus{}),
-        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, dim_type{2}, std::plus{}),
-        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, dim_type{2}, std::plus{}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{4}, std::plus{}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{3}, std::plus{})
+        std::make_tuple(tensor_type{1,2,3,4,5,6}, dim_type{1}, sum{}),
+        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, dim_type{2}, sum{}),
+        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, dim_type{2}, sum{}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{4}, sum{}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{3}, sum{})
     );
     auto test = [](const auto& t){
         auto tensor = std::get<0>(t);
