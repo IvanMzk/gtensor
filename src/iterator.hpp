@@ -92,7 +92,7 @@ public:
 
     //assuming usual stoarge subscript operator semantic i.e. subscript index in range [0,size()-1]:
     //begin should be constructed with zero flat_index_ argument, end with size() flat_index_argument
-    template<typename Indexer_, std::enable_if_t<!std::is_convertible_v<Indexer_,indexer_iterator> ,int> =0>
+    template<typename Indexer_>
     indexer_iterator(Indexer_&& indexer_, const difference_type& flat_index_):
         indexer{std::forward<Indexer_>(indexer_)},
         flat_index{flat_index_}
@@ -145,7 +145,7 @@ public:
     using const_reference = typename detail::iterator_internals_selector<result_type>::const_reference;
 
     //begin should be constructed with zero flat_index_ argument, end with size() flat_index_argument
-    template<typename Walker_, std::enable_if_t<!std::is_convertible_v<Walker_,walker_iterator> ,int> =0>
+    template<typename Walker_>
     walker_iterator(Walker_&& walker_, const shape_type& shape_, const strides_div_type& strides_, const difference_type& flat_index_):
         traverser{shape_, strides_, std::forward<Walker_>(walker_)},
         flat_index{flat_index_}
