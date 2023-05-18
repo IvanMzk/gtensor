@@ -19,26 +19,26 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_SOURCE_DIR}/test_helpers_for_testing.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_tmp.cpp
 
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_common.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_libdivide_helper.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_init_list.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_slice.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_descriptor.cpp
-#
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_data_accessor_indexer.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_data_accessor_walker.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_data_accessor_traverser.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_iterator.cpp
-#
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_implementation.cpp
-#
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_common.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_libdivide_helper.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_init_list.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_slice.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_descriptor.cpp
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_data_accessor_indexer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_data_accessor_walker.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_data_accessor_traverser.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_iterator.cpp
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_implementation.cpp
+
     ${CMAKE_CURRENT_SOURCE_DIR}/test_tensor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_operators.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_view_factory.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_expression_template_engine.cpp
-#
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_reduce.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_combine.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_expression_template_engine.cpp
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_reduce.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_combine.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/test.cpp
 )
