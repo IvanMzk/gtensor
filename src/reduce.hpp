@@ -226,20 +226,89 @@ class reducer
         }
         return res;
     }
+
+    template<typename F, typename...Ts, typename...Args>
+    static auto slide_(
+        const basic_tensor<Ts...>& parent,
+        const typename basic_tensor<Ts...>::dim_type& direction,
+        F slide_f,
+        const typename basic_tensor<Ts...>::index_type& window_size,
+        const typename basic_tensor<Ts...>::index_type& window_step,
+        Args&&...args
+    ){
+        using parent_type = basic_tensor<Ts...>;
+        using value_type = typename parent_type::value_type;
+        using config_type = typename parent_type::config_type;
+        using dim_type = typename config_type::dim_type;
+        const auto& pshape = parent.shape();
+        detail::check_slide_args(pshape, direction, window_size);
+        auto res = tensor<value_type,config_type>{detail::make_slide_shape(pshape, direction, window_size, window_step)};
+        if (!res.empty()){
+            auto pdim = parent.dim();
+            if (pdim == dim_type{1}){
+                slide_f(parent.begin(), parent.end(), res.begin(), res.end(), window_size,window_step,std::forward<Args>(args)...);
+            }else{
+                auto parent_reduce_traverser = detail::walker_reduce_traverser<config_type, decltype(parent.create_walker())>{pshape, parent.create_walker(), direction};
+                auto result_reduce_traverser = detail::walker_reduce_traverser<config_type, decltype(res.create_walker())>{res.shape(), res.create_walker(), direction};
+                do{
+                    //0first,1last,2dst_first,3dst_last,4window_size,5window_step,6args
+                    slide_f(
+                        parent_reduce_traverser.begin(),
+                        parent_reduce_traverser.end(),
+                        result_reduce_traverser.begin(),
+                        result_reduce_traverser.end(),
+                        window_size,
+                        window_step,
+                        std::forward<Args>(args)...
+                    );
+                    result_reduce_traverser.next();
+                }while(parent_reduce_traverser.next());
+            }
+        }
+        return res;
+    }
 public:
     //interface
     template<typename F, typename...Ts>
-    static auto reduce(const basic_tensor<Ts...>& t, const typename basic_tensor<Ts...>::dim_type& direction, F reduce_f){
-        return reduce_(t,direction,reduce_f);
+    static auto reduce(const basic_tensor<Ts...>& t, const typename basic_tensor<Ts...>::dim_type& direction, F f){
+        return reduce_(t,direction,f);
+    }
+    template<typename F, typename...Ts, typename...Args>
+    static auto slide(
+        const basic_tensor<Ts...>& t,
+        const typename basic_tensor<Ts...>::dim_type& direction,
+        F f,
+        const typename basic_tensor<Ts...>::index_type& window_size,
+        const typename basic_tensor<Ts...>::index_type& window_step,
+        Args&&...args
+    ){
+        return slide_(t,direction,f,window_size,window_step,std::forward<Args>(args)...);
     }
 };
 
-//F is reduce functor that takes iterators range of data to be reduced as arguments
-//call operator must be defined like this: template<typename It> Ret operator()(It first, It last){...}
+//F is reduce functor that takes iterators range of data to be reduced as arguments and return scalar - reduction result
+//F call operator must be defined like this: template<typename It> Ret operator()(It first, It last){...}
 template<typename F, typename...Ts>
-auto reduce(const basic_tensor<Ts...>& t, const typename basic_tensor<Ts...>::dim_type& direction, F reduce_f){
+auto reduce(const basic_tensor<Ts...>& t, const typename basic_tensor<Ts...>::dim_type& direction, F f){
     using config_type = typename basic_tensor<Ts...>::config_type;
-    return reducer_selector_t<config_type>::reduce(t, direction, reduce_f);
+    return reducer_selector_t<config_type>::reduce(t, direction, f);
+}
+
+//F is slide functor that takes arguments: iterators range of data to be slided, dst iterators range, sliding parameters
+//F call operator must be defined like this:
+//template<typename It,typename DstIt,typename IdxT,typename...Args> void operator()(It first, It last, DstIt dfirst, DstIt dlast, IdxT window_size, IdxT window_step, Args&&...args){...}
+//where Args is application specific arguments
+template<typename F, typename...Ts, typename...Args>
+auto slide(
+    const basic_tensor<Ts...>& t,
+    const typename basic_tensor<Ts...>::dim_type& direction,
+    F f,
+    const typename basic_tensor<Ts...>::index_type& window_size,
+    const typename basic_tensor<Ts...>::index_type& window_step,
+    Args&&...args
+){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return reducer_selector_t<config_type>::slide(t, direction, f, window_size, window_step,std::forward<Args>(args)...);
 }
 
 }   //end of namespace gtensor

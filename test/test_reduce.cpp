@@ -169,6 +169,64 @@ struct prod
     }
 };
 
+template<typename T>
+struct cumsum{
+    T cumsum_{0};
+    template<typename It, typename DstIt, typename IdxT>
+    void operator()(It first, It last, DstIt dfirst, DstIt dlast, IdxT,IdxT){
+        cumsum_ = T(0);
+        for(;dfirst!=dlast; ++dfirst,++first){
+            cumsum_+=*first;
+            *dfirst = cumsum_;
+        }
+    }
+};
+
+struct moving_avarage{
+    template<typename It, typename DstIt, typename IdxT>
+    void operator()(It first, It last, DstIt dfirst, DstIt dlast, const IdxT& window_size, const IdxT& window_step, const typename std::iterator_traits<It>::value_type& denom){
+        using index_type = IdxT;
+        using value_type = typename std::iterator_traits<It>::value_type;
+        value_type sum{0};
+        auto it = first;
+        for (index_type i{0}; i!=window_size; ++i, ++it){
+            sum+=*it;
+        }
+        for(;dfirst!=dlast;++dfirst){
+            *dfirst = sum/denom;
+            for (index_type i{0}; i!=window_step; ++i,++first){
+                sum-=*first;
+            }
+            for (index_type i{0}; i!=window_step; ++i, ++it){
+                sum+=*it;
+            }
+        }
+    }
+};
+
+struct diff_1{
+    template<typename It, typename DstIt, typename IdxT>
+    void operator()(It first, It last, DstIt dfirst, DstIt dlast, const IdxT&, const IdxT&){
+        for (;dfirst!=dlast;++dfirst){
+            auto prev = *first;
+            *dfirst = *(++first) - prev;
+        }
+    }
+};
+
+struct diff_2{
+    template<typename It, typename DstIt, typename IdxT>
+    void operator()(It first, It last, DstIt dfirst, DstIt dlast, const IdxT&, const IdxT&){
+        for (;dfirst!=dlast;++dfirst){
+            auto v0 = *first;
+            auto v1 = *(++first);
+            auto v2 = *(++first);
+            *dfirst = v2-v1-v1+v0;
+            --first;
+        }
+    }
+};
+
 }   //end of namespace test_reduce_
 
 TEST_CASE("test_reduce","[test_reduce]")
@@ -246,3 +304,75 @@ TEST_CASE("test_reduce_ecxeption","[test_reduce]")
     apply_by_element(test, test_data);
 }
 
+TEST_CASE("test_slide","[test_reduce]")
+{
+    using value_type = int;
+    using tensor_type = gtensor::tensor<value_type>;
+    using dim_type = typename tensor_type::dim_type;
+    using index_type = typename tensor_type::index_type;
+    using test_reduce_::cumsum;
+    using test_reduce_::diff_1;
+    using test_reduce_::diff_2;
+    using gtensor::slide;
+    using helpers_for_testing::apply_by_element;
+
+    //0tensor,1direction,2functor,3window_size,4window_step,5expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(tensor_type{}, dim_type{0}, cumsum<value_type>{}, index_type{1}, index_type{1}, tensor_type{}),
+        std::make_tuple(tensor_type{1}, dim_type{0}, cumsum<value_type>{}, index_type{1}, index_type{1}, tensor_type{1}),
+        std::make_tuple(tensor_type{1,2,3,4,5}, dim_type{0}, cumsum<value_type>{}, index_type{1}, index_type{1}, tensor_type{1,3,6,10,15}),
+        std::make_tuple(tensor_type{1,3,2,5,7,4,6,7,8}, dim_type{0}, diff_1{}, index_type{2}, index_type{1}, tensor_type{2,-1,3,2,-3,2,1,1}),
+        std::make_tuple(tensor_type{1,3,2,5,7,4,6,7,8}, dim_type{0}, diff_2{}, index_type{3}, index_type{1}, tensor_type{-3,4,-1,-5,5,-1,0}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9}}, dim_type{0}, cumsum<value_type>{}, index_type{1}, index_type{1}, tensor_type{{1,2,3},{5,7,9},{12,15,18}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9}}, dim_type{1}, cumsum<value_type>{}, index_type{1}, index_type{1}, tensor_type{{1,3,6},{4,9,15},{7,15,24}})
+    );
+    auto test = [](const auto& t){
+        auto tensor = std::get<0>(t);
+        auto direction = std::get<1>(t);
+        auto functor = std::get<2>(t);
+        auto window_size = std::get<3>(t);
+        auto window_step = std::get<4>(t);
+        auto expected = std::get<5>(t);
+        auto result = slide(tensor, direction, functor, window_size, window_step);
+        REQUIRE(result == expected);
+        auto result1 = slide(tensor, direction, functor, window_size, window_step);
+        REQUIRE(result1 == expected);
+    };
+    apply_by_element(test, test_data);
+}
+
+TEST_CASE("test_slide_custom_arg","[test_reduce]")
+{
+    using value_type = int;
+    using tensor_type = gtensor::tensor<value_type>;
+    using dim_type = typename tensor_type::dim_type;
+    using index_type = typename tensor_type::index_type;
+    using test_reduce_::moving_avarage;
+    using gtensor::slide;
+    using helpers_for_testing::apply_by_element;
+
+    //0tensor,1direction,2functor,3window_size,4window_step,5denom,6expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(tensor_type{}, dim_type{0}, moving_avarage{}, index_type{1}, index_type{1}, value_type{1}, tensor_type{}),
+        std::make_tuple(tensor_type{1}, dim_type{0}, moving_avarage{}, index_type{1}, index_type{1}, value_type{1}, tensor_type{1}),
+        std::make_tuple(tensor_type{1,2,3,4,5}, dim_type{0}, moving_avarage{}, index_type{1}, index_type{1}, value_type{1}, tensor_type{1,2,3,4,5}),
+        std::make_tuple(tensor_type{1,2,3,4,5,6,7,8,9,10}, dim_type{0}, moving_avarage{}, index_type{3}, index_type{1}, value_type{3}, tensor_type{2,3,4,5,6,7,8,9}),
+        std::make_tuple(tensor_type{1,2,3,4,5,6,7,8,9,10}, dim_type{0}, moving_avarage{}, index_type{3}, index_type{2}, value_type{3}, tensor_type{2,4,6,8}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9}}, dim_type{0}, moving_avarage{}, index_type{2}, index_type{1}, value_type{2}, tensor_type{{2,3,4},{5,6,7}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9}}, dim_type{1}, moving_avarage{}, index_type{2}, index_type{1}, value_type{2}, tensor_type{{1,2},{4,5},{7,8}})
+    );
+    auto test = [](const auto& t){
+        auto tensor = std::get<0>(t);
+        auto direction = std::get<1>(t);
+        auto functor = std::get<2>(t);
+        auto window_size = std::get<3>(t);
+        auto window_step = std::get<4>(t);
+        auto denom = std::get<5>(t);
+        auto expected = std::get<6>(t);
+        auto result = slide(tensor, direction, functor, window_size, window_step,denom);
+        REQUIRE(result == expected);
+        auto result1 = slide(tensor, direction, functor, window_size, window_step,denom);
+        REQUIRE(result1 == expected);
+    };
+    apply_by_element(test, test_data);
+}
