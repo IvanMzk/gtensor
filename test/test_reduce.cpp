@@ -52,6 +52,88 @@ TEST_CASE("test_make_reduce_shape","[test_reduce]")
     REQUIRE(result == expected);
 }
 
+TEST_CASE("test_check_slide_args","[test_reduce]")
+{
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
+    using dim_type = config_type::dim_type;
+    using index_type = config_type::index_type;
+    using shape_type = config_type::shape_type;
+    using gtensor::reduce_exception;
+    using gtensor::detail::check_slide_args;
+
+    REQUIRE_NOTHROW(check_slide_args(shape_type{0},dim_type{0},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{0},dim_type{0},index_type{2}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{1},dim_type{0},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{10},dim_type{0},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{10},dim_type{0},index_type{2}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{10},dim_type{0},index_type{5}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{10},dim_type{0},index_type{10}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{1,0},dim_type{0},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,0},dim_type{0},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,0},dim_type{0},index_type{2}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,0},dim_type{1},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,0},dim_type{1},index_type{2}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,0},dim_type{1},index_type{3}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,4},dim_type{0},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,4},dim_type{0},index_type{2}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,4},dim_type{1},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,4},dim_type{1},index_type{2}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,4},dim_type{1},index_type{3}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,4},dim_type{2},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,4},dim_type{2},index_type{2}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,4},dim_type{2},index_type{3}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,4},dim_type{2},index_type{4}));
+
+    REQUIRE_THROWS_AS(check_slide_args(shape_type{},dim_type{0},index_type{1}), reduce_exception);
+    REQUIRE_THROWS_AS(check_slide_args(shape_type{0},dim_type{1},index_type{1}), reduce_exception);
+    REQUIRE_THROWS_AS(check_slide_args(shape_type{10},dim_type{1},index_type{1}), reduce_exception);
+    REQUIRE_THROWS_AS(check_slide_args(shape_type{10},dim_type{0},index_type{11}), reduce_exception);
+    REQUIRE_THROWS_AS(check_slide_args(shape_type{2,3,4},dim_type{3},index_type{1}), reduce_exception);
+    REQUIRE_THROWS_AS(check_slide_args(shape_type{2,3,4},dim_type{0},index_type{3}), reduce_exception);
+    REQUIRE_THROWS_AS(check_slide_args(shape_type{2,3,4},dim_type{1},index_type{4}), reduce_exception);
+    REQUIRE_THROWS_AS(check_slide_args(shape_type{2,3,4},dim_type{2},index_type{5}), reduce_exception);
+}
+
+TEST_CASE("test_make_slide_shape","[test_reduce]")
+{
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
+    using dim_type = config_type::dim_type;
+    using index_type = config_type::index_type;
+    using shape_type = config_type::shape_type;
+    using gtensor::detail::make_slide_shape;
+    //0pshape,1direction,2window_size,3window_step,4expected
+    using test_type = std::tuple<shape_type,dim_type,index_type,index_type,shape_type>;
+    auto test_data = GENERATE(
+        test_type{shape_type{0},dim_type{0},index_type{1},index_type{1},shape_type{0}},
+        test_type{shape_type{0},dim_type{0},index_type{2},index_type{1},shape_type{0}},
+        test_type{shape_type{0},dim_type{0},index_type{1},index_type{2},shape_type{0}},
+        test_type{shape_type{20,30,0},dim_type{0},index_type{5},index_type{2},shape_type{8,30,0}},
+        test_type{shape_type{20,30,0},dim_type{1},index_type{5},index_type{2},shape_type{20,13,0}},
+        test_type{shape_type{20,30,0},dim_type{2},index_type{5},index_type{2},shape_type{20,30,0}},
+        test_type{shape_type{1},dim_type{0},index_type{1},index_type{1},shape_type{1}},
+        test_type{shape_type{1},dim_type{0},index_type{1},index_type{2},shape_type{1}},
+        test_type{shape_type{10},dim_type{0},index_type{1},index_type{1},shape_type{10}},
+        test_type{shape_type{10},dim_type{0},index_type{1},index_type{2},shape_type{5}},
+        test_type{shape_type{10},dim_type{0},index_type{1},index_type{5},shape_type{2}},
+        test_type{shape_type{10},dim_type{0},index_type{2},index_type{1},shape_type{9}},
+        test_type{shape_type{10},dim_type{0},index_type{2},index_type{2},shape_type{5}},
+        test_type{shape_type{10},dim_type{0},index_type{2},index_type{5},shape_type{2}},
+        test_type{shape_type{10},dim_type{0},index_type{5},index_type{1},shape_type{6}},
+        test_type{shape_type{10},dim_type{0},index_type{5},index_type{2},shape_type{3}},
+        test_type{shape_type{10},dim_type{0},index_type{5},index_type{5},shape_type{2}},
+        test_type{shape_type{5,30,40},dim_type{0},index_type{3},index_type{2},shape_type{2,30,40}},
+        test_type{shape_type{5,30,40},dim_type{1},index_type{5},index_type{1},shape_type{5,26,40}},
+        test_type{shape_type{5,30,40},dim_type{2},index_type{10},index_type{3},shape_type{5,30,11}}
+    );
+    auto pshape = std::get<0>(test_data);
+    auto direction = std::get<1>(test_data);
+    auto window_size = std::get<2>(test_data);
+    auto window_step = std::get<3>(test_data);
+    auto expected = std::get<4>(test_data);
+    auto result = make_slide_shape(pshape,direction,window_size,window_step);
+    REQUIRE(result == expected);
+}
+
 namespace test_reduce_{
 
 struct max

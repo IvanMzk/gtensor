@@ -16,23 +16,51 @@ public:
 
 namespace detail{
 
-template<typename ShT, typename SizeT>
-auto check_reduce_args(const ShT& pshape, const SizeT& direction){
-    using dim_type = SizeT;
-    const dim_type pdim = pshape.size();
-    if (direction >= pdim){
+template<typename ShT, typename DimT>
+auto check_reduce_args(const ShT& shape, const DimT& direction){
+    using dim_type = DimT;
+    const dim_type dim = shape.size();
+    if (direction >= dim){
         throw reduce_exception("bad reduce direction");
     }
 }
-template<typename ShT, typename SizeT>
-auto make_reduce_shape(const ShT& shape, const SizeT& direction){
-    using dim_type = SizeT;
+template<typename ShT, typename DimT>
+auto make_reduce_shape(const ShT& shape, const DimT& direction){
+    using dim_type = DimT;
     using shape_type = ShT;
     dim_type dim = shape.size();
     shape_type res(--dim);
     auto shape_stop = shape.begin()+direction;
     std::copy(shape.begin(), shape_stop, res.begin());
     std::copy(++shape_stop, shape.end(), res.begin()+direction);
+    return res;
+}
+
+template<typename ShT, typename DimT, typename IdxT>
+auto check_slide_args(const ShT& shape, const DimT& direction, const IdxT& window_size){
+    using dim_type = DimT;
+    using index_type = IdxT;
+    const dim_type dim = shape.size();
+    if (direction >= dim){
+        throw reduce_exception("bad slide direction");
+    }
+    index_type direction_size = shape[direction];
+    if (direction_size > 0){
+        if (window_size > direction_size || window_size <= index_type{0}){
+            throw reduce_exception("bad sliding window size");
+        }
+    }
+}
+template<typename ShT, typename DimT, typename IdxT>
+auto make_slide_shape(const ShT& shape, const DimT& direction, const IdxT& window_size, const IdxT& window_step){
+    using index_type = IdxT;
+    using shape_type = ShT;
+    shape_type res(shape);
+    index_type direction_size = shape[direction];
+    if (direction_size != index_type{0}){
+        index_type result_direction_size = (direction_size - window_size)/window_step + index_type{1};
+        res[direction] = result_direction_size;
+    }
     return res;
 }
 
@@ -108,6 +136,7 @@ class walker_reduce_traverser
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     using dim_type = typename config_type::dim_type;
+    using reduce_iterator_type = reduce_iterator<config_type,walker_type>;
 
     const shape_type* shape_;
     walker_type walker_;
@@ -148,11 +177,11 @@ public:
     }
 
     //create reduce iterator
-    auto begin()const{
-        return reduce_iterator<config_type,walker_type>{walker_,reduce_direction_,0};
+    auto begin(){
+        return reduce_iterator_type{walker_,reduce_direction_,0};
     }
-    auto end()const{
-        return reduce_iterator<config_type,walker_type>{walker_,reduce_direction_,(*shape_)[reduce_direction_]};
+    auto end(){
+        return reduce_iterator_type{walker_,reduce_direction_,(*shape_)[reduce_direction_]};
     }
 };
 
