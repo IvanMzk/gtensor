@@ -11,11 +11,15 @@ TEST_CASE("test_check_reduce_args","[test_reduce]")
     using gtensor::reduce_exception;
     using gtensor::detail::check_reduce_args;
 
+    //single reduce direction
+    REQUIRE_NOTHROW(check_reduce_args(shape_type{0},dim_type{0}));
     REQUIRE_NOTHROW(check_reduce_args(shape_type{1},dim_type{0}));
     REQUIRE_NOTHROW(check_reduce_args(shape_type{10},dim_type{0}));
     REQUIRE_NOTHROW(check_reduce_args(shape_type{1,0},dim_type{0}));
+    REQUIRE_NOTHROW(check_reduce_args(shape_type{1,0},dim_type{1}));
     REQUIRE_NOTHROW(check_reduce_args(shape_type{2,3,0},dim_type{0}));
     REQUIRE_NOTHROW(check_reduce_args(shape_type{2,3,0},dim_type{1}));
+    REQUIRE_NOTHROW(check_reduce_args(shape_type{2,3,0},dim_type{2}));
     REQUIRE_NOTHROW(check_reduce_args(shape_type{2,3,4},dim_type{0}));
     REQUIRE_NOTHROW(check_reduce_args(shape_type{2,3,4},dim_type{1}));
     REQUIRE_NOTHROW(check_reduce_args(shape_type{2,3,4},dim_type{2}));
@@ -24,6 +28,42 @@ TEST_CASE("test_check_reduce_args","[test_reduce]")
     REQUIRE_THROWS_AS(check_reduce_args(shape_type{0},dim_type{1}), reduce_exception);
     REQUIRE_THROWS_AS(check_reduce_args(shape_type{1,0},dim_type{2}), reduce_exception);
     REQUIRE_THROWS_AS(check_reduce_args(shape_type{2,3,4},dim_type{3}), reduce_exception);
+
+    //container of directions
+    REQUIRE_NOTHROW(check_reduce_args(shape_type{},std::vector<int>{}));
+    REQUIRE_NOTHROW(check_reduce_args(shape_type{0},std::vector<int>{}));
+    REQUIRE_NOTHROW(check_reduce_args(shape_type{0},std::vector<int>{0}));
+    REQUIRE_NOTHROW(check_reduce_args(shape_type{1},std::vector<int>{}));
+    REQUIRE_NOTHROW(check_reduce_args(shape_type{1},std::vector<int>{0}));
+    REQUIRE_NOTHROW(check_reduce_args(shape_type{10},std::vector<int>{}));
+    REQUIRE_NOTHROW(check_reduce_args(shape_type{10},std::vector<int>{0}));
+    REQUIRE_NOTHROW(check_reduce_args(shape_type{1,0},std::vector<int>{}));
+    REQUIRE_NOTHROW(check_reduce_args(shape_type{1,0},std::vector<int>{0}));
+    REQUIRE_NOTHROW(check_reduce_args(shape_type{1,0},std::vector<int>{1}));
+    REQUIRE_NOTHROW(check_reduce_args(shape_type{1,0},std::vector<int>{0,1}));
+    REQUIRE_NOTHROW(check_reduce_args(shape_type{1,0},std::vector<int>{1,0}));
+    REQUIRE_NOTHROW(check_reduce_args(shape_type{2,3,4},std::vector<int>{}));
+    REQUIRE_NOTHROW(check_reduce_args(shape_type{2,3,4},std::vector<int>{0}));
+    REQUIRE_NOTHROW(check_reduce_args(shape_type{2,3,4},std::vector<int>{1}));
+    REQUIRE_NOTHROW(check_reduce_args(shape_type{2,3,4},std::vector<int>{2}));
+    REQUIRE_NOTHROW(check_reduce_args(shape_type{2,3,4},std::vector<int>{0,1}));
+    REQUIRE_NOTHROW(check_reduce_args(shape_type{2,3,4},std::vector<int>{1,2}));
+    REQUIRE_NOTHROW(check_reduce_args(shape_type{2,3,4},std::vector<int>{1,2,0}));
+    REQUIRE_NOTHROW(check_reduce_args(shape_type{2,3,4},std::vector<int>{0,1,2}));
+
+    REQUIRE_THROWS_AS(check_reduce_args(shape_type{},std::vector<int>{0}), reduce_exception);
+    REQUIRE_THROWS_AS(check_reduce_args(shape_type{},std::vector<int>{0,0}), reduce_exception);
+    REQUIRE_THROWS_AS(check_reduce_args(shape_type{},std::vector<int>{1}), reduce_exception);
+    REQUIRE_THROWS_AS(check_reduce_args(shape_type{},std::vector<int>{1,0}), reduce_exception);
+    REQUIRE_THROWS_AS(check_reduce_args(shape_type{0},std::vector<int>{1}), reduce_exception);
+    REQUIRE_THROWS_AS(check_reduce_args(shape_type{0},std::vector<int>{0,0}), reduce_exception);
+    REQUIRE_THROWS_AS(check_reduce_args(shape_type{10},std::vector<int>{1}), reduce_exception);
+    REQUIRE_THROWS_AS(check_reduce_args(shape_type{10},std::vector<int>{0,1}), reduce_exception);
+    REQUIRE_THROWS_AS(check_reduce_args(shape_type{2,3,4},std::vector<int>{3}), reduce_exception);
+    REQUIRE_THROWS_AS(check_reduce_args(shape_type{2,3,4},std::vector<int>{0,0}), reduce_exception);
+    REQUIRE_THROWS_AS(check_reduce_args(shape_type{2,3,4},std::vector<int>{0,1,0}), reduce_exception);
+    REQUIRE_THROWS_AS(check_reduce_args(shape_type{2,3,4},std::vector<int>{1,2,0,1}), reduce_exception);
+    REQUIRE_THROWS_AS(check_reduce_args(shape_type{2,3,4},std::vector<int>{1,2,3}), reduce_exception);
 }
 
 TEST_CASE("test_make_reduce_shape","[test_reduce]")

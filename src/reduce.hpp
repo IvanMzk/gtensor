@@ -2,6 +2,7 @@
 #define REDUCE_HPP_
 
 #include "type_selector.hpp"
+#include "common.hpp"
 #include "iterator.hpp"
 #include "tensor.hpp"
 
@@ -16,24 +17,50 @@ public:
 
 namespace detail{
 
-template<typename ShT, typename DimT>
-auto check_reduce_args(const ShT& shape, const DimT& direction){
-    using dim_type = DimT;
+template<typename ShT>
+auto check_reduce_args(const ShT& shape, const typename ShT::size_type& direction){
+    using dim_type = typename ShT::size_type;
     const dim_type dim = shape.size();
     if (direction >= dim){
-        throw reduce_exception("bad reduce direction");
+        throw reduce_exception("invalid reduce direction: direction is out of bounds");
     }
 }
-template<typename ShT, typename DimT>
-auto make_reduce_shape(const ShT& shape, const DimT& direction){
-    using dim_type = DimT;
+template<typename ShT, typename Container, std::enable_if_t<detail::is_container_of_type_v<Container, typename ShT::size_type>,int> =0>
+auto check_reduce_args(const ShT& shape, const Container& directions){
+    using dim_type = typename ShT::size_type;
+    const dim_type dim = shape.size();
+    const dim_type directions_number = static_cast<dim_type>(directions.size());
+    if (directions_number > dim){
+        throw reduce_exception("invalid reduce directions: too many directions");
+    }
+    auto it=directions.begin();
+    auto last=directions.end();
+    while(it!=last){
+        const dim_type& direction = static_cast<dim_type>(*it);
+        if (direction >= dim || direction < dim_type{0}){
+            throw reduce_exception("invalid reduce directions: direction is out of bounds");
+        }
+        ++it;
+        if (std::find(it, last, direction) != last){
+            throw reduce_exception("invalid reduce directions: duplicates in directions");
+        }
+    }
+}
+
+template<typename ShT>
+auto make_reduce_shape(const ShT& shape, const typename ShT::size_type& direction){
     using shape_type = ShT;
+    using dim_type = typename ShT::size_type;
     dim_type dim = shape.size();
     shape_type res(--dim);
     auto shape_stop = shape.begin()+direction;
     std::copy(shape.begin(), shape_stop, res.begin());
     std::copy(++shape_stop, shape.end(), res.begin()+direction);
     return res;
+}
+template<typename ShT, typename Container, std::enable_if_t<detail::is_container_of_type_v<Container, typename ShT::size_type>,int> =0>
+auto make_reduce_shape(const ShT& shape, const Container& directions, bool keep_dims){
+
 }
 
 template<typename ShT, typename DimT, typename IdxT>
