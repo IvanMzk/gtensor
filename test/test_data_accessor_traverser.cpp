@@ -409,6 +409,33 @@ TEMPLATE_TEST_CASE("test_walker_traverser_predicate","test_data_accessor",
             value_type{9},
             true
         ),
+        std::make_tuple(
+            storage_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24},
+            shape_type{2,3,4},
+            [](const auto& d){if(d==0||d==2){return false;} return true;},
+            [](auto& tr){tr.to_last(); return true;},
+            shape_type{0,2,0},
+            value_type{9},
+            true
+        ),
+        std::make_tuple(
+            storage_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24},
+            shape_type{2,3,4},
+            [](const auto& d){if(d==0||d==2){return false;} return true;},
+            [](auto& tr){do_prev(tr,1); tr.to_last(); return true;},
+            shape_type{0,2,0},
+            value_type{9},
+            true
+        ),
+        std::make_tuple(
+            storage_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24},
+            shape_type{2,3,4},
+            [](const auto& d){if(d==0||d==2){return false;} return true;},
+            [](auto& tr){do_next(tr,3); tr.to_last(); return true;},
+            shape_type{0,2,0},
+            value_type{9},
+            true
+        ),
         //traverse directions 0,2
         std::make_tuple(
             storage_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24},
@@ -480,6 +507,24 @@ TEMPLATE_TEST_CASE("test_walker_traverser_predicate","test_data_accessor",
             [](auto& tr){do_next(tr,8); return do_prev(tr,5);},
             shape_type{0,0,3},
             value_type{4},
+            true
+        ),
+        std::make_tuple(
+            storage_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24},
+            shape_type{2,3,4},
+            [](const auto& d){if(d==1){return false;} return true;},
+            [](auto& tr){tr.to_last(); return true;},
+            shape_type{1,0,3},
+            value_type{16},
+            true
+        ),
+        std::make_tuple(
+            storage_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24},
+            shape_type{2,3,4},
+            [](const auto& d){if(d==1){return false;} return true;},
+            [](auto& tr){do_next(tr,4); tr.to_last(); return true;},
+            shape_type{1,0,3},
+            value_type{16},
             true
         )
     );

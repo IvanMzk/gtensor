@@ -238,20 +238,20 @@ struct TraverseAllPredicate{};
 template<typename Config, typename Walker, typename Predicate = TraverseAllPredicate>
 class walker_forward_traverser
 {
-protected:
+public:
     using config_type = Config;
-    using walker_type = Walker;
-    using predicate_type = Predicate;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     using dim_type = typename config_type::dim_type;
+protected:
+    using walker_type = Walker;
+    using predicate_type = Predicate;
 
     const shape_type* shape_;
     const dim_type dim_;
     walker_type walker_;
     shape_type index_;
     predicate_type predicate_;
-
 public:
     template<typename Walker_,typename Predicate_>
     walker_forward_traverser(const shape_type& shape__, Walker_&& walker__, Predicate_&& predicate__):
@@ -295,22 +295,21 @@ public:
 template<typename Config, typename Walker, typename Predicate = TraverseAllPredicate>
 class walker_bidirectional_traverser : public walker_forward_traverser<Config, Walker, Predicate>
 {
-protected:
     using walker_forward_traverser_base = walker_forward_traverser<Config, Walker, Predicate>;
-    using typename walker_forward_traverser_base::config_type;
-    using typename walker_forward_traverser_base::walker_type;
+protected:
     using typename walker_forward_traverser_base::predicate_type;
-    using typename walker_forward_traverser_base::shape_type;
-    using typename walker_forward_traverser_base::index_type;
-    using typename walker_forward_traverser_base::dim_type;
     using walker_forward_traverser_base::walker_;
     using walker_forward_traverser_base::dim_;
     using walker_forward_traverser_base::index_;
     using walker_forward_traverser_base::shape_;
     using walker_forward_traverser_base::predicate_;
 
-    index_type overflow_{0};
+    typename walker_forward_traverser_base::index_type overflow_{0};
 public:
+    using typename walker_forward_traverser_base::config_type;
+    using typename walker_forward_traverser_base::dim_type;
+    using typename walker_forward_traverser_base::index_type;
+    using typename walker_forward_traverser_base::shape_type;
     using walker_forward_traverser_base::walker_forward_traverser_base;
 
     bool next(){
@@ -354,26 +353,43 @@ public:
             return false;
         }
     }
+    void to_last(){
+        overflow_ = index_type{0};
+        dim_type direction{dim_};
+        if constexpr (std::is_same_v<predicate_type,TraverseAllPredicate>){
+            walker_.reset_back();
+            while(direction!=dim_type{0}){
+                --direction;
+                walker_.reset(direction);
+                index_[direction] = (*shape_)[direction]-index_type{1};
+            }
+        }else{
+            while(direction!=dim_type{0}){
+                --direction;
+                if (predicate_(direction)){
+                    auto dec_direction_size = (*shape_)[direction]-index_type{1};
+                    walker_.walk(direction, dec_direction_size-index_[direction]);
+                    index_[direction] = dec_direction_size;
+                }
+            }
+        }
+    }
 };
 
 template<typename CfgT, typename Walker>
 class walker_random_access_traverser : public walker_bidirectional_traverser<CfgT, Walker, TraverseAllPredicate>
 {
     using walker_bidirectional_traverser_base = walker_bidirectional_traverser<CfgT, Walker, TraverseAllPredicate>;
-    using typename walker_bidirectional_traverser_base::config_type;
-    using typename walker_bidirectional_traverser_base::walker_type;
-    using typename walker_bidirectional_traverser_base::predicate_type;
-    using typename walker_bidirectional_traverser_base::shape_type;
-    using typename walker_bidirectional_traverser_base::index_type;
-    using typename walker_bidirectional_traverser_base::dim_type;
     using strides_div_type = typename detail::strides_div_traits<CfgT>::type;
     using walker_bidirectional_traverser_base::walker_;
-    using walker_bidirectional_traverser_base::dim_;
     using walker_bidirectional_traverser_base::index_;
     using walker_bidirectional_traverser_base::overflow_;
-    using walker_bidirectional_traverser_base::predicate_;
     const strides_div_type* strides_;
 public:
+    using typename walker_bidirectional_traverser_base::config_type;
+    using typename walker_bidirectional_traverser_base::dim_type;
+    using typename walker_bidirectional_traverser_base::index_type;
+    using typename walker_bidirectional_traverser_base::shape_type;
     template<typename Walker_>
     walker_random_access_traverser(const shape_type& shape__, const strides_div_type& strides__ ,Walker_&& walker__):
         walker_bidirectional_traverser_base(shape__, std::forward<Walker_>(walker__)),
