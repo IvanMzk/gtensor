@@ -229,14 +229,19 @@ private:
     indexer_type indexer;
 };
 
+//default traverse predicate
+struct TraverseAllPredicate{};
+
 //walker_traverser implement algorithms to iterate walker using given shape
 //traverse shape may be not native walker shape but shapes must be broadcastable
-template<typename Config, typename Walker>
+//Predicate specify what directions should be traversed
+template<typename Config, typename Walker, typename Predicate = TraverseAllPredicate>
 class walker_forward_traverser
 {
 protected:
     using config_type = Config;
     using walker_type = Walker;
+    using predicate_type = Predicate;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     using dim_type = typename config_type::dim_type;
@@ -245,14 +250,20 @@ protected:
     const dim_type dim_;
     walker_type walker_;
     shape_type index_;
+    predicate_type predicate_;
 
 public:
-    template<typename Walker_>
-    walker_forward_traverser(const shape_type& shape__, Walker_&& walker__):
+    template<typename Walker_,typename Predicate_>
+    walker_forward_traverser(const shape_type& shape__, Walker_&& walker__, Predicate_&& predicate__):
         shape_{&shape__},
         dim_(shape__.size()),
         walker_{std::forward<Walker_>(walker__)},
-        index_(dim_, index_type{0})
+        index_(dim_, index_type{0}),
+        predicate_{std::forward<Predicate_>(predicate__)}
+    {}
+    template<typename P = Predicate, typename Walker_, std::enable_if_t<std::is_same_v<P,TraverseAllPredicate>,int> = 0>
+    walker_forward_traverser(const shape_type& shape__, Walker_&& walker__):
+        walker_forward_traverser(shape__, std::forward<Walker_>(walker__), TraverseAllPredicate{})
     {}
     const auto& index()const{return index_;}
     const auto& walker()const{return walker_;}
@@ -261,7 +272,14 @@ public:
         auto direction = dim_;
         auto index_it = index_.end();
         while(direction!=dim_type{0}){
-            if (*--index_it == (*shape_)[--direction]-index_type{1}){   //direction at their max
+            --index_it;
+            --direction;
+            if constexpr (!std::is_same_v<predicate_type,TraverseAllPredicate>){
+                if (predicate_(direction) == false){    //traverse directions with true predicate only
+                    continue;
+                }
+            }
+            if (*index_it == (*shape_)[direction]-index_type{1}){   //direction at their max
                 *index_it = index_type{0};
                 walker_.reset_back(direction);
             }else{  //can next on direction
@@ -274,13 +292,14 @@ public:
     }
 };
 
-template<typename Config, typename Walker>
-class walker_bidirectional_traverser : public walker_forward_traverser<Config, Walker>
+template<typename Config, typename Walker, typename Predicate = TraverseAllPredicate>
+class walker_bidirectional_traverser : public walker_forward_traverser<Config, Walker, Predicate>
 {
 protected:
-    using walker_forward_traverser_base = walker_forward_traverser<Config, Walker>;
+    using walker_forward_traverser_base = walker_forward_traverser<Config, Walker, Predicate>;
     using typename walker_forward_traverser_base::config_type;
     using typename walker_forward_traverser_base::walker_type;
+    using typename walker_forward_traverser_base::predicate_type;
     using typename walker_forward_traverser_base::shape_type;
     using typename walker_forward_traverser_base::index_type;
     using typename walker_forward_traverser_base::dim_type;
@@ -288,6 +307,7 @@ protected:
     using walker_forward_traverser_base::dim_;
     using walker_forward_traverser_base::index_;
     using walker_forward_traverser_base::shape_;
+    using walker_forward_traverser_base::predicate_;
 
     index_type overflow_{0};
 public:
@@ -312,6 +332,11 @@ public:
         while(direction!=dim_type{0}){
             --index_it;
             --direction;
+            if constexpr (!std::is_same_v<predicate_type,TraverseAllPredicate>){
+                if (predicate_(direction) == false){    //traverse directions with true predicate only
+                    continue;
+                }
+            }
             if (*index_it == index_type{0}){   //direction at their min
                 *index_it = (*shape_)[direction]-index_type{1};
                 walker_.reset(direction);
@@ -332,11 +357,12 @@ public:
 };
 
 template<typename CfgT, typename Walker>
-class walker_random_access_traverser : public walker_bidirectional_traverser<CfgT, Walker>
+class walker_random_access_traverser : public walker_bidirectional_traverser<CfgT, Walker, TraverseAllPredicate>
 {
-    using walker_bidirectional_traverser_base = walker_bidirectional_traverser<CfgT, Walker>;
+    using walker_bidirectional_traverser_base = walker_bidirectional_traverser<CfgT, Walker, TraverseAllPredicate>;
     using typename walker_bidirectional_traverser_base::config_type;
     using typename walker_bidirectional_traverser_base::walker_type;
+    using typename walker_bidirectional_traverser_base::predicate_type;
     using typename walker_bidirectional_traverser_base::shape_type;
     using typename walker_bidirectional_traverser_base::index_type;
     using typename walker_bidirectional_traverser_base::dim_type;
@@ -345,14 +371,15 @@ class walker_random_access_traverser : public walker_bidirectional_traverser<Cfg
     using walker_bidirectional_traverser_base::dim_;
     using walker_bidirectional_traverser_base::index_;
     using walker_bidirectional_traverser_base::overflow_;
+    using walker_bidirectional_traverser_base::predicate_;
     const strides_div_type* strides_;
 public:
     template<typename Walker_>
     walker_random_access_traverser(const shape_type& shape__, const strides_div_type& strides__ ,Walker_&& walker__):
-        walker_bidirectional_traverser_base(shape__,walker__),
+        walker_bidirectional_traverser_base(shape__, std::forward<Walker_>(walker__)),
         strides_{&strides__}
     {}
-    //in must be in range [0,size-1], where size = make_size(shape__)
+    //n must be in range [0,size-1], where size = make_size(shape__)
     void move(index_type n){
         walker_.reset_back();
         overflow_ = index_type{0};
