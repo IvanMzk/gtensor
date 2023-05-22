@@ -189,7 +189,7 @@ template<typename Core, typename Descriptor, typename ShT, typename IdxT>
 inline auto create_broadcast_iterator(Core& t, const Descriptor& descriptor, ShT&& shape, const IdxT& pos){
     using config_type = typename Core::config_type;
     using dim_type = typename config_type::dim_type;
-    dim_type max_dim = std::max(descriptor.dim(), shape.size());
+    dim_type max_dim = std::max(descriptor.dim(), detail::make_dim(shape));
     auto strides_div = make_strides_div<config_type>(shape);
     return broadcast_iterator<config_type, decltype(create_walker(t,descriptor,max_dim))>{
         create_walker(t,descriptor,max_dim),
@@ -218,7 +218,7 @@ template<typename Core, typename Descriptor, typename ShT, typename IdxT>
 inline auto create_reverse_broadcast_iterator(Core& t, const Descriptor& descriptor, ShT&& shape, const IdxT& pos){
     using config_type = typename Core::config_type;
     using dim_type = typename config_type::dim_type;
-    dim_type max_dim = std::max(descriptor.dim(), shape.size());
+    dim_type max_dim = std::max(descriptor.dim(), detail::make_dim(shape));
     auto strides_div = make_strides_div<config_type>(shape);
     return reverse_broadcast_iterator<config_type, decltype(create_walker(t,descriptor,max_dim))>{
         create_walker(t,descriptor,max_dim),

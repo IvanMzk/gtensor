@@ -151,7 +151,7 @@ TEMPLATE_TEST_CASE("test_walker_indexer","test_data_accessor",
         auto adapted_strides = gtensor::detail::make_adapted_strides(shape, strides);
         auto reset_strides = gtensor::detail::make_reset_strides(shape, strides);
         auto strides_div = gtensor::detail::make_dividers<config_type>(strides);
-        dim_type dim = shape.size();
+        dim_type dim = gtensor::detail::make_dim(shape);
         indexer_type indexer{elements};
         walker_type walker{adapted_strides, reset_strides, offset, indexer, dim};
         walker_indexer_type walker_indexer{strides_div, walker};

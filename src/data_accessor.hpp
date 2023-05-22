@@ -163,7 +163,7 @@ public:
         reset_strides_{&reset_strides__},
         offset_{offset__},
         cursor_{offset__},
-        dim_offset_{max_dim__ - adapted_strides__.size()}
+        dim_offset_{max_dim__ - detail::make_dim(adapted_strides__)}
     {}
     //direction argument must be in range [0,max_dim_-1]
     void walk(const dim_type& direction, const index_type& steps){
@@ -256,7 +256,7 @@ public:
     template<typename Walker_,typename Predicate_>
     walker_forward_traverser(const shape_type& shape__, Walker_&& walker__, Predicate_&& predicate__):
         shape_{&shape__},
-        dim_(shape__.size()),
+        dim_(detail::make_dim(shape__)),
         walker_{std::forward<Walker_>(walker__)},
         index_(dim_, index_type{0}),
         predicate_{std::forward<Predicate_>(predicate__)}

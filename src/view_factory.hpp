@@ -73,14 +73,14 @@ inline IdxT make_slice_view_cstride_element(const IdxT& pstride_element, const S
     return pstride_element*subs.step();
 }
 template<typename ShT, typename Container>
-inline typename ShT::size_type make_slice_view_dim(const ShT& pshape, const Container& subs){
-    using dim_type = typename ShT::size_type;
-    dim_type pdim = pshape.size();
+inline typename ShT::difference_type make_slice_view_dim(const ShT& pshape, const Container& subs){
+    using dim_type = typename ShT::difference_type;
+    dim_type pdim = detail::make_dim(pshape);
     dim_type reduce_number = std::count_if(subs.begin(),subs.end(),[](const auto& subs_){return subs_.is_reduce();});
     return pdim - reduce_number;
 }
-template<typename ShT, typename SizeT, typename Container, typename ElementMaker>
-inline ShT make_slice_view_shape_cstrides(const ShT& pshape_or_pstrides, const SizeT& res_dim, const Container& subs, ElementMaker element_maker){
+template<typename ShT, typename DimT, typename Container, typename ElementMaker>
+inline ShT make_slice_view_shape_cstrides(const ShT& pshape_or_pstrides, const DimT& res_dim, const Container& subs, ElementMaker element_maker){
     using index_type = typename ShT::value_type;
     ShT res(res_dim, index_type{});
     auto it = pshape_or_pstrides.begin();
@@ -100,9 +100,9 @@ inline ShT make_slice_view_shape_cstrides(const ShT& pshape_or_pstrides, const S
 //check args
 template<typename ShT, typename Container>
 inline void check_slice_view_args(const ShT& pshape, const Container& subs){
-    using dim_type = typename ShT::size_type;
+    using dim_type = typename ShT::difference_type;
     using index_type = typename ShT::value_type;
-    const dim_type pdim = pshape.size();
+    const dim_type pdim = detail::make_dim(pshape);
     const dim_type subs_number = subs.size();
     if (subs_number > pdim){
         throw subscript_exception("invalid subscripts number");
@@ -120,13 +120,13 @@ inline void check_slice_view_args(const ShT& pshape, const Container& subs){
     }
 }
 //slice view shape
-template<typename ShT, typename SizeT, typename Container>
-inline ShT make_slice_view_shape(const ShT& pshape, const SizeT& res_dim, const Container& subs){
+template<typename ShT, typename DimT, typename Container>
+inline ShT make_slice_view_shape(const ShT& pshape, const DimT& res_dim, const Container& subs){
     return make_slice_view_shape_cstrides(pshape, res_dim, subs, [](const auto& pelement, const auto& subs_){return make_slice_view_shape_element(pelement,subs_);});
 }
 //slice view cstrides
-template<typename ShT, typename SizeT, typename Container>
-inline ShT make_slice_view_cstrides(const ShT& pstrides, const SizeT& res_dim, const Container& subs){
+template<typename ShT, typename DimT, typename Container>
+inline ShT make_slice_view_cstrides(const ShT& pstrides, const DimT& res_dim, const Container& subs){
     return make_slice_view_shape_cstrides(pstrides, res_dim, subs, [](const auto& pelement, const auto& subs_){return make_slice_view_cstride_element(pelement,subs_);});
 }
 //slice view offset
@@ -146,8 +146,8 @@ inline typename ShT::value_type make_slice_view_offset(const ShT& pshape, const 
     }
     return res;
 }
-template<typename ShT, typename SizeT, typename SliceT>
-inline typename ShT::value_type make_slice_view_offset_direction(const ShT& pshape, const ShT& pstrides, const SizeT& direction, const SliceT& subs){
+template<typename ShT, typename DimT, typename SliceT>
+inline typename ShT::value_type make_slice_view_offset_direction(const ShT& pshape, const ShT& pstrides, const DimT& direction, const SliceT& subs){
     return pstrides[direction]*make_slice_start(pshape[direction],subs);
 }
 //transpose view helpers
@@ -170,9 +170,9 @@ template<typename ShT, typename Container>
 ShT make_view_transpose_strides(const ShT& pstrides, const Container& subs){
     return make_transpose_view_shape(pstrides, subs);
 }
-template<typename SizeT, typename Container>
-inline void check_transpose_args(const SizeT& dim, const Container& subs){
-    using dim_type = SizeT;
+template<typename DimT, typename Container>
+inline void check_transpose_args(const DimT& dim, const Container& subs){
+    using dim_type = DimT;
     if (!std::empty(subs)){
         const dim_type subs_number = subs.size();
         if (dim!=subs_number){
@@ -215,8 +215,8 @@ IdxT make_subdim_index(const IdxT& pshape_element, const Subs& subs){
     index_type subs_{subs};
     return subs_ < index_type{0} ? pshape_element+subs_:subs_;
 }
-template<typename ShT, typename SizeT>
-inline ShT make_subdim_view_shape(const ShT& pshape, const SizeT& subs_number){
+template<typename ShT, typename DimT>
+inline ShT make_subdim_view_shape(const ShT& pshape, const DimT& subs_number){
     return ShT(pshape.begin()+subs_number, pshape.end());
 }
 template<typename ShT, typename Container>
@@ -233,9 +233,9 @@ inline typename ShT::value_type make_subdim_view_offset(const ShT& pshape, const
 template<typename ShT, typename Container>
 inline void check_subdim_args(const ShT& pshape, const Container& subs){
     using index_type = typename ShT::value_type;
-    using dim_type = typename ShT::size_type;
+    using dim_type = typename ShT::difference_type;
     const dim_type& subs_number = subs.size();
-    const dim_type& pdim = pshape.size();
+    const dim_type& pdim = detail::make_dim(pshape);
     if (subs_number > pdim){
         throw subscript_exception("subscripts number exceeds dim");
     }
@@ -304,8 +304,8 @@ inline auto check_reshape_args(const IdxT& psize, const Container& subs){
     }
 }
 //index_mapping_view helpers
-template<typename ShT, typename SizeT>
-inline auto mapping_view_chunk_size(const ShT& pshape, const SizeT& subs_dim_or_subs_number){
+template<typename ShT, typename DimT>
+inline auto mapping_view_chunk_size(const ShT& pshape, const DimT& subs_dim_or_subs_number){
     using index_type = typename ShT::value_type;
     return std::accumulate(pshape.begin()+subs_dim_or_subs_number,pshape.end(),index_type(1),std::multiplies<index_type>{});
 }
@@ -314,9 +314,9 @@ inline auto mapping_view_chunk_size(const ShT& pshape, const SizeT& subs_dim_or_
 //check of subscripts indeces defered to place where subscripts should be iterated (result fill or mapping descriptor making)
 template<typename ShT, typename...ShTs>
 inline void check_index_mapping_view_subs(const ShT& pshape, const ShTs&...subs_shapes){
-    using dim_type = typename ShT::size_type;
+    using dim_type = typename ShT::difference_type;
     using index_type = typename ShT::value_type;
-    const dim_type pdim = pshape.size();
+    const dim_type pdim = detail::make_dim(pshape);
     const dim_type subs_number = sizeof...(ShTs);
     if (pdim == dim_type{0}){
         throw subscript_exception("can't subscript 0-dim tensor");
@@ -335,13 +335,14 @@ inline void check_index_mapping_view_subs(const ShT& pshape, const ShTs&...subs_
 
 template<typename ShT, typename SizeT>
 inline ShT make_index_mapping_view_shape(const ShT& pshape, const ShT& subs_shape, const SizeT& subs_number){
+    using dim_type = typename ShT::difference_type;
     using shape_type = ShT;
-    using dim_type = SizeT;
-    auto pdim = static_cast<dim_type>(pshape.size());
-    auto subs_dim = static_cast<dim_type>(subs_shape.size());
-    auto res = shape_type(pdim - subs_number + subs_dim);
+    const dim_type pdim = detail::make_dim(pshape);
+    const dim_type subs_dim = detail::make_dim(subs_shape);
+    const dim_type subs_number_ = static_cast<dim_type>(subs_number);
+    shape_type res(pdim - subs_number_ + subs_dim);
     std::copy(subs_shape.begin(), subs_shape.end(), res.begin());
-    std::copy(pshape.begin()+subs_number, pshape.end(), res.begin()+subs_dim);
+    std::copy(pshape.begin()+subs_number_, pshape.end(), res.begin()+subs_dim);
     return res;
 }
 
@@ -356,7 +357,7 @@ inline auto check_index(const IdxT& idx, const IdxT& shape_element){
 
 template<typename ShT, typename IndexMap,  typename...SubsIt>
 auto fill_index_map(const ShT& pshape, const ShT& pstrides, IndexMap& index_map, SubsIt...subs_traverser){
-    using dim_type = typename ShT::size_type;
+    using dim_type = typename ShT::difference_type;
     using index_type = typename ShT::value_type;
 
     const dim_type subs_number = sizeof...(SubsIt);
@@ -386,9 +387,9 @@ auto fill_index_map(const ShT& pshape, const ShT& pstrides, IndexMap& index_map,
 //helpers for making bool_mapping_view
 template<typename ShT>
 auto check_bool_mapping_view_subs(const ShT& pshape, const ShT& subs_shape){
-    using dim_type = typename ShT::size_type;
-    dim_type pdim = pshape.size();
-    dim_type subs_dim = subs_shape.size();
+    using dim_type = typename ShT::difference_type;
+    const dim_type pdim = detail::make_dim(pshape);
+    const dim_type subs_dim = detail::make_dim(subs_shape);
     if (pdim == dim_type{0}){
         throw subscript_exception("can't subscript 0-dim tensor");
     }
@@ -403,14 +404,16 @@ auto check_bool_mapping_view_subs(const ShT& pshape, const ShT& subs_shape){
     }
 }
 
-template<typename ShT, typename SizeT>
-inline ShT make_bool_mapping_view_shape(const ShT& pshape, const typename ShT::value_type& subs_trues_number, const SizeT& subs_dim){
+template<typename ShT, typename IdxT, typename DimT>
+inline ShT make_bool_mapping_view_shape(const ShT& pshape, const IdxT& subs_trues_number, const DimT& subs_dim){
+    using dim_type = typename ShT::difference_type;
+    using index_type = typename ShT::value_type;
     using shape_type = ShT;
-    using dim_type = SizeT;
-    dim_type pdim = pshape.size();
-    auto res = shape_type(pdim - subs_dim + dim_type{1});
+    const dim_type pdim = detail::make_dim(pshape);
+    const dim_type subs_dim_ = static_cast<dim_type>(subs_dim);
+    auto res = shape_type(pdim - subs_dim_ + dim_type{1});
     auto res_it = res.begin();
-    *res_it = subs_trues_number;
+    *res_it = static_cast<index_type>(subs_trues_number);
     ++res_it;
     std::copy(pshape.begin()+subs_dim, pshape.end(), res_it);
     return res;
@@ -419,7 +422,7 @@ inline ShT make_bool_mapping_view_shape(const ShT& pshape, const typename ShT::v
 template<typename ShT, typename IndexContainer, typename Subs, typename SubsIt>
 auto fill_bool_map(const ShT& pshape, const ShT& pstrides, IndexContainer& index_container, const Subs& subs, SubsIt subs_traverser){
     using index_type = typename ShT::value_type;
-    using dim_type = typename ShT::size_type;
+    using dim_type = typename ShT::difference_type;
 
     index_type trues_number{0};
     dim_type subs_dim = subs.dim();
@@ -593,7 +596,7 @@ class view_factory
         const auto& pshape = parent.shape();
         detail::check_index_mapping_view_subs(pshape, subs.shape()...);
         const auto subs_shape = detail::make_broadcast_shape<shape_type>(subs.shape()...);
-        const auto subs_dim = subs_shape.size();
+        const auto subs_dim = detail::make_dim(subs_shape);
         auto res_shape = detail::make_index_mapping_view_shape(pshape, subs_shape, sizeof...(Subs));
         auto res_size = detail::make_size(res_shape);
         index_map_type index_map(res_size);

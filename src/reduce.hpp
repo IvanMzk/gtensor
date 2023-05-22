@@ -18,17 +18,17 @@ public:
 namespace detail{
 
 template<typename ShT>
-auto check_reduce_args(const ShT& shape, const typename ShT::size_type& direction){
-    using dim_type = typename ShT::size_type;
-    const dim_type dim = shape.size();
+auto check_reduce_args(const ShT& shape, const typename ShT::difference_type& direction){
+    using dim_type = typename ShT::difference_type;
+    const dim_type dim = detail::make_dim(shape);
     if (direction >= dim){
         throw reduce_exception("invalid reduce direction: direction is out of bounds");
     }
 }
-template<typename ShT, typename Container, std::enable_if_t<detail::is_container_of_type_v<Container, typename ShT::size_type>,int> =0>
+template<typename ShT, typename Container, std::enable_if_t<detail::is_container_of_type_v<Container, typename ShT::difference_type>,int> =0>
 auto check_reduce_args(const ShT& shape, const Container& directions){
-    using dim_type = typename ShT::size_type;
-    const dim_type dim = shape.size();
+    using dim_type = typename ShT::difference_type;
+    const dim_type dim = detail::make_dim(shape);
     const dim_type directions_number = static_cast<dim_type>(directions.size());
     if (directions_number > dim){
         throw reduce_exception("invalid reduce directions: too many directions");
@@ -48,16 +48,16 @@ auto check_reduce_args(const ShT& shape, const Container& directions){
 }
 
 template<typename ShT>
-auto make_reduce_shape(const ShT& shape, const typename ShT::size_type& direction, bool keep_dims){
+auto make_reduce_shape(const ShT& shape, const typename ShT::difference_type& direction, bool keep_dims){
     using shape_type = ShT;
-    using dim_type = typename ShT::size_type;
+    using dim_type = typename ShT::difference_type;
     using index_type = typename ShT::value_type;
     if (keep_dims){
         shape_type res(shape);
         res[direction] = index_type{1};
         return res;
     }else{
-        dim_type dim = shape.size();
+        dim_type dim = detail::make_dim(shape);
         shape_type res(--dim);
         auto shape_stop = shape.begin()+direction;
         std::copy(shape.begin(), shape_stop, res.begin());
@@ -65,13 +65,13 @@ auto make_reduce_shape(const ShT& shape, const typename ShT::size_type& directio
         return res;
     }
 }
-template<typename ShT, typename Container, std::enable_if_t<detail::is_container_of_type_v<Container, typename ShT::size_type>,int> =0>
+template<typename ShT, typename Container, std::enable_if_t<detail::is_container_of_type_v<Container, typename ShT::difference_type>,int> =0>
 auto make_reduce_shape(const ShT& shape, const Container& directions, bool keep_dims){
     using shape_type = ShT;
-    using dim_type = typename ShT::size_type;
+    using dim_type = typename ShT::difference_type;
     using index_type = typename ShT::value_type;
     using directions_value_type = typename Container::value_type;
-    const dim_type dim = shape.size();
+    const dim_type dim = detail::make_dim(shape);
     const dim_type directions_number = static_cast<dim_type>(directions.size());
     if (keep_dims){
         if (directions_number == dim_type{0}){  //all directions
@@ -105,7 +105,7 @@ template<typename ShT, typename DimT, typename IdxT>
 auto check_slide_args(const ShT& shape, const DimT& direction, const IdxT& window_size){
     using dim_type = DimT;
     using index_type = IdxT;
-    const dim_type dim = shape.size();
+    const dim_type dim = detail::make_dim(shape);
     if (direction >= dim){
         throw reduce_exception("bad slide direction");
     }
@@ -130,13 +130,13 @@ auto make_slide_shape(const ShT& shape, const DimT& direction, const IdxT& windo
 }
 
 template<typename ShT>
-auto make_slide_direction_size(const ShT& shape, const typename ShT::size_type& direction){
+auto make_slide_direction_size(const ShT& shape, const typename ShT::difference_type& direction){
     return shape[direction];
 }
 
 template<typename ShT, typename Directions>
 auto make_reduce_directions_size(const ShT& shape, const typename ShT::value_type& size, const Directions& directions){
-    using dim_type = typename ShT::size_type;
+    using dim_type = typename ShT::difference_type;
     using index_type = typename ShT::value_type;
     if constexpr (detail::is_container_of_type_v<Directions,dim_type>){
         if (directions.size()==0){

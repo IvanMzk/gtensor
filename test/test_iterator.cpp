@@ -150,7 +150,7 @@ TEMPLATE_TEST_CASE("test_random_access_iterator_difference","[test_iterator]",
             auto adapted_strides = gtensor::detail::make_adapted_strides(shape, strides);
             auto reset_strides = gtensor::detail::make_reset_strides(shape, strides);
             index_type offset{0};
-            dim_type max_dim = shape.size();
+            dim_type max_dim = gtensor::detail::make_dim(shape);
             indexer_type indexer{storage};
             walker_type walker{adapted_strides,reset_strides,offset,indexer,max_dim};
             auto first = iterator_type{walker, shape, strides_div, 0};
@@ -177,7 +177,7 @@ TEMPLATE_TEST_CASE("test_random_access_iterator_difference","[test_iterator]",
             auto adapted_strides = gtensor::detail::make_adapted_strides(shape, strides);
             auto reset_strides = gtensor::detail::make_reset_strides(shape, strides);
             index_type offset{0};
-            dim_type max_dim = shape.size();
+            dim_type max_dim = gtensor::detail::make_dim(shape);
             indexer_type indexer{storage};
             walker_type walker{adapted_strides,reset_strides,offset,indexer,max_dim};
             auto first = iterator_type{walker, shape, strides_div, size};
@@ -284,7 +284,7 @@ TEMPLATE_TEST_CASE("test_random_access_iterator_compare","[test_iterator]",
             auto adapted_strides = gtensor::detail::make_adapted_strides(shape, strides);
             auto reset_strides = gtensor::detail::make_reset_strides(shape, strides);
             index_type offset{0};
-            dim_type max_dim = shape.size();
+            dim_type max_dim = gtensor::detail::make_dim(shape);
             indexer_type indexer{storage};
             walker_type walker{adapted_strides,reset_strides,offset,indexer,max_dim};
             auto first = iterator_type{walker, shape, strides_div, 0};
@@ -311,7 +311,7 @@ TEMPLATE_TEST_CASE("test_random_access_iterator_compare","[test_iterator]",
             auto adapted_strides = gtensor::detail::make_adapted_strides(shape, strides);
             auto reset_strides = gtensor::detail::make_reset_strides(shape, strides);
             index_type offset{0};
-            dim_type max_dim = shape.size();
+            dim_type max_dim = gtensor::detail::make_dim(shape);
             indexer_type indexer{storage};
             walker_type walker{adapted_strides,reset_strides,offset,indexer,max_dim};
             auto first = iterator_type{walker, shape, strides_div, size};
@@ -432,7 +432,7 @@ TEMPLATE_TEST_CASE("test_random_access_iterator_dereference","[test_iterator]",
             auto adapted_strides = gtensor::detail::make_adapted_strides(shape, strides);
             auto reset_strides = gtensor::detail::make_reset_strides(shape, strides);
             index_type offset{0};
-            dim_type max_dim = shape.size();
+            dim_type max_dim = gtensor::detail::make_dim(shape);
             indexer_type indexer{storage};
             walker_type walker{adapted_strides,reset_strides,offset,indexer,max_dim};
             auto first = iterator_type{walker, shape, strides_div, 0};
@@ -458,7 +458,7 @@ TEMPLATE_TEST_CASE("test_random_access_iterator_dereference","[test_iterator]",
             auto adapted_strides = gtensor::detail::make_adapted_strides(shape, strides);
             auto reset_strides = gtensor::detail::make_reset_strides(shape, strides);
             index_type offset{0};
-            dim_type max_dim = shape.size();
+            dim_type max_dim = gtensor::detail::make_dim(shape);
             indexer_type indexer{storage};
             walker_type walker{adapted_strides,reset_strides,offset,indexer,max_dim};
             auto first = iterator_type{walker, shape, strides_div, size};
@@ -513,7 +513,7 @@ TEMPLATE_TEST_CASE("test_gtensor_iterator_std_reverse_adapter","[test_iterator]"
         auto adapted_strides = gtensor::detail::make_adapted_strides(shape, strides);
         auto reset_strides = gtensor::detail::make_reset_strides(shape, strides);
         index_type offset{0};
-        dim_type max_dim = shape.size();
+        dim_type max_dim = gtensor::detail::make_dim(shape);
         walker_type walker{adapted_strides,reset_strides,offset,indexer,max_dim};
         auto first = iterator_type{walker, shape, strides_div, 0};
         auto last = iterator_type{walker, shape, strides_div, size};
@@ -577,7 +577,7 @@ TEMPLATE_TEST_CASE("test_broadcast_iterator_dereference","[test_iterator]",
     auto adapted_strides = gtensor::detail::make_adapted_strides(shape, strides);
     auto reset_strides = gtensor::detail::make_reset_strides(shape, strides);
     index_type offset{0};
-    dim_type max_dim = std::max(broadcast_shape.size(),shape.size());
+    dim_type max_dim = std::max(gtensor::detail::make_dim(broadcast_shape),gtensor::detail::make_dim(shape));
     indexer_type indexer{storage};
     walker_type walker{adapted_strides,reset_strides,offset,indexer,max_dim};
     auto broadcast_strides_div = gtensor::detail::make_strides_div<config_type>(broadcast_shape);

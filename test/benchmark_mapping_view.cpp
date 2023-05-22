@@ -24,7 +24,7 @@ auto make_test_tensor(T&& t){return TestT<std::decay_t<T>>{t};}
 
 template<typename ShT>
 auto check_bool_mapping_view_subs(const ShT& pshape, const ShT& subs_shape){
-    using dim_type = typename ShT::size_type;
+    using dim_type = typename ShT::difference_type;
     dim_type pdim = pshape.size();
     dim_type subs_dim = subs_shape.size();
     if (subs_dim > pdim){
@@ -61,7 +61,7 @@ template<typename ShT, typename ParentIndexer, typename ResIt, typename Subs>
 auto fill_bool_mapping_view(const ShT& pshape, const ShT& pstrides, ParentIndexer pindexer, ResIt res_it, const Subs& subs){
     using config_type = typename Subs::config_type;
     using index_type = typename ShT::value_type;
-    using dim_type = typename ShT::size_type;
+    using dim_type = typename ShT::difference_type;
 
     dim_type subs_dim = subs.dim();
     index_type block_size = mapping_view_block_size(pshape, subs_dim);
@@ -134,7 +134,7 @@ template<typename ShT, typename ParentIndexer, typename ResIt, typename Subs>
 auto fill_bool_mapping_view(const ShT& pshape, const ShT& pstrides, ParentIndexer pindexer, ResIt res_it, const Subs& subs){
     using config_type = typename Subs::config_type;
     using index_type = typename ShT::value_type;
-    using dim_type = typename ShT::size_type;
+    using dim_type = typename ShT::difference_type;
 
     dim_type subs_dim = subs.dim();
     index_type block_size = mapping_view_block_size(pshape, subs_dim);

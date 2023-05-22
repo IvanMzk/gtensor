@@ -90,7 +90,7 @@ TEMPLATE_TEST_CASE("test_walker_traverser_next","test_data_accessor",
             auto adapted_strides = make_adapted_strides(shape,strides);
             auto reset_strides = make_reset_strides(shape,strides);
             index_type offset{0};
-            dim_type max_dim = shape.size();
+            dim_type max_dim = gtensor::detail::make_dim(shape);
             auto walker =  walker_type{adapted_strides, reset_strides, offset, indexer, max_dim};
             auto traverser = traverser_type{shape, walker};
             test(t,traverser);
@@ -108,7 +108,7 @@ TEMPLATE_TEST_CASE("test_walker_traverser_next","test_data_accessor",
             auto adapted_strides = make_adapted_strides(shape,strides);
             auto reset_strides = make_reset_strides(shape,strides);
             index_type offset{0};
-            dim_type max_dim = shape.size();
+            dim_type max_dim = gtensor::detail::make_dim(shape);
             auto walker =  walker_type{adapted_strides, reset_strides, offset, indexer, max_dim};
             auto traverser = traverser_type{shape, walker};
             test(t,traverser);
@@ -200,7 +200,7 @@ TEMPLATE_TEST_CASE("test_walker_traverser_prev","test_data_accessor",
             auto adapted_strides = make_adapted_strides(shape,strides);
             auto reset_strides = make_reset_strides(shape,strides);
             index_type offset{0};
-            dim_type max_dim = shape.size();
+            dim_type max_dim = gtensor::detail::make_dim(shape);
             auto walker =  walker_type{adapted_strides, reset_strides, offset, indexer, max_dim};
             auto traverser = traverser_type{shape, walker};
             test(t,traverser);
@@ -218,7 +218,7 @@ TEMPLATE_TEST_CASE("test_walker_traverser_prev","test_data_accessor",
             auto adapted_strides = make_adapted_strides(shape,strides);
             auto reset_strides = make_reset_strides(shape,strides);
             index_type offset{0};
-            dim_type max_dim = shape.size();
+            dim_type max_dim = gtensor::detail::make_dim(shape);
             auto walker =  walker_type{adapted_strides, reset_strides, offset, indexer, max_dim};
             auto strides_div = make_dividers<config_type>(strides);
             auto traverser = traverser_type{shape, strides_div, walker};
@@ -311,7 +311,7 @@ TEMPLATE_TEST_CASE("test_walker_traverser_move","test_data_accessor",
             auto adapted_strides = make_adapted_strides(shape,strides);
             auto reset_strides = make_reset_strides(shape,strides);
             index_type offset{0};
-            dim_type max_dim = shape.size();
+            dim_type max_dim = gtensor::detail::make_dim(shape);
             auto walker =  walker_type{adapted_strides, reset_strides, offset, indexer, max_dim};
             auto strides_div = make_dividers<config_type>(strides);
             auto traverser = traverser_type{shape, strides_div, walker};
@@ -552,7 +552,7 @@ TEMPLATE_TEST_CASE("test_walker_traverser_predicate","test_data_accessor",
             auto adapted_strides = make_adapted_strides(shape,strides);
             auto reset_strides = make_reset_strides(shape,strides);
             index_type offset{0};
-            dim_type max_dim = shape.size();
+            dim_type max_dim = gtensor::detail::make_dim(shape);
             auto walker =  walker_type{adapted_strides, reset_strides, offset, indexer, max_dim};
             auto traverser = traverser_type{shape, walker, predicate};
             test(t,traverser);
