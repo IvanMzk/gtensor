@@ -528,9 +528,9 @@ public:
 //F is reduce functor that takes iterators range of data to be reduced as arguments and return scalar - reduction result
 //F call operator must be defined like this: template<typename It> Ret operator()(It first, It last){...}
 template<typename F, typename Directions, typename...Ts, typename...Args>
-auto reduce(const basic_tensor<Ts...>& t, const Directions& directions, F f, bool keep_dim, Args&&...args){
+auto reduce(const basic_tensor<Ts...>& t, const Directions& directions, F f, bool keep_dims, Args&&...args){
     using config_type = typename basic_tensor<Ts...>::config_type;
-    return reducer_selector_t<config_type>::reduce(t, directions, f, keep_dim, std::forward<Args>(args)...);
+    return reducer_selector_t<config_type>::reduce(t, directions, f, keep_dims, std::forward<Args>(args)...);
 }
 
 //F is slide functor that takes arguments: iterators range of data to be slided, dst iterators range, sliding parameters

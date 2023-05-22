@@ -255,6 +255,13 @@ struct sum
         return std::accumulate(++first,last,init,std::plus{});
     }
 };
+struct sum_init
+{
+    template<typename It>
+    auto operator()(It first, It last, const typename std::iterator_traits<It>::value_type& init){
+        return std::accumulate(first,last,init,std::plus{});
+    }
+};
 struct prod
 {
     template<typename It>
@@ -268,25 +275,23 @@ struct prod
     }
 };
 
-template<typename T>
 struct cumsum{
-    T cumsum_{0};
     template<typename It, typename DstIt, typename IdxT>
     void operator()(It first, It last, DstIt dfirst, DstIt dlast, IdxT,IdxT){
-        cumsum_ = T(0);
-        for(;dfirst!=dlast; ++dfirst,++first){
+        auto cumsum_ = *first;
+        *dfirst = cumsum_;
+        for(++dfirst,++first; dfirst!=dlast; ++dfirst,++first){
             cumsum_+=*first;
             *dfirst = cumsum_;
         }
     }
 };
 
-template<typename T>
 struct cumprod_reverse{
-    T cumprod_{0};
     template<typename It, typename DstIt, typename IdxT>
     void operator()(It first, It last, DstIt dfirst, DstIt dlast, IdxT,IdxT){
-        cumprod_ = T(1);
+        auto cumprod_ = *--last;
+        *--dlast = cumprod_;
         while(dlast!=dfirst){
             cumprod_*=*--last;
             *--dlast = cumprod_;
@@ -485,6 +490,34 @@ TEST_CASE("test_reduce","[test_reduce]")
     apply_by_element(test, test_data);
 }
 
+TEST_CASE("test_reduce_custom_arg","[test_reduce]")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using dim_type = typename tensor_type::dim_type;
+    using test_reduce_::sum_init;
+    using gtensor::reduce;
+    using helpers_for_testing::apply_by_element;
+    //0tensor,1direction,2functor,3keep_dims,4init,5expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(tensor_type{1,2,3,4,5}, dim_type{0}, sum_init{}, false, value_type{0}, tensor_type(15)),
+        std::make_tuple(tensor_type{1,2,3,4,5}, dim_type{0}, sum_init{}, true, value_type{-1}, tensor_type{14}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{0}, sum_init{}, false, value_type{-1}, tensor_type{4,6,8}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{1}, sum_init{}, false, value_type{1}, tensor_type{7,16})
+    );
+    auto test = [](const auto& t){
+        auto tensor = std::get<0>(t);
+        auto direction = std::get<1>(t);
+        auto functor = std::get<2>(t);
+        auto keep_dims = std::get<3>(t);
+        auto init = std::get<4>(t);
+        auto expected = std::get<5>(t);
+        auto result = reduce(tensor, direction, functor, keep_dims, init);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test, test_data);
+}
+
 TEST_CASE("test_reduce_ecxeption","[test_reduce]")
 {
     using value_type = double;
@@ -548,16 +581,16 @@ TEST_CASE("test_slide","[test_reduce]")
 
     //0tensor,1direction,2functor,3window_size,4window_step,5expected
     auto test_data = std::make_tuple(
-        std::make_tuple(tensor_type{}, dim_type{0}, cumsum<value_type>{}, index_type{1}, index_type{1}, tensor_type{}),
-        std::make_tuple(tensor_type{1}, dim_type{0}, cumsum<value_type>{}, index_type{1}, index_type{1}, tensor_type{1}),
-        std::make_tuple(tensor_type{1,2,3,4,5}, dim_type{0}, cumsum<value_type>{}, index_type{1}, index_type{1}, tensor_type{1,3,6,10,15}),
-        std::make_tuple(tensor_type{1,2,3,4,5}, dim_type{0}, cumprod_reverse<value_type>{}, index_type{1}, index_type{1}, tensor_type{120,120,60,20,5}),
+        std::make_tuple(tensor_type{}, dim_type{0}, cumsum{}, index_type{1}, index_type{1}, tensor_type{}),
+        std::make_tuple(tensor_type{1}, dim_type{0}, cumsum{}, index_type{1}, index_type{1}, tensor_type{1}),
+        std::make_tuple(tensor_type{1,2,3,4,5}, dim_type{0}, cumsum{}, index_type{1}, index_type{1}, tensor_type{1,3,6,10,15}),
+        std::make_tuple(tensor_type{1,2,3,4,5}, dim_type{0}, cumprod_reverse{}, index_type{1}, index_type{1}, tensor_type{120,120,60,20,5}),
         std::make_tuple(tensor_type{1,3,2,5,7,4,6,7,8}, dim_type{0}, diff_1{}, index_type{2}, index_type{1}, tensor_type{2,-1,3,2,-3,2,1,1}),
         std::make_tuple(tensor_type{1,3,2,5,7,4,6,7,8}, dim_type{0}, diff_2{}, index_type{3}, index_type{1}, tensor_type{-3,4,-1,-5,5,-1,0}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9}}, dim_type{0}, cumsum<value_type>{}, index_type{1}, index_type{1}, tensor_type{{1,2,3},{5,7,9},{12,15,18}}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9}}, dim_type{1}, cumsum<value_type>{}, index_type{1}, index_type{1}, tensor_type{{1,3,6},{4,9,15},{7,15,24}}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9}}, dim_type{0}, cumprod_reverse<value_type>{}, index_type{1}, index_type{1}, tensor_type{{28,80,162},{28,40,54},{7,8,9}}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9}}, dim_type{1}, cumprod_reverse<value_type>{}, index_type{1}, index_type{1}, tensor_type{{6,6,3},{120,30,6},{504,72,9}})
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9}}, dim_type{0}, cumsum{}, index_type{1}, index_type{1}, tensor_type{{1,2,3},{5,7,9},{12,15,18}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9}}, dim_type{1}, cumsum{}, index_type{1}, index_type{1}, tensor_type{{1,3,6},{4,9,15},{7,15,24}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9}}, dim_type{0}, cumprod_reverse{}, index_type{1}, index_type{1}, tensor_type{{28,80,162},{28,40,54},{7,8,9}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9}}, dim_type{1}, cumprod_reverse{}, index_type{1}, index_type{1}, tensor_type{{6,6,3},{120,30,6},{504,72,9}})
     );
     auto test = [](const auto& t){
         auto tensor = std::get<0>(t);
@@ -619,14 +652,14 @@ TEST_CASE("test_slide_exception","[test_reduce]")
 
     //0tensor,1direction,2functor,3window_size,4window_step
     auto test_data = std::make_tuple(
-        std::make_tuple(tensor_type(0), dim_type{0}, cumsum<value_type>{}, index_type{1}, index_type{1}),
-        std::make_tuple(tensor_type{}, dim_type{1}, cumsum<value_type>{}, index_type{1}, index_type{1}),
-        std::make_tuple(tensor_type{1}, dim_type{0}, cumsum<value_type>{}, index_type{2}, index_type{1}),
-        std::make_tuple(tensor_type{1,2,3,4,5}, dim_type{1}, cumsum<value_type>{}, index_type{1}, index_type{1}),
-        std::make_tuple(tensor_type{1,2,3,4,5}, dim_type{0}, cumsum<value_type>{}, index_type{6}, index_type{1}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{2}, cumsum<value_type>{}, index_type{1}, index_type{1}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{0}, cumsum<value_type>{}, index_type{3}, index_type{1}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{1}, cumsum<value_type>{}, index_type{4}, index_type{1})
+        std::make_tuple(tensor_type(0), dim_type{0}, cumsum{}, index_type{1}, index_type{1}),
+        std::make_tuple(tensor_type{}, dim_type{1}, cumsum{}, index_type{1}, index_type{1}),
+        std::make_tuple(tensor_type{1}, dim_type{0}, cumsum{}, index_type{2}, index_type{1}),
+        std::make_tuple(tensor_type{1,2,3,4,5}, dim_type{1}, cumsum{}, index_type{1}, index_type{1}),
+        std::make_tuple(tensor_type{1,2,3,4,5}, dim_type{0}, cumsum{}, index_type{6}, index_type{1}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{2}, cumsum{}, index_type{1}, index_type{1}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{0}, cumsum{}, index_type{3}, index_type{1}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{1}, cumsum{}, index_type{4}, index_type{1})
     );
     auto test = [](const auto& t){
         auto tensor = std::get<0>(t);

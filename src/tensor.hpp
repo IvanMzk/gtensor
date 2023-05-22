@@ -127,9 +127,13 @@ public:
     auto create_walker(dim_type max_dim)const{return impl().create_walker(max_dim);}
     auto create_walker()const{return impl().create_walker();}
     //reduce
+    template<typename Directions, typename F>
+    auto reduce(const Directions& directions, F f, bool keep_dims=false)const{
+        return gtensor::reduce(*this, directions, f, keep_dims);
+    }
     template<typename F>
-    auto reduce(const dim_type& direction, F f)const{
-        return gtensor::reduce(*this, direction, f);
+    auto slide(const dim_type& direction, F f, const index_type& window_size, const index_type& window_step)const{
+        return gtensor::slide(*this, direction, f, window_size, window_step);
     }
     //view construction operators and methods
     //slice view
