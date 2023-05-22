@@ -69,8 +69,8 @@ struct extended_config{
     //used in indexed access to meta-data elements:
     //e.g. index of direction, dimensions number
     //transpose view subscripts are of dim_type, since they are directions indexes
-    //must have semantic of integral type
-    using dim_type = typename shape_type::size_type;
+    //must have semantic of signed integral type
+    using dim_type = typename shape_type::difference_type;
     //index_map_type is used in mapping_descriptor that is descriptor type of mapping_view
     using index_map_type = index_map<index_type>;
 };

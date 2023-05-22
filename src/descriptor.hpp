@@ -4,6 +4,7 @@
 #include <iostream>
 #include <numeric>
 #include <sstream>
+#include "common.hpp"
 #include "libdivide_helper.hpp"
 
 namespace gtensor{
@@ -303,7 +304,7 @@ public:
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     auto size()const{return size_;}
-    auto dim()const{return shape_.size();}
+    auto dim()const{return detail::make_dim(shape_);}
     const auto& shape()const{return shape_;}
     const auto& strides_div()const{return strides_.strides_div();}
     const auto& strides()const{return strides_.strides();}

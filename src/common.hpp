@@ -2,12 +2,22 @@
 #define COMMON_HPP_
 
 #include <type_traits>
+#include <exception>
 #include "config.hpp"
 
 namespace gtensor{
 
 template<typename Impl> class basic_tensor;
 template<typename T, typename Config> class tensor;
+
+class dim_exception : public std::runtime_error
+{
+public:
+    explicit dim_exception(const char* what):
+        std::runtime_error(what)
+    {}
+};
+
 
 namespace detail{
 
@@ -65,6 +75,38 @@ void fill(It first, It last, const T& v){
         for(;first!=last; ++first){
             *first = v;
         }
+    }
+}
+//returns dimension for given shape argument
+//guarantes result is signed (assuming shape container difference_type is signed, as it must be)
+template<typename ShT>
+inline typename ShT::difference_type make_dim(const ShT& shape){
+    return shape.size();
+}
+//make_direction helper to convert and check negative directions
+//positive direction is converted to dim_type and returned as is whithout any checks
+template<typename DimT, typename Direction>
+inline DimT make_direction_helper(const DimT& dim, const Direction& direction){
+    using dim_type = DimT;
+    const dim_type direction_ = static_cast<dim_type>(direction);
+    if (direction_ < dim_type{0}){
+        const dim_type res = dim + direction_;
+        if (res < dim_type{0}){
+            throw gtensor::dim_exception("invalid negative direction");
+        }
+        return res;
+    }else{
+        return direction_;
+    }
+}
+template<typename T, typename Direction>
+inline auto make_direction(const T& shape_or_dim, const Direction& direction){
+    if constexpr (is_container_v<T>){   //shape container
+        return make_direction_helper(make_dim(shape_or_dim), direction);
+    }else if constexpr (std::is_convertible_v<Direction,T>){  //dim scalar
+        return make_direction_helper(shape_or_dim, direction);
+    }else{
+        static_assert(always_false<T>,"invalid shape_or_dim argument");
     }
 }
 

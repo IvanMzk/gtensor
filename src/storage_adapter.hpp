@@ -18,7 +18,7 @@ public:
     using difference_type = index_type;
     using size_type = index_type;
 
-    storage_adapter(const index_type& n):
+    explicit storage_adapter(const index_type& n):
         impl_(n.value())
     {}
     storage_adapter(const index_type& n, const value_type& v):
