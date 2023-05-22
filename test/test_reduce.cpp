@@ -281,6 +281,19 @@ struct cumsum{
     }
 };
 
+template<typename T>
+struct cumprod_reverse{
+    T cumprod_{0};
+    template<typename It, typename DstIt, typename IdxT>
+    void operator()(It first, It last, DstIt dfirst, DstIt dlast, IdxT,IdxT){
+        cumprod_ = T(1);
+        while(dlast!=dfirst){
+            cumprod_*=*--last;
+            *--dlast = cumprod_;
+        }
+    }
+};
+
 struct moving_avarage{
     template<typename It, typename DstIt, typename IdxT>
     void operator()(It first, It last, DstIt dfirst, DstIt dlast, const IdxT& window_size, const IdxT& window_step, const typename std::iterator_traits<It>::value_type& denom){
@@ -393,7 +406,7 @@ TEST_CASE("test_reduce","[test_reduce]")
         std::make_tuple(tensor_type{}.reshape(1,0), std::vector<dim_type>{}, sum{}, false, tensor_type(value_type{})),
         std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{0}, sum{}, false, tensor_type{}.reshape(3,0)),
         std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{1}, sum{}, false, tensor_type{}.reshape(2,0)),
-        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{2}, sum{}, true, tensor_type{{{value_type{}},{value_type{}},{value_type{}}},{{value_type{}},{value_type{}},{value_type{}}}}),
+        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{2}, sum{}, false, tensor_type{{value_type{},value_type{},value_type{}},{value_type{},value_type{},value_type{}}}),
         std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{2,0}, sum{}, false, tensor_type{value_type{},value_type{},value_type{}}),
         std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{0,1}, sum{}, false, tensor_type{}),
         std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{}, sum{}, false, tensor_type(value_type{})),
@@ -420,8 +433,45 @@ TEST_CASE("test_reduce","[test_reduce]")
         std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{1}, prod{}, false, tensor_type{{0,3},{24,35}}),
         std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{2}, sum{}, false, tensor_type{{1,5},{9,13}}),
         std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{1,2}, sum{}, false, tensor_type{6,22}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{2,0}, prod{}, false, tensor_type{0,252})
-
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{2,0}, prod{}, false, tensor_type{0,252}),
+        //keep_dims is true
+        std::make_tuple(tensor_type{}, std::vector<dim_type>{0}, sum{}, true, tensor_type{value_type{}}),
+        std::make_tuple(tensor_type{}, std::vector<dim_type>{}, sum{}, true, tensor_type{value_type{}}),
+        std::make_tuple(tensor_type{}.reshape(1,0), std::vector<dim_type>{0}, sum{}, true, tensor_type{}.reshape(1,0)),
+        std::make_tuple(tensor_type{}.reshape(1,0), std::vector<dim_type>{1}, sum{}, true, tensor_type{{value_type{}}}),
+        std::make_tuple(tensor_type{}.reshape(1,0), std::vector<dim_type>{0,1}, sum{}, true, tensor_type{{value_type{}}}),
+        std::make_tuple(tensor_type{}.reshape(1,0), std::vector<dim_type>{1,0}, sum{}, true, tensor_type{{value_type{}}}),
+        std::make_tuple(tensor_type{}.reshape(1,0), std::vector<dim_type>{}, sum{}, true, tensor_type{{value_type{}}}),
+        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{0}, sum{}, true, tensor_type{}.reshape(1,3,0)),
+        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{1}, sum{}, true, tensor_type{}.reshape(2,1,0)),
+        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{2}, sum{}, true, tensor_type{{{value_type{}},{value_type{}},{value_type{}}},{{value_type{}},{value_type{}},{value_type{}}}}),
+        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{2,0}, sum{}, true, tensor_type{{{value_type{}},{value_type{}},{value_type{}}}}),
+        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{0,1}, sum{}, true, tensor_type{}.reshape(1,1,0)),
+        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{}, sum{}, true, tensor_type{{{value_type{}}}}),
+        std::make_tuple(tensor_type{1,2,3,4,5,6}, std::vector<dim_type>{0}, sum{}, true, tensor_type{21}),
+        std::make_tuple(tensor_type{1,2,3,4,5,6}, std::vector<dim_type>{}, sum{}, true, tensor_type{21}),
+        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, std::vector<dim_type>{0}, sum{}, true, tensor_type{{21}}),
+        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, std::vector<dim_type>{1}, sum{}, true, tensor_type{{1},{2},{3},{4},{5},{6}}),
+        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, std::vector<dim_type>{1,0}, sum{}, true, tensor_type{{21}}),
+        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, std::vector<dim_type>{0,1}, sum{}, true, tensor_type{{21}}),
+        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, std::vector<dim_type>{}, sum{}, true, tensor_type{{21}}),
+        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, std::vector<dim_type>{0}, sum{}, true, tensor_type{{1,2,3,4,5,6}}),
+        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, std::vector<dim_type>{1}, sum{}, true, tensor_type{{21}}),
+        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, std::vector<dim_type>{0,1}, sum{}, true, tensor_type{{21}}),
+        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, std::vector<dim_type>{}, sum{}, true, tensor_type{{21}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::vector<dim_type>{0}, sum{}, true, tensor_type{{5,7,9}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::vector<dim_type>{1}, sum{}, true, tensor_type{{6},{15}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::vector<dim_type>{1,0}, sum{}, true, tensor_type{{21}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::vector<dim_type>{1}, prod{}, true, tensor_type{{6},{120}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::vector<dim_type>{0}, prod{}, true, tensor_type{{4,10,18}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::vector<dim_type>{0,1}, prod{}, true, tensor_type{{720}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::vector<dim_type>{}, prod{}, true, tensor_type{{720}}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{0}, sum{}, true, tensor_type{{{4,6},{8,10}}}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{1}, sum{}, true, tensor_type{{{2,4}},{{10,12}}}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{1}, prod{}, true, tensor_type{{{0,3}},{{24,35}}}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{2}, sum{}, true, tensor_type{{{1},{5}},{{9},{13}}}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{1,2}, sum{}, true, tensor_type{{{6}},{{22}}}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{2,0}, prod{}, true, tensor_type{{{0},{252}}})
     );
     auto test = [](const auto& t){
         auto tensor = std::get<0>(t);
@@ -449,11 +499,29 @@ TEST_CASE("test_reduce_ecxeption","[test_reduce]")
 
     //0tensor,1direction,2functor,3keep_dim
     auto test_data = std::make_tuple(
+        //single direction
+        std::make_tuple(tensor_type(0), dim_type{0}, sum{}, false),
+        std::make_tuple(tensor_type{}, dim_type{1}, sum{}, false),
         std::make_tuple(tensor_type{1,2,3,4,5,6}, dim_type{1}, sum{}, false),
         std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, dim_type{2}, sum{}, false),
         std::make_tuple(tensor_type{{1,2,3,4,5,6}}, dim_type{2}, sum{}, false),
         std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{4}, sum{}, false),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{3}, sum{}, false)
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{3}, sum{}, false),
+        //directions container
+        std::make_tuple(tensor_type(0), std::vector<dim_type>{0}, sum{}, false),
+        std::make_tuple(tensor_type{0}, std::vector<dim_type>{0,0}, sum{}, false),
+        std::make_tuple(tensor_type{0}, std::vector<dim_type>{1,1}, sum{}, false),
+        std::make_tuple(tensor_type{0}, std::vector<dim_type>{1}, sum{}, false),
+        std::make_tuple(tensor_type{0}, std::vector<dim_type>{0,1}, sum{}, false),
+        std::make_tuple(tensor_type{0}, std::vector<dim_type>{1,0}, sum{}, false),
+        std::make_tuple(tensor_type{1,2,3,4,5,6}, std::vector<dim_type>{0,0}, sum{}, false),
+        std::make_tuple(tensor_type{1,2,3,4,5,6}, std::vector<dim_type>{1,1}, sum{}, false),
+        std::make_tuple(tensor_type{1,2,3,4,5,6}, std::vector<dim_type>{0,1}, sum{}, false),
+        std::make_tuple(tensor_type{1,2,3,4,5,6}, std::vector<dim_type>{1,0}, sum{}, false),
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}, std::vector<dim_type>{3}, sum{}, false),
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}, std::vector<dim_type>{0,1,0}, sum{}, false),
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}, std::vector<dim_type>{1,1}, sum{}, false),
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}, std::vector<dim_type>{0,1,2,0}, sum{}, false)
     );
     auto test = [](const auto& t){
         auto tensor = std::get<0>(t);
@@ -471,6 +539,7 @@ TEST_CASE("test_slide","[test_reduce]")
     using tensor_type = gtensor::tensor<value_type>;
     using dim_type = typename tensor_type::dim_type;
     using index_type = typename tensor_type::index_type;
+    using test_reduce_::cumprod_reverse;
     using test_reduce_::cumsum;
     using test_reduce_::diff_1;
     using test_reduce_::diff_2;
@@ -482,10 +551,13 @@ TEST_CASE("test_slide","[test_reduce]")
         std::make_tuple(tensor_type{}, dim_type{0}, cumsum<value_type>{}, index_type{1}, index_type{1}, tensor_type{}),
         std::make_tuple(tensor_type{1}, dim_type{0}, cumsum<value_type>{}, index_type{1}, index_type{1}, tensor_type{1}),
         std::make_tuple(tensor_type{1,2,3,4,5}, dim_type{0}, cumsum<value_type>{}, index_type{1}, index_type{1}, tensor_type{1,3,6,10,15}),
+        std::make_tuple(tensor_type{1,2,3,4,5}, dim_type{0}, cumprod_reverse<value_type>{}, index_type{1}, index_type{1}, tensor_type{120,120,60,20,5}),
         std::make_tuple(tensor_type{1,3,2,5,7,4,6,7,8}, dim_type{0}, diff_1{}, index_type{2}, index_type{1}, tensor_type{2,-1,3,2,-3,2,1,1}),
         std::make_tuple(tensor_type{1,3,2,5,7,4,6,7,8}, dim_type{0}, diff_2{}, index_type{3}, index_type{1}, tensor_type{-3,4,-1,-5,5,-1,0}),
         std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9}}, dim_type{0}, cumsum<value_type>{}, index_type{1}, index_type{1}, tensor_type{{1,2,3},{5,7,9},{12,15,18}}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9}}, dim_type{1}, cumsum<value_type>{}, index_type{1}, index_type{1}, tensor_type{{1,3,6},{4,9,15},{7,15,24}})
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9}}, dim_type{1}, cumsum<value_type>{}, index_type{1}, index_type{1}, tensor_type{{1,3,6},{4,9,15},{7,15,24}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9}}, dim_type{0}, cumprod_reverse<value_type>{}, index_type{1}, index_type{1}, tensor_type{{28,80,162},{28,40,54},{7,8,9}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9}}, dim_type{1}, cumprod_reverse<value_type>{}, index_type{1}, index_type{1}, tensor_type{{6,6,3},{120,30,6},{504,72,9}})
     );
     auto test = [](const auto& t){
         auto tensor = std::get<0>(t);
@@ -496,8 +568,6 @@ TEST_CASE("test_slide","[test_reduce]")
         auto expected = std::get<5>(t);
         auto result = slide(tensor, direction, functor, window_size, window_step);
         REQUIRE(result == expected);
-        auto result1 = slide(tensor, direction, functor, window_size, window_step);
-        REQUIRE(result1 == expected);
     };
     apply_by_element(test, test_data);
 }
@@ -532,8 +602,39 @@ TEST_CASE("test_slide_custom_arg","[test_reduce]")
         auto expected = std::get<6>(t);
         auto result = slide(tensor, direction, functor, window_size, window_step,denom);
         REQUIRE(result == expected);
-        auto result1 = slide(tensor, direction, functor, window_size, window_step,denom);
-        REQUIRE(result1 == expected);
+    };
+    apply_by_element(test, test_data);
+}
+
+TEST_CASE("test_slide_exception","[test_reduce]")
+{
+    using value_type = int;
+    using tensor_type = gtensor::tensor<value_type>;
+    using dim_type = typename tensor_type::dim_type;
+    using index_type = typename tensor_type::index_type;
+    using gtensor::reduce_exception;
+    using test_reduce_::cumsum;
+    using gtensor::slide;
+    using helpers_for_testing::apply_by_element;
+
+    //0tensor,1direction,2functor,3window_size,4window_step
+    auto test_data = std::make_tuple(
+        std::make_tuple(tensor_type(0), dim_type{0}, cumsum<value_type>{}, index_type{1}, index_type{1}),
+        std::make_tuple(tensor_type{}, dim_type{1}, cumsum<value_type>{}, index_type{1}, index_type{1}),
+        std::make_tuple(tensor_type{1}, dim_type{0}, cumsum<value_type>{}, index_type{2}, index_type{1}),
+        std::make_tuple(tensor_type{1,2,3,4,5}, dim_type{1}, cumsum<value_type>{}, index_type{1}, index_type{1}),
+        std::make_tuple(tensor_type{1,2,3,4,5}, dim_type{0}, cumsum<value_type>{}, index_type{6}, index_type{1}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{2}, cumsum<value_type>{}, index_type{1}, index_type{1}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{0}, cumsum<value_type>{}, index_type{3}, index_type{1}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{1}, cumsum<value_type>{}, index_type{4}, index_type{1})
+    );
+    auto test = [](const auto& t){
+        auto tensor = std::get<0>(t);
+        auto direction = std::get<1>(t);
+        auto functor = std::get<2>(t);
+        auto window_size = std::get<3>(t);
+        auto window_step = std::get<4>(t);
+        REQUIRE_THROWS_AS(slide(tensor, direction, functor, window_size, window_step), reduce_exception);
     };
     apply_by_element(test, test_data);
 }

@@ -153,7 +153,6 @@ auto make_reduce_directions_size(const ShT& shape, const typename ShT::value_typ
     }
 }
 
-//random access iterator, use walker data accessor
 template<typename Config, typename Walker>
 class reduce_iterator
 {
@@ -266,124 +265,6 @@ private:
 GTENSOR_ITERATOR_OPERATOR_POSTFIX_INC(reduce_directions_iterator);
 GTENSOR_ITERATOR_OPERATOR_POSTFIX_DEC(reduce_directions_iterator);
 
-// template<typename Config, typename Walker, typename Directions>
-// class walker_reduce_traverser
-// {
-//     using config_type = Config;
-//     using walker_type = Walker;
-//     using directions_type = Directions;
-//     using shape_type = typename config_type::shape_type;
-//     using index_type = typename config_type::index_type;
-//     using dim_type = typename config_type::dim_type;
-//     static_assert(detail::is_container_of_type_v<directions_type,dim_type> || std::is_convertible_v<directions_type,dim_type>);
-
-//     const shape_type* shape_;
-//     walker_type walker_;
-//     const directions_type* directions_;
-//     bool inverse_directions_;
-//     const dim_type dim_;
-//     shape_type index_;
-//     const index_type directions_size_;
-
-//     bool is_in_directions(const dim_type& d){
-//         if constexpr (detail::is_container_of_type_v<directions_type,dim_type>){
-//             auto first = directions_->begin();
-//             const auto last = directions_->end();
-//             return std::find(first,last,[&d](const auto& dir){return d == static_cast<dim_type>(dir);}) != last;
-//         }else{
-//             return d == static_cast<dim_type>(directions_);
-//         }
-//     }
-
-//     index_type directions_size(){
-//         if constexpr (detail::is_container_of_type_v<directions_type,dim_type>){
-//             index_type size{1};
-//             for (auto it=directions_->begin(), last=directions_->end(); it!=last; ++it){
-//                 size*=(*shape_)[static_cast<dim_type>(*it)];
-//             }
-//             return size;
-//         }else{
-//             return (*shape_)[static_cast<dim_type>(directions_)];
-//         }
-//     }
-
-//     auto make_iterator(const index_type& pos){
-//         if constexpr (detail::is_container_of_type_v<directions_type,dim_type>){
-//             return reduce_directions_iterator<config_type, walker_reduce_traverser>{walker_reduce_traverser{*shape_,walker_,*directions_,true},pos};
-//         }else{
-//             return reduce_iterator<config_type,walker_type>{walker_,directions_,pos};
-//         }
-//     }
-
-// public:
-//     template<typename Walker_>
-//     walker_reduce_traverser(const shape_type& shape__, Walker_&& walker__, const directions_type& directions__, bool inverse_directions__):
-//         shape_{&shape__},
-//         walker_{std::forward<Walker_>(walker__)},
-//         directions_{&directions__},
-//         inverse_directions_{inverse_directions__},
-//         dim_{shape_->size()},
-//         index_(dim_, index_type{0}),
-//         directions_size_{directions_size()}
-//     {}
-
-//     bool next(){
-//         auto direction = dim_;
-//         auto index_it = index_.end();
-//         while(direction!=dim_type{0}){
-//             --direction;
-//             --index_it;
-//             if (inverse_directions_ != is_in_directions(direction)){
-//                 continue;
-//             }else{
-//                 if (*index_it == (*shape_)[direction]-index_type{1}){   //direction at their max
-//                     *index_it = index_type{0};
-//                     walker_.reset_back(direction);
-//                 }else{  //can next on direction
-//                     ++(*index_it);
-//                     walker_.step(direction);
-//                     return true;
-//                 }
-//             }
-//         }
-//         return false;
-//     }
-
-//     bool prev(){
-//         dim_type direction{dim_}; //start from direction with min stride
-//         auto index_it = index_.end();
-//         while(direction!=dim_type{0}){
-//             --index_it;
-//             --direction;
-//             if (inverse_directions_ != is_in_directions(direction)){
-//                 continue;
-//             }else{
-//                 if (*index_it == index_type{0}){   //direction at their min
-//                     *index_it = (*shape_)[direction]-index_type{1};
-//                     walker_.reset(direction);
-//                 }else{  //can prev on direction
-//                     --(*index_it);
-//                     walker_.step_back(direction);
-//                     return true;
-//                 }
-//             }
-//         }
-//         return false;
-//     }
-
-//     decltype(auto) operator*(){
-//         return *walker_;
-//     }
-
-//     //create reduce iterator
-//     auto begin(){
-//         return make_iterator(0);
-//     }
-//     auto end(){
-//         return make_iterator(directions_size_);
-//     }
-// };
-
 template<typename Config, typename Directions>
 class reduce_traverse_predicate
 {
@@ -423,63 +304,6 @@ public:
         return apply_inverse(is_in_directions(d));
     }
 };
-
-// template<typename Config, typename Walker>
-// class walker_reduce_traverser
-// {
-//     using config_type = Config;
-//     using walker_type = Walker;
-//     using shape_type = typename config_type::shape_type;
-//     using index_type = typename config_type::index_type;
-//     using dim_type = typename config_type::dim_type;
-//     using reduce_iterator_type = reduce_iterator<config_type,walker_type>;
-
-//     const shape_type* shape_;
-//     walker_type walker_;
-//     const dim_type reduce_direction_;
-//     const dim_type dim_;
-//     shape_type index_;
-
-// public:
-//     template<typename Walker_>
-//     walker_reduce_traverser(const shape_type& shape__, Walker_&& walker__, const dim_type direction__):
-//         shape_{&shape__},
-//         walker_{std::forward<Walker_>(walker__)},
-//         reduce_direction_{direction__},
-//         dim_{shape_->size()},
-//         index_(dim_, index_type{0})
-//     {}
-
-//     bool next(){
-//         auto direction = dim_;
-//         auto index_it = index_.end();
-//         while(direction!=dim_type{0}){
-//             --direction;
-//             --index_it;
-//             if (direction == reduce_direction_){
-//                 continue;
-//             }else{
-//                 if (*index_it == (*shape_)[direction]-index_type{1}){   //direction at their max
-//                     *index_it = index_type{0};
-//                     walker_.reset_back(direction);
-//                 }else{  //can next on direction
-//                     ++(*index_it);
-//                     walker_.step(direction);
-//                     return true;
-//                 }
-//             }
-//         }
-//         return false;
-//     }
-
-//     //create reduce iterator
-//     auto begin(){
-//         return reduce_iterator_type{walker_,reduce_direction_,0};
-//     }
-//     auto end(){
-//         return reduce_iterator_type{walker_,reduce_direction_,(*shape_)[reduce_direction_]};
-//     }
-// };
 
 template<typename Traverser>
 auto slide_begin(const Traverser& traverser, const typename Traverser::dim_type& direction){
