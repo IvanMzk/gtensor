@@ -155,6 +155,16 @@ public:
             traverser.next();
         }
     }
+    walker_iterator& operator++(){
+        traverser.next();
+        ++flat_index;
+        return *this;
+    }
+    walker_iterator& operator--(){
+        traverser.prev();
+        --flat_index;
+        return *this;
+    }
     walker_iterator& operator+=(difference_type n){
         advance(n);
         return *this;
@@ -174,8 +184,6 @@ private:
 GTENSOR_ITERATOR_OPERATOR_ASSIGN_MINUS(walker_iterator);
 GTENSOR_ITERATOR_OPERATOR_PLUS(walker_iterator);
 GTENSOR_ITERATOR_OPERATOR_MINUS(walker_iterator);
-GTENSOR_ITERATOR_OPERATOR_PREFIX_INC(walker_iterator);
-GTENSOR_ITERATOR_OPERATOR_PREFIX_DEC(walker_iterator);
 GTENSOR_ITERATOR_OPERATOR_POSTFIX_INC(walker_iterator);
 GTENSOR_ITERATOR_OPERATOR_POSTFIX_DEC(walker_iterator);
 GTENSOR_ITERATOR_OPERATOR_EQUAL(walker_iterator);
