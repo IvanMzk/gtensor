@@ -402,11 +402,14 @@ TEST_CASE("test_stack_nothrow","[test_combine]")
     //0direction,1tensors,2expected
     auto test_data = std::make_tuple(
         std::make_tuple(dim_type{0}, std::make_tuple(tensor_type{}), tensor_type{}.reshape(1,0)),
+        std::make_tuple(dim_type{-1}, std::make_tuple(tensor_type{}), tensor_type{}.reshape(1,0)),
         std::make_tuple(dim_type{1}, std::make_tuple(tensor_type{}), tensor_type{}.reshape(0,1)),
         std::make_tuple(dim_type{0}, std::make_tuple(tensor_type{}, tensor_type{}, tensor_type{}), tensor_type{}.reshape(3,0)),
         std::make_tuple(dim_type{1}, std::make_tuple(tensor_type{}, tensor_type{}, tensor_type{}), tensor_type{}.reshape(0,3)),
         std::make_tuple(dim_type{0}, std::make_tuple(tensor_type{}.reshape(1,0), tensor_type{}.reshape(1,0), tensor_type{}.reshape(1,0)), tensor_type{}.reshape(3,1,0)),
+        std::make_tuple(dim_type{-2}, std::make_tuple(tensor_type{}.reshape(1,0), tensor_type{}.reshape(1,0), tensor_type{}.reshape(1,0)), tensor_type{}.reshape(3,1,0)),
         std::make_tuple(dim_type{1}, std::make_tuple(tensor_type{}.reshape(1,0), tensor_type{}.reshape(1,0), tensor_type{}.reshape(1,0)), tensor_type{}.reshape(1,3,0)),
+        std::make_tuple(dim_type{-1}, std::make_tuple(tensor_type{}.reshape(1,0), tensor_type{}.reshape(1,0), tensor_type{}.reshape(1,0)), tensor_type{}.reshape(1,3,0)),
         std::make_tuple(dim_type{2}, std::make_tuple(tensor_type{}.reshape(1,0), tensor_type{}.reshape(1,0), tensor_type{}.reshape(1,0)), tensor_type{}.reshape(1,0,3)),
         std::make_tuple(dim_type{0}, std::make_tuple(tensor_type{1}), tensor_type{{1}}),
         std::make_tuple(dim_type{1}, std::make_tuple(tensor_type{1}), tensor_type{{1}}),
@@ -420,7 +423,17 @@ TEST_CASE("test_stack_nothrow","[test_combine]")
             tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}},{{13,14,15},{16,17,18}},{{19,20,21},{22,23,24}}}
         ),
         std::make_tuple(
+            dim_type{-2},
+            std::make_tuple(tensor_type{{1,2,3},{4,5,6}},tensor_type{{7,8,9},{10,11,12}},tensor_type{{13,14,15},{16,17,18}},tensor_type{{19,20,21},{22,23,24}}),
+            tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}},{{13,14,15},{16,17,18}},{{19,20,21},{22,23,24}}}
+        ),
+        std::make_tuple(
             dim_type{1},
+            std::make_tuple(tensor_type{{1,2,3},{4,5,6}},tensor_type{{7,8,9},{10,11,12}},tensor_type{{13,14,15},{16,17,18}},tensor_type{{19,20,21},{22,23,24}}),
+            tensor_type{{{1,2,3},{7,8,9},{13,14,15},{19,20,21}},{{4,5,6},{10,11,12},{16,17,18},{22,23,24}}}
+        ),
+        std::make_tuple(
+            dim_type{-1},
             std::make_tuple(tensor_type{{1,2,3},{4,5,6}},tensor_type{{7,8,9},{10,11,12}},tensor_type{{13,14,15},{16,17,18}},tensor_type{{19,20,21},{22,23,24}}),
             tensor_type{{{1,2,3},{7,8,9},{13,14,15},{19,20,21}},{{4,5,6},{10,11,12},{16,17,18},{22,23,24}}}
         ),
@@ -547,15 +560,20 @@ TEST_CASE("test_concatenate","[test_combine]")
     //0direction,1tensors,2expected
     auto test_data = std::make_tuple(
         std::make_tuple(dim_type{0}, std::make_tuple(tensor_type{}), tensor_type{}),
+        std::make_tuple(dim_type{-1}, std::make_tuple(tensor_type{}), tensor_type{}),
         std::make_tuple(dim_type{0}, std::make_tuple(tensor_type{}, tensor_type{}, tensor_type{}), tensor_type{}),
+        std::make_tuple(dim_type{-1}, std::make_tuple(tensor_type{}, tensor_type{}, tensor_type{}), tensor_type{}),
         std::make_tuple(dim_type{0}, std::make_tuple(tensor_type{1}), tensor_type{1}),
         std::make_tuple(dim_type{0}, std::make_tuple(tensor_type{1},tensor_type{2},tensor_type{3}), tensor_type{1,2,3}),
         std::make_tuple(dim_type{0}, std::make_tuple(tensor_type{},tensor_type{1},tensor_type{},tensor_type{2},tensor_type{3},tensor_type{}), tensor_type{1,2,3}),
         std::make_tuple(dim_type{0}, std::make_tuple(tensor_type{1},tensor_type{2,3},tensor_type{4,5,6}), tensor_type{1,2,3,4,5,6}),
+        std::make_tuple(dim_type{-1}, std::make_tuple(tensor_type{1},tensor_type{2,3},tensor_type{4,5,6}), tensor_type{1,2,3,4,5,6}),
         std::make_tuple(dim_type{0}, std::make_tuple(tensor_type{}.reshape(1,0),tensor_type{}.reshape(2,0)), tensor_type{}.reshape(3,0)),
         std::make_tuple(dim_type{1}, std::make_tuple(tensor_type{}.reshape(0,1),tensor_type{}.reshape(0,2)), tensor_type{}.reshape(0,3)),
         std::make_tuple(dim_type{0}, std::make_tuple(tensor_type{{1,2},{3,4}},tensor_type{{5,6}}), tensor_type{{1,2},{3,4},{5,6}}),
         std::make_tuple(dim_type{1}, std::make_tuple(tensor_type{{1,2},{3,4}},tensor_type{{5},{6}}), tensor_type{{1,2,5},{3,4,6}}),
+        std::make_tuple(dim_type{-2}, std::make_tuple(tensor_type{{1,2},{3,4}},tensor_type{{5,6}}), tensor_type{{1,2},{3,4},{5,6}}),
+        std::make_tuple(dim_type{-1}, std::make_tuple(tensor_type{{1,2},{3,4}},tensor_type{{5},{6}}), tensor_type{{1,2,5},{3,4,6}}),
         std::make_tuple(dim_type{1}, std::make_tuple(tensor_type{{1,2},{3,4}},tensor_type{{5},{6}}), tensor_type{{1,2,5},{3,4,6}}),
         std::make_tuple(dim_type{0}, std::make_tuple(tensor_type{}.reshape(0,2),tensor_type{{1,2},{3,4}},tensor_type{}.reshape(0,2),tensor_type{{5,6}}), tensor_type{{1,2},{3,4},{5,6}}),
         std::make_tuple(dim_type{1}, std::make_tuple(tensor_type{}.reshape(2,0),tensor_type{{1,2},{3,4}},tensor_type{}.reshape(2,0),tensor_type{{5},{6}}), tensor_type{{1,2,5},{3,4,6}}),
@@ -590,12 +608,27 @@ TEST_CASE("test_concatenate","[test_combine]")
             tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}},{{17,18},{19,20}},{{21,22},{23,24}}}
         ),
         std::make_tuple(
+            dim_type{-3},
+            std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},tensor_type{{{9,10},{11,12}}},tensor_type{{{13,14},{15,16}},{{17,18},{19,20}},{{21,22},{23,24}}}),
+            tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}},{{17,18},{19,20}},{{21,22},{23,24}}}
+        ),
+        std::make_tuple(
             dim_type{1},
             std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},tensor_type{{{9,10}},{{11,12}}},tensor_type{{{13,14},{15,16},{17,18}},{{19,20},{21,22},{23,24}}}),
             tensor_type{{{1,2},{3,4},{9,10},{13,14},{15,16},{17,18}},{{5,6},{7,8},{11,12},{19,20},{21,22},{23,24}}}
         ),
         std::make_tuple(
+            dim_type{-2},
+            std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},tensor_type{{{9,10}},{{11,12}}},tensor_type{{{13,14},{15,16},{17,18}},{{19,20},{21,22},{23,24}}}),
+            tensor_type{{{1,2},{3,4},{9,10},{13,14},{15,16},{17,18}},{{5,6},{7,8},{11,12},{19,20},{21,22},{23,24}}}
+        ),
+        std::make_tuple(
             dim_type{2},
+            std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},tensor_type{{{9},{10}},{{11},{12}}},tensor_type{{{13,14,15},{16,17,18}},{{19,20,21},{22,23,24}}}),
+            tensor_type{{{1,2,9,13,14,15},{3,4,10,16,17,18}},{{5,6,11,19,20,21},{7,8,12,22,23,24}}}
+        ),
+        std::make_tuple(
+            dim_type{-1},
             std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},tensor_type{{{9},{10}},{{11},{12}}},tensor_type{{{13,14,15},{16,17,18}},{{19,20,21},{22,23,24}}}),
             tensor_type{{{1,2,9,13,14,15},{3,4,10,16,17,18}},{{5,6,11,19,20,21},{7,8,12,22,23,24}}}
         ),
@@ -638,9 +671,9 @@ TEST_CASE("test_concatenate","[test_combine]")
 TEST_CASE("test_concatenate_exception","[test_combine]")
 {
     using value_type = double;
-    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
-    using dim_type = typename config_type::dim_type;
-    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using tensor_type = gtensor::tensor<value_type>;
+    using dim_type = typename tensor_type::dim_type;
+    using shape_type = typename tensor_type::shape_type;
     using gtensor::combine_exception;
     using helpers_for_testing::apply_by_element;
     using gtensor::concatenate;
@@ -654,9 +687,12 @@ TEST_CASE("test_concatenate_exception","[test_combine]")
         std::make_tuple(dim_type{2}, std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, tensor_type{{1,2,3},{4,5,6}})),
         std::make_tuple(dim_type{0}, std::make_tuple(tensor_type{}.reshape(0,1), tensor_type{}.reshape(1,0))),
         std::make_tuple(dim_type{1}, std::make_tuple(tensor_type{}.reshape(1,0), tensor_type{}.reshape(0,1))),
-        std::make_tuple(dim_type{0}, std::make_tuple(tensor_type{{2,3,4},value_type{}}, tensor_type{{2,4,4},value_type{}}, tensor_type{{2,3,4},value_type{}})),
-        std::make_tuple(dim_type{1}, std::make_tuple(tensor_type{{2,3,5},value_type{}}, tensor_type{{2,4,4},value_type{}}, tensor_type{{2,3,4},value_type{}})),
-        std::make_tuple(dim_type{2}, std::make_tuple(tensor_type{{2,3,4},value_type{}}, tensor_type{{2,3,4},value_type{}}, tensor_type{{3,3,4},value_type{}}))
+        std::make_tuple(dim_type{0}, std::make_tuple(tensor_type{shape_type{2,3,4}}, tensor_type{shape_type{2,4,4}}, tensor_type{shape_type{2,3,4}})),
+        std::make_tuple(dim_type{-3}, std::make_tuple(tensor_type{shape_type{2,3,4}}, tensor_type{shape_type{2,4,4}}, tensor_type{shape_type{2,3,4}})),
+        std::make_tuple(dim_type{1}, std::make_tuple(tensor_type{shape_type{2,3,5}}, tensor_type{shape_type{2,4,4}}, tensor_type{shape_type{2,3,4}})),
+        std::make_tuple(dim_type{-2}, std::make_tuple(tensor_type{shape_type{2,3,5}}, tensor_type{shape_type{2,4,4}}, tensor_type{shape_type{2,3,4}})),
+        std::make_tuple(dim_type{2}, std::make_tuple(tensor_type{shape_type{2,3,4}}, tensor_type{shape_type{2,3,4}}, tensor_type{shape_type{3,3,4}})),
+        std::make_tuple(dim_type{-1}, std::make_tuple(tensor_type{shape_type{2,3,4}}, tensor_type{shape_type{2,3,4}}, tensor_type{shape_type{3,3,4}}))
     );
     SECTION("test_concatenate_variadic_exception")
     {
@@ -1141,6 +1177,12 @@ TEST_CASE("test_split_split_points","[test_combine]")
             result_type{tensor_type{{{1,2},{3,4}}},  tensor_type{{{5,6},{7,8}}}, tensor_type{{{9,10},{11,12}}}}
         ),
         std::make_tuple(
+            tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}}},
+            std::vector<int>{1,2},
+            dim_type{-3},
+            result_type{tensor_type{{{1,2},{3,4}}},  tensor_type{{{5,6},{7,8}}}, tensor_type{{{9,10},{11,12}}}}
+        ),
+        std::make_tuple(
             tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}},{{13,14,15},{16,17,18}}},
             gtensor::tensor<index_type>{1},
             dim_type{1},
@@ -1148,8 +1190,20 @@ TEST_CASE("test_split_split_points","[test_combine]")
         ),
         std::make_tuple(
             tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}},{{13,14,15},{16,17,18}}},
+            gtensor::tensor<index_type>{1},
+            dim_type{-2},
+            result_type{tensor_type{{{1,2,3}},{{7,8,9}},{{13,14,15}}}, tensor_type{{{4,5,6}},{{10,11,12}},{{16,17,18}}}}
+        ),
+        std::make_tuple(
+            tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}},{{13,14,15},{16,17,18}}},
             std::initializer_list<std::size_t>{1,2},
             dim_type{2},
+            result_type{tensor_type{{{1},{4}},{{7},{10}},{{13},{16}}},  tensor_type{{{2},{5}},{{8},{11}},{{14},{17}}}, tensor_type{{{3},{6}},{{9},{12}},{{15},{18}}}}
+        ),
+        std::make_tuple(
+            tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}},{{13,14,15},{16,17,18}}},
+            std::initializer_list<std::size_t>{1,2},
+            dim_type{-1},
             result_type{tensor_type{{{1},{4}},{{7},{10}},{{13},{16}}},  tensor_type{{{2},{5}},{{8},{11}},{{14},{17}}}, tensor_type{{{3},{6}},{{9},{12}},{{15},{18}}}}
         )
     );
@@ -1209,6 +1263,12 @@ TEST_CASE("test_split_equal_parts","[test_combine]")
             result_type{tensor_type{{{1,2},{3,4}}},  tensor_type{{{5,6},{7,8}}}, tensor_type{{{9,10},{11,12}}}}
         ),
         std::make_tuple(
+            tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}}},
+            index_type{3},
+            dim_type{-3},
+            result_type{tensor_type{{{1,2},{3,4}}},  tensor_type{{{5,6},{7,8}}}, tensor_type{{{9,10},{11,12}}}}
+        ),
+        std::make_tuple(
             tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}},{{13,14,15},{16,17,18}}},
             index_type{2},
             dim_type{1},
@@ -1216,8 +1276,20 @@ TEST_CASE("test_split_equal_parts","[test_combine]")
         ),
         std::make_tuple(
             tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}},{{13,14,15},{16,17,18}}},
+            index_type{2},
+            dim_type{-2},
+            result_type{tensor_type{{{1,2,3}},{{7,8,9}},{{13,14,15}}}, tensor_type{{{4,5,6}},{{10,11,12}},{{16,17,18}}}}
+        ),
+        std::make_tuple(
+            tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}},{{13,14,15},{16,17,18}}},
             index_type{3},
             dim_type{2},
+            result_type{tensor_type{{{1},{4}},{{7},{10}},{{13},{16}}},  tensor_type{{{2},{5}},{{8},{11}},{{14},{17}}}, tensor_type{{{3},{6}},{{9},{12}},{{15},{18}}}}
+        ),
+        std::make_tuple(
+            tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}},{{13,14,15},{16,17,18}}},
+            index_type{3},
+            dim_type{-1},
             result_type{tensor_type{{{1},{4}},{{7},{10}},{{13},{16}}},  tensor_type{{{2},{5}},{{8},{11}},{{14},{17}}}, tensor_type{{{3},{6}},{{9},{12}},{{15},{18}}}}
         )
     );

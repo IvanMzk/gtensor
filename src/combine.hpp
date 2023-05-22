@@ -48,9 +48,10 @@ template<typename T> using tensor_nested_tuple_config_type_t = typename tensor_n
 
 
 template<typename DimT, typename ShT, typename...ShTs>
-void check_stack_variadic_args(const DimT& direction, const ShT& shape, const ShTs&...shapes){
+void check_stack_variadic_args(const DimT& direction_, const ShT& shape, const ShTs&...shapes){
     using dim_type = DimT;
     dim_type dim = detail::make_dim(shape);
+    dim_type direction = detail::make_direction(shape,direction_);
     if (direction > dim){
         throw combine_exception{"bad stack direction"};
     }
@@ -62,14 +63,15 @@ void check_stack_variadic_args(const DimT& direction, const ShT& shape, const Sh
 }
 
 template<typename DimT, typename Container>
-void check_stack_container_args(const DimT& direction, const Container& shapes){
+void check_stack_container_args(const DimT& direction_, const Container& shapes){
     using dim_type = DimT;
     if (std::empty(shapes)){
         throw combine_exception("stack empty container");
     }
     auto it = shapes.begin();
     const auto& first_shape = *it;
-    dim_type first_dim = detail::make_dim(first_shape);
+    const auto direction = make_direction(first_shape, direction_);
+    dim_type first_dim = make_dim(first_shape);
     if (direction > first_dim){
         throw combine_exception{"bad stack direction"};
     }
@@ -81,9 +83,10 @@ void check_stack_container_args(const DimT& direction, const Container& shapes){
 }
 
 template<typename DimT, typename ShT, typename...ShTs>
-void check_concatenate_variadic_args(const DimT& direction, const ShT& shape, const ShTs&...shapes){
+void check_concatenate_variadic_args(const DimT& direction_, const ShT& shape, const ShTs&...shapes){
     using dim_type = DimT;
-    dim_type dim = detail::make_dim(shape);
+    dim_type dim = make_dim(shape);
+    dim_type direction = make_direction(shape, direction_);
     if (direction >= dim){
         throw combine_exception{"bad concatenate direction"};
     }
@@ -102,25 +105,26 @@ void check_concatenate_variadic_args(const DimT& direction, const ShT& shape, co
 }
 
 template<typename DimT, typename ShT, typename...ShTs>
-void check_concatenate_variadic_args(const DimT& direction, const std::tuple<ShT, ShTs...>& shapes){
-    std::apply([&direction](const auto&...shapes_){check_concatenate_variadic_args(direction,shapes_...);},shapes);
+void check_concatenate_variadic_args(const DimT& direction_, const std::tuple<ShT, ShTs...>& shapes){
+    std::apply([&direction_](const auto&...shapes_){check_concatenate_variadic_args(direction_,shapes_...);},shapes);
 }
 
 template<typename DimT, typename Container>
-void check_concatenate_container_args(const DimT& direction, const Container& shapes){
+void check_concatenate_container_args(const DimT& direction_, const Container& shapes){
     using dim_type = DimT;
     if (shapes.empty()){
         throw combine_exception{"nothing to concatenate"};
     }
     auto it = shapes.begin();
     const auto& first_shape = *it;
-    const dim_type& first_dim = detail::make_dim(first_shape);
+    const dim_type direction = make_direction(first_shape, direction_);
+    const dim_type first_dim = make_dim(first_shape);
     if (direction >= first_dim){
         throw combine_exception{"bad concatenate direction"};
     }
     for(++it; it!=shapes.end(); ++it){
         const auto& shape = *it;
-        if (first_dim!=detail::make_dim(shape)){
+        if (first_dim!=make_dim(shape)){
             throw combine_exception("tensors to concatenate must have equal dimensions number");
         }
         for (dim_type d{0}; d!=first_dim; ++d){
@@ -133,16 +137,19 @@ void check_concatenate_container_args(const DimT& direction, const Container& sh
     }
 }
 
-template<typename...Ts>
-void check_split_by_points_args(const basic_tensor<Ts...>& t, const typename basic_tensor<Ts...>::dim_type& direction){
+template<typename DimT, typename...Ts>
+void check_split_by_points_args(const basic_tensor<Ts...>& t, const DimT& direction_){
+    const auto direction = make_direction(t.dim(),direction_);
     if (direction >= t.dim()){
         throw combine_exception("invalid split direction");
     }
 }
 
-template<typename...Ts>
-void check_split_by_equal_parts_args(const basic_tensor<Ts...>& t, const typename basic_tensor<Ts...>::dim_type& direction, const typename basic_tensor<Ts...>::index_type& parts_number){
+template<typename...Ts, typename DimT, typename IdxT>
+void check_split_by_equal_parts_args(const basic_tensor<Ts...>& t, const DimT& direction_, const IdxT& parts_number_){
     using index_type = typename basic_tensor<Ts...>::index_type;
+    const auto direction = make_direction(t.dim(), direction_);
+    const auto parts_number = static_cast<index_type>(parts_number_);
     if (direction >= t.dim()){
         throw combine_exception("invalid split direction");
     }
@@ -363,14 +370,15 @@ class combiner
 //join tensors along new direction, tensors must have the same shape
 //variadic
 template<typename DimT, typename...Us, typename...Ts>
-static auto stack_variadic(const DimT& direction, const basic_tensor<Us...>& t, const Ts&...ts){
+static auto stack_variadic(const DimT& direction_, const basic_tensor<Us...>& t, const Ts&...ts){
     using tensor_type = basic_tensor<Us...>;
     using config_type = typename tensor_type::config_type;
     using index_type = typename config_type::index_type;
     using res_value_type = std::common_type_t<typename tensor_type::value_type, typename Ts::value_type...>;
 
     const auto& shape = t.shape();
-    detail::check_stack_variadic_args(direction, shape, ts.shape()...);
+    detail::check_stack_variadic_args(direction_, shape, ts.shape()...);
+    const auto direction = detail::make_direction(shape,direction_);
     constexpr auto tensors_number = sizeof...(Ts) + 1;
     auto res_shape = detail::make_stack_shape(direction, shape, index_type{tensors_number});
     if constexpr (tensors_number == 1){
@@ -384,16 +392,17 @@ static auto stack_variadic(const DimT& direction, const basic_tensor<Us...>& t, 
     }
 }
 template<typename DimT, typename Container>
-static auto stack_container(const DimT& direction, const Container& ts){
+static auto stack_container(const DimT& direction_, const Container& ts){
     using tensor_type = typename Container::value_type;
     using config_type = typename tensor_type::config_type;
     using index_type = typename config_type::index_type;
     using res_value_type = typename tensor_type::value_type;
 
     const auto shapes = detail::make_shapes_container(ts);
-    detail::check_stack_container_args(direction, shapes);
-    index_type tensors_number = static_cast<index_type>(ts.size());
+    detail::check_stack_container_args(direction_, shapes);
     const auto& shape = *shapes.begin();
+    const auto direction = detail::make_direction(shape, direction_);
+    index_type tensors_number = static_cast<index_type>(ts.size());
     auto res_shape = detail::make_stack_shape(direction, shape, tensors_number);
     if (tensors_number == index_type{1}){
         const auto& t = *ts.begin();
@@ -411,13 +420,16 @@ static auto stack_container(const DimT& direction, const Container& ts){
 //join tensors along existing direction, tensors must have the same shape except concatenate direction
 //variadic
 template<typename DimT, typename...Us, typename...Ts>
-static auto concatenate_variadic(const DimT& direction, const basic_tensor<Us...>& t, const Ts&...ts){
+static auto concatenate_variadic(const DimT& direction_, const basic_tensor<Us...>& t, const Ts&...ts){
     using tensor_type = basic_tensor<Us...>;
     using config_type = typename tensor_type::config_type;
+    using dim_type = typename tensor_type::dim_type;
     using res_value_type = std::common_type_t<typename tensor_type::value_type, typename Ts::value_type...>;
 
-    auto shapes = std::make_tuple(t.shape(), ts.shape()...);
-    detail::check_concatenate_variadic_args(direction, shapes);
+    const auto& first_shape = t.shape();
+    auto shapes = std::make_tuple(first_shape, ts.shape()...);
+    detail::check_concatenate_variadic_args(direction_, shapes);
+    const dim_type direction = detail::make_direction(first_shape, direction_);
     auto res_shape = detail::make_concatenate_variadic_shape(direction, shapes);
     constexpr auto tensors_number = sizeof...(Ts) + 1;
     if constexpr (tensors_number == 1){
@@ -432,13 +444,16 @@ static auto concatenate_variadic(const DimT& direction, const basic_tensor<Us...
 }
 //container
 template<typename DimT, typename Container>
-static auto concatenate_container(const DimT& direction, const Container& ts){
+static auto concatenate_container(const DimT& direction_, const Container& ts){
     using tensor_type = typename Container::value_type;
     using config_type = typename tensor_type::config_type;
+    using dim_type = typename tensor_type::dim_type;
     using res_value_type = typename tensor_type::value_type;
 
     const auto shapes = detail::make_shapes_container(ts);
-    detail::check_concatenate_container_args(direction, shapes);
+    detail::check_concatenate_container_args(direction_, shapes);
+    const auto& first_shape = *shapes.begin();
+    const dim_type direction = detail::make_direction(first_shape, direction_);
     auto res = tensor<res_value_type, config_type>(detail::make_concatenate_container_shape(direction, shapes), res_value_type{});
     if (!res.empty()){
         detail::fill_concatenate_container(direction,shapes,res.begin(),ts);
@@ -586,8 +601,8 @@ static auto block_init_list(std::initializer_list<std::initializer_list<Nested>>
 
 //Split tensor and return container of slice views
 //split points determined using split_points parameter that is container of split points
-template<typename...Ts, typename IdxContainer>
-static auto split_by_points(const basic_tensor<Ts...>& t, const IdxContainer& split_points, const typename basic_tensor<Ts...>::dim_type& direction){
+template<typename...Ts, typename IdxContainer, typename DimT>
+static auto split_by_points(const basic_tensor<Ts...>& t, const IdxContainer& split_points, const DimT& direction_){
     using tensor_type = basic_tensor<Ts...>;
     using config_type = typename tensor_type::config_type;
     using index_type = typename tensor_type::index_type;
@@ -598,7 +613,8 @@ static auto split_by_points(const basic_tensor<Ts...>& t, const IdxContainer& sp
     using slices_type = typename config_type::template container<slice_type>;
     using slices_size_type = typename slices_type::size_type;
 
-    detail::check_split_by_points_args(t, direction);
+    detail::check_split_by_points_args(t, direction_);
+    const auto direction = detail::make_direction(t.dim(), direction_);
     if (std::empty(split_points)){
         return res_type{t(slice_type{})};
     }else{
@@ -626,8 +642,8 @@ static auto split_by_points(const basic_tensor<Ts...>& t, const IdxContainer& sp
     }
 }
 //split points determined by dividing tensor by equal parts
-template<typename...Ts>
-static auto split_equal_parts(const basic_tensor<Ts...>& t, const typename basic_tensor<Ts...>::index_type& parts_number, const typename basic_tensor<Ts...>::dim_type& direction){
+template<typename...Ts, typename IdxT, typename DimT>
+static auto split_equal_parts(const basic_tensor<Ts...>& t, const IdxT& parts_number_, const DimT& direction_){
     using tensor_type = basic_tensor<Ts...>;
     using config_type = typename tensor_type::config_type;
     using index_type = typename tensor_type::index_type;
@@ -639,7 +655,9 @@ static auto split_equal_parts(const basic_tensor<Ts...>& t, const typename basic
     using slices_type = typename config_type::template container<slice_type>;
     using slices_size_type = typename slices_type::size_type;
 
-    detail::check_split_by_equal_parts_args(t,direction,parts_number);
+    detail::check_split_by_equal_parts_args(t,direction_,parts_number_);
+    const auto direction = detail::make_direction(t.dim(),direction_);
+    const auto parts_number = static_cast<index_type>(parts_number_);
     const index_type direction_size = t.shape()[direction];
     const index_type part_size = direction_size/parts_number;
     index_type stop{part_size};
@@ -668,12 +686,12 @@ static auto vsplit_by_points(const basic_tensor<Ts...>& t, const IdxContainer& s
     const dim_type direction{0};
     return split_by_points(t,split_points,direction);
 }
-template<typename...Ts>
-static auto vsplit_equal_parts(const basic_tensor<Ts...>& t, const typename basic_tensor<Ts...>::index_type& parts_number){
+template<typename...Ts, typename DimT>
+static auto vsplit_equal_parts(const basic_tensor<Ts...>& t, const DimT& parts_number_){
     using dim_type = typename basic_tensor<Ts...>::dim_type;
     detail::check_vsplit_args(t);
     const dim_type direction{0};
-    return split_equal_parts(t,parts_number,direction);
+    return split_equal_parts(t,parts_number_,direction);
 }
 //split in direction 1, for 1-d split in direction 0
 template<typename...Ts, typename IdxContainer>
@@ -682,11 +700,11 @@ static auto hsplit_by_points(const basic_tensor<Ts...>& t, const IdxContainer& s
     const dim_type direction = t.dim() == dim_type{1} ? dim_type{0} : dim_type{1};
     return split_by_points(t,split_points,direction);
 }
-template<typename...Ts>
-static auto hsplit_equal_parts(const basic_tensor<Ts...>& t, const typename basic_tensor<Ts...>::index_type& parts_number){
+template<typename...Ts, typename DimT>
+static auto hsplit_equal_parts(const basic_tensor<Ts...>& t, const DimT& parts_number_){
     using dim_type = typename basic_tensor<Ts...>::dim_type;
     const dim_type direction = t.dim() == dim_type{1} ? dim_type{0} : dim_type{1};
-    return split_equal_parts(t,parts_number,direction);
+    return split_equal_parts(t,parts_number_,direction);
 }
 
 public:
