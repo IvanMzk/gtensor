@@ -17,6 +17,25 @@ public:
 
 namespace detail{
 
+template<typename Container, typename DimT, typename Directions>
+auto make_directions(const DimT& dim, const Directions& directions_){
+    using dim_type = DimT;
+    if constexpr (detail::is_container_of_type_v<Directions,dim_type>){
+        using container_size_type = typename Container::size_type;
+        using directions_size_type = typename Directions::size_type;
+        Container res{};
+        if constexpr (std::is_convertible_v<directions_size_type, container_size_type>){
+            res.reserve(static_cast<container_size_type>(directions_.size()));
+        }
+        for (auto it=directions_.begin(), last=directions_.end(); it!=last; ++it){
+            res.push_back(make_direction(dim,*it));
+        }
+        return res;
+    }else{
+        return make_direction(dim,directions_);
+    }
+}
+
 template<typename ShT>
 auto check_reduce_args(const ShT& shape, const typename ShT::difference_type& direction){
     using dim_type = typename ShT::difference_type;
@@ -365,13 +384,15 @@ auto reduce_end(const ShT& shape, const Traverser& traverser, const Directions& 
 class reducer
 {
     template<typename F, typename Directions, typename...Ts, typename...Args>
-    static auto reduce_(const basic_tensor<Ts...>& parent, const Directions& directions, F reduce_f, bool keep_dims, Args&&...args){
+    static auto reduce_(const basic_tensor<Ts...>& parent, const Directions& directions_, F reduce_f, bool keep_dims, Args&&...args){
         using parent_type = basic_tensor<Ts...>;
         using value_type = typename parent_type::value_type;
         using config_type = typename parent_type::config_type;
         using dim_type = typename config_type::dim_type;
         using index_type = typename config_type::index_type;
+        using directions_container_type = typename config_type::template container<dim_type>;
 
+        auto directions = detail::make_directions<directions_container_type>(parent.dim(),directions_);
         const auto& pshape = parent.shape();
         detail::check_reduce_args(pshape, directions);
         auto res = tensor<value_type,config_type>{detail::make_reduce_shape(pshape, directions, keep_dims)};
@@ -423,58 +444,18 @@ class reducer
         return res;
     }
 
-    // template<typename F, typename...Ts>
-    // static auto reduce_(const basic_tensor<Ts...>& parent, const typename basic_tensor<Ts...>::dim_type& direction, F reduce_f, bool keep_dims){
-    //     using parent_type = basic_tensor<Ts...>;
-    //     using value_type = typename parent_type::value_type;
-    //     using config_type = typename parent_type::config_type;
-    //     using dim_type = typename config_type::dim_type;
-    //     using index_type = typename config_type::index_type;
-    //     using walker_reduce_traverser_type = detail::walker_reduce_traverser<config_type, decltype(parent.create_walker())>;
-    //     using reduce_iterator_type = decltype(std::declval<walker_reduce_traverser_type>().begin());
-    //     using res_value_type = std::decay_t<decltype(reduce_f(std::declval<reduce_iterator_type>(),std::declval<reduce_iterator_type>()))>;
-    //     const auto& pshape = parent.shape();
-    //     detail::check_reduce_args(pshape, direction);
-    //     auto res = tensor<res_value_type,config_type>{detail::make_reduce_shape(pshape, direction, keep_dims)};
-    //     index_type reduce_direction_size = pshape[direction];
-    //     if (!res.empty()){
-    //         if (reduce_direction_size == index_type{0}){    //fill with default
-    //             if constexpr (std::is_default_constructible_v<value_type>){
-    //                 detail::fill(res.begin(), res.end(), value_type{});
-    //             }else{
-    //                 throw reduce_exception("reduce can't fill result, value_type is not default constructible");
-    //             }
-    //         }else{
-    //             auto pdim = parent.dim();
-    //             if (pdim == dim_type{1}){
-    //                 *res.begin() = reduce_f(parent.begin(), parent.end());
-    //             }else{
-    //                 auto reduce_traverser = walker_reduce_traverser_type{pshape, parent.create_walker(), direction};
-    //                 auto res_it = res.begin();
-    //                 do{
-    //                     *res_it = reduce_f(reduce_traverser.begin(),reduce_traverser.end());
-    //                     ++res_it;
-    //                 }while(reduce_traverser.next());
-    //             }
-    //         }
-    //     }
-    //     return res;
-    // }
-
-    template<typename F, typename...Ts, typename...Args>
-    static auto slide_(
-        const basic_tensor<Ts...>& parent,
-        const typename basic_tensor<Ts...>::dim_type& direction,
-        F slide_f,
-        const typename basic_tensor<Ts...>::index_type& window_size,
-        const typename basic_tensor<Ts...>::index_type& window_step,
-        Args&&...args
-    ){
+    template<typename...Ts, typename DimT, typename F, typename IdxT, typename...Args>
+    static auto slide_(const basic_tensor<Ts...>& parent, const DimT& direction_, F slide_f, const IdxT& window_size_, const IdxT& window_step_, Args&&...args)
+    {
         using parent_type = basic_tensor<Ts...>;
         using value_type = typename parent_type::value_type;
         using config_type = typename parent_type::config_type;
+        using index_type = typename config_type::index_type;
         using dim_type = typename config_type::dim_type;
         const auto& pshape = parent.shape();
+        const dim_type direction = detail::make_direction(pshape,direction_);
+        const index_type window_size = static_cast<index_type>(window_size_);
+        const index_type window_step = static_cast<index_type>(window_step_);
         detail::check_slide_args(pshape, direction, window_size);
         auto res = tensor<value_type,config_type>{detail::make_slide_shape(pshape, direction, window_size, window_step)};
         if (!res.empty()){
@@ -512,15 +493,9 @@ public:
     static auto reduce(const basic_tensor<Ts...>& t, const Directions& directions, F f, bool keep_dims, Args&&...args){
         return reduce_(t,directions,f,keep_dims,std::forward<Args>(args)...);
     }
-    template<typename F, typename...Ts, typename...Args>
-    static auto slide(
-        const basic_tensor<Ts...>& t,
-        const typename basic_tensor<Ts...>::dim_type& direction,
-        F f,
-        const typename basic_tensor<Ts...>::index_type& window_size,
-        const typename basic_tensor<Ts...>::index_type& window_step,
-        Args&&...args
-    ){
+
+    template<typename...Ts, typename DimT, typename F, typename IdxT, typename...Args>
+    static auto slide(const basic_tensor<Ts...>& t, const DimT& direction, F f, const IdxT& window_size, const IdxT& window_step, Args&&...args){
         return slide_(t,direction,f,window_size,window_step,std::forward<Args>(args)...);
     }
 };
@@ -537,15 +512,8 @@ auto reduce(const basic_tensor<Ts...>& t, const Directions& directions, F f, boo
 //F call operator must be defined like this:
 //template<typename It,typename DstIt,typename IdxT,typename...Args> void operator()(It first, It last, DstIt dfirst, DstIt dlast, IdxT window_size, IdxT window_step, Args&&...args){...}
 //where Args is application specific arguments
-template<typename F, typename...Ts, typename...Args>
-auto slide(
-    const basic_tensor<Ts...>& t,
-    const typename basic_tensor<Ts...>::dim_type& direction,
-    F f,
-    const typename basic_tensor<Ts...>::index_type& window_size,
-    const typename basic_tensor<Ts...>::index_type& window_step,
-    Args&&...args
-){
+template<typename...Ts, typename DimT, typename F, typename IdxT, typename...Args>
+auto slide(const basic_tensor<Ts...>& t, const DimT& direction, F f, const IdxT& window_size, const IdxT& window_step, Args&&...args){
     using config_type = typename basic_tensor<Ts...>::config_type;
     return reducer_selector_t<config_type>::slide(t, direction, f, window_size, window_step,std::forward<Args>(args)...);
 }
