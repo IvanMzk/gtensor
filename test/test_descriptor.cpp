@@ -266,24 +266,59 @@ TEMPLATE_TEST_CASE("test_flat_to_flat", "[test_descriptor]",
     using config_type = gtensor::config::extend_config_t<test_config::config_div_mode_selector_t<TestType>, int>;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
+    using gtensor::config::c_layout;
+    using gtensor::config::f_layout;
     using gtensor::detail::make_dividers;
     using gtensor::detail::flat_to_flat;
-    using test_type = std::tuple<index_type, decltype(make_dividers<config_type>(std::declval<shape_type>())), shape_type, index_type, index_type>;
-    //0flat_idx,1strides,2cstrides,3offset,4expected_flat_idx
-    auto test_data = GENERATE(
-                                test_type{0,make_dividers<config_type>(shape_type{1}),shape_type{1},0,0},
-                                test_type{5,make_dividers<config_type>(shape_type{1}),shape_type{1},0,5},
-                                test_type{5,make_dividers<config_type>(shape_type{1,1}),shape_type{1,1},10,15},
-                                test_type{5,make_dividers<config_type>(shape_type{3,1}),shape_type{2,1},10,14},
-                                test_type{34,make_dividers<config_type>(shape_type{12,3,1}),shape_type{6,3,1},0,22}
+    using helpers_for_testing::apply_by_element;
+    //0flat_idx,1strides,2cstrides,3offset,4layout,5expected
+    auto test_data = std::make_tuple(
+        //c_layout
+        std::make_tuple(index_type{0}, shape_type{1}, shape_type{1}, index_type{0}, c_layout{}, index_type{0}),
+        std::make_tuple(index_type{0}, shape_type{1}, shape_type{1}, index_type{1}, c_layout{}, index_type{1}),
+        std::make_tuple(index_type{5}, shape_type{1}, shape_type{1}, index_type{0}, c_layout{}, index_type{5}),
+        std::make_tuple(index_type{5}, shape_type{1}, shape_type{1}, index_type{1}, c_layout{}, index_type{6}),
+        std::make_tuple(index_type{5}, shape_type{1,1}, shape_type{1,1}, index_type{0}, c_layout{}, index_type{5}),
+        std::make_tuple(index_type{5}, shape_type{1,1}, shape_type{1,1}, index_type{10}, c_layout{}, index_type{15}),
+        std::make_tuple(index_type{0}, shape_type{3,1}, shape_type{2,1}, index_type{0}, c_layout{}, index_type{0}),
+        std::make_tuple(index_type{5}, shape_type{3,1}, shape_type{2,1}, index_type{0}, c_layout{}, index_type{4}),
+        std::make_tuple(index_type{5}, shape_type{3,1}, shape_type{2,1}, index_type{10}, c_layout{}, index_type{14}),
+        std::make_tuple(index_type{34}, shape_type{12,3,1}, shape_type{6,3,1}, index_type{0}, c_layout{}, index_type{22}),
+        std::make_tuple(index_type{34}, shape_type{12,3,1}, shape_type{6,3,1}, index_type{3}, c_layout{}, index_type{25}),
+        //f_layout
+        std::make_tuple(index_type{0}, shape_type{1}, shape_type{1}, index_type{0}, f_layout{}, index_type{0}),
+        std::make_tuple(index_type{0}, shape_type{1}, shape_type{1}, index_type{1}, f_layout{}, index_type{1}),
+        std::make_tuple(index_type{5}, shape_type{1}, shape_type{1}, index_type{0}, f_layout{}, index_type{5}),
+        std::make_tuple(index_type{5}, shape_type{1}, shape_type{1}, index_type{1}, f_layout{}, index_type{6}),
+        std::make_tuple(index_type{5}, shape_type{1,1}, shape_type{1,1}, index_type{0}, f_layout{}, index_type{5}),
+        std::make_tuple(index_type{5}, shape_type{1,1}, shape_type{1,1}, index_type{10}, f_layout{}, index_type{15}),
+        std::make_tuple(index_type{0}, shape_type{1,2}, shape_type{3,1}, index_type{0}, f_layout{}, index_type{0}),
+        std::make_tuple(index_type{1}, shape_type{1,2}, shape_type{3,1}, index_type{0}, f_layout{}, index_type{3}),
+        std::make_tuple(index_type{2}, shape_type{1,2}, shape_type{3,1}, index_type{0}, f_layout{}, index_type{1}),
+        std::make_tuple(index_type{3}, shape_type{1,2}, shape_type{3,1}, index_type{0}, f_layout{}, index_type{4}),
+        std::make_tuple(index_type{0}, shape_type{1,2}, shape_type{3,1}, index_type{2}, f_layout{}, index_type{2}),
+        std::make_tuple(index_type{1}, shape_type{1,2}, shape_type{3,1}, index_type{2}, f_layout{}, index_type{5}),
+        std::make_tuple(index_type{2}, shape_type{1,2}, shape_type{3,1}, index_type{2}, f_layout{}, index_type{3}),
+        std::make_tuple(index_type{3}, shape_type{1,2}, shape_type{3,1}, index_type{2}, f_layout{}, index_type{6}),
+        std::make_tuple(index_type{0}, shape_type{1,2,6}, shape_type{1,2,12}, index_type{4}, f_layout{}, index_type{4}),
+        std::make_tuple(index_type{1}, shape_type{1,2,6}, shape_type{1,2,12}, index_type{4}, f_layout{}, index_type{5}),
+        std::make_tuple(index_type{2}, shape_type{1,2,6}, shape_type{1,2,12}, index_type{4}, f_layout{}, index_type{6}),
+        std::make_tuple(index_type{3}, shape_type{1,2,6}, shape_type{1,2,12}, index_type{4}, f_layout{}, index_type{7}),
+        std::make_tuple(index_type{6}, shape_type{1,2,6}, shape_type{1,2,12}, index_type{4}, f_layout{}, index_type{16}),
+        std::make_tuple(index_type{7}, shape_type{1,2,6}, shape_type{1,2,12}, index_type{4}, f_layout{}, index_type{17})
     );
-
-    auto flat_idx = std::get<0>(test_data);
-    auto strides = std::get<1>(test_data);
-    auto cstrides = std::get<2>(test_data);
-    auto offset = std::get<3>(test_data);
-    auto expected_flat_idx = std::get<4>(test_data);
-    REQUIRE(flat_to_flat(strides, cstrides, offset, flat_idx) == expected_flat_idx);
+    auto test = [](const auto& t){
+        auto flat_idx = std::get<0>(t);
+        auto strides = std::get<1>(t);
+        auto strides_div = make_dividers<config_type>(strides);
+        auto cstrides = std::get<2>(t);
+        auto offset = std::get<3>(t);
+        auto layout = std::get<4>(t);
+        auto expected = std::get<5>(t);
+        auto result = flat_to_flat(strides_div, cstrides, offset, flat_idx, layout);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test,test_data);
 }
 
 TEST_CASE("test_make_shape_of_type","[test_descriptor]"){

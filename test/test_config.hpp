@@ -8,6 +8,7 @@ template<typename Div, typename Engine, template<typename...> typename Storage, 
 struct config_tmpl_{
     using engine = Engine;
     using div_mode = Div;
+    using layout = gtensor::config::default_config::layout;
     template<typename T> using storage = Storage<T>;
     template<typename T> using shape = typename gtensor::config::default_config::shape<T>;
     template<typename T> using container = typename gtensor::config::default_config::container<T>;

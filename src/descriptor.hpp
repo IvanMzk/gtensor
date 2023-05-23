@@ -187,15 +187,25 @@ T make_shape_of_type(std::initializer_list<IdxT> shape){
 }
 
 //converts flat index to flat index given strides and converting strides
-template<typename StT, typename CStT, typename IdxT>
-auto flat_to_flat(const StT& strides, const CStT& cstrides, IdxT offset, IdxT idx){
+template<typename StT, typename CStT, typename IdxT, typename Layout>
+auto flat_to_flat(const StT& strides, const CStT& cstrides, IdxT offset, IdxT idx, Layout){
     using index_type = IdxT;
-    auto st_it = strides.begin();
-    auto cst_it = cstrides.begin();
-    while(idx != index_type(0)){
-        offset += *cst_it*divide(idx,*st_it);
-        ++st_it;
-        ++cst_it;
+    if constexpr (std::is_same_v<Layout,config::c_layout>){
+        auto st_it = strides.begin();
+        auto cst_it = cstrides.begin();
+        while(idx != index_type(0)){
+            offset += *cst_it*divide(idx,*st_it);
+            ++st_it;
+            ++cst_it;
+        }
+    }else if constexpr (std::is_same_v<Layout,config::f_layout>){
+        auto st_it = strides.end();
+        auto cst_it = cstrides.end();
+        while(idx != index_type(0)){
+            offset += *--cst_it*divide(idx,*--st_it);
+        }
+    }else{
+        static_assert(always_false<Layout>,"invalid Layout argument");
     }
     return offset;
 }
@@ -387,9 +397,15 @@ public:
         descriptor_with_offset_base{std::forward<ShT>(shape__), offset__},
         cstrides_{std::forward<StT>(cstrides__)}
     {}
-    const shape_type& cstrides()const override{return cstrides_;}
-    index_type convert(const index_type& idx)const override{return operator()(idx);}
-    index_type operator()(const index_type& idx)const{return detail::flat_to_flat(strides_div(),cstrides(),offset(),idx);}
+    const shape_type& cstrides()const override{
+        return cstrides_;
+    }
+    index_type convert(const index_type& idx)const override{
+        return operator()(idx);
+    }
+    index_type operator()(const index_type& idx)const{
+        return detail::flat_to_flat(strides_div(),cstrides(),offset(),idx,typename Config::layout{});
+    }
 private:
     shape_type cstrides_;
 };

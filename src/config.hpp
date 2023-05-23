@@ -61,6 +61,7 @@ struct extended_config{
     using config_type = Config;
     using engine = typename config_type::engine;
     using div_mode = typename config_type::div_mode;
+    using layout = typename config_type::layout;
     template<typename T> using storage = typename config_type::template storage<T>;
     template<typename T> using shape = typename config_type::template shape<T>;
     template<typename T> using container = typename config_type::template container<T>;
