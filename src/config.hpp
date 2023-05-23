@@ -9,18 +9,24 @@ namespace config{
 
 enum class div_modes : std::size_t {native, libdivide};
 enum class engines : std::size_t {expression_template};
+enum class layouts : std::size_t {c,f};
 
-template<typename T, T M> struct tag{static constexpr T value = M;};
+//template<typename T, T M> struct tag{static constexpr T value = M;};
 
-using mode_div_native = tag<div_modes, div_modes::native>;
-using mode_div_libdivide = tag<div_modes, div_modes::libdivide>;
-using engine_expression_template = tag<engines, engines::expression_template>;
+using mode_div_native = std::integral_constant<div_modes, div_modes::native>;
+using mode_div_libdivide = std::integral_constant<div_modes, div_modes::libdivide>;
+using engine_expression_template = std::integral_constant<engines, engines::expression_template>;
+using c_layout = std::integral_constant<layouts, layouts::c>;
+using f_layout = std::integral_constant<layouts, layouts::f>;
 
 struct default_config
 {
     using engine = engine_expression_template;
     using div_mode = mode_div_libdivide;
     //using div_mode = mode_div_native;
+
+    //specify storage scheme of data elements
+    using layout = c_layout;
 
     //data elements storage template
     //must provide at least storage(const difference_type& n) constructor, which constructs storage of size n
