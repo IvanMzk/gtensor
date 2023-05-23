@@ -65,7 +65,7 @@ template<typename T, typename...Ts> struct first_tensor_type<T,Ts...>{
 };
 template<typename...Ts> using first_tensor_type_t = typename first_tensor_type<Ts...>::type;
 
-//std::fill may require difference_type to be convertible to integral
+//standart library may require difference_type to be convertible to integral
 template<typename It, typename T>
 void fill(It first, It last, const T& v){
     using difference_type = typename std::iterator_traits<It>::difference_type;
@@ -77,6 +77,31 @@ void fill(It first, It last, const T& v){
         }
     }
 }
+template<typename It, typename T>
+void advance(It& it, T n){
+    using iterator_type = std::remove_cv_t<It>;
+    using difference_type = typename std::iterator_traits<iterator_type>::difference_type;
+    if constexpr (std::is_integral_v<difference_type>){
+        std::advance(it,n);
+    }else{
+        using it_cat = typename std::iterator_traits<iterator_type>::iterator_category;
+        if constexpr (std::is_convertible_v<it_cat,std::random_access_iterator_tag>){
+            it+=n;
+        }else{
+            const difference_type zero_{0};
+            if (n>=zero_){
+                for (;n!=zero_;--n){
+                    ++it;
+                }
+            }else{
+                for (;n!=zero_;++n){
+                    --it;
+                }
+            }
+        }
+    }
+}
+
 //returns dimension for given shape argument
 //guarantes result is signed (assuming shape container difference_type is signed, as it must be)
 template<typename ShT>

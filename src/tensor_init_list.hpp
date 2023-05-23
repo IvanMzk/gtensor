@@ -7,6 +7,7 @@
 #include <vector>
 #include <numeric>
 #include <functional>
+#include "common.hpp"
 
 namespace gtensor{
 
@@ -124,9 +125,10 @@ inline auto list_parse(std::initializer_list<T> list){
 }
 
 //copy init list to Dst
-template<typename Dst_It, typename T>
-void fill_from_list_(const T& v, Dst_It& dst_it, std::size_t& size_){
-    using dst_value_type = typename std::iterator_traits<Dst_It>::value_type;
+struct trivial_mapper{};
+template<typename T, typename DstIt>
+inline void fill_element_(const T& v, DstIt& dst_it){
+    using dst_value_type = typename std::iterator_traits<DstIt>::value_type;
     if constexpr (std::is_same_v<T,dst_value_type>){
         *dst_it = v;
     }else if constexpr (std::is_convertible_v<T,dst_value_type>){
@@ -134,20 +136,47 @@ void fill_from_list_(const T& v, Dst_It& dst_it, std::size_t& size_){
     }else{
         *dst_it = v;
     }
-    ++dst_it;
-    ++size_;
 }
-template<typename Dst_It, typename T>
-void fill_from_list_(std::initializer_list<T> list, Dst_It& dst_it, std::size_t& size_){
+//trivial mapper implementation
+template<typename T, typename DstIt, typename DiffT>
+inline void fill_from_list_(const T& v, DstIt& dst_it, DiffT& src_pos){
+    fill_element_(v,dst_it);
+    ++dst_it;
+    ++src_pos;
+}
+template<typename T, typename DstIt, typename DiffT>
+inline void fill_from_list_(std::initializer_list<T> list, DstIt& dst_it, DiffT& src_pos){
     for (auto p=list.begin();p!=list.end(); ++p){
-        fill_from_list_(*p, dst_it, size_);
+        fill_from_list_(*p, dst_it, src_pos);
     }
 }
-template<typename Dst_It, typename T>
-std::size_t fill_from_list(std::initializer_list<T> list, Dst_It dst_it){
-    std::size_t size_{0};
-    fill_from_list_(list, dst_it, size_);
-    return size_;
+//custom mapper implementation
+template<typename T, typename DstIt, typename Mapper, typename DiffT>
+inline void fill_from_list_(const T& v, DstIt dst_it, Mapper& mapper, DiffT& src_pos){
+    advance(dst_it, mapper(src_pos));
+    fill_element_(v,dst_it);
+    ++dst_it;
+    ++src_pos;
+}
+template<typename T, typename DstIt, typename Mapper, typename DiffT>
+inline void fill_from_list_(std::initializer_list<T> list, DstIt& dst_it, Mapper& mapper, DiffT& src_pos){
+    for (auto p=list.begin();p!=list.end(); ++p){
+        fill_from_list_(*p, dst_it, mapper, src_pos);
+    }
+}
+template<typename T, typename DstIt, typename Mapper>
+inline auto fill_from_list(std::initializer_list<T> list, DstIt dst_it, Mapper mapper){
+    typename std::iterator_traits<DstIt>::difference_type src_pos{0};
+    if constexpr (std::is_same_v<Mapper,trivial_mapper>){
+        fill_from_list_(list, dst_it, src_pos);
+    }else{
+        fill_from_list_(list, dst_it, mapper, src_pos);
+    }
+    return src_pos;
+}
+template<typename T, typename DstIt>
+inline auto fill_from_list(std::initializer_list<T> list, DstIt dst_it){
+    return fill_from_list(list, dst_it, trivial_mapper{});
 }
 
 }   //end of namespace detail

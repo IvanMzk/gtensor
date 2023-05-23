@@ -407,7 +407,7 @@ public:
         descriptor_(detail::list_parse<dim_type,shape_type>(init_data)),
         elements_(descriptor_.size())
     {
-        detail::fill_from_list(init_data, begin_());
+        fill_from_list(init_data, typename config_type::layout{});
     }
 
     template<typename ShT, typename It>
@@ -479,6 +479,19 @@ private:
         elements_(descriptor_.size())
     {
         fill_from_range(descriptor_.size(), first, last, begin_(), end_(), typename std::iterator_traits<It>::iterator_category{});
+    }
+
+    template<typename Nested>
+    void fill_from_list(std::initializer_list<Nested> init_data, config::c_layout){
+        detail::fill_from_list(init_data, begin_());
+    }
+
+    template<typename Nested>
+    void fill_from_list(std::initializer_list<Nested> init_data, config::f_layout){
+        auto mapper = [strides=detail::make_strides(descriptor_.shape()), &cstrides=descriptor_.strides()](const auto& i){
+            return detail::flat_to_flat(strides,cstrides,index_type{0},i,config::c_layout{});
+        };
+        detail::fill_from_list(init_data, begin_(), mapper);
     }
 
     template<typename It, typename DstIt>

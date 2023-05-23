@@ -77,7 +77,7 @@ TEST_CASE("test_has_callable_reverse_iterator","[test_tensor_implementation]")
     REQUIRE(has_callable_reverse_iterator<std::string>::value);
 }
 
-TEST_CASE("test_has_subscript_operator","[test_tensor_implementation]")
+TEST_CASE("test_has_callable_subscript_operator","[test_tensor_implementation]")
 {
     struct const_subscriptable{
         using size_type = std::size_t;

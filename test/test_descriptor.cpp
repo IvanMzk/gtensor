@@ -296,16 +296,14 @@ TEMPLATE_TEST_CASE("test_flat_to_flat", "[test_descriptor]",
         std::make_tuple(index_type{1}, shape_type{1,2}, shape_type{3,1}, index_type{0}, f_layout{}, index_type{3}),
         std::make_tuple(index_type{2}, shape_type{1,2}, shape_type{3,1}, index_type{0}, f_layout{}, index_type{1}),
         std::make_tuple(index_type{3}, shape_type{1,2}, shape_type{3,1}, index_type{0}, f_layout{}, index_type{4}),
-        std::make_tuple(index_type{0}, shape_type{1,2}, shape_type{3,1}, index_type{2}, f_layout{}, index_type{2}),
-        std::make_tuple(index_type{1}, shape_type{1,2}, shape_type{3,1}, index_type{2}, f_layout{}, index_type{5}),
-        std::make_tuple(index_type{2}, shape_type{1,2}, shape_type{3,1}, index_type{2}, f_layout{}, index_type{3}),
-        std::make_tuple(index_type{3}, shape_type{1,2}, shape_type{3,1}, index_type{2}, f_layout{}, index_type{6}),
-        std::make_tuple(index_type{0}, shape_type{1,2,6}, shape_type{1,2,12}, index_type{4}, f_layout{}, index_type{4}),
-        std::make_tuple(index_type{1}, shape_type{1,2,6}, shape_type{1,2,12}, index_type{4}, f_layout{}, index_type{5}),
-        std::make_tuple(index_type{2}, shape_type{1,2,6}, shape_type{1,2,12}, index_type{4}, f_layout{}, index_type{6}),
-        std::make_tuple(index_type{3}, shape_type{1,2,6}, shape_type{1,2,12}, index_type{4}, f_layout{}, index_type{7}),
-        std::make_tuple(index_type{6}, shape_type{1,2,6}, shape_type{1,2,12}, index_type{4}, f_layout{}, index_type{16}),
-        std::make_tuple(index_type{7}, shape_type{1,2,6}, shape_type{1,2,12}, index_type{4}, f_layout{}, index_type{17})
+        std::make_tuple(index_type{4}, shape_type{1,2}, shape_type{3,1}, index_type{0}, f_layout{}, index_type{2}),
+        std::make_tuple(index_type{5}, shape_type{1,2}, shape_type{3,1}, index_type{0}, f_layout{}, index_type{5}),
+        std::make_tuple(index_type{0}, shape_type{1,2,6}, shape_type{1,2,12}, index_type{2}, f_layout{}, index_type{2}),
+        std::make_tuple(index_type{1}, shape_type{1,2,6}, shape_type{1,2,12}, index_type{2}, f_layout{}, index_type{3}),
+        std::make_tuple(index_type{2}, shape_type{1,2,6}, shape_type{1,2,12}, index_type{2}, f_layout{}, index_type{4}),
+        std::make_tuple(index_type{3}, shape_type{1,2,6}, shape_type{1,2,12}, index_type{2}, f_layout{}, index_type{5}),
+        std::make_tuple(index_type{6}, shape_type{1,2,6}, shape_type{1,2,12}, index_type{2}, f_layout{}, index_type{14}),
+        std::make_tuple(index_type{7}, shape_type{1,2,6}, shape_type{1,2,12}, index_type{2}, f_layout{}, index_type{15})
     );
     auto test = [](const auto& t){
         auto flat_idx = std::get<0>(t);
