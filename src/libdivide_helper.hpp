@@ -42,12 +42,6 @@ auto operator/(const integral_type::integral<T>& n, const libdivide_divider<inte
     return integral_type::integral<T>(n.value()/divider);
 }
 
-template<typename CfgT>
-struct libdivide_container_selector
-{
-    template<typename T> using container = typename CfgT::template container<libdivide_divider<T>>;
-};
-
 template<typename Config, typename T> using libdivide_dividers_t = typename Config::template container<libdivide_divider<T>>;
 
 template<typename Config, typename ShT>
