@@ -157,33 +157,57 @@ TEMPLATE_TEST_CASE("test_make_strides_div","[test_descriptor]",
     using shape_type = typename config_type::shape_type;
     using strides_div_type = gtensor::detail::strides_div_t<config_type>;
     using divider_type = typename strides_div_type::value_type;
-    using test_type = typename std::tuple<shape_type,strides_div_type>;
+    using gtensor::config::c_layout;
+    using gtensor::config::f_layout;
     using gtensor::detail::make_strides_div;
-    //0shape,1expected_strides_div
-    auto test_data = GENERATE(
-        test_type{shape_type{},strides_div_type{}},
-        test_type{shape_type{0},strides_div_type{divider_type(1)}},
-        test_type{shape_type{1},strides_div_type{divider_type(1)}},
-        test_type{shape_type{5},strides_div_type{divider_type(1)}},
-        test_type{shape_type{0,0},strides_div_type{divider_type(1),divider_type(1)}},
-        test_type{shape_type{1,0},strides_div_type{divider_type(1),divider_type(1)}},
-        test_type{shape_type{5,0},strides_div_type{divider_type(1),divider_type(1)}},
-        test_type{shape_type{0,1},strides_div_type{divider_type(1),divider_type(1)}},
-        test_type{shape_type{0,5},strides_div_type{divider_type(5),divider_type(1)}},
-        test_type{shape_type{1,1},strides_div_type{divider_type(1),divider_type(1)}},
-        test_type{shape_type{5,1},strides_div_type{divider_type(1),divider_type(1)}},
-        test_type{shape_type{1,5},strides_div_type{divider_type(5),divider_type(1)}},
-        test_type{shape_type{0,0,0},strides_div_type{divider_type(1),divider_type(1),divider_type(1)}},
-        test_type{shape_type{2,3,4},strides_div_type{divider_type(12),divider_type(4),divider_type(1)}},
-        test_type{shape_type{2,2,0,2},strides_div_type{divider_type(4),divider_type(2),divider_type(2),divider_type(1)}},
-        test_type{shape_type{4,3,2,0},strides_div_type{divider_type(6),divider_type(2),divider_type(1),divider_type(1)}},
-        test_type{shape_type{0,3,2,1},strides_div_type{divider_type(6),divider_type(2),divider_type(1),divider_type(1)}}
+    using helpers_for_testing::apply_by_element;
+    //0shape,1layout,2expected
+    auto test_data = std::make_tuple(
+        //c_layout
+        std::make_tuple(shape_type{}, c_layout{}, strides_div_type{}),
+        std::make_tuple(shape_type{0}, c_layout{}, strides_div_type{divider_type(1)}),
+        std::make_tuple(shape_type{1}, c_layout{}, strides_div_type{divider_type(1)}),
+        std::make_tuple(shape_type{5}, c_layout{}, strides_div_type{divider_type(1)}),
+        std::make_tuple(shape_type{0,0}, c_layout{}, strides_div_type{divider_type(1),divider_type(1)}),
+        std::make_tuple(shape_type{1,0}, c_layout{}, strides_div_type{divider_type(1),divider_type(1)}),
+        std::make_tuple(shape_type{5,0}, c_layout{}, strides_div_type{divider_type(1),divider_type(1)}),
+        std::make_tuple(shape_type{0,1}, c_layout{}, strides_div_type{divider_type(1),divider_type(1)}),
+        std::make_tuple(shape_type{0,5}, c_layout{}, strides_div_type{divider_type(5),divider_type(1)}),
+        std::make_tuple(shape_type{1,1}, c_layout{}, strides_div_type{divider_type(1),divider_type(1)}),
+        std::make_tuple(shape_type{5,1}, c_layout{}, strides_div_type{divider_type(1),divider_type(1)}),
+        std::make_tuple(shape_type{1,5}, c_layout{}, strides_div_type{divider_type(5),divider_type(1)}),
+        std::make_tuple(shape_type{0,0,0}, c_layout{}, strides_div_type{divider_type(1),divider_type(1),divider_type(1)}),
+        std::make_tuple(shape_type{2,3,4}, c_layout{}, strides_div_type{divider_type(12),divider_type(4),divider_type(1)}),
+        std::make_tuple(shape_type{2,2,0,2}, c_layout{}, strides_div_type{divider_type(4),divider_type(2),divider_type(2),divider_type(1)}),
+        std::make_tuple(shape_type{4,3,2,0}, c_layout{}, strides_div_type{divider_type(6),divider_type(2),divider_type(1),divider_type(1)}),
+        std::make_tuple(shape_type{0,3,2,1}, c_layout{}, strides_div_type{divider_type(6),divider_type(2),divider_type(1),divider_type(1)}),
+        //f_layout
+        std::make_tuple(shape_type{}, f_layout{}, strides_div_type{}),
+        std::make_tuple(shape_type{0}, f_layout{}, strides_div_type{divider_type(1)}),
+        std::make_tuple(shape_type{1}, f_layout{}, strides_div_type{divider_type(1)}),
+        std::make_tuple(shape_type{5}, f_layout{}, strides_div_type{divider_type(1)}),
+        std::make_tuple(shape_type{0,0}, f_layout{}, strides_div_type{divider_type(1),divider_type(1)}),
+        std::make_tuple(shape_type{1,0}, f_layout{}, strides_div_type{divider_type(1),divider_type(1)}),
+        std::make_tuple(shape_type{5,0}, f_layout{}, strides_div_type{divider_type(1),divider_type(5)}),
+        std::make_tuple(shape_type{0,1}, f_layout{}, strides_div_type{divider_type(1),divider_type(1)}),
+        std::make_tuple(shape_type{0,5}, f_layout{}, strides_div_type{divider_type(1),divider_type(1)}),
+        std::make_tuple(shape_type{1,1}, f_layout{}, strides_div_type{divider_type(1),divider_type(1)}),
+        std::make_tuple(shape_type{5,1}, f_layout{}, strides_div_type{divider_type(1),divider_type(5)}),
+        std::make_tuple(shape_type{1,5}, f_layout{}, strides_div_type{divider_type(1),divider_type(1)}),
+        std::make_tuple(shape_type{0,0,0}, f_layout{}, strides_div_type{divider_type(1),divider_type(1),divider_type(1)}),
+        std::make_tuple(shape_type{2,3,4}, f_layout{}, strides_div_type{divider_type(1),divider_type(2),divider_type(6)}),
+        std::make_tuple(shape_type{2,2,0,2}, f_layout{}, strides_div_type{divider_type(1),divider_type(2),divider_type(4),divider_type(4)}),
+        std::make_tuple(shape_type{4,3,2,0}, f_layout{}, strides_div_type{divider_type(1),divider_type(4),divider_type(12),divider_type(24)}),
+        std::make_tuple(shape_type{0,3,2,1}, f_layout{}, strides_div_type{divider_type(1),divider_type(1),divider_type(3),divider_type(6)})
     );
-
-    auto shape = std::get<0>(test_data);
-    auto strides_expected = std::get<1>(test_data);
-    auto strides_result = make_strides_div<config_type>(shape);
-    REQUIRE(strides_result == strides_expected);
+    auto test = [](const auto& t){
+        auto shape = std::get<0>(t);
+        auto layout = std::get<1>(t);
+        auto expected = std::get<2>(t);
+        auto result = make_strides_div<config_type>(shape, layout);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test,test_data);
 }
 
 // TEMPLATE_TEST_CASE("test_make_reset_strides","[test_descriptor]",std::vector<std::int64_t>)

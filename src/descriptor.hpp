@@ -18,26 +18,26 @@ public:
 
 namespace detail{
 
-//select type of strides_div
-template<typename Config>
-class strides_div_traits
-{
-    using config_type = Config;
-    //native division
-    template<typename, typename>
-    struct selector_
-    {
-        using type = typename config_type::shape_type;
-    };
-    //libdivide division
-    template<typename Dummy>
-    struct selector_<config::mode_div_libdivide, Dummy>
-    {
-        using type = typename libdivide_container_selector<config_type>::template container<typename config_type::index_type>;
-    };
-public:
-    using type = typename selector_<typename config_type::div_mode, void>::type;
-};
+// //select type of strides_div
+// template<typename Config>
+// class strides_div_traits
+// {
+//     using config_type = Config;
+//     //native division
+//     template<typename, typename>
+//     struct selector_
+//     {
+//         using type = typename config_type::shape_type;
+//     };
+//     //libdivide division
+//     template<typename Dummy>
+//     struct selector_<config::mode_div_libdivide, Dummy>
+//     {
+//         using type = typename libdivide_container_selector<config_type>::template container<typename config_type::index_type>;
+//     };
+// public:
+//     using type = typename selector_<typename config_type::div_mode, void>::type;
+// };
 
 template<typename Config>
 struct strides_div_type_
