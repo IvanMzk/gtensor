@@ -75,19 +75,30 @@ inline T make_shape_element(const T& shape_element){
     using shape_element_type = T;
     return shape_element==shape_element_type{0} ? shape_element_type{1}:shape_element;
 }
-template<typename ResT, typename ShT>
-inline ResT make_strides(const ShT& shape, typename ShT::value_type min_stride = typename ShT::value_type(1)){
+template<typename ResT, typename ShT, typename Layout>
+inline ResT make_strides(const ShT& shape, Layout, typename ShT::value_type min_stride = typename ShT::value_type(1)){
     using result_type = ResT;
     using result_value_type = typename result_type::value_type;
     if (!std::empty(shape)){
         result_type res(shape.size(), result_value_type());
-        auto shape_begin = shape.begin();
-        auto shape_it = shape.end();
-        auto res_end{res.end()};
-        *--res_end = result_value_type(min_stride);
-        while (--shape_it!=shape_begin){
-            min_stride *= make_shape_element(*shape_it);
-            *--res_end = result_value_type(min_stride);
+        auto shape_first = shape.begin();
+        auto shape_last = shape.end();
+        if constexpr (std::is_same_v<Layout,gtensor::config::c_layout>){
+            auto res_it = res.end();
+            *--res_it = result_value_type(min_stride);
+            for(;res_it != res.begin();){
+                min_stride *= make_shape_element(*--shape_last);
+                *--res_it = result_value_type(min_stride);
+            }
+        }else if constexpr (std::is_same_v<Layout,gtensor::config::f_layout>){
+            auto res_it = res.begin();
+            *res_it = result_value_type(min_stride);
+            for(++res_it;res_it != res.end();++res_it,++shape_first){
+                min_stride *= make_shape_element(*shape_first);
+                *res_it = result_value_type(min_stride);
+            }
+        }else{
+            static_assert(always_false<Layout>,"invalid Layout argument");
         }
         return res;
     }
@@ -95,9 +106,9 @@ inline ResT make_strides(const ShT& shape, typename ShT::value_type min_stride =
         return result_type{};
     }
 }
-template<typename ShT>
-inline ShT make_strides(const ShT& shape, typename ShT::value_type min_stride = typename ShT::value_type(1)){
-    return make_strides<ShT,ShT>(shape,min_stride);
+template<typename ShT, typename Layout>
+inline ShT make_strides(const ShT& shape, Layout layout, typename ShT::value_type min_stride = typename ShT::value_type(1)){
+    return make_strides<ShT,ShT>(shape, layout, min_stride);
 }
 
 template<typename ShT, typename Config>
