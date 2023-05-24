@@ -39,6 +39,24 @@ public:
     using type = typename selector_<typename config_type::div_mode, void>::type;
 };
 
+template<typename Config>
+struct strides_div_type_
+{
+    template<typename, typename> struct selector_;
+    //native division
+    template<typename Dummy> struct selector_<gtensor::config::mode_div_native, Dummy>
+    {
+        using type = typename Config::shape_type;
+    };
+    //libdivide division
+    template<typename Dummy> struct selector_<config::mode_div_libdivide, Dummy>
+    {
+        using type = libdivide_dividers_t<Config, typename Config::index_type>;
+    };
+    using type = typename selector_<typename Config::div_mode, void>::type;
+};
+template<typename Config> using strides_div_t = typename strides_div_type_<Config>::type;
+
 //makes broadcast shape, throws if shapes are not broadcastable
 template<typename ShT>
 inline void make_broadcast_shape_helper(ShT&){}
@@ -111,17 +129,16 @@ inline ShT make_strides(const ShT& shape, Layout layout, typename ShT::value_typ
     return make_strides<ShT,ShT>(shape, layout, min_stride);
 }
 
-template<typename ShT, typename Config>
-inline auto make_strides_div(const ShT& shape, Config, gtensor::config::mode_div_libdivide){
-    return make_strides<typename strides_div_traits<Config>::type>(shape);
-}
-template<typename ShT, typename Config>
-inline auto make_strides_div(const ShT& shape, Config, gtensor::config::mode_div_native){
-    return make_strides(shape);
-}
-template<typename Config, typename ShT>
-inline auto make_strides_div(const ShT& shape){
-    return make_strides_div(shape, Config{}, typename Config::div_mode{});
+template<typename Config, typename ShT, typename Layout = typename Config::layout>
+inline auto make_strides_div(const ShT& shape, Layout layout = Layout{}){
+    using div_mode = typename Config::div_mode;
+    if constexpr (std::is_same_v<div_mode, gtensor::config::mode_div_native>){
+        return make_strides(shape, layout);
+    }else if constexpr (std::is_same_v<div_mode, gtensor::config::mode_div_libdivide>){
+        return make_strides<strides_div_t<Config>>(shape,layout);
+    }else{
+        static_assert(always_false<Layout>,"invalid div_mode");
+    }
 }
 
 template<typename ShT>
@@ -228,12 +245,12 @@ class strides_div_extension<Config,gtensor::config::mode_div_libdivide>
 {
     using shape_type = typename Config::shape_type;
     using index_type = typename Config::index_type;
-    using strides_div_type = typename detail::strides_div_traits<Config>::type;
+    using strides_div_type = detail::strides_div_t<Config>;
     strides_div_type strides_div_;
 protected:
     strides_div_extension() = default;
     strides_div_extension(const shape_type& strides__):
-        strides_div_{detail::make_libdivide_container<Config>(strides__)}
+        strides_div_{detail::make_libdivide_dividers<Config>(strides__)}
     {}
     const auto&  strides_div()const{return strides_div_;}
 };
@@ -301,7 +318,7 @@ public:
     using index_type = typename config_type::index_type;
     using dim_type = typename config_type::dim_type;
     using shape_type = typename config_type::shape_type;
-    using strides_div_type = typename detail::strides_div_traits<config_type>::type;
+    using strides_div_type = detail::strides_div_t<config_type>;
 
     virtual ~descriptor_base(){}
     virtual index_type convert(const index_type& idx)const = 0;

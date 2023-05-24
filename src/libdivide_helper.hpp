@@ -48,28 +48,30 @@ struct libdivide_container_selector
     template<typename T> using container = typename CfgT::template container<libdivide_divider<T>>;
 };
 
-template<typename CfgT, typename ShT>
-inline auto make_libdivide_container(const ShT& src){
+template<typename Config, typename T> using libdivide_dividers_t = typename Config::template container<libdivide_divider<T>>;
+
+template<typename Config, typename ShT>
+inline auto make_libdivide_dividers(const ShT& src){
     using value_type = typename ShT::value_type;
-    typename libdivide_container_selector<CfgT>::template container<value_type> res{};
+    libdivide_dividers_t<Config, value_type> res{};
     res.reserve(src.size());
     for(const auto& i:src){
-        res.push_back(libdivide_divider<value_type>(i));
+        res.emplace_back(i);
     }
     return res;
 }
 
-template<typename CfgT, typename ShT>
+template<typename Config, typename ShT>
 inline auto make_dividers(const ShT& src, gtensor::config::mode_div_libdivide){
-    return make_libdivide_container<CfgT>(src);
+    return make_libdivide_dividers<Config>(src);
 }
-template<typename CfgT, typename ShT>
+template<typename Config, typename ShT>
 inline auto make_dividers(const ShT& src, gtensor::config::mode_div_native){
     return src;
 }
-template<typename CfgT, typename ShT>
+template<typename Config, typename ShT>
 inline auto make_dividers(const ShT& src){
-    return make_dividers<CfgT>(src, typename CfgT::div_mode{});
+    return make_dividers<Config>(src, typename Config::div_mode{});
 }
 
 //returns quotient, reminder write back to dividend

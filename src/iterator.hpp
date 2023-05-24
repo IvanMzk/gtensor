@@ -59,7 +59,7 @@ namespace detail{
     class broadcast_iterator_extension
     {
         using shape_type = typename Config::shape_type;
-        using strides_div_type = typename detail::strides_div_traits<Config>::type;
+        using strides_div_type = detail::strides_div_t<Config>;
         shape_type shape_;
         strides_div_type strides_;
     public:
@@ -134,7 +134,7 @@ protected:
     using result_type = decltype(*std::declval<walker_type>());
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
-    using strides_div_type = typename detail::strides_div_traits<config_type>::type;
+    using strides_div_type = detail::strides_div_t<config_type>;
     using traverser_type = walker_random_access_traverser<config_type, walker_type>;
 public:
     using iterator_category = std::random_access_iterator_tag;

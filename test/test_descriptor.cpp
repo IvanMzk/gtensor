@@ -148,43 +148,43 @@ TEMPLATE_TEST_CASE("test_make_strides","[test_descriptor]", std::vector<std::int
     apply_by_element(test,test_data);
 }
 
-// TEMPLATE_TEST_CASE("test_make_strides_div","[test_descriptor]",
-//     gtensor::config::mode_div_libdivide,
-//     gtensor::config::mode_div_native
-// )
-// {
-//     using config_type = gtensor::config::extend_config_t<test_config::config_div_mode_selector_t<TestType>, int>;
-//     using shape_type = typename config_type::shape_type;
-//     using strides_div_type = typename gtensor::detail::strides_div_traits<config_type>::type;
-//     using divider_type = typename strides_div_type::value_type;
-//     using test_type = typename std::tuple<shape_type,strides_div_type>;
-//     using gtensor::detail::make_strides_div;
-//     //0shape,1expected_strides_div
-//     auto test_data = GENERATE(
-//         test_type{shape_type{},strides_div_type{}},
-//         test_type{shape_type{0},strides_div_type{divider_type(1)}},
-//         test_type{shape_type{1},strides_div_type{divider_type(1)}},
-//         test_type{shape_type{5},strides_div_type{divider_type(1)}},
-//         test_type{shape_type{0,0},strides_div_type{divider_type(1),divider_type(1)}},
-//         test_type{shape_type{1,0},strides_div_type{divider_type(1),divider_type(1)}},
-//         test_type{shape_type{5,0},strides_div_type{divider_type(1),divider_type(1)}},
-//         test_type{shape_type{0,1},strides_div_type{divider_type(1),divider_type(1)}},
-//         test_type{shape_type{0,5},strides_div_type{divider_type(5),divider_type(1)}},
-//         test_type{shape_type{1,1},strides_div_type{divider_type(1),divider_type(1)}},
-//         test_type{shape_type{5,1},strides_div_type{divider_type(1),divider_type(1)}},
-//         test_type{shape_type{1,5},strides_div_type{divider_type(5),divider_type(1)}},
-//         test_type{shape_type{0,0,0},strides_div_type{divider_type(1),divider_type(1),divider_type(1)}},
-//         test_type{shape_type{2,3,4},strides_div_type{divider_type(12),divider_type(4),divider_type(1)}},
-//         test_type{shape_type{2,2,0,2},strides_div_type{divider_type(4),divider_type(2),divider_type(2),divider_type(1)}},
-//         test_type{shape_type{4,3,2,0},strides_div_type{divider_type(6),divider_type(2),divider_type(1),divider_type(1)}},
-//         test_type{shape_type{0,3,2,1},strides_div_type{divider_type(6),divider_type(2),divider_type(1),divider_type(1)}}
-//     );
+TEMPLATE_TEST_CASE("test_make_strides_div","[test_descriptor]",
+    gtensor::config::mode_div_libdivide,
+    gtensor::config::mode_div_native
+)
+{
+    using config_type = gtensor::config::extend_config_t<test_config::config_div_mode_selector_t<TestType>, int>;
+    using shape_type = typename config_type::shape_type;
+    using strides_div_type = gtensor::detail::strides_div_t<config_type>;
+    using divider_type = typename strides_div_type::value_type;
+    using test_type = typename std::tuple<shape_type,strides_div_type>;
+    using gtensor::detail::make_strides_div;
+    //0shape,1expected_strides_div
+    auto test_data = GENERATE(
+        test_type{shape_type{},strides_div_type{}},
+        test_type{shape_type{0},strides_div_type{divider_type(1)}},
+        test_type{shape_type{1},strides_div_type{divider_type(1)}},
+        test_type{shape_type{5},strides_div_type{divider_type(1)}},
+        test_type{shape_type{0,0},strides_div_type{divider_type(1),divider_type(1)}},
+        test_type{shape_type{1,0},strides_div_type{divider_type(1),divider_type(1)}},
+        test_type{shape_type{5,0},strides_div_type{divider_type(1),divider_type(1)}},
+        test_type{shape_type{0,1},strides_div_type{divider_type(1),divider_type(1)}},
+        test_type{shape_type{0,5},strides_div_type{divider_type(5),divider_type(1)}},
+        test_type{shape_type{1,1},strides_div_type{divider_type(1),divider_type(1)}},
+        test_type{shape_type{5,1},strides_div_type{divider_type(1),divider_type(1)}},
+        test_type{shape_type{1,5},strides_div_type{divider_type(5),divider_type(1)}},
+        test_type{shape_type{0,0,0},strides_div_type{divider_type(1),divider_type(1),divider_type(1)}},
+        test_type{shape_type{2,3,4},strides_div_type{divider_type(12),divider_type(4),divider_type(1)}},
+        test_type{shape_type{2,2,0,2},strides_div_type{divider_type(4),divider_type(2),divider_type(2),divider_type(1)}},
+        test_type{shape_type{4,3,2,0},strides_div_type{divider_type(6),divider_type(2),divider_type(1),divider_type(1)}},
+        test_type{shape_type{0,3,2,1},strides_div_type{divider_type(6),divider_type(2),divider_type(1),divider_type(1)}}
+    );
 
-//     auto shape = std::get<0>(test_data);
-//     auto strides_expected = std::get<1>(test_data);
-//     auto strides_result = make_strides_div<config_type>(shape);
-//     REQUIRE(strides_result == strides_expected);
-// }
+    auto shape = std::get<0>(test_data);
+    auto strides_expected = std::get<1>(test_data);
+    auto strides_result = make_strides_div<config_type>(shape);
+    REQUIRE(strides_result == strides_expected);
+}
 
 // TEMPLATE_TEST_CASE("test_make_reset_strides","[test_descriptor]",std::vector<std::int64_t>)
 // {

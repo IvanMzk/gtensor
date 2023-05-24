@@ -81,7 +81,7 @@ class walker_indexer
     using config_type = typename walker_type::config_type;
     using dim_type = typename walker_type::dim_type;
     using index_type = typename walker_type::index_type;
-    using strides_div_type = typename detail::strides_div_traits<config_type>::type;
+    using strides_div_type = detail::strides_div_t<config_type>;
 
     const strides_div_type* strides_;
     mutable walker_type walker_;
@@ -355,11 +355,11 @@ public:
     }
 };
 
-template<typename CfgT, typename Walker>
-class walker_random_access_traverser : public walker_bidirectional_traverser<CfgT, Walker, TraverseAllPredicate>
+template<typename Config, typename Walker>
+class walker_random_access_traverser : public walker_bidirectional_traverser<Config, Walker, TraverseAllPredicate>
 {
-    using walker_bidirectional_traverser_base = walker_bidirectional_traverser<CfgT, Walker, TraverseAllPredicate>;
-    using strides_div_type = typename detail::strides_div_traits<CfgT>::type;
+    using walker_bidirectional_traverser_base = walker_bidirectional_traverser<Config, Walker, TraverseAllPredicate>;
+    using strides_div_type = detail::strides_div_t<Config>;
     using walker_bidirectional_traverser_base::walker_;
     using walker_bidirectional_traverser_base::index_;
     using walker_bidirectional_traverser_base::overflow_;
