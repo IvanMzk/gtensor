@@ -276,7 +276,7 @@ class strides_extension
 protected:
     strides_extension() = default;
     strides_extension(const shape_type& shape__):
-        strides_{detail::make_strides(shape__)},
+        strides_{detail::make_strides(shape__, typename Config::layout{})},
         adapted_strides_{detail::make_adapted_strides(shape__,strides_)},
         reset_strides_{detail::make_reset_strides(shape__,strides_)}
     {}

@@ -5,8 +5,8 @@
 
 TEMPLATE_TEST_CASE("test_make_dividers", "[test_libdivide_helper]", std::int64_t, integral_type::integral<std::int64_t>)
 {
-    using native_config_type = typename test_config::config_div_mode_selector<gtensor::config::mode_div_native>::config_type;
-    using libdivide_config_type = typename test_config::config_div_mode_selector<gtensor::config::mode_div_libdivide>::config_type;
+    using native_config_type = test_config::config_div_mode_selector_t<gtensor::config::mode_div_native>;
+    using libdivide_config_type = test_config::config_div_mode_selector_t<gtensor::config::mode_div_libdivide>;
     using value_type = TestType;
     using libdivide_divider_type =  gtensor::detail::libdivide_divider<value_type>;
     using gtensor::detail::make_dividers;

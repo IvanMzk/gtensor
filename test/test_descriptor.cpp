@@ -210,237 +210,237 @@ TEMPLATE_TEST_CASE("test_make_strides_div","[test_descriptor]",
     apply_by_element(test,test_data);
 }
 
-// TEMPLATE_TEST_CASE("test_make_reset_strides","[test_descriptor]",std::vector<std::int64_t>)
-// {
-//     using shape_type = TestType;
-//     using gtensor::detail::make_reset_strides;
-//     //0shape,1strides,2expected reset strides
-//     using test_type = typename std::tuple<shape_type,shape_type,shape_type>;
-//     auto test_data = GENERATE(
-//         test_type{shape_type{},shape_type{},shape_type{}},
-//         test_type{shape_type{0},shape_type{1},shape_type{0}},
-//         test_type{shape_type{1},shape_type{1},shape_type{0}},
-//         test_type{shape_type{5},shape_type{1},shape_type{4}},
-//         test_type{shape_type{0,0},shape_type{1,1},shape_type{0,0}},
-//         test_type{shape_type{1,0},shape_type{1,1},shape_type{0,0}},
-//         test_type{shape_type{0,1},shape_type{1,1},shape_type{0,0}},
-//         test_type{shape_type{5,0},shape_type{1,1},shape_type{4,0}},
-//         test_type{shape_type{0,5},shape_type{5,1},shape_type{0,4}},
-//         test_type{shape_type{1,1},shape_type{1,1},shape_type{0,0}},
-//         test_type{shape_type{5,1},shape_type{1,1},shape_type{4,0}},
-//         test_type{shape_type{1,5},shape_type{5,1},shape_type{0,4}},
-//         test_type{shape_type{0,0,0},shape_type{1,1,1},shape_type{0,0,0}},
-//         test_type{shape_type{2,3,4},shape_type{12,4,1},{12,8,3}},
-//         test_type{shape_type{2,2,0,2},shape_type{4,2,2,1},shape_type{4,2,0,1}},
-//         test_type{shape_type{4,3,2,0},shape_type{6,2,1,1},shape_type{18,4,1,0}},
-//         test_type{shape_type{0,3,2,1},shape_type{6,2,1,1},shape_type{0,4,1,0}}
-//     );
-//     auto shape = std::get<0>(test_data);
-//     auto strides = std::get<1>(test_data);
-//     auto reset_strides_expected = std::get<2>(test_data);
-//     auto reset_strides_result = make_reset_strides(shape,strides);
-//     REQUIRE(reset_strides_result == reset_strides_expected);
-// }
+TEMPLATE_TEST_CASE("test_make_reset_strides","[test_descriptor]",std::vector<std::int64_t>)
+{
+    using shape_type = TestType;
+    using gtensor::detail::make_reset_strides;
+    //0shape,1strides,2expected reset strides
+    using test_type = typename std::tuple<shape_type,shape_type,shape_type>;
+    auto test_data = GENERATE(
+        test_type{shape_type{},shape_type{},shape_type{}},
+        test_type{shape_type{0},shape_type{1},shape_type{0}},
+        test_type{shape_type{1},shape_type{1},shape_type{0}},
+        test_type{shape_type{5},shape_type{1},shape_type{4}},
+        test_type{shape_type{0,0},shape_type{1,1},shape_type{0,0}},
+        test_type{shape_type{1,0},shape_type{1,1},shape_type{0,0}},
+        test_type{shape_type{0,1},shape_type{1,1},shape_type{0,0}},
+        test_type{shape_type{5,0},shape_type{1,1},shape_type{4,0}},
+        test_type{shape_type{0,5},shape_type{5,1},shape_type{0,4}},
+        test_type{shape_type{1,1},shape_type{1,1},shape_type{0,0}},
+        test_type{shape_type{5,1},shape_type{1,1},shape_type{4,0}},
+        test_type{shape_type{1,5},shape_type{5,1},shape_type{0,4}},
+        test_type{shape_type{0,0,0},shape_type{1,1,1},shape_type{0,0,0}},
+        test_type{shape_type{2,3,4},shape_type{12,4,1},{12,8,3}},
+        test_type{shape_type{2,2,0,2},shape_type{4,2,2,1},shape_type{4,2,0,1}},
+        test_type{shape_type{4,3,2,0},shape_type{6,2,1,1},shape_type{18,4,1,0}},
+        test_type{shape_type{0,3,2,1},shape_type{6,2,1,1},shape_type{0,4,1,0}}
+    );
+    auto shape = std::get<0>(test_data);
+    auto strides = std::get<1>(test_data);
+    auto reset_strides_expected = std::get<2>(test_data);
+    auto reset_strides_result = make_reset_strides(shape,strides);
+    REQUIRE(reset_strides_result == reset_strides_expected);
+}
 
-// TEMPLATE_TEST_CASE("test_make_adapted_strides","[test_descriptor]",std::vector<std::int64_t>)
-// {
-//     using shape_type = TestType;
-//     using gtensor::detail::make_adapted_strides;
-//     //0shape,1strides,2expected
-//     using test_type = typename std::tuple<shape_type,shape_type,shape_type>;
-//     auto test_data = GENERATE(
-//         test_type{shape_type{},shape_type{},shape_type{}},
-//         test_type{shape_type{0},shape_type{1},shape_type{1}},
-//         test_type{shape_type{1},shape_type{1},shape_type{0}},
-//         test_type{shape_type{5},shape_type{1},shape_type{1}},
-//         test_type{shape_type{0,0},shape_type{1,1},shape_type{1,1}},
-//         test_type{shape_type{1,0},shape_type{1,1},shape_type{0,1}},
-//         test_type{shape_type{0,1},shape_type{1,1},shape_type{1,0}},
-//         test_type{shape_type{5,0},shape_type{1,1},shape_type{1,1}},
-//         test_type{shape_type{0,5},shape_type{5,1},shape_type{5,1}},
-//         test_type{shape_type{1,1},shape_type{1,1},shape_type{0,0}},
-//         test_type{shape_type{5,1},shape_type{1,1},shape_type{1,0}},
-//         test_type{shape_type{1,5},shape_type{5,1},shape_type{0,1}},
-//         test_type{shape_type{0,0,0},shape_type{1,1,1},shape_type{1,1,1}},
-//         test_type{shape_type{2,1,4},shape_type{4,4,1},{4,0,1}},
-//         test_type{shape_type{2,3,4},shape_type{12,4,1},{12,4,1}},
-//         test_type{shape_type{2,2,0,2},shape_type{4,2,2,1},shape_type{4,2,2,1}},
-//         test_type{shape_type{4,3,2,0},shape_type{6,2,1,1},shape_type{6,2,1,1}},
-//         test_type{shape_type{0,3,2,1},shape_type{6,2,1,1},shape_type{6,2,1,0}}
-//     );
-//     auto shape = std::get<0>(test_data);
-//     auto strides = std::get<1>(test_data);
-//     auto expected = std::get<2>(test_data);
-//     auto result = make_adapted_strides(shape,strides);
-//     REQUIRE(result == expected);
-// }
+TEMPLATE_TEST_CASE("test_make_adapted_strides","[test_descriptor]",std::vector<std::int64_t>)
+{
+    using shape_type = TestType;
+    using gtensor::detail::make_adapted_strides;
+    //0shape,1strides,2expected
+    using test_type = typename std::tuple<shape_type,shape_type,shape_type>;
+    auto test_data = GENERATE(
+        test_type{shape_type{},shape_type{},shape_type{}},
+        test_type{shape_type{0},shape_type{1},shape_type{1}},
+        test_type{shape_type{1},shape_type{1},shape_type{0}},
+        test_type{shape_type{5},shape_type{1},shape_type{1}},
+        test_type{shape_type{0,0},shape_type{1,1},shape_type{1,1}},
+        test_type{shape_type{1,0},shape_type{1,1},shape_type{0,1}},
+        test_type{shape_type{0,1},shape_type{1,1},shape_type{1,0}},
+        test_type{shape_type{5,0},shape_type{1,1},shape_type{1,1}},
+        test_type{shape_type{0,5},shape_type{5,1},shape_type{5,1}},
+        test_type{shape_type{1,1},shape_type{1,1},shape_type{0,0}},
+        test_type{shape_type{5,1},shape_type{1,1},shape_type{1,0}},
+        test_type{shape_type{1,5},shape_type{5,1},shape_type{0,1}},
+        test_type{shape_type{0,0,0},shape_type{1,1,1},shape_type{1,1,1}},
+        test_type{shape_type{2,1,4},shape_type{4,4,1},{4,0,1}},
+        test_type{shape_type{2,3,4},shape_type{12,4,1},{12,4,1}},
+        test_type{shape_type{2,2,0,2},shape_type{4,2,2,1},shape_type{4,2,2,1}},
+        test_type{shape_type{4,3,2,0},shape_type{6,2,1,1},shape_type{6,2,1,1}},
+        test_type{shape_type{0,3,2,1},shape_type{6,2,1,1},shape_type{6,2,1,0}}
+    );
+    auto shape = std::get<0>(test_data);
+    auto strides = std::get<1>(test_data);
+    auto expected = std::get<2>(test_data);
+    auto result = make_adapted_strides(shape,strides);
+    REQUIRE(result == expected);
+}
 
-// TEMPLATE_TEST_CASE("test_make_size","[test_descriptor]",std::vector<std::int64_t>)
-// {
-//     using shape_type = TestType;
-//     using index_type = typename TestType::value_type;
-//     using gtensor::detail::make_size;
-//     //shape,expected
-//     using test_type = typename std::tuple<shape_type,index_type>;
-//     auto test_data = GENERATE(
-//         test_type{shape_type{},index_type{1}},
-//         test_type{shape_type{0},index_type{0}},
-//         test_type{shape_type{1},index_type{1}},
-//         test_type{shape_type{5},index_type{5}},
-//         test_type{shape_type{0,0},index_type{0}},
-//         test_type{shape_type{1,0},index_type{0}},
-//         test_type{shape_type{0,1},index_type{0}},
-//         test_type{shape_type{0,5},index_type{0}},
-//         test_type{shape_type{5,0},index_type{0}},
-//         test_type{shape_type{1,1},index_type{1}},
-//         test_type{shape_type{5,1},index_type{5}},
-//         test_type{shape_type{1,5},index_type{5}},
-//         test_type{shape_type{0,0,0},index_type{0}},
-//         test_type{shape_type{2,3,4},index_type{24}},
-//         test_type{shape_type{2,2,0,2},index_type{0}},
-//         test_type{shape_type{4,3,2,0},index_type{0}},
-//         test_type{shape_type{0,3,2,1},index_type{0}}
-//     );
-//     auto shape = std::get<0>(test_data);
-//     auto expected = std::get<1>(test_data);
-//     auto result = make_size(shape);
-//     REQUIRE(result == expected);
-// }
+TEMPLATE_TEST_CASE("test_make_size","[test_descriptor]",std::vector<std::int64_t>)
+{
+    using shape_type = TestType;
+    using index_type = typename TestType::value_type;
+    using gtensor::detail::make_size;
+    //shape,expected
+    using test_type = typename std::tuple<shape_type,index_type>;
+    auto test_data = GENERATE(
+        test_type{shape_type{},index_type{1}},
+        test_type{shape_type{0},index_type{0}},
+        test_type{shape_type{1},index_type{1}},
+        test_type{shape_type{5},index_type{5}},
+        test_type{shape_type{0,0},index_type{0}},
+        test_type{shape_type{1,0},index_type{0}},
+        test_type{shape_type{0,1},index_type{0}},
+        test_type{shape_type{0,5},index_type{0}},
+        test_type{shape_type{5,0},index_type{0}},
+        test_type{shape_type{1,1},index_type{1}},
+        test_type{shape_type{5,1},index_type{5}},
+        test_type{shape_type{1,5},index_type{5}},
+        test_type{shape_type{0,0,0},index_type{0}},
+        test_type{shape_type{2,3,4},index_type{24}},
+        test_type{shape_type{2,2,0,2},index_type{0}},
+        test_type{shape_type{4,3,2,0},index_type{0}},
+        test_type{shape_type{0,3,2,1},index_type{0}}
+    );
+    auto shape = std::get<0>(test_data);
+    auto expected = std::get<1>(test_data);
+    auto result = make_size(shape);
+    REQUIRE(result == expected);
+}
 
-// TEMPLATE_TEST_CASE("test_flat_to_flat", "[test_descriptor]",
-//     gtensor::config::mode_div_native,
-//     gtensor::config::mode_div_libdivide
-// )
-// {
-//     using config_type = gtensor::config::extend_config_t<test_config::config_div_mode_selector_t<TestType>, int>;
-//     using shape_type = typename config_type::shape_type;
-//     using index_type = typename config_type::index_type;
-//     using gtensor::config::c_layout;
-//     using gtensor::config::f_layout;
-//     using gtensor::detail::make_dividers;
-//     using gtensor::detail::flat_to_flat;
-//     using helpers_for_testing::apply_by_element;
-//     //0flat_idx,1strides,2cstrides,3offset,4layout,5expected
-//     auto test_data = std::make_tuple(
-//         //c_layout
-//         std::make_tuple(index_type{0}, shape_type{1}, shape_type{1}, index_type{0}, c_layout{}, index_type{0}),
-//         std::make_tuple(index_type{0}, shape_type{1}, shape_type{1}, index_type{1}, c_layout{}, index_type{1}),
-//         std::make_tuple(index_type{5}, shape_type{1}, shape_type{1}, index_type{0}, c_layout{}, index_type{5}),
-//         std::make_tuple(index_type{5}, shape_type{1}, shape_type{1}, index_type{1}, c_layout{}, index_type{6}),
-//         std::make_tuple(index_type{5}, shape_type{1,1}, shape_type{1,1}, index_type{0}, c_layout{}, index_type{5}),
-//         std::make_tuple(index_type{5}, shape_type{1,1}, shape_type{1,1}, index_type{10}, c_layout{}, index_type{15}),
-//         std::make_tuple(index_type{0}, shape_type{3,1}, shape_type{2,1}, index_type{0}, c_layout{}, index_type{0}),
-//         std::make_tuple(index_type{5}, shape_type{3,1}, shape_type{2,1}, index_type{0}, c_layout{}, index_type{4}),
-//         std::make_tuple(index_type{5}, shape_type{3,1}, shape_type{2,1}, index_type{10}, c_layout{}, index_type{14}),
-//         std::make_tuple(index_type{34}, shape_type{12,3,1}, shape_type{6,3,1}, index_type{0}, c_layout{}, index_type{22}),
-//         std::make_tuple(index_type{34}, shape_type{12,3,1}, shape_type{6,3,1}, index_type{3}, c_layout{}, index_type{25}),
-//         //f_layout
-//         std::make_tuple(index_type{0}, shape_type{1}, shape_type{1}, index_type{0}, f_layout{}, index_type{0}),
-//         std::make_tuple(index_type{0}, shape_type{1}, shape_type{1}, index_type{1}, f_layout{}, index_type{1}),
-//         std::make_tuple(index_type{5}, shape_type{1}, shape_type{1}, index_type{0}, f_layout{}, index_type{5}),
-//         std::make_tuple(index_type{5}, shape_type{1}, shape_type{1}, index_type{1}, f_layout{}, index_type{6}),
-//         std::make_tuple(index_type{5}, shape_type{1,1}, shape_type{1,1}, index_type{0}, f_layout{}, index_type{5}),
-//         std::make_tuple(index_type{5}, shape_type{1,1}, shape_type{1,1}, index_type{10}, f_layout{}, index_type{15}),
-//         std::make_tuple(index_type{0}, shape_type{1,2}, shape_type{3,1}, index_type{0}, f_layout{}, index_type{0}),
-//         std::make_tuple(index_type{1}, shape_type{1,2}, shape_type{3,1}, index_type{0}, f_layout{}, index_type{3}),
-//         std::make_tuple(index_type{2}, shape_type{1,2}, shape_type{3,1}, index_type{0}, f_layout{}, index_type{1}),
-//         std::make_tuple(index_type{3}, shape_type{1,2}, shape_type{3,1}, index_type{0}, f_layout{}, index_type{4}),
-//         std::make_tuple(index_type{4}, shape_type{1,2}, shape_type{3,1}, index_type{0}, f_layout{}, index_type{2}),
-//         std::make_tuple(index_type{5}, shape_type{1,2}, shape_type{3,1}, index_type{0}, f_layout{}, index_type{5}),
-//         std::make_tuple(index_type{0}, shape_type{1,2,6}, shape_type{1,2,12}, index_type{2}, f_layout{}, index_type{2}),
-//         std::make_tuple(index_type{1}, shape_type{1,2,6}, shape_type{1,2,12}, index_type{2}, f_layout{}, index_type{3}),
-//         std::make_tuple(index_type{2}, shape_type{1,2,6}, shape_type{1,2,12}, index_type{2}, f_layout{}, index_type{4}),
-//         std::make_tuple(index_type{3}, shape_type{1,2,6}, shape_type{1,2,12}, index_type{2}, f_layout{}, index_type{5}),
-//         std::make_tuple(index_type{6}, shape_type{1,2,6}, shape_type{1,2,12}, index_type{2}, f_layout{}, index_type{14}),
-//         std::make_tuple(index_type{7}, shape_type{1,2,6}, shape_type{1,2,12}, index_type{2}, f_layout{}, index_type{15})
-//     );
-//     auto test = [](const auto& t){
-//         auto flat_idx = std::get<0>(t);
-//         auto strides = std::get<1>(t);
-//         auto strides_div = make_dividers<config_type>(strides);
-//         auto cstrides = std::get<2>(t);
-//         auto offset = std::get<3>(t);
-//         auto layout = std::get<4>(t);
-//         auto expected = std::get<5>(t);
-//         auto result = flat_to_flat(strides_div, cstrides, offset, flat_idx, layout);
-//         REQUIRE(result == expected);
-//     };
-//     apply_by_element(test,test_data);
-// }
+TEMPLATE_TEST_CASE("test_flat_to_flat", "[test_descriptor]",
+    gtensor::config::mode_div_native,
+    gtensor::config::mode_div_libdivide
+)
+{
+    using config_type = gtensor::config::extend_config_t<test_config::config_div_mode_selector_t<TestType>, int>;
+    using shape_type = typename config_type::shape_type;
+    using index_type = typename config_type::index_type;
+    using gtensor::config::c_layout;
+    using gtensor::config::f_layout;
+    using gtensor::detail::make_dividers;
+    using gtensor::detail::flat_to_flat;
+    using helpers_for_testing::apply_by_element;
+    //0flat_idx,1strides,2cstrides,3offset,4layout,5expected
+    auto test_data = std::make_tuple(
+        //c_layout
+        std::make_tuple(index_type{0}, shape_type{1}, shape_type{1}, index_type{0}, c_layout{}, index_type{0}),
+        std::make_tuple(index_type{0}, shape_type{1}, shape_type{1}, index_type{1}, c_layout{}, index_type{1}),
+        std::make_tuple(index_type{5}, shape_type{1}, shape_type{1}, index_type{0}, c_layout{}, index_type{5}),
+        std::make_tuple(index_type{5}, shape_type{1}, shape_type{1}, index_type{1}, c_layout{}, index_type{6}),
+        std::make_tuple(index_type{5}, shape_type{1,1}, shape_type{1,1}, index_type{0}, c_layout{}, index_type{5}),
+        std::make_tuple(index_type{5}, shape_type{1,1}, shape_type{1,1}, index_type{10}, c_layout{}, index_type{15}),
+        std::make_tuple(index_type{0}, shape_type{3,1}, shape_type{2,1}, index_type{0}, c_layout{}, index_type{0}),
+        std::make_tuple(index_type{5}, shape_type{3,1}, shape_type{2,1}, index_type{0}, c_layout{}, index_type{4}),
+        std::make_tuple(index_type{5}, shape_type{3,1}, shape_type{2,1}, index_type{10}, c_layout{}, index_type{14}),
+        std::make_tuple(index_type{34}, shape_type{12,3,1}, shape_type{6,3,1}, index_type{0}, c_layout{}, index_type{22}),
+        std::make_tuple(index_type{34}, shape_type{12,3,1}, shape_type{6,3,1}, index_type{3}, c_layout{}, index_type{25}),
+        //f_layout
+        std::make_tuple(index_type{0}, shape_type{1}, shape_type{1}, index_type{0}, f_layout{}, index_type{0}),
+        std::make_tuple(index_type{0}, shape_type{1}, shape_type{1}, index_type{1}, f_layout{}, index_type{1}),
+        std::make_tuple(index_type{5}, shape_type{1}, shape_type{1}, index_type{0}, f_layout{}, index_type{5}),
+        std::make_tuple(index_type{5}, shape_type{1}, shape_type{1}, index_type{1}, f_layout{}, index_type{6}),
+        std::make_tuple(index_type{5}, shape_type{1,1}, shape_type{1,1}, index_type{0}, f_layout{}, index_type{5}),
+        std::make_tuple(index_type{5}, shape_type{1,1}, shape_type{1,1}, index_type{10}, f_layout{}, index_type{15}),
+        std::make_tuple(index_type{0}, shape_type{1,2}, shape_type{3,1}, index_type{0}, f_layout{}, index_type{0}),
+        std::make_tuple(index_type{1}, shape_type{1,2}, shape_type{3,1}, index_type{0}, f_layout{}, index_type{3}),
+        std::make_tuple(index_type{2}, shape_type{1,2}, shape_type{3,1}, index_type{0}, f_layout{}, index_type{1}),
+        std::make_tuple(index_type{3}, shape_type{1,2}, shape_type{3,1}, index_type{0}, f_layout{}, index_type{4}),
+        std::make_tuple(index_type{4}, shape_type{1,2}, shape_type{3,1}, index_type{0}, f_layout{}, index_type{2}),
+        std::make_tuple(index_type{5}, shape_type{1,2}, shape_type{3,1}, index_type{0}, f_layout{}, index_type{5}),
+        std::make_tuple(index_type{0}, shape_type{1,2,6}, shape_type{1,2,12}, index_type{2}, f_layout{}, index_type{2}),
+        std::make_tuple(index_type{1}, shape_type{1,2,6}, shape_type{1,2,12}, index_type{2}, f_layout{}, index_type{3}),
+        std::make_tuple(index_type{2}, shape_type{1,2,6}, shape_type{1,2,12}, index_type{2}, f_layout{}, index_type{4}),
+        std::make_tuple(index_type{3}, shape_type{1,2,6}, shape_type{1,2,12}, index_type{2}, f_layout{}, index_type{5}),
+        std::make_tuple(index_type{6}, shape_type{1,2,6}, shape_type{1,2,12}, index_type{2}, f_layout{}, index_type{14}),
+        std::make_tuple(index_type{7}, shape_type{1,2,6}, shape_type{1,2,12}, index_type{2}, f_layout{}, index_type{15})
+    );
+    auto test = [](const auto& t){
+        auto flat_idx = std::get<0>(t);
+        auto strides = std::get<1>(t);
+        auto strides_div = make_dividers<config_type>(strides);
+        auto cstrides = std::get<2>(t);
+        auto offset = std::get<3>(t);
+        auto layout = std::get<4>(t);
+        auto expected = std::get<5>(t);
+        auto result = flat_to_flat(strides_div, cstrides, offset, flat_idx, layout);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test,test_data);
+}
 
-// TEST_CASE("test_make_shape_of_type","[test_descriptor]"){
-//     using gtensor::detail::make_shape_of_type;
-//     using shape_type = std::vector<int>;
-//     auto s = shape_type{1,2,3};
-//     auto l = std::list<int>{1,2,3};
-//     REQUIRE(std::is_same_v<decltype(make_shape_of_type<shape_type>(shape_type{1,2,3})), shape_type&&>);
-//     REQUIRE(std::is_same_v<decltype(make_shape_of_type<shape_type>(s)), shape_type&>);
-//     REQUIRE(std::is_same_v<decltype(make_shape_of_type<shape_type>(std::list{1,2,3})), shape_type>);
-//     REQUIRE(std::is_same_v<decltype(make_shape_of_type<shape_type>(l)), shape_type>);
-//     REQUIRE(std::is_same_v<decltype(make_shape_of_type<shape_type>({1,2,3})), shape_type>);
+TEST_CASE("test_make_shape_of_type","[test_descriptor]"){
+    using gtensor::detail::make_shape_of_type;
+    using shape_type = std::vector<int>;
+    auto s = shape_type{1,2,3};
+    auto l = std::list<int>{1,2,3};
+    REQUIRE(std::is_same_v<decltype(make_shape_of_type<shape_type>(shape_type{1,2,3})), shape_type&&>);
+    REQUIRE(std::is_same_v<decltype(make_shape_of_type<shape_type>(s)), shape_type&>);
+    REQUIRE(std::is_same_v<decltype(make_shape_of_type<shape_type>(std::list{1,2,3})), shape_type>);
+    REQUIRE(std::is_same_v<decltype(make_shape_of_type<shape_type>(l)), shape_type>);
+    REQUIRE(std::is_same_v<decltype(make_shape_of_type<shape_type>({1,2,3})), shape_type>);
 
-//     REQUIRE(make_shape_of_type<shape_type>(shape_type{1,2,3}) == shape_type{1,2,3});
-//     REQUIRE(make_shape_of_type<shape_type>(s) == shape_type{1,2,3});
-//     REQUIRE(make_shape_of_type<shape_type>(std::list{1,2,3}) == shape_type{1,2,3});
-//     REQUIRE(make_shape_of_type<shape_type>(l) == shape_type{1,2,3});
-//     REQUIRE(make_shape_of_type<shape_type>({1,2,3}) == shape_type{1,2,3});
-// }
+    REQUIRE(make_shape_of_type<shape_type>(shape_type{1,2,3}) == shape_type{1,2,3});
+    REQUIRE(make_shape_of_type<shape_type>(s) == shape_type{1,2,3});
+    REQUIRE(make_shape_of_type<shape_type>(std::list{1,2,3}) == shape_type{1,2,3});
+    REQUIRE(make_shape_of_type<shape_type>(l) == shape_type{1,2,3});
+    REQUIRE(make_shape_of_type<shape_type>({1,2,3}) == shape_type{1,2,3});
+}
 
-// TEST_CASE("test_basic_descriptor","[test_descriptor]"){
-//     using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
-//     using descriptor_type = gtensor::basic_descriptor<config_type>;
-//     using shape_type = typename config_type::shape_type;
-//     using index_type = typename config_type::index_type;
-//     using dim_type = typename config_type::dim_type;
-//     using test_type = std::tuple<shape_type, shape_type, shape_type, shape_type, index_type, dim_type, index_type>;
-//     //0shape,1expected_strides,2expected_adapted_strides,3expected_reset_strides,4expected_size,5expected_dim,6expected_offset
-//     auto test_data = GENERATE(
-//         test_type(shape_type{},shape_type{},shape_type{},shape_type{},1,0,0),
-//         test_type(shape_type{0},shape_type{1},shape_type{1},shape_type{0},0,1,0),
-//         test_type(shape_type{1},shape_type{1},shape_type{0},shape_type{0},1,1,0),
-//         test_type(shape_type{5},shape_type{1},shape_type{1},shape_type{4},5,1,0),
-//         test_type(shape_type{0,0},shape_type{1,1},shape_type{1,1},shape_type{0,0},0,2,0),
-//         test_type(shape_type{1,0},shape_type{1,1},shape_type{0,1},shape_type{0,0},0,2,0),
-//         test_type(shape_type{0,1},shape_type{1,1},shape_type{1,0},shape_type{0,0},0,2,0),
-//         test_type(shape_type{5,0},shape_type{1,1},shape_type{1,1},shape_type{4,0},0,2,0),
-//         test_type(shape_type{0,5},shape_type{5,1},shape_type{5,1},shape_type{0,4},0,2,0),
-//         test_type(shape_type{1,1},shape_type{1,1},shape_type{0,0},shape_type{0,0},1,2,0),
-//         test_type(shape_type{1,5},shape_type{5,1},shape_type{0,1},shape_type{0,4},5,2,0),
-//         test_type(shape_type{5,1},shape_type{1,1},shape_type{1,0},shape_type{4,0},5,2,0),
-//         test_type(shape_type{5,4,3},shape_type{12,3,1},shape_type{12,3,1},shape_type{48,9,2},60,3,0),
-//         test_type(shape_type{2,2,0,2},shape_type{4,2,2,1},shape_type{4,2,2,1},shape_type{4,2,0,1},0,4,0),
-//         test_type(shape_type{4,3,2,0},shape_type{6,2,1,1},shape_type{6,2,1,1},shape_type{18,4,1,0},0,4,0),
-//         test_type(shape_type{0,3,2,1},shape_type{6,2,1,1},shape_type{6,2,1,0},shape_type{0,4,1,0},0,4,0)
-//     );
-//     auto shape = std::get<0>(test_data);
-//     auto expected_shape = shape;
-//     auto expected_strides = std::get<1>(test_data);
-//     auto expected_cstrides = expected_strides;
-//     auto expected_adapted_strides = std::get<2>(test_data);
-//     auto expected_reset_strides = std::get<3>(test_data);
-//     auto expected_size = std::get<4>(test_data);
-//     auto expected_dim = std::get<5>(test_data);
-//     auto expected_offset = std::get<6>(test_data);
-//     auto descriptor = descriptor_type{shape};
+TEST_CASE("test_basic_descriptor","[test_descriptor]"){
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
+    using descriptor_type = gtensor::basic_descriptor<config_type>;
+    using shape_type = typename config_type::shape_type;
+    using index_type = typename config_type::index_type;
+    using dim_type = typename config_type::dim_type;
+    using test_type = std::tuple<shape_type, shape_type, shape_type, shape_type, index_type, dim_type, index_type>;
+    //0shape,1expected_strides,2expected_adapted_strides,3expected_reset_strides,4expected_size,5expected_dim,6expected_offset
+    auto test_data = GENERATE(
+        test_type(shape_type{},shape_type{},shape_type{},shape_type{},1,0,0),
+        test_type(shape_type{0},shape_type{1},shape_type{1},shape_type{0},0,1,0),
+        test_type(shape_type{1},shape_type{1},shape_type{0},shape_type{0},1,1,0),
+        test_type(shape_type{5},shape_type{1},shape_type{1},shape_type{4},5,1,0),
+        test_type(shape_type{0,0},shape_type{1,1},shape_type{1,1},shape_type{0,0},0,2,0),
+        test_type(shape_type{1,0},shape_type{1,1},shape_type{0,1},shape_type{0,0},0,2,0),
+        test_type(shape_type{0,1},shape_type{1,1},shape_type{1,0},shape_type{0,0},0,2,0),
+        test_type(shape_type{5,0},shape_type{1,1},shape_type{1,1},shape_type{4,0},0,2,0),
+        test_type(shape_type{0,5},shape_type{5,1},shape_type{5,1},shape_type{0,4},0,2,0),
+        test_type(shape_type{1,1},shape_type{1,1},shape_type{0,0},shape_type{0,0},1,2,0),
+        test_type(shape_type{1,5},shape_type{5,1},shape_type{0,1},shape_type{0,4},5,2,0),
+        test_type(shape_type{5,1},shape_type{1,1},shape_type{1,0},shape_type{4,0},5,2,0),
+        test_type(shape_type{5,4,3},shape_type{12,3,1},shape_type{12,3,1},shape_type{48,9,2},60,3,0),
+        test_type(shape_type{2,2,0,2},shape_type{4,2,2,1},shape_type{4,2,2,1},shape_type{4,2,0,1},0,4,0),
+        test_type(shape_type{4,3,2,0},shape_type{6,2,1,1},shape_type{6,2,1,1},shape_type{18,4,1,0},0,4,0),
+        test_type(shape_type{0,3,2,1},shape_type{6,2,1,1},shape_type{6,2,1,0},shape_type{0,4,1,0},0,4,0)
+    );
+    auto shape = std::get<0>(test_data);
+    auto expected_shape = shape;
+    auto expected_strides = std::get<1>(test_data);
+    auto expected_cstrides = expected_strides;
+    auto expected_adapted_strides = std::get<2>(test_data);
+    auto expected_reset_strides = std::get<3>(test_data);
+    auto expected_size = std::get<4>(test_data);
+    auto expected_dim = std::get<5>(test_data);
+    auto expected_offset = std::get<6>(test_data);
+    auto descriptor = descriptor_type{shape};
 
-//     auto result_shape = descriptor.shape();
-//     auto result_strides = descriptor.strides();
-//     auto result_adapted_strides = descriptor.adapted_strides();
-//     auto result_reset_strides = descriptor.reset_strides();
-//     auto result_cstrides = descriptor.cstrides();
-//     auto result_size = descriptor.size();
-//     auto result_dim = descriptor.dim();
-//     auto result_offset = descriptor.offset();
+    auto result_shape = descriptor.shape();
+    auto result_strides = descriptor.strides();
+    auto result_adapted_strides = descriptor.adapted_strides();
+    auto result_reset_strides = descriptor.reset_strides();
+    auto result_cstrides = descriptor.cstrides();
+    auto result_size = descriptor.size();
+    auto result_dim = descriptor.dim();
+    auto result_offset = descriptor.offset();
 
-//     REQUIRE(result_shape == expected_shape);
-//     REQUIRE(result_strides == expected_strides);
-//     REQUIRE(result_adapted_strides == expected_adapted_strides);
-//     REQUIRE(result_reset_strides == expected_reset_strides);
-//     REQUIRE(result_cstrides == expected_cstrides);
-//     REQUIRE(result_size == expected_size);
-//     REQUIRE(result_dim == expected_dim);
-//     REQUIRE(result_offset == expected_offset);
-// }
+    REQUIRE(result_shape == expected_shape);
+    REQUIRE(result_strides == expected_strides);
+    REQUIRE(result_adapted_strides == expected_adapted_strides);
+    REQUIRE(result_reset_strides == expected_reset_strides);
+    REQUIRE(result_cstrides == expected_cstrides);
+    REQUIRE(result_size == expected_size);
+    REQUIRE(result_dim == expected_dim);
+    REQUIRE(result_offset == expected_offset);
+}
 
 // TEST_CASE("test_basic_descriptor_convert", "[test_descriptor]"){
 //     using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
