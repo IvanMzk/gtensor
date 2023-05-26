@@ -104,8 +104,8 @@ TEMPLATE_TEST_CASE("test_basic_indexer_converter_specialization","test_data_acce
 }
 
 TEMPLATE_TEST_CASE("test_walker_indexer","test_data_accessor",
-    test_config::config_storage_selector<std::vector>::config_type,
-    test_config::config_storage_selector<gtensor::storage_vector>::config_type
+    test_config::config_storage_selector_t<std::vector>,
+    test_config::config_storage_selector_t<gtensor::storage_vector>
 )
 {
     using value_type = int;
@@ -113,6 +113,7 @@ TEMPLATE_TEST_CASE("test_walker_indexer","test_data_accessor",
     using gtensor::basic_indexer;
     using gtensor::walker_indexer;
     using gtensor::walker;
+    using layout_type = typename config_type::layout;
     using shape_type = typename config_type::shape_type;
     using dim_type = typename config_type::dim_type;
     using index_type = typename config_type::index_type;
@@ -137,7 +138,11 @@ TEMPLATE_TEST_CASE("test_walker_indexer","test_data_accessor",
         std::make_tuple(storage_type{0,0,0,1,2,3,4,5,6,7,8,9,10,11,12}, shape_type{2,2,2}, index_type{3}, 4,5, 6,7),
         std::make_tuple(storage_type{0,0,0,1,2,3,4,5,6,7,8,9,10,11,12}, shape_type{2,2,2}, index_type{3}, 8,9, 5,6),
         std::make_tuple(storage_type{0,0,0,1,2,3,4,5,6,7,8,9,10,11,12}, shape_type{2,2,2}, index_type{3}, 10,11, 7,8),
-        std::make_tuple(storage_type{0,0,0,1,2,3,4,5,6,7,8,9,10,11,12}, shape_type{2,2,2}, index_type{3}, 11,12, 11,12)
+        std::make_tuple(storage_type{0,0,0,1,2,3,4,5,6,7,8,9,10,11,12}, shape_type{2,2,2}, index_type{3}, 11,12, 11,12),
+        std::make_tuple(storage_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24}, shape_type{2,3,4}, index_type{0}, 0,1, 1,2),
+        std::make_tuple(storage_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24}, shape_type{2,1,3,4}, index_type{0}, 22,23, 23,24),
+        std::make_tuple(storage_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24}, shape_type{2,3,4,1}, index_type{0}, 15,16, 7,8),
+        std::make_tuple(storage_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24}, shape_type{1,2,3,4}, index_type{0}, 15,16, 7,8)
     );
     auto test = [](const auto& t){
         auto elements = std::get<0>(t);
@@ -147,7 +152,7 @@ TEMPLATE_TEST_CASE("test_walker_indexer","test_data_accessor",
         auto expected_1 = std::get<4>(t);
         auto index_2 = std::get<5>(t);
         auto expected_2 = std::get<6>(t);
-        auto strides = gtensor::detail::make_strides(shape);
+        auto strides = gtensor::detail::make_strides(shape, layout_type{});
         auto adapted_strides = gtensor::detail::make_adapted_strides(shape, strides);
         auto reset_strides = gtensor::detail::make_reset_strides(shape, strides);
         auto strides_div = gtensor::detail::make_dividers<config_type>(strides);

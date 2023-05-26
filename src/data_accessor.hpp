@@ -91,8 +91,13 @@ public:
         strides_{&strides__},
         walker_{std::forward<Walker_>(walker__)}
     {}
-    decltype(std::declval<walker_type>().operator*()) operator[](index_type i)const{
+    decltype(auto) operator[](index_type i)const{
         walker_.reset_back();
+        subscript_helper(i, typename config_type::layout{});
+        return *walker_;
+    }
+private:
+    decltype(auto) subscript_helper(index_type i, gtensor::config::c_layout)const{
         dim_type direction{0};
         for(auto strides_it = strides_->begin(), srtides_end=strides_->end(); strides_it!=srtides_end; ++strides_it, ++direction){
             auto steps = detail::divide(i,*strides_it);
@@ -100,7 +105,17 @@ public:
                 walker_.walk(direction,steps);
             }
         }
-        return *walker_;
+    }
+    decltype(auto) subscript_helper(index_type i, gtensor::config::f_layout)const{
+        auto direction = static_cast<dim_type>(strides_->size());
+        for(auto strides_it = strides_->end(), strides_first=strides_->begin(); strides_it!=strides_first;){
+            --strides_it;
+            --direction;
+            auto steps = detail::divide(i,*strides_it);
+            if (steps!=index_type{0}){
+                walker_.walk(direction,steps);
+            }
+        }
     }
 };
 //iterator-indexer adaptes iterator to indexer interface

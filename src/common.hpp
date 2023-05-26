@@ -134,8 +134,8 @@ inline It next(It it, typename std::iterator_traits<It>::difference_type n = 1)
 //returns dimension for given shape argument
 //guarantes result is signed (assuming shape container difference_type is signed, as it must be)
 template<typename ShT>
-inline typename ShT::difference_type make_dim(const ShT& shape){
-    return shape.size();
+inline typename ShT::difference_type make_dim(const ShT& shape_or_strides){
+    return shape_or_strides.size();
 }
 //make_direction helper to convert and check negative directions
 //positive direction is converted to dim_type and returned as is whithout any checks

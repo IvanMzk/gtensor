@@ -5,8 +5,8 @@
 #include "test_config.hpp"
 
 TEMPLATE_TEST_CASE("test_walker","test_data_accessor",
-    test_config::config_storage_selector<std::vector>::config_type,
-    test_config::config_storage_selector<gtensor::storage_vector>::config_type
+    test_config::config_storage_selector_t<std::vector>,
+    test_config::config_storage_selector_t<gtensor::storage_vector>
 )
 {
     using value_type = int;
@@ -114,8 +114,8 @@ TEMPLATE_TEST_CASE("test_walker","test_data_accessor",
 }
 
 TEMPLATE_TEST_CASE("test_walker_result_type","test_data_accessor",
-    test_config::config_storage_selector<std::vector>::config_type,
-    test_config::config_storage_selector<gtensor::storage_vector>::config_type
+    test_config::config_storage_selector_t<std::vector>,
+    test_config::config_storage_selector_t<gtensor::storage_vector>
 )
 {
     using value_type = int;
