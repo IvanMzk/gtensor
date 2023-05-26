@@ -7,189 +7,20 @@
 #include "test_config.hpp"
 #include "helpers_for_testing.hpp"
 
-TEST_CASE("test_has_callable_iterator","[test_tensor_implementation]")
-{
-    struct const_iterable{
-        const int* begin()const{return nullptr;}
-        const int* end()const{return nullptr;}
-    };
-    struct non_const_iterable{
-        int* begin(){return nullptr;}
-        int* end(){return nullptr;}
-    };
-    struct iterable{
-        const int* begin()const{return nullptr;}
-        const int* end()const{return nullptr;}
-        int* begin(){return nullptr;}
-        int* end(){return nullptr;}
-    };
-
-    using gtensor::detail::has_callable_iterator;
-    REQUIRE(!has_callable_iterator<void>::value);
-    REQUIRE(!has_callable_iterator<void*>::value);
-    REQUIRE(!has_callable_iterator<int>::value);
-    REQUIRE(!has_callable_iterator<int*>::value);
-    REQUIRE(!has_callable_iterator<int[]>::value);
-    REQUIRE(!has_callable_iterator<const non_const_iterable>::value);
-
-    REQUIRE(has_callable_iterator<non_const_iterable>::value);
-    REQUIRE(has_callable_iterator<const_iterable>::value);
-    REQUIRE(has_callable_iterator<const const_iterable>::value);
-    REQUIRE(has_callable_iterator<iterable>::value);
-    REQUIRE(has_callable_iterator<const iterable>::value);
-    REQUIRE(has_callable_iterator<std::list<int>>::value);
-    REQUIRE(has_callable_iterator<std::vector<int>>::value);
-    REQUIRE(has_callable_iterator<std::string>::value);
-}
-
-TEST_CASE("test_has_callable_reverse_iterator","[test_tensor_implementation]")
-{
-    struct const_reverse_iterable{
-        const int* rbegin()const{return nullptr;}
-        const int* rend()const{return nullptr;}
-    };
-    struct non_const_reverse_iterable{
-        int* rbegin(){return nullptr;}
-        int* rend(){return nullptr;}
-    };
-    struct reverse_iterable{
-        const int* rbegin()const{return nullptr;}
-        const int* rend()const{return nullptr;}
-        int* rbegin(){return nullptr;}
-        int* rend(){return nullptr;}
-    };
-
-    using gtensor::detail::has_callable_reverse_iterator;
-    REQUIRE(!has_callable_reverse_iterator<void>::value);
-    REQUIRE(!has_callable_reverse_iterator<void*>::value);
-    REQUIRE(!has_callable_reverse_iterator<int>::value);
-    REQUIRE(!has_callable_reverse_iterator<int*>::value);
-    REQUIRE(!has_callable_reverse_iterator<int[]>::value);
-    REQUIRE(!has_callable_reverse_iterator<const non_const_reverse_iterable>::value);
-
-    REQUIRE(has_callable_reverse_iterator<non_const_reverse_iterable>::value);
-    REQUIRE(has_callable_reverse_iterator<const_reverse_iterable>::value);
-    REQUIRE(has_callable_reverse_iterator<const const_reverse_iterable>::value);
-    REQUIRE(has_callable_reverse_iterator<reverse_iterable>::value);
-    REQUIRE(has_callable_reverse_iterator<const reverse_iterable>::value);
-    REQUIRE(has_callable_reverse_iterator<std::list<int>>::value);
-    REQUIRE(has_callable_reverse_iterator<std::vector<int>>::value);
-    REQUIRE(has_callable_reverse_iterator<std::string>::value);
-}
-
-TEST_CASE("test_has_callable_subscript_operator","[test_tensor_implementation]")
-{
-    struct const_subscriptable{
-        using size_type = std::size_t;
-        int operator[](size_type)const;
-    };
-    struct non_const_subscriptable{
-        using difference_type = std::ptrdiff_t;
-        int& operator[](difference_type);
-    };
-    struct subscriptable{
-        using size_type = std::size_t;
-        const int& operator[](size_type)const;
-        int& operator[](size_type);
-    };
-
-    using gtensor::detail::has_callable_subscript_operator;
-    REQUIRE(!has_callable_subscript_operator<void>());
-    REQUIRE(!has_callable_subscript_operator<void*>());
-    REQUIRE(!has_callable_subscript_operator<int>());
-    REQUIRE(!has_callable_subscript_operator<int*>());
-    REQUIRE(!has_callable_subscript_operator<int[]>());
-    REQUIRE(!has_callable_subscript_operator<std::list<int>>());
-    REQUIRE(!has_callable_subscript_operator<const non_const_subscriptable>());
-
-    REQUIRE(has_callable_subscript_operator<non_const_subscriptable>());
-    REQUIRE(has_callable_subscript_operator<const_subscriptable>());
-    REQUIRE(has_callable_subscript_operator<const const_subscriptable>());
-    REQUIRE(has_callable_subscript_operator<subscriptable>());
-    REQUIRE(has_callable_subscript_operator<const subscriptable>());
-    REQUIRE(has_callable_subscript_operator<std::vector<int>>());
-    REQUIRE(has_callable_subscript_operator<std::string>());
-}
-
-TEST_CASE("test_has_mutating_iterator","[test_tensor_implementation]")
-{
-    struct const_iterable{
-        using value_type = int;
-        const value_type* begin()const{return nullptr;}
-        const value_type* end()const{return nullptr;}
-    };
-    struct non_const_iterable{
-        using value_type = int;
-        value_type* begin(){return nullptr;}
-        value_type* end(){return nullptr;}
-    };
-    struct iterable{
-        using value_type = int;
-        const value_type* begin()const{return nullptr;}
-        const value_type* end()const{return nullptr;}
-        value_type* begin(){return nullptr;}
-        value_type* end(){return nullptr;}
-    };
-    using gtensor::detail::has_mutating_iterator_v;
-    REQUIRE(!has_mutating_iterator_v<void>);
-    REQUIRE(!has_mutating_iterator_v<void*>);
-    REQUIRE(!has_mutating_iterator_v<int>);
-    REQUIRE(!has_mutating_iterator_v<int*>);
-    REQUIRE(!has_mutating_iterator_v<int[]>);
-    REQUIRE(!has_mutating_iterator_v<const_iterable>);
-    REQUIRE(!has_mutating_iterator_v<const std::list<int>>);
-    REQUIRE(!has_mutating_iterator_v<const std::vector<int>>);
-    REQUIRE(!has_mutating_iterator_v<const std::string>);
-    REQUIRE(has_mutating_iterator_v<iterable>);
-    REQUIRE(has_mutating_iterator_v<non_const_iterable>);
-    REQUIRE(has_mutating_iterator_v<std::list<int>>);
-    REQUIRE(has_mutating_iterator_v<std::vector<int>>);
-    REQUIRE(has_mutating_iterator_v<std::vector<bool>>);
-    REQUIRE(has_mutating_iterator_v<std::string>);
-}
-
-TEST_CASE("test_has_mutating_subscript_operator","[test_tensor_implementation]")
-{
-    struct const_subscriptable{
-        using size_type = std::size_t;
-        using difference_type = std::int64_t;
-        using value_type = std::string;
-        const value_type& operator[](size_type)const;
-    };
-    struct non_const_subscriptable{
-        using size_type = std::size_t;
-        using difference_type = std::int64_t;
-        using value_type = std::string;
-        value_type& operator[](size_type);
-    };
-    struct subscriptable{
-        using size_type = std::size_t;
-        using difference_type = std::int64_t;
-        using value_type = std::string;
-        const value_type& operator[](size_type)const;
-        value_type& operator[](size_type);
-    };
-
-    using gtensor::detail::has_mutating_subscript_operator_v;
-    REQUIRE(!has_mutating_subscript_operator_v<void>);
-    REQUIRE(!has_mutating_subscript_operator_v<void*>);
-    REQUIRE(!has_mutating_subscript_operator_v<int>);
-    REQUIRE(!has_mutating_subscript_operator_v<int*>);
-    REQUIRE(!has_mutating_subscript_operator_v<int[]>);
-    REQUIRE(!has_mutating_subscript_operator_v<const_subscriptable>);
-    REQUIRE(!has_mutating_subscript_operator_v<const std::list<int>>);
-    REQUIRE(!has_mutating_subscript_operator_v<const std::vector<int>>);
-    REQUIRE(!has_mutating_subscript_operator_v<const std::string>);
-    REQUIRE(!has_mutating_subscript_operator_v<std::list<int>>);
-
-    REQUIRE(has_mutating_subscript_operator_v<subscriptable>);
-    REQUIRE(has_mutating_subscript_operator_v<non_const_subscriptable>);
-    REQUIRE(has_mutating_subscript_operator_v<std::vector<int>>);
-    REQUIRE(has_mutating_subscript_operator_v<std::vector<bool>>);
-    REQUIRE(has_mutating_subscript_operator_v<std::string>);
-}
-
 namespace test_storage_core{
+
+template<template<typename...> typename Storage> struct test_config_c_layout : gtensor::config::default_config
+{
+    using layout = gtensor::config::c_layout;
+    template<typename T> using storage = Storage<T>;
+};
+
+template<template<typename...> typename Storage> struct test_config_f_layout : gtensor::config::default_config
+{
+    using layout = gtensor::config::f_layout;
+    template<typename T> using storage = Storage<T>;
+};
+
 template<typename T>
 class subscriptable_storage
 {
@@ -274,128 +105,6 @@ public:
     iterator end(){return iterator{indexer_type{impl_},size()};}
 };
 }   //end of namespace test_storage_core
-
-TEMPLATE_TEST_CASE("test_storage_core","[test_tensor_implementation]",
-    //0test_config,1is_iterable,2is_subscriptable
-    (std::tuple<test_config::config_storage_selector_t<std::vector>, std::true_type, std::true_type>),
-    (std::tuple<test_config::config_storage_selector_t<std::list>, std::true_type, std::false_type>),
-    (std::tuple<test_config::config_storage_selector_t<test_storage_core::subscriptable_storage>, std::false_type, std::true_type>),
-    (std::tuple<test_config::config_storage_selector_t<test_storage_core::subscriptable_storage_integral>, std::false_type, std::true_type>),
-    (std::tuple<test_config::config_storage_selector_t<test_storage_core::iterable_storage>, std::true_type, std::false_type>),
-    (std::tuple<test_config::config_storage_selector_t<test_storage_core::iterable_storage_integral>, std::true_type, std::false_type>)
-)
-{
-    using value_type = int;
-    using config_type = gtensor::config::extend_config_t<std::tuple_element_t<0,TestType>,value_type>;
-    using is_iterable =std::tuple_element_t<1,TestType>;
-    using is_subscriptable =std::tuple_element_t<2,TestType>;
-    using shape_type = typename config_type::shape_type;
-    using index_type = typename config_type::index_type;
-    using core_type = gtensor::storage_core<config_type,value_type>;
-    using helpers_for_testing::apply_by_element;
-
-    SECTION("test_storage_core_shape_value_constructor"){
-        //0shape,1value,2expected_shape,3expected_elements
-        auto test_data = std::make_tuple(
-            std::make_tuple(shape_type{0},0,shape_type{0},std::vector<value_type>{}),
-            std::make_tuple(shape_type{3,0},2,shape_type{3,0},std::vector<value_type>{}),
-            std::make_tuple(shape_type{1},1,shape_type{1},std::vector<value_type>{1}),
-            std::make_tuple(shape_type{5},2,shape_type{5},std::vector<value_type>{2,2,2,2,2}),
-            std::make_tuple(shape_type{2,3},4,shape_type{2,3},std::vector<value_type>{4,4,4,4,4,4})
-        );
-        auto test = [](const auto& t){
-            auto shape = std::get<0>(t);
-            auto value = std::get<1>(t);
-            auto expected_elements = std::get<3>(t);
-            auto expected_shape = std::get<2>(t);
-            core_type core(shape,value);
-            auto result_shape = core.descriptor().shape();
-            REQUIRE(result_shape == expected_shape);
-            if constexpr (is_iterable::value){
-                REQUIRE(std::equal(core.begin(),core.end(),expected_elements.begin(),expected_elements.end()));
-            }
-            if constexpr (is_subscriptable::value){
-                std::vector<value_type> result_elements{};
-                const index_type result_size = core.descriptor().size();
-                for (index_type i{0}; i!=result_size; ++i){
-                    result_elements.push_back(core[i]);
-                }
-                REQUIRE(result_elements == expected_elements);
-            }
-        };
-        apply_by_element(test,test_data);
-    }
-    SECTION("test_storage_core_init_list_constructor"){
-        //0core,1expected_shape,2expected_elements
-        auto test_data = std::make_tuple(
-            std::make_tuple(core_type(std::initializer_list<value_type>{}),shape_type{0},std::vector<value_type>{}),
-            std::make_tuple(core_type(std::initializer_list<value_type>{1}),shape_type{1},std::vector<value_type>{1}),
-            std::make_tuple(core_type(std::initializer_list<value_type>{1,2,3,4,5}),shape_type{5},std::vector<value_type>{1,2,3,4,5}),
-            std::make_tuple(core_type(std::initializer_list<std::initializer_list<value_type>>{{1,2,3},{4,5,6}}),shape_type{2,3},std::vector<value_type>{1,2,3,4,5,6}),
-            std::make_tuple(
-                core_type(std::initializer_list<std::initializer_list<std::initializer_list<value_type>>>{{{1},{2},{3}},{{4},{5},{6}}}),
-                shape_type{2,3,1},
-                std::vector<value_type>{1,2,3,4,5,6}
-            )
-        );
-        auto test = [](const auto& t){
-            auto core = std::get<0>(t);
-            auto expected_shape = std::get<1>(t);
-            auto expected_elements = std::get<2>(t);
-            auto result_shape = core.descriptor().shape();
-            REQUIRE(result_shape == expected_shape);
-            if constexpr (is_iterable::value){
-                REQUIRE(std::equal(core.begin(),core.end(),expected_elements.begin(),expected_elements.end()));
-            }
-            if constexpr (is_subscriptable::value){
-                std::vector<value_type> result_elements{};
-                const index_type result_size = core.descriptor().size();
-                for (index_type i{0}; i!=result_size; ++i){
-                    result_elements.push_back(core[i]);
-                }
-                REQUIRE(result_elements == expected_elements);
-            }
-        };
-        apply_by_element(test,test_data);
-    }
-    SECTION("test_storage_core_range_constructor"){
-        //0shape,1elements,2expected_shape,3expected_elements
-        auto test_data = std::make_tuple(
-            std::make_tuple(shape_type{0},std::vector<value_type>{},shape_type{0},std::vector<value_type>{}),
-            std::make_tuple(shape_type{0,3},std::vector<value_type>{},shape_type{0,3},std::vector<value_type>{}),
-            std::make_tuple(shape_type{0},std::vector<value_type>{2,2,2,2},shape_type{0},std::vector<value_type>{}),
-            std::make_tuple(shape_type{1},std::vector<value_type>{2},shape_type{1},std::vector<value_type>{2}),
-            std::make_tuple(shape_type{1},std::vector<value_type>{3,4,5},shape_type{1},std::vector<value_type>{3}),
-            std::make_tuple(shape_type{5},std::vector<value_type>{1,2,3,4,5},shape_type{5},std::vector<value_type>{1,2,3,4,5}),
-            std::make_tuple(shape_type{5},std::vector<value_type>{1,2,3,4,5,6,7,8,9},shape_type{5},std::vector<value_type>{1,2,3,4,5}),
-            std::make_tuple(shape_type{5},std::vector<value_type>{1,2,3},shape_type{5},std::vector<value_type>{1,2,3,0,0}),
-            std::make_tuple(shape_type{3,2},std::vector<value_type>{1,2,3,4,5,6},shape_type{3,2},std::vector<value_type>{1,2,3,4,5,6}),
-            std::make_tuple(shape_type{3,2},std::vector<value_type>{1,2},shape_type{3,2},std::vector<value_type>{1,2,0,0,0,0}),
-            std::make_tuple(shape_type{3,2},std::vector<value_type>{1,2,3,4,5,6,7,8,9,10},shape_type{3,2},std::vector<value_type>{1,2,3,4,5,6})
-        );
-        auto test = [](const auto& t){
-            auto shape = std::get<0>(t);
-            auto elements = std::get<1>(t);
-            auto expected_shape = std::get<2>(t);
-            auto expected_elements = std::get<3>(t);
-            core_type core(shape,elements.begin(),elements.end());
-            auto result_shape = core.descriptor().shape();
-            REQUIRE(result_shape == expected_shape);
-            if constexpr (is_iterable::value){
-                REQUIRE(std::equal(core.begin(),core.end(),expected_elements.begin(),expected_elements.end()));
-            }
-            if constexpr (is_subscriptable::value){
-                std::vector<value_type> result_elements{};
-                const index_type result_size = core.descriptor().size();
-                for (index_type i{0}; i!=result_size; ++i){
-                    result_elements.push_back(core[i]);
-                }
-                REQUIRE(result_elements == expected_elements);
-            }
-        };
-        apply_by_element(test,test_data);
-    }
-}
 
 namespace test_tensor_implementation_{
 
@@ -720,58 +429,20 @@ TEMPLATE_TEST_CASE("test_tensor_implementation","[test_tensor_implementation]",
     }
 }
 
-TEMPLATE_TEST_CASE("test_tensor_implementation_data_accesor_result_type_non_const_accessible_core","[test_tensor_implementation]",
+TEMPLATE_TEST_CASE("test_tensor_implementation_broadcast_iterator","[test_tensor_implementation]",
+    //non const accessible core
     (test_tensor_implementation_::test_core_subscriptable<test_config::config_storage_selector_t<std::vector>,int>),
     (test_tensor_implementation_::test_core_subscriptable<test_config::config_storage_selector_t<test_storage_core::subscriptable_storage_integral>,int>),
     (test_tensor_implementation_::test_core_indexible<test_config::config_storage_selector_t<std::vector>,int>),
     (test_tensor_implementation_::test_core_walkable<test_config::config_storage_selector_t<std::vector>,int>),
     (test_tensor_implementation_::test_core_iterable<test_config::config_storage_selector_t<std::vector>,int>),
-    (test_tensor_implementation_::test_core_iterable<test_config::config_storage_selector_t<test_storage_core::iterable_storage_integral>,int>)
-)
-{
-    using core_type = TestType;
-    using config_type = typename core_type::config_type;
-    using value_type = typename core_type::value_type;
-    using index_type = typename config_type::index_type;
-    using tensor_implementation_type = gtensor::tensor_implementation<core_type>;
-
-    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().begin()),value_type&>);
-    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().end()),value_type&>);
-    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().rbegin()),value_type&>);
-    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().rend()),value_type&>);
-    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().create_walker()),value_type&>);
-    REQUIRE(std::is_same_v<decltype(std::declval<tensor_implementation_type>().create_indexer()[std::declval<index_type>()]),value_type&>);
-}
-
-TEMPLATE_TEST_CASE("test_tensor_implementation_data_accesor_result_type_const_accessible_core","[test_tensor_implementation]",
+    (test_tensor_implementation_::test_core_iterable<test_config::config_storage_selector_t<test_storage_core::iterable_storage_integral>,int>),
+    //const accessible core
     (test_tensor_implementation_::test_core_const_subscriptable<test_config::config_storage_selector_t<std::vector>,int>),
     (test_tensor_implementation_::test_core_const_indexible<test_config::config_storage_selector_t<std::vector>,int>),
     (test_tensor_implementation_::test_core_const_walkable<test_config::config_storage_selector_t<std::vector>,int>),
-    (test_tensor_implementation_::test_core_const_iterable<test_config::config_storage_selector_t<std::vector>,int>)
-)
-{
-    using core_type = TestType;
-    using config_type = typename core_type::config_type;
-    using value_type = typename core_type::value_type;
-    using index_type = typename config_type::index_type;
-    using tensor_implementation_type = gtensor::tensor_implementation<core_type>;
-
-    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().begin()),const value_type&>);
-    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().end()),const value_type&>);
-    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().rbegin()),const value_type&>);
-    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().rend()),const value_type&>);
-    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().create_walker()),const value_type&>);
-    REQUIRE(std::is_same_v<decltype(std::declval<tensor_implementation_type>().create_indexer()[std::declval<index_type>()]),const value_type&>);
-
-    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().begin()),const value_type&>);
-    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().end()),const value_type&>);
-    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().rbegin()),const value_type&>);
-    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().rend()),const value_type&>);
-    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().create_walker()),const value_type&>);
-    REQUIRE(std::is_same_v<decltype(std::declval<const tensor_implementation_type>().create_indexer()[std::declval<index_type>()]),const value_type&>);
-}
-
-TEMPLATE_TEST_CASE("test_tensor_implementation_data_accesor_result_type_full_accessible_core","[test_tensor_implementation]",
+    (test_tensor_implementation_::test_core_const_iterable<test_config::config_storage_selector_t<std::vector>,int>),
+    //full accessible core
     (test_tensor_implementation_::test_core_full_subscriptable<test_config::config_storage_selector_t<std::vector>,int>),
     (test_tensor_implementation_::test_core_full_indexible<test_config::config_storage_selector_t<std::vector>,int>),
     (test_tensor_implementation_::test_core_full_walkable<test_config::config_storage_selector_t<std::vector>,int>),
@@ -781,31 +452,6 @@ TEMPLATE_TEST_CASE("test_tensor_implementation_data_accesor_result_type_full_acc
     using core_type = TestType;
     using config_type = typename core_type::config_type;
     using value_type = typename core_type::value_type;
-    using index_type = typename config_type::index_type;
-    using tensor_implementation_type = gtensor::tensor_implementation<core_type>;
-
-    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().begin()),value_type&>);
-    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().end()),value_type&>);
-    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().rbegin()),value_type&>);
-    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().rend()),value_type&>);
-    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().create_walker()),value_type&>);
-    REQUIRE(std::is_same_v<decltype(std::declval<tensor_implementation_type>().create_indexer()[std::declval<index_type>()]),value_type&>);
-
-    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().begin()),const value_type&>);
-    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().end()),const value_type&>);
-    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().rbegin()),const value_type&>);
-    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().rend()),const value_type&>);
-    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().create_walker()),const value_type&>);
-    REQUIRE(std::is_same_v<decltype(std::declval<const tensor_implementation_type>().create_indexer()[std::declval<index_type>()]),const value_type&>);
-}
-
-TEMPLATE_TEST_CASE("test_tensor_implementation_broadcast_iterator","[test_tensor_implementation]",
-    test_config::config_storage_selector_t<std::vector>
-)
-{
-    using value_type = double;
-    using config_type = gtensor::config::extend_config_t<TestType,value_type>;
-    using core_type = gtensor::storage_core<config_type,value_type>;
     using shape_type = typename config_type::shape_type;
     using tensor_implementation_type = gtensor::tensor_implementation<core_type>;
     using helpers_for_testing::apply_by_element;
@@ -828,31 +474,113 @@ TEMPLATE_TEST_CASE("test_tensor_implementation_broadcast_iterator","[test_tensor
         std::make_tuple(shape_type{2,3}, std::vector<value_type>{1,2,3,4,5,6}, shape_type{2,1,3}, std::vector<value_type>{1,2,3,1,2,3})
     );
 
-    SECTION("test_broadcast_iterator")
-    {
-        auto test = [](const auto& t){
-            const auto shape = std::get<0>(t);
-            const auto elements = std::get<1>(t);
-            const auto broadcast_shape = std::get<2>(t);
-            const auto expected = std::get<3>(t);
-            tensor_implementation_type result_tensor_implementation{shape, elements.begin(), elements.end()};
-            REQUIRE(std::equal(result_tensor_implementation.begin(broadcast_shape),result_tensor_implementation.end(broadcast_shape),expected.begin(),expected.end()));
-            REQUIRE(std::equal(result_tensor_implementation.rbegin(broadcast_shape),result_tensor_implementation.rend(broadcast_shape),expected.rbegin(),expected.rend()));
-        };
-        apply_by_element(test,test_data);
-    }
-    SECTION("test_const_broadcast_iterator")
-    {
-        auto test = [](const auto& t){
-            const auto shape = std::get<0>(t);
-            const auto elements = std::get<1>(t);
-            const auto broadcast_shape = std::get<2>(t);
-            const auto expected = std::get<3>(t);
-            const tensor_implementation_type result_tensor_implementation{shape, elements.begin(), elements.end()};
-            REQUIRE(std::equal(result_tensor_implementation.begin(broadcast_shape),result_tensor_implementation.end(broadcast_shape),expected.begin(),expected.end()));
-            REQUIRE(std::equal(result_tensor_implementation.rbegin(broadcast_shape),result_tensor_implementation.rend(broadcast_shape),expected.rbegin(),expected.rend()));
-        };
-        apply_by_element(test,test_data);
-    }
-
+    auto test = [](const auto& t){
+        const auto shape = std::get<0>(t);
+        const auto elements = std::get<1>(t);
+        const auto broadcast_shape = std::get<2>(t);
+        const auto expected = std::get<3>(t);
+        tensor_implementation_type result_tensor_implementation{shape, elements.begin(), elements.end()};
+        REQUIRE(std::equal(result_tensor_implementation.begin(broadcast_shape),result_tensor_implementation.end(broadcast_shape),expected.begin(),expected.end()));
+        REQUIRE(std::equal(result_tensor_implementation.rbegin(broadcast_shape),result_tensor_implementation.rend(broadcast_shape),expected.rbegin(),expected.rend()));
+    };
+    apply_by_element(test,test_data);
 }
+
+TEMPLATE_TEST_CASE("test_tensor_implementation_data_accesor_result_type_non_const_accessible_core","[test_tensor_implementation]",
+    (test_tensor_implementation_::test_core_subscriptable<test_config::config_storage_selector_t<std::vector>,int>),
+    (test_tensor_implementation_::test_core_subscriptable<test_config::config_storage_selector_t<test_storage_core::subscriptable_storage_integral>,int>),
+    (test_tensor_implementation_::test_core_indexible<test_config::config_storage_selector_t<std::vector>,int>),
+    (test_tensor_implementation_::test_core_walkable<test_config::config_storage_selector_t<std::vector>,int>),
+    (test_tensor_implementation_::test_core_iterable<test_config::config_storage_selector_t<std::vector>,int>),
+    (test_tensor_implementation_::test_core_iterable<test_config::config_storage_selector_t<test_storage_core::iterable_storage_integral>,int>)
+)
+{
+    using core_type = TestType;
+    using config_type = typename core_type::config_type;
+    using value_type = typename core_type::value_type;
+    using index_type = typename config_type::index_type;
+    using shape_type = typename config_type::shape_type;
+    using tensor_implementation_type = gtensor::tensor_implementation<core_type>;
+
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().begin()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().end()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().rbegin()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().rend()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().begin(std::declval<shape_type>())),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().end(std::declval<shape_type>())),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().rbegin(std::declval<shape_type>())),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().rend(std::declval<shape_type>())),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().create_walker()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(std::declval<tensor_implementation_type>().create_indexer()[std::declval<index_type>()]),value_type&>);
+}
+
+TEMPLATE_TEST_CASE("test_tensor_implementation_data_accesor_result_type_const_accessible_core","[test_tensor_implementation]",
+    (test_tensor_implementation_::test_core_const_subscriptable<test_config::config_storage_selector_t<std::vector>,int>),
+    (test_tensor_implementation_::test_core_const_indexible<test_config::config_storage_selector_t<std::vector>,int>),
+    (test_tensor_implementation_::test_core_const_walkable<test_config::config_storage_selector_t<std::vector>,int>),
+    (test_tensor_implementation_::test_core_const_iterable<test_config::config_storage_selector_t<std::vector>,int>)
+)
+{
+    using core_type = TestType;
+    using config_type = typename core_type::config_type;
+    using value_type = typename core_type::value_type;
+    using index_type = typename config_type::index_type;
+    using shape_type = typename config_type::shape_type;
+    using tensor_implementation_type = gtensor::tensor_implementation<core_type>;
+
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().begin()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().end()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().rbegin()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().rend()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().begin(std::declval<shape_type>())),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().end(std::declval<shape_type>())),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().rbegin(std::declval<shape_type>())),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().rend(std::declval<shape_type>())),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().create_walker()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(std::declval<tensor_implementation_type>().create_indexer()[std::declval<index_type>()]),const value_type&>);
+
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().begin()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().end()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().rbegin()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().rend()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().create_walker()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(std::declval<const tensor_implementation_type>().create_indexer()[std::declval<index_type>()]),const value_type&>);
+}
+
+TEMPLATE_TEST_CASE("test_tensor_implementation_data_accesor_result_type_full_accessible_core","[test_tensor_implementation]",
+    (test_tensor_implementation_::test_core_full_subscriptable<test_config::config_storage_selector_t<std::vector>,int>),
+    (test_tensor_implementation_::test_core_full_indexible<test_config::config_storage_selector_t<std::vector>,int>),
+    (test_tensor_implementation_::test_core_full_walkable<test_config::config_storage_selector_t<std::vector>,int>),
+    (test_tensor_implementation_::test_core_full_iterable<test_config::config_storage_selector_t<std::vector>,int>)
+)
+{
+    using core_type = TestType;
+    using config_type = typename core_type::config_type;
+    using value_type = typename core_type::value_type;
+    using index_type = typename config_type::index_type;
+    using shape_type = typename config_type::shape_type;
+    using tensor_implementation_type = gtensor::tensor_implementation<core_type>;
+
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().begin()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().end()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().rbegin()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().rend()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().begin(std::declval<shape_type>())),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().end(std::declval<shape_type>())),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().rbegin(std::declval<shape_type>())),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().rend(std::declval<shape_type>())),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().create_walker()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(std::declval<tensor_implementation_type>().create_indexer()[std::declval<index_type>()]),value_type&>);
+
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().begin()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().end()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().rbegin()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().rend()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().begin(std::declval<shape_type>())),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().end(std::declval<shape_type>())),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().rbegin(std::declval<shape_type>())),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().rend(std::declval<shape_type>())),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().create_walker()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(std::declval<const tensor_implementation_type>().create_indexer()[std::declval<index_type>()]),const value_type&>);
+}
+

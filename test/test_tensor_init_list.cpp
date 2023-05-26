@@ -63,40 +63,49 @@ TEMPLATE_TEST_CASE("test_list_parser_exception","[test_tensor_init_list]",std::v
     REQUIRE_THROWS_AS((list_parse<value_type, container_type>(nested_init_list3<int>{{{1,2},{2}},{{3},{4}},{{5},{6}}})), tensor_init_list_exception);
 }
 
-TEST_CASE("test_fill_from_list","[test_tensor_init_list]")
+TEST_CASE("test_copy_from_list","[test_tensor_init_list]")
 {
     using container_type = std::vector<int>;
     using gtensor::detail::nested_init_list1;
     using gtensor::detail::nested_init_list2;
     using gtensor::detail::nested_init_list3;
-    using gtensor::detail::fill_from_list;
+    using gtensor::detail::copy_from_list;
 
-    auto iterator_filler = [](const auto& n, auto init_list){
+    auto make_copy = [](const auto& n, auto init_list){
         container_type container(n);
-        fill_from_list(init_list, container.begin());
+        copy_from_list(init_list, container.begin());
         return container;
     };
-    // auto indexer_filler = [](const auto& n, auto init_list){
-    //     container_type container(n);
-    //     struct indexer_type{
-    //         container_type& ref;
-    //         indexer_type(container_type& ref_):
-    //             ref{ref_}
-    //         {}
-
-    //     };
-    //     fill_from_list(init_list, container.begin());
-    //     return container;
-    // };
+    auto make_mapped_copy = [](const auto& n, auto init_list, auto mapper){
+        container_type container(n);
+        copy_from_list(init_list, container.begin(), mapper);
+        return container;
+    };
     //0result,1expected
     using test_type = std::tuple<container_type, container_type>;
     auto test_data = GENERATE_COPY(
-        test_type{iterator_filler(0,nested_init_list1<int>{}), container_type{}},
-        test_type{iterator_filler(5,nested_init_list1<int>{1,2,3,4,5}), container_type{1,2,3,4,5}},
-        test_type{iterator_filler(0,nested_init_list2<int>{{},{},{}}), container_type{}},
-        test_type{iterator_filler(6,nested_init_list2<int>{{1,2},{3,4},{5,6}}), container_type{1,2,3,4,5,6}},
-        test_type{iterator_filler(0,nested_init_list3<int>{{{},{}},{{},{}},{{},{}}}), container_type{}},
-        test_type{iterator_filler(18,nested_init_list3<int>{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}},{{13,14,15},{16,17,18}}}), container_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}}
+        test_type{make_copy(0,nested_init_list1<int>{}), container_type{}},
+        test_type{make_copy(5,nested_init_list1<int>{1,2,3,4,5}), container_type{1,2,3,4,5}},
+        test_type{make_copy(0,nested_init_list2<int>{{},{},{}}), container_type{}},
+        test_type{make_copy(6,nested_init_list2<int>{{1,2},{3,4},{5,6}}), container_type{1,2,3,4,5,6}},
+        test_type{make_copy(0,nested_init_list3<int>{{{},{}},{{},{}},{{},{}}}), container_type{}},
+        test_type{make_copy(18,nested_init_list3<int>{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}},{{13,14,15},{16,17,18}}}), container_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}},
+        test_type{
+            make_mapped_copy(
+                6,
+                nested_init_list2<int>{{1,2},{3,4},{5,6}},
+                [](auto i){int map[]={5,4,3,2,1,0}; return map[i];}
+            ),
+            container_type{6,5,4,3,2,1}
+        },
+        test_type{
+            make_mapped_copy(
+                6,
+                nested_init_list2<int>{{1,2},{3,4},{5,6}},
+                [](auto i){int map[]={1,4,5,0,3,2}; return map[i];}
+            ),
+            container_type{4,1,6,5,2,3}
+        }
     );
     auto result = std::get<0>(test_data);
     auto expected = std::get<1>(test_data);

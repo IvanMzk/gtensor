@@ -21,11 +21,34 @@ public:
 
 namespace detail{
 
-#define GENERATE_HAS_MEMBER_FUNCTION_SIGNATURE(function_name,function_signature,trait_name)\
+#define GENERATE_HAS_METHOD_SIGNATURE(function_name,function_signature,trait_name)\
 template<typename T, typename = void>\
 struct trait_name : std::false_type{};\
 template<typename T>\
 struct trait_name<T, std::void_t<std::integral_constant<function_signature,&T::function_name>>> : std::true_type{};
+
+#define GENERATE_HAS_CALLABLE_METHOD(call_expression,trait_name)\
+template<typename,typename=void> struct trait_name : std::false_type{};\
+template<typename T> struct trait_name<T,std::void_t<decltype(std::declval<T>().call_expression)>> : std::true_type{};
+
+GENERATE_HAS_CALLABLE_METHOD(operator[](std::declval<typename T::size_type>()), has_callable_subscript_operator_size_type);
+GENERATE_HAS_CALLABLE_METHOD(operator[](std::declval<typename T::difference_type>()), has_callable_subscript_operator_difference_type);
+GENERATE_HAS_CALLABLE_METHOD(operator[](std::declval<typename T::index_type>()), has_callable_subscript_operator_index_type);
+GENERATE_HAS_CALLABLE_METHOD(create_indexer(), has_callable_create_indexer);
+GENERATE_HAS_CALLABLE_METHOD(create_walker(std::declval<typename T::dim_type>()), has_callable_create_walker);
+GENERATE_HAS_CALLABLE_METHOD(begin(), has_callable_begin);
+GENERATE_HAS_CALLABLE_METHOD(end(), has_callable_end);
+GENERATE_HAS_CALLABLE_METHOD(rbegin(), has_callable_rbegin);
+GENERATE_HAS_CALLABLE_METHOD(rend(), has_callable_rend);
+
+template<typename T> using has_callable_subscript_operator = std::disjunction<
+    has_callable_subscript_operator_difference_type<T>,
+    has_callable_subscript_operator_size_type<T>,
+    has_callable_subscript_operator_index_type<T>
+>;
+
+template<typename T> using has_callable_iterator = std::conjunction<has_callable_begin<T>,has_callable_end<T>>;
+template<typename T> using has_callable_reverse_iterator = std::conjunction<has_callable_rbegin<T>,has_callable_rend<T>>;
 
 template<typename...> inline constexpr bool always_false = false;
 
@@ -67,7 +90,7 @@ template<typename...Ts> using first_tensor_type_t = typename first_tensor_type<T
 
 //standart library may require difference_type to be convertible to integral
 template<typename It, typename T>
-void fill(It first, It last, const T& v){
+inline void fill(It first, It last, const T& v){
     using difference_type = typename std::iterator_traits<It>::difference_type;
     if constexpr (std::is_integral_v<difference_type>){
         std::fill(first,last,v);
@@ -78,7 +101,7 @@ void fill(It first, It last, const T& v){
     }
 }
 template<typename It, typename T>
-void advance(It& it, T n){
+inline void advance(It& it, T n){
     using iterator_type = std::remove_cv_t<It>;
     using difference_type = typename std::iterator_traits<iterator_type>::difference_type;
     if constexpr (std::is_integral_v<difference_type>){
@@ -100,6 +123,12 @@ void advance(It& it, T n){
             }
         }
     }
+}
+template<typename It>
+inline It next(It it, typename std::iterator_traits<It>::difference_type n = 1)
+{
+    detail::advance(it, n);
+    return it;
 }
 
 //returns dimension for given shape argument

@@ -127,7 +127,7 @@ inline auto list_parse(std::initializer_list<T> list){
 //copy init list to Dst
 struct trivial_mapper{};
 template<typename T, typename DstIt>
-inline void fill_element_(const T& v, DstIt& dst_it){
+inline void copy_element_(const T& v, DstIt& dst_it){
     using dst_value_type = typename std::iterator_traits<DstIt>::value_type;
     if constexpr (std::is_same_v<T,dst_value_type>){
         *dst_it = v;
@@ -139,44 +139,44 @@ inline void fill_element_(const T& v, DstIt& dst_it){
 }
 //trivial mapper implementation
 template<typename T, typename DstIt, typename DiffT>
-inline void fill_from_list_(const T& v, DstIt& dst_it, DiffT& src_pos){
-    fill_element_(v,dst_it);
+inline void copy_from_list_(const T& v, DstIt& dst_it, DiffT& src_pos){
+    copy_element_(v,dst_it);
     ++dst_it;
     ++src_pos;
 }
 template<typename T, typename DstIt, typename DiffT>
-inline void fill_from_list_(std::initializer_list<T> list, DstIt& dst_it, DiffT& src_pos){
+inline void copy_from_list_(std::initializer_list<T> list, DstIt& dst_it, DiffT& src_pos){
     for (auto p=list.begin();p!=list.end(); ++p){
-        fill_from_list_(*p, dst_it, src_pos);
+        copy_from_list_(*p, dst_it, src_pos);
     }
 }
 //custom mapper implementation
 template<typename T, typename DstIt, typename Mapper, typename DiffT>
-inline void fill_from_list_(const T& v, DstIt dst_it, Mapper& mapper, DiffT& src_pos){
-    advance(dst_it, mapper(src_pos));
-    fill_element_(v,dst_it);
+inline void copy_from_list_(const T& v, DstIt dst_it, Mapper& mapper, DiffT& src_pos){
+    detail::advance(dst_it, mapper(src_pos));
+    copy_element_(v,dst_it);
     ++dst_it;
     ++src_pos;
 }
 template<typename T, typename DstIt, typename Mapper, typename DiffT>
-inline void fill_from_list_(std::initializer_list<T> list, DstIt& dst_it, Mapper& mapper, DiffT& src_pos){
+inline void copy_from_list_(std::initializer_list<T> list, DstIt& dst_it, Mapper& mapper, DiffT& src_pos){
     for (auto p=list.begin();p!=list.end(); ++p){
-        fill_from_list_(*p, dst_it, mapper, src_pos);
+        copy_from_list_(*p, dst_it, mapper, src_pos);
     }
 }
 template<typename T, typename DstIt, typename Mapper>
-inline auto fill_from_list(std::initializer_list<T> list, DstIt dst_it, Mapper mapper){
+inline auto copy_from_list(std::initializer_list<T> list, DstIt dst_it, Mapper mapper){
     typename std::iterator_traits<DstIt>::difference_type src_pos{0};
     if constexpr (std::is_same_v<Mapper,trivial_mapper>){
-        fill_from_list_(list, dst_it, src_pos);
+        copy_from_list_(list, dst_it, src_pos);
     }else{
-        fill_from_list_(list, dst_it, mapper, src_pos);
+        copy_from_list_(list, dst_it, mapper, src_pos);
     }
     return src_pos;
 }
 template<typename T, typename DstIt>
-inline auto fill_from_list(std::initializer_list<T> list, DstIt dst_it){
-    return fill_from_list(list, dst_it, trivial_mapper{});
+inline auto copy_from_list(std::initializer_list<T> list, DstIt dst_it){
+    return copy_from_list(list, dst_it, trivial_mapper{});
 }
 
 }   //end of namespace detail

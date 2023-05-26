@@ -2,6 +2,7 @@
 #define TENSOR_FACTORY_HPP_
 
 #include "config.hpp"
+#include "tensor_core.hpp"
 #include "tensor_implementation.hpp"
 
 namespace gtensor{
