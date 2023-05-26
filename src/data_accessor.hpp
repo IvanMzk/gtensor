@@ -263,24 +263,42 @@ public:
     const auto& walker()const{return walker_;}
     auto& walker(){return walker_;}
     bool next(){
-        auto direction = dim_;
+        return next_helper(typename config_type::layout{});
+    }
+private:
+    bool next_helper(config::c_layout){
         auto index_it = index_.end();
-        while(direction!=dim_type{0}){
+        for (dim_type direction{dim_}; direction!=dim_type{0};){
             --index_it;
             --direction;
-            if constexpr (!std::is_same_v<predicate_type,TraverseAllPredicate>){
-                if (predicate_(direction) == false){    //traverse directions with true predicate only
-                    continue;
-                }
-            }
-            if (*index_it == (*shape_)[direction]-index_type{1}){   //direction at their max
-                *index_it = index_type{0};
-                walker_.reset_back(direction);
-            }else{  //can next on direction
-                ++(*index_it);
-                walker_.step(direction);
+            if (next_on_direction(direction, *index_it)){
                 return true;
             }
+        }
+        return false;
+    }
+    bool next_helper(config::f_layout){
+        auto index_it = index_.begin();
+        for (dim_type direction{0}; direction!=dim_; ++direction,++index_it){
+            if (next_on_direction(direction, *index_it)){
+                return true;
+            }
+        }
+        return false;
+    }
+    bool next_on_direction(dim_type direction, index_type& index){
+        if constexpr (!std::is_same_v<predicate_type,TraverseAllPredicate>){
+            if (predicate_(direction) == false){    //traverse directions with true predicate only
+                return false;
+            }
+        }
+        if (index == (*shape_)[direction]-index_type{1}){   //direction at their max
+            index = index_type{0};
+            walker_.reset_back(direction);
+        }else{  //can next on direction
+            ++index;
+            walker_.step(direction);
+            return true;
         }
         return false;
     }
@@ -320,24 +338,8 @@ public:
         }
     }
     bool prev(){
-        dim_type direction{dim_}; //start from direction with min stride
-        auto index_it = index_.end();
-        while(direction!=dim_type{0}){
-            --index_it;
-            --direction;
-            if constexpr (!std::is_same_v<predicate_type,TraverseAllPredicate>){
-                if (predicate_(direction) == false){    //traverse directions with true predicate only
-                    continue;
-                }
-            }
-            if (*index_it == index_type{0}){   //direction at their min
-                *index_it = (*shape_)[direction]-index_type{1};
-                walker_.reset(direction);
-            }else{  //can prev on direction
-                --(*index_it);
-                walker_.step_back(direction);
-                return true;
-            }
+        if (prev_helper(typename config_type::layout{})){
+            return true;
         }
         if (overflow_ == index_type{1}){
             --overflow_;
@@ -368,6 +370,43 @@ public:
             }
         }
     }
+private:
+    bool prev_helper(config::c_layout){
+        auto index_it = index_.end();
+        for (dim_type direction{dim_}; direction!=dim_type{0};){
+            --index_it;
+            --direction;
+            if (prev_on_direction(direction, *index_it)){
+                return true;
+            }
+        }
+        return false;
+    }
+    bool prev_helper(config::f_layout){
+        auto index_it = index_.begin();
+        for (dim_type direction{0}; direction!=dim_; ++direction,++index_it){
+            if (prev_on_direction(direction, *index_it)){
+                return true;
+            }
+        }
+        return false;
+    }
+    bool prev_on_direction(dim_type direction, index_type& index){
+        if constexpr (!std::is_same_v<predicate_type,TraverseAllPredicate>){
+            if (predicate_(direction) == false){    //traverse directions with true predicate only
+                return false;
+            }
+        }
+        if (index == index_type{0}){   //direction at their min
+            index = (*shape_)[direction]-index_type{1};
+            walker_.reset(direction);
+        }else{  //can prev on direction
+            --index;
+            walker_.step_back(direction);
+            return true;
+        }
+        return false;
+    }
 };
 
 template<typename Config, typename Walker>
@@ -377,6 +416,7 @@ class walker_random_access_traverser : public walker_bidirectional_traverser<Con
     using strides_div_type = detail::strides_div_t<Config>;
     using walker_bidirectional_traverser_base::walker_;
     using walker_bidirectional_traverser_base::index_;
+    using walker_bidirectional_traverser_base::dim_;
     using walker_bidirectional_traverser_base::overflow_;
     const strides_div_type* strides_;
 public:
@@ -393,9 +433,27 @@ public:
     void move(index_type n){
         walker_.reset_back();
         overflow_ = index_type{0};
+        move_helper(n, typename config_type::layout{});
+    }
+private:
+    void move_helper(index_type n, config::c_layout){
         auto index_it = index_.begin();
         dim_type direction{0};
         for(auto strides_it = strides_->begin(); strides_it!=strides_->end(); ++strides_it,++index_it,++direction){
+            auto steps = detail::divide(n,*strides_it);
+            if (steps!=index_type{0}){
+                walker_.walk(direction,steps);
+            }
+            *index_it = steps;
+        }
+    }
+    void move_helper(index_type n, config::f_layout){
+        auto index_it = index_.end();
+        auto direction = dim_;
+        for(auto strides_it = strides_->end(), strides_first=strides_->begin(); strides_it!=strides_first;){
+            --index_it;
+            --strides_it;
+            --direction;
             auto steps = detail::divide(n,*strides_it);
             if (steps!=index_type{0}){
                 walker_.walk(direction,steps);
