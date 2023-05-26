@@ -26,8 +26,8 @@ struct default_config
     //using div_mode = mode_div_native;
 
     //specify storage scheme of data elements
-    //using layout = c_layout;
-    using layout = f_layout;
+    using layout = c_layout;
+    //using layout = f_layout;
 
     //data elements storage template
     //must provide at least storage(const difference_type& n) constructor, which constructs storage of size n

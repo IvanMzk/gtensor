@@ -7,14 +7,14 @@
 #include "test_config.hpp"
 #include "helpers_for_testing.hpp"
 
-namespace test_storage_core{
+
+namespace test_tensor_implementation_{
 
 template<template<typename...> typename Storage> struct test_config_c_layout : gtensor::config::default_config
 {
     using layout = gtensor::config::c_layout;
     template<typename T> using storage = Storage<T>;
 };
-
 template<template<typename...> typename Storage> struct test_config_f_layout : gtensor::config::default_config
 {
     using layout = gtensor::config::f_layout;
@@ -104,9 +104,6 @@ public:
     iterator begin(){return iterator{indexer_type{impl_},0};}
     iterator end(){return iterator{indexer_type{impl_},size()};}
 };
-}   //end of namespace test_storage_core
-
-namespace test_tensor_implementation_{
 
 template<typename Config, typename T>
 class test_core_base{
@@ -330,11 +327,11 @@ public:
 TEMPLATE_TEST_CASE("test_tensor_implementation","[test_tensor_implementation]",
     //non const accessible core
     (test_tensor_implementation_::test_core_subscriptable<test_config::config_storage_selector_t<std::vector>,int>),
-    (test_tensor_implementation_::test_core_subscriptable<test_config::config_storage_selector_t<test_storage_core::subscriptable_storage_integral>,int>),
+    (test_tensor_implementation_::test_core_subscriptable<test_config::config_storage_selector_t<test_tensor_implementation_::subscriptable_storage_integral>,int>),
     (test_tensor_implementation_::test_core_indexible<test_config::config_storage_selector_t<std::vector>,int>),
     (test_tensor_implementation_::test_core_walkable<test_config::config_storage_selector_t<std::vector>,int>),
     (test_tensor_implementation_::test_core_iterable<test_config::config_storage_selector_t<std::vector>,int>),
-    (test_tensor_implementation_::test_core_iterable<test_config::config_storage_selector_t<test_storage_core::iterable_storage_integral>,int>),
+    (test_tensor_implementation_::test_core_iterable<test_config::config_storage_selector_t<test_tensor_implementation_::iterable_storage_integral>,int>),
     //const accessible core
     (test_tensor_implementation_::test_core_const_subscriptable<test_config::config_storage_selector_t<std::vector>,int>),
     (test_tensor_implementation_::test_core_const_indexible<test_config::config_storage_selector_t<std::vector>,int>),
@@ -429,24 +426,24 @@ TEMPLATE_TEST_CASE("test_tensor_implementation","[test_tensor_implementation]",
     }
 }
 
-TEMPLATE_TEST_CASE("test_tensor_implementation_broadcast_iterator","[test_tensor_implementation]",
+TEMPLATE_TEST_CASE("test_tensor_implementation_broadcast_iterator_c_layout","[test_tensor_implementation]",
     //non const accessible core
-    (test_tensor_implementation_::test_core_subscriptable<test_config::config_storage_selector_t<std::vector>,int>),
-    (test_tensor_implementation_::test_core_subscriptable<test_config::config_storage_selector_t<test_storage_core::subscriptable_storage_integral>,int>),
-    (test_tensor_implementation_::test_core_indexible<test_config::config_storage_selector_t<std::vector>,int>),
-    (test_tensor_implementation_::test_core_walkable<test_config::config_storage_selector_t<std::vector>,int>),
-    (test_tensor_implementation_::test_core_iterable<test_config::config_storage_selector_t<std::vector>,int>),
-    (test_tensor_implementation_::test_core_iterable<test_config::config_storage_selector_t<test_storage_core::iterable_storage_integral>,int>),
+    (test_tensor_implementation_::test_core_subscriptable<test_tensor_implementation_::test_config_c_layout<std::vector>,int>),
+    (test_tensor_implementation_::test_core_subscriptable<test_tensor_implementation_::test_config_c_layout<test_tensor_implementation_::subscriptable_storage_integral>,int>),
+    (test_tensor_implementation_::test_core_indexible<test_tensor_implementation_::test_config_c_layout<std::vector>,int>),
+    (test_tensor_implementation_::test_core_walkable<test_tensor_implementation_::test_config_c_layout<std::vector>,int>),
+    (test_tensor_implementation_::test_core_iterable<test_tensor_implementation_::test_config_c_layout<std::vector>,int>),
+    (test_tensor_implementation_::test_core_iterable<test_tensor_implementation_::test_config_c_layout<test_tensor_implementation_::iterable_storage_integral>,int>),
     //const accessible core
-    (test_tensor_implementation_::test_core_const_subscriptable<test_config::config_storage_selector_t<std::vector>,int>),
-    (test_tensor_implementation_::test_core_const_indexible<test_config::config_storage_selector_t<std::vector>,int>),
-    (test_tensor_implementation_::test_core_const_walkable<test_config::config_storage_selector_t<std::vector>,int>),
-    (test_tensor_implementation_::test_core_const_iterable<test_config::config_storage_selector_t<std::vector>,int>),
+    (test_tensor_implementation_::test_core_const_subscriptable<test_tensor_implementation_::test_config_c_layout<std::vector>,int>),
+    (test_tensor_implementation_::test_core_const_indexible<test_tensor_implementation_::test_config_c_layout<std::vector>,int>),
+    (test_tensor_implementation_::test_core_const_walkable<test_tensor_implementation_::test_config_c_layout<std::vector>,int>),
+    (test_tensor_implementation_::test_core_const_iterable<test_tensor_implementation_::test_config_c_layout<std::vector>,int>),
     //full accessible core
-    (test_tensor_implementation_::test_core_full_subscriptable<test_config::config_storage_selector_t<std::vector>,int>),
-    (test_tensor_implementation_::test_core_full_indexible<test_config::config_storage_selector_t<std::vector>,int>),
-    (test_tensor_implementation_::test_core_full_walkable<test_config::config_storage_selector_t<std::vector>,int>),
-    (test_tensor_implementation_::test_core_full_iterable<test_config::config_storage_selector_t<std::vector>,int>)
+    (test_tensor_implementation_::test_core_full_subscriptable<test_tensor_implementation_::test_config_c_layout<std::vector>,int>),
+    (test_tensor_implementation_::test_core_full_indexible<test_tensor_implementation_::test_config_c_layout<std::vector>,int>),
+    (test_tensor_implementation_::test_core_full_walkable<test_tensor_implementation_::test_config_c_layout<std::vector>,int>),
+    (test_tensor_implementation_::test_core_full_iterable<test_tensor_implementation_::test_config_c_layout<std::vector>,int>)
 )
 {
     using core_type = TestType;
@@ -486,13 +483,70 @@ TEMPLATE_TEST_CASE("test_tensor_implementation_broadcast_iterator","[test_tensor
     apply_by_element(test,test_data);
 }
 
+TEMPLATE_TEST_CASE("test_tensor_implementation_broadcast_iterator_f_layout","[test_tensor_implementation]",
+    //non const accessible core
+    (test_tensor_implementation_::test_core_subscriptable<test_tensor_implementation_::test_config_f_layout<std::vector>,int>),
+    (test_tensor_implementation_::test_core_subscriptable<test_tensor_implementation_::test_config_f_layout<test_tensor_implementation_::subscriptable_storage_integral>,int>),
+    (test_tensor_implementation_::test_core_indexible<test_tensor_implementation_::test_config_f_layout<std::vector>,int>),
+    (test_tensor_implementation_::test_core_walkable<test_tensor_implementation_::test_config_f_layout<std::vector>,int>),
+    (test_tensor_implementation_::test_core_iterable<test_tensor_implementation_::test_config_f_layout<std::vector>,int>),
+    (test_tensor_implementation_::test_core_iterable<test_tensor_implementation_::test_config_f_layout<test_tensor_implementation_::iterable_storage_integral>,int>),
+    //const accessible core
+    (test_tensor_implementation_::test_core_const_subscriptable<test_tensor_implementation_::test_config_f_layout<std::vector>,int>),
+    (test_tensor_implementation_::test_core_const_indexible<test_tensor_implementation_::test_config_f_layout<std::vector>,int>),
+    (test_tensor_implementation_::test_core_const_walkable<test_tensor_implementation_::test_config_f_layout<std::vector>,int>),
+    (test_tensor_implementation_::test_core_const_iterable<test_tensor_implementation_::test_config_f_layout<std::vector>,int>),
+    //full accessible core
+    (test_tensor_implementation_::test_core_full_subscriptable<test_tensor_implementation_::test_config_f_layout<std::vector>,int>),
+    (test_tensor_implementation_::test_core_full_indexible<test_tensor_implementation_::test_config_f_layout<std::vector>,int>),
+    (test_tensor_implementation_::test_core_full_walkable<test_tensor_implementation_::test_config_f_layout<std::vector>,int>),
+    (test_tensor_implementation_::test_core_full_iterable<test_tensor_implementation_::test_config_f_layout<std::vector>,int>)
+)
+{
+    using core_type = TestType;
+    using config_type = typename core_type::config_type;
+    using value_type = typename core_type::value_type;
+    using shape_type = typename config_type::shape_type;
+    using tensor_implementation_type = gtensor::tensor_implementation<core_type>;
+    using helpers_for_testing::apply_by_element;
+
+    //0shape,1elements,2broadcast_shape,3expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(shape_type{}, std::vector<value_type>{1}, shape_type{}, std::vector<value_type>{1}),
+        std::make_tuple(shape_type{}, std::vector<value_type>{2}, shape_type{1}, std::vector<value_type>{2}),
+        std::make_tuple(shape_type{}, std::vector<value_type>{3}, shape_type{5}, std::vector<value_type>{3,3,3,3,3}),
+        std::make_tuple(shape_type{1}, std::vector<value_type>{2}, shape_type{1}, std::vector<value_type>{2}),
+        std::make_tuple(shape_type{1}, std::vector<value_type>{1}, shape_type{5}, std::vector<value_type>{1,1,1,1,1}),
+        std::make_tuple(shape_type{6}, std::vector<value_type>{1,2,3,4,5,6}, shape_type{1}, std::vector<value_type>{1}),
+        std::make_tuple(shape_type{6}, std::vector<value_type>{1,2,3,4,5,6}, shape_type{6}, std::vector<value_type>{1,2,3,4,5,6}),
+        std::make_tuple(shape_type{6}, std::vector<value_type>{1,2,3,4,5,6}, shape_type{1,6}, std::vector<value_type>{1,2,3,4,5,6}),
+        std::make_tuple(shape_type{6}, std::vector<value_type>{1,2,3,4,5,6}, shape_type{6,1}, std::vector<value_type>{1,1,1,1,1,1}),
+        std::make_tuple(shape_type{6}, std::vector<value_type>{1,2,3,4,5,6}, shape_type{2,6}, std::vector<value_type>{1,1,2,2,3,3,4,4,5,5,6,6}),
+        std::make_tuple(shape_type{2,3}, std::vector<value_type>{1,2,3,4,5,6}, std::array<int,2>{2,3}, std::vector<value_type>{1,2,3,4,5,6}),
+        std::make_tuple(shape_type{2,3}, std::vector<value_type>{1,2,3,4,5,6}, std::list<std::size_t>{2,2,3}, std::vector<value_type>{1,1,2,2,3,3,4,4,5,5,6,6}),
+        std::make_tuple(shape_type{2,3}, std::vector<value_type>{1,2,3,4,5,6}, shape_type{1,3}, std::vector<value_type>{1,3,5}),
+        std::make_tuple(shape_type{2,3}, std::vector<value_type>{1,2,3,4,5,6}, shape_type{2,1,3}, std::vector<value_type>{1,1,3,3,5,5})
+    );
+
+    auto test = [](const auto& t){
+        const auto shape = std::get<0>(t);
+        const auto elements = std::get<1>(t);
+        const auto broadcast_shape = std::get<2>(t);
+        const auto expected = std::get<3>(t);
+        tensor_implementation_type result_tensor_implementation{shape, elements.begin(), elements.end()};
+        REQUIRE(std::equal(result_tensor_implementation.begin(broadcast_shape),result_tensor_implementation.end(broadcast_shape),expected.begin(),expected.end()));
+        REQUIRE(std::equal(result_tensor_implementation.rbegin(broadcast_shape),result_tensor_implementation.rend(broadcast_shape),expected.rbegin(),expected.rend()));
+    };
+    apply_by_element(test,test_data);
+}
+
 TEMPLATE_TEST_CASE("test_tensor_implementation_data_accesor_result_type_non_const_accessible_core","[test_tensor_implementation]",
     (test_tensor_implementation_::test_core_subscriptable<test_config::config_storage_selector_t<std::vector>,int>),
-    (test_tensor_implementation_::test_core_subscriptable<test_config::config_storage_selector_t<test_storage_core::subscriptable_storage_integral>,int>),
+    (test_tensor_implementation_::test_core_subscriptable<test_config::config_storage_selector_t<test_tensor_implementation_::subscriptable_storage_integral>,int>),
     (test_tensor_implementation_::test_core_indexible<test_config::config_storage_selector_t<std::vector>,int>),
     (test_tensor_implementation_::test_core_walkable<test_config::config_storage_selector_t<std::vector>,int>),
     (test_tensor_implementation_::test_core_iterable<test_config::config_storage_selector_t<std::vector>,int>),
-    (test_tensor_implementation_::test_core_iterable<test_config::config_storage_selector_t<test_storage_core::iterable_storage_integral>,int>)
+    (test_tensor_implementation_::test_core_iterable<test_config::config_storage_selector_t<test_tensor_implementation_::iterable_storage_integral>,int>)
 )
 {
     using core_type = TestType;
