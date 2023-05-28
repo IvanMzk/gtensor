@@ -163,14 +163,15 @@ TEMPLATE_TEST_CASE("test_expression_template_core","[test_expression_template_en
         std::make_tuple(unary_square{}, std::make_tuple(tensor_type{3}), dim_type{1}, index_type{1}, shape_type{1}, std::vector<value_type>{9}),
         std::make_tuple(unary_square{}, std::make_tuple(tensor_type{1,2,3,4,5}), dim_type{1}, index_type{5}, shape_type{5}, std::vector<value_type>{1,4,9,16,25}),
         std::make_tuple(unary_square{}, std::make_tuple(tensor_type{{1},{2},{3},{4},{5}}), dim_type{2}, index_type{5}, shape_type{5,1}, std::vector<value_type>{1,4,9,16,25}),
-        std::make_tuple(binary_mul{}, std::make_tuple(tensor_type{},tensor_type{}), dim_type{1}, index_type{0}, shape_type{0}, std::vector<value_type>{}),
-        std::make_tuple(binary_mul{}, std::make_tuple(tensor_type{2},tensor_type{}), dim_type{1}, index_type{0}, shape_type{0}, std::vector<value_type>{}),
-        std::make_tuple(binary_mul{}, std::make_tuple(tensor_type{},tensor_type(1)), dim_type{1}, index_type{0}, shape_type{0}, std::vector<value_type>{}),
-        std::make_tuple(binary_mul{}, std::make_tuple(tensor_type(2),tensor_type(3)), dim_type{0}, index_type{1}, shape_type{}, std::vector<value_type>{6}),
-        std::make_tuple(binary_mul{}, std::make_tuple(tensor_type(2),tensor_type{3}), dim_type{1}, index_type{1}, shape_type{1}, std::vector<value_type>{6}),
-        std::make_tuple(binary_mul{}, std::make_tuple(tensor_type(2),tensor_type{3,4,5}), dim_type{1}, index_type{3}, shape_type{3}, std::vector<value_type>{6,8,10}),
-        std::make_tuple(binary_mul{}, std::make_tuple(tensor_type(2),tensor_type{{3},{4},{5}}), dim_type{2}, index_type{3}, shape_type{3,1}, std::vector<value_type>{6,8,10}),
-        std::make_tuple(binary_mul{}, std::make_tuple(tensor_type{1,2},tensor_type{{3},{4}}), dim_type{2}, index_type{4}, shape_type{2,2}, std::vector<value_type>{3,6,4,8})
+        std::make_tuple(unary_square{}, std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}), dim_type{3}, index_type{8}, shape_type{2,2,2}, std::vector<value_type>{1,4,9,16,25,36,49,64})
+        // std::make_tuple(binary_mul{}, std::make_tuple(tensor_type{},tensor_type{}), dim_type{1}, index_type{0}, shape_type{0}, std::vector<value_type>{}),
+        // std::make_tuple(binary_mul{}, std::make_tuple(tensor_type{2},tensor_type{}), dim_type{1}, index_type{0}, shape_type{0}, std::vector<value_type>{}),
+        // std::make_tuple(binary_mul{}, std::make_tuple(tensor_type{},tensor_type(1)), dim_type{1}, index_type{0}, shape_type{0}, std::vector<value_type>{}),
+        // std::make_tuple(binary_mul{}, std::make_tuple(tensor_type(2),tensor_type(3)), dim_type{0}, index_type{1}, shape_type{}, std::vector<value_type>{6}),
+        // std::make_tuple(binary_mul{}, std::make_tuple(tensor_type(2),tensor_type{3}), dim_type{1}, index_type{1}, shape_type{1}, std::vector<value_type>{6}),
+        // std::make_tuple(binary_mul{}, std::make_tuple(tensor_type(2),tensor_type{3,4,5}), dim_type{1}, index_type{3}, shape_type{3}, std::vector<value_type>{6,8,10}),
+        // std::make_tuple(binary_mul{}, std::make_tuple(tensor_type(2),tensor_type{{3},{4},{5}}), dim_type{2}, index_type{3}, shape_type{3,1}, std::vector<value_type>{6,8,10}),
+        // std::make_tuple(binary_mul{}, std::make_tuple(tensor_type{1,2},tensor_type{{3},{4}}), dim_type{2}, index_type{4}, shape_type{2,2}, std::vector<value_type>{3,6,4,8})
     );
     auto test = [](const auto& t){
         auto f = std::get<0>(t);

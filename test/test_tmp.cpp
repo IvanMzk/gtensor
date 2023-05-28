@@ -1,6 +1,7 @@
 #include <iostream>
 #include "catch.hpp"
 #include "tensor.hpp"
+#include "combine.hpp"
 #include "test_config.hpp"
 
 namespace test_tmp{
@@ -32,7 +33,16 @@ TEST_CASE("test_tmp","[test_tmp]")
     using tensor_type = tensor<value_type,config_type>;
 
 
-    std::cout<<std::endl<<tensor_type{{1,2,3},{4,5,6},{7,8,9}}(tensor_type{1}, tensor_type{{0,2},{2,0}});
+    //std::cout<<std::endl<<tensor_type{{1,2,3},{4,5,6},{7,8,9}}(tensor_type{1}, tensor_type{{0,2},{2,0}});
     //std::cout<<std::endl<<tensor_type{{1,2,3},{4,5,6},{7,8,9}}(tensor_type(1), tensor_type{0,2});
+
+    std::cout<<std::endl<<tensor_type{{1,2,3},{4,5,6}};
+
+    tensor_type a{1,2,3};
+    tensor_type b{4,5,6};
+
+    std::cout<<std::endl<<gtensor::stack(0, a,b);
+    std::cout<<std::endl<<gtensor::stack(1, a,b);
+
 
 }

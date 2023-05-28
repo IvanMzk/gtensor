@@ -1643,3 +1643,4 @@ TEST_CASE("test_tensor_of_tensors_variadic_arg","[test_combine]")
         REQUIRE(hstack(tensor_type{value_type{1},value_type{2,3},value_type{4,5,6}}) == tensor_type{value_type{1},value_type{2,3},value_type{4,5,6}});
     }
 }
+

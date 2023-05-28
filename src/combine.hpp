@@ -265,16 +265,22 @@ auto make_concatenate_container_shape(const DimT& direction, const Container& sh
 }
 
 template<typename DimT, typename ShT>
-auto make_stack_chunk_size(const DimT& direction, const ShT& shape){
+auto make_stack_chunk_size(const DimT& direction, const ShT& shape, config::c_layout){
     using index_type = typename ShT::value_type;
     return std::accumulate(shape.begin()+direction, shape.end(), index_type{1}, std::multiplies{});
 }
 
-template<typename DimT, typename ShT, typename ResultIt, typename...It>
-auto fill_stack(const DimT& direction, const ShT& shape, const typename ShT::value_type& size, ResultIt res_it, It...it){
+template<typename DimT, typename ShT>
+auto make_stack_chunk_size(const DimT& direction, const ShT& shape, config::f_layout){
+    using index_type = typename ShT::value_type;
+    return std::accumulate(shape.begin(), shape.begin()+direction, index_type{1}, std::multiplies{});
+}
+
+template<typename DimT, typename ShT, typename Layout, typename ResultIt, typename...It>
+auto fill_stack(const DimT& direction, const ShT& shape, const typename ShT::value_type& size, Layout layout, ResultIt res_it, It...it){
     using index_type = typename ShT::value_type;
     using res_value_type = typename std::iterator_traits<ResultIt>::value_type;
-    const index_type chunk_size = make_stack_chunk_size(direction, shape);
+    const index_type chunk_size = make_stack_chunk_size(direction, shape, layout);
     auto filler = [chunk_size, res_it](auto& it) mutable {
         for (index_type i{0}; i!=chunk_size; ++i, ++res_it, ++it){
             *res_it = static_cast<res_value_type>(*it);
@@ -286,11 +292,12 @@ auto fill_stack(const DimT& direction, const ShT& shape, const typename ShT::val
     }
 }
 
-template<typename DimT, typename ShT, typename ResultIt, typename ItContainer>
-auto fill_stack_container(const DimT& direction, const ShT& shape, ResultIt res_it, ItContainer& iterators){
+template<typename DimT, typename ShT, typename Layout, typename ResultIt, typename ItContainer>
+auto fill_stack_container(const DimT& direction, const ShT& shape, const typename ShT::value_type& size, Layout layout, ResultIt res_it, ItContainer& iterators){
     using index_type = typename ShT::value_type;
-    const index_type chunk_size = make_stack_chunk_size(direction, shape);
-    const index_type iterations_number = std::accumulate(shape.begin(), shape.begin()+direction, index_type{1}, std::multiplies{});
+    const index_type chunk_size = make_stack_chunk_size(direction, shape, layout);
+    //const index_type iterations_number = std::accumulate(shape.begin(), shape.begin()+direction, index_type{1}, std::multiplies{});
+    const index_type iterations_number = size/chunk_size;
     if (chunk_size == index_type{1}){
         for (index_type i{0}; i!=iterations_number; ++i){
             for (auto it=iterators.begin(); it!=iterators.end(); ++it){
@@ -313,39 +320,51 @@ auto fill_stack_container(const DimT& direction, const ShT& shape, ResultIt res_
 }
 
 template<typename DimT, typename ShT, typename...ShTs>
-auto make_concatenate_chunk_size_helper(const DimT& direction, const ShT& shape, const ShTs&...shapes){
+auto make_concatenate_chunk_size_helper(const DimT& direction, gtensor::config::c_layout, const ShT& shape, const ShTs&...shapes){
     using dim_type = DimT;
     using index_type = typename ShT::value_type;
     index_type chunk_size_ = std::accumulate(shape.begin()+direction+dim_type{1}, shape.end(), index_type{1}, std::multiplies{});
     return std::make_tuple(shape[direction]*chunk_size_, shapes[direction]*chunk_size_...);
 }
-
 template<typename DimT, typename ShT, typename...ShTs>
-auto make_concatenate_chunk_size(const DimT& direction, const std::tuple<ShT, ShTs...>& shapes){
-    return std::apply([&direction](const auto&...shapes_){return make_concatenate_chunk_size_helper(direction,shapes_...);},shapes);
+auto make_concatenate_chunk_size_helper(const DimT& direction, gtensor::config::f_layout, const ShT& shape, const ShTs&...shapes){
+    using index_type = typename ShT::value_type;
+    index_type chunk_size_ = std::accumulate(shape.begin(), shape.begin()+direction, index_type{1}, std::multiplies{});
+    return std::make_tuple(shape[direction]*chunk_size_, shapes[direction]*chunk_size_...);
 }
 
-template<typename DimT, typename ShT, typename...ShTs, typename ResultIt, std::size_t...I, typename...It>
-auto fill_concatenate(const DimT& direction, const std::tuple<ShT, ShTs...>& shapes, ResultIt res_it, std::index_sequence<I...>, It...it){
+template<typename DimT, typename Layout, typename ShT, typename...ShTs>
+auto make_concatenate_chunk_size(const DimT& direction, Layout layout, const std::tuple<ShT, ShTs...>& shapes){
+    return std::apply([&direction,layout](const auto&...shapes_){return make_concatenate_chunk_size_helper(direction,layout,shapes_...);},shapes);
+}
+
+template<typename DimT, typename ShT, typename...ShTs, typename Layout, typename ResultIt, std::size_t...I, typename...It>
+auto fill_concatenate(const DimT& direction, const std::tuple<ShT, ShTs...>& shapes, Layout layout, ResultIt res_it, std::index_sequence<I...>, It...it){
     using shape_type = std::remove_cv_t<std::remove_reference_t<ShT>>;
+    using dim_type = typename shape_type::difference_type;
     using index_type = typename shape_type::value_type;
     using res_value_type = typename std::iterator_traits<ResultIt>::value_type;
 
-    const auto chunk_size = make_concatenate_chunk_size(direction, shapes);
+    const auto chunk_size = make_concatenate_chunk_size(direction, layout, shapes);
     const auto first_shape = std::get<0>(shapes);
     auto filler = [res_it](const auto& chunk_size_, auto& it)mutable{
         for (index_type i{0}; i!=chunk_size_; ++i,++it,++res_it){
             *res_it = static_cast<res_value_type>(*it);
         }
     };
-    index_type iterations_number = std::accumulate(first_shape.begin(), first_shape.begin()+direction, index_type{1}, std::multiplies{});
+    index_type iterations_number{};
+    if constexpr (std::is_same_v<Layout, gtensor::config::c_layout>){
+        iterations_number = std::accumulate(first_shape.begin(), first_shape.begin()+direction, index_type{1}, std::multiplies{});
+    }else{
+        iterations_number = std::accumulate(first_shape.begin()+direction+dim_type{1}, first_shape.end(), index_type{1}, std::multiplies{});
+    }
     for (index_type i{0}; i!=iterations_number; ++i){
         (filler(std::get<I>(chunk_size),it),...);
     }
 }
 
-template<typename DimT, typename Shapes, typename ResIt, typename Tensors>
-auto fill_concatenate_container(const DimT& direction, const Shapes& shapes, ResIt res_it, const Tensors& ts){
+template<typename DimT, typename Shapes, typename Layout, typename ResIt, typename Tensors>
+auto fill_concatenate_container(const DimT& direction, const Shapes& shapes, Layout layout, ResIt res_it, const Tensors& ts){
     using tensor_type = typename Tensors::value_type;
     using dim_type = typename tensor_type::dim_type;
     using index_type = typename tensor_type::index_type;
@@ -357,14 +376,30 @@ auto fill_concatenate_container(const DimT& direction, const Shapes& shapes, Res
     ts_internals.reserve(ts.size());
     auto shapes_it = shapes.begin();
     const auto& first_shape = unwrap_shape(*shapes_it);
+
     //the same part for all shapes
-    const index_type chunk_size_ = std::accumulate(first_shape.begin()+direction+dim_type{1}, first_shape.end(), index_type{1}, std::multiplies{});
+    //const index_type chunk_size_ = std::accumulate(first_shape.begin()+direction+dim_type{1}, first_shape.end(), index_type{1}, std::multiplies{});
+    index_type chunk_size_{};
+    if constexpr (std::is_same_v<Layout, gtensor::config::c_layout>){
+        chunk_size_ = std::accumulate(first_shape.begin()+direction+dim_type{1}, first_shape.end(), index_type{1}, std::multiplies{});
+    }else{
+        chunk_size_ = std::accumulate(first_shape.begin(), first_shape.begin()+direction, index_type{1}, std::multiplies{});
+    }
+
     for (auto ts_it = ts.begin(); ts_it!=ts.end(); ++ts_it,++shapes_it){
         const auto& shape = unwrap_shape(*shapes_it);
         index_type chunk_size = chunk_size_*shape[direction];
         ts_internals.emplace_back(chunk_size, (*ts_it).begin());
     }
-    index_type iterations_number = std::accumulate(first_shape.begin(), first_shape.begin()+direction, index_type{1}, std::multiplies{});
+
+    //index_type iterations_number = std::accumulate(first_shape.begin(), first_shape.begin()+direction, index_type{1}, std::multiplies{});
+    index_type iterations_number{};
+    if constexpr (std::is_same_v<Layout, gtensor::config::c_layout>){
+        iterations_number = std::accumulate(first_shape.begin(), first_shape.begin()+direction, index_type{1}, std::multiplies{});
+    }else{
+        iterations_number = std::accumulate(first_shape.begin()+direction+dim_type{1}, first_shape.end(), index_type{1}, std::multiplies{});
+    }
+
     for (index_type j = 0; j!=iterations_number; ++j){
         for (auto ts_internals_it = ts_internals.begin(); ts_internals_it!=ts_internals.end(); ++ts_internals_it){
             auto chunk_size = std::get<0>(*ts_internals_it);
@@ -408,6 +443,7 @@ static auto stack_variadic(const DimT& direction_, const basic_tensor<Us...>& t,
     using tensor_type = basic_tensor<Us...>;
     using config_type = typename tensor_type::config_type;
     using index_type = typename config_type::index_type;
+    using layout_type = typename config_type::layout;
     using res_value_type = std::common_type_t<typename tensor_type::value_type, typename Ts::value_type...>;
 
     const auto& shape = t.shape();
@@ -420,7 +456,7 @@ static auto stack_variadic(const DimT& direction_, const basic_tensor<Us...>& t,
     }else{
         auto res = tensor<res_value_type, config_type>(std::move(res_shape), res_value_type{});
         if (!res.empty()){
-            detail::fill_stack(direction, shape, t.size(), res.begin(), t.begin(), ts.begin()...);
+            detail::fill_stack(direction, shape, t.size(), layout_type{}, res.begin(), t.begin(), ts.begin()...);
         }
         return res;
     }
@@ -430,6 +466,7 @@ static auto stack_container(const DimT& direction_, const Container& ts){
     using tensor_type = typename Container::value_type;
     using config_type = typename tensor_type::config_type;
     using index_type = typename config_type::index_type;
+    using layout_type = typename config_type::layout;
     using res_value_type = typename tensor_type::value_type;
 
     const auto shapes = detail::make_shapes_container(ts);
@@ -438,14 +475,14 @@ static auto stack_container(const DimT& direction_, const Container& ts){
     const auto direction = detail::make_direction(shape, direction_);
     index_type tensors_number = static_cast<index_type>(ts.size());
     auto res_shape = detail::make_stack_shape(direction, shape, tensors_number);
+    const auto& t = *ts.begin();
     if (tensors_number == index_type{1}){
-        const auto& t = *ts.begin();
         return tensor<res_value_type, config_type>(std::move(res_shape), t.begin(), t.end());
     }else{
         auto res = tensor<res_value_type, config_type>(std::move(res_shape), res_value_type{});
         if (!res.empty()){
             auto iterators = detail::make_iterators_container(ts);
-            detail::fill_stack_container(direction, shape, res.begin(), iterators);
+            detail::fill_stack_container(direction, shape, t.size(), layout_type{}, res.begin(), iterators);
         }
         return res;
     }
@@ -458,6 +495,7 @@ static auto concatenate_variadic(const DimT& direction_, const basic_tensor<Us..
     using tensor_type = basic_tensor<Us...>;
     using config_type = typename tensor_type::config_type;
     using dim_type = typename tensor_type::dim_type;
+    using layout_type = typename config_type::layout;
     using res_value_type = std::common_type_t<typename tensor_type::value_type, typename Ts::value_type...>;
 
     const auto shapes = detail::make_shapes_tuple(t,ts...);
@@ -471,7 +509,7 @@ static auto concatenate_variadic(const DimT& direction_, const basic_tensor<Us..
     }else{
         auto res = tensor<res_value_type, config_type>(std::move(res_shape));
         if (!res.empty()){
-            detail::fill_concatenate(direction, shapes, res.begin(), std::make_index_sequence<tensors_number>{}, t.begin(), ts.begin()...);
+            detail::fill_concatenate(direction, shapes, layout_type{}, res.begin(), std::make_index_sequence<tensors_number>{}, t.begin(), ts.begin()...);
         }
         return res;
     }
@@ -482,6 +520,7 @@ static auto concatenate_container(const DimT& direction_, const Container& ts){
     using tensor_type = typename Container::value_type;
     using config_type = typename tensor_type::config_type;
     using dim_type = typename tensor_type::dim_type;
+    using layout_type = typename config_type::layout;
     using res_value_type = typename tensor_type::value_type;
 
     const auto shapes = detail::make_shapes_container(ts);
@@ -490,7 +529,7 @@ static auto concatenate_container(const DimT& direction_, const Container& ts){
     const dim_type direction = detail::make_direction(first_shape, direction_);
     auto res = tensor<res_value_type, config_type>(detail::make_concatenate_container_shape(direction, shapes), res_value_type{});
     if (!res.empty()){
-        detail::fill_concatenate_container(direction,shapes,res.begin(),ts);
+        detail::fill_concatenate_container(direction,shapes,layout_type{},res.begin(),ts);
     }
     return res;
 }
