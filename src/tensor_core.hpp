@@ -48,12 +48,13 @@ void copy_n(It first, It last, IdxT n, DstIt dst_first){
 //storage core combine together data and meta-data
 //owns descriptor
 //owns storage of data elements of type T - Config::storage<T>
-template<typename Config, typename T>
+//Layout is storage scheme of data elements, may be config::c_order or config::f_order
+template<typename Config, typename T, typename Layout>
 class storage_core
 {
     using descriptor_type = basic_descriptor<Config>;
     using storage_type = typename Config::template storage<T>;
-    using layout_type = typename Config::layout;
+    using layout_type = Layout;
 public:
     using value_type = T;
     using config_type = Config;
@@ -62,6 +63,8 @@ public:
     using shape_type = typename config_type::shape_type;
     using size_type = index_type;
     using difference_type = index_type;
+
+    using order_type = layout_type;
 
     //if value_type is trivially copiable elements_ may be not initialized, depends on storage_type implementation
     template<typename ShT, std::enable_if_t<!std::is_same_v<ShT,storage_core>,int> =0>
