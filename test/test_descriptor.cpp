@@ -584,120 +584,97 @@ TEST_CASE("test_basic_descriptor_changing_order_convert", "[test_descriptor]")
 
 }
 
-// TEST_CASE("test_descriptor_with_offset_c_layout","[test_descriptor]")
-// {
-//     using layout_type = gtensor::config::c_layout;
-//     using config_type = gtensor::config::extend_config_t<test_config::config_layout_selector_t<layout_type>,int>;
-//     using descriptor_type = gtensor::descriptor_with_offset<config_type>;
-//     using shape_type = typename config_type::shape_type;
-//     using index_type = typename config_type::index_type;
-//     using dim_type = typename config_type::dim_type;
-//     using gtensor::detail::make_dividers;
-//     using test_type = std::tuple<shape_type, index_type, shape_type, index_type, dim_type>;
-//     //0shape,1offset,2expected_strides,3expected_size,4expected_dim
-//     auto test_data = GENERATE(
-//         test_type(shape_type{},0,shape_type{},1,0),
-//         test_type(shape_type{1},0,shape_type{1},1,1),
-//         test_type(shape_type{5},10,shape_type{1},5,1),
-//         test_type(shape_type{1,1},0,shape_type{1,1},1,2),
-//         test_type(shape_type{1,5},0,shape_type{5,1},5,2),
-//         test_type(shape_type{5,1},4,shape_type{1,1},5,2),
-//         test_type(shape_type{5,4,3},100,shape_type{12,3,1},60,3)
-//     );
-//     auto shape = std::get<0>(test_data);
-//     auto expected_shape = shape;
-//     auto offset = std::get<1>(test_data);
-//     auto expected_offset = offset;
-//     auto expected_strides = std::get<2>(test_data);
-//     auto expected_strides_div = make_dividers<config_type>(expected_strides);
-//     auto expected_size = std::get<3>(test_data);
-//     auto expected_dim = std::get<4>(test_data);
-//     auto descriptor = descriptor_type{shape, offset};
+TEST_CASE("test_descriptor_with_offset_c_layout","[test_descriptor]")
+{
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
+    using shape_type = typename config_type::shape_type;
+    using index_type = typename config_type::index_type;
+    using dim_type = typename config_type::dim_type;
+    using gtensor::descriptor_with_offset;
+    using gtensor::config::c_order;
+    using gtensor::config::f_order;
+    using helpers_for_testing::apply_by_element;
+    //0order,1shape,2offset,3expected_strides,4expected_size,5expected_dim
+    auto test_data = std::make_tuple(
+        //c_order
+        std::make_tuple(c_order{}, shape_type{},index_type{0},shape_type{},index_type{1},dim_type{0}),
+        std::make_tuple(c_order{}, shape_type{1},index_type{0},shape_type{1},index_type{1},dim_type{1}),
+        std::make_tuple(c_order{}, shape_type{5},index_type{10},shape_type{1},index_type{5},dim_type{1}),
+        std::make_tuple(c_order{}, shape_type{1,1},index_type{0},shape_type{1,1},index_type{1},dim_type{2}),
+        std::make_tuple(c_order{}, shape_type{1,5},index_type{0},shape_type{5,1},index_type{5},dim_type{2}),
+        std::make_tuple(c_order{}, shape_type{5,1},index_type{4},shape_type{1,1},index_type{5},dim_type{2}),
+        std::make_tuple(c_order{}, shape_type{5,4,3},index_type{100},shape_type{12,3,1},index_type{60},dim_type{3}),
+        //f_order
+        std::make_tuple(f_order{}, shape_type{},index_type{0},shape_type{},index_type{1},dim_type{0}),
+        std::make_tuple(f_order{}, shape_type{1},index_type{0},shape_type{1},index_type{1},dim_type{1}),
+        std::make_tuple(f_order{}, shape_type{5},index_type{10},shape_type{1},index_type{5},dim_type{1}),
+        std::make_tuple(f_order{}, shape_type{1,1},index_type{0},shape_type{1,1},index_type{1},dim_type{2}),
+        std::make_tuple(f_order{}, shape_type{1,5},index_type{0},shape_type{1,1},index_type{5},dim_type{2}),
+        std::make_tuple(f_order{}, shape_type{5,1},index_type{4},shape_type{1,5},index_type{5},dim_type{2}),
+        std::make_tuple(f_order{}, shape_type{5,4,3},index_type{100},shape_type{1,5,20},index_type{60},dim_type{3})
+    );
+    auto test = [](const auto& t){
+        auto order = std::get<0>(t);
+        auto shape = std::get<1>(t);
+        auto expected_shape = shape;
+        auto offset = std::get<2>(t);
+        auto expected_offset = offset;
+        auto expected_strides = std::get<3>(t);
+        auto expected_size = std::get<4>(t);
+        auto expected_dim = std::get<5>(t);
+        using order_type = decltype(order);
+        using descriptor_type = descriptor_with_offset<config_type,order_type>;
+        auto descriptor = descriptor_type{shape, offset};
 
-//     auto result_shape = descriptor.shape();
-//     auto result_strides = descriptor.strides();
-//     auto result_strides_div = descriptor.strides_div();
-//     auto result_size = descriptor.size();
-//     auto result_dim = descriptor.dim();
-//     auto result_offset = descriptor.offset();
+        auto result_shape = descriptor.shape();
+        auto result_strides = descriptor.strides();
+        auto result_size = descriptor.size();
+        auto result_dim = descriptor.dim();
+        auto result_offset = descriptor.offset();
 
-//     REQUIRE(result_shape == expected_shape);
-//     REQUIRE(result_strides == expected_strides);
-//     REQUIRE(result_strides_div == expected_strides_div);
-//     REQUIRE(result_size == expected_size);
-//     REQUIRE(result_dim == expected_dim);
-//     REQUIRE(result_offset == expected_offset);
-// }
+        REQUIRE(result_shape == expected_shape);
+        REQUIRE(result_strides == expected_strides);
+        REQUIRE(result_size == expected_size);
+        REQUIRE(result_dim == expected_dim);
+        REQUIRE(result_offset == expected_offset);
+    };
+    apply_by_element(test,test_data);
+}
 
-// TEST_CASE("test_descriptor_with_offset_f_layout","[test_descriptor]")
-// {
-//     using layout_type = gtensor::config::f_layout;
-//     using config_type = gtensor::config::extend_config_t<test_config::config_layout_selector_t<layout_type>,int>;
-//     using descriptor_type = gtensor::descriptor_with_offset<config_type>;
-//     using shape_type = typename config_type::shape_type;
-//     using index_type = typename config_type::index_type;
-//     using dim_type = typename config_type::dim_type;
-//     using gtensor::detail::make_dividers;
-//     using test_type = std::tuple<shape_type, index_type, shape_type, index_type, dim_type>;
-//     //0shape,1offset,2expected_strides,3expected_size,4expected_dim
-//     auto test_data = GENERATE(
-//         test_type(shape_type{},0,shape_type{},1,0),
-//         test_type(shape_type{1},0,shape_type{1},1,1),
-//         test_type(shape_type{5},10,shape_type{1},5,1),
-//         test_type(shape_type{1,1},0,shape_type{1,1},1,2),
-//         test_type(shape_type{1,5},0,shape_type{1,1},5,2),
-//         test_type(shape_type{5,1},4,shape_type{1,5},5,2),
-//         test_type(shape_type{5,4,3},100,shape_type{1,5,20},60,3)
-//     );
-//     auto shape = std::get<0>(test_data);
-//     auto expected_shape = shape;
-//     auto offset = std::get<1>(test_data);
-//     auto expected_offset = offset;
-//     auto expected_strides = std::get<2>(test_data);
-//     auto expected_strides_div = make_dividers<config_type>(expected_strides);
-//     auto expected_size = std::get<3>(test_data);
-//     auto expected_dim = std::get<4>(test_data);
-//     auto descriptor = descriptor_type{shape, offset};
-
-//     auto result_shape = descriptor.shape();
-//     auto result_strides = descriptor.strides();
-//     auto result_strides_div = descriptor.strides_div();
-//     auto result_size = descriptor.size();
-//     auto result_dim = descriptor.dim();
-//     auto result_offset = descriptor.offset();
-
-//     REQUIRE(result_shape == expected_shape);
-//     REQUIRE(result_strides == expected_strides);
-//     REQUIRE(result_strides_div == expected_strides_div);
-//     REQUIRE(result_size == expected_size);
-//     REQUIRE(result_dim == expected_dim);
-//     REQUIRE(result_offset == expected_offset);
-// }
-
-// TEMPLATE_TEST_CASE("test_descriptor_with_offset_convert", "[test_descriptor]",
-//     gtensor::config::c_layout,
-//     gtensor::config::f_layout
-// )
-// {
-//     using config_type = gtensor::config::extend_config_t<test_config::config_layout_selector_t<TestType>,int>;
-//     using descriptor_type = gtensor::descriptor_with_offset<config_type>;
-//     using shape_type = typename config_type::shape_type;
-//     using index_type = typename config_type::index_type;
-//     using test_type = std::tuple<shape_type, index_type, index_type, index_type>;
-//     //0shape,1offset,2idx,3expected
-//     auto test_data = GENERATE(
-//         test_type{shape_type{15},0,0,0},
-//         test_type{shape_type{1,15},0,7,7},
-//         test_type{shape_type{3,3,5},5,22,27}
-//     );
-//     auto shape = std::get<0>(test_data);
-//     auto offset = std::get<1>(test_data);
-//     auto idx = std::get<2>(test_data);
-//     auto expected = std::get<3>(test_data);
-//     auto descriptor = descriptor_type{shape,offset};
-//     auto result = descriptor.convert(idx);
-//     REQUIRE(result == expected);
-// }
+TEMPLATE_TEST_CASE("test_descriptor_with_offset_convert", "[test_descriptor]",
+    gtensor::config::c_order,
+    gtensor::config::f_order
+)
+{
+    using order = TestType;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
+    using descriptor_type = gtensor::descriptor_with_offset<config_type, order>;
+    using shape_type = typename config_type::shape_type;
+    using index_type = typename config_type::index_type;
+    using test_type = std::tuple<shape_type, index_type, index_type, index_type>;
+    //0shape,1offset,2idx,3expected
+    auto test_data = GENERATE(
+        test_type{shape_type{15},0,0,0},
+        test_type{shape_type{1,15},0,7,7},
+        test_type{shape_type{15,1},2,7,9},
+        test_type{shape_type{3,3,5},5,22,27}
+    );
+    auto shape = std::get<0>(test_data);
+    auto offset = std::get<1>(test_data);
+    auto idx = std::get<2>(test_data);
+    auto expected = std::get<3>(test_data);
+    auto descriptor = descriptor_type{shape,offset};
+    SECTION("test_call_operator")
+    {
+        auto result = descriptor(idx);
+        REQUIRE(result == expected);
+    }
+    SECTION("test_convert")
+    {
+        auto result = descriptor.convert(idx);
+        REQUIRE(result == expected);
+    }
+}
 
 // TEST_CASE("test_converting_descriptor_c_layout", "[test_descriptor]")
 // {
