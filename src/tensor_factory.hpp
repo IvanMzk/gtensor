@@ -7,12 +7,12 @@
 
 namespace gtensor{
 
-template<typename Config, typename T>
+template<typename Config, typename T, typename Layout>
 class tensor_factory
 {
     using config_type = config::extend_config_t<Config,T>;
 public:
-    using result_type = tensor_implementation<storage_core<config_type,T>>;
+    using result_type = tensor_implementation<storage_core<config_type,T,Layout>>;
 
     template<typename...Args>
     static auto create(Args&&...args){

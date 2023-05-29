@@ -10,7 +10,7 @@
 #include "reduce.hpp"
 
 namespace gtensor{
-template<typename T, typename Config> class tensor;
+template<typename T, typename Layout, typename Config> class tensor;
 
 template<typename Impl>
 class basic_tensor
@@ -241,11 +241,11 @@ private:
 };
 
 //tensor is basic_tensor with storage implementation and constructors
-template<typename T, typename Config = config::extend_config_t<config::default_config,T>>
-class tensor : public basic_tensor<typename tensor_factory_selector_t<Config,T>::result_type>
+template<typename T, typename Layout, typename Config = config::extend_config_t<config::default_config,T>>
+class tensor : public basic_tensor<typename tensor_factory_selector_t<Config,T,Layout>::result_type>
 {
     static_assert(config::is_extended_config_v<Config>);
-    using tensor_factory_type = tensor_factory_selector_t<Config,T>;
+    using tensor_factory_type = tensor_factory_selector_t<Config,T,Layout>;
     using basic_tensor_base = basic_tensor<typename tensor_factory_type::result_type>;
 
     class forward_tag{

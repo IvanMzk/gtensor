@@ -5,7 +5,7 @@
 
 namespace gtensor{
 //forward declarations
-template<typename Config, typename T> class tensor_factory;
+template<typename Config, typename T, typename Layout> class tensor_factory;
 class view_factory;
 template<typename F> class expression_template_operator;
 class reducer;
@@ -18,9 +18,9 @@ class tensor_factory_selector
 {
     using config_type = Config;
     template<typename...> struct selector_;
-    template<typename T> struct selector_<config::engine_expression_template,T>
+    template<typename T, typename Layout> struct selector_<config::engine_expression_template,T,Layout>
     {
-        using type = tensor_factory<config_type,T>;
+        using type = tensor_factory<config_type,T,Layout>;
     };
 public:
     using type = typename selector_<typename config_type::engine, Ts...>::type;

@@ -8,7 +8,7 @@
 namespace gtensor{
 
 template<typename Impl> class basic_tensor;
-template<typename T, typename Config> class tensor;
+template<typename T, typename Layout, typename Config> class tensor;
 
 class dim_exception : public std::runtime_error
 {
