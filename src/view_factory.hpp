@@ -355,8 +355,8 @@ inline auto check_index(const IdxT& idx, const IdxT& shape_element){
     }
 }
 
-template<typename ShT, typename IndexMap,  typename...SubsIt>
-auto fill_index_map(const ShT& pshape, const ShT& pstrides, IndexMap& index_map, SubsIt...subs_traverser){
+template<typename ShT, typename Layout, typename IdxT, typename IndexMap,  typename...SubsIt>
+auto fill_index_map(const ShT& pshape, const ShT& pstrides, Layout layout, const IdxT& subs_size, IndexMap& index_map, SubsIt...subs_traverser){
     using dim_type = typename ShT::difference_type;
     using index_type = typename ShT::value_type;
 
@@ -372,12 +372,22 @@ auto fill_index_map(const ShT& pshape, const ShT& pstrides, IndexMap& index_map,
             ++i;
         }while(((subs_traverser.next()),...));
     }else{
+        const index_type stride_step = pstrides[subs_number];
+        const index_type map_step = subs_size;
         do{
             index_type block_first{0};
             dim_type n{0};
-            ((block_first+=check_index(static_cast<index_type>(*subs_traverser.walker()),pshape[n])*pstrides[n],++n),...);
-            for(index_type j{0}; j!=chunk_size; ++j){
-                index_map[i] = block_first+j;
+            if constexpr (std::is_same_v<Layout, gtensor::config::c_layout>){
+                ((block_first+=check_index(static_cast<index_type>(*subs_traverser.walker()),pshape[n])*pstrides[n],++n),...);
+                for(index_type j{0}; j!=chunk_size; ++j){
+                    index_map[i] = block_first+j;
+                    ++i;
+                }
+            }else{
+                ((block_first+=check_index(static_cast<index_type>(*subs_traverser.walker()),pshape[n])*pstrides[n],++n),...);
+                for(index_type j{i}, j_last{i+chunk_size*map_step}; j!=j_last; j+=map_step,block_first+=stride_step){
+                    index_map[j] = block_first;
+                }
                 ++i;
             }
         }while(((subs_traverser.next()),...));
@@ -419,14 +429,10 @@ inline ShT make_bool_mapping_view_shape(const ShT& pshape, const IdxT& subs_true
     return res;
 }
 
-template<typename ShT, typename IndexContainer, typename Subs, typename SubsIt>
-auto fill_bool_map(const ShT& pshape, const ShT& pstrides, IndexContainer& index_container, const Subs& subs, SubsIt subs_traverser){
+template<typename ShT, typename Layout, typename DimT, typename IdxT, typename IndexContainer, typename SubsIt>
+auto fill_bool_map(const ShT& pshape, const ShT& pstrides, Layout layout, const DimT& subs_dim, const IdxT& chunk_size, IndexContainer& index_container, SubsIt subs_traverser){
     using index_type = typename ShT::value_type;
-    using dim_type = typename ShT::difference_type;
-
     index_type trues_number{0};
-    dim_type subs_dim = subs.dim();
-    index_type chunk_size = mapping_view_chunk_size(pshape, subs_dim);
     if (chunk_size == index_type{1}){
         do{
             if(*subs_traverser.walker()){
@@ -437,11 +443,18 @@ auto fill_bool_map(const ShT& pshape, const ShT& pstrides, IndexContainer& index
             }
         }while(subs_traverser.next());
     }else{
+        index_type stride_step{};
+        if constexpr (std::is_same_v<Layout, gtensor::config::c_layout>){
+            stride_step = index_type{1};
+        }else{
+            stride_step = pstrides[subs_dim];
+        }
         do{
+            std::cout<<std::endl<<*subs_traverser.walker()<<" "<<detail::shape_to_str(subs_traverser.index());
             if(*subs_traverser.walker()){
                 auto block_first = std::inner_product(subs_traverser.index().begin(), subs_traverser.index().end(), pstrides.begin(), index_type{0});
                 for(index_type j{0}; j!=chunk_size; ++j){
-                    index_container.push_back(block_first+j);
+                    index_container.push_back(block_first+j*stride_step);
                 }
                 ++trues_number;
             }
@@ -591,12 +604,14 @@ class view_factory
         using config_type = typename parent_type::config_type;
         using index_map_type = typename config_type::index_map_type;
         using shape_type = typename parent_type::shape_type;
+        using layout_type = typename config_type::layout;
         using descriptor_type = mapping_descriptor<config_type>;
         using view_type = mapping_view<config_type,parent_type>;
         const auto& pshape = parent.shape();
         detail::check_index_mapping_view_subs(pshape, subs.shape()...);
         const auto subs_shape = detail::make_broadcast_shape<shape_type>(subs.shape()...);
         const auto subs_dim = detail::make_dim(subs_shape);
+        const auto subs_size = detail::make_size(subs_shape);
         auto res_shape = detail::make_index_mapping_view_shape(pshape, subs_shape, sizeof...(Subs));
         auto res_size = detail::make_size(res_shape);
         index_map_type index_map(res_size);
@@ -604,6 +619,8 @@ class view_factory
             detail::fill_index_map(
                 pshape,
                 parent.strides(),
+                layout_type{},
+                subs_size,
                 index_map,
                 walker_forward_traverser<config_type, decltype(subs.create_walker())>{subs_shape, subs.create_walker(subs_dim)}...
             );
@@ -619,6 +636,8 @@ class view_factory
         using parent_type = basic_tensor<Ts...>;
         using config_type = typename parent_type::config_type;
         using index_type = typename parent_type::index_type;
+        using dim_type = typename parent_type::dim_type;
+        using layout_type = typename config_type::layout;
         using index_map_type = typename config_type::index_map_type;
         using index_container_type = typename config_type::template container<index_type>;
         using descriptor_type = mapping_descriptor<config_type>;
@@ -629,6 +648,8 @@ class view_factory
         if (!parent.empty()){
             index_container_type index_container{};
             index_type subs_trues_number{0};
+            const dim_type subs_dim = subs.dim();
+            const index_type chunk_size = detail::mapping_view_chunk_size(pshape, subs_dim);
             if (!subs.empty()){
                 if constexpr (std::is_convertible_v<index_type,typename index_container_type::difference_type>){
                     index_container.reserve(parent.size());
@@ -636,8 +657,10 @@ class view_factory
                 subs_trues_number = detail::fill_bool_map(
                     pshape,
                     parent.strides(),
+                    layout_type{},
+                    subs_dim,
+                    chunk_size,
                     index_container,
-                    subs,
                     walker_forward_traverser<config_type, decltype(subs.create_walker())>{subs_shape, subs.create_walker()}
                 );
             }
@@ -645,8 +668,30 @@ class view_factory
             auto res_size = detail::make_size(res_shape);
             index_map_type index_map(res_size);
             index_type i{0};
-            for(auto it=index_container.begin(), last=index_container.end(); it!=last; ++it,++i){
-                index_map[i] = *it;
+            if (chunk_size == index_type{1}){
+                for(auto it=index_container.begin(), last=index_container.end(); it!=last; ++it,++i){
+                    index_map[i] = *it;
+                }
+            }else{
+                for (auto i : index_container){
+                    std::cout<<std::endl<<i;
+                }
+
+                index_type j{i};
+                const index_type j_delta = chunk_size*subs_trues_number;
+                index_type j_last{i+j_delta};
+                for(auto it=index_container.begin(), last=index_container.end(); it!=last; ++it,j+=subs_trues_number){
+                    if (j == j_last){
+                        j = ++i;
+                        j_last = i+j_delta;
+                    }
+                    index_map[j] = *it;
+                    std::cout<<std::endl<<"index_map[j] = *it;"<<j<<" "<<*it;
+                }
+
+                for (index_type k{0}; k!=index_container.size(); ++k){
+                    std::cout<<std::endl<<index_map[k];
+                }
             }
             return std::make_shared<view_type>(
                 descriptor_type{std::move(res_shape), std::move(index_map)},
