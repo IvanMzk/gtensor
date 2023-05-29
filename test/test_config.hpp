@@ -18,11 +18,11 @@ struct config_div_mode_selector : test_default_config{
 };
 template<typename Div> using config_div_mode_selector_t = config_div_mode_selector<Div>;
 
-template<typename Layout>
-struct config_layout_selector : test_default_config{
+template<typename Order>
+struct config_order_selector : test_default_config{
     using layout = Layout;
 };
-template<typename Layout> using config_layout_selector_t = config_layout_selector<Layout>;
+template<typename Order> using config_order_selector_t = config_order_selector<Order>;
 
 template<template<typename...> typename Storage>
 struct config_storage_selector : test_default_config{

@@ -9,15 +9,15 @@ namespace config{
 
 enum class div_modes : std::size_t {native, libdivide};
 enum class engines : std::size_t {expression_template};
-enum class layouts : std::size_t {c,f};
+enum class orders : std::size_t {c,f};
 
 //template<typename T, T M> struct tag{static constexpr T value = M;};
 
 using mode_div_native = std::integral_constant<div_modes, div_modes::native>;
 using mode_div_libdivide = std::integral_constant<div_modes, div_modes::libdivide>;
 using engine_expression_template = std::integral_constant<engines, engines::expression_template>;
-using c_layout = std::integral_constant<layouts, layouts::c>;
-using f_layout = std::integral_constant<layouts, layouts::f>;
+using c_order = std::integral_constant<orders, orders::c>;
+using f_order = std::integral_constant<orders, orders::f>;
 
 struct default_config
 {
@@ -25,9 +25,10 @@ struct default_config
     using div_mode = mode_div_libdivide;
     //using div_mode = mode_div_native;
 
-    //specify storage scheme of data elements
-    //using layout = c_layout;
-    using layout = f_layout;
+    //specify storage scheme of data elements - depricated
+    //specify default traverse order of iterators
+    //using order = c_order;
+    using order = f_order;
 
     //data elements storage template
     //must provide at least storage(const difference_type& n) constructor, which constructs storage of size n
@@ -62,7 +63,7 @@ struct extended_config{
     using config_type = Config;
     using engine = typename config_type::engine;
     using div_mode = typename config_type::div_mode;
-    using layout = typename config_type::layout;
+    using order = typename config_type::order;
     template<typename T> using storage = typename config_type::template storage<T>;
     template<typename T> using shape = typename config_type::template shape<T>;
     template<typename T> using container = typename config_type::template container<T>;
