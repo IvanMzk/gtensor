@@ -395,7 +395,9 @@ TEST_CASE("test_basic_descriptor","[test_descriptor]")
     using gtensor::basic_descriptor;
     using gtensor::config::c_order;
     using gtensor::config::f_order;
+    using gtensor::detail::change_order_t;
     using gtensor::detail::make_dividers;
+    using gtensor::detail::make_strides_div;
     using helpers_for_testing::apply_by_element;
     //0order,1shape,2expected_strides,3expected_adapted_strides,4expected_reset_strides,5expected_size,6expected_dim
     auto test_data = std::make_tuple(
@@ -436,23 +438,25 @@ TEST_CASE("test_basic_descriptor","[test_descriptor]")
     );
     auto test = [](const auto& t){
         auto order = std::get<0>(t);
+        using order_type = decltype(order);
         auto shape = std::get<1>(t);
         auto expected_shape = shape;
         auto expected_strides = std::get<2>(t);
         auto expected_strides_div = make_dividers<config_type>(expected_strides);
+        auto expected_changing_order_strides_div = make_strides_div<config_type>(shape, change_order_t<order_type>{});
         auto expected_cstrides = expected_strides;
         auto expected_adapted_strides = std::get<3>(t);
         auto expected_reset_strides = std::get<4>(t);
         auto expected_size = std::get<5>(t);
         auto expected_dim = std::get<6>(t);
         auto expected_offset = index_type{0};
-        using order_type = decltype(order);
         using descriptor_type = basic_descriptor<config_type, order_type>;
         auto descriptor = descriptor_type{shape};
 
         auto result_shape = descriptor.shape();
         auto result_strides = descriptor.strides();
         auto result_strides_div = descriptor.strides_div();
+        auto result_changing_order_strides_div = descriptor.changing_order_strides_div();
         auto result_adapted_strides = descriptor.adapted_strides();
         auto result_reset_strides = descriptor.reset_strides();
         auto result_cstrides = descriptor.cstrides();
@@ -463,6 +467,7 @@ TEST_CASE("test_basic_descriptor","[test_descriptor]")
         REQUIRE(result_shape == expected_shape);
         REQUIRE(result_strides == expected_strides);
         REQUIRE(result_strides_div == expected_strides_div);
+        REQUIRE(result_changing_order_strides_div == expected_changing_order_strides_div);
         REQUIRE(result_adapted_strides == expected_adapted_strides);
         REQUIRE(result_reset_strides == expected_reset_strides);
         REQUIRE(result_cstrides == expected_cstrides);
@@ -494,8 +499,89 @@ TEMPLATE_TEST_CASE("test_basic_descriptor_convert", "[test_descriptor]",
     auto idx = std::get<1>(test_data);
     auto expected = std::get<2>(test_data);
     auto descriptor = descriptor_type{shape};
-    auto result = descriptor.convert(idx);
-    REQUIRE(result == expected);
+    SECTION("test_call_operator")
+    {
+        auto result = descriptor(idx);
+        REQUIRE(result == expected);
+    }
+    SECTION("test_convert")
+    {
+        auto result = descriptor.convert(idx);
+        REQUIRE(result == expected);
+    }
+}
+
+TEST_CASE("test_basic_descriptor_changing_order_convert", "[test_descriptor]")
+{
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
+    //using descriptor_type = gtensor::basic_descriptor<config_type, order>;
+    using shape_type = typename config_type::shape_type;
+    using gtensor::basic_descriptor;
+    using gtensor::config::c_order;
+    using gtensor::config::f_order;
+    using helpers_for_testing::apply_by_element;
+    //0order,1shape,2idx,3expected
+    auto test_data = std::make_tuple(
+        //convert from f_order to c_order
+        std::make_tuple(c_order{},shape_type{15},0,0),
+        std::make_tuple(c_order{},shape_type{15},3,3),
+        std::make_tuple(c_order{},shape_type{15},14,14),
+        std::make_tuple(c_order{},shape_type{1,15},1,1),
+        std::make_tuple(c_order{},shape_type{1,15},7,7),
+        std::make_tuple(c_order{},shape_type{15,1},1,1),
+        std::make_tuple(c_order{},shape_type{15,1},7,7),
+        std::make_tuple(c_order{},shape_type{3,3,5},0,0),
+        std::make_tuple(c_order{},shape_type{3,3,5},1,15),
+        std::make_tuple(c_order{},shape_type{3,3,5},2,30),
+        std::make_tuple(c_order{},shape_type{3,3,5},3,5),
+        std::make_tuple(c_order{},shape_type{3,3,5},11,31),
+        std::make_tuple(c_order{},shape_type{3,3,5},44,44),
+        //convert from f_order to c_order
+        std::make_tuple(f_order{},shape_type{15},0,0),
+        std::make_tuple(f_order{},shape_type{15},3,3),
+        std::make_tuple(f_order{},shape_type{15},14,14),
+        std::make_tuple(f_order{},shape_type{1,15},1,1),
+        std::make_tuple(f_order{},shape_type{1,15},7,7),
+        std::make_tuple(f_order{},shape_type{15,1},1,1),
+        std::make_tuple(f_order{},shape_type{15,1},7,7),
+        std::make_tuple(f_order{},shape_type{3,3,5},0,0),
+        std::make_tuple(f_order{},shape_type{3,3,5},1,9),
+        std::make_tuple(f_order{},shape_type{3,3,5},2,18),
+        std::make_tuple(f_order{},shape_type{3,3,5},11,15),
+        std::make_tuple(f_order{},shape_type{3,3,5},23,31),
+        std::make_tuple(c_order{},shape_type{3,3,5},44,44)
+    );
+    SECTION("test_call_operator")
+    {
+        auto test = [](const auto& t){
+            auto order = std::get<0>(t);
+            auto shape = std::get<1>(t);
+            auto idx = std::get<2>(t);
+            auto expected = std::get<3>(t);
+            using order_type = decltype(order);
+            using descriptor_type = basic_descriptor<config_type, order_type>;
+            auto descriptor = descriptor_type{shape};
+            auto result = descriptor(idx,0);
+            REQUIRE(result == expected);
+        };
+        apply_by_element(test, test_data);
+    }
+    SECTION("test_convert")
+    {
+        auto test = [](const auto& t){
+            auto order = std::get<0>(t);
+            auto shape = std::get<1>(t);
+            auto idx = std::get<2>(t);
+            auto expected = std::get<3>(t);
+            using order_type = decltype(order);
+            using descriptor_type = basic_descriptor<config_type, order_type>;
+            auto descriptor = descriptor_type{shape};
+            auto result = descriptor.convert(idx,0);
+            REQUIRE(result == expected);
+        };
+        apply_by_element(test, test_data);
+    }
+
 }
 
 // TEST_CASE("test_descriptor_with_offset_c_layout","[test_descriptor]")

@@ -36,6 +36,11 @@ struct strides_div_type_
 };
 template<typename Config> using strides_div_t = typename strides_div_type_<Config>::type;
 
+template<typename> struct change_order;
+template<> struct change_order<gtensor::config::c_order>{using type = gtensor::config::f_order;};
+template<> struct change_order<gtensor::config::f_order>{using type = gtensor::config::c_order;};
+template<typename Order> using change_order_t = typename change_order<Order>::type;
+
 //makes broadcast shape, throws if shapes are not broadcastable
 template<typename ShT>
 inline void make_broadcast_shape_helper(ShT&){}
@@ -119,6 +124,18 @@ inline auto make_strides_div(const ShT& shape, Order order){
         static_assert(always_false<Order>,"invalid div_mode");
     }
 }
+
+// template<typename Config, typename ShT, typename Order>
+// inline auto make_changing_order_strides_div(const ShT& shape, Order order){
+//     using div_mode = typename Config::div_mode;
+//     if constexpr (std::is_same_v<div_mode, gtensor::config::mode_div_native>){
+//         return make_strides(shape, order);
+//     }else if constexpr (std::is_same_v<div_mode, gtensor::config::mode_div_libdivide>){
+//         return make_strides<strides_div_t<Config>>(shape,order);
+//     }else{
+//         static_assert(always_false<Order>,"invalid div_mode");
+//     }
+// }
 
 template<typename ShT>
 inline auto make_reset_strides(const ShT& shape, const ShT& strides){
@@ -226,22 +243,30 @@ class strides_div_extension<Config,gtensor::config::mode_div_libdivide>
     using index_type = typename Config::index_type;
     using strides_div_type = detail::strides_div_t<Config>;
     strides_div_type strides_div_;
+    strides_div_type changing_order_strides_div_;
 protected:
     strides_div_extension() = default;
-    strides_div_extension(const shape_type& strides__):
-        strides_div_{detail::make_libdivide_dividers<Config>(strides__)}
+    template<typename Order>
+    strides_div_extension(const shape_type& shape__, const shape_type& strides__, Order):
+        strides_div_{detail::make_libdivide_dividers<Config>(strides__)},
+        changing_order_strides_div_{detail::make_strides_div<Config>(shape__, detail::change_order_t<Order>{})}
     {}
     const auto&  strides_div()const{return strides_div_;}
+    const auto&  changing_order_strides_div()const{return changing_order_strides_div_;}
 };
 
 template<typename Config>
 class strides_div_extension<Config,gtensor::config::mode_div_native>
 {
     using shape_type = typename Config::shape_type;
+    shape_type changing_order_strides_div_;
 protected:
     strides_div_extension() = default;
-    strides_div_extension(const shape_type&)
+    template<typename Order>
+    strides_div_extension(const shape_type& shape__, const shape_type&, Order):
+        changing_order_strides_div_{detail::make_strides(shape__,detail::change_order_t<Order>{})}
     {}
+    const auto&  changing_order_strides_div()const{return changing_order_strides_div_;}
 };
 
 template<typename Config>
@@ -279,14 +304,15 @@ class descriptor_strides :
 public:
     descriptor_strides() = default;
     template<typename Order>
-    descriptor_strides(const shape_type& shape__, Order):
-        strides_extension_base{shape__, Order{}},
-        strides_div_extension_base{strides_extension_base::strides()}
+    descriptor_strides(const shape_type& shape__, Order order__):
+        strides_extension_base{shape__, order__},
+        strides_div_extension_base{shape__, strides_extension_base::strides(), order__}
     {}
     const auto& strides_div()const{return strides_div(typename Config::div_mode{});}
     const auto& strides()const{return strides_extension_base::strides();}
     const auto& adapted_strides()const{return strides_extension_base::adapted_strides();}
     const auto& reset_strides()const{return strides_extension_base::reset_strides();}
+    const auto& changing_order_strides_div()const{return strides_div_extension_base::changing_order_strides_div();}
 };
 
 }   //end of namespace detail
@@ -303,11 +329,13 @@ public:
 
     virtual ~descriptor_base(){}
     virtual index_type convert(const index_type& idx)const = 0;
+    virtual index_type convert(const index_type& idx, int)const = 0;
     virtual dim_type dim()const = 0;
     virtual index_type size()const = 0;
     virtual index_type offset()const = 0;
     virtual const shape_type& shape()const = 0;
     virtual const strides_div_type& strides_div()const = 0; //strides optimized for division
+    virtual const strides_div_type& changing_order_strides_div()const = 0; //strides optimized for division
     virtual const shape_type& strides()const = 0;
     virtual const shape_type& adapted_strides()const = 0;
     virtual const shape_type& reset_strides()const = 0;
@@ -326,6 +354,7 @@ public:
     auto dim()const{return detail::make_dim(shape_);}
     const auto& shape()const{return shape_;}
     const auto& strides_div()const{return strides_.strides_div();}
+    const auto& changing_order_strides_div()const{return strides_.changing_order_strides_div();}
     const auto& strides()const{return strides_.strides();}
     const auto& adapted_strides()const{return strides_.adapted_strides();}
     const auto& reset_strides()const{return strides_.reset_strides();}
@@ -362,13 +391,18 @@ public:
     index_type size()const override{return impl_.size();}
     const shape_type& shape()const override{return impl_.shape();}
     const strides_div_type& strides_div()const override{return impl_.strides_div();}
+    const strides_div_type& changing_order_strides_div()const override{return impl_.changing_order_strides_div();}
     const shape_type& strides()const override{return impl_.strides();}
     const shape_type& adapted_strides()const override{return impl_.adapted_strides();}
     const shape_type& reset_strides()const override{return impl_.reset_strides();}
     index_type offset()const override{return index_type{0};}
     const shape_type& cstrides()const override{return strides();}
     index_type convert(const index_type& idx)const override{return operator()(idx);}
+    index_type convert(const index_type& idx, int)const override{return operator()(idx,0);}
     index_type operator()(const index_type& idx)const{return idx;}
+    index_type operator()(const index_type& idx, int)const{
+        return detail::flat_to_flat(changing_order_strides_div(),strides(),offset(),idx,detail::change_order_t<Order>{});
+    }
 };
 
 template<typename Config, typename Order>
