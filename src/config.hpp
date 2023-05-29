@@ -25,7 +25,6 @@ struct default_config
     using div_mode = mode_div_libdivide;
     //using div_mode = mode_div_native;
 
-    //specify storage scheme of data elements - depricated
     //specify default traverse order of iterators
     //using order = c_order;
     using order = f_order;
