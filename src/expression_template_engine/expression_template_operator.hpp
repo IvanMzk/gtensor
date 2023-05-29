@@ -39,7 +39,7 @@ inline auto&& forward_as_tensor(T&& t){
 template<typename Config, typename T, std::enable_if_t<!is_tensor_v<std::remove_cv_t<std::remove_reference_t<T>>>,int> =0>
 inline auto forward_as_tensor(T&& t){
     using value_type = std::remove_cv_t<std::remove_reference_t<T>>;
-    return tensor<value_type,Config>(t);
+    return tensor<value_type,gtensor::config::c_order,Config>(t);
 }
 
 }   //end of namespace detail

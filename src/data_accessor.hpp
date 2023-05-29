@@ -97,7 +97,7 @@ public:
         return *walker_;
     }
 private:
-    decltype(auto) subscript_helper(index_type i, gtensor::config::c_layout)const{
+    decltype(auto) subscript_helper(index_type i, gtensor::config::c_order)const{
         dim_type direction{0};
         for(auto strides_it = strides_->begin(), srtides_end=strides_->end(); strides_it!=srtides_end; ++strides_it, ++direction){
             auto steps = detail::divide(i,*strides_it);
@@ -106,7 +106,7 @@ private:
             }
         }
     }
-    decltype(auto) subscript_helper(index_type i, gtensor::config::f_layout)const{
+    decltype(auto) subscript_helper(index_type i, gtensor::config::f_order)const{
         auto direction = static_cast<dim_type>(strides_->size());
         for(auto strides_it = strides_->end(), strides_first=strides_->begin(); strides_it!=strides_first;){
             --strides_it;
@@ -266,7 +266,7 @@ public:
         return next_helper(typename config_type::layout{});
     }
 private:
-    bool next_helper(config::c_layout){
+    bool next_helper(config::c_order){
         auto index_it = index_.end();
         for (dim_type direction{dim_}; direction!=dim_type{0};){
             --index_it;
@@ -277,7 +277,7 @@ private:
         }
         return false;
     }
-    bool next_helper(config::f_layout){
+    bool next_helper(config::f_order){
         auto index_it = index_.begin();
         for (dim_type direction{0}; direction!=dim_; ++direction,++index_it){
             if (next_on_direction(direction, *index_it)){
@@ -371,7 +371,7 @@ public:
         }
     }
 private:
-    bool prev_helper(config::c_layout){
+    bool prev_helper(config::c_order){
         auto index_it = index_.end();
         for (dim_type direction{dim_}; direction!=dim_type{0};){
             --index_it;
@@ -382,7 +382,7 @@ private:
         }
         return false;
     }
-    bool prev_helper(config::f_layout){
+    bool prev_helper(config::f_order){
         auto index_it = index_.begin();
         for (dim_type direction{0}; direction!=dim_; ++direction,++index_it){
             if (prev_on_direction(direction, *index_it)){
@@ -436,7 +436,7 @@ public:
         move_helper(n, typename config_type::layout{});
     }
 private:
-    void move_helper(index_type n, config::c_layout){
+    void move_helper(index_type n, config::c_order){
         auto index_it = index_.begin();
         dim_type direction{0};
         for(auto strides_it = strides_->begin(); strides_it!=strides_->end(); ++strides_it,++index_it,++direction){
@@ -447,7 +447,7 @@ private:
             *index_it = steps;
         }
     }
-    void move_helper(index_type n, config::f_layout){
+    void move_helper(index_type n, config::f_order){
         auto index_it = index_.end();
         auto direction = dim_;
         for(auto strides_it = strides_->end(), strides_first=strides_->begin(); strides_it!=strides_first;){

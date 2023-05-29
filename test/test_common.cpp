@@ -4,6 +4,15 @@
 #include "common.hpp"
 #include "tensor.hpp"
 
+// namespace test_common_{
+
+// template<typename T> using test_tensor = gtensor::tensor<
+//     T,
+//     gtensor::config::c_order,
+//     gtensor::config::extend_config_t<gtensor::config::default_config,T>
+// >;
+
+// }
 
 TEST_CASE("test_is_iterator","[test_common]")
 {
@@ -12,6 +21,7 @@ TEST_CASE("test_is_iterator","[test_common]")
     REQUIRE(!is_iterator_v<std::vector<int>>);
     REQUIRE(is_iterator_v<std::vector<int>::iterator>);
 }
+
 
 TEST_CASE("test_is_tensor_of_type","[test_common]")
 {

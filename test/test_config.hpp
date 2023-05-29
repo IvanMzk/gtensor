@@ -20,7 +20,7 @@ template<typename Div> using config_div_mode_selector_t = config_div_mode_select
 
 template<typename Order>
 struct config_order_selector : test_default_config{
-    using layout = Layout;
+    using order = Order;
 };
 template<typename Order> using config_order_selector_t = config_order_selector<Order>;
 

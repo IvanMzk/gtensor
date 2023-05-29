@@ -223,6 +223,7 @@ class tensor_implementation
 {
     using core_type = Core;
 public:
+    using order = typename core_type::order;
     using config_type = typename core_type::config_type;
     using value_type = typename core_type::value_type;
     using dim_type = typename config_type::dim_type;

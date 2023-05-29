@@ -19,6 +19,7 @@ class basic_tensor
     using impl_type = Impl;
     std::shared_ptr<impl_type> impl_;
 public:
+    using order = typename impl_type::order;
     using config_type = typename impl_type::config_type;
     using value_type = typename impl_type::value_type;
     using dim_type = typename impl_type::dim_type;
@@ -83,7 +84,7 @@ public:
     }
     //makes tensor by copying shape and elements from this
     auto copy()const{
-        return tensor<value_type,config_type>(shape(),begin(),end());
+        return tensor<value_type,order,config_type>(shape(),begin(),end());
     }
     //check is this and other are tensors and have the same implementation
     template<typename Other>
@@ -200,7 +201,7 @@ private:
         static_assert(std::is_convertible_v<decltype(copy()),basic_tensor>,"can't resize view");
         const auto& shape_ = shape();
         if (!std::equal(shape_.begin(),shape_.end(),new_shape.begin(),new_shape.end())){
-            swap(tensor<value_type,config_type>{std::forward<Container>(new_shape),begin(),end()});
+            swap(tensor<value_type,order,config_type>{std::forward<Container>(new_shape),begin(),end()});
         }
     }
     template<typename Rhs>
@@ -209,19 +210,19 @@ private:
         if (is_same(rhs)){  //self assignment
             return;
         }
-        if constexpr (std::is_convertible_v<tensor<value_type,config_type>*,basic_tensor*>){  //value assignment
+        if constexpr (std::is_convertible_v<tensor<value_type,order,config_type>*,basic_tensor*>){  //value assignment
             if constexpr (detail::is_tensor_v<RhsT>){
                 const auto& rhs_shape = rhs.shape();
                 if (shape() == rhs_shape){
                     std::copy(rhs.begin(),rhs.end(),begin());
                 }else{
-                    swap(tensor<value_type,config_type>(rhs_shape,rhs.begin(),rhs.end()));
+                    swap(tensor<value_type,order,config_type>(rhs_shape,rhs.begin(),rhs.end()));
                 }
             }else{
                 if (size() == index_type{1}){
                     *begin() = std::forward<Rhs>(rhs);
                 }else{
-                    swap(tensor<value_type,config_type>(rhs));
+                    swap(tensor<value_type,order,config_type>(rhs));
                 }
             }
         }else{  //broadcast assignment if possible, not compile otherwise
@@ -232,7 +233,7 @@ private:
         if (is_same(rhs)){  //self assignment
             return;
         }
-        if constexpr (std::is_convertible_v<tensor<value_type,config_type>,basic_tensor>){  //value assignment
+        if constexpr (std::is_convertible_v<tensor<value_type,order,config_type>,basic_tensor>){  //value assignment
             swap(rhs);
         }else{  //broadcast assignment if possible, not compile otherwise
             assign(std::move(rhs));
@@ -243,7 +244,7 @@ private:
 //tensor is basic_tensor with storage implementation and constructors
 //T is type of element
 //Layout is storage scheme of data elements, may be config::c_order or config::f_order
-template<typename T, typename Layout, typename Config = config::extend_config_t<config::default_config,T>>
+template<typename T, typename Layout = config::c_order, typename Config = config::extend_config_t<config::default_config,T>>
 class tensor : public basic_tensor<typename tensor_factory_selector_t<Config,T,Layout>::result_type>
 {
     static_assert(config::is_extended_config_v<Config>);

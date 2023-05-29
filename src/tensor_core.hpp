@@ -52,10 +52,10 @@ void copy_n(It first, It last, IdxT n, DstIt dst_first){
 template<typename Config, typename T, typename Layout>
 class storage_core
 {
-    using descriptor_type = basic_descriptor<Config>;
+    using descriptor_type = basic_descriptor<Config,Layout>;
     using storage_type = typename Config::template storage<T>;
-    using layout_type = Layout;
 public:
+    using order = Layout;
     using value_type = T;
     using config_type = Config;
     using dim_type = typename config_type::dim_type;
@@ -63,8 +63,6 @@ public:
     using shape_type = typename config_type::shape_type;
     using size_type = index_type;
     using difference_type = index_type;
-
-    using order_type = layout_type;
 
     //if value_type is trivially copiable elements_ may be not initialized, depends on storage_type implementation
     template<typename ShT, std::enable_if_t<!std::is_same_v<ShT,storage_core>,int> =0>
@@ -155,8 +153,8 @@ private:
     }
 
     template<typename Nested>
-    void copy_from_list(std::initializer_list<Nested> init_data){   //init_data always in c_layout
-        detail::copy_from_list(init_data, begin_(), make_mapper(config::c_layout{}));
+    void copy_from_list(std::initializer_list<Nested> init_data){   //init_data always in c_order
+        detail::copy_from_list(init_data, begin_(), make_mapper(config::c_order{}));
     }
 
     template<typename It>
@@ -187,22 +185,24 @@ private:
         return res;
     }
 
-    //parameter is layout of input
-    auto make_mapper(config::c_layout){
-        if constexpr (std::is_same_v<layout_type,config::c_layout>){    //input in my order
+    //parameter is input layout
+    auto make_mapper(config::c_order){
+        if constexpr (std::is_same_v<order,config::c_order>){    //input in my order
             return detail::trivial_mapper{};
         }else{  //mapper from c order to f order
-            return [strides=detail::make_strides(descriptor_.shape(), config::c_layout{}), &cstrides=descriptor_.strides()](const auto& i){
-                return detail::flat_to_flat(strides,cstrides,index_type{0},i,config::c_layout{});
+            //refactor: use make_strides_div to make strides to divide
+            return [strides=detail::make_strides(descriptor_.shape(), config::c_order{}), &cstrides=descriptor_.strides()](const auto& i){
+                return detail::flat_to_flat(strides,cstrides,index_type{0},i,config::c_order{});
             };
         }
     }
-    auto make_mapper(config::f_layout){
-        if constexpr (std::is_same_v<layout_type,config::f_layout>){    //input in my order
+    auto make_mapper(config::f_order){
+        if constexpr (std::is_same_v<order,config::f_order>){    //input in my order
             return detail::trivial_mapper{};
         }else{  //mapper from f order to c order
-            return [strides=detail::make_strides(descriptor_.shape(), config::f_layout{}), &cstrides=descriptor_.strides()](const auto& i){
-                return detail::flat_to_flat(strides,cstrides,index_type{0},i,config::f_layout{});
+            //refactor: use make_strides_div to make strides to divide
+            return [strides=detail::make_strides(descriptor_.shape(), config::f_order{}), &cstrides=descriptor_.strides()](const auto& i){
+                return detail::flat_to_flat(strides,cstrides,index_type{0},i,config::f_order{});
             };
         }
     }
@@ -240,6 +240,7 @@ class view_core
     using parent_type = Parent;
 public:
     using config_type = Config;
+    using order = typename Parent::order;
     using value_type = typename Parent::value_type;
 
     template<typename Descriptor_, typename Parent_>

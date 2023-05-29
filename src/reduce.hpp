@@ -386,6 +386,7 @@ class reducer
     template<typename F, typename Directions, typename...Ts, typename...Args>
     static auto reduce_(const basic_tensor<Ts...>& parent, const Directions& directions_, F reduce_f, bool keep_dims, Args&&...args){
         using parent_type = basic_tensor<Ts...>;
+        using order = typename parent_type::order;
         using value_type = typename parent_type::value_type;
         using config_type = typename parent_type::config_type;
         using dim_type = typename config_type::dim_type;
@@ -395,7 +396,7 @@ class reducer
         auto directions = detail::make_directions<directions_container_type>(parent.dim(),directions_);
         const auto& pshape = parent.shape();
         detail::check_reduce_args(pshape, directions);
-        auto res = tensor<value_type,config_type>{detail::make_reduce_shape(pshape, directions, keep_dims)};
+        auto res = tensor<value_type,order,config_type>{detail::make_reduce_shape(pshape, directions, keep_dims)};
         bool reduce_zero_size_direction{false};
         if (parent.size() == index_type{0}){    //check if reduce zero size direction
             if constexpr (detail::is_container_of_type_v<Directions,dim_type>){
@@ -448,6 +449,7 @@ class reducer
     static auto slide_(const basic_tensor<Ts...>& parent, const DimT& direction_, F slide_f, const IdxT& window_size_, const IdxT& window_step_, Args&&...args)
     {
         using parent_type = basic_tensor<Ts...>;
+        using order = typename parent_type::order;
         using value_type = typename parent_type::value_type;
         using config_type = typename parent_type::config_type;
         using index_type = typename config_type::index_type;
@@ -457,7 +459,7 @@ class reducer
         const index_type window_size = static_cast<index_type>(window_size_);
         const index_type window_step = static_cast<index_type>(window_step_);
         detail::check_slide_args(pshape, direction, window_size);
-        auto res = tensor<value_type,config_type>{detail::make_slide_shape(pshape, direction, window_size, window_step)};
+        auto res = tensor<value_type,order,config_type>{detail::make_slide_shape(pshape, direction, window_size, window_step)};
         if (!res.empty()){
             auto pdim = parent.dim();
             if (pdim == dim_type{1}){

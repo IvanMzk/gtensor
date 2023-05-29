@@ -72,22 +72,22 @@ inline T make_shape_element(const T& shape_element){
     using shape_element_type = T;
     return shape_element==shape_element_type{0} ? shape_element_type{1}:shape_element;
 }
-template<typename ResT, typename ShT, typename Layout>
-inline ResT make_strides(const ShT& shape, Layout, typename ShT::value_type min_stride = typename ShT::value_type(1)){
+template<typename ResT, typename ShT, typename Order>
+inline ResT make_strides(const ShT& shape, Order, typename ShT::value_type min_stride = typename ShT::value_type(1)){
     using result_type = ResT;
     using result_value_type = typename result_type::value_type;
     if (!std::empty(shape)){
         result_type res(shape.size(), result_value_type());
         auto shape_first = shape.begin();
         auto shape_last = shape.end();
-        if constexpr (std::is_same_v<Layout,gtensor::config::c_layout>){
+        if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
             auto res_it = res.end();
             *--res_it = result_value_type(min_stride);
             for(;res_it != res.begin();){
                 min_stride *= make_shape_element(*--shape_last);
                 *--res_it = result_value_type(min_stride);
             }
-        }else if constexpr (std::is_same_v<Layout,gtensor::config::f_layout>){
+        }else if constexpr (std::is_same_v<Order,gtensor::config::f_order>){
             auto res_it = res.begin();
             *res_it = result_value_type(min_stride);
             for(++res_it;res_it != res.end();++res_it,++shape_first){
@@ -95,7 +95,7 @@ inline ResT make_strides(const ShT& shape, Layout, typename ShT::value_type min_
                 *res_it = result_value_type(min_stride);
             }
         }else{
-            static_assert(always_false<Layout>,"invalid Layout argument");
+            static_assert(always_false<Order>,"invalid Order argument");
         }
         return res;
     }
@@ -103,20 +103,20 @@ inline ResT make_strides(const ShT& shape, Layout, typename ShT::value_type min_
         return result_type{};
     }
 }
-template<typename ShT, typename Layout>
-inline ShT make_strides(const ShT& shape, Layout layout, typename ShT::value_type min_stride = typename ShT::value_type(1)){
-    return make_strides<ShT,ShT>(shape, layout, min_stride);
+template<typename ShT, typename Order>
+inline ShT make_strides(const ShT& shape, Order order, typename ShT::value_type min_stride = typename ShT::value_type(1)){
+    return make_strides<ShT,ShT>(shape, order, min_stride);
 }
 
-template<typename Config, typename ShT, typename Layout = typename Config::layout>
-inline auto make_strides_div(const ShT& shape, Layout layout = Layout{}){
+template<typename Config, typename ShT, typename Order>
+inline auto make_strides_div(const ShT& shape, Order order){
     using div_mode = typename Config::div_mode;
     if constexpr (std::is_same_v<div_mode, gtensor::config::mode_div_native>){
-        return make_strides(shape, layout);
+        return make_strides(shape, order);
     }else if constexpr (std::is_same_v<div_mode, gtensor::config::mode_div_libdivide>){
-        return make_strides<strides_div_t<Config>>(shape,layout);
+        return make_strides<strides_div_t<Config>>(shape,order);
     }else{
-        static_assert(always_false<Layout>,"invalid div_mode");
+        static_assert(always_false<Order>,"invalid div_mode");
     }
 }
 
@@ -194,10 +194,10 @@ T make_shape_of_type(std::initializer_list<IdxT> shape){
 }
 
 //converts flat index to flat index given strides and converting strides
-template<typename StT, typename CStT, typename IdxT, typename Layout>
-auto flat_to_flat(const StT& strides, const CStT& cstrides, IdxT offset, IdxT idx, Layout){
+template<typename StT, typename CStT, typename IdxT, typename Order>
+auto flat_to_flat(const StT& strides, const CStT& cstrides, IdxT offset, IdxT idx, Order){
     using index_type = IdxT;
-    if constexpr (std::is_same_v<Layout,config::c_layout>){
+    if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
         auto st_it = strides.begin();
         auto cst_it = cstrides.begin();
         while(idx != index_type(0)){
@@ -205,14 +205,14 @@ auto flat_to_flat(const StT& strides, const CStT& cstrides, IdxT offset, IdxT id
             ++st_it;
             ++cst_it;
         }
-    }else if constexpr (std::is_same_v<Layout,config::f_layout>){
+    }else if constexpr (std::is_same_v<Order,gtensor::config::f_order>){
         auto st_it = strides.end();
         auto cst_it = cstrides.end();
         while(idx != index_type(0)){
             offset += *--cst_it*divide(idx,*--st_it);
         }
     }else{
-        static_assert(always_false<Layout>,"invalid Layout argument");
+        static_assert(always_false<Order>,"invalid Order argument");
     }
     return offset;
 }
@@ -254,8 +254,9 @@ class strides_extension
 
 protected:
     strides_extension() = default;
-    strides_extension(const shape_type& shape__):
-        strides_{detail::make_strides(shape__, typename Config::layout{})},
+    template<typename Order>
+    strides_extension(const shape_type& shape__, Order):
+        strides_{detail::make_strides(shape__, Order{})},
         adapted_strides_{detail::make_adapted_strides(shape__,strides_)},
         reset_strides_{detail::make_reset_strides(shape__,strides_)}
     {}
@@ -277,8 +278,9 @@ class descriptor_strides :
     const auto& strides_div(gtensor::config::mode_div_native)const{return strides_extension_base::strides();}
 public:
     descriptor_strides() = default;
-    descriptor_strides(const shape_type& shape__):
-        strides_extension_base{shape__},
+    template<typename Order>
+    descriptor_strides(const shape_type& shape__, Order):
+        strides_extension_base{shape__, Order{}},
         strides_div_extension_base{strides_extension_base::strides()}
     {}
     const auto& strides_div()const{return strides_div(typename Config::div_mode{});}
@@ -328,18 +330,19 @@ public:
     const auto& adapted_strides()const{return strides_.adapted_strides();}
     const auto& reset_strides()const{return strides_.reset_strides();}
 
-    template<typename ShT, std::enable_if_t<!std::is_convertible_v<std::decay_t<ShT>, descriptor_common>,int> =0 >
-    explicit descriptor_common(ShT&& shape__):
-        shape_{detail::make_shape_of_type<shape_type>(std::forward<ShT>(shape__))}
+    template<typename ShT, typename Order>
+    explicit descriptor_common(ShT&& shape__, Order):
+        shape_{detail::make_shape_of_type<shape_type>(std::forward<ShT>(shape__))},
+        strides_{shape_, Order{}}
     {}
 private:
     shape_type shape_;
+    detail::descriptor_strides<Config> strides_;
     index_type size_{detail::make_size(shape_)};
-    detail::descriptor_strides<Config> strides_{shape_};
 };
 
 //descriptors implementation
-template<typename Config>
+template<typename Config, typename Order>
 class basic_descriptor : public descriptor_base<Config>
 {
     using descriptor_base_type = descriptor_base<Config>;
@@ -353,7 +356,7 @@ public:
 
     template<typename ShT, std::enable_if_t<!std::is_convertible_v<std::decay_t<ShT>, basic_descriptor>,int> =0 >
     explicit basic_descriptor(ShT&& shape__):
-        impl_{std::forward<ShT>(shape__)}
+        impl_{std::forward<ShT>(shape__), Order{}}
     {}
     dim_type dim()const override{return impl_.dim();}
     index_type size()const override{return impl_.size();}
@@ -368,10 +371,10 @@ public:
     index_type operator()(const index_type& idx)const{return idx;}
 };
 
-template<typename Config>
-class descriptor_with_offset : public basic_descriptor<Config>
+template<typename Config, typename Order>
+class descriptor_with_offset : public basic_descriptor<Config,Order>
 {
-    using basic_descriptor_base = basic_descriptor<Config>;
+    using basic_descriptor_base = basic_descriptor<Config,Order>;
 public:
     using typename basic_descriptor_base::index_type;
     using typename basic_descriptor_base::shape_type;
@@ -388,10 +391,10 @@ private:
     index_type offset_;
 };
 
-template<typename Config>
-class converting_descriptor : public descriptor_with_offset<Config>
+template<typename Config, typename Order>
+class converting_descriptor : public descriptor_with_offset<Config,Order>
 {
-    using descriptor_with_offset_base = descriptor_with_offset<Config>;
+    using descriptor_with_offset_base = descriptor_with_offset<Config,Order>;
 public:
     using typename descriptor_with_offset_base::index_type;
     using typename descriptor_with_offset_base::shape_type;
@@ -411,16 +414,16 @@ public:
         return operator()(idx);
     }
     index_type operator()(const index_type& idx)const{
-        return detail::flat_to_flat(strides_div(),cstrides(),offset(),idx,typename Config::layout{});
+        return detail::flat_to_flat(strides_div(),cstrides(),offset(),idx,Order{});
     }
 private:
     shape_type cstrides_;
 };
 
-template<typename Config>
-class mapping_descriptor : public basic_descriptor<Config>
+template<typename Config, typename Order>
+class mapping_descriptor : public basic_descriptor<Config,Order>
 {
-    using basic_descriptor_base = basic_descriptor<Config>;
+    using basic_descriptor_base = basic_descriptor<Config,Order>;
     using index_map_type = typename Config::index_map_type;
 public:
     using typename basic_descriptor_base::shape_type;

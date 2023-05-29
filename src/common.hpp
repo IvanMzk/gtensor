@@ -18,7 +18,6 @@ public:
     {}
 };
 
-
 namespace detail{
 
 #define GENERATE_HAS_METHOD_SIGNATURE(function_name,function_signature,trait_name)\

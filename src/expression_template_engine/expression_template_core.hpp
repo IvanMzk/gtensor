@@ -12,12 +12,13 @@ namespace gtensor{
 template<typename Config, typename F, typename...Operands>
 class expression_template_core
 {
-    using descriptor_type = basic_descriptor<Config>;
+    using descriptor_type = basic_descriptor<Config, typename Config::order>;
     template<typename...Ts> using tuple_type = std::tuple<Ts...>;
     using sequence_type = std::make_index_sequence<sizeof...(Operands)>;
 public:
     using value_type = std::decay_t<decltype(std::declval<F>()(std::declval<typename Operands::value_type&>()...))>;
     using config_type = config::extend_config_t<Config,value_type>;
+    using order = typename config_type::order;
     using dim_type = typename config_type::dim_type;
     using shape_type = typename config_type::shape_type;
 

@@ -377,7 +377,7 @@ auto fill_index_map(const ShT& pshape, const ShT& pstrides, Layout layout, const
         do{
             index_type block_first{0};
             dim_type n{0};
-            if constexpr (std::is_same_v<Layout, gtensor::config::c_layout>){
+            if constexpr (std::is_same_v<Layout, gtensor::config::c_order>){
                 ((block_first+=check_index(static_cast<index_type>(*subs_traverser.walker()),pshape[n])*pstrides[n],++n),...);
                 for(index_type j{0}; j!=chunk_size; ++j){
                     index_map[i] = block_first+j;
@@ -444,7 +444,7 @@ auto fill_bool_map(const ShT& pshape, const ShT& pstrides, Layout layout, const 
         }while(subs_traverser.next());
     }else{
         index_type stride_step{};
-        if constexpr (std::is_same_v<Layout, gtensor::config::c_layout>){
+        if constexpr (std::is_same_v<Layout, gtensor::config::c_order>){
             stride_step = index_type{1};
         }else{
             stride_step = pstrides[subs_dim];
@@ -467,25 +467,26 @@ auto fill_bool_map(const ShT& pshape, const ShT& pstrides, Layout layout, const 
 
 class view_factory
 {
-    template<typename Config> using reshape_view_descriptor = basic_descriptor<Config>;
-    template<typename Config> using subdim_view_descriptor = descriptor_with_offset<Config>;
-    template<typename Config> using slice_view_descriptor = converting_descriptor<Config>;
-    template<typename Config> using transpose_view_descriptor = converting_descriptor<Config>;
-    template<typename Config> using mapping_view_descriptor = mapping_descriptor<Config>;
-    template<typename Config, typename Parent> using reshape_view = tensor_implementation<view_core<Config,reshape_view_descriptor<Config>,Parent>>;
-    template<typename Config, typename Parent> using subdim_view = tensor_implementation<view_core<Config,subdim_view_descriptor<Config>,Parent>>;
-    template<typename Config, typename Parent> using slice_view = tensor_implementation<view_core<Config,slice_view_descriptor<Config>,Parent>>;
-    template<typename Config, typename Parent> using transpose_view = tensor_implementation<view_core<Config,transpose_view_descriptor<Config>,Parent>>;
-    template<typename Config, typename Parent> using mapping_view = tensor_implementation<view_core<Config,mapping_view_descriptor<Config>,Parent>>;
+    template<typename Config, typename Order> using reshape_view_descriptor = basic_descriptor<Config, Order>;
+    template<typename Config, typename Order> using subdim_view_descriptor = descriptor_with_offset<Config, Order>;
+    template<typename Config, typename Order> using slice_view_descriptor = converting_descriptor<Config, Order>;
+    template<typename Config, typename Order> using transpose_view_descriptor = converting_descriptor<Config, Order>;
+    template<typename Config, typename Order> using mapping_view_descriptor = mapping_descriptor<Config, Order>;
+    template<typename Config, typename Order, typename Parent> using reshape_view = tensor_implementation<view_core<Config,reshape_view_descriptor<Config, Order>,Parent>>;
+    template<typename Config, typename Order, typename Parent> using subdim_view = tensor_implementation<view_core<Config,subdim_view_descriptor<Config, Order>,Parent>>;
+    template<typename Config, typename Order, typename Parent> using slice_view = tensor_implementation<view_core<Config,slice_view_descriptor<Config, Order>,Parent>>;
+    template<typename Config, typename Order, typename Parent> using transpose_view = tensor_implementation<view_core<Config,transpose_view_descriptor<Config, Order>,Parent>>;
+    template<typename Config, typename Order, typename Parent> using mapping_view = tensor_implementation<view_core<Config,mapping_view_descriptor<Config, Order>,Parent>>;
 
     //subdim view
     template<typename...Ts, typename Container>
     static auto create_subdim_view_container(const basic_tensor<Ts...>& parent, const Container& subs){
         using parent_type = basic_tensor<Ts...>;
+        using order = typename parent_type::order;
         using config_type = typename parent_type::config_type;
         using dim_type = typename parent_type::dim_type;
-        using descriptor_type = subdim_view_descriptor<config_type>;
-        using view_type = subdim_view<config_type,parent_type>;
+        using descriptor_type = subdim_view_descriptor<config_type, order>;
+        using view_type = subdim_view<config_type,parent_type,order>;
         const auto& pshape = parent.shape();
         detail::check_subdim_args(pshape,subs);
         const dim_type subs_number = subs.size();
@@ -507,9 +508,10 @@ class view_factory
     template<typename...Ts, typename Container>
     static auto create_reshape_view_container(const basic_tensor<Ts...>& parent, const Container& subs){
         using parent_type = basic_tensor<Ts...>;
+        using order = typename parent_type::order;
         using config_type = typename parent_type::config_type;
-        using descriptor_type = reshape_view_descriptor<config_type>;
-        using view_type = reshape_view<config_type,parent_type>;
+        using descriptor_type = reshape_view_descriptor<config_type, order>;
+        using view_type = reshape_view<config_type,parent_type,order>;
         const auto& psize = parent.size();
         detail::check_reshape_args(psize,subs);
         return std::make_shared<view_type>(
@@ -527,10 +529,11 @@ class view_factory
     template<typename...Ts, typename Container>
     static auto create_transpose_view_container(const basic_tensor<Ts...>& parent, const Container& subs){
         using parent_type = basic_tensor<Ts...>;
+        using order = typename parent_type::order;
         using config_type = typename parent_type::config_type;
         using index_type = typename parent_type::index_type;
-        using descriptor_type = transpose_view_descriptor<config_type>;
-        using view_type = transpose_view<config_type,parent_type>;
+        using descriptor_type = transpose_view_descriptor<config_type, order>;
+        using view_type = transpose_view<config_type,parent_type,order>;
         detail::check_transpose_args(parent.dim(),subs);
         return std::make_shared<view_type>(
             descriptor_type{
@@ -552,11 +555,12 @@ class view_factory
     template<typename...Ts, typename Container>
     static auto create_slice_view_container(const basic_tensor<Ts...>& parent, const Container& subs){
         using parent_type = basic_tensor<Ts...>;
+        using order = typename parent_type::order;
         using config_type = typename parent_type::config_type;
         using dim_type = typename parent_type::dim_type;
         using slice_type = typename parent_type::slice_type;
-        using descriptor_type = slice_view_descriptor<config_type>;
-        using view_type = slice_view<config_type,parent_type>;
+        using descriptor_type = slice_view_descriptor<config_type, order>;
+        using view_type = slice_view<config_type,parent_type,order>;
         static_assert(std::is_same_v<typename Container::value_type,slice_type>);
         const auto& pshape = parent.shape();
         detail::check_slice_view_args(pshape,subs);
@@ -601,12 +605,13 @@ class view_factory
     template<typename...Ts, typename...Subs>
     static auto create_index_mapping_view_(const basic_tensor<Ts...>& parent, const Subs&...subs){
         using parent_type = basic_tensor<Ts...>;
+        using order = typename parent_type::order;
         using config_type = typename parent_type::config_type;
         using index_map_type = typename config_type::index_map_type;
         using shape_type = typename parent_type::shape_type;
         using layout_type = typename config_type::layout;
-        using descriptor_type = mapping_descriptor<config_type>;
-        using view_type = mapping_view<config_type,parent_type>;
+        using descriptor_type = mapping_descriptor<config_type, order>;
+        using view_type = mapping_view<config_type,parent_type,order>;
         const auto& pshape = parent.shape();
         detail::check_index_mapping_view_subs(pshape, subs.shape()...);
         const auto subs_shape = detail::make_broadcast_shape<shape_type>(subs.shape()...);
@@ -634,14 +639,15 @@ class view_factory
     template<typename...Ts, typename Subs>
     static auto create_bool_mapping_view_(const basic_tensor<Ts...>& parent, const Subs& subs){
         using parent_type = basic_tensor<Ts...>;
+        using order = typename parent_type::order;
         using config_type = typename parent_type::config_type;
         using index_type = typename parent_type::index_type;
         using dim_type = typename parent_type::dim_type;
         using layout_type = typename config_type::layout;
         using index_map_type = typename config_type::index_map_type;
         using index_container_type = typename config_type::template container<index_type>;
-        using descriptor_type = mapping_descriptor<config_type>;
-        using view_type = mapping_view<config_type,parent_type>;
+        using descriptor_type = mapping_descriptor<config_type, order>;
+        using view_type = mapping_view<config_type,parent_type,order>;
         const auto& pshape = parent.shape();
         const auto& subs_shape = subs.shape();
         detail::check_bool_mapping_view_subs(pshape, subs_shape);
