@@ -284,11 +284,17 @@ public:
     const auto& index()const{return index_;}
     const auto& walker()const{return walker_;}
     auto& walker(){return walker_;}
+    template<typename Order>
     bool next(){
-        return next_helper(typename config_type::layout{});
+        ASSERT_ORDER(Order);
+        if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
+            return next_c();
+        }else{
+            return next_f();
+        }
     }
 private:
-    bool next_helper(config::c_order){
+    bool next_c(){
         auto index_it = index_.end();
         for (dim_type direction{dim_}; direction!=dim_type{0};){
             --index_it;
@@ -299,7 +305,7 @@ private:
         }
         return false;
     }
-    bool next_helper(config::f_order){
+    bool next_f(){
         auto index_it = index_.begin();
         for (dim_type direction{0}; direction!=dim_; ++direction,++index_it){
             if (next_on_direction(direction, *index_it)){
@@ -346,8 +352,9 @@ public:
     using typename walker_forward_traverser_base::shape_type;
     using walker_forward_traverser_base::walker_forward_traverser_base;
 
+    template<typename Order>
     bool next(){
-        if (walker_forward_traverser_base::next()){
+        if (walker_forward_traverser_base::template next<Order>()){
             return true;
         }else{
             if (overflow_ == index_type{-1}){
@@ -359,8 +366,10 @@ public:
             }
         }
     }
+    template<typename Order>
     bool prev(){
-        if (prev_helper(typename config_type::layout{})){
+        ASSERT_ORDER(Order);
+        if (prev_helper<Order>()){
             return true;
         }
         if (overflow_ == index_type{1}){
@@ -393,7 +402,15 @@ public:
         }
     }
 private:
-    bool prev_helper(config::c_order){
+    template<typename Order>
+    bool prev_helper(){
+        if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
+            return prev_c();
+        }else{
+            return prev_f();
+        }
+    }
+    bool prev_c(){
         auto index_it = index_.end();
         for (dim_type direction{dim_}; direction!=dim_type{0};){
             --index_it;
@@ -404,7 +421,7 @@ private:
         }
         return false;
     }
-    bool prev_helper(config::f_order){
+    bool prev_f(){
         auto index_it = index_.begin();
         for (dim_type direction{0}; direction!=dim_; ++direction,++index_it){
             if (prev_on_direction(direction, *index_it)){
@@ -431,9 +448,10 @@ private:
     }
 };
 
-template<typename Config, typename Walker>
+template<typename Config, typename Walker, typename Order>
 class walker_random_access_traverser : public walker_bidirectional_traverser<Config, Walker, TraverseAllPredicate>
 {
+    ASSERT_ORDER(Order);
     using walker_bidirectional_traverser_base = walker_bidirectional_traverser<Config, Walker, TraverseAllPredicate>;
     using strides_div_type = detail::strides_div_t<Config>;
     using walker_bidirectional_traverser_base::walker_;
@@ -451,14 +469,25 @@ public:
         walker_bidirectional_traverser_base(shape__, std::forward<Walker_>(walker__)),
         strides_{&strides__}
     {}
+
+    bool next(){return walker_bidirectional_traverser_base::template next<Order>();}
+    bool prev(){return walker_bidirectional_traverser_base::template prev<Order>();}
+
     //n must be in range [0,size-1], where size = make_size(shape__)
     void move(index_type n){
         walker_.reset_back();
         overflow_ = index_type{0};
-        move_helper(n, typename config_type::layout{});
+        move_helper(n);
     }
 private:
-    void move_helper(index_type n, config::c_order){
+    void move_helper(index_type n){
+        if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
+            move_c(n);
+        }else{
+            move_f(n);
+        }
+    }
+    void move_c(index_type n){
         auto index_it = index_.begin();
         dim_type direction{0};
         for(auto strides_it = strides_->begin(); strides_it!=strides_->end(); ++strides_it,++index_it,++direction){
@@ -469,7 +498,7 @@ private:
             *index_it = steps;
         }
     }
-    void move_helper(index_type n, config::f_order){
+    void move_f(index_type n){
         auto index_it = index_.end();
         auto direction = dim_;
         for(auto strides_it = strides_->end(), strides_first=strides_->begin(); strides_it!=strides_first;){

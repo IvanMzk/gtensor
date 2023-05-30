@@ -363,7 +363,7 @@ private:
 template<typename Config, typename Order>
 class basic_descriptor : public descriptor_base<Config>
 {
-    static_assert(std::is_same_v<Order,gtensor::config::c_order>||std::is_same_v<Order,gtensor::config::f_order>,"Order must be c_order or f_order");
+    ASSERT_ORDER(Order);
     using descriptor_base_type = descriptor_base<Config>;
     descriptor_common<Config> impl_;
 public:

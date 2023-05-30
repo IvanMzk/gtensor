@@ -20,6 +20,8 @@ public:
 
 namespace detail{
 
+#define ASSERT_ORDER(order) static_assert(std::is_same_v<order, gtensor::config::c_order>||std::is_same_v<order, gtensor::config::f_order>, "order must be c_order or f_order");
+
 #define GENERATE_HAS_METHOD_SIGNATURE(function_name,function_signature,trait_name)\
 template<typename T, typename = void>\
 struct trait_name : std::false_type{};\
