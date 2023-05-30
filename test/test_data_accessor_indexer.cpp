@@ -113,52 +113,91 @@ TEMPLATE_TEST_CASE("test_walker_indexer","test_data_accessor",
     using gtensor::basic_indexer;
     using gtensor::walker_indexer;
     using gtensor::walker;
-    using layout_type = typename config_type::layout;
     using shape_type = typename config_type::shape_type;
     using dim_type = typename config_type::dim_type;
     using index_type = typename config_type::index_type;
     using storage_type = typename config_type::template storage<value_type>;
     using indexer_type = basic_indexer<storage_type&>;
     using walker_type = walker<config_type, indexer_type>;
-    using walker_indexer_type = walker_indexer<walker_type>;
+    using gtensor::config::c_order;
+    using gtensor::config::f_order;
     using helpers_for_testing::apply_by_element;
 
-    //0elements,1shape,2offset,3index_1,4expected_1,5index_2,6expected_2
+    //0indexer_order,1elements_order,2elements,3shape,4offset,5index,6expected_1,7index_2,8expected_2
     auto test_data = std::make_tuple(
-        std::make_tuple(storage_type{2}, shape_type{1}, index_type{0}, 0 , 2, 0, 2),
-        std::make_tuple(storage_type{1,2,3,4,5}, shape_type{5}, index_type{0}, 0,1, 4,5),
-        std::make_tuple(storage_type{1,2,3,4,5}, shape_type{5}, index_type{0}, 1,2, 2,3),
-        std::make_tuple(storage_type{1,2,3,4,5}, shape_type{5}, index_type{0}, 2,3, 1,2),
-        std::make_tuple(storage_type{1,2,3,4,5}, shape_type{5}, index_type{0}, 3,4, 3,4),
-        std::make_tuple(storage_type{1,2,3,4,5}, shape_type{5}, index_type{0}, 4,5, 0,1),
-        std::make_tuple(storage_type{0,0,0,1,2,3,4,5,6,7,8,9,10,11,12}, shape_type{2,2,2}, index_type{3}, 0,1, 11,12),
-        std::make_tuple(storage_type{0,0,0,1,2,3,4,5,6,7,8,9,10,11,12}, shape_type{2,2,2}, index_type{3}, 1,2, 2,3),
-        std::make_tuple(storage_type{0,0,0,1,2,3,4,5,6,7,8,9,10,11,12}, shape_type{2,2,2}, index_type{3}, 2,3, 1,2),
-        std::make_tuple(storage_type{0,0,0,1,2,3,4,5,6,7,8,9,10,11,12}, shape_type{2,2,2}, index_type{3}, 3,4, 0,1),
-        std::make_tuple(storage_type{0,0,0,1,2,3,4,5,6,7,8,9,10,11,12}, shape_type{2,2,2}, index_type{3}, 4,5, 6,7),
-        std::make_tuple(storage_type{0,0,0,1,2,3,4,5,6,7,8,9,10,11,12}, shape_type{2,2,2}, index_type{3}, 8,9, 5,6),
-        std::make_tuple(storage_type{0,0,0,1,2,3,4,5,6,7,8,9,10,11,12}, shape_type{2,2,2}, index_type{3}, 10,11, 7,8),
-        std::make_tuple(storage_type{0,0,0,1,2,3,4,5,6,7,8,9,10,11,12}, shape_type{2,2,2}, index_type{3}, 11,12, 11,12),
-        std::make_tuple(storage_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24}, shape_type{2,3,4}, index_type{0}, 0,1, 1,2),
-        std::make_tuple(storage_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24}, shape_type{2,1,3,4}, index_type{0}, 22,23, 23,24),
-        std::make_tuple(storage_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24}, shape_type{2,3,4,1}, index_type{0}, 15,16, 7,8),
-        std::make_tuple(storage_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24}, shape_type{1,2,3,4}, index_type{0}, 15,16, 7,8)
+        //c_order, c_order
+        std::make_tuple(c_order{}, c_order{}, storage_type{2}, shape_type{1}, index_type{0}, 0 , 2, 0, 2),
+        std::make_tuple(c_order{}, c_order{}, storage_type{1,2,3,4,5}, shape_type{5}, index_type{0}, 0,1, 4,5),
+        std::make_tuple(c_order{}, c_order{}, storage_type{1,2,3,4,5}, shape_type{5}, index_type{0}, 1,2, 2,3),
+        std::make_tuple(c_order{}, c_order{}, storage_type{1,2,3,4,5}, shape_type{5}, index_type{0}, 3,4, 3,4),
+        std::make_tuple(c_order{}, c_order{}, storage_type{0,0,0,1,2,3,4,5,6,7,8,9,10,11,12}, shape_type{2,3,2}, index_type{3}, 0,1, 11,12),
+        std::make_tuple(c_order{}, c_order{}, storage_type{0,0,0,1,2,3,4,5,6,7,8,9,10,11,12}, shape_type{2,3,2}, index_type{3}, 2,3, 1,2),
+        std::make_tuple(c_order{}, c_order{}, storage_type{0,0,0,1,2,3,4,5,6,7,8,9,10,11,12}, shape_type{2,3,2}, index_type{3}, 4,5, 6,7),
+        std::make_tuple(c_order{}, c_order{}, storage_type{0,0,0,1,2,3,4,5,6,7,8,9,10,11,12}, shape_type{2,3,2}, index_type{3}, 11,12, 11,12),
+        std::make_tuple(c_order{}, c_order{}, storage_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24}, shape_type{2,3,4}, index_type{0}, 0,1, 1,2),
+        std::make_tuple(c_order{}, c_order{}, storage_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24}, shape_type{2,1,3,4}, index_type{0}, 22,23, 23,24),
+        std::make_tuple(c_order{}, c_order{}, storage_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24}, shape_type{2,3,4,1}, index_type{0}, 15,16, 7,8),
+        std::make_tuple(c_order{}, c_order{}, storage_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24}, shape_type{1,2,3,4}, index_type{0}, 15,16, 7,8),
+        //c_order, f_order
+        std::make_tuple(c_order{}, f_order{}, storage_type{2}, shape_type{1}, index_type{0}, 0 , 2, 0, 2),
+        std::make_tuple(c_order{}, f_order{}, storage_type{1,2,3,4,5}, shape_type{5}, index_type{0}, 0,1, 4,5),
+        std::make_tuple(c_order{}, f_order{}, storage_type{1,2,3,4,5}, shape_type{5}, index_type{0}, 1,2, 2,3),
+        std::make_tuple(c_order{}, f_order{}, storage_type{1,2,3,4,5}, shape_type{5}, index_type{0}, 3,4, 3,4),
+        std::make_tuple(c_order{}, f_order{}, storage_type{0,0,0,1,7,3,9,5,11,2,8,4,10,6,12}, shape_type{2,3,2}, index_type{3}, 0,1, 11,12),
+        std::make_tuple(c_order{}, f_order{}, storage_type{0,0,0,1,7,3,9,5,11,2,8,4,10,6,12}, shape_type{2,3,2}, index_type{3}, 2,3, 1,2),
+        std::make_tuple(c_order{}, f_order{}, storage_type{0,0,0,1,7,3,9,5,11,2,8,4,10,6,12}, shape_type{2,3,2}, index_type{3}, 4,5, 6,7),
+        std::make_tuple(c_order{}, f_order{}, storage_type{0,0,0,1,7,3,9,5,11,2,8,4,10,6,12}, shape_type{2,3,2}, index_type{3}, 11,12, 11,12),
+        std::make_tuple(c_order{}, f_order{}, storage_type{1,13,5,17,9,21,2,14,6,18,10,22,3,15,7,19,11,23,4,16,8,20,12,24}, shape_type{2,3,4}, index_type{0}, 0,1, 1,2),
+        std::make_tuple(c_order{}, f_order{}, storage_type{1,13,5,17,9,21,2,14,6,18,10,22,3,15,7,19,11,23,4,16,8,20,12,24}, shape_type{2,1,3,4}, index_type{0}, 22,23, 23,24),
+        std::make_tuple(c_order{}, f_order{}, storage_type{1,13,5,17,9,21,2,14,6,18,10,22,3,15,7,19,11,23,4,16,8,20,12,24}, shape_type{2,3,4,1}, index_type{0}, 15,16, 7,8),
+        std::make_tuple(c_order{}, f_order{}, storage_type{1,13,5,17,9,21,2,14,6,18,10,22,3,15,7,19,11,23,4,16,8,20,12,24}, shape_type{1,2,3,4}, index_type{0}, 15,16, 7,8),
+        //f_order, c_order
+        std::make_tuple(f_order{}, c_order{}, storage_type{2}, shape_type{1}, index_type{0}, 0 , 2, 0, 2),
+        std::make_tuple(f_order{}, c_order{}, storage_type{1,2,3,4,5}, shape_type{5}, index_type{0}, 0,1, 4,5),
+        std::make_tuple(f_order{}, c_order{}, storage_type{1,2,3,4,5}, shape_type{5}, index_type{0}, 1,2, 2,3),
+        std::make_tuple(f_order{}, c_order{}, storage_type{1,2,3,4,5}, shape_type{5}, index_type{0}, 3,4, 3,4),
+        std::make_tuple(f_order{}, c_order{}, storage_type{0,0,0,1,2,3,4,5,6,7,8,9,10,11,12}, shape_type{2,3,2}, index_type{3}, 0,1, 11,12),
+        std::make_tuple(f_order{}, c_order{}, storage_type{0,0,0,1,2,3,4,5,6,7,8,9,10,11,12}, shape_type{2,3,2}, index_type{3}, 2,3, 1,7),
+        std::make_tuple(f_order{}, c_order{}, storage_type{0,0,0,1,2,3,4,5,6,7,8,9,10,11,12}, shape_type{2,3,2}, index_type{3}, 4,5, 6,2),
+        std::make_tuple(f_order{}, c_order{}, storage_type{0,0,0,1,2,3,4,5,6,7,8,9,10,11,12}, shape_type{2,3,2}, index_type{3}, 11,12, 11,12),
+        std::make_tuple(f_order{}, c_order{}, storage_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24}, shape_type{2,3,4}, index_type{0}, 0,1, 1,13),
+        std::make_tuple(f_order{}, c_order{}, storage_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24}, shape_type{2,1,3,4}, index_type{0}, 22,12, 23,24),
+        std::make_tuple(f_order{}, c_order{}, storage_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24}, shape_type{2,3,4,1}, index_type{0}, 15,19, 7,14),
+        std::make_tuple(f_order{}, c_order{}, storage_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24}, shape_type{1,2,3,4}, index_type{0}, 15,19, 7,14),
+        //f_order, f_order
+        std::make_tuple(f_order{}, f_order{}, storage_type{2}, shape_type{1}, index_type{0}, 0 , 2, 0, 2),
+        std::make_tuple(f_order{}, f_order{}, storage_type{1,2,3,4,5}, shape_type{5}, index_type{0}, 0,1, 4,5),
+        std::make_tuple(f_order{}, f_order{}, storage_type{1,2,3,4,5}, shape_type{5}, index_type{0}, 1,2, 2,3),
+        std::make_tuple(f_order{}, f_order{}, storage_type{1,2,3,4,5}, shape_type{5}, index_type{0}, 3,4, 3,4),
+        std::make_tuple(f_order{}, f_order{}, storage_type{0,0,0,1,7,3,9,5,11,2,8,4,10,6,12}, shape_type{2,3,2}, index_type{3}, 0,1, 11,12),
+        std::make_tuple(f_order{}, f_order{}, storage_type{0,0,0,1,7,3,9,5,11,2,8,4,10,6,12}, shape_type{2,3,2}, index_type{3}, 2,3, 1,7),
+        std::make_tuple(f_order{}, f_order{}, storage_type{0,0,0,1,7,3,9,5,11,2,8,4,10,6,12}, shape_type{2,3,2}, index_type{3}, 4,5, 6,2),
+        std::make_tuple(f_order{}, f_order{}, storage_type{0,0,0,1,7,3,9,5,11,2,8,4,10,6,12}, shape_type{2,3,2}, index_type{3}, 11,12, 11,12),
+        std::make_tuple(f_order{}, f_order{}, storage_type{1,13,5,17,9,21,2,14,6,18,10,22,3,15,7,19,11,23,4,16,8,20,12,24}, shape_type{2,3,4}, index_type{0}, 0,1, 1,13),
+        std::make_tuple(f_order{}, f_order{}, storage_type{1,13,5,17,9,21,2,14,6,18,10,22,3,15,7,19,11,23,4,16,8,20,12,24}, shape_type{2,1,3,4}, index_type{0}, 22,12, 23,24),
+        std::make_tuple(f_order{}, f_order{}, storage_type{1,13,5,17,9,21,2,14,6,18,10,22,3,15,7,19,11,23,4,16,8,20,12,24}, shape_type{2,3,4,1}, index_type{0}, 15,19, 7,14),
+        std::make_tuple(f_order{}, f_order{}, storage_type{1,13,5,17,9,21,2,14,6,18,10,22,3,15,7,19,11,23,4,16,8,20,12,24}, shape_type{1,2,3,4}, index_type{0}, 15,19, 7,14)
     );
     auto test = [](const auto& t){
-        auto elements = std::get<0>(t);
-        auto shape = std::get<1>(t);
-        auto offset = std::get<2>(t);
-        auto index_1 = std::get<3>(t);
-        auto expected_1 = std::get<4>(t);
-        auto index_2 = std::get<5>(t);
-        auto expected_2 = std::get<6>(t);
-        auto strides = gtensor::detail::make_strides(shape, layout_type{});
+        auto indexer_order = std::get<0>(t);
+        using indexer_order_type = decltype(indexer_order);
+        auto elements_order = std::get<1>(t);
+        using elements_order_type = decltype(elements_order);
+        auto elements = std::get<2>(t);
+        auto shape = std::get<3>(t);
+        auto offset = std::get<4>(t);
+        auto index_1 = std::get<5>(t);
+        auto expected_1 = std::get<6>(t);
+        auto index_2 = std::get<7>(t);
+        auto expected_2 = std::get<8>(t);
+        auto strides = gtensor::detail::make_strides(shape, elements_order_type{});
         auto adapted_strides = gtensor::detail::make_adapted_strides(shape, strides);
         auto reset_strides = gtensor::detail::make_reset_strides(shape, strides);
-        auto strides_div = gtensor::detail::make_dividers<config_type>(strides);
         dim_type dim = gtensor::detail::make_dim(shape);
         indexer_type indexer{elements};
         walker_type walker{adapted_strides, reset_strides, offset, indexer, dim};
+        using walker_indexer_type = walker_indexer<walker_type,indexer_order_type>;
+        auto strides_div = gtensor::detail::make_strides_div<config_type>(shape,indexer_order_type{});
         walker_indexer_type walker_indexer{strides_div, walker};
         auto result_1 = walker_indexer[index_1];
         auto result_2 = walker_indexer[index_2];

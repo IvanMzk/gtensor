@@ -5,6 +5,40 @@
 #include "helpers_for_testing.hpp"
 #include "integral_type.hpp"
 
+TEST_CASE("test_is_tensor_of_type","[test_common]")
+{
+    using gtensor::tensor;
+    using integral_type::integral;
+    using gtensor::detail::is_tensor_of_type_v;
+    using gtensor::detail::is_bool_tensor_v;
+
+    REQUIRE(is_tensor_of_type_v<tensor<int>,int>);
+    REQUIRE(is_tensor_of_type_v<tensor<integral<std::int64_t>>,integral<std::int64_t>>);
+    REQUIRE(is_tensor_of_type_v<tensor<std::int64_t>,integral<std::int64_t>>);
+    REQUIRE(is_tensor_of_type_v<tensor<integral<std::size_t>>,integral<std::int64_t>>);
+    REQUIRE(is_tensor_of_type_v<tensor<std::size_t>,integral<std::int64_t>>);
+    REQUIRE(is_tensor_of_type_v<tensor<std::size_t>,std::int64_t>);
+    REQUIRE(is_tensor_of_type_v<tensor<bool>,std::int64_t>);
+    REQUIRE(is_tensor_of_type_v<tensor<bool>,int>);
+    REQUIRE(is_tensor_of_type_v<tensor<double>,std::int64_t>);
+
+    //model no conversation to inner type
+    //REQUIRE(is_tensor_of_type_v<tensor<integral<std::int64_t>>,std::int64_t>);
+    //REQUIRE(is_tensor_of_type_v<tensor<integral<std::size_t>>,std::int64_t>);
+
+    REQUIRE(!is_tensor_of_type_v<tensor<double>,integral<std::int64_t>>);
+    REQUIRE(!is_tensor_of_type_v<std::vector<int>,int>);
+    REQUIRE(!is_tensor_of_type_v<std::string,int>);
+    REQUIRE(!is_tensor_of_type_v<std::vector<bool>,int>);
+
+    REQUIRE(is_bool_tensor_v<tensor<bool>>);
+    REQUIRE(!is_bool_tensor_v<tensor<int>>);
+    REQUIRE(!is_bool_tensor_v<tensor<float>>);
+    REQUIRE(!is_bool_tensor_v<std::vector<int>>);
+    REQUIRE(!is_bool_tensor_v<std::string>);
+    REQUIRE(!is_bool_tensor_v<std::vector<bool>>);
+}
+
 //test tensor constructors
 TEST_CASE("test_tensor_default_constructor","[test_tensor]")
 {

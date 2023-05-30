@@ -2,17 +2,6 @@
 #include <list>
 #include "catch.hpp"
 #include "common.hpp"
-#include "tensor.hpp"
-
-// namespace test_common_{
-
-// template<typename T> using test_tensor = gtensor::tensor<
-//     T,
-//     gtensor::config::c_order,
-//     gtensor::config::extend_config_t<gtensor::config::default_config,T>
-// >;
-
-// }
 
 TEST_CASE("test_is_iterator","[test_common]")
 {
@@ -22,40 +11,6 @@ TEST_CASE("test_is_iterator","[test_common]")
     REQUIRE(is_iterator_v<std::vector<int>::iterator>);
 }
 
-
-TEST_CASE("test_is_tensor_of_type","[test_common]")
-{
-    using gtensor::tensor;
-    using integral_type::integral;
-    using gtensor::detail::is_tensor_of_type_v;
-    using gtensor::detail::is_bool_tensor_v;
-
-    REQUIRE(is_tensor_of_type_v<tensor<int>,int>);
-    REQUIRE(is_tensor_of_type_v<tensor<integral<std::int64_t>>,integral<std::int64_t>>);
-    REQUIRE(is_tensor_of_type_v<tensor<std::int64_t>,integral<std::int64_t>>);
-    REQUIRE(is_tensor_of_type_v<tensor<integral<std::size_t>>,integral<std::int64_t>>);
-    REQUIRE(is_tensor_of_type_v<tensor<std::size_t>,integral<std::int64_t>>);
-    REQUIRE(is_tensor_of_type_v<tensor<std::size_t>,std::int64_t>);
-    REQUIRE(is_tensor_of_type_v<tensor<bool>,std::int64_t>);
-    REQUIRE(is_tensor_of_type_v<tensor<bool>,int>);
-    REQUIRE(is_tensor_of_type_v<tensor<double>,std::int64_t>);
-
-    //model no conversation to inner type
-    //REQUIRE(is_tensor_of_type_v<tensor<integral<std::int64_t>>,std::int64_t>);
-    //REQUIRE(is_tensor_of_type_v<tensor<integral<std::size_t>>,std::int64_t>);
-
-    REQUIRE(!is_tensor_of_type_v<tensor<double>,integral<std::int64_t>>);
-    REQUIRE(!is_tensor_of_type_v<std::vector<int>,int>);
-    REQUIRE(!is_tensor_of_type_v<std::string,int>);
-    REQUIRE(!is_tensor_of_type_v<std::vector<bool>,int>);
-
-    REQUIRE(is_bool_tensor_v<tensor<bool>>);
-    REQUIRE(!is_bool_tensor_v<tensor<int>>);
-    REQUIRE(!is_bool_tensor_v<tensor<float>>);
-    REQUIRE(!is_bool_tensor_v<std::vector<int>>);
-    REQUIRE(!is_bool_tensor_v<std::string>);
-    REQUIRE(!is_bool_tensor_v<std::vector<bool>>);
-}
 
 TEST_CASE("test_has_callable_iterator","[test_tensor_implementation]")
 {

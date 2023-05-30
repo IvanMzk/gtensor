@@ -65,15 +65,19 @@ public:
         converter_{&converter__}
     {}
     template<typename U>
-    decltype(std::declval<indexer_type>()[std::declval<Converter_type>().operator()(std::declval<U>())]) operator[](const U& i)const{
+    decltype(auto) operator[](const U& i)const{
         return indexer_[converter_->operator()(i)];
     }
 private:
     indexer_type indexer_;
     const Converter_type* converter_;
 };
+
+
 //walker-indexer adaptes walker to indexer interface
-template<typename Walker>
+//Order can be c_order or f_order, specifies how to treat index parameter of subscript operator
+//strides must be in this order
+template<typename Walker, typename Order>
 class walker_indexer
 {
     static_assert(!std::is_reference_v<Walker>);
@@ -86,14 +90,14 @@ class walker_indexer
     const strides_div_type* strides_;
     mutable walker_type walker_;
 public:
-    template<typename Walker_, std::enable_if_t<!std::is_convertible_v<std::decay_t<Walker_>, walker_indexer>,int> =0>
-    explicit walker_indexer(const strides_div_type& strides__, Walker_&& walker__):
+    template<typename Walker_>
+    walker_indexer(const strides_div_type& strides__, Walker_&& walker__):
         strides_{&strides__},
         walker_{std::forward<Walker_>(walker__)}
     {}
     decltype(auto) operator[](index_type i)const{
         walker_.reset_back();
-        subscript_helper(i, typename config_type::layout{});
+        subscript_helper(i, Order{});
         return *walker_;
     }
 private:
