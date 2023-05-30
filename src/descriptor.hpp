@@ -125,18 +125,6 @@ inline auto make_strides_div(const ShT& shape, Order order){
     }
 }
 
-// template<typename Config, typename ShT, typename Order>
-// inline auto make_changing_order_strides_div(const ShT& shape, Order order){
-//     using div_mode = typename Config::div_mode;
-//     if constexpr (std::is_same_v<div_mode, gtensor::config::mode_div_native>){
-//         return make_strides(shape, order);
-//     }else if constexpr (std::is_same_v<div_mode, gtensor::config::mode_div_libdivide>){
-//         return make_strides<strides_div_t<Config>>(shape,order);
-//     }else{
-//         static_assert(always_false<Order>,"invalid div_mode");
-//     }
-// }
-
 template<typename ShT>
 inline auto make_reset_strides(const ShT& shape, const ShT& strides){
     using index_type = typename ShT::value_type;
@@ -335,7 +323,8 @@ public:
     virtual index_type offset()const = 0;
     virtual const shape_type& shape()const = 0;
     virtual const strides_div_type& strides_div()const = 0; //strides optimized for division
-    virtual const strides_div_type& changing_order_strides_div()const = 0; //strides optimized for division
+    virtual const strides_div_type& strides_div(gtensor::config::c_order)const = 0; //strides optimized for division
+    virtual const strides_div_type& strides_div(gtensor::config::f_order)const = 0; //strides optimized for division
     virtual const shape_type& strides()const = 0;
     virtual const shape_type& adapted_strides()const = 0;
     virtual const shape_type& reset_strides()const = 0;
@@ -374,6 +363,7 @@ private:
 template<typename Config, typename Order>
 class basic_descriptor : public descriptor_base<Config>
 {
+    static_assert(std::is_same_v<Order,gtensor::config::c_order>||std::is_same_v<Order,gtensor::config::f_order>,"Order must be c_order or f_order");
     using descriptor_base_type = descriptor_base<Config>;
     descriptor_common<Config> impl_;
 public:
@@ -390,8 +380,9 @@ public:
     dim_type dim()const override{return impl_.dim();}
     index_type size()const override{return impl_.size();}
     const shape_type& shape()const override{return impl_.shape();}
-    const strides_div_type& strides_div()const override{return impl_.strides_div();}
-    const strides_div_type& changing_order_strides_div()const override{return impl_.changing_order_strides_div();}
+    const strides_div_type& strides_div(gtensor::config::c_order)const override{return strides_div_helper<gtensor::config::c_order>();}
+    const strides_div_type& strides_div(gtensor::config::f_order)const override{return strides_div_helper<gtensor::config::f_order>();}
+    const strides_div_type& strides_div()const override{return strides_div_helper<Order>();}
     const shape_type& strides()const override{return impl_.strides();}
     const shape_type& adapted_strides()const override{return impl_.adapted_strides();}
     const shape_type& reset_strides()const override{return impl_.reset_strides();}
@@ -401,7 +392,17 @@ public:
     index_type convert(const index_type& idx, int)const override{return operator()(idx,0);}
     index_type operator()(const index_type& idx)const{return idx;}
     index_type operator()(const index_type& idx, int)const{
-        return detail::flat_to_flat(changing_order_strides_div(),strides(),offset(),idx,detail::change_order_t<Order>{});
+        using changed_order_type = detail::change_order_t<Order>;
+        return detail::flat_to_flat(strides_div(changed_order_type{}),strides(),offset(),idx,changed_order_type{});
+    }
+private:
+    template<typename Order_>
+    const strides_div_type& strides_div_helper()const{
+        if constexpr (std::is_same_v<Order_,Order>){
+            return impl_.strides_div();
+        }else{
+            return impl_.changing_order_strides_div();
+        }
     }
 };
 

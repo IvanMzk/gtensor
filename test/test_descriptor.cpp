@@ -443,7 +443,8 @@ TEST_CASE("test_basic_descriptor","[test_descriptor]")
         auto expected_shape = shape;
         auto expected_strides = std::get<2>(t);
         auto expected_strides_div = make_dividers<config_type>(expected_strides);
-        auto expected_changing_order_strides_div = make_strides_div<config_type>(shape, change_order_t<order_type>{});
+        auto expected_strides_div_c_order = make_strides_div<config_type>(shape, c_order{});
+        auto expected_strides_div_f_order = make_strides_div<config_type>(shape, f_order{});
         auto expected_cstrides = expected_strides;
         auto expected_adapted_strides = std::get<3>(t);
         auto expected_reset_strides = std::get<4>(t);
@@ -456,7 +457,8 @@ TEST_CASE("test_basic_descriptor","[test_descriptor]")
         auto result_shape = descriptor.shape();
         auto result_strides = descriptor.strides();
         auto result_strides_div = descriptor.strides_div();
-        auto result_changing_order_strides_div = descriptor.changing_order_strides_div();
+        auto result_strides_div_c_order = descriptor.strides_div(c_order{});
+        auto result_strides_div_f_order = descriptor.strides_div(f_order{});
         auto result_adapted_strides = descriptor.adapted_strides();
         auto result_reset_strides = descriptor.reset_strides();
         auto result_cstrides = descriptor.cstrides();
@@ -467,7 +469,8 @@ TEST_CASE("test_basic_descriptor","[test_descriptor]")
         REQUIRE(result_shape == expected_shape);
         REQUIRE(result_strides == expected_strides);
         REQUIRE(result_strides_div == expected_strides_div);
-        REQUIRE(result_changing_order_strides_div == expected_changing_order_strides_div);
+        REQUIRE(result_strides_div_c_order == expected_strides_div_c_order);
+        REQUIRE(result_strides_div_f_order == expected_strides_div_f_order);
         REQUIRE(result_adapted_strides == expected_adapted_strides);
         REQUIRE(result_reset_strides == expected_reset_strides);
         REQUIRE(result_cstrides == expected_cstrides);
