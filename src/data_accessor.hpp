@@ -17,7 +17,6 @@ class basic_indexer<Parent&>
     using parent_type = Parent;
     parent_type* parent_;
 public:
-
     template<typename Parent_> struct enable_parent_ : std::conjunction<
         std::is_lvalue_reference<Parent_>,
         std::negation<std::is_same<std::remove_cv_t<std::remove_reference_t<Parent_>>, basic_indexer>>
@@ -28,7 +27,7 @@ public:
         parent_{&parent__}
     {}
     template<typename U>
-    decltype(std::declval<parent_type>()[std::declval<U>()]) operator[](const U& i)const{
+    decltype(auto) operator[](const U& i)const{
         return (*parent_)[i];
     }
 };
@@ -46,7 +45,7 @@ public:
         indexer_{std::forward<Indexer_>(indexer__)}
     {}
     template<typename U>
-    decltype(std::declval<indexer_type>()[std::declval<U>()]) operator[](const U& i)const{
+    decltype(auto) operator[](const U& i)const{
         return indexer_[i];
     }
 };
@@ -54,13 +53,13 @@ public:
 //Indexer is type of previous indexer in the chain or data storage
 //Converter is flat index mapper, must provide operator()() that take index as parameter and return mapped index
 template<typename Indexer, typename Converter>
-class basic_indexer<Indexer, Converter>
+class basic_indexer<Indexer, Converter&>
 {
     using indexer_type = basic_indexer<Indexer>;
     using Converter_type = Converter;
 public:
-    template<typename Indexer_>
-    basic_indexer(Indexer_&& indexer__, const Converter_type& converter__):
+    template<typename Indexer_, typename Converter_, std::enable_if_t<std::is_lvalue_reference_v<Converter_> ,int> = 0>
+    basic_indexer(Indexer_&& indexer__,  Converter_&& converter__):
         indexer_{std::forward<Indexer_>(indexer__)},
         converter_{&converter__}
     {}
@@ -72,7 +71,26 @@ private:
     indexer_type indexer_;
     const Converter_type* converter_;
 };
-
+template<typename Indexer, typename Converter>
+class basic_indexer<Indexer, Converter>
+{
+    static_assert(!std::is_reference_v<Converter>);
+    using indexer_type = basic_indexer<Indexer>;
+    using Converter_type = Converter;
+public:
+    template<typename Indexer_, typename Converter_>
+    basic_indexer(Indexer_&& indexer__,  Converter_&& converter__):
+        indexer_{std::forward<Indexer_>(indexer__)},
+        converter_{std::forward<Converter_>(converter__)}
+    {}
+    template<typename U>
+    decltype(auto) operator[](const U& i)const{
+        return indexer_[converter_(i)];
+    }
+private:
+    indexer_type indexer_;
+    Converter_type converter_;
+};
 
 //walker-indexer adaptes walker to indexer interface
 //Order can be c_order or f_order, specifies how to treat index parameter of subscript operator

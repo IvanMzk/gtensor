@@ -6,56 +6,57 @@
 #include "helpers_for_testing.hpp"
 #include "test_config.hpp"
 
-TEMPLATE_TEST_CASE("test_basic_indexer_reference_specialization","test_data_accessor",
+TEMPLATE_TEST_CASE("test_basic_indexer","test_data_accessor",
     std::vector<int>,
-    gtensor::storage_vector<int>
+    const std::vector<int>
 )
 {
     using storage_type = TestType;
+    using difference_type = typename storage_type::difference_type;
     using gtensor::basic_indexer;
     using helpers_for_testing::apply_by_element;
 
     //0parent,1index,2expected
     auto test_data = std::make_tuple(
-        std::make_tuple(storage_type{1,2,3,0}, 0, 1),
-        std::make_tuple(storage_type{1,2,3,0}, 1, 2),
-        std::make_tuple(storage_type{1,2,3,0}, 2, 3),
-        std::make_tuple(storage_type{1,2,3,0}, 3, 0)
+        std::make_tuple(storage_type{1,2,3,0}, difference_type{0}, difference_type{1}),
+        std::make_tuple(storage_type{1,2,3,0}, difference_type{1}, difference_type{2}),
+        std::make_tuple(storage_type{1,2,3,0}, difference_type{2}, difference_type{3}),
+        std::make_tuple(storage_type{1,2,3,0}, difference_type{3}, difference_type{0})
     );
-    auto test = [](const auto& t, auto& parent){
-        auto index = std::get<1>(t);
-        auto expected = std::get<2>(t);
-        using parent_type = decltype(parent);
-        auto indexer = basic_indexer<parent_type>{parent};
-        auto result = indexer[index];
-        REQUIRE(std::is_same_v<decltype(parent[index]),decltype(indexer[index])>);
-        REQUIRE(result == expected);
-    };
-    SECTION("test_basic_indexer_reference_to_non_const_specialization")
+    SECTION("test_reference_specialization")
     {
-        auto test_ = [test](const auto& t){
-            auto parent = std::get<0>(t);
-            using parent_type = decltype(parent);
-            static_assert(!std::is_const_v<parent_type>);
-            test(t,parent);
+        using indexer_type = basic_indexer<storage_type&>;
+        REQUIRE(std::is_same_v<decltype(std::declval<storage_type>()[std::declval<difference_type>()]),decltype(std::declval<indexer_type>()[std::declval<difference_type>()])>);
+        auto test = [](const auto& t){
+            storage_type parent = std::get<0>(t);
+            auto index = std::get<1>(t);
+            auto expected = std::get<2>(t);
+            auto indexer = indexer_type{parent};
+            auto result = indexer[index];
+            REQUIRE(result == expected);
         };
-        apply_by_element(test_, test_data);
+        apply_by_element(test, test_data);
     }
-    SECTION("test_basic_indexer_reference_to_const_specialization")
+    SECTION("test_value_specialization")
     {
-        auto test_ = [test](const auto& t){
-            const auto parent = std::get<0>(t);
-            using parent_type = decltype(parent);
-            static_assert(std::is_const_v<parent_type>);
-            test(t,parent);
+        using indexer_type = basic_indexer<basic_indexer<storage_type&>>;
+        REQUIRE(std::is_same_v<decltype(std::declval<storage_type>()[std::declval<difference_type>()]),decltype(std::declval<indexer_type>()[std::declval<difference_type>()])>);
+        auto test = [](const auto& t){
+            storage_type parent = std::get<0>(t);
+            auto index = std::get<1>(t);
+            auto expected = std::get<2>(t);
+            auto indexer = indexer_type{basic_indexer<storage_type&>{parent}};
+            auto result = indexer[index];
+            REQUIRE(std::is_same_v<decltype(parent[index]),decltype(indexer[index])>);
+            REQUIRE(result == expected);
         };
-        apply_by_element(test_, test_data);
+        apply_by_element(test, test_data);
     }
 }
 
 TEMPLATE_TEST_CASE("test_basic_indexer_converter_specialization","test_data_accessor",
     std::vector<int>,
-    gtensor::storage_vector<int>
+    const std::vector<int>
 )
 {
     using stoarge_type = TestType;
@@ -69,47 +70,45 @@ TEMPLATE_TEST_CASE("test_basic_indexer_converter_specialization","test_data_acce
         std::make_tuple(stoarge_type{1,2,3,0}, [](auto i){return --i;}, 2, 2),
         std::make_tuple(stoarge_type{1,2,3,0}, [](auto i){return i;}, 3, 0)
     );
-    auto test = [](const auto& t, auto& parent){
-        auto converter = std::get<1>(t);
-        auto index = std::get<2>(t);
-        auto expected = std::get<3>(t);
-        using converter_type = decltype(converter);
-        using parent_type = decltype(parent);
-        static_assert(std::is_lvalue_reference_v<parent_type>);
-        auto indexer = basic_indexer<basic_indexer<parent_type>,converter_type>{basic_indexer<parent_type>{parent}, converter};
-        auto result = indexer[index];
-        REQUIRE(std::is_same_v<decltype(parent[index]),decltype(indexer[index])>);
-        REQUIRE(result == expected);
-    };
-    SECTION("test_basic_indexer_converter_specialization_non_const_parent")
+
+    SECTION("test_basic_indexer_converter_reference_specialization")
     {
-        auto test_ = [test](const auto& t){
+        auto test = [](const auto& t){
             auto parent = std::get<0>(t);
+            auto converter = std::get<1>(t);
+            auto index = std::get<2>(t);
+            auto expected = std::get<3>(t);
+            using converter_type = decltype(converter);
             using parent_type = decltype(parent);
-            static_assert(!std::is_const_v<parent_type>);
-            test(t, parent);
+            auto indexer = basic_indexer<basic_indexer<parent_type&>,converter_type&>{basic_indexer<parent_type&>{parent}, converter};
+            auto result = indexer[index];
+            REQUIRE(std::is_same_v<decltype(parent[index]),decltype(indexer[index])>);
+            REQUIRE(result == expected);
         };
-        apply_by_element(test_, test_data);
+        apply_by_element(test, test_data);
     }
-    SECTION("test_basic_indexer_converter_specialization_const_parent")
+    SECTION("test_basic_indexer_converter_value_specialization")
     {
-        auto test_ = [test](const auto& t){
-            const auto parent = std::get<0>(t);
+        auto test = [](const auto& t){
+            auto parent = std::get<0>(t);
+            auto converter = std::get<1>(t);
+            auto index = std::get<2>(t);
+            auto expected = std::get<3>(t);
+            using converter_type = decltype(converter);
             using parent_type = decltype(parent);
-            static_assert(std::is_const_v<parent_type>);
-            test(t, parent);
+            auto indexer = basic_indexer<basic_indexer<parent_type&>,converter_type>{basic_indexer<parent_type&>{parent}, converter};
+            auto result = indexer[index];
+            REQUIRE(std::is_same_v<decltype(parent[index]),decltype(indexer[index])>);
+            REQUIRE(result == expected);
         };
-        apply_by_element(test_, test_data);
+        apply_by_element(test, test_data);
     }
 }
 
-TEMPLATE_TEST_CASE("test_walker_indexer","test_data_accessor",
-    test_config::config_storage_selector_t<std::vector>,
-    test_config::config_storage_selector_t<gtensor::storage_vector>
-)
+TEST_CASE("test_walker_indexer","test_data_accessor")
 {
     using value_type = int;
-    using config_type = gtensor::config::extend_config_t<TestType,value_type>;
+    using config_type = gtensor::config::extend_config_t<test_config::config_storage_selector_t<std::vector>,value_type>;
     using gtensor::basic_indexer;
     using gtensor::walker_indexer;
     using gtensor::walker;
@@ -122,6 +121,9 @@ TEMPLATE_TEST_CASE("test_walker_indexer","test_data_accessor",
     using gtensor::config::c_order;
     using gtensor::config::f_order;
     using helpers_for_testing::apply_by_element;
+
+    REQUIRE(std::is_same_v<decltype(*std::declval<walker_type>()), decltype(std::declval<walker_indexer<walker_type,c_order>>()[std::declval<index_type>()])>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<walker_type>()), decltype(std::declval<walker_indexer<walker_type,f_order>>()[std::declval<index_type>()])>);
 
     //0indexer_order,1elements_order,2elements,3shape,4offset,5index,6expected_1,7index_2,8expected_2
     auto test_data = std::make_tuple(
@@ -217,6 +219,9 @@ TEMPLATE_TEST_CASE("test_iterator_indexer","test_data_accessor",
     using index_type = typename container_type::difference_type;
     using gtensor::iterator_indexer;
     using helpers_for_testing::apply_by_element;
+
+    using iterator_type = decltype(std::declval<container_type>().begin());
+    REQUIRE(std::is_same_v<decltype(*std::declval<iterator_type>()),decltype(std::declval<iterator_indexer<iterator_type>>()[std::declval<index_type>()])>);
 
     //0elements,1index_1,2expected_1,3index_2,4expected_2
     auto test_data = std::make_tuple(

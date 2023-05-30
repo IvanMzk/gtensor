@@ -4,6 +4,7 @@
 #include <tuple>
 #include <array>
 #include <functional>
+#include <sstream>
 
 namespace helpers_for_testing{
 
@@ -47,45 +48,25 @@ inline auto apply_by_element(F&& f, Tuple&& t){
     return apply_by_element(std::forward<F>(f), std::forward<Tuple>(t), std::make_index_sequence<std::tuple_size_v<std::decay_t<Tuple>>>{});
 }
 
-//safe cmp of signed,unsigned integrals
-template<typename T, typename U>
-inline constexpr bool cmp_equal(T t, U u){
-    using UT = std::make_unsigned_t<T>;
-    using UU = std::make_unsigned_t<U>;
-    if constexpr (std::is_signed_v<T> == std::is_signed_v<U>)
-        return t==u;
-    else if constexpr (std::is_signed_v<T>)
-        return t<0 ? false : UT(t) == u;
-    else
-        return u<0 ? false : t == UU(u);
+template<typename T>
+auto type_to_str(){
+    std::stringstream ss{};
+    if constexpr (std::is_const_v<std::remove_reference_t<T>>){
+        ss<<"const";
+    }
+    if constexpr (std::is_volatile_v<T>){
+        ss<<"volatile";
+    }
+    if constexpr (std::is_lvalue_reference_v<T>){
+        ss<<"&";
+    }
+    if constexpr (std::is_rvalue_reference_v<T>){
+        ss<<"&&";
+    }
+    ss<<typeid(T).name();
+    return ss.str();
 }
-template<typename T, typename U>
-inline constexpr bool cmp_not_equal(T t, U u){
-    return !cmp_equal(t, u);
-}
-template<typename T, typename U>
-inline constexpr bool cmp_less(T t, U u){
-    using UT = std::make_unsigned_t<T>;
-    using UU = std::make_unsigned_t<U>;
-    if constexpr (std::is_signed_v<T> == std::is_signed_v<U>)
-        return t<u;
-    else if constexpr (std::is_signed_v<T>)
-        return t<0 ? true : UT(t) < u;
-    else
-        return u<0 ? false : t < UU(u);
-}
-template<typename T, typename U>
-inline constexpr bool cmp_greater(T t, U u){
-    return cmp_less(u, t);
-}
-template<typename T, typename U>
-inline constexpr bool cmp_less_equal(T t, U u){
-    return !cmp_greater(t, u);
-}
-template<typename T, typename U>
-inline constexpr bool cmp_greater_equal(T t, U u){
-    return !cmp_less(t, u);
-}
+
 }   //end of namespace helpers_for_testing
 
 #endif
