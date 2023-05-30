@@ -343,8 +343,6 @@ protected:
     using walker_forward_traverser_base::index_;
     using walker_forward_traverser_base::shape_;
     using walker_forward_traverser_base::predicate_;
-
-    typename walker_forward_traverser_base::index_type overflow_{0};
 public:
     using typename walker_forward_traverser_base::config_type;
     using typename walker_forward_traverser_base::dim_type;
@@ -353,35 +351,15 @@ public:
     using walker_forward_traverser_base::walker_forward_traverser_base;
 
     template<typename Order>
-    bool next(){
-        if (walker_forward_traverser_base::template next<Order>()){
-            return true;
-        }else{
-            if (overflow_ == index_type{-1}){
-                ++overflow_;
-                return true;
-            }else{
-                ++overflow_;
-                return false;
-            }
-        }
-    }
-    template<typename Order>
     bool prev(){
         ASSERT_ORDER(Order);
-        if (prev_helper<Order>()){
-            return true;
-        }
-        if (overflow_ == index_type{1}){
-            --overflow_;
-            return true;
+        if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
+            return prev_c();
         }else{
-            --overflow_;
-            return false;
+            return prev_f();
         }
     }
     void to_last(){
-        overflow_ = index_type{0};
         dim_type direction{dim_};
         if constexpr (std::is_same_v<predicate_type,TraverseAllPredicate>){
             walker_.reset_back();
@@ -402,14 +380,6 @@ public:
         }
     }
 private:
-    template<typename Order>
-    bool prev_helper(){
-        if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
-            return prev_c();
-        }else{
-            return prev_f();
-        }
-    }
     bool prev_c(){
         auto index_it = index_.end();
         for (dim_type direction{dim_}; direction!=dim_type{0};){
