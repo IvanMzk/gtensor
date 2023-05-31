@@ -427,7 +427,6 @@ class walker_random_access_traverser : public walker_bidirectional_traverser<Con
     using walker_bidirectional_traverser_base::walker_;
     using walker_bidirectional_traverser_base::index_;
     using walker_bidirectional_traverser_base::dim_;
-    using walker_bidirectional_traverser_base::overflow_;
     const strides_div_type* strides_;
 public:
     using typename walker_bidirectional_traverser_base::config_type;
@@ -446,17 +445,13 @@ public:
     //n must be in range [0,size-1], where size = make_size(shape__)
     void move(index_type n){
         walker_.reset_back();
-        overflow_ = index_type{0};
-        move_helper(n);
-    }
-private:
-    void move_helper(index_type n){
         if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
             move_c(n);
         }else{
             move_f(n);
         }
     }
+private:
     void move_c(index_type n){
         auto index_it = index_.begin();
         dim_type direction{0};
@@ -485,5 +480,4 @@ private:
 };
 
 }   //end of namespace gtensor
-
 #endif
