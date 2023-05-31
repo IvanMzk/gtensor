@@ -113,13 +113,6 @@ public:
     template<typename Storage_ = storage_type, std::enable_if_t<detail::has_callable_subscript_operator<const Storage_>::value,int> =0>
     decltype(auto) operator[](index_type i)const{return elements_[i];}
 
-    //inplace
-    template<typename ShT>
-    void resize(ShT&& shape){
-        descriptor_ = descriptor_type{std::forward<ShT>(shape)};
-        elements_.resize(descriptor_.size());
-        elements_.shrink_to_fit();
-    }
 private:
     //size,value constructors
     //direct construction
