@@ -125,7 +125,7 @@ GTENSOR_ITERATOR_OPERATOR_GREATER_EQUAL(indexer_iterator);
 GTENSOR_ITERATOR_OPERATOR_LESS_EQUAL(indexer_iterator);
 
 //random access iterator, use walker data accessor
-template<typename Config, typename Walker>
+template<typename Config, typename Walker, typename Order>
 class walker_iterator
 {
 protected:
@@ -135,7 +135,7 @@ protected:
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     using strides_div_type = detail::strides_div_t<config_type>;
-    using traverser_type = walker_random_access_traverser<config_type, walker_type>;
+    using traverser_type = walker_random_access_traverser<config_type, walker_type, Order>;
 public:
     using iterator_category = std::random_access_iterator_tag;
     using difference_type = typename config_type::index_type;
@@ -194,13 +194,13 @@ GTENSOR_ITERATOR_OPERATOR_GREATER_EQUAL(walker_iterator);
 GTENSOR_ITERATOR_OPERATOR_LESS_EQUAL(walker_iterator);
 
 //random access broadcast iterator
-template<typename Config, typename Walker>
+template<typename Config, typename Walker, typename Order>
 class broadcast_iterator:
     private detail::broadcast_iterator_extension<Config>,
-    private walker_iterator<Config,Walker>
+    private walker_iterator<Config,Walker,Order>
 {
     using extension_base = detail::broadcast_iterator_extension<Config>;
-    using walker_iterator_base = walker_iterator<Config,Walker>;
+    using walker_iterator_base = walker_iterator<Config,Walker,Order>;
 protected:
     using typename walker_iterator_base::walker_type;
     using typename walker_iterator_base::result_type;
@@ -300,8 +300,8 @@ GTENSOR_ITERATOR_OPERATOR_GREATER_EQUAL(reverse_iterator_generic);
 GTENSOR_ITERATOR_OPERATOR_LESS_EQUAL(reverse_iterator_generic);
 
 template<typename Config, typename Indexer> using reverse_indexer_iterator = reverse_iterator_generic<indexer_iterator<Config,Indexer>>;
-template<typename Config, typename Walker> using reverse_walker_iterator = reverse_iterator_generic<walker_iterator<Config,Walker>>;
-template<typename Config, typename Walker> using reverse_broadcast_iterator = reverse_iterator_generic<broadcast_iterator<Config,Walker>>;
+template<typename Config, typename Walker, typename Order> using reverse_walker_iterator = reverse_iterator_generic<walker_iterator<Config,Walker,Order>>;
+template<typename Config, typename Walker, typename Order> using reverse_broadcast_iterator = reverse_iterator_generic<broadcast_iterator<Config,Walker,Order>>;
 
 }   //end of namespace gtensor
 

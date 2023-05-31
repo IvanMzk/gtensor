@@ -264,7 +264,7 @@ protected:
     using predicate_type = Predicate;
 
     const shape_type* shape_;
-    const dim_type dim_;
+    dim_type dim_;
     walker_type walker_;
     shape_type index_;
     predicate_type predicate_;
