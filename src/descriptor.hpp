@@ -199,8 +199,8 @@ T make_shape_of_type(std::initializer_list<IdxT> shape){
 }
 
 //converts flat index to flat index given strides and converting strides
-template<typename StT, typename CStT, typename IdxT, typename Order>
-auto flat_to_flat(const StT& strides, const CStT& cstrides, IdxT offset, IdxT idx, Order){
+template<typename Order, typename StT, typename CStT, typename IdxT>
+auto flat_to_flat(const StT& strides, const CStT& cstrides, IdxT offset, IdxT idx){
     using index_type = IdxT;
     if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
         auto st_it = strides.begin();
@@ -220,6 +220,13 @@ auto flat_to_flat(const StT& strides, const CStT& cstrides, IdxT offset, IdxT id
         static_assert(always_false<Order>,"invalid Order argument");
     }
     return offset;
+}
+
+template<typename Descriptor>
+auto make_order_converter(const Descriptor& desc){
+    return [&desc](const auto& idx){
+        return desc.convert_order_inline(idx);
+    };
 }
 
 template<typename Config, typename Mode> class strides_div_extension;
@@ -317,7 +324,7 @@ public:
 
     virtual ~descriptor_base(){}
     virtual index_type convert(const index_type& idx)const = 0;
-    virtual index_type convert(const index_type& idx, int)const = 0;
+    virtual index_type convert_order(const index_type& idx)const = 0;
     virtual dim_type dim()const = 0;
     virtual index_type size()const = 0;
     virtual index_type offset()const = 0;
@@ -389,11 +396,11 @@ public:
     index_type offset()const override{return index_type{0};}
     const shape_type& cstrides()const override{return strides();}
     index_type convert(const index_type& idx)const override{return operator()(idx);}
-    index_type convert(const index_type& idx, int)const override{return operator()(idx,0);}
+    index_type convert_order(const index_type& idx)const override{return convert_order_inline(idx);}
     index_type operator()(const index_type& idx)const{return idx;}
-    index_type operator()(const index_type& idx, int)const{
+    index_type convert_order_inline(const index_type& idx)const{
         using changed_order_type = detail::change_order_t<Order>;
-        return detail::flat_to_flat(strides_div(changed_order_type{}),strides(),offset(),idx,changed_order_type{});
+        return detail::flat_to_flat<changed_order_type>(strides_div_helper<changed_order_type>(),strides(),offset(),idx);
     }
 private:
     template<typename Order_>
@@ -449,7 +456,7 @@ public:
         return operator()(idx);
     }
     index_type operator()(const index_type& idx)const{
-        return detail::flat_to_flat(strides_div(),cstrides(),offset(),idx,Order{});
+        return detail::flat_to_flat<Order>(strides_div(),cstrides(),offset(),idx);
     }
 private:
     shape_type cstrides_;

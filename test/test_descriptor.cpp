@@ -362,7 +362,8 @@ TEMPLATE_TEST_CASE("test_flat_to_flat", "[test_descriptor]",
         auto offset = std::get<3>(t);
         auto order = std::get<4>(t);
         auto expected = std::get<5>(t);
-        auto result = flat_to_flat(strides_div, cstrides, offset, flat_idx, order);
+        using order_type = decltype(order);
+        auto result = flat_to_flat<order_type>(strides_div, cstrides, offset, flat_idx);
         REQUIRE(result == expected);
     };
     apply_by_element(test,test_data);
@@ -561,24 +562,24 @@ TEST_CASE("test_basic_descriptor_changing_order_convert", "[test_descriptor]")
         using descriptor_type = basic_descriptor<config_type, order_type>;
         return descriptor_type{shape};
     };
-    SECTION("test_call_operator")
+    SECTION("test_convert_order_inline")
     {
         auto test = [&make_descriptor](const auto& t){
             auto idx = std::get<2>(t);
             auto expected = std::get<3>(t);
             auto descriptor = make_descriptor(t);
-            auto result = descriptor(idx,0);
+            auto result = descriptor.convert_order_inline(idx);
             REQUIRE(result == expected);
         };
         apply_by_element(test, test_data);
     }
-    SECTION("test_convert")
+    SECTION("test_convert_order")
     {
         auto test = [&make_descriptor](const auto& t){
             auto idx = std::get<2>(t);
             auto expected = std::get<3>(t);
             auto descriptor = make_descriptor(t);
-            auto result = descriptor.convert(idx,0);
+            auto result = descriptor.convert_order(idx);
             REQUIRE(result == expected);
         };
         apply_by_element(test, test_data);

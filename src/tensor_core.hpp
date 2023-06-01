@@ -147,7 +147,11 @@ private:
 
     template<typename Nested>
     void copy_from_list(std::initializer_list<Nested> init_data){   //init_data always in c_order
-        detail::copy_from_list(init_data, begin_(), make_mapper(config::c_order{}));
+        if constexpr (std::is_same_v<order,config::c_order>){    //no map needed
+            detail::copy_from_list(init_data, begin_());
+        }else{  //mapper from c order to f order
+            detail::copy_from_list(init_data, begin_(), detail::make_order_converter(descriptor_));
+        }
     }
 
     template<typename It>
@@ -176,28 +180,6 @@ private:
         storage_type res(size);
         detail::copy_n(first,last,size,begin_(res));
         return res;
-    }
-
-    //parameter is input layout
-    auto make_mapper(config::c_order){
-        if constexpr (std::is_same_v<order,config::c_order>){    //input in my order
-            return detail::trivial_mapper{};
-        }else{  //mapper from c order to f order
-            //refactor: use make_strides_div to make strides to divide
-            return [strides=detail::make_strides(descriptor_.shape(), config::c_order{}), &cstrides=descriptor_.strides()](const auto& i){
-                return detail::flat_to_flat(strides,cstrides,index_type{0},i,config::c_order{});
-            };
-        }
-    }
-    auto make_mapper(config::f_order){
-        if constexpr (std::is_same_v<order,config::f_order>){    //input in my order
-            return detail::trivial_mapper{};
-        }else{  //mapper from f order to c order
-            //refactor: use make_strides_div to make strides to divide
-            return [strides=detail::make_strides(descriptor_.shape(), config::f_order{}), &cstrides=descriptor_.strides()](const auto& i){
-                return detail::flat_to_flat(strides,cstrides,index_type{0},i,config::f_order{});
-            };
-        }
     }
 
     auto begin_(storage_type& elements__){
