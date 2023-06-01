@@ -428,7 +428,25 @@ TEMPLATE_TEST_CASE("test_tensor_implementation","[test_tensor_implementation]",
 
     SECTION("test_iterator")
     {
-        auto test = [](const auto& t){
+        auto test_equal = [](auto res_first, auto res_last, auto expected_first, auto expected_last){
+            REQUIRE(std::equal(res_first,res_last,expected_first,expected_last));
+        };
+        auto test_backward_traverse = [](auto res_first, auto res_last, auto expected_first, auto expected_last){
+            std::vector<value_type> result;
+            while(res_last!=res_first){
+                result.push_back(*--res_last);
+            }
+            REQUIRE(std::equal(result.rbegin(),result.rend(),expected_first,expected_last));
+        };
+        auto test_subscript = [](auto res_first, auto res_last, auto expected_first, auto expected_last){
+            std::vector<value_type> result;
+            for(index_type i{0}, i_last = res_last-res_first; i!=i_last; ++i){
+                result.push_back(res_first[i]);
+            }
+            REQUIRE(std::equal(result.begin(),result.end(),expected_first,expected_last));
+        };
+
+        auto test = [test_equal,test_backward_traverse,test_subscript](const auto& t){
             auto core_order = std::get<0>(t);
             auto traverse_order = std::get<1>(t);
             auto shape = std::get<2>(t);
@@ -441,47 +459,17 @@ TEMPLATE_TEST_CASE("test_tensor_implementation","[test_tensor_implementation]",
             auto result_shape = tensor_implementation.shape();
             REQUIRE(result_shape == expected_shape);
             using traverse_order_type = decltype(traverse_order);
-            SECTION("test_equal")
-            {
-                REQUIRE(std::equal(tensor_implementation.template begin<traverse_order_type>(),tensor_implementation.template end<traverse_order_type>(),expected.begin(),expected.end()));
-                REQUIRE(std::equal(tensor_implementation.template rbegin<traverse_order_type>(),tensor_implementation.template rend<traverse_order_type>(),expected.rbegin(),expected.rend()));
-            }
-            SECTION("test_iterator_backward_traverse")
-            {
-                std::vector<value_type> result;
-                for(auto it = tensor_implementation.template end<traverse_order_type>(), it_first = tensor_implementation.template begin<traverse_order_type>(); it!=it_first;){
-                    result.push_back(*--it);
-                }
-                REQUIRE(std::equal(result.rbegin(),result.rend(),expected.begin(),expected.end()));
-            }
-            SECTION("test_reverse_iterator_backward_traverse")
-            {
-                std::vector<value_type> result;
-                for(auto it = tensor_implementation.template rend<traverse_order_type>(), it_first = tensor_implementation.template rbegin<traverse_order_type>(); it!=it_first;){
-                    result.push_back(*--it);
-                }
-                REQUIRE(std::equal(result.begin(),result.end(),expected.begin(),expected.end()));
-            }
-            SECTION("test_iterator_subscript")
-            {
-                auto first = tensor_implementation.template begin<traverse_order_type>();
-                auto last = tensor_implementation.template end<traverse_order_type>();
-                std::vector<value_type> result;
-                for(index_type i{0}, i_last = last - first; i!=i_last; ++i){
-                    result.push_back(first[i]);
-                }
-                REQUIRE(std::equal(result.begin(),result.end(),expected.begin(),expected.end()));
-            }
-            SECTION("test_reverse_iterator_subscript")
-            {
-                auto first = tensor_implementation.template rbegin<traverse_order_type>();
-                auto last = tensor_implementation.template rend<traverse_order_type>();
-                std::vector<value_type> result;
-                for(index_type i{0}, i_last = last - first; i!=i_last; ++i){
-                    result.push_back(first[i]);
-                }
-                REQUIRE(std::equal(result.rbegin(),result.rend(),expected.begin(),expected.end()));
-            }
+            auto first = tensor_implementation.template begin<traverse_order_type>();
+            auto last = tensor_implementation.template end<traverse_order_type>();
+            auto rfirst = tensor_implementation.template rbegin<traverse_order_type>();
+            auto rlast = tensor_implementation.template rend<traverse_order_type>();
+
+            test_equal(first,last,expected.begin(),expected.end());
+            test_equal(rfirst,rlast,expected.rbegin(),expected.rend());
+            test_backward_traverse(first,last,expected.begin(),expected.end());
+            test_backward_traverse(rfirst,rlast,expected.rbegin(),expected.rend());
+            test_subscript(first,last,expected.begin(),expected.end());
+            test_subscript(rfirst,rlast,expected.rbegin(),expected.rend());
         };
         apply_by_element(test,test_data);
     }
@@ -543,215 +531,280 @@ TEMPLATE_TEST_CASE("test_tensor_implementation","[test_tensor_implementation]",
     }
 }
 
-// TEMPLATE_TEST_CASE("test_tensor_implementation_broadcast_iterator_c_layout","[test_tensor_implementation]",
-//     //non const accessible core
-//     (test_tensor_implementation_::test_core_subscriptable<test_tensor_implementation_::test_config_c_layout<std::vector>,int>),
-//     (test_tensor_implementation_::test_core_subscriptable<test_tensor_implementation_::test_config_c_layout<test_tensor_implementation_::subscriptable_storage_integral>,int>),
-//     (test_tensor_implementation_::test_core_indexible<test_tensor_implementation_::test_config_c_layout<std::vector>,int>),
-//     (test_tensor_implementation_::test_core_walkable<test_tensor_implementation_::test_config_c_layout<std::vector>,int>),
-//     (test_tensor_implementation_::test_core_iterable<test_tensor_implementation_::test_config_c_layout<std::vector>,int>),
-//     (test_tensor_implementation_::test_core_iterable<test_tensor_implementation_::test_config_c_layout<test_tensor_implementation_::iterable_storage_integral>,int>),
-//     //const accessible core
-//     (test_tensor_implementation_::test_core_const_subscriptable<test_tensor_implementation_::test_config_c_layout<std::vector>,int>),
-//     (test_tensor_implementation_::test_core_const_indexible<test_tensor_implementation_::test_config_c_layout<std::vector>,int>),
-//     (test_tensor_implementation_::test_core_const_walkable<test_tensor_implementation_::test_config_c_layout<std::vector>,int>),
-//     (test_tensor_implementation_::test_core_const_iterable<test_tensor_implementation_::test_config_c_layout<std::vector>,int>),
-//     //full accessible core
-//     (test_tensor_implementation_::test_core_full_subscriptable<test_tensor_implementation_::test_config_c_layout<std::vector>,int>),
-//     (test_tensor_implementation_::test_core_full_indexible<test_tensor_implementation_::test_config_c_layout<std::vector>,int>),
-//     (test_tensor_implementation_::test_core_full_walkable<test_tensor_implementation_::test_config_c_layout<std::vector>,int>),
-//     (test_tensor_implementation_::test_core_full_iterable<test_tensor_implementation_::test_config_c_layout<std::vector>,int>)
-// )
-// {
-//     using core_type = TestType;
-//     using config_type = typename core_type::config_type;
-//     using value_type = typename core_type::value_type;
-//     using shape_type = typename config_type::shape_type;
-//     using tensor_implementation_type = gtensor::tensor_implementation<core_type>;
-//     using helpers_for_testing::apply_by_element;
+TEMPLATE_TEST_CASE("test_tensor_implementation_broadcast_iterator","[test_tensor_implementation]",
+    //non const accessible core
+    (test_tensor_implementation_::test_core_template<test_tensor_implementation_::test_core_subscriptable>),
+    (test_tensor_implementation_::test_core_template<test_tensor_implementation_::test_core_indexible>),
+    (test_tensor_implementation_::test_core_template<test_tensor_implementation_::test_core_walkable>),
+    (test_tensor_implementation_::test_core_template<test_tensor_implementation_::test_core_iterable>),
+    //const accessible core
+    (test_tensor_implementation_::test_core_template<test_tensor_implementation_::test_core_const_subscriptable>),
+    (test_tensor_implementation_::test_core_template<test_tensor_implementation_::test_core_const_indexible>),
+    (test_tensor_implementation_::test_core_template<test_tensor_implementation_::test_core_const_walkable>),
+    (test_tensor_implementation_::test_core_template<test_tensor_implementation_::test_core_const_iterable>),
+    //full accessible core
+    (test_tensor_implementation_::test_core_template<test_tensor_implementation_::test_core_full_subscriptable>),
+    (test_tensor_implementation_::test_core_template<test_tensor_implementation_::test_core_full_indexible>),
+    (test_tensor_implementation_::test_core_template<test_tensor_implementation_::test_core_full_walkable>),
+    (test_tensor_implementation_::test_core_template<test_tensor_implementation_::test_core_full_iterable>)
+)
+{
+    using value_type = int;
+    using config_type = typename gtensor::config::extend_config_t<test_config::config_storage_selector_t<std::vector>,int>;
+    using index_type = typename config_type::index_type;
+    using shape_type = typename config_type::shape_type;
+    using gtensor::tensor_implementation;
+    using gtensor::config::c_order;
+    using gtensor::config::f_order;
+    using helpers_for_testing::apply_by_element;
 
-//     //0shape,1elements,2broadcast_shape,3expected
-//     auto test_data = std::make_tuple(
-//         std::make_tuple(shape_type{}, std::vector<value_type>{1}, shape_type{}, std::vector<value_type>{1}),
-//         std::make_tuple(shape_type{}, std::vector<value_type>{2}, shape_type{1}, std::vector<value_type>{2}),
-//         std::make_tuple(shape_type{}, std::vector<value_type>{3}, shape_type{5}, std::vector<value_type>{3,3,3,3,3}),
-//         std::make_tuple(shape_type{1}, std::vector<value_type>{2}, shape_type{1}, std::vector<value_type>{2}),
-//         std::make_tuple(shape_type{1}, std::vector<value_type>{1}, shape_type{5}, std::vector<value_type>{1,1,1,1,1}),
-//         std::make_tuple(shape_type{6}, std::vector<value_type>{1,2,3,4,5,6}, shape_type{1}, std::vector<value_type>{1}),
-//         std::make_tuple(shape_type{6}, std::vector<value_type>{1,2,3,4,5,6}, shape_type{6}, std::vector<value_type>{1,2,3,4,5,6}),
-//         std::make_tuple(shape_type{6}, std::vector<value_type>{1,2,3,4,5,6}, shape_type{1,6}, std::vector<value_type>{1,2,3,4,5,6}),
-//         std::make_tuple(shape_type{6}, std::vector<value_type>{1,2,3,4,5,6}, shape_type{6,1}, std::vector<value_type>{1,1,1,1,1,1}),
-//         std::make_tuple(shape_type{6}, std::vector<value_type>{1,2,3,4,5,6}, shape_type{2,6}, std::vector<value_type>{1,2,3,4,5,6,1,2,3,4,5,6}),
-//         std::make_tuple(shape_type{2,3}, std::vector<value_type>{1,2,3,4,5,6}, std::array<int,2>{2,3}, std::vector<value_type>{1,2,3,4,5,6}),
-//         std::make_tuple(shape_type{2,3}, std::vector<value_type>{1,2,3,4,5,6}, std::list<std::size_t>{2,2,3}, std::vector<value_type>{1,2,3,4,5,6,1,2,3,4,5,6}),
-//         std::make_tuple(shape_type{2,3}, std::vector<value_type>{1,2,3,4,5,6}, shape_type{1,3}, std::vector<value_type>{1,2,3}),
-//         std::make_tuple(shape_type{2,3}, std::vector<value_type>{1,2,3,4,5,6}, shape_type{2,1,3}, std::vector<value_type>{1,2,3,1,2,3})
-//     );
+    auto elements_c = std::vector<value_type>{1,2,3,4,5,6};
+    auto elements_f = std::vector<value_type>{1,4,2,5,3,6};
 
-//     auto test = [](const auto& t){
-//         const auto shape = std::get<0>(t);
-//         const auto elements = std::get<1>(t);
-//         const auto broadcast_shape = std::get<2>(t);
-//         const auto expected = std::get<3>(t);
-//         tensor_implementation_type result_tensor_implementation{shape, elements.begin(), elements.end()};
-//         REQUIRE(std::equal(result_tensor_implementation.begin(broadcast_shape),result_tensor_implementation.end(broadcast_shape),expected.begin(),expected.end()));
-//         REQUIRE(std::equal(result_tensor_implementation.rbegin(broadcast_shape),result_tensor_implementation.rend(broadcast_shape),expected.rbegin(),expected.rend()));
-//     };
-//     apply_by_element(test,test_data);
-// }
+    //0core_order,1traverse_order,2elements,3shape,4broadcast_shape,5expected
+    auto test_data = std::make_tuple(
+        //elements in c_order
+        //traverse c_order
+        std::make_tuple(c_order{}, c_order{}, elements_c, shape_type{6}, shape_type{6}, std::vector<value_type>{1,2,3,4,5,6}),
+        std::make_tuple(c_order{}, c_order{}, elements_c, shape_type{6}, shape_type{1,2,6}, std::vector<value_type>{1,2,3,4,5,6,1,2,3,4,5,6}),
+        std::make_tuple(c_order{}, c_order{}, elements_c, shape_type{6}, shape_type{6,1}, std::vector<value_type>{1,1,1,1,1,1}),
+        std::make_tuple(c_order{}, c_order{}, elements_c, shape_type{2,3}, shape_type{2,3}, std::vector<value_type>{1,2,3,4,5,6}),
+        std::make_tuple(c_order{}, c_order{}, elements_c, shape_type{2,3}, shape_type{2,2,3}, std::vector<value_type>{1,2,3,4,5,6,1,2,3,4,5,6}),
+        std::make_tuple(c_order{}, c_order{}, elements_c, shape_type{2,3}, shape_type{1,3}, std::vector<value_type>{1,2,3}),
+        std::make_tuple(c_order{}, c_order{}, elements_c, shape_type{2,3}, shape_type{3,1,3}, std::vector<value_type>{1,2,3,1,2,3,1,2,3}),
+        //traverse f_order
+        std::make_tuple(c_order{}, f_order{}, elements_c, shape_type{6}, shape_type{6}, std::vector<value_type>{1,2,3,4,5,6}),
+        std::make_tuple(c_order{}, f_order{}, elements_c, shape_type{6}, shape_type{1,2,6}, std::vector<value_type>{1,1,2,2,3,3,4,4,5,5,6,6}),
+        std::make_tuple(c_order{}, f_order{}, elements_c, shape_type{6}, shape_type{6,1}, std::vector<value_type>{1,1,1,1,1,1}),
+        std::make_tuple(c_order{}, f_order{}, elements_c, shape_type{2,3}, shape_type{2,3}, std::vector<value_type>{1,4,2,5,3,6}),
+        std::make_tuple(c_order{}, f_order{}, elements_c, shape_type{2,3}, shape_type{2,2,3}, std::vector<value_type>{1,1,4,4,2,2,5,5,3,3,6,6}),
+        std::make_tuple(c_order{}, f_order{}, elements_c, shape_type{2,3}, shape_type{1,3}, std::vector<value_type>{1,2,3}),
+        std::make_tuple(c_order{}, f_order{}, elements_c, shape_type{2,3}, shape_type{3,1,3}, std::vector<value_type>{1,1,1,2,2,2,3,3,3}),
+        //elements in f_order
+        //traverse c_order
+        std::make_tuple(f_order{}, c_order{}, elements_f, shape_type{6}, shape_type{6}, std::vector<value_type>{1,4,2,5,3,6}),
+        std::make_tuple(f_order{}, c_order{}, elements_f, shape_type{6}, shape_type{1,2,6}, std::vector<value_type>{1,4,2,5,3,6,1,4,2,5,3,6}),
+        std::make_tuple(f_order{}, c_order{}, elements_f, shape_type{6}, shape_type{6,1}, std::vector<value_type>{1,1,1,1,1,1}),
+        std::make_tuple(f_order{}, c_order{}, elements_f, shape_type{2,3}, shape_type{2,3}, std::vector<value_type>{1,2,3,4,5,6}),
+        std::make_tuple(f_order{}, c_order{}, elements_f, shape_type{2,3}, shape_type{2,2,3}, std::vector<value_type>{1,2,3,4,5,6,1,2,3,4,5,6}),
+        std::make_tuple(f_order{}, c_order{}, elements_f, shape_type{2,3}, shape_type{1,3}, std::vector<value_type>{1,2,3}),
+        std::make_tuple(f_order{}, c_order{}, elements_f, shape_type{2,3}, shape_type{3,1,3}, std::vector<value_type>{1,2,3,1,2,3,1,2,3}),
+        // //traverse f_order
+        std::make_tuple(f_order{}, f_order{}, elements_f, shape_type{6}, shape_type{6}, std::vector<value_type>{1,4,2,5,3,6}),
+        std::make_tuple(f_order{}, f_order{}, elements_f, shape_type{6}, shape_type{1,2,6}, std::vector<value_type>{1,1,4,4,2,2,5,5,3,3,6,6}),
+        std::make_tuple(f_order{}, f_order{}, elements_f, shape_type{6}, shape_type{6,1}, std::vector<value_type>{1,1,1,1,1,1}),
+        std::make_tuple(f_order{}, f_order{}, elements_f, shape_type{2,3}, shape_type{2,3}, std::vector<value_type>{1,4,2,5,3,6}),
+        std::make_tuple(f_order{}, f_order{}, elements_f, shape_type{2,3}, shape_type{2,2,3}, std::vector<value_type>{1,1,4,4,2,2,5,5,3,3,6,6}),
+        std::make_tuple(f_order{}, f_order{}, elements_f, shape_type{2,3}, shape_type{1,3}, std::vector<value_type>{1,2,3}),
+        std::make_tuple(f_order{}, f_order{}, elements_f, shape_type{2,3}, shape_type{3,1,3}, std::vector<value_type>{1,1,1,2,2,2,3,3,3})
+    );
 
-// TEMPLATE_TEST_CASE("test_tensor_implementation_broadcast_iterator_f_layout","[test_tensor_implementation]",
-//     //non const accessible core
-//     (test_tensor_implementation_::test_core_subscriptable<test_tensor_implementation_::test_config_f_layout<std::vector>,int>),
-//     (test_tensor_implementation_::test_core_subscriptable<test_tensor_implementation_::test_config_f_layout<test_tensor_implementation_::subscriptable_storage_integral>,int>),
-//     (test_tensor_implementation_::test_core_indexible<test_tensor_implementation_::test_config_f_layout<std::vector>,int>),
-//     (test_tensor_implementation_::test_core_walkable<test_tensor_implementation_::test_config_f_layout<std::vector>,int>),
-//     (test_tensor_implementation_::test_core_iterable<test_tensor_implementation_::test_config_f_layout<std::vector>,int>),
-//     (test_tensor_implementation_::test_core_iterable<test_tensor_implementation_::test_config_f_layout<test_tensor_implementation_::iterable_storage_integral>,int>),
-//     //const accessible core
-//     (test_tensor_implementation_::test_core_const_subscriptable<test_tensor_implementation_::test_config_f_layout<std::vector>,int>),
-//     (test_tensor_implementation_::test_core_const_indexible<test_tensor_implementation_::test_config_f_layout<std::vector>,int>),
-//     (test_tensor_implementation_::test_core_const_walkable<test_tensor_implementation_::test_config_f_layout<std::vector>,int>),
-//     (test_tensor_implementation_::test_core_const_iterable<test_tensor_implementation_::test_config_f_layout<std::vector>,int>),
-//     //full accessible core
-//     (test_tensor_implementation_::test_core_full_subscriptable<test_tensor_implementation_::test_config_f_layout<std::vector>,int>),
-//     (test_tensor_implementation_::test_core_full_indexible<test_tensor_implementation_::test_config_f_layout<std::vector>,int>),
-//     (test_tensor_implementation_::test_core_full_walkable<test_tensor_implementation_::test_config_f_layout<std::vector>,int>),
-//     (test_tensor_implementation_::test_core_full_iterable<test_tensor_implementation_::test_config_f_layout<std::vector>,int>)
-// )
-// {
-//     using core_type = TestType;
-//     using config_type = typename core_type::config_type;
-//     using value_type = typename core_type::value_type;
-//     using shape_type = typename config_type::shape_type;
-//     using tensor_implementation_type = gtensor::tensor_implementation<core_type>;
-//     using helpers_for_testing::apply_by_element;
+    auto test_equal = [](auto res_first, auto res_last, auto expected_first, auto expected_last){
+        REQUIRE(std::equal(res_first,res_last,expected_first,expected_last));
+    };
+    auto test_backward_traverse = [](auto res_first, auto res_last, auto expected_first, auto expected_last){
+        std::vector<value_type> result;
+        while(res_last!=res_first){
+            result.push_back(*--res_last);
+        }
+        REQUIRE(std::equal(result.rbegin(),result.rend(),expected_first,expected_last));
+    };
+    auto test_subscript = [](auto res_first, auto res_last, auto expected_first, auto expected_last){
+        std::vector<value_type> result;
+        for(index_type i{0}, i_last = res_last-res_first; i!=i_last; ++i){
+            result.push_back(res_first[i]);
+        }
+        REQUIRE(std::equal(result.begin(),result.end(),expected_first,expected_last));
+    };
 
-//     //0shape,1elements,2broadcast_shape,3expected
-//     auto test_data = std::make_tuple(
-//         std::make_tuple(shape_type{}, std::vector<value_type>{1}, shape_type{}, std::vector<value_type>{1}),
-//         std::make_tuple(shape_type{}, std::vector<value_type>{2}, shape_type{1}, std::vector<value_type>{2}),
-//         std::make_tuple(shape_type{}, std::vector<value_type>{3}, shape_type{5}, std::vector<value_type>{3,3,3,3,3}),
-//         std::make_tuple(shape_type{1}, std::vector<value_type>{2}, shape_type{1}, std::vector<value_type>{2}),
-//         std::make_tuple(shape_type{1}, std::vector<value_type>{1}, shape_type{5}, std::vector<value_type>{1,1,1,1,1}),
-//         std::make_tuple(shape_type{6}, std::vector<value_type>{1,2,3,4,5,6}, shape_type{1}, std::vector<value_type>{1}),
-//         std::make_tuple(shape_type{6}, std::vector<value_type>{1,2,3,4,5,6}, shape_type{6}, std::vector<value_type>{1,2,3,4,5,6}),
-//         std::make_tuple(shape_type{6}, std::vector<value_type>{1,2,3,4,5,6}, shape_type{1,6}, std::vector<value_type>{1,2,3,4,5,6}),
-//         std::make_tuple(shape_type{6}, std::vector<value_type>{1,2,3,4,5,6}, shape_type{6,1}, std::vector<value_type>{1,1,1,1,1,1}),
-//         std::make_tuple(shape_type{6}, std::vector<value_type>{1,2,3,4,5,6}, shape_type{2,6}, std::vector<value_type>{1,1,2,2,3,3,4,4,5,5,6,6}),
-//         std::make_tuple(shape_type{2,3}, std::vector<value_type>{1,2,3,4,5,6}, std::array<int,2>{2,3}, std::vector<value_type>{1,2,3,4,5,6}),
-//         std::make_tuple(shape_type{2,3}, std::vector<value_type>{1,2,3,4,5,6}, std::list<std::size_t>{2,2,3}, std::vector<value_type>{1,1,2,2,3,3,4,4,5,5,6,6}),
-//         std::make_tuple(shape_type{2,3}, std::vector<value_type>{1,2,3,4,5,6}, shape_type{1,3}, std::vector<value_type>{1,3,5}),
-//         std::make_tuple(shape_type{2,3}, std::vector<value_type>{1,2,3,4,5,6}, shape_type{2,1,3}, std::vector<value_type>{1,1,3,3,5,5})
-//     );
+    auto test = [test_equal,test_backward_traverse,test_subscript](const auto& t){
+        auto core_order = std::get<0>(t);
+        auto traverse_order = std::get<1>(t);
+        auto elements = std::get<2>(t);
+        auto shape = std::get<3>(t);
+        auto broadcast_shape = std::get<4>(t);
+        auto expected = std::get<5>(t);
+        using core_order_type = decltype(core_order);
+        using tensor_implementation_type = tensor_implementation<typename TestType::template core<config_type,value_type,core_order_type>>;
+        tensor_implementation_type tensor_implementation{shape, elements.begin(), elements.end()};
+        auto result_shape = tensor_implementation.shape();
+        using traverse_order_type = decltype(traverse_order);
+        auto first = tensor_implementation.template begin<traverse_order_type>(broadcast_shape);
+        auto last = tensor_implementation.template end<traverse_order_type>(broadcast_shape);
+        auto rfirst = tensor_implementation.template rbegin<traverse_order_type>(broadcast_shape);
+        auto rlast = tensor_implementation.template rend<traverse_order_type>(broadcast_shape);
 
-//     auto test = [](const auto& t){
-//         const auto shape = std::get<0>(t);
-//         const auto elements = std::get<1>(t);
-//         const auto broadcast_shape = std::get<2>(t);
-//         const auto expected = std::get<3>(t);
-//         tensor_implementation_type result_tensor_implementation{shape, elements.begin(), elements.end()};
-//         REQUIRE(std::equal(result_tensor_implementation.begin(broadcast_shape),result_tensor_implementation.end(broadcast_shape),expected.begin(),expected.end()));
-//         REQUIRE(std::equal(result_tensor_implementation.rbegin(broadcast_shape),result_tensor_implementation.rend(broadcast_shape),expected.rbegin(),expected.rend()));
-//     };
-//     apply_by_element(test,test_data);
-// }
+        test_equal(first,last,expected.begin(),expected.end());
+        test_equal(rfirst,rlast,expected.rbegin(),expected.rend());
+        test_backward_traverse(first,last,expected.begin(),expected.end());
+        test_backward_traverse(rfirst,rlast,expected.rbegin(),expected.rend());
+        test_subscript(first,last,expected.begin(),expected.end());
+        test_subscript(rfirst,rlast,expected.rbegin(),expected.rend());
+    };
+    apply_by_element(test,test_data);
+}
 
-// TEMPLATE_TEST_CASE("test_tensor_implementation_data_accesor_result_type_non_const_accessible_core","[test_tensor_implementation]",
-//     (test_tensor_implementation_::test_core_subscriptable<test_config::config_storage_selector_t<std::vector>,int>),
-//     (test_tensor_implementation_::test_core_subscriptable<test_config::config_storage_selector_t<test_tensor_implementation_::subscriptable_storage_integral>,int>),
-//     (test_tensor_implementation_::test_core_indexible<test_config::config_storage_selector_t<std::vector>,int>),
-//     (test_tensor_implementation_::test_core_walkable<test_config::config_storage_selector_t<std::vector>,int>),
-//     (test_tensor_implementation_::test_core_iterable<test_config::config_storage_selector_t<std::vector>,int>),
-//     (test_tensor_implementation_::test_core_iterable<test_config::config_storage_selector_t<test_tensor_implementation_::iterable_storage_integral>,int>)
-// )
-// {
-//     using core_type = TestType;
-//     using config_type = typename core_type::config_type;
-//     using value_type = typename core_type::value_type;
-//     using index_type = typename config_type::index_type;
-//     using shape_type = typename config_type::shape_type;
-//     using tensor_implementation_type = gtensor::tensor_implementation<core_type>;
+TEMPLATE_TEST_CASE("test_tensor_implementation_data_accesor_result_type_non_const_accessible_core","[test_tensor_implementation]",
+    (test_tensor_implementation_::test_core_subscriptable<test_config::config_storage_selector_t<std::vector>,int,gtensor::config::c_order>),
+    (test_tensor_implementation_::test_core_indexible<test_config::config_storage_selector_t<std::vector>,int,gtensor::config::c_order>),
+    (test_tensor_implementation_::test_core_walkable<test_config::config_storage_selector_t<std::vector>,int,gtensor::config::c_order>),
+    (test_tensor_implementation_::test_core_iterable<test_config::config_storage_selector_t<std::vector>,int,gtensor::config::c_order>),
+    (test_tensor_implementation_::test_core_subscriptable<test_config::config_storage_selector_t<std::vector>,int,gtensor::config::f_order>),
+    (test_tensor_implementation_::test_core_indexible<test_config::config_storage_selector_t<std::vector>,int,gtensor::config::f_order>),
+    (test_tensor_implementation_::test_core_walkable<test_config::config_storage_selector_t<std::vector>,int,gtensor::config::f_order>),
+    (test_tensor_implementation_::test_core_iterable<test_config::config_storage_selector_t<std::vector>,int,gtensor::config::f_order>)
+)
+{
+    using core_type = TestType;
+    using config_type = typename core_type::config_type;
+    using value_type = typename core_type::value_type;
+    using index_type = typename config_type::index_type;
+    using shape_type = typename config_type::shape_type;
+    using gtensor::config::c_order;
+    using gtensor::config::f_order;
+    using tensor_implementation_type = gtensor::tensor_implementation<core_type>;
+    //non const instance
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().create_walker()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template begin<c_order>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template end<c_order>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rbegin<c_order>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rend<c_order>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template begin<c_order>(std::declval<shape_type>())),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template end<c_order>(std::declval<shape_type>())),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rbegin<c_order>(std::declval<shape_type>())),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rend<c_order>(std::declval<shape_type>())),value_type&>);
+    REQUIRE(std::is_same_v<decltype(std::declval<tensor_implementation_type>().template create_indexer<c_order>()[std::declval<index_type>()]),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template begin<f_order>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template end<f_order>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rbegin<f_order>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rend<f_order>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template begin<f_order>(std::declval<shape_type>())),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template end<f_order>(std::declval<shape_type>())),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rbegin<f_order>(std::declval<shape_type>())),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rend<f_order>(std::declval<shape_type>())),value_type&>);
+    REQUIRE(std::is_same_v<decltype(std::declval<tensor_implementation_type>().template create_indexer<f_order>()[std::declval<index_type>()]),value_type&>);
+    //const instance
+    //core doesn't provide const access must not compile
+}
 
-//     REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().begin()),value_type&>);
-//     REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().end()),value_type&>);
-//     REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().rbegin()),value_type&>);
-//     REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().rend()),value_type&>);
-//     REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().begin(std::declval<shape_type>())),value_type&>);
-//     REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().end(std::declval<shape_type>())),value_type&>);
-//     REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().rbegin(std::declval<shape_type>())),value_type&>);
-//     REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().rend(std::declval<shape_type>())),value_type&>);
-//     REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().create_walker()),value_type&>);
-//     REQUIRE(std::is_same_v<decltype(std::declval<tensor_implementation_type>().create_indexer()[std::declval<index_type>()]),value_type&>);
-// }
+TEMPLATE_TEST_CASE("test_tensor_implementation_data_accesor_result_type_const_accessible_core","[test_tensor_implementation]",
+    (test_tensor_implementation_::test_core_const_subscriptable<test_config::config_storage_selector_t<std::vector>,int,gtensor::config::c_order>),
+    (test_tensor_implementation_::test_core_const_indexible<test_config::config_storage_selector_t<std::vector>,int,gtensor::config::c_order>),
+    (test_tensor_implementation_::test_core_const_walkable<test_config::config_storage_selector_t<std::vector>,int,gtensor::config::c_order>),
+    (test_tensor_implementation_::test_core_const_iterable<test_config::config_storage_selector_t<std::vector>,int,gtensor::config::c_order>),
+    (test_tensor_implementation_::test_core_const_subscriptable<test_config::config_storage_selector_t<std::vector>,int,gtensor::config::f_order>),
+    (test_tensor_implementation_::test_core_const_indexible<test_config::config_storage_selector_t<std::vector>,int,gtensor::config::f_order>),
+    (test_tensor_implementation_::test_core_const_walkable<test_config::config_storage_selector_t<std::vector>,int,gtensor::config::f_order>),
+    (test_tensor_implementation_::test_core_const_iterable<test_config::config_storage_selector_t<std::vector>,int,gtensor::config::f_order>)
+)
+{
+    using core_type = TestType;
+    using config_type = typename core_type::config_type;
+    using value_type = typename core_type::value_type;
+    using index_type = typename config_type::index_type;
+    using shape_type = typename config_type::shape_type;
+    using gtensor::config::c_order;
+    using gtensor::config::f_order;
+    using tensor_implementation_type = gtensor::tensor_implementation<core_type>;
+    //non const instance
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().create_walker()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template begin<c_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template end<c_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rbegin<c_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rend<c_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template begin<c_order>(std::declval<shape_type>())),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template end<c_order>(std::declval<shape_type>())),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rbegin<c_order>(std::declval<shape_type>())),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rend<c_order>(std::declval<shape_type>())),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(std::declval<tensor_implementation_type>().template create_indexer<c_order>()[std::declval<index_type>()]),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template begin<f_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template end<f_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rbegin<f_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rend<f_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template begin<f_order>(std::declval<shape_type>())),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template end<f_order>(std::declval<shape_type>())),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rbegin<f_order>(std::declval<shape_type>())),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rend<f_order>(std::declval<shape_type>())),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(std::declval<tensor_implementation_type>().template create_indexer<f_order>()[std::declval<index_type>()]),const value_type&>);
+    //const instance
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().create_walker()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template begin<c_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template end<c_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template rbegin<c_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template rend<c_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template begin<c_order>(std::declval<shape_type>())),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template end<c_order>(std::declval<shape_type>())),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template rbegin<c_order>(std::declval<shape_type>())),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template rend<c_order>(std::declval<shape_type>())),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(std::declval<const tensor_implementation_type>().template create_indexer<c_order>()[std::declval<index_type>()]),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template begin<f_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template end<f_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template rbegin<f_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template rend<f_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template begin<f_order>(std::declval<shape_type>())),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template end<f_order>(std::declval<shape_type>())),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template rbegin<f_order>(std::declval<shape_type>())),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template rend<f_order>(std::declval<shape_type>())),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(std::declval<const tensor_implementation_type>().template create_indexer<f_order>()[std::declval<index_type>()]),const value_type&>);
+}
 
-// TEMPLATE_TEST_CASE("test_tensor_implementation_data_accesor_result_type_const_accessible_core","[test_tensor_implementation]",
-//     (test_tensor_implementation_::test_core_const_subscriptable<test_config::config_storage_selector_t<std::vector>,int>),
-//     (test_tensor_implementation_::test_core_const_indexible<test_config::config_storage_selector_t<std::vector>,int>),
-//     (test_tensor_implementation_::test_core_const_walkable<test_config::config_storage_selector_t<std::vector>,int>),
-//     (test_tensor_implementation_::test_core_const_iterable<test_config::config_storage_selector_t<std::vector>,int>)
-// )
-// {
-//     using core_type = TestType;
-//     using config_type = typename core_type::config_type;
-//     using value_type = typename core_type::value_type;
-//     using index_type = typename config_type::index_type;
-//     using shape_type = typename config_type::shape_type;
-//     using tensor_implementation_type = gtensor::tensor_implementation<core_type>;
-
-//     REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().begin()),const value_type&>);
-//     REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().end()),const value_type&>);
-//     REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().rbegin()),const value_type&>);
-//     REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().rend()),const value_type&>);
-//     REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().begin(std::declval<shape_type>())),const value_type&>);
-//     REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().end(std::declval<shape_type>())),const value_type&>);
-//     REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().rbegin(std::declval<shape_type>())),const value_type&>);
-//     REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().rend(std::declval<shape_type>())),const value_type&>);
-//     REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().create_walker()),const value_type&>);
-//     REQUIRE(std::is_same_v<decltype(std::declval<tensor_implementation_type>().create_indexer()[std::declval<index_type>()]),const value_type&>);
-
-//     REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().begin()),const value_type&>);
-//     REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().end()),const value_type&>);
-//     REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().rbegin()),const value_type&>);
-//     REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().rend()),const value_type&>);
-//     REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().create_walker()),const value_type&>);
-//     REQUIRE(std::is_same_v<decltype(std::declval<const tensor_implementation_type>().create_indexer()[std::declval<index_type>()]),const value_type&>);
-// }
-
-// TEMPLATE_TEST_CASE("test_tensor_implementation_data_accesor_result_type_full_accessible_core","[test_tensor_implementation]",
-//     (test_tensor_implementation_::test_core_full_subscriptable<test_config::config_storage_selector_t<std::vector>,int>),
-//     (test_tensor_implementation_::test_core_full_indexible<test_config::config_storage_selector_t<std::vector>,int>),
-//     (test_tensor_implementation_::test_core_full_walkable<test_config::config_storage_selector_t<std::vector>,int>),
-//     (test_tensor_implementation_::test_core_full_iterable<test_config::config_storage_selector_t<std::vector>,int>)
-// )
-// {
-//     using core_type = TestType;
-//     using config_type = typename core_type::config_type;
-//     using value_type = typename core_type::value_type;
-//     using index_type = typename config_type::index_type;
-//     using shape_type = typename config_type::shape_type;
-//     using tensor_implementation_type = gtensor::tensor_implementation<core_type>;
-
-//     REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().begin()),value_type&>);
-//     REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().end()),value_type&>);
-//     REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().rbegin()),value_type&>);
-//     REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().rend()),value_type&>);
-//     REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().begin(std::declval<shape_type>())),value_type&>);
-//     REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().end(std::declval<shape_type>())),value_type&>);
-//     REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().rbegin(std::declval<shape_type>())),value_type&>);
-//     REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().rend(std::declval<shape_type>())),value_type&>);
-//     REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().create_walker()),value_type&>);
-//     REQUIRE(std::is_same_v<decltype(std::declval<tensor_implementation_type>().create_indexer()[std::declval<index_type>()]),value_type&>);
-
-//     REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().begin()),const value_type&>);
-//     REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().end()),const value_type&>);
-//     REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().rbegin()),const value_type&>);
-//     REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().rend()),const value_type&>);
-//     REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().begin(std::declval<shape_type>())),const value_type&>);
-//     REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().end(std::declval<shape_type>())),const value_type&>);
-//     REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().rbegin(std::declval<shape_type>())),const value_type&>);
-//     REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().rend(std::declval<shape_type>())),const value_type&>);
-//     REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().create_walker()),const value_type&>);
-//     REQUIRE(std::is_same_v<decltype(std::declval<const tensor_implementation_type>().create_indexer()[std::declval<index_type>()]),const value_type&>);
-// }
-
+TEMPLATE_TEST_CASE("test_tensor_implementation_data_accesor_result_type_full_accessible_core","[test_tensor_implementation]",
+    (test_tensor_implementation_::test_core_full_subscriptable<test_config::config_storage_selector_t<std::vector>,int,gtensor::config::c_order>),
+    (test_tensor_implementation_::test_core_full_indexible<test_config::config_storage_selector_t<std::vector>,int,gtensor::config::c_order>),
+    (test_tensor_implementation_::test_core_full_walkable<test_config::config_storage_selector_t<std::vector>,int,gtensor::config::c_order>),
+    (test_tensor_implementation_::test_core_full_iterable<test_config::config_storage_selector_t<std::vector>,int,gtensor::config::c_order>),
+    (test_tensor_implementation_::test_core_full_subscriptable<test_config::config_storage_selector_t<std::vector>,int,gtensor::config::f_order>),
+    (test_tensor_implementation_::test_core_full_indexible<test_config::config_storage_selector_t<std::vector>,int,gtensor::config::f_order>),
+    (test_tensor_implementation_::test_core_full_walkable<test_config::config_storage_selector_t<std::vector>,int,gtensor::config::f_order>),
+    (test_tensor_implementation_::test_core_full_iterable<test_config::config_storage_selector_t<std::vector>,int,gtensor::config::f_order>)
+)
+{
+    using core_type = TestType;
+    using config_type = typename core_type::config_type;
+    using value_type = typename core_type::value_type;
+    using index_type = typename config_type::index_type;
+    using shape_type = typename config_type::shape_type;
+    using gtensor::config::c_order;
+    using gtensor::config::f_order;
+    using tensor_implementation_type = gtensor::tensor_implementation<core_type>;
+    //non const instance
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().create_walker()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template begin<c_order>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template end<c_order>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rbegin<c_order>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rend<c_order>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template begin<c_order>(std::declval<shape_type>())),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template end<c_order>(std::declval<shape_type>())),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rbegin<c_order>(std::declval<shape_type>())),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rend<c_order>(std::declval<shape_type>())),value_type&>);
+    REQUIRE(std::is_same_v<decltype(std::declval<tensor_implementation_type>().template create_indexer<c_order>()[std::declval<index_type>()]),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template begin<f_order>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template end<f_order>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rbegin<f_order>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rend<f_order>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template begin<f_order>(std::declval<shape_type>())),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template end<f_order>(std::declval<shape_type>())),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rbegin<f_order>(std::declval<shape_type>())),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rend<f_order>(std::declval<shape_type>())),value_type&>);
+    REQUIRE(std::is_same_v<decltype(std::declval<tensor_implementation_type>().template create_indexer<f_order>()[std::declval<index_type>()]),value_type&>);
+    //const instance
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().create_walker()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template begin<c_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template end<c_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template rbegin<c_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template rend<c_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template begin<c_order>(std::declval<shape_type>())),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template end<c_order>(std::declval<shape_type>())),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template rbegin<c_order>(std::declval<shape_type>())),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template rend<c_order>(std::declval<shape_type>())),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(std::declval<const tensor_implementation_type>().template create_indexer<c_order>()[std::declval<index_type>()]),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template begin<f_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template end<f_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template rbegin<f_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template rend<f_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template begin<f_order>(std::declval<shape_type>())),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template end<f_order>(std::declval<shape_type>())),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template rbegin<f_order>(std::declval<shape_type>())),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template rend<f_order>(std::declval<shape_type>())),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(std::declval<const tensor_implementation_type>().template create_indexer<f_order>()[std::declval<index_type>()]),const value_type&>);
+}

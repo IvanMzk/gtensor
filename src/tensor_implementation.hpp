@@ -274,9 +274,8 @@ class tensor_implementation
 {
     using core_type = Core;
 public:
-    using config_type = typename core_type::config_type;
     using order = typename core_type::order;
-    using traverse_order = typename config_type::order;
+    using config_type = typename core_type::config_type;
     using value_type = typename core_type::value_type;
     using dim_type = typename config_type::dim_type;
     using index_type = typename config_type::index_type;
@@ -316,39 +315,39 @@ public:
     }
 
     //data interface
-    template<typename Order = traverse_order>
+    template<typename Order>
     auto begin(){
         return detail::begin<Order>(core_,descriptor());
     }
-    template<typename Order = traverse_order>
+    template<typename Order>
     auto end(){
         return detail::end<Order>(core_,descriptor());
     }
-    template<typename Order = traverse_order>
+    template<typename Order>
     auto rbegin(){
         return detail::rbegin<Order>(core_,descriptor());
     }
-    template<typename Order = traverse_order>
+    template<typename Order>
     auto rend(){
         return detail::rend<Order>(core_,descriptor());
     }
-    template<typename Order = traverse_order, typename Container>
+    template<typename Order, typename Container>
     auto begin(Container&& shape){
         return detail::begin_broadcast<Order>(core_,descriptor(),detail::make_shape_of_type<shape_type>(std::forward<Container>(shape)));
     }
-    template<typename Order = traverse_order, typename Container>
+    template<typename Order, typename Container>
     auto end(Container&& shape){
         return detail::end_broadcast<Order>(core_,descriptor(),detail::make_shape_of_type<shape_type>(std::forward<Container>(shape)));
     }
-    template<typename Order = traverse_order, typename Container>
+    template<typename Order, typename Container>
     auto rbegin(Container&& shape){
         return detail::rbegin_broadcast<Order>(core_,descriptor(),detail::make_shape_of_type<shape_type>(std::forward<Container>(shape)));
     }
-    template<typename Order = traverse_order, typename Container>
+    template<typename Order, typename Container>
     auto rend(Container&& shape){
         return detail::rend_broadcast<Order>(core_,descriptor(),detail::make_shape_of_type<shape_type>(std::forward<Container>(shape)));
     }
-    template<typename Order = traverse_order>
+    template<typename Order>
     auto create_indexer(){
         return detail::create_indexer<Order>(core_,descriptor());
     }
@@ -360,39 +359,39 @@ public:
     }
 
     //const data interface
-    template<typename Order = traverse_order>
+    template<typename Order>
     auto begin()const{
         return detail::begin<Order>(core_,descriptor());
     }
-    template<typename Order = traverse_order>
+    template<typename Order>
     auto end()const{
         return detail::end<Order>(core_,descriptor());
     }
-    template<typename Order = traverse_order>
+    template<typename Order>
     auto rbegin()const{
         return detail::rbegin<Order>(core_,descriptor());
     }
-    template<typename Order = traverse_order>
+    template<typename Order>
     auto rend()const{
         return detail::rend<Order>(core_,descriptor());
     }
-    template<typename Order = traverse_order, typename Container>
+    template<typename Order, typename Container>
     auto begin(Container&& shape)const{
         return detail::begin_broadcast<Order>(core_,descriptor(),detail::make_shape_of_type<shape_type>(std::forward<Container>(shape)));
     }
-    template<typename Order = traverse_order, typename Container>
+    template<typename Order, typename Container>
     auto end(Container&& shape)const{
         return detail::end_broadcast<Order>(core_,descriptor(),detail::make_shape_of_type<shape_type>(std::forward<Container>(shape)));
     }
-    template<typename Order = traverse_order, typename Container>
+    template<typename Order, typename Container>
     auto rbegin(Container&& shape)const{
         return detail::rbegin_broadcast<Order>(core_,descriptor(),detail::make_shape_of_type<shape_type>(std::forward<Container>(shape)));
     }
-    template<typename Order = traverse_order, typename Container>
+    template<typename Order, typename Container>
     auto rend(Container&& shape)const{
         return detail::rend_broadcast<Order>(core_,descriptor(),detail::make_shape_of_type<shape_type>(std::forward<Container>(shape)));
     }
-    template<typename Order = traverse_order>
+    template<typename Order>
     auto create_indexer()const{
         return detail::create_indexer<Order>(core_,descriptor());
     }
