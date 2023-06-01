@@ -486,7 +486,7 @@ class view_factory
         using config_type = typename parent_type::config_type;
         using dim_type = typename parent_type::dim_type;
         using descriptor_type = subdim_view_descriptor<config_type, order>;
-        using view_type = subdim_view<config_type,parent_type,order>;
+        using view_type = subdim_view<config_type,order,parent_type>;
         const auto& pshape = parent.shape();
         detail::check_subdim_args(pshape,subs);
         const dim_type subs_number = subs.size();
@@ -511,7 +511,7 @@ class view_factory
         using order = typename parent_type::order;
         using config_type = typename parent_type::config_type;
         using descriptor_type = reshape_view_descriptor<config_type, order>;
-        using view_type = reshape_view<config_type,parent_type,order>;
+        using view_type = reshape_view<config_type,order,parent_type>;
         const auto& psize = parent.size();
         detail::check_reshape_args(psize,subs);
         return std::make_shared<view_type>(
@@ -533,7 +533,7 @@ class view_factory
         using config_type = typename parent_type::config_type;
         using index_type = typename parent_type::index_type;
         using descriptor_type = transpose_view_descriptor<config_type, order>;
-        using view_type = transpose_view<config_type,parent_type,order>;
+        using view_type = transpose_view<config_type,order,parent_type>;
         detail::check_transpose_args(parent.dim(),subs);
         return std::make_shared<view_type>(
             descriptor_type{
@@ -560,7 +560,7 @@ class view_factory
         using dim_type = typename parent_type::dim_type;
         using slice_type = typename parent_type::slice_type;
         using descriptor_type = slice_view_descriptor<config_type, order>;
-        using view_type = slice_view<config_type,parent_type,order>;
+        using view_type = slice_view<config_type,order,parent_type>;
         static_assert(std::is_same_v<typename Container::value_type,slice_type>);
         const auto& pshape = parent.shape();
         detail::check_slice_view_args(pshape,subs);

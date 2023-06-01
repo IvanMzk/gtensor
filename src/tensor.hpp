@@ -12,6 +12,56 @@
 namespace gtensor{
 template<typename T, typename Layout, typename Config> class tensor;
 
+namespace detail{
+
+//helper to change traverse order of tensor
+template<typename Impl, typename TraverseOrder>
+class traverse_order_adapter
+{
+    ASSERT_ORDER(TraverseOrder);
+    Impl* impl_;
+public:
+    traverse_order_adapter(Impl& impl__):
+        impl_{&impl__}
+    {}
+
+    auto begin()const{
+        return impl_->template begin<TraverseOrder>();
+    }
+    auto end()const{
+        return impl_->template end<TraverseOrder>();
+    }
+    auto rbegin()const{
+        return impl_->template rbegin<TraverseOrder>();
+    }
+    auto rend()const{
+        return impl_->template rend<TraverseOrder>();
+    }
+    template<typename Container>
+    auto begin(Container&& shape)const{
+        return impl_->template begin<TraverseOrder>(std::forward<Container>(shape));
+    }
+    template<typename Container>
+    auto end(Container&& shape)const{
+        return impl_->template end<TraverseOrder>(std::forward<Container>(shape));
+    }
+    template<typename Container>
+    auto rbegin(Container&& shape)const{
+        return impl_->template rbegin<TraverseOrder>(std::forward<Container>(shape));
+    }
+    template<typename Container>
+    auto rend(Container&& shape)const{
+        return impl_->template rend<TraverseOrder>(std::forward<Container>(shape));
+    }
+    auto create_indexer()const{
+        return impl_->template create_indexer<TraverseOrder>();
+    }
+};
+
+}   //end of namespace detail
+
+
+
 template<typename Impl>
 class basic_tensor
 {
@@ -21,6 +71,7 @@ class basic_tensor
 public:
     using order = typename impl_type::order;
     using config_type = typename impl_type::config_type;
+    using traverse_order = typename config_type::order;
     using value_type = typename impl_type::value_type;
     using dim_type = typename impl_type::dim_type;
     using index_type = typename impl_type::index_type;
@@ -96,37 +147,109 @@ public:
         }
     }
     //meta-data interface
-    const auto& descriptor()const{return impl().descriptor();}
-    index_type size()const{return impl().size();}
-    dim_type dim()const{return impl().dim();}
-    const shape_type& shape()const{return impl().shape();}
-    const shape_type& strides()const{return impl().strides();}
+    const auto& descriptor()const{
+        return impl().descriptor();
+    }
+    index_type size()const{
+        return impl().size();
+    }
+    dim_type dim()const{
+        return impl().dim();
+    }
+    const shape_type& shape()const{
+        return impl().shape();
+    }
+    const shape_type& strides()const{
+        return impl().strides();
+    }
     //guaranteed to be empty after move construct from this
-    bool empty()const{return static_cast<bool>(impl_) ? impl().empty() : true;}
+    bool empty()const{
+        return static_cast<bool>(impl_) ? impl().empty() : true;
+    }
     //data interface
-    auto begin(){return impl().begin();}
-    auto end(){return impl().end();}
-    auto rbegin(){return impl().rbegin();}
-    auto rend(){return impl().rend();}
-    template<typename Container> auto begin(Container&& shape){return impl().begin(std::forward<Container>(shape));}
-    template<typename Container> auto end(Container&& shape){return impl().end(std::forward<Container>(shape));}
-    template<typename Container> auto rbegin(Container&& shape){return impl().rbegin(std::forward<Container>(shape));}
-    template<typename Container> auto rend(Container&& shape){return impl().rend(std::forward<Container>(shape));}
-    auto create_indexer(){return impl().create_indexer();}
-    auto create_walker(dim_type max_dim){return impl().create_walker(max_dim);}
-    auto create_walker(){return impl().create_walker();}
+    auto begin(){
+        return impl().template begin<traverse_order>();
+    }
+    auto end(){
+        return impl().template end<traverse_order>();
+    }
+    auto rbegin(){
+        return impl().template rbegin<traverse_order>();
+    }
+    auto rend(){
+        return impl().template rend<traverse_order>();
+    }
+    template<typename Container>
+    auto begin(Container&& shape){
+        return impl().template begin<traverse_order>(std::forward<Container>(shape));
+    }
+    template<typename Container>
+    auto end(Container&& shape){
+        return impl().template end<traverse_order>(std::forward<Container>(shape));
+    }
+    template<typename Container>
+    auto rbegin(Container&& shape){
+        return impl().template rbegin<traverse_order>(std::forward<Container>(shape));
+    }
+    template<typename Container>
+    auto rend(Container&& shape){
+        return impl().template rend<traverse_order>(std::forward<Container>(shape));
+    }
+    auto create_indexer(){
+        return impl().template create_indexer<traverse_order>();
+    }
+    auto create_walker(dim_type max_dim){
+        return impl().create_walker(max_dim);
+    }
+    auto create_walker(){
+        return impl().create_walker();
+    }
+    template<typename TraverseOrder>
+    auto traverse_order_adapter(){
+        return detail::traverse_order_adapter<impl_type,TraverseOrder>{impl()};
+    }
     //const data interface
-    auto begin()const{return impl().begin();}
-    auto end()const{return impl().end();}
-    auto rbegin()const{return impl().rbegin();}
-    auto rend()const{return impl().rend();}
-    template<typename Container> auto begin(Container&& shape)const{return impl().begin(std::forward<Container>(shape));}
-    template<typename Container> auto end(Container&& shape)const{return impl().end(std::forward<Container>(shape));}
-    template<typename Container> auto rbegin(Container&& shape)const{return impl().rbegin(std::forward<Container>(shape));}
-    template<typename Container> auto rend(Container&& shape)const{return impl().rend(std::forward<Container>(shape));}
-    auto create_indexer()const{return impl().create_indexer();}
-    auto create_walker(dim_type max_dim)const{return impl().create_walker(max_dim);}
-    auto create_walker()const{return impl().create_walker();}
+    auto begin()const{
+        return impl().template begin<traverse_order>();
+    }
+    auto end()const{
+        return impl().template end<traverse_order>();
+    }
+    auto rbegin()const{
+        return impl().template rbegin<traverse_order>();
+    }
+    auto rend()const{
+        return impl().template rend<traverse_order>();
+    }
+    template<typename Container>
+    auto begin(Container&& shape)const{
+        return impl().template begin<traverse_order>(std::forward<Container>(shape));
+    }
+    template<typename Container>
+    auto end(Container&& shape)const{
+        return impl().template end<traverse_order>(std::forward<Container>(shape));
+    }
+    template<typename Container>
+    auto rbegin(Container&& shape)const{
+        return impl().template rbegin<traverse_order>(std::forward<Container>(shape));
+    }
+    template<typename Container>
+    auto rend(Container&& shape)const{
+        return impl().template rend<traverse_order>(std::forward<Container>(shape));
+    }
+    auto create_indexer()const{
+        return impl().template create_indexer<traverse_order>();
+    }
+    auto create_walker(dim_type max_dim)const{
+        return impl().create_walker(max_dim);
+    }
+    auto create_walker()const{
+        return impl().create_walker();
+    }
+    template<typename TraverseOrder>
+    auto traverse_order_adapter()const{
+        return detail::traverse_order_adapter<const impl_type,TraverseOrder>{impl()};
+    }
     //reduce
     template<typename Directions, typename F>
     auto reduce(const Directions& directions, F f, bool keep_dims=false)const{
@@ -190,8 +313,8 @@ public:
         return create_view_(view_factory_type::create_bool_mapping_view(*this, subs));
     }
 private:
-    auto& impl(){return *impl_.get();}
-    const auto& impl()const{return *impl_.get();}
+    impl_type& impl(){return *impl_.get();}
+    const impl_type& impl()const{return *impl_.get();}
     template<typename Impl_>
     auto create_view_(std::shared_ptr<Impl_>&& impl__)const{
         return basic_tensor<Impl_>{std::move(impl__)};

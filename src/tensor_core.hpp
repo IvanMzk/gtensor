@@ -230,8 +230,8 @@ public:
 private:
     template<typename U>
     static auto create_indexer_helper(U& instance){
-        return basic_indexer<decltype(instance.parent_.create_indexer()), descriptor_type>{
-            instance.parent_.create_indexer(),
+        return basic_indexer<decltype(instance.parent_.template traverse_order_adapter<order>().create_indexer()), const descriptor_type&>{
+            instance.parent_.template traverse_order_adapter<order>().create_indexer(),
             static_cast<const descriptor_type&>(instance.descriptor_)
         };
     }
