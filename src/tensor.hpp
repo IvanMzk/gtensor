@@ -367,7 +367,7 @@ private:
 //tensor is basic_tensor with storage implementation and constructors
 //T is type of element
 //Layout is storage scheme of data elements, may be config::c_order or config::f_order
-template<typename T, typename Layout = config::c_order, typename Config = config::extend_config_t<config::default_config,T>>
+template<typename T, typename Layout = config::f_order, typename Config = config::extend_config_t<config::default_config,T>>
 class tensor : public basic_tensor<typename tensor_factory_selector_t<Config,T,Layout>::result_type>
 {
     static_assert(config::is_extended_config_v<Config>);

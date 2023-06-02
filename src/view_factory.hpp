@@ -584,6 +584,7 @@ class view_factory
     template<typename...Ts,typename...Subs>
     static auto create_slice_view_variadic(const basic_tensor<Ts...>& parent, const Subs&...subs){
         using parent_type = basic_tensor<Ts...>;
+        using order = typename parent_type::order;
         using config_type = typename parent_type::config_type;
         using slice_type = typename parent_type::slice_type;
         using slice_item_type = typename slice_type::slice_item_type;
@@ -594,7 +595,9 @@ class view_factory
             auto operator()(std::initializer_list<slice_item_type> slice_init_list){return slice_type(slice_init_list);}
             const auto& operator()(const slice_type& slice){return slice;}
         };
-        if constexpr((std::is_convertible_v<Subs,index_type>&&...)){    //can make subdim view
+
+        if constexpr(std::is_same_v<order,gtensor::config::c_order> && (std::is_convertible_v<Subs,index_type>&&...)){
+            //can make subdim view, in c_order optimized descriptor, which uses only offset and no stride to convert index is used
             return create_subdim_view_variadic(parent, subs...);
         }else{
             slice_maker maker{};
