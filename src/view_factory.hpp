@@ -467,12 +467,11 @@ auto fill_bool_map(const ShT& pshape, const ShT& pstrides, Layout layout, const 
 
 class view_factory
 {
-    template<typename Config, typename Order> using reshape_view_descriptor = basic_descriptor<Config, Order>;
     template<typename Config, typename Order> using subdim_view_descriptor = descriptor_with_offset<Config, Order>;
     template<typename Config, typename Order> using slice_view_descriptor = converting_descriptor<Config, Order>;
     template<typename Config, typename Order> using transpose_view_descriptor = converting_descriptor<Config, Order>;
     template<typename Config, typename Order> using mapping_view_descriptor = mapping_descriptor<Config, Order>;
-    template<typename Config, typename Order, typename Parent> using reshape_view = tensor_implementation<view_core<Config,reshape_view_descriptor<Config, Order>,Parent>>;
+    template<typename Config, typename Order, typename Parent> using reshape_view = tensor_implementation<reshape_view_core<Config,Order,Parent>>;
     template<typename Config, typename Order, typename Parent> using subdim_view = tensor_implementation<view_core<Config,subdim_view_descriptor<Config, Order>,Parent>>;
     template<typename Config, typename Order, typename Parent> using slice_view = tensor_implementation<view_core<Config,slice_view_descriptor<Config, Order>,Parent>>;
     template<typename Config, typename Order, typename Parent> using transpose_view = tensor_implementation<view_core<Config,transpose_view_descriptor<Config, Order>,Parent>>;
@@ -505,25 +504,23 @@ class view_factory
         return create_subdim_view_container(parent, typename config_type::template container<index_type>{subs...});
     }
     //reshape view
-    template<typename...Ts, typename Container>
+    template<typename Order, typename...Ts, typename Container>
     static auto create_reshape_view_container(const basic_tensor<Ts...>& parent, const Container& subs){
         using parent_type = basic_tensor<Ts...>;
-        using order = typename parent_type::order;
         using config_type = typename parent_type::config_type;
-        using descriptor_type = reshape_view_descriptor<config_type, order>;
-        using view_type = reshape_view<config_type,order,parent_type>;
+        using view_type = reshape_view<config_type,Order,parent_type>;
         const auto& psize = parent.size();
         detail::check_reshape_args(psize,subs);
         return std::make_shared<view_type>(
-            descriptor_type{detail::make_reshape_view_shape(parent.shape(), psize,subs)},
+            detail::make_reshape_view_shape(parent.shape(),psize,subs),
             parent
         );
     }
-    template<typename...Ts, typename...Subs>
+    template<typename Order, typename...Ts, typename...Subs>
     static auto create_reshape_view_variadic(const basic_tensor<Ts...>& parent, const Subs&...subs){
         using config_type = typename basic_tensor<Ts...>::config_type;
         using index_type = typename config_type::index_type;
-        return create_reshape_view_container(parent, typename config_type::template container<index_type>{subs...});
+        return create_reshape_view_container<Order>(parent, typename config_type::template container<index_type>{subs...});
     }
     //transpose view
     template<typename...Ts, typename Container>
@@ -721,13 +718,13 @@ class view_factory
 public:
     //view_factory interface
     //reshape view
-    template<typename...Ts, typename Container, std::enable_if_t<detail::is_container_of_type_v<Container, typename basic_tensor<Ts...>::index_type>,int> = 0>
+    template<typename Order, typename...Ts, typename Container, std::enable_if_t<detail::is_container_of_type_v<Container, typename basic_tensor<Ts...>::index_type>,int> = 0>
     static auto create_reshape_view(const basic_tensor<Ts...>& parent, const Container& subs){
-        return create_reshape_view_container(parent, subs);
+        return create_reshape_view_container<Order>(parent, subs);
     }
-    template<typename...Ts, typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs, typename basic_tensor<Ts...>::index_type>...>,int> = 0>
+    template<typename Order, typename...Ts, typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs, typename basic_tensor<Ts...>::index_type>...>,int> = 0>
     static auto create_reshape_view(const basic_tensor<Ts...>& parent, const Subs&...subs){
-        return create_reshape_view_variadic(parent, subs...);
+        return create_reshape_view_variadic<Order>(parent, subs...);
     }
     //transpose view
     template<typename...Ts, typename Container, std::enable_if_t<detail::is_container_of_type_v<Container, typename basic_tensor<Ts...>::dim_type>,int> = 0>

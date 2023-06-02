@@ -60,8 +60,6 @@ public:
 
 }   //end of namespace detail
 
-
-
 template<typename Impl>
 class basic_tensor
 {
@@ -292,11 +290,11 @@ public:
     //reshape view
     template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,index_type>...>,int> = 0 >
     auto reshape(const Subs&...subs)const{
-        return create_view_(view_factory_type::create_reshape_view(*this, subs...));
+        return create_view_(view_factory_type::template create_reshape_view<config::c_order>(*this, subs...));
     }
-    template<typename Container, std::enable_if_t<detail::is_container_of_type_v<Container,index_type>,int> = 0 >
-    auto reshape(const Container& subs)const{
-        return create_view_(view_factory_type::create_reshape_view(*this, subs));
+    template<typename Container, typename Order = config::c_order, std::enable_if_t<detail::is_container_of_type_v<Container,index_type>,int> = 0 >
+    auto reshape(const Container& subs, Order order = Order{})const{
+        return create_view_(view_factory_type::template create_reshape_view<Order>(*this, subs));
     }
     //mapping view
     template<typename...Subs> struct enable_index_mapping_view_variadic_ : std::conjunction<

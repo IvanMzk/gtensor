@@ -239,6 +239,93 @@ private:
     parent_type parent_;
 };
 
-}   //end of namespace gtensor
+template<typename Config, typename Order, typename Parent>
+class reshape_view_core
+{
+    using descriptor_type = basic_descriptor<Config,Order>;
+    using parent_type = Parent;
+public:
+    using order = Order;
+    using config_type = Config;
+    using value_type = typename Parent::value_type;
+    using dim_type = typename config_type::dim_type;
 
+    template<typename ShT, typename Parent_>
+    reshape_view_core(ShT&& shape__, Parent_&& parent__):
+        descriptor_{std::forward<ShT>(shape__)},
+        parent_{std::forward<Parent_>(parent__)}
+    {}
+    //descriptor interface
+    const descriptor_type& descriptor()const{return descriptor_;}
+    //reshape view can use parent's data interface taking order into account
+    //non const data interface
+    auto begin(){
+        return parent_.template traverse_order_adapter<order>().begin();
+    }
+    auto end(){
+        return parent_.template traverse_order_adapter<order>().end();
+    }
+    auto rbegin(){
+        return parent_.template traverse_order_adapter<order>().rbegin();
+    }
+    auto rend(){
+        return parent_.template traverse_order_adapter<order>().rend();
+    }
+    template<typename Container>
+    auto begin(Container&& shape){
+        return parent_.template traverse_order_adapter<order>().begin(std::forward<Container>(shape));
+    }
+    template<typename Container>
+    auto end(Container&& shape){
+        return parent_.template traverse_order_adapter<order>().end(std::forward<Container>(shape));
+    }
+    template<typename Container>
+    auto rbegin(Container&& shape){
+        return parent_.template traverse_order_adapter<order>().rbegin(std::forward<Container>(shape));
+    }
+    template<typename Container>
+    auto rend(Container&& shape){
+        return parent_.template traverse_order_adapter<order>().rend(std::forward<Container>(shape));
+    }
+    auto create_indexer(){
+        return parent_.template traverse_order_adapter<order>().create_indexer();
+    }
+    //const data interface
+    auto begin()const{
+        return parent_.template traverse_order_adapter<order>().begin();
+    }
+    auto end()const{
+        return parent_.template traverse_order_adapter<order>().end();
+    }
+    auto rbegin()const{
+        return parent_.template traverse_order_adapter<order>().rbegin();
+    }
+    auto rend()const{
+        return parent_.template traverse_order_adapter<order>().rend();
+    }
+    template<typename Container>
+    auto begin(Container&& shape)const{
+        return parent_.template traverse_order_adapter<order>().begin(std::forward<Container>(shape));
+    }
+    template<typename Container>
+    auto end(Container&& shape)const{
+        return parent_.template traverse_order_adapter<order>().end(std::forward<Container>(shape));
+    }
+    template<typename Container>
+    auto rbegin(Container&& shape)const{
+        return parent_.template traverse_order_adapter<order>().rbegin(std::forward<Container>(shape));
+    }
+    template<typename Container>
+    auto rend(Container&& shape)const{
+        return parent_.template traverse_order_adapter<order>().rend(std::forward<Container>(shape));
+    }
+    auto create_indexer()const{
+        return parent_.template traverse_order_adapter<order>().create_indexer();
+    }
+private:
+    descriptor_type descriptor_;
+    parent_type parent_;
+};
+
+}   //end of namespace gtensor
 #endif
