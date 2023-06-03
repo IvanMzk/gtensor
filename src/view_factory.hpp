@@ -355,8 +355,8 @@ inline auto check_index(const IdxT& idx, const IdxT& shape_element){
     }
 }
 
-template<typename ShT, typename Layout, typename IdxT, typename IndexMap,  typename...SubsIt>
-auto fill_index_map(const ShT& pshape, const ShT& pstrides, Layout layout, const IdxT& subs_size, IndexMap& index_map, SubsIt...subs_traverser){
+template<typename Order, typename ShT, typename IdxT, typename IndexMap,  typename...SubsIt>
+auto fill_index_map(const ShT& pshape, const ShT& pstrides, const IdxT& subs_size, IndexMap& index_map, SubsIt...subs_traverser){
     using dim_type = typename ShT::difference_type;
     using index_type = typename ShT::value_type;
 
@@ -370,14 +370,14 @@ auto fill_index_map(const ShT& pshape, const ShT& pstrides, Layout layout, const
             ((block_first+=check_index(static_cast<index_type>(*subs_traverser.walker()),pshape[n])*pstrides[n],++n),...);
             index_map[i] = block_first;
             ++i;
-        }while(((subs_traverser.next()),...));
+        }while(((subs_traverser.template next<Order>()),...));
     }else{
         const index_type stride_step = pstrides[subs_number];
         const index_type map_step = subs_size;
         do{
             index_type block_first{0};
             dim_type n{0};
-            if constexpr (std::is_same_v<Layout, gtensor::config::c_order>){
+            if constexpr (std::is_same_v<Order, gtensor::config::c_order>){
                 ((block_first+=check_index(static_cast<index_type>(*subs_traverser.walker()),pshape[n])*pstrides[n],++n),...);
                 for(index_type j{0}; j!=chunk_size; ++j){
                     index_map[i] = block_first+j;
@@ -390,7 +390,7 @@ auto fill_index_map(const ShT& pshape, const ShT& pstrides, Layout layout, const
                 }
                 ++i;
             }
-        }while(((subs_traverser.next()),...));
+        }while(((subs_traverser.template next<Order>()),...));
     }
 }
 
@@ -609,9 +609,8 @@ class view_factory
         using config_type = typename parent_type::config_type;
         using index_map_type = typename config_type::index_map_type;
         using shape_type = typename parent_type::shape_type;
-        using layout_type = typename config_type::layout;
-        using descriptor_type = mapping_descriptor<config_type, order>;
-        using view_type = mapping_view<config_type,parent_type,order>;
+        using descriptor_type = mapping_descriptor<config_type,order>;
+        using view_type = mapping_view<config_type,order,parent_type>;
         const auto& pshape = parent.shape();
         detail::check_index_mapping_view_subs(pshape, subs.shape()...);
         const auto subs_shape = detail::make_broadcast_shape<shape_type>(subs.shape()...);
@@ -621,10 +620,9 @@ class view_factory
         auto res_size = detail::make_size(res_shape);
         index_map_type index_map(res_size);
         if (res_size!=0){
-            detail::fill_index_map(
+            detail::fill_index_map<order>(
                 pshape,
                 parent.strides(),
-                layout_type{},
                 subs_size,
                 index_map,
                 walker_forward_traverser<config_type, decltype(subs.create_walker())>{subs_shape, subs.create_walker(subs_dim)}...

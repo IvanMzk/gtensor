@@ -920,130 +920,183 @@ TEST_CASE("test_make_index_mapping_view_shape","[test_view_factory]")
     apply_by_element(test, test_data);
 }
 
-// TEST_CASE("test_fill_index_map","[test_view_factory]")
-// {
-//     using value_type = int;
-//     using config_type = gtensor::config::extend_config_t<test_config::config_storage_selector_t<std::vector>,value_type>;
-//     using tensor_type = gtensor::tensor<value_type,config_type>;
-//     using index_type = typename tensor_type::index_type;
-//     using shape_type = typename tensor_type::shape_type;
-//     using index_tensor_type = gtensor::tensor<index_type,config_type>;
-//     using index_map_type = std::vector<index_type>;
-//     using gtensor::walker_forward_traverser;
-//     using gtensor::detail::fill_index_map;
-//     using gtensor::detail::make_index_mapping_view_shape;
-//     using gtensor::detail::make_size;
-//     using gtensor::detail::make_strides;
-//     using gtensor::detail::make_strides_div;
-//     using gtensor::detail::make_broadcast_shape;
-//     using helpers_for_testing::apply_by_element;
+TEMPLATE_TEST_CASE("test_fill_index_map","[test_view_factory]",
+    gtensor::config::c_order,
+    gtensor::config::f_order
+)
+{
+    using value_type = int;
+    using config_type = gtensor::config::extend_config_t<test_config::config_storage_selector_t<std::vector>,value_type>;
+    using index_type = typename config_type::index_type;
+    using shape_type = typename config_type::shape_type;
+    using index_tensor_type = gtensor::tensor<index_type,TestType,config_type>;
+    using index_map_type = std::vector<index_type>;
+    using gtensor::tensor;
+    using gtensor::config::c_order;
+    using gtensor::config::f_order;
+    using gtensor::walker_forward_traverser;
+    using gtensor::detail::fill_index_map;
+    using gtensor::detail::make_index_mapping_view_shape;
+    using gtensor::detail::make_size;
+    using gtensor::detail::make_strides;
+    using gtensor::detail::make_strides_div;
+    using gtensor::detail::make_broadcast_shape;
+    using helpers_for_testing::apply_by_element;
 
-//     //0pshape,1subs,2expected
-//     auto test_data = std::make_tuple(
-//         std::make_tuple(tensor_type{0}, std::make_tuple(index_tensor_type{0,0,0}),index_map_type{0,0,0}),
-//         std::make_tuple(tensor_type{0,1,2,3,4,5,6,7,8,9}, std::make_tuple(index_tensor_type{0,2,0,1,0}),index_map_type{0,2,0,1,0}),
-//         std::make_tuple(tensor_type{0,1,2,3,4}, std::make_tuple(index_tensor_type{{4,3,2,1,0}}),index_map_type{4,3,2,1,0}),
-//         std::make_tuple(tensor_type{0,1,2,3,4,5,6,7,8,9}, std::make_tuple(index_tensor_type{{0,2,4,6,8},{1,3,5,7,9}}),index_map_type{0,2,4,6,8,1,3,5,7,9}),
-//         std::make_tuple(tensor_type{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{1,3,0,1}),index_map_type{3,4,5,9,10,11,0,1,2,3,4,5}),
-//         std::make_tuple(tensor_type{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{{1},{3}}),index_map_type{3,4,5,9,10,11}),
-//         std::make_tuple(tensor_type{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{0,1,2}, index_tensor_type{0,1,2}),index_map_type{0,4,8}),
-//         std::make_tuple(tensor_type{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{{1,2},{0,1}}, index_tensor_type{{0,1},{1,2}}),index_map_type{3,7,1,5}),
-//         std::make_tuple(tensor_type{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{0,1,2}, index_tensor_type{1}),index_map_type{1,4,7}),
-//         std::make_tuple(
-//             tensor_type{{{0,1,2},{3,4,5},{6,7,8},{9,10,11}},{{12,13,14},{15,16,17},{18,19,20},{21,22,23}}},
-//             std::make_tuple(index_tensor_type{0,1}, index_tensor_type{1}),
-//             index_map_type{3,4,5,15,16,17}
-//         ),
-//         std::make_tuple(
-//             tensor_type{{{0,1,2},{3,4,5},{6,7,8},{9,10,11}},{{12,13,14},{15,16,17},{18,19,20},{21,22,23}}},
-//             std::make_tuple(index_tensor_type{0,1}, index_tensor_type{3}, index_tensor_type{2}),
-//             index_map_type{11,23}
-//         )
-//     );
+    //0pshape,1subs,2expected
+    auto test_data = std::make_tuple(
+        //parent's layout c_order
+        std::make_tuple(tensor<value_type,c_order,config_type>{0}, std::make_tuple(index_tensor_type{0,0,0}),index_map_type{0,0,0}),
+        std::make_tuple(tensor<value_type,c_order,config_type>{0,1,2,3,4,5,6,7,8,9}, std::make_tuple(index_tensor_type{0,2,0,1,0}),index_map_type{0,2,0,1,0}),
+        std::make_tuple(tensor<value_type,c_order,config_type>{0,1,2,3,4}, std::make_tuple(index_tensor_type{{4,3,2,1,0}}),index_map_type{4,3,2,1,0}),
+        std::make_tuple(tensor<value_type,c_order,config_type>{0,1,2,3,4,5,6,7,8,9}, std::make_tuple(index_tensor_type{{0,2,4,6,8},{1,3,5,7,9}}),index_map_type{0,2,4,6,8,1,3,5,7,9}),
+        std::make_tuple(tensor<value_type,c_order,config_type>{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{1,3,0,1}),index_map_type{3,4,5,9,10,11,0,1,2,3,4,5}),
+        std::make_tuple(tensor<value_type,c_order,config_type>{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{{1},{3}}),index_map_type{3,4,5,9,10,11}),
+        std::make_tuple(tensor<value_type,c_order,config_type>{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{0,1,2}, index_tensor_type{0,1,2}),index_map_type{0,4,8}),
+        std::make_tuple(tensor<value_type,c_order,config_type>{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{{1,2},{0,1}}, index_tensor_type{{0,1},{1,2}}),index_map_type{3,7,1,5}),
+        std::make_tuple(tensor<value_type,c_order,config_type>{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{0,1,2}, index_tensor_type{1}),index_map_type{1,4,7}),
+        std::make_tuple(
+            tensor<value_type,c_order,config_type>{{{0,1,2},{3,4,5},{6,7,8},{9,10,11}},{{12,13,14},{15,16,17},{18,19,20},{21,22,23}}},
+            std::make_tuple(index_tensor_type{0,1}, index_tensor_type{1}),
+            index_map_type{3,4,5,15,16,17}
+        ),
+        std::make_tuple(
+            tensor<value_type,c_order,config_type>{{{0,1,2},{3,4,5},{6,7,8},{9,10,11}},{{12,13,14},{15,16,17},{18,19,20},{21,22,23}}},
+            std::make_tuple(index_tensor_type{0,1}, index_tensor_type{3}, index_tensor_type{2}),
+            index_map_type{11,23}
+        ),
+        //parent's layout f_order
+        std::make_tuple(tensor<value_type,f_order,config_type>{0}, std::make_tuple(index_tensor_type{0,0,0}),index_map_type{0,0,0}),
+        std::make_tuple(tensor<value_type,f_order,config_type>{0,1,2,3,4,5,6,7,8,9}, std::make_tuple(index_tensor_type{0,2,0,1,0}),index_map_type{0,2,0,1,0}),
+        std::make_tuple(tensor<value_type,f_order,config_type>{0,1,2,3,4}, std::make_tuple(index_tensor_type{{4,3,2,1,0}}),index_map_type{4,3,2,1,0}),
+        std::make_tuple(tensor<value_type,f_order,config_type>{0,1,2,3,4,5,6,7,8,9}, std::make_tuple(index_tensor_type{{0,2,4,6,8},{1,3,5,7,9}}),index_map_type{0,1,2,3,4,5,6,7,8,9}),
+        std::make_tuple(tensor<value_type,f_order,config_type>{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{1,3,0,1}),index_map_type{1,3,0,1,5,7,4,5,9,11,8,9}),
+        std::make_tuple(tensor<value_type,f_order,config_type>{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{{1},{3}}),index_map_type{1,3,5,7,9,11}),
+        std::make_tuple(tensor<value_type,f_order,config_type>{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{0,1,2}, index_tensor_type{0,1,2}),index_map_type{0,5,10}),
+        std::make_tuple(tensor<value_type,f_order,config_type>{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{{1,2},{0,1}}, index_tensor_type{{0,1},{1,2}}),index_map_type{1,4,6,9}),
+        std::make_tuple(tensor<value_type,f_order,config_type>{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{0,1,2}, index_tensor_type{1}),index_map_type{4,5,6}),
+        std::make_tuple(
+            tensor<value_type,f_order,config_type>{{{0,1,2},{3,4,5},{6,7,8},{9,10,11}},{{12,13,14},{15,16,17},{18,19,20},{21,22,23}}},
+            std::make_tuple(index_tensor_type{0,1}, index_tensor_type{1}),
+            index_map_type{2,3,10,11,18,19}
+        ),
+        std::make_tuple(
+            tensor<value_type,f_order,config_type>{{{0,1,2},{3,4,5},{6,7,8},{9,10,11}},{{12,13,14},{15,16,17},{18,19,20},{21,22,23}}},
+            std::make_tuple(index_tensor_type{0,1}, index_tensor_type{3}, index_tensor_type{2}),
+            index_map_type{22,23}
+        )
+    );
 
-//     auto test = [](const auto& t){
-//         auto parent = std::get<0>(t);
-//         auto subs = std::get<1>(t);
-//         auto expected = std::get<2>(t);
-//         auto broadcast_shape_maker = [](const auto&...subs){
-//             return make_broadcast_shape<shape_type>(subs.shape()...);
-//         };
-//         auto subs_shape = std::apply(broadcast_shape_maker, subs);
-//         auto result_shape = make_index_mapping_view_shape(parent.shape(), subs_shape, std::tuple_size_v<std::decay_t<decltype(subs)>>);
-//         auto result_size = make_size(result_shape);
-//         index_map_type result(result_size);
-//         auto result_filler = [&parent,&result,&subs_shape](const auto&...subs){
-//             return fill_index_map(
-//                 parent.shape(),
-//                 parent.strides(),
-//                 result,
-//                 walker_forward_traverser<config_type, decltype(subs.create_walker())>{subs_shape, subs.create_walker()}...
-//             );
-//         };
-//         std::apply(result_filler, subs);
-//         REQUIRE(result == expected);
-//     };
-//     apply_by_element(test, test_data);
-// }
+    auto test = [](const auto& t){
+        auto parent = std::get<0>(t);
+        auto subs = std::get<1>(t);
+        auto expected = std::get<2>(t);
+        auto broadcast_shape_maker = [](const auto&...subs){
+            return make_broadcast_shape<shape_type>(subs.shape()...);
+        };
+        auto subs_shape = std::apply(broadcast_shape_maker, subs);
+        auto subs_size = make_size(subs_shape);
+        auto result_shape = make_index_mapping_view_shape(parent.shape(), subs_shape, std::tuple_size_v<std::decay_t<decltype(subs)>>);
+        auto result_size = make_size(result_shape);
+        index_map_type result(result_size);
+        using order = typename decltype(parent)::order;
+        auto result_filler = [&parent,&result,&subs_shape,&subs_size](const auto&...subs){
+            return fill_index_map<order>(
+                parent.shape(),
+                parent.strides(),
+                subs_size,
+                result,
+                walker_forward_traverser<config_type, decltype(subs.create_walker())>{subs_shape, subs.create_walker()}...
+            );
+        };
+        std::apply(result_filler, subs);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test, test_data);
+}
 
-// TEST_CASE("test_fill_index_map_exception","[test_view_factory]"){
-//     using value_type = int;
-//     using config_type = gtensor::config::extend_config_t<test_config::config_storage_selector_t<std::vector>,value_type>;
-//     using tensor_type = gtensor::tensor<value_type,config_type>;
-//     using index_type = typename tensor_type::index_type;
-//     using shape_type = typename tensor_type::shape_type;
-//     using index_tensor_type = gtensor::tensor<index_type,config_type>;
-//     using index_map_type = std::vector<index_type>;
-//     using gtensor::walker_forward_traverser;
-//     using gtensor::subscript_exception;
-//     using gtensor::detail::fill_index_map;
-//     using gtensor::detail::make_index_mapping_view_shape;
-//     using gtensor::detail::make_broadcast_shape;
-//     using gtensor::detail::make_size;
-//     using gtensor::detail::make_strides;
-//     using gtensor::detail::make_strides_div;
-//     using gtensor::detail::make_broadcast_shape;
-//     using helpers_for_testing::apply_by_element;
+TEMPLATE_TEST_CASE("test_fill_index_map_exception","[test_view_factory]",
+    gtensor::config::c_order,
+    gtensor::config::f_order
+)
+{
+    using value_type = int;
+    using config_type = gtensor::config::extend_config_t<test_config::config_storage_selector_t<std::vector>,value_type>;
+    using index_type = typename config_type::index_type;
+    using shape_type = typename config_type::shape_type;
+    using index_tensor_type = gtensor::tensor<index_type,TestType,config_type>;
+    using index_map_type = std::vector<index_type>;
+    using gtensor::tensor;
+    using gtensor::config::c_order;
+    using gtensor::config::f_order;
+    using gtensor::walker_forward_traverser;
+    using gtensor::subscript_exception;
+    using gtensor::detail::fill_index_map;
+    using gtensor::detail::make_index_mapping_view_shape;
+    using gtensor::detail::make_broadcast_shape;
+    using gtensor::detail::make_size;
+    using gtensor::detail::make_strides;
+    using gtensor::detail::make_strides_div;
+    using gtensor::detail::make_broadcast_shape;
+    using helpers_for_testing::apply_by_element;
 
-//     //0pshape,1subs
-//     auto test_data = std::make_tuple(
-//         std::make_tuple(tensor_type{0}, std::make_tuple(index_tensor_type{0,0,3})),
-//         std::make_tuple(tensor_type{0,1,2,3,4,5,6,7,8,9}, std::make_tuple(index_tensor_type{0,20,0,1,0})),
-//         std::make_tuple(tensor_type{0,1,2,3,4,5,6,7,8,9}, std::make_tuple(index_tensor_type{{0,2,4,16,8},{1,3,5,7,9}})),
-//         std::make_tuple(tensor_type{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{1,3,0,4})),
-//         std::make_tuple(tensor_type{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{{11},{3}})),
-//         std::make_tuple(tensor_type{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{{1,2},{5,1}}, index_tensor_type{{0,1},{1,2}})),
-//         std::make_tuple(tensor_type{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{{1,2},{0,1}}, index_tensor_type{{0,1},{1,4}})),
-//         std::make_tuple(tensor_type{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{0,1,5}, index_tensor_type{1})),
-//         std::make_tuple(tensor_type{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{0,1,2}, index_tensor_type{3})),
-//         std::make_tuple(
-//             tensor_type{{{0,1,2},{3,4,5},{6,7,8},{9,10,11}},{{12,13,14},{15,16,17},{18,19,20},{21,22,23}}},
-//             std::make_tuple(index_tensor_type{0,1,2}, index_tensor_type{4}, index_tensor_type{2})
-//         )
-//     );
+    //0pshape,1subs
+    auto test_data = std::make_tuple(
+        //c_order
+        std::make_tuple(tensor<value_type,c_order,config_type>{0}, std::make_tuple(index_tensor_type{0,0,3})),
+        std::make_tuple(tensor<value_type,c_order,config_type>{0,1,2,3,4,5,6,7,8,9}, std::make_tuple(index_tensor_type{0,20,0,1,0})),
+        std::make_tuple(tensor<value_type,c_order,config_type>{0,1,2,3,4,5,6,7,8,9}, std::make_tuple(index_tensor_type{{0,2,4,16,8},{1,3,5,7,9}})),
+        std::make_tuple(tensor<value_type,c_order,config_type>{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{1,3,0,4})),
+        std::make_tuple(tensor<value_type,c_order,config_type>{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{{11},{3}})),
+        std::make_tuple(tensor<value_type,c_order,config_type>{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{{1,2},{5,1}}, index_tensor_type{{0,1},{1,2}})),
+        std::make_tuple(tensor<value_type,c_order,config_type>{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{{1,2},{0,1}}, index_tensor_type{{0,1},{1,4}})),
+        std::make_tuple(tensor<value_type,c_order,config_type>{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{0,1,5}, index_tensor_type{1})),
+        std::make_tuple(tensor<value_type,c_order,config_type>{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{0,1,2}, index_tensor_type{3})),
+        std::make_tuple(
+            tensor<value_type,c_order,config_type>{{{0,1,2},{3,4,5},{6,7,8},{9,10,11}},{{12,13,14},{15,16,17},{18,19,20},{21,22,23}}},
+            std::make_tuple(index_tensor_type{0,1,2}, index_tensor_type{4}, index_tensor_type{2})
+        ),
+        //f_order
+        std::make_tuple(tensor<value_type,f_order,config_type>{0}, std::make_tuple(index_tensor_type{0,0,3})),
+        std::make_tuple(tensor<value_type,f_order,config_type>{0,1,2,3,4,5,6,7,8,9}, std::make_tuple(index_tensor_type{0,20,0,1,0})),
+        std::make_tuple(tensor<value_type,f_order,config_type>{0,1,2,3,4,5,6,7,8,9}, std::make_tuple(index_tensor_type{{0,2,4,16,8},{1,3,5,7,9}})),
+        std::make_tuple(tensor<value_type,f_order,config_type>{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{1,3,0,4})),
+        std::make_tuple(tensor<value_type,f_order,config_type>{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{{11},{3}})),
+        std::make_tuple(tensor<value_type,f_order,config_type>{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{{1,2},{5,1}}, index_tensor_type{{0,1},{1,2}})),
+        std::make_tuple(tensor<value_type,f_order,config_type>{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{{1,2},{0,1}}, index_tensor_type{{0,1},{1,4}})),
+        std::make_tuple(tensor<value_type,f_order,config_type>{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{0,1,5}, index_tensor_type{1})),
+        std::make_tuple(tensor<value_type,f_order,config_type>{{0,1,2},{3,4,5},{6,7,8},{9,10,11}}, std::make_tuple(index_tensor_type{0,1,2}, index_tensor_type{3})),
+        std::make_tuple(
+            tensor<value_type,f_order,config_type>{{{0,1,2},{3,4,5},{6,7,8},{9,10,11}},{{12,13,14},{15,16,17},{18,19,20},{21,22,23}}},
+            std::make_tuple(index_tensor_type{0,1,2}, index_tensor_type{4}, index_tensor_type{2})
+        )
+    );
 
-//     auto test = [](const auto& t){
-//         auto parent = std::get<0>(t);
-//         auto subs = std::get<1>(t);
-//         auto broadcast_shape_maker = [](const auto&...subs){
-//             return make_broadcast_shape<shape_type>(subs.shape()...);
-//         };
-//         auto subs_shape = std::apply(broadcast_shape_maker, subs);
-//         auto res_shape = make_index_mapping_view_shape(parent.shape(), subs_shape, std::tuple_size_v<std::decay_t<decltype(subs)>>);
-//         auto res_size = make_size(res_shape);
-//         index_map_type index_map(res_size);
-//         auto elements_filler = [&parent,&index_map,&subs_shape](const auto&...subs){
-//             return fill_index_map(
-//                 parent.shape(),
-//                 parent.strides(),
-//                 index_map,
-//                 walker_forward_traverser<config_type, decltype(subs.create_walker())>{subs_shape, subs.create_walker()}...
-//             );
-//         };
-//         REQUIRE_THROWS_AS(std::apply(elements_filler, subs), subscript_exception);
-//     };
-//     apply_by_element(test, test_data);
-// }
+    auto test = [](const auto& t){
+        auto parent = std::get<0>(t);
+        auto subs = std::get<1>(t);
+        auto broadcast_shape_maker = [](const auto&...subs){
+            return make_broadcast_shape<shape_type>(subs.shape()...);
+        };
+        auto subs_shape = std::apply(broadcast_shape_maker, subs);
+        auto subs_size = make_size(subs_shape);
+        auto res_shape = make_index_mapping_view_shape(parent.shape(), subs_shape, std::tuple_size_v<std::decay_t<decltype(subs)>>);
+        auto res_size = make_size(res_shape);
+        index_map_type index_map(res_size);
+        using order = typename decltype(parent)::order;
+        auto elements_filler = [&parent,&index_map,&subs_shape,&subs_size](const auto&...subs){
+            return fill_index_map<order>(
+                parent.shape(),
+                parent.strides(),
+                subs_size,
+                index_map,
+                walker_forward_traverser<config_type, decltype(subs.create_walker())>{subs_shape, subs.create_walker()}...
+            );
+        };
+        REQUIRE_THROWS_AS(std::apply(elements_filler, subs), subscript_exception);
+    };
+    apply_by_element(test, test_data);
+}
 
 TEST_CASE("test_check_bool_mapping_view_subs","[test_view_factory]")
 {
@@ -1896,105 +1949,121 @@ TEST_CASE("test_create_slice_exception_mixed_subs_exception","[test_view_factory
     apply_by_element(test, test_data);
 }
 
-// //test create_index_mapping_view
-// TEST_CASE("test_create_index_mapping_view","[test_view_factory]")
-// {
-//     using value_type = double;
-//     using tensor_type = gtensor::tensor<value_type>;
-//     using config_type = typename tensor_type::config_type;
-//     using index_tensor_type = gtensor::tensor<int, config_type>;
-//     using view_factory_type = gtensor::view_factory_selector_t<config_type>;
-//     using gtensor::basic_tensor;
-//     using helpers_for_testing::apply_by_element;
-//     //0parent,1subs,2expected
-//     auto test_data = std::make_tuple(
-//         std::make_tuple(tensor_type{},std::make_tuple(index_tensor_type{}),tensor_type{}),
-//         std::make_tuple(tensor_type{},std::make_tuple(index_tensor_type{}.reshape(2,3,0)),tensor_type{}.reshape(2,3,0)),
-//         std::make_tuple(tensor_type{}.reshape(1,0),std::make_tuple(index_tensor_type(0)),tensor_type{}),
-//         std::make_tuple(tensor_type{}.reshape(1,0),std::make_tuple(index_tensor_type{0}),tensor_type{}.reshape(1,0)),
-//         std::make_tuple(tensor_type{}.reshape(1,0),std::make_tuple(index_tensor_type{0,0,0}),tensor_type{}.reshape(3,0)),
-//         std::make_tuple(tensor_type{}.reshape(1,0),std::make_tuple(index_tensor_type{0},index_tensor_type{}),tensor_type{}),
-//         std::make_tuple(tensor_type{}.reshape(2,3,0),std::make_tuple(index_tensor_type(1)),tensor_type{}.reshape(3,0)),
-//         std::make_tuple(tensor_type{}.reshape(2,3,0),std::make_tuple(index_tensor_type{0,1,0,1,0}),tensor_type{}.reshape(5,3,0)),
-//         std::make_tuple(tensor_type{}.reshape(2,3,0),std::make_tuple(index_tensor_type{4,1,2,1,3}),tensor_type{}.reshape(5,3,0)),
-//         std::make_tuple(tensor_type{}.reshape(2,3,0),std::make_tuple(index_tensor_type{0,1},index_tensor_type{2}),tensor_type{}.reshape(2,0)),
-//         std::make_tuple(tensor_type{}.reshape(2,3,0),std::make_tuple(index_tensor_type{0,1},index_tensor_type{2},index_tensor_type{}.reshape(0,3,1)),tensor_type{}.reshape(0,3,2)),
-//         std::make_tuple(tensor_type{}.reshape(2,3,0),std::make_tuple(index_tensor_type{{0,1}},index_tensor_type{{0,2}},index_tensor_type{}.reshape(0,3,1)),tensor_type{}.reshape(0,3,2)),
-//         std::make_tuple(tensor_type{}.reshape(2,3,0),std::make_tuple(index_tensor_type{{0,1}},index_tensor_type{4},index_tensor_type{}.reshape(0,3,1)),tensor_type{}.reshape(0,3,2)),
-//         std::make_tuple(tensor_type{1},std::make_tuple(index_tensor_type(0)), tensor_type(1)),
-//         std::make_tuple(tensor_type{1},std::make_tuple(index_tensor_type{0}), tensor_type{1}),
-//         std::make_tuple(tensor_type{1},std::make_tuple(index_tensor_type{0,0,0}), tensor_type{1,1,1}),
-//         std::make_tuple(tensor_type{1,2,3,4,5},std::make_tuple(index_tensor_type(3)), tensor_type(4)),
-//         std::make_tuple(tensor_type{1,2,3,4,5},std::make_tuple(index_tensor_type{1,1,0,0}), tensor_type{2,2,1,1}),
-//         std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9}},std::make_tuple(index_tensor_type{{1,2},{0,1}}), tensor_type{{{4,5,6},{7,8,9}},{{1,2,3},{4,5,6}}}),
-//         std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9},{10,11,12}},std::make_tuple(index_tensor_type{{0,0},{3,3}}, index_tensor_type{{0,2},{0,2}}), tensor_type{{1,3},{10,12}}),
-//         std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}},std::make_tuple(index_tensor_type{1}), tensor_type{{{5,6},{7,8}}}),
-//         std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}},std::make_tuple(index_tensor_type(1)), tensor_type{{5,6},{7,8}}),
-//         std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}},std::make_tuple(index_tensor_type(1),index_tensor_type(0)), tensor_type{5,6}),
-//         std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}},std::make_tuple(index_tensor_type{1,3}), tensor_type{{{5,6},{7,8}},{{13,14},{15,16}}}),
-//         std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}},std::make_tuple(index_tensor_type{1,3}, index_tensor_type{0,1}), tensor_type{{5,6},{15,16}}),
-//         std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}},std::make_tuple(index_tensor_type{1,3}, index_tensor_type(1)), tensor_type{{7,8},{15,16}}),
-//         std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}},std::make_tuple(index_tensor_type(2), index_tensor_type{1,0}), tensor_type{{11,12},{9,10}}),
-//         std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}},std::make_tuple(index_tensor_type(2), index_tensor_type{{1,0},{0,1}}), tensor_type{{{11,12},{9,10}},{{9,10},{11,12}}}),
-//         std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}},std::make_tuple(index_tensor_type{1,3}, index_tensor_type{1}), tensor_type{{7,8},{15,16}}),
-//         std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}},std::make_tuple(index_tensor_type{1,3}, index_tensor_type{{1,0},{0,1}}), tensor_type{{{7,8},{13,14}},{{5,6},{15,16}}})
-//     );
-//     auto test = [](const auto& t){
-//         auto parent = std::get<0>(t);
-//         auto subs = std::get<1>(t);
-//         auto expected = std::get<2>(t);
-//         auto apply_subs = [&parent](const auto&...subs_){
-//             return basic_tensor{view_factory_type::create_index_mapping_view(parent, subs_...)};
-//         };
-//         auto result = std::apply(apply_subs, subs);
-//         REQUIRE(result == expected);
-//     };
-//     apply_by_element(test,test_data);
-// }
+//test create_index_mapping_view
+TEMPLATE_TEST_CASE("test_create_index_mapping_view","[test_view_factory]",
+    //parent's order, subs order
+    (std::tuple<gtensor::config::c_order,gtensor::config::c_order>),
+    (std::tuple<gtensor::config::c_order,gtensor::config::f_order>),
+    (std::tuple<gtensor::config::f_order,gtensor::config::c_order>),
+    (std::tuple<gtensor::config::f_order,gtensor::config::f_order>)
+)
+{
+    using parent_order = std::tuple_element_t<0,TestType>;
+    using subs_order = std::tuple_element_t<1,TestType>;
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type,parent_order>;
+    using config_type = typename tensor_type::config_type;
+    using index_tensor_type = gtensor::tensor<int, subs_order, config_type>;
+    using view_factory_type = gtensor::view_factory_selector_t<config_type>;
+    using gtensor::basic_tensor;
+    using helpers_for_testing::apply_by_element;
+    //0parent,1subs,2expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(tensor_type{},std::make_tuple(index_tensor_type{}),tensor_type{}),
+        std::make_tuple(tensor_type{},std::make_tuple(index_tensor_type{}.reshape(2,3,0)),tensor_type{}.reshape(2,3,0)),
+        std::make_tuple(tensor_type{}.reshape(1,0),std::make_tuple(index_tensor_type(0)),tensor_type{}),
+        std::make_tuple(tensor_type{}.reshape(1,0),std::make_tuple(index_tensor_type{0}),tensor_type{}.reshape(1,0)),
+        std::make_tuple(tensor_type{}.reshape(1,0),std::make_tuple(index_tensor_type{0,0,0}),tensor_type{}.reshape(3,0)),
+        std::make_tuple(tensor_type{}.reshape(1,0),std::make_tuple(index_tensor_type{0},index_tensor_type{}),tensor_type{}),
+        std::make_tuple(tensor_type{}.reshape(2,3,0),std::make_tuple(index_tensor_type(1)),tensor_type{}.reshape(3,0)),
+        std::make_tuple(tensor_type{}.reshape(2,3,0),std::make_tuple(index_tensor_type{0,1,0,1,0}),tensor_type{}.reshape(5,3,0)),
+        std::make_tuple(tensor_type{}.reshape(2,3,0),std::make_tuple(index_tensor_type{4,1,2,1,3}),tensor_type{}.reshape(5,3,0)),
+        std::make_tuple(tensor_type{}.reshape(2,3,0),std::make_tuple(index_tensor_type{0,1},index_tensor_type{2}),tensor_type{}.reshape(2,0)),
+        std::make_tuple(tensor_type{}.reshape(2,3,0),std::make_tuple(index_tensor_type{0,1},index_tensor_type{2},index_tensor_type{}.reshape(0,3,1)),tensor_type{}.reshape(0,3,2)),
+        std::make_tuple(tensor_type{}.reshape(2,3,0),std::make_tuple(index_tensor_type{{0,1}},index_tensor_type{{0,2}},index_tensor_type{}.reshape(0,3,1)),tensor_type{}.reshape(0,3,2)),
+        std::make_tuple(tensor_type{}.reshape(2,3,0),std::make_tuple(index_tensor_type{{0,1}},index_tensor_type{4},index_tensor_type{}.reshape(0,3,1)),tensor_type{}.reshape(0,3,2)),
+        std::make_tuple(tensor_type{1},std::make_tuple(index_tensor_type(0)), tensor_type(1)),
+        std::make_tuple(tensor_type{1},std::make_tuple(index_tensor_type{0}), tensor_type{1}),
+        std::make_tuple(tensor_type{1},std::make_tuple(index_tensor_type{0,0,0}), tensor_type{1,1,1}),
+        std::make_tuple(tensor_type{1,2,3,4,5},std::make_tuple(index_tensor_type(3)), tensor_type(4)),
+        std::make_tuple(tensor_type{1,2,3,4,5},std::make_tuple(index_tensor_type{1,1,0,0}), tensor_type{2,2,1,1}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9}},std::make_tuple(index_tensor_type{{1,2},{0,1}}), tensor_type{{{4,5,6},{7,8,9}},{{1,2,3},{4,5,6}}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9},{10,11,12}},std::make_tuple(index_tensor_type{{0,0},{3,3}}, index_tensor_type{{0,2},{0,2}}), tensor_type{{1,3},{10,12}}),
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}},std::make_tuple(index_tensor_type{1}), tensor_type{{{5,6},{7,8}}}),
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}},std::make_tuple(index_tensor_type(1)), tensor_type{{5,6},{7,8}}),
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}},std::make_tuple(index_tensor_type(1),index_tensor_type(0)), tensor_type{5,6}),
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}},std::make_tuple(index_tensor_type{1,3}), tensor_type{{{5,6},{7,8}},{{13,14},{15,16}}}),
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}},std::make_tuple(index_tensor_type{1,3}, index_tensor_type{0,1}), tensor_type{{5,6},{15,16}}),
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}},std::make_tuple(index_tensor_type{1,3}, index_tensor_type(1)), tensor_type{{7,8},{15,16}}),
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}},std::make_tuple(index_tensor_type(2), index_tensor_type{1,0}), tensor_type{{11,12},{9,10}}),
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}},std::make_tuple(index_tensor_type(2), index_tensor_type{{1,0},{0,1}}), tensor_type{{{11,12},{9,10}},{{9,10},{11,12}}}),
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}},std::make_tuple(index_tensor_type{1,3}, index_tensor_type{1}), tensor_type{{7,8},{15,16}}),
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}},std::make_tuple(index_tensor_type{1,3}, index_tensor_type{{1,0},{0,1}}), tensor_type{{{7,8},{13,14}},{{5,6},{15,16}}})
+    );
+    auto test = [](const auto& t){
+        auto parent = std::get<0>(t);
+        auto subs = std::get<1>(t);
+        auto expected = std::get<2>(t);
+        auto apply_subs = [&parent](const auto&...subs_){
+            return basic_tensor{view_factory_type::create_index_mapping_view(parent, subs_...)};
+        };
+        auto result = std::apply(apply_subs, subs);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test,test_data);
+}
 
-// TEST_CASE("test_create_index_mapping_view_exception","[test_view_factory]")
-// {
-//     using value_type = double;
-//     using tensor_type = gtensor::tensor<value_type>;
-//     using config_type = typename tensor_type::config_type;
-//     using index_tensor_type = gtensor::tensor<int, config_type>;
-//     using view_factory_type = gtensor::view_factory_selector_t<config_type>;
-//     using gtensor::basic_tensor;
-//     using gtensor::subscript_exception;
-//     using gtensor::broadcast_exception;
-//     using helpers_for_testing::apply_by_element;
-//     //0parent,1subs,2exception
-//     auto test_data = std::make_tuple(
-//         //0-dim tensor
-//         std::make_tuple(tensor_type(2),std::make_tuple(index_tensor_type{}),subscript_exception{""}),
-//         //exception, parent zero size direction and non zero size subs
-//         std::make_tuple(tensor_type{},std::make_tuple(index_tensor_type(0)),subscript_exception{""}),
-//         std::make_tuple(tensor_type{},std::make_tuple(index_tensor_type{0}),subscript_exception{""}),
-//         std::make_tuple(tensor_type{},std::make_tuple(index_tensor_type{1}),subscript_exception{""}),
-//         std::make_tuple(tensor_type{}.reshape(2,3,0),std::make_tuple(index_tensor_type{1},index_tensor_type{2},index_tensor_type{0}),subscript_exception{""}),
-//         //exception, subs number more than parent dim
-//         std::make_tuple(tensor_type{},std::make_tuple(index_tensor_type{},index_tensor_type{}),subscript_exception{""}),
-//         std::make_tuple(tensor_type{1},std::make_tuple(index_tensor_type{0},index_tensor_type{0,0,0}),subscript_exception{""}),
-//         std::make_tuple(tensor_type{1},std::make_tuple(index_tensor_type{0,1},index_tensor_type{0,1}),subscript_exception{""}),
-//         std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::make_tuple(index_tensor_type{0,1},index_tensor_type{1,1},index_tensor_type{}),subscript_exception{""}),
-//         //exception, subs shapes not broadcast
-//         std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::make_tuple(index_tensor_type{0,0},index_tensor_type{0,0,0}),broadcast_exception{""}),
-//         //exception, subs out of bounds
-//         std::make_tuple(tensor_type{1},std::make_tuple(index_tensor_type{0,4,0}),subscript_exception{""}),
-//         std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::make_tuple(index_tensor_type{3}),subscript_exception{""}),
-//         std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::make_tuple(index_tensor_type{0},index_tensor_type{1,2,3}),subscript_exception{""})
-//     );
-//     auto test = [](const auto& t){
-//         auto parent = std::get<0>(t);
-//         auto subs = std::get<1>(t);
-//         auto exception = std::get<2>(t);
-//         auto apply_subs = [&parent](const auto&...subs_){
-//             return basic_tensor{view_factory_type::create_index_mapping_view(parent, subs_...)};
-//         };
-//         REQUIRE_THROWS_AS(std::apply(apply_subs, subs), decltype(exception));
-//     };
-//     apply_by_element(test,test_data);
-// }
+TEMPLATE_TEST_CASE("test_create_index_mapping_view_exception","[test_view_factory]",
+    //parent's order, subs order
+    (std::tuple<gtensor::config::c_order,gtensor::config::c_order>),
+    (std::tuple<gtensor::config::c_order,gtensor::config::f_order>),
+    (std::tuple<gtensor::config::f_order,gtensor::config::c_order>),
+    (std::tuple<gtensor::config::f_order,gtensor::config::f_order>)
+)
+{
+    using parent_order = std::tuple_element_t<0,TestType>;
+    using subs_order = std::tuple_element_t<1,TestType>;
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type,parent_order>;
+    using index_tensor_type = gtensor::tensor<int,subs_order>;
+    using config_type = typename tensor_type::config_type;
+    using view_factory_type = gtensor::view_factory_selector_t<config_type>;
+    using gtensor::basic_tensor;
+    using gtensor::subscript_exception;
+    using gtensor::broadcast_exception;
+    using helpers_for_testing::apply_by_element;
+    //0parent,1subs,2exception
+    auto test_data = std::make_tuple(
+        //0-dim tensor
+        std::make_tuple(tensor_type(2),std::make_tuple(index_tensor_type{}),subscript_exception{""}),
+        //exception, parent zero size direction and non zero size subs
+        std::make_tuple(tensor_type{},std::make_tuple(index_tensor_type(0)),subscript_exception{""}),
+        std::make_tuple(tensor_type{},std::make_tuple(index_tensor_type{0}),subscript_exception{""}),
+        std::make_tuple(tensor_type{},std::make_tuple(index_tensor_type{1}),subscript_exception{""}),
+        std::make_tuple(tensor_type{}.reshape(2,3,0),std::make_tuple(index_tensor_type{1},index_tensor_type{2},index_tensor_type{0}),subscript_exception{""}),
+        //exception, subs number more than parent dim
+        std::make_tuple(tensor_type{},std::make_tuple(index_tensor_type{},index_tensor_type{}),subscript_exception{""}),
+        std::make_tuple(tensor_type{1},std::make_tuple(index_tensor_type{0},index_tensor_type{0,0,0}),subscript_exception{""}),
+        std::make_tuple(tensor_type{1},std::make_tuple(index_tensor_type{0,1},index_tensor_type{0,1}),subscript_exception{""}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::make_tuple(index_tensor_type{0,1},index_tensor_type{1,1},index_tensor_type{}),subscript_exception{""}),
+        //exception, subs shapes not broadcast
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::make_tuple(index_tensor_type{0,0},index_tensor_type{0,0,0}),broadcast_exception{""}),
+        //exception, subs out of bounds
+        std::make_tuple(tensor_type{1},std::make_tuple(index_tensor_type{0,4,0}),subscript_exception{""}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::make_tuple(index_tensor_type{3}),subscript_exception{""}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::make_tuple(index_tensor_type{0},index_tensor_type{1,2,3}),subscript_exception{""})
+    );
+    auto test = [](const auto& t){
+        auto parent = std::get<0>(t);
+        auto subs = std::get<1>(t);
+        auto exception = std::get<2>(t);
+        auto apply_subs = [&parent](const auto&...subs_){
+            return basic_tensor{view_factory_type::create_index_mapping_view(parent, subs_...)};
+        };
+        REQUIRE_THROWS_AS(std::apply(apply_subs, subs), decltype(exception));
+    };
+    apply_by_element(test,test_data);
+}
 
 // //test create_bool_mapping_view
 // TEST_CASE("test_create_bool_mapping_view","[test_view_factory]")
