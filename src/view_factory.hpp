@@ -429,8 +429,8 @@ inline ShT make_bool_mapping_view_shape(const ShT& pshape, const IdxT& subs_true
     return res;
 }
 
-template<typename ShT, typename Layout, typename DimT, typename IdxT, typename IndexContainer, typename SubsIt>
-auto fill_bool_map(const ShT& pshape, const ShT& pstrides, Layout layout, const DimT& subs_dim, const IdxT& chunk_size, IndexContainer& index_container, SubsIt subs_traverser){
+template<typename Order, typename ShT, typename DimT, typename IdxT, typename IndexContainer, typename SubsIt>
+auto fill_bool_map(const ShT& pshape, const ShT& pstrides, const DimT& subs_dim, const IdxT& chunk_size, IndexContainer& index_container, SubsIt subs_traverser){
     using index_type = typename ShT::value_type;
     index_type trues_number{0};
     if (chunk_size == index_type{1}){
@@ -441,24 +441,25 @@ auto fill_bool_map(const ShT& pshape, const ShT& pstrides, Layout layout, const 
                 );
                 ++trues_number;
             }
-        }while(subs_traverser.next());
+        }while(subs_traverser.template next<gtensor::config::c_order>());
     }else{
-        index_type stride_step{};
-        if constexpr (std::is_same_v<Layout, gtensor::config::c_order>){
-            stride_step = index_type{1};
-        }else{
-            stride_step = pstrides[subs_dim];
-        }
+        //if subs_dim==pdim than chunk_size is 1 and if branch is executed
+        const auto stride_step = pstrides[subs_dim];
         do{
-            std::cout<<std::endl<<*subs_traverser.walker()<<" "<<detail::shape_to_str(subs_traverser.index());
             if(*subs_traverser.walker()){
                 auto block_first = std::inner_product(subs_traverser.index().begin(), subs_traverser.index().end(), pstrides.begin(), index_type{0});
-                for(index_type j{0}; j!=chunk_size; ++j){
-                    index_container.push_back(block_first+j*stride_step);
+                if constexpr (std::is_same_v<Order, gtensor::config::c_order>){
+                    for(index_type j{0}; j!=chunk_size; ++j){
+                        index_container.push_back(block_first+j);
+                    }
+                }else{
+                    for(index_type j{0}, j_last = chunk_size*stride_step; j!=j_last; j+=stride_step){
+                        index_container.push_back(block_first+j);
+                    }
                 }
                 ++trues_number;
             }
-        }while(subs_traverser.next());
+        }while(subs_traverser.template next<gtensor::config::c_order>());
     }
     return trues_number;
 }
@@ -641,11 +642,10 @@ class view_factory
         using config_type = typename parent_type::config_type;
         using index_type = typename parent_type::index_type;
         using dim_type = typename parent_type::dim_type;
-        using layout_type = typename config_type::layout;
         using index_map_type = typename config_type::index_map_type;
         using index_container_type = typename config_type::template container<index_type>;
-        using descriptor_type = mapping_descriptor<config_type, order>;
-        using view_type = mapping_view<config_type,parent_type,order>;
+        using descriptor_type = mapping_descriptor<config_type,order>;
+        using view_type = mapping_view<config_type,order,parent_type>;
         const auto& pshape = parent.shape();
         const auto& subs_shape = subs.shape();
         detail::check_bool_mapping_view_subs(pshape, subs_shape);
@@ -658,10 +658,9 @@ class view_factory
                 if constexpr (std::is_convertible_v<index_type,typename index_container_type::difference_type>){
                     index_container.reserve(parent.size());
                 }
-                subs_trues_number = detail::fill_bool_map(
+                subs_trues_number = detail::fill_bool_map<order>(
                     pshape,
                     parent.strides(),
-                    layout_type{},
                     subs_dim,
                     chunk_size,
                     index_container,
@@ -671,16 +670,13 @@ class view_factory
             auto res_shape = detail::make_bool_mapping_view_shape(pshape, subs_trues_number, subs.dim());
             auto res_size = detail::make_size(res_shape);
             index_map_type index_map(res_size);
+
             index_type i{0};
-            if (chunk_size == index_type{1}){
+            if (chunk_size == index_type{1} || std::is_same_v<order,gtensor::config::c_order>){
                 for(auto it=index_container.begin(), last=index_container.end(); it!=last; ++it,++i){
                     index_map[i] = *it;
                 }
-            }else{
-                for (auto i : index_container){
-                    std::cout<<std::endl<<i;
-                }
-
+            }else{  //need reorder if parent in f_order and chunk_size > 1
                 index_type j{i};
                 const index_type j_delta = chunk_size*subs_trues_number;
                 index_type j_last{i+j_delta};
@@ -690,13 +686,9 @@ class view_factory
                         j_last = i+j_delta;
                     }
                     index_map[j] = *it;
-                    std::cout<<std::endl<<"index_map[j] = *it;"<<j<<" "<<*it;
-                }
-
-                for (index_type k{0}; k!=index_container.size(); ++k){
-                    std::cout<<std::endl<<index_map[k];
                 }
             }
+
             return std::make_shared<view_type>(
                 descriptor_type{std::move(res_shape), std::move(index_map)},
                 parent
