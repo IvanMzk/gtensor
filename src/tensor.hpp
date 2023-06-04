@@ -117,12 +117,13 @@ public:
         return gtensor::equal(*this, other);
     }
     //resize
-    template<typename Container>
-    void resize(Container&& new_shape){
-        resize_(std::forward<Container>(new_shape));
+    template<typename Container, typename Order = config::c_order>
+    void resize(Container&& new_shape, Order order = Order{}){
+        resize_<Order>(std::forward<Container>(new_shape));
     }
-    void resize(std::initializer_list<index_type> new_shape){
-        resize_(new_shape);
+    template<typename Order = config::c_order>
+    void resize(std::initializer_list<index_type> new_shape, Order order = Order{}){
+        resize_<Order>(new_shape);
     }
     //swap
     void swap(basic_tensor& other){
@@ -133,7 +134,8 @@ public:
     }
     //makes tensor by copying shape and elements from this
     auto copy()const{
-        return tensor<value_type,order,config_type>(shape(),begin(),end());
+        auto a = traverse_order_adapter<order>();
+        return tensor<value_type,order,config_type>(shape(),a.begin(),a.end());
     }
     //check is this and other are tensors and have the same implementation
     template<typename Other>
@@ -317,12 +319,19 @@ private:
     auto create_view_(std::shared_ptr<Impl_>&& impl__)const{
         return basic_tensor<Impl_>{std::move(impl__)};
     }
-    template<typename Container>
+    template<typename Order, typename Container>
     void resize_(Container&& new_shape){
-        static_assert(std::is_convertible_v<decltype(copy()),basic_tensor>,"can't resize view");
+        static_assert(std::is_convertible_v<tensor<value_type,order,config_type>*,basic_tensor*>,"can't resize view");
         const auto& shape_ = shape();
         if (!std::equal(shape_.begin(),shape_.end(),new_shape.begin(),new_shape.end())){
-            swap(tensor<value_type,order,config_type>{std::forward<Container>(new_shape),begin(),end()});
+            auto a = traverse_order_adapter<Order>();
+            if constexpr (std::is_same_v<Order,order>){
+                swap(tensor<value_type,Order,config_type>{std::forward<Container>(new_shape),a.begin(),a.end()});
+            }else{
+                auto tmp = tensor<value_type,Order,config_type>{std::forward<Container>(new_shape),a.begin(),a.end()};
+                auto tmp_a = tmp.template traverse_order_adapter<order>();
+                swap(tensor<value_type,order,config_type>{std::forward<Container>(new_shape),tmp_a.begin(),tmp_a.end()});
+            }
         }
     }
     template<typename Rhs>
@@ -334,10 +343,11 @@ private:
         if constexpr (std::is_convertible_v<tensor<value_type,order,config_type>*,basic_tensor*>){  //value assignment
             if constexpr (detail::is_tensor_v<RhsT>){
                 const auto& rhs_shape = rhs.shape();
+                auto a = rhs.template traverse_order_adapter<order>();
                 if (shape() == rhs_shape){
-                    std::copy(rhs.begin(),rhs.end(),begin());
+                    std::copy(a.begin(),a.end(),traverse_order_adapter<order>().begin());
                 }else{
-                    swap(tensor<value_type,order,config_type>(rhs_shape,rhs.begin(),rhs.end()));
+                    swap(tensor<value_type,order,config_type>(rhs_shape,a.begin(),a.end()));
                 }
             }else{
                 if (size() == index_type{1}){
