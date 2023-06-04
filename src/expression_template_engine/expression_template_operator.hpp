@@ -85,7 +85,7 @@ public:
     //makes tensor that represents applying operation F on operands element-wise
     //operands shapes must be broadcastable
     //scalar operands is allowed
-    //actual evaluation happens only when result tensor is iterated
+    //actual evaluation happens only when result tensor iterator is dereferenced
     template<typename F_, typename...Operands>
     static auto n_operator(F_&& f, Operands&&...operands){
         static_assert(std::is_same_v<F,std::decay_t<F_>>);

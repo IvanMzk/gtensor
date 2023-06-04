@@ -58,12 +58,10 @@ struct assign_add{
 
 }
 
-TEMPLATE_TEST_CASE("test_expression_template_walker","[test_expression_template_engine]",
-    test_config::config_engine_selector_t<gtensor::config::engine_expression_template>
-)
+TEST_CASE("test_expression_template_walker","[test_expression_template_engine]")
 {
     using value_type = double;
-    using config_type = gtensor::config::extend_config_t<TestType,value_type>;
+    using config_type = gtensor::config::extend_config_t<test_config::config_engine_selector_t<gtensor::config::engine_expression_template>,value_type>;
     using dim_type = typename config_type::dim_type;
     using tensor_type = gtensor::tensor<value_type>;
     using test_expression_template_engine_::unary_square;
@@ -114,9 +112,7 @@ TEMPLATE_TEST_CASE("test_expression_template_walker","[test_expression_template_
     apply_by_element(test,test_data);
 }
 
-TEMPLATE_TEST_CASE("test_expression_template_walker_result_type","[test_expression_template_engine]",
-    test_config::config_engine_selector_t<gtensor::config::engine_expression_template>
-)
+TEST_CASE("test_expression_template_walker_result_type","[test_expression_template_engine]")
 {
     using gtensor::tensor;
     using gtensor::config::extend_config_t;
@@ -126,10 +122,12 @@ TEMPLATE_TEST_CASE("test_expression_template_walker_result_type","[test_expressi
     using test_expression_template_engine_::binary_mul;
     using gtensor::expression_template_walker;
 
-    using config_type_int = extend_config_t<TestType,int>;
-    using config_type_double = extend_config_t<TestType,double>;
-    using tensor_int_walker_type = decltype(std::declval<tensor<int,config_type_int>>().create_walker());
-    using tensor_double_walker_type = decltype(std::declval<tensor<double,config_type_double>>().create_walker());
+    using order = gtensor::config::c_order;
+    using config_type_ = test_config::config_engine_selector_t<gtensor::config::engine_expression_template>;
+    using config_type_int = extend_config_t<config_type_,int>;
+    using config_type_double = extend_config_t<config_type_,double>;
+    using tensor_int_walker_type = decltype(std::declval<tensor<int,order,config_type_int>>().create_walker());
+    using tensor_double_walker_type = decltype(std::declval<tensor<double,order,config_type_double>>().create_walker());
 
     REQUIRE(std::is_same_v<int, decltype(*std::declval<expression_template_walker<config_type_int, unary_square, tensor_int_walker_type>>())>);
     REQUIRE(std::is_same_v<double, decltype(*std::declval<expression_template_walker<config_type_double, unary_square, tensor_double_walker_type>>())>);
@@ -141,16 +139,17 @@ TEMPLATE_TEST_CASE("test_expression_template_walker_result_type","[test_expressi
     REQUIRE(std::is_same_v<double, decltype(*std::declval<expression_template_walker<config_type_double, binary_mul, tensor_int_walker_type, tensor_double_walker_type>>())>);
 }
 
-TEMPLATE_TEST_CASE("test_expression_template_core","[test_expression_template_engine]",
-    test_config::config_engine_selector_t<gtensor::config::engine_expression_template>
-)
+TEST_CASE("test_expression_template_core","[test_expression_template_engine]")
 {
+    using gtensor::config::c_order;
+    using gtensor::config::f_order;
     using value_type = double;
-    using config_type = gtensor::config::extend_config_t<TestType,value_type>;
+    using config_type = gtensor::config::extend_config_t<test_config::config_engine_selector_t<gtensor::config::engine_expression_template>,value_type>;
     using dim_type = typename config_type::dim_type;
     using index_type = typename config_type::index_type;
     using shape_type = typename config_type::shape_type;
-    using tensor_type = gtensor::tensor<value_type>;
+    using c_tensor_type = gtensor::tensor<value_type,c_order,config_type>;
+    using f_tensor_type = gtensor::tensor<value_type,f_order,config_type>;
     using gtensor::walker_iterator;
     using gtensor::expression_template_core;
     using test_expression_template_engine_::unary_square;
@@ -158,20 +157,45 @@ TEMPLATE_TEST_CASE("test_expression_template_core","[test_expression_template_en
     using helpers_for_testing::apply_by_element;
     //0operation,1operands,2expected_dim,3expected_size,4expected_shape,5expected_elements
     auto test_data = std::make_tuple(
-        std::make_tuple(unary_square{}, std::make_tuple(tensor_type(2)), dim_type{0}, index_type{1}, shape_type{}, std::vector<value_type>{4}),
-        std::make_tuple(unary_square{}, std::make_tuple(tensor_type{}), dim_type{1}, index_type{0}, shape_type{0}, std::vector<value_type>{}),
-        std::make_tuple(unary_square{}, std::make_tuple(tensor_type{3}), dim_type{1}, index_type{1}, shape_type{1}, std::vector<value_type>{9}),
-        std::make_tuple(unary_square{}, std::make_tuple(tensor_type{1,2,3,4,5}), dim_type{1}, index_type{5}, shape_type{5}, std::vector<value_type>{1,4,9,16,25}),
-        std::make_tuple(unary_square{}, std::make_tuple(tensor_type{{1},{2},{3},{4},{5}}), dim_type{2}, index_type{5}, shape_type{5,1}, std::vector<value_type>{1,4,9,16,25}),
-        std::make_tuple(unary_square{}, std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}), dim_type{3}, index_type{8}, shape_type{2,2,2}, std::vector<value_type>{1,4,9,16,25,36,49,64})
-        // std::make_tuple(binary_mul{}, std::make_tuple(tensor_type{},tensor_type{}), dim_type{1}, index_type{0}, shape_type{0}, std::vector<value_type>{}),
-        // std::make_tuple(binary_mul{}, std::make_tuple(tensor_type{2},tensor_type{}), dim_type{1}, index_type{0}, shape_type{0}, std::vector<value_type>{}),
-        // std::make_tuple(binary_mul{}, std::make_tuple(tensor_type{},tensor_type(1)), dim_type{1}, index_type{0}, shape_type{0}, std::vector<value_type>{}),
-        // std::make_tuple(binary_mul{}, std::make_tuple(tensor_type(2),tensor_type(3)), dim_type{0}, index_type{1}, shape_type{}, std::vector<value_type>{6}),
-        // std::make_tuple(binary_mul{}, std::make_tuple(tensor_type(2),tensor_type{3}), dim_type{1}, index_type{1}, shape_type{1}, std::vector<value_type>{6}),
-        // std::make_tuple(binary_mul{}, std::make_tuple(tensor_type(2),tensor_type{3,4,5}), dim_type{1}, index_type{3}, shape_type{3}, std::vector<value_type>{6,8,10}),
-        // std::make_tuple(binary_mul{}, std::make_tuple(tensor_type(2),tensor_type{{3},{4},{5}}), dim_type{2}, index_type{3}, shape_type{3,1}, std::vector<value_type>{6,8,10}),
-        // std::make_tuple(binary_mul{}, std::make_tuple(tensor_type{1,2},tensor_type{{3},{4}}), dim_type{2}, index_type{4}, shape_type{2,2}, std::vector<value_type>{3,6,4,8})
+        //c_order operands
+        std::make_tuple(unary_square{}, std::make_tuple(c_tensor_type(2)), dim_type{0}, index_type{1}, shape_type{}, std::vector<value_type>{4}),
+        std::make_tuple(unary_square{}, std::make_tuple(c_tensor_type{}), dim_type{1}, index_type{0}, shape_type{0}, std::vector<value_type>{}),
+        std::make_tuple(unary_square{}, std::make_tuple(c_tensor_type{3}), dim_type{1}, index_type{1}, shape_type{1}, std::vector<value_type>{9}),
+        std::make_tuple(unary_square{}, std::make_tuple(c_tensor_type{1,2,3,4,5}), dim_type{1}, index_type{5}, shape_type{5}, std::vector<value_type>{1,4,9,16,25}),
+        std::make_tuple(unary_square{}, std::make_tuple(c_tensor_type{{1},{2},{3},{4},{5}}), dim_type{2}, index_type{5}, shape_type{5,1}, std::vector<value_type>{1,4,9,16,25}),
+        std::make_tuple(unary_square{}, std::make_tuple(c_tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}), dim_type{3}, index_type{8}, shape_type{2,2,2}, std::vector<value_type>{1,4,9,16,25,36,49,64}),
+        std::make_tuple(binary_mul{}, std::make_tuple(c_tensor_type{},c_tensor_type{}), dim_type{1}, index_type{0}, shape_type{0}, std::vector<value_type>{}),
+        std::make_tuple(binary_mul{}, std::make_tuple(c_tensor_type{2},c_tensor_type{}), dim_type{1}, index_type{0}, shape_type{0}, std::vector<value_type>{}),
+        std::make_tuple(binary_mul{}, std::make_tuple(c_tensor_type{},c_tensor_type(1)), dim_type{1}, index_type{0}, shape_type{0}, std::vector<value_type>{}),
+        std::make_tuple(binary_mul{}, std::make_tuple(c_tensor_type(2),c_tensor_type(3)), dim_type{0}, index_type{1}, shape_type{}, std::vector<value_type>{6}),
+        std::make_tuple(binary_mul{}, std::make_tuple(c_tensor_type(2),c_tensor_type{3}), dim_type{1}, index_type{1}, shape_type{1}, std::vector<value_type>{6}),
+        std::make_tuple(binary_mul{}, std::make_tuple(c_tensor_type(2),c_tensor_type{3,4,5}), dim_type{1}, index_type{3}, shape_type{3}, std::vector<value_type>{6,8,10}),
+        std::make_tuple(binary_mul{}, std::make_tuple(c_tensor_type(2),c_tensor_type{{3},{4},{5}}), dim_type{2}, index_type{3}, shape_type{3,1}, std::vector<value_type>{6,8,10}),
+        std::make_tuple(binary_mul{}, std::make_tuple(c_tensor_type{1,2},c_tensor_type{{3},{4}}), dim_type{2}, index_type{4}, shape_type{2,2}, std::vector<value_type>{3,6,4,8}),
+        //f_order operands
+        std::make_tuple(unary_square{}, std::make_tuple(f_tensor_type(2)), dim_type{0}, index_type{1}, shape_type{}, std::vector<value_type>{4}),
+        std::make_tuple(unary_square{}, std::make_tuple(f_tensor_type{}), dim_type{1}, index_type{0}, shape_type{0}, std::vector<value_type>{}),
+        std::make_tuple(unary_square{}, std::make_tuple(f_tensor_type{3}), dim_type{1}, index_type{1}, shape_type{1}, std::vector<value_type>{9}),
+        std::make_tuple(unary_square{}, std::make_tuple(f_tensor_type{1,2,3,4,5}), dim_type{1}, index_type{5}, shape_type{5}, std::vector<value_type>{1,4,9,16,25}),
+        std::make_tuple(unary_square{}, std::make_tuple(f_tensor_type{{1},{2},{3},{4},{5}}), dim_type{2}, index_type{5}, shape_type{5,1}, std::vector<value_type>{1,4,9,16,25}),
+        std::make_tuple(unary_square{}, std::make_tuple(f_tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}), dim_type{3}, index_type{8}, shape_type{2,2,2}, std::vector<value_type>{1,4,9,16,25,36,49,64}),
+        std::make_tuple(binary_mul{}, std::make_tuple(f_tensor_type{},f_tensor_type{}), dim_type{1}, index_type{0}, shape_type{0}, std::vector<value_type>{}),
+        std::make_tuple(binary_mul{}, std::make_tuple(f_tensor_type{2},f_tensor_type{}), dim_type{1}, index_type{0}, shape_type{0}, std::vector<value_type>{}),
+        std::make_tuple(binary_mul{}, std::make_tuple(f_tensor_type{},f_tensor_type(1)), dim_type{1}, index_type{0}, shape_type{0}, std::vector<value_type>{}),
+        std::make_tuple(binary_mul{}, std::make_tuple(f_tensor_type(2),f_tensor_type(3)), dim_type{0}, index_type{1}, shape_type{}, std::vector<value_type>{6}),
+        std::make_tuple(binary_mul{}, std::make_tuple(f_tensor_type(2),f_tensor_type{3}), dim_type{1}, index_type{1}, shape_type{1}, std::vector<value_type>{6}),
+        std::make_tuple(binary_mul{}, std::make_tuple(f_tensor_type(2),f_tensor_type{3,4,5}), dim_type{1}, index_type{3}, shape_type{3}, std::vector<value_type>{6,8,10}),
+        std::make_tuple(binary_mul{}, std::make_tuple(f_tensor_type(2),f_tensor_type{{3},{4},{5}}), dim_type{2}, index_type{3}, shape_type{3,1}, std::vector<value_type>{6,8,10}),
+        std::make_tuple(binary_mul{}, std::make_tuple(f_tensor_type{1,2},f_tensor_type{{3},{4}}), dim_type{2}, index_type{4}, shape_type{2,2}, std::vector<value_type>{3,6,4,8}),
+        //mixed operands
+        std::make_tuple(binary_mul{}, std::make_tuple(f_tensor_type{},c_tensor_type{}), dim_type{1}, index_type{0}, shape_type{0}, std::vector<value_type>{}),
+        std::make_tuple(binary_mul{}, std::make_tuple(c_tensor_type{2},f_tensor_type{}), dim_type{1}, index_type{0}, shape_type{0}, std::vector<value_type>{}),
+        std::make_tuple(binary_mul{}, std::make_tuple(c_tensor_type{},f_tensor_type(1)), dim_type{1}, index_type{0}, shape_type{0}, std::vector<value_type>{}),
+        std::make_tuple(binary_mul{}, std::make_tuple(f_tensor_type(2),c_tensor_type(3)), dim_type{0}, index_type{1}, shape_type{}, std::vector<value_type>{6}),
+        std::make_tuple(binary_mul{}, std::make_tuple(f_tensor_type(2),c_tensor_type{3}), dim_type{1}, index_type{1}, shape_type{1}, std::vector<value_type>{6}),
+        std::make_tuple(binary_mul{}, std::make_tuple(c_tensor_type(2),f_tensor_type{3,4,5}), dim_type{1}, index_type{3}, shape_type{3}, std::vector<value_type>{6,8,10}),
+        std::make_tuple(binary_mul{}, std::make_tuple(f_tensor_type(2),c_tensor_type{{3},{4},{5}}), dim_type{2}, index_type{3}, shape_type{3,1}, std::vector<value_type>{6,8,10}),
+        std::make_tuple(binary_mul{}, std::make_tuple(c_tensor_type{1,2},f_tensor_type{{3},{4}}), dim_type{2}, index_type{4}, shape_type{2,2}, std::vector<value_type>{3,6,4,8})
     );
     auto test = [](const auto& t){
         auto f = std::get<0>(t);
@@ -191,7 +215,7 @@ TEMPLATE_TEST_CASE("test_expression_template_core","[test_expression_template_en
         REQUIRE(result_dim == expected_dim);
         REQUIRE(result_size == expected_size);
         REQUIRE(result_shape == expected_shape);
-        using iterator_type = walker_iterator<config_type,decltype(result_core.create_walker(result_dim))>;
+        using iterator_type = walker_iterator<config_type,decltype(result_core.create_walker(result_dim)),gtensor::config::c_order>;
         auto result_first = iterator_type{
             result_core.create_walker(result_dim),
             result_core.descriptor().shape(),
@@ -209,13 +233,59 @@ TEMPLATE_TEST_CASE("test_expression_template_core","[test_expression_template_en
     apply_by_element(test,test_data);
 }
 
-TEMPLATE_TEST_CASE("test_expression_template_operator_n_operator","[test_expression_template_engine]",
-    test_config::config_engine_selector_t<gtensor::config::engine_expression_template>
-)
+TEST_CASE("test_expression_template_core_order","[test_expression_template_engine]")
 {
+    using gtensor::config::c_order;
+    using gtensor::config::f_order;
     using value_type = double;
-    using config_type = gtensor::config::extend_config_t<TestType,value_type>;
-    using tensor_type = gtensor::tensor<value_type,config_type>;
+    using config_type = gtensor::config::extend_config_t<test_config::config_engine_selector_t<gtensor::config::engine_expression_template>,value_type>;
+    using c_tensor_type = gtensor::tensor<value_type,c_order,config_type>;
+    using f_tensor_type = gtensor::tensor<value_type,f_order,config_type>;
+    using gtensor::expression_template_core;
+    using test_expression_template_engine_::unary_square;
+    using test_expression_template_engine_::binary_mul;
+    using helpers_for_testing::apply_by_element;
+    //0operation,1operands,2expected_order
+    auto test_data = std::make_tuple(
+        //c_order operands
+        std::make_tuple(unary_square{}, std::make_tuple(c_tensor_type(2)), c_order{}),
+        std::make_tuple(unary_square{}, std::make_tuple(c_tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}), c_order{}),
+        std::make_tuple(binary_mul{}, std::make_tuple(c_tensor_type{},c_tensor_type{}), c_order{}),
+        std::make_tuple(binary_mul{}, std::make_tuple(c_tensor_type{1,2},c_tensor_type{{3},{4}}), c_order{}),
+        //f_order operands
+        std::make_tuple(unary_square{}, std::make_tuple(f_tensor_type(2)), f_order{}),
+        std::make_tuple(unary_square{}, std::make_tuple(f_tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}), f_order{}),
+        std::make_tuple(binary_mul{}, std::make_tuple(f_tensor_type{},f_tensor_type{}), f_order{}),
+        std::make_tuple(binary_mul{}, std::make_tuple(f_tensor_type{1,2},f_tensor_type{{3},{4}}), f_order{}),
+        //mixed operands
+        std::make_tuple(binary_mul{}, std::make_tuple(f_tensor_type{},c_tensor_type{}), typename config_type::order{}),
+        std::make_tuple(binary_mul{}, std::make_tuple(c_tensor_type{1,2},f_tensor_type{{3},{4}}), typename config_type::order{})
+    );
+    auto test = [](const auto& t){
+        auto f = std::get<0>(t);
+        using F = decltype(f);
+        auto operands = std::get<1>(t);
+        auto expected_order = std::get<2>(t);
+        using expected_order_type = decltype(expected_order);
+        auto make_core = [f](auto&&...operands){
+            return expression_template_core<config_type,F,std::remove_reference_t<decltype(operands)>...>{f,std::forward<decltype(operands)>(operands)...};
+        };
+        auto result_core = std::apply(make_core, operands);
+        using result_order_type = typename decltype(result_core)::order;
+        REQUIRE(std::is_same_v<result_order_type,expected_order_type>);
+    };
+    apply_by_element(test,test_data);
+}
+
+TEST_CASE("test_expression_template_operator_n_operator","[test_expression_template_engine]")
+{
+    using gtensor::config::c_order;
+    using gtensor::config::f_order;
+    using value_type = double;
+    using config_type = gtensor::config::extend_config_t<test_config::config_engine_selector_t<gtensor::config::engine_expression_template>,value_type>;
+    using tensor_type = gtensor::tensor<value_type>;
+    using c_tensor_type = gtensor::tensor<value_type,c_order,config_type>;
+    using f_tensor_type = gtensor::tensor<value_type,f_order,config_type>;
     using gtensor::expression_template_operator;
     using test_expression_template_engine_::unary_square;
     using test_expression_template_engine_::binary_mul;
@@ -224,29 +294,62 @@ TEMPLATE_TEST_CASE("test_expression_template_operator_n_operator","[test_express
     using helpers_for_testing::apply_by_element;
     //0operation,1operands,2expected
     auto test_data = std::make_tuple(
-        std::make_tuple(unary_square{},std::make_tuple(tensor_type{}),tensor_type{}),
-        std::make_tuple(unary_square{},std::make_tuple(tensor_type(2)),tensor_type(4)),
-        std::make_tuple(unary_square{},std::make_tuple(tensor_type{1,2,3,4,5}),tensor_type{1,4,9,16,25}),
-        std::make_tuple(binary_mul{},std::make_tuple(tensor_type(5),2),tensor_type(10)),
-        std::make_tuple(binary_mul{},std::make_tuple(3,tensor_type(5)),tensor_type(15)),
-        std::make_tuple(binary_mul{},std::make_tuple(tensor_type(5),tensor_type(4)),tensor_type(20)),
-        std::make_tuple(binary_mul{},std::make_tuple(tensor_type{1,2,3,4,5},2),tensor_type{2,4,6,8,10}),
-        std::make_tuple(binary_mul{},std::make_tuple(3,tensor_type{1,2,3,4,5}),tensor_type{3,6,9,12,15}),
-        std::make_tuple(binary_sub{},std::make_tuple(3,tensor_type{1,2,3,4,5}),tensor_type{2,1,0,-1,-2}),
-        std::make_tuple(binary_sub{},std::make_tuple(tensor_type{1,2,3,4,5},3),tensor_type{-2,-1,0,1,2}),
-        std::make_tuple(binary_mul{},std::make_tuple(tensor_type{1,2,3,4,5},tensor_type(2)),tensor_type{2,4,6,8,10}),
-        std::make_tuple(binary_mul{},std::make_tuple(tensor_type{1,2,3,4,5},tensor_type{2}),tensor_type{2,4,6,8,10}),
-        std::make_tuple(binary_mul{},std::make_tuple(tensor_type{1,2,3,4,5},tensor_type{5,4,3,2,1}),tensor_type{5,8,9,8,5}),
-        std::make_tuple(binary_mul{},std::make_tuple(4,tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}),tensor_type{{{4,8},{12,16}},{{20,24},{28,32}}}),
-        std::make_tuple(binary_mul{},std::make_tuple(tensor_type(4), tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}),tensor_type{{{4,8},{12,16}},{{20,24},{28,32}}}),
-        std::make_tuple(binary_mul{},std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},tensor_type{-1,2}),tensor_type{{{-1,4},{-3,8}},{{-5,12},{-7,16}}}),
-        std::make_tuple(binary_mul{},std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},tensor_type{{-1},{2}}),tensor_type{{{-1,-2},{6,8}},{{-5,-6},{14,16}}}),
-        std::make_tuple(ternary_add_mul{},std::make_tuple(tensor_type(1),tensor_type(2),tensor_type(3)),tensor_type(9)),
-        std::make_tuple(ternary_add_mul{},std::make_tuple(tensor_type(1),tensor_type{1,2,3,4,5},tensor_type(3)),tensor_type{6,9,12,15,18}),
-        std::make_tuple(ternary_add_mul{},std::make_tuple(tensor_type(1),tensor_type{1,2,3},tensor_type{{1},{2},{3}}),tensor_type{{2,3,4},{4,6,8},{6,9,12}}),
-        std::make_tuple(ternary_add_mul{},std::make_tuple(-1,tensor_type{1,2,3},tensor_type{{1},{2},{3}}),tensor_type{{0,1,2},{0,2,4},{0,3,6}}),
-        std::make_tuple(ternary_add_mul{},std::make_tuple(tensor_type{{4,5,6},{7,8,9}},tensor_type{1,2,3},2),tensor_type{{10,14,18},{16,20,24}}),
-        std::make_tuple(ternary_add_mul{},std::make_tuple(-1,tensor_type{{1,2,3},{4,5,6}},2),tensor_type{{0,2,4},{6,8,10}})
+        //c_order operands
+        std::make_tuple(unary_square{},std::make_tuple(c_tensor_type{}),tensor_type{}),
+        std::make_tuple(unary_square{},std::make_tuple(c_tensor_type(2)),tensor_type(4)),
+        std::make_tuple(unary_square{},std::make_tuple(c_tensor_type{1,2,3,4,5}),tensor_type{1,4,9,16,25}),
+        std::make_tuple(binary_mul{},std::make_tuple(c_tensor_type(5),2),tensor_type(10)),
+        std::make_tuple(binary_mul{},std::make_tuple(3,c_tensor_type(5)),tensor_type(15)),
+        std::make_tuple(binary_mul{},std::make_tuple(c_tensor_type(5),c_tensor_type(4)),tensor_type(20)),
+        std::make_tuple(binary_mul{},std::make_tuple(c_tensor_type{1,2,3,4,5},2),tensor_type{2,4,6,8,10}),
+        std::make_tuple(binary_mul{},std::make_tuple(3,c_tensor_type{1,2,3,4,5}),tensor_type{3,6,9,12,15}),
+        std::make_tuple(binary_sub{},std::make_tuple(3,c_tensor_type{1,2,3,4,5}),tensor_type{2,1,0,-1,-2}),
+        std::make_tuple(binary_sub{},std::make_tuple(c_tensor_type{1,2,3,4,5},3),tensor_type{-2,-1,0,1,2}),
+        std::make_tuple(binary_mul{},std::make_tuple(c_tensor_type{1,2,3,4,5},c_tensor_type(2)),tensor_type{2,4,6,8,10}),
+        std::make_tuple(binary_mul{},std::make_tuple(c_tensor_type{1,2,3,4,5},c_tensor_type{2}),tensor_type{2,4,6,8,10}),
+        std::make_tuple(binary_mul{},std::make_tuple(c_tensor_type{1,2,3,4,5},c_tensor_type{5,4,3,2,1}),tensor_type{5,8,9,8,5}),
+        std::make_tuple(binary_mul{},std::make_tuple(4,c_tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}),tensor_type{{{4,8},{12,16}},{{20,24},{28,32}}}),
+        std::make_tuple(binary_mul{},std::make_tuple(c_tensor_type(4), c_tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}),tensor_type{{{4,8},{12,16}},{{20,24},{28,32}}}),
+        std::make_tuple(binary_mul{},std::make_tuple(c_tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},c_tensor_type{-1,2}),tensor_type{{{-1,4},{-3,8}},{{-5,12},{-7,16}}}),
+        std::make_tuple(binary_mul{},std::make_tuple(c_tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},c_tensor_type{{-1},{2}}),tensor_type{{{-1,-2},{6,8}},{{-5,-6},{14,16}}}),
+        std::make_tuple(ternary_add_mul{},std::make_tuple(c_tensor_type(1),c_tensor_type(2),c_tensor_type(3)),tensor_type(9)),
+        std::make_tuple(ternary_add_mul{},std::make_tuple(c_tensor_type(1),c_tensor_type{1,2,3,4,5},c_tensor_type(3)),tensor_type{6,9,12,15,18}),
+        std::make_tuple(ternary_add_mul{},std::make_tuple(c_tensor_type(1),c_tensor_type{1,2,3},c_tensor_type{{1},{2},{3}}),tensor_type{{2,3,4},{4,6,8},{6,9,12}}),
+        std::make_tuple(ternary_add_mul{},std::make_tuple(-1,c_tensor_type{1,2,3},c_tensor_type{{1},{2},{3}}),tensor_type{{0,1,2},{0,2,4},{0,3,6}}),
+        std::make_tuple(ternary_add_mul{},std::make_tuple(c_tensor_type{{4,5,6},{7,8,9}},c_tensor_type{1,2,3},2),tensor_type{{10,14,18},{16,20,24}}),
+        std::make_tuple(ternary_add_mul{},std::make_tuple(-1,c_tensor_type{{1,2,3},{4,5,6}},2),tensor_type{{0,2,4},{6,8,10}}),
+        //f_order operands
+        std::make_tuple(unary_square{},std::make_tuple(f_tensor_type{}),tensor_type{}),
+        std::make_tuple(unary_square{},std::make_tuple(f_tensor_type(2)),tensor_type(4)),
+        std::make_tuple(unary_square{},std::make_tuple(f_tensor_type{1,2,3,4,5}),tensor_type{1,4,9,16,25}),
+        std::make_tuple(binary_mul{},std::make_tuple(f_tensor_type(5),2),tensor_type(10)),
+        std::make_tuple(binary_mul{},std::make_tuple(3,f_tensor_type(5)),tensor_type(15)),
+        std::make_tuple(binary_mul{},std::make_tuple(f_tensor_type(5),f_tensor_type(4)),tensor_type(20)),
+        std::make_tuple(binary_mul{},std::make_tuple(f_tensor_type{1,2,3,4,5},2),tensor_type{2,4,6,8,10}),
+        std::make_tuple(binary_mul{},std::make_tuple(3,f_tensor_type{1,2,3,4,5}),tensor_type{3,6,9,12,15}),
+        std::make_tuple(binary_sub{},std::make_tuple(3,f_tensor_type{1,2,3,4,5}),tensor_type{2,1,0,-1,-2}),
+        std::make_tuple(binary_sub{},std::make_tuple(f_tensor_type{1,2,3,4,5},3),tensor_type{-2,-1,0,1,2}),
+        std::make_tuple(binary_mul{},std::make_tuple(f_tensor_type{1,2,3,4,5},f_tensor_type(2)),tensor_type{2,4,6,8,10}),
+        std::make_tuple(binary_mul{},std::make_tuple(f_tensor_type{1,2,3,4,5},f_tensor_type{2}),tensor_type{2,4,6,8,10}),
+        std::make_tuple(binary_mul{},std::make_tuple(f_tensor_type{1,2,3,4,5},f_tensor_type{5,4,3,2,1}),tensor_type{5,8,9,8,5}),
+        std::make_tuple(binary_mul{},std::make_tuple(4,f_tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}),tensor_type{{{4,8},{12,16}},{{20,24},{28,32}}}),
+        std::make_tuple(binary_mul{},std::make_tuple(f_tensor_type(4), f_tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}),tensor_type{{{4,8},{12,16}},{{20,24},{28,32}}}),
+        std::make_tuple(binary_mul{},std::make_tuple(f_tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},f_tensor_type{-1,2}),tensor_type{{{-1,4},{-3,8}},{{-5,12},{-7,16}}}),
+        std::make_tuple(binary_mul{},std::make_tuple(f_tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},f_tensor_type{{-1},{2}}),tensor_type{{{-1,-2},{6,8}},{{-5,-6},{14,16}}}),
+        std::make_tuple(ternary_add_mul{},std::make_tuple(f_tensor_type(1),f_tensor_type(2),f_tensor_type(3)),tensor_type(9)),
+        std::make_tuple(ternary_add_mul{},std::make_tuple(f_tensor_type(1),f_tensor_type{1,2,3,4,5},f_tensor_type(3)),tensor_type{6,9,12,15,18}),
+        std::make_tuple(ternary_add_mul{},std::make_tuple(f_tensor_type(1),f_tensor_type{1,2,3},f_tensor_type{{1},{2},{3}}),tensor_type{{2,3,4},{4,6,8},{6,9,12}}),
+        std::make_tuple(ternary_add_mul{},std::make_tuple(-1,f_tensor_type{1,2,3},f_tensor_type{{1},{2},{3}}),tensor_type{{0,1,2},{0,2,4},{0,3,6}}),
+        std::make_tuple(ternary_add_mul{},std::make_tuple(f_tensor_type{{4,5,6},{7,8,9}},f_tensor_type{1,2,3},2),tensor_type{{10,14,18},{16,20,24}}),
+        std::make_tuple(ternary_add_mul{},std::make_tuple(-1,f_tensor_type{{1,2,3},{4,5,6}},2),tensor_type{{0,2,4},{6,8,10}}),
+        //mixed operands
+        std::make_tuple(binary_mul{},std::make_tuple(c_tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},f_tensor_type{-1,2}),tensor_type{{{-1,4},{-3,8}},{{-5,12},{-7,16}}}),
+        std::make_tuple(binary_mul{},std::make_tuple(f_tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},c_tensor_type{{-1},{2}}),tensor_type{{{-1,-2},{6,8}},{{-5,-6},{14,16}}}),
+        std::make_tuple(ternary_add_mul{},std::make_tuple(f_tensor_type(1),c_tensor_type(2),f_tensor_type(3)),tensor_type(9)),
+        std::make_tuple(ternary_add_mul{},std::make_tuple(f_tensor_type(1),f_tensor_type{1,2,3,4,5},c_tensor_type(3)),tensor_type{6,9,12,15,18}),
+        std::make_tuple(ternary_add_mul{},std::make_tuple(f_tensor_type(1),c_tensor_type{1,2,3},f_tensor_type{{1},{2},{3}}),tensor_type{{2,3,4},{4,6,8},{6,9,12}}),
+        std::make_tuple(ternary_add_mul{},std::make_tuple(-1,f_tensor_type{1,2,3},c_tensor_type{{1},{2},{3}}),tensor_type{{0,1,2},{0,2,4},{0,3,6}}),
+        std::make_tuple(ternary_add_mul{},std::make_tuple(f_tensor_type{{4,5,6},{7,8,9}},c_tensor_type{1,2,3},2),tensor_type{{10,14,18},{16,20,24}})
     );
     auto test = [](const auto& t){
         auto f = std::get<0>(t);
@@ -263,12 +366,20 @@ TEMPLATE_TEST_CASE("test_expression_template_operator_n_operator","[test_express
 }
 
 TEMPLATE_TEST_CASE("test_expression_template_operator_a_operator","[test_expression_template_engine]",
-    test_config::config_engine_selector_t<gtensor::config::engine_expression_template>
+    //lhs order, rhs order
+    (std::tuple<gtensor::config::c_order,gtensor::config::c_order>),
+    (std::tuple<gtensor::config::c_order,gtensor::config::f_order>),
+    (std::tuple<gtensor::config::f_order,gtensor::config::c_order>),
+    (std::tuple<gtensor::config::f_order,gtensor::config::f_order>)
 )
 {
+    using lhs_order = std::tuple_element_t<0,TestType>;
+    using rhs_order = std::tuple_element_t<1,TestType>;
     using value_type = double;
-    using config_type = gtensor::config::extend_config_t<TestType,value_type>;
-    using tensor_type = gtensor::tensor<value_type,config_type>;
+    using config_type = gtensor::config::extend_config_t<test_config::config_engine_selector_t<gtensor::config::engine_expression_template>,value_type>;
+    using tensor_type = gtensor::tensor<value_type>;
+    using lhs_tensor_type = gtensor::tensor<value_type,lhs_order,config_type>;
+    using rhs_tensor_type = gtensor::tensor<value_type,rhs_order,config_type>;
     using gtensor::expression_template_operator;
     using test_expression_template_engine_::assign;
     using test_expression_template_engine_::assign_add;
@@ -276,38 +387,38 @@ TEMPLATE_TEST_CASE("test_expression_template_operator_a_operator","[test_express
     //0operation,1lhs,2rhs,3expected
     auto test_data = std::make_tuple(
         //rhs scalar
-        std::make_tuple(assign{},tensor_type{},2,tensor_type{}),
-        std::make_tuple(assign{},tensor_type(2),1,tensor_type(1)),
-        std::make_tuple(assign{},tensor_type{1,2,3,4,5},3,tensor_type{3,3,3,3,3}),
-        std::make_tuple(assign{},tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},4,tensor_type{{{4,4},{4,4}},{{4,4},{4,4}}}),
-        std::make_tuple(assign_add{},tensor_type{},2,tensor_type{}),
-        std::make_tuple(assign_add{},tensor_type(2),1,tensor_type(3)),
-        std::make_tuple(assign_add{},tensor_type{1,2,3,4,5},3,tensor_type{4,5,6,7,8}),
-        std::make_tuple(assign_add{},tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},4,tensor_type{{{5,6},{7,8}},{{9,10},{11,12}}}),
+        std::make_tuple(assign{},lhs_tensor_type{},2,tensor_type{}),
+        std::make_tuple(assign{},lhs_tensor_type(2),1,tensor_type(1)),
+        std::make_tuple(assign{},lhs_tensor_type{1,2,3,4,5},3,tensor_type{3,3,3,3,3}),
+        std::make_tuple(assign{},lhs_tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},4,tensor_type{{{4,4},{4,4}},{{4,4},{4,4}}}),
+        std::make_tuple(assign_add{},lhs_tensor_type{},2,tensor_type{}),
+        std::make_tuple(assign_add{},lhs_tensor_type(2),1,tensor_type(3)),
+        std::make_tuple(assign_add{},lhs_tensor_type{1,2,3,4,5},3,tensor_type{4,5,6,7,8}),
+        std::make_tuple(assign_add{},lhs_tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},4,tensor_type{{{5,6},{7,8}},{{9,10},{11,12}}}),
         //rhs tensor
-        std::make_tuple(assign{},tensor_type{},tensor_type{},tensor_type{}),
-        std::make_tuple(assign{},tensor_type{},tensor_type(1),tensor_type{}),
-        std::make_tuple(assign{},tensor_type{},tensor_type{1},tensor_type{}),
-        std::make_tuple(assign{},tensor_type(1),tensor_type{},tensor_type(1)),
-        std::make_tuple(assign{},tensor_type(1),tensor_type(2),tensor_type(2)),
-        std::make_tuple(assign{},tensor_type(2),tensor_type{3},tensor_type(3)),
-        std::make_tuple(assign{},tensor_type{1,2,3,4,5},tensor_type{6},tensor_type{6,6,6,6,6}),
-        std::make_tuple(assign{},tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},tensor_type{{-1},{1}},tensor_type{{{-1,-1},{1,1}},{{-1,-1},{1,1}}}),
-        std::make_tuple(assign_add{},tensor_type{},tensor_type{},tensor_type{}),
-        std::make_tuple(assign_add{},tensor_type{},tensor_type(1),tensor_type{}),
-        std::make_tuple(assign_add{},tensor_type{},tensor_type{1},tensor_type{}),
-        std::make_tuple(assign_add{},tensor_type(1),tensor_type{},tensor_type(1)),
-        std::make_tuple(assign_add{},tensor_type(1),tensor_type(2),tensor_type(3)),
-        std::make_tuple(assign_add{},tensor_type(2),tensor_type{3},tensor_type(5)),
-        std::make_tuple(assign_add{},tensor_type{1,2,3,4,5},tensor_type{6},tensor_type{7,8,9,10,11}),
-        std::make_tuple(assign_add{},tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},tensor_type{{-1},{1}},tensor_type{{{0,1},{4,5}},{{4,5},{8,9}}}),
+        std::make_tuple(assign{},lhs_tensor_type{},rhs_tensor_type{},tensor_type{}),
+        std::make_tuple(assign{},lhs_tensor_type{},rhs_tensor_type(1),tensor_type{}),
+        std::make_tuple(assign{},lhs_tensor_type{},rhs_tensor_type{1},tensor_type{}),
+        std::make_tuple(assign{},lhs_tensor_type(1),rhs_tensor_type{},tensor_type(1)),
+        std::make_tuple(assign{},lhs_tensor_type(1),rhs_tensor_type(2),tensor_type(2)),
+        std::make_tuple(assign{},lhs_tensor_type(2),rhs_tensor_type{3},tensor_type(3)),
+        std::make_tuple(assign{},lhs_tensor_type{1,2,3,4,5},rhs_tensor_type{6},tensor_type{6,6,6,6,6}),
+        std::make_tuple(assign{},lhs_tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},rhs_tensor_type{{-1},{1}},tensor_type{{{-1,-1},{1,1}},{{-1,-1},{1,1}}}),
+        std::make_tuple(assign_add{},lhs_tensor_type{},rhs_tensor_type{},tensor_type{}),
+        std::make_tuple(assign_add{},lhs_tensor_type{},rhs_tensor_type(1),tensor_type{}),
+        std::make_tuple(assign_add{},lhs_tensor_type{},rhs_tensor_type{1},tensor_type{}),
+        std::make_tuple(assign_add{},lhs_tensor_type(1),rhs_tensor_type{},tensor_type(1)),
+        std::make_tuple(assign_add{},lhs_tensor_type(1),rhs_tensor_type(2),tensor_type(3)),
+        std::make_tuple(assign_add{},lhs_tensor_type(2),rhs_tensor_type{3},tensor_type(5)),
+        std::make_tuple(assign_add{},lhs_tensor_type{1,2,3,4,5},rhs_tensor_type{6},tensor_type{7,8,9,10,11}),
+        std::make_tuple(assign_add{},lhs_tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},rhs_tensor_type{{-1},{1}},tensor_type{{{0,1},{4,5}},{{4,5},{8,9}}}),
         //assign multiple times to lhs
-        std::make_tuple(assign{},tensor_type(3),tensor_type{1,2,3,4,5},tensor_type(5)),
-        std::make_tuple(assign{},tensor_type{0},tensor_type{1,2,3,4,5},tensor_type{5}),
-        std::make_tuple(assign{},tensor_type{0,0},tensor_type{{1,2},{3,4},{5,6}},tensor_type{5,6}),
-        std::make_tuple(assign_add{},tensor_type(3),tensor_type{1,2,3,4,5},tensor_type(18)),
-        std::make_tuple(assign_add{},tensor_type{0},tensor_type{1,2,3,4,5},tensor_type{15}),
-        std::make_tuple(assign_add{},tensor_type{-1,1},tensor_type{{1,2},{3,4},{5,6}},tensor_type{8,13})
+        std::make_tuple(assign{},lhs_tensor_type(3),rhs_tensor_type{1,2,3,4,5},tensor_type(5)),
+        std::make_tuple(assign{},lhs_tensor_type{0},rhs_tensor_type{1,2,3,4,5},tensor_type{5}),
+        std::make_tuple(assign{},lhs_tensor_type{0,0},rhs_tensor_type{{1,2},{3,4},{5,6}},tensor_type{5,6}),
+        std::make_tuple(assign_add{},lhs_tensor_type(3),rhs_tensor_type{1,2,3,4,5},tensor_type(18)),
+        std::make_tuple(assign_add{},lhs_tensor_type{0},rhs_tensor_type{1,2,3,4,5},tensor_type{15}),
+        std::make_tuple(assign_add{},lhs_tensor_type{-1,1},rhs_tensor_type{{1,2},{3,4},{5,6}},tensor_type{8,13})
     );
     auto test = [](const auto& t){
         auto f = std::get<0>(t);
