@@ -644,29 +644,28 @@ class view_factory
         using dim_type = typename parent_type::dim_type;
         using index_map_type = typename config_type::index_map_type;
         using index_container_type = typename config_type::template container<index_type>;
+        using index_container_difference_type = typename index_container_type::difference_type;
         using descriptor_type = mapping_descriptor<config_type,order>;
         using view_type = mapping_view<config_type,order,parent_type>;
         const auto& pshape = parent.shape();
         const auto& subs_shape = subs.shape();
         detail::check_bool_mapping_view_subs(pshape, subs_shape);
-        if (!parent.empty()){
+        if (!parent.empty() && !subs.empty()){
             index_container_type index_container{};
             index_type subs_trues_number{0};
             const dim_type subs_dim = subs.dim();
             const index_type chunk_size = detail::mapping_view_chunk_size(pshape, subs_dim);
-            if (!subs.empty()){
-                if constexpr (std::is_convertible_v<index_type,typename index_container_type::difference_type>){
-                    index_container.reserve(parent.size());
-                }
-                subs_trues_number = detail::fill_bool_map<order>(
-                    pshape,
-                    parent.strides(),
-                    subs_dim,
-                    chunk_size,
-                    index_container,
-                    walker_forward_traverser<config_type, decltype(subs.create_walker())>{subs_shape, subs.create_walker()}
-                );
+            if constexpr (detail::is_static_castable_v<index_type,index_container_difference_type>){
+                index_container.reserve(static_cast<index_container_difference_type>(parent.size()));
             }
+            subs_trues_number = detail::fill_bool_map<order>(
+                pshape,
+                parent.strides(),
+                subs_dim,
+                chunk_size,
+                index_container,
+                walker_forward_traverser<config_type, decltype(subs.create_walker())>{subs_shape, subs.create_walker()}
+            );
             auto res_shape = detail::make_bool_mapping_view_shape(pshape, subs_trues_number, subs.dim());
             auto res_size = detail::make_size(res_shape);
             index_map_type index_map(res_size);
@@ -694,7 +693,7 @@ class view_factory
                 parent
             );
         }else{
-            index_type subs_trues_number = static_cast<index_type>(std::count(subs.begin(),subs.end(),true));
+            index_type subs_trues_number = std::count(subs.begin(),subs.end(),true);
             return std::make_shared<view_type>(
                 descriptor_type{
                     detail::make_bool_mapping_view_shape(pshape, subs_trues_number, subs.dim()),
