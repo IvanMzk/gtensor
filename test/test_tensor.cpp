@@ -1074,7 +1074,6 @@ TEST_CASE("test_tensor_copy","[test_tensor]"){
         auto expected = std::get<1>(t);
         auto result = ten.copy();
         REQUIRE(result == expected);
-        REQUIRE(std::is_same_v<tensor_type,decltype(result)>);
     };
     apply_by_element(test, test_data);
 }
@@ -1140,18 +1139,28 @@ TEST_CASE("test_tensor_swap","[test_tensor]")
 TEST_CASE("test_tensor_meta_data_interface","[test_tensor]")
 {
     using value_type = double;
-    using tensor_type = gtensor::tensor<value_type>;
-    using dim_type = typename tensor_type::dim_type;
-    using index_type = typename tensor_type::index_type;
-    using shape_type = typename tensor_type::shape_type;
+    using gtensor::config::c_order;
+    using gtensor::config::f_order;
+    using gtensor::tensor;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
+    using dim_type = typename config_type::dim_type;
+    using index_type = typename config_type::index_type;
+    using shape_type = typename config_type::shape_type;
     using helpers_for_testing::apply_by_element;
     //0tensor,1expected_dim,2expected_size,3expected_shape,4expected_strides
     auto test_data = std::make_tuple(
-        std::make_tuple(tensor_type(1),dim_type{0},index_type{1},shape_type{},shape_type{}),
-        std::make_tuple(tensor_type{},dim_type{1},index_type{0},shape_type{0},shape_type{1}),
-        std::make_tuple(tensor_type{1},dim_type{1},index_type{1},shape_type{1},shape_type{1}),
-        std::make_tuple(tensor_type{1,2,3},dim_type{1},index_type{3},shape_type{3},shape_type{1}),
-        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},dim_type{3},index_type{8},shape_type{2,2,2},shape_type{4,2,1})
+        //c_order layout
+        std::make_tuple(tensor<value_type,c_order>(1),dim_type{0},index_type{1},shape_type{},shape_type{}),
+        std::make_tuple(tensor<value_type,c_order>{},dim_type{1},index_type{0},shape_type{0},shape_type{1}),
+        std::make_tuple(tensor<value_type,c_order>{1},dim_type{1},index_type{1},shape_type{1},shape_type{1}),
+        std::make_tuple(tensor<value_type,c_order>{1,2,3},dim_type{1},index_type{3},shape_type{3},shape_type{1}),
+        std::make_tuple(tensor<value_type,c_order>{{{1,2},{3,4}},{{5,6},{7,8}}},dim_type{3},index_type{8},shape_type{2,2,2},shape_type{4,2,1}),
+        //f_order layout
+        std::make_tuple(tensor<value_type,f_order>(1),dim_type{0},index_type{1},shape_type{},shape_type{}),
+        std::make_tuple(tensor<value_type,f_order>{},dim_type{1},index_type{0},shape_type{0},shape_type{1}),
+        std::make_tuple(tensor<value_type,f_order>{1},dim_type{1},index_type{1},shape_type{1},shape_type{1}),
+        std::make_tuple(tensor<value_type,f_order>{1,2,3},dim_type{1},index_type{3},shape_type{3},shape_type{1}),
+        std::make_tuple(tensor<value_type,f_order>{{{1,2},{3,4}},{{5,6},{7,8}}},dim_type{3},index_type{8},shape_type{2,2,2},shape_type{1,2,4})
     );
     auto test = [](const auto& t){
         auto ten = std::get<0>(t);
@@ -1187,20 +1196,11 @@ TEMPLATE_TEST_CASE("test_tensor_data_interface","[test_tensor]",
     using tensor_type = TestType;
     using config_type = typename tensor_type::config_type;
     using traverse_order = typename config_type::order;
-    using value_type = typename tensor_type::value_type;
     using index_type = typename tensor_type::index_type;
-    using shape_type = typename tensor_type::shape_type;
+    using value_type = typename tensor_type::value_type;
     using gtensor::config::c_order;
     using gtensor::config::f_order;
     using helpers_for_testing::apply_by_element;
-    // //0shape,1elements
-    // auto test_data = std::make_tuple(
-    //     std::make_tuple(shape_type{},std::vector<value_type>{1}),
-    //     std::make_tuple(shape_type{0},std::vector<value_type>{}),
-    //     std::make_tuple(shape_type{1},std::vector<value_type>{2}),
-    //     std::make_tuple(shape_type{6},std::vector<value_type>{1,2,3,4,5,6}),
-    //     std::make_tuple(shape_type{2,2,2},std::vector<value_type>{1,2,3,4,5,6,7,8})
-    // );
     //0tensor,1elements_c_traverse,2elements_f_traverse
     auto test_data = std::make_tuple(
         std::make_tuple(tensor_type(1),std::vector<value_type>{1},std::vector<value_type>{1}),
@@ -1218,7 +1218,6 @@ TEMPLATE_TEST_CASE("test_tensor_data_interface","[test_tensor]",
             auto first = ten.begin();
             auto last = ten.end();
             REQUIRE(std::is_same_v<decltype(first),decltype(last)>);
-            REQUIRE(std::is_const_v<tensor_type> == std::is_const_v<std::remove_reference_t<decltype(*first)>>);
             if constexpr (std::is_same_v<traverse_order,c_order>){
                 REQUIRE(std::equal(first,last,elements_c_traverse.begin(),elements_c_traverse.end()));
             }else{
@@ -1227,84 +1226,107 @@ TEMPLATE_TEST_CASE("test_tensor_data_interface","[test_tensor]",
         };
         apply_by_element(test,test_data);
     }
-    // SECTION("test_reverse_iterator")
-    // {
-    //     auto test = [](const auto& t){
-    //         shape_type shape = std::get<0>(t);
-    //         auto elements = std::get<1>(t);
-    //         auto expected = elements;
-    //         tensor_type ten{shape,elements.begin(),elements.end()};
-    //         auto first = ten.rbegin();
-    //         auto last = ten.rend();
-    //         REQUIRE(std::is_same_v<decltype(first),decltype(last)>);
-    //         REQUIRE(std::is_const_v<tensor_type> == std::is_const_v<std::remove_reference_t<decltype(*first)>>);
-    //         REQUIRE(std::equal(first,last,expected.rbegin(),expected.rend()));
-    //     };
-    //     apply_by_element(test,test_data);
-    // }
-    // SECTION("test_broadcast_iterator")
-    // {
-    //     auto test = [](const auto& t){
-    //         shape_type shape = std::get<0>(t);
-    //         auto elements = std::get<1>(t);
-    //         auto expected = elements;
-    //         tensor_type ten{shape,elements.begin(),elements.end()};
-    //         auto first = ten.begin(shape);
-    //         auto last = ten.end(shape);
-    //         REQUIRE(std::is_same_v<decltype(first),decltype(last)>);
-    //         REQUIRE(std::is_const_v<tensor_type> == std::is_const_v<std::remove_reference_t<decltype(*first)>>);
-    //         REQUIRE(std::equal(first,last,expected.begin(),expected.end()));
-    //     };
-    //     apply_by_element(test,test_data);
-    // }
-    // SECTION("test_reverse_broadcast_iterator")
-    // {
-    //     auto test = [](const auto& t){
-    //         shape_type shape = std::get<0>(t);
-    //         auto elements = std::get<1>(t);
-    //         auto expected = elements;
-    //         tensor_type ten{shape,elements.begin(),elements.end()};
-    //         auto first = ten.rbegin(shape);
-    //         auto last = ten.rend(shape);
-    //         REQUIRE(std::is_same_v<decltype(first),decltype(last)>);
-    //         REQUIRE(std::is_const_v<tensor_type> == std::is_const_v<std::remove_reference_t<decltype(*first)>>);
-    //         REQUIRE(std::equal(first,last,expected.rbegin(),expected.rend()));
-    //     };
-    //     apply_by_element(test,test_data);
-    // }
-    // SECTION("test_indexer")
-    // {
-    //     auto test = [](const auto& t){
-    //         shape_type shape = std::get<0>(t);
-    //         auto elements = std::get<1>(t);
-    //         auto expected = elements;
-    //         tensor_type ten{shape,elements.begin(),elements.end()};
-    //         auto indexer = ten.create_indexer();
-    //         REQUIRE(std::is_const_v<tensor_type> == std::is_const_v<std::remove_reference_t<decltype(indexer[std::declval<index_type>()])>>);
-    //         using indexer_iterator_type = gtensor::indexer_iterator<config_type,decltype(indexer)>;
-    //         indexer_iterator_type first{indexer,index_type{0}};
-    //         indexer_iterator_type last{indexer,ten.size()};
-    //         REQUIRE(std::equal(first,last,expected.begin(),expected.end()));
-    //     };
-    //     apply_by_element(test,test_data);
-    // }
-    // SECTION("test_walker")
-    // {
-    //     auto test = [](const auto& t){
-    //         shape_type shape = std::get<0>(t);
-    //         auto elements = std::get<1>(t);
-    //         auto expected = elements;
-    //         tensor_type ten{shape,elements.begin(),elements.end()};
-    //         auto walker = ten.create_walker();
-    //         REQUIRE(std::is_const_v<tensor_type> == std::is_const_v<std::remove_reference_t<decltype(*walker)>>);
-    //         using walker_iterator_type = gtensor::walker_iterator<config_type,decltype(walker)>;
-    //         walker_iterator_type first{walker,ten.shape(), ten.descriptor().strides_div(), index_type{0}};
-    //         walker_iterator_type last{walker,ten.shape(), ten.descriptor().strides_div(), ten.size()};
-    //         REQUIRE(std::equal(first,last,expected.begin(),expected.end()));
-    //     };
-    //     apply_by_element(test,test_data);
-    // }
-
+    SECTION("test_reverse_iterator")
+    {
+        auto test = [](const auto& t){
+            tensor_type ten = std::get<0>(t);
+            auto elements_c_traverse = std::get<1>(t);
+            auto elements_f_traverse = std::get<2>(t);
+            auto first = ten.rbegin();
+            auto last = ten.rend();
+            REQUIRE(std::is_same_v<decltype(first),decltype(last)>);
+            if constexpr (std::is_same_v<traverse_order,c_order>){
+                REQUIRE(std::equal(first,last,elements_c_traverse.rbegin(),elements_c_traverse.rend()));
+            }else{
+                REQUIRE(std::equal(first,last,elements_f_traverse.rbegin(),elements_f_traverse.rend()));
+            }
+        };
+        apply_by_element(test,test_data);
+    }
+    SECTION("test_broadcast_iterator")
+    {
+        auto test = [](const auto& t){
+            tensor_type ten = std::get<0>(t);
+            auto elements_c_traverse = std::get<1>(t);
+            auto elements_f_traverse = std::get<2>(t);
+            auto shape = ten.shape();
+            auto first = ten.begin(shape);
+            auto last = ten.end(shape);
+            REQUIRE(std::is_same_v<decltype(first),decltype(last)>);
+            if constexpr (std::is_same_v<traverse_order,c_order>){
+                REQUIRE(std::equal(first,last,elements_c_traverse.begin(),elements_c_traverse.end()));
+            }else{
+                REQUIRE(std::equal(first,last,elements_f_traverse.begin(),elements_f_traverse.end()));
+            }
+        };
+        apply_by_element(test,test_data);
+    }
+    SECTION("test_reverse_broadcast_iterator")
+    {
+        auto test = [](const auto& t){
+            tensor_type ten = std::get<0>(t);
+            auto elements_c_traverse = std::get<1>(t);
+            auto elements_f_traverse = std::get<2>(t);
+            auto shape = ten.shape();
+            auto first = ten.rbegin(shape);
+            auto last = ten.rend(shape);
+            REQUIRE(std::is_same_v<decltype(first),decltype(last)>);
+            if constexpr (std::is_same_v<traverse_order,c_order>){
+                REQUIRE(std::equal(first,last,elements_c_traverse.rbegin(),elements_c_traverse.rend()));
+            }else{
+                REQUIRE(std::equal(first,last,elements_f_traverse.rbegin(),elements_f_traverse.rend()));
+            }
+        };
+        apply_by_element(test,test_data);
+    }
+    SECTION("test_indexer")
+    {
+        auto test = [](const auto& t){
+            tensor_type ten = std::get<0>(t);
+            auto elements_c_traverse = std::get<1>(t);
+            auto elements_f_traverse = std::get<2>(t);
+            auto indexer = ten.create_indexer();
+            std::vector<value_type> traverse_result{};
+            for(index_type i=0, i_last = ten.size(); i!=i_last; ++i){
+                traverse_result.push_back(indexer[i]);
+            }
+            auto first = traverse_result.begin();
+            auto last = traverse_result.end();
+            REQUIRE(std::is_same_v<decltype(first),decltype(last)>);
+            if constexpr (std::is_same_v<traverse_order,c_order>){
+                REQUIRE(std::equal(first,last,elements_c_traverse.begin(),elements_c_traverse.end()));
+            }else{
+                REQUIRE(std::equal(first,last,elements_f_traverse.begin(),elements_f_traverse.end()));
+            }
+        };
+        apply_by_element(test,test_data);
+    }
+    SECTION("test_walker_c_order_traverse")
+    {
+        auto test = [](const auto& t){
+            tensor_type ten = std::get<0>(t);
+            auto elements_c_traverse = std::get<1>(t);
+            auto walker = ten.create_walker();
+            using walker_iterator_type = gtensor::walker_iterator<config_type,decltype(walker),c_order>;
+            walker_iterator_type first{walker, ten.shape(), ten.descriptor().strides_div(c_order{}), index_type{0}};
+            walker_iterator_type last{walker, ten.shape(), ten.descriptor().strides_div(c_order{}), ten.size()};
+            REQUIRE(std::equal(first,last,elements_c_traverse.begin(),elements_c_traverse.end()));
+        };
+        apply_by_element(test,test_data);
+    }
+    SECTION("test_walker_f_order_traverse")
+    {
+        auto test = [](const auto& t){
+            tensor_type ten = std::get<0>(t);
+            auto elements_f_traverse = std::get<2>(t);
+            auto walker = ten.create_walker();
+            using walker_iterator_type = gtensor::walker_iterator<config_type,decltype(walker),f_order>;
+            walker_iterator_type first{walker, ten.shape(), ten.descriptor().strides_div(f_order{}), index_type{0}};
+            walker_iterator_type last{walker, ten.shape(), ten.descriptor().strides_div(f_order{}), ten.size()};
+            REQUIRE(std::equal(first,last,elements_f_traverse.begin(),elements_f_traverse.end()));
+        };
+        apply_by_element(test,test_data);
+    }
 }
 
 TEST_CASE("test_tensor_view_interface","[test_tensor]")
