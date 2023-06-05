@@ -964,87 +964,95 @@ TEST_CASE("test_tensor_is_same","[test_tensor]")
 
 TEST_CASE("test_tensor_resize","[test_tensor]")
 {
+    using value_type = int;
     using gtensor::config::c_order;
     using gtensor::config::f_order;
-    using value_type = int;
-    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::tensor;
+    using tensor_type = tensor<value_type>;
     using helpers_for_testing::apply_by_element;
     SECTION("test_tensor_resize_to_not_bigger")
     {
-        //0tensor,1new_shape,2order,3expected
+        //0tensor,1new_shape,2expected
         auto test_data = std::make_tuple(
             //c_order
-            std::make_tuple(tensor_type{},std::vector<int>{0},c_order{},tensor_type{}),
-            std::make_tuple(tensor_type{},std::array<int,3>{0,2,3},c_order{},tensor_type{}.reshape(0,2,3)),
-            std::make_tuple(tensor_type(1),std::vector<int>{0},c_order{},tensor_type{}),
-            std::make_tuple(tensor_type(2),std::vector<int>{},c_order{},tensor_type(2)),
-            std::make_tuple(tensor_type(1),std::vector<int>{1,1},c_order{},tensor_type{{1}}),
-            std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},std::vector<int>{0},c_order{},tensor_type{}),
-            std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},std::vector<int>{},c_order{},tensor_type(1)),
-            std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},std::vector<int>{3},c_order{},tensor_type{1,2,3}),
-            std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},std::vector<int>{2,3},c_order{},tensor_type{{1,2,3},{4,5,6}}),
-            std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},std::vector<int>{2,2,2},c_order{},tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}),
+            std::make_tuple(tensor<value_type,c_order>{},std::vector<int>{0},tensor_type{}),
+            std::make_tuple(tensor<value_type,c_order>{},std::array<int,3>{0,2,3},tensor_type{}.reshape(0,2,3)),
+            std::make_tuple(tensor<value_type,c_order>(1),std::vector<int>{0},tensor_type{}),
+            std::make_tuple(tensor<value_type,c_order>(2),std::vector<int>{},tensor_type(2)),
+            std::make_tuple(tensor<value_type,c_order>(1),std::vector<int>{1,1},tensor_type{{1}}),
+            std::make_tuple(tensor<value_type,c_order>{{{1,2},{3,4}},{{5,6},{7,8}}},std::vector<int>{0},tensor_type{}),
+            std::make_tuple(tensor<value_type,c_order>{{{1,2},{3,4}},{{5,6},{7,8}}},std::vector<int>{},tensor_type(1)),
+            std::make_tuple(tensor<value_type,c_order>{{{1,2},{3,4}},{{5,6},{7,8}}},std::vector<int>{3},tensor_type{1,2,3}),
+            std::make_tuple(tensor<value_type,c_order>{{{1,2},{3,4}},{{5,6},{7,8}}},std::vector<int>{2,3},tensor_type{{1,2,3},{4,5,6}}),
+            std::make_tuple(tensor<value_type,c_order>{{{1,2},{3,4}},{{5,6},{7,8}}},std::vector<int>{2,2,2},tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}),
             //f_order
-            std::make_tuple(tensor_type{},std::vector<int>{0},f_order{},tensor_type{}),
-            std::make_tuple(tensor_type{},std::array<int,3>{0,2,3},f_order{},tensor_type{}.reshape(0,2,3)),
-            std::make_tuple(tensor_type(1),std::vector<int>{0},f_order{},tensor_type{}),
-            std::make_tuple(tensor_type(2),std::vector<int>{},f_order{},tensor_type(2)),
-            std::make_tuple(tensor_type(1),std::vector<int>{1,1},f_order{},tensor_type{{1}}),
-            std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},std::vector<int>{0},f_order{},tensor_type{}),
-            std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},std::vector<int>{},f_order{},tensor_type(1)),
-            std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},std::vector<int>{3},f_order{},tensor_type{1,5,3}),
-            std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},std::vector<int>{2,3},f_order{},tensor_type{{1,5,3},{7,2,6}}),
-            std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}},std::vector<int>{2,2,2},f_order{},tensor_type{{{1,5},{3,7}},{{2,6},{4,8}}})
+            std::make_tuple(tensor<value_type,f_order>{},std::vector<int>{0},tensor_type{}),
+            std::make_tuple(tensor<value_type,f_order>{},std::array<int,3>{0,2,3},tensor_type{}.reshape(0,2,3)),
+            std::make_tuple(tensor<value_type,f_order>(1),std::vector<int>{0},tensor_type{}),
+            std::make_tuple(tensor<value_type,f_order>(2),std::vector<int>{},tensor_type(2)),
+            std::make_tuple(tensor<value_type,f_order>(1),std::vector<int>{1,1},tensor_type{{1}}),
+            std::make_tuple(tensor<value_type,f_order>{{{1,2},{3,4}},{{5,6},{7,8}}},std::vector<int>{0},tensor_type{}),
+            std::make_tuple(tensor<value_type,f_order>{{{1,2},{3,4}},{{5,6},{7,8}}},std::vector<int>{},tensor_type(1)),
+            std::make_tuple(tensor<value_type,f_order>{{{1,2},{3,4}},{{5,6},{7,8}}},std::vector<int>{3},tensor_type{1,5,3}),
+            std::make_tuple(tensor<value_type,f_order>{{{1,2},{3,4}},{{5,6},{7,8}}},std::vector<int>{2,3},tensor_type{{1,3,2},{5,7,6}}),
+            std::make_tuple(tensor<value_type,f_order>{{{1,2},{3,4}},{{5,6},{7,8}}},std::vector<int>{2,2,2},tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}})
         );
         auto test = [](const auto& t){
             auto ten = std::get<0>(t);
             auto new_shape = std::get<1>(t);
-            auto order = std::get<2>(t);
-            auto expected = std::get<3>(t);
+            auto expected = std::get<2>(t);
             auto ten_size = ten.size();
             auto expected_size = expected.size();
             REQUIRE(ten_size >= expected_size);
-            ten.resize(new_shape, order);
+            ten.resize(new_shape);
             REQUIRE(ten == expected);
         };
         apply_by_element(test,test_data);
     }
     SECTION("test_tensor_resize_to_bigger")
     {
-        using index_type = typename tensor_type::index_type;
-        const value_type any{-1};
+        const value_type any{std::numeric_limits<value_type>::max()};
         //0tensor,1size,2new_shape,3expected
         auto test_data = std::make_tuple(
-            std::make_tuple(tensor_type{},index_type{0},std::vector<int>{1},tensor_type{any}),
-            std::make_tuple(tensor_type{},index_type{0},std::vector<int>{5},tensor_type{any,any,any,any,any}),
-            std::make_tuple(tensor_type{},index_type{0},std::vector<int>{2,3},tensor_type{{any,any,any},{any,any,any}}),
-            std::make_tuple(tensor_type(3),index_type{1},std::vector<int>{5},tensor_type{3,any,any,any,any}),
-            std::make_tuple(tensor_type(3),index_type{1},std::vector<int>{3,2},tensor_type{{3,any},{any,any},{any,any}}),
-            std::make_tuple(tensor_type{4},index_type{1},std::vector<int>{5},tensor_type{4,any,any,any,any}),
-            std::make_tuple(tensor_type{{1,2,3},{4,5,6}},index_type{6},std::vector<int>{2,2,2},tensor_type{{{1,2},{3,4}},{{5,6},{any,any}}})
+            //c_order
+            std::make_tuple(tensor<value_type,c_order>{},std::vector<int>{1},tensor_type{any}),
+            std::make_tuple(tensor<value_type,c_order>{},std::vector<int>{5},tensor_type{any,any,any,any,any}),
+            std::make_tuple(tensor<value_type,c_order>{},std::vector<int>{2,3},tensor_type{{any,any,any},{any,any,any}}),
+            std::make_tuple(tensor<value_type,c_order>(3),std::vector<int>{5},tensor_type{3,any,any,any,any}),
+            std::make_tuple(tensor<value_type,c_order>(3),std::vector<int>{3,2},tensor_type{{3,any},{any,any},{any,any}}),
+            std::make_tuple(tensor<value_type,c_order>{4},std::vector<int>{5},tensor_type{4,any,any,any,any}),
+            std::make_tuple(tensor<value_type,c_order>{{1,2,3},{4,5,6}},std::vector<int>{2,2,2},tensor_type{{{1,2},{3,4}},{{5,6},{any,any}}}),
+            //f_order
+            std::make_tuple(tensor<value_type,f_order>{},std::vector<int>{1},tensor_type{any}),
+            std::make_tuple(tensor<value_type,f_order>{},std::vector<int>{5},tensor_type{any,any,any,any,any}),
+            std::make_tuple(tensor<value_type,f_order>{},std::vector<int>{2,3},tensor_type{{any,any,any},{any,any,any}}),
+            std::make_tuple(tensor<value_type,f_order>(3),std::vector<int>{5},tensor_type{3,any,any,any,any}),
+            std::make_tuple(tensor<value_type,f_order>(3),std::vector<int>{3,2},tensor_type{{3,any},{any,any},{any,any}}),
+            std::make_tuple(tensor<value_type,f_order>{4},std::vector<int>{5},tensor_type{4,any,any,any,any}),
+            std::make_tuple(tensor<value_type,f_order>{{1,2,3},{4,5,6}},std::vector<int>{2,2,2},tensor_type{{{1,3},{2,any}},{{4,6},{5,any}}})
         );
-        auto test = [](const auto& t){
+        auto test = [&any](const auto& t){
             auto ten = std::get<0>(t);
-            auto ten_size = std::get<1>(t);
-            auto new_shape = std::get<2>(t);
-            auto expected = std::get<3>(t);
-            auto expected_size = expected.size();
+            auto new_shape = std::get<1>(t);
+            auto expected = std::get<2>(t);
             auto expected_shape = expected.shape();
-            REQUIRE(ten_size == ten.size());
-            REQUIRE(expected_size > ten_size);
             ten.resize(new_shape);
             auto result_shape = ten.shape();
             REQUIRE(result_shape == expected_shape);
-            REQUIRE(std::equal(ten.begin(),ten.begin()+ten_size,expected.begin()));
+            auto comparator = [&any](auto result_element, auto expected_element){
+                return expected_element == any ? true : result_element == expected_element;
+            };
+            REQUIRE(std::equal(ten.begin(),ten.end(),expected.begin(),expected.end(),comparator));
         };
         apply_by_element(test,test_data);
     }
     SECTION("test_tensor_resize_init_list_interface")
     {
-        tensor_type t0{{1,2,3},{4,5,6}};
+        tensor<value_type,c_order> t0{{1,2,3},{4,5,6}};
         t0.resize({2,2});
         REQUIRE(t0 == tensor_type{{1,2},{3,4}});
     }
+
 }
 
 TEST_CASE("test_tensor_copy","[test_tensor]"){
