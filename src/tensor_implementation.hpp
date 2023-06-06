@@ -233,7 +233,8 @@ inline auto begin_broadcast(Core& t, const Descriptor& descriptor, ShT&& shape){
 }
 template<typename TraverseOrder, typename Core, typename Descriptor, typename ShT>
 inline auto end_broadcast(Core& t, const Descriptor& descriptor, ShT&& shape){
-    return create_broadcast_iterator<TraverseOrder>(t, descriptor, std::forward<ShT>(shape),make_size(shape));
+    auto size = make_size(shape);
+    return create_broadcast_iterator<TraverseOrder>(t, descriptor, std::forward<ShT>(shape), size);
 }
 
 //create reverse broadcast iterator
@@ -254,7 +255,8 @@ inline auto create_reverse_broadcast_iterator(Core& t, const Descriptor& descrip
 }
 template<typename TraverseOrder, typename Core, typename Descriptor, typename ShT>
 inline auto rbegin_broadcast(Core& t, const Descriptor& descriptor, ShT&& shape){
-    return create_reverse_broadcast_iterator<TraverseOrder>(t, descriptor, std::forward<ShT>(shape),make_size(shape));
+    auto size = make_size(shape);
+    return create_reverse_broadcast_iterator<TraverseOrder>(t, descriptor, std::forward<ShT>(shape), size);
 }
 template<typename TraverseOrder, typename Core, typename Descriptor, typename ShT>
 inline auto rend_broadcast(Core& t, const Descriptor& descriptor, ShT&& shape){
