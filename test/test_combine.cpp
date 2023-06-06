@@ -391,12 +391,15 @@ TEST_CASE("test_widen_shape", "[test_combine]"){
 }
 
 //test interface
-TEST_CASE("test_stack_nothrow","[test_combine]")
+TEMPLATE_TEST_CASE("test_stack_nothrow","[test_combine]",
+    gtensor::config::c_order,
+    gtensor::config::f_order
+)
 {
+    using order = TestType;
     using value_type = double;
-    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
-    using dim_type = typename config_type::dim_type;
-    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using tensor_type = gtensor::tensor<value_type, order>;
+    using dim_type = typename tensor_type::dim_type;
     using helpers_for_testing::apply_by_element;
     using gtensor::stack;
     //0direction,1tensors,2expected
@@ -460,12 +463,12 @@ TEST_CASE("test_stack_nothrow","[test_combine]")
     }
     SECTION("test_stack_container_nothrow")
     {
-        using container_type = std::vector<tensor_type>;
+        using container_type = std::vector<decltype(std::declval<tensor_type>().copy(order{}))>;
         auto test_concatenate_container = [](const auto& t){
             auto direction = std::get<0>(t);
             auto tensors = std::get<1>(t);
             auto expected = std::get<2>(t);
-            auto container = std::apply([](const auto&...ts){return container_type{ts.copy()...};}, tensors);
+            auto container = std::apply([](const auto&...ts){return container_type{ts.copy(order{})...};}, tensors);
             auto result = stack(direction, container);
             REQUIRE(result == expected);
         };
@@ -476,9 +479,8 @@ TEST_CASE("test_stack_nothrow","[test_combine]")
 TEST_CASE("test_stack_exception","[test_combine]")
 {
     using value_type = double;
-    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
-    using dim_type = typename config_type::dim_type;
-    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using tensor_type = gtensor::tensor<value_type>;
+    using dim_type = typename tensor_type::dim_type;
     using gtensor::combine_exception;
     using helpers_for_testing::apply_by_element;
     using gtensor::stack;
@@ -510,7 +512,7 @@ TEST_CASE("test_stack_exception","[test_combine]")
     }
     SECTION("test_stack_container_exception")
     {
-        using container_type = std::vector<tensor_type>;
+        using container_type = std::vector<decltype(std::declval<tensor_type>().copy())>;
         auto test_concatenate_container = [](const auto& t){
             auto direction = std::get<0>(t);
             auto tensors = std::get<1>(t);
@@ -549,12 +551,15 @@ TEST_CASE("test_stack_common_type","[test_combine]")
     apply_by_element(test, test_data);
 }
 
-TEST_CASE("test_concatenate","[test_combine]")
+TEMPLATE_TEST_CASE("test_concatenate","[test_combine]",
+    gtensor::config::c_order,
+    gtensor::config::f_order
+)
 {
+    using order = TestType;
     using value_type = double;
-    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
-    using dim_type = typename config_type::dim_type;
-    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using tensor_type = gtensor::tensor<value_type, order>;
+    using dim_type = typename tensor_type::dim_type;
     using helpers_for_testing::apply_by_element;
     using gtensor::concatenate;
     //0direction,1tensors,2expected
@@ -655,12 +660,12 @@ TEST_CASE("test_concatenate","[test_combine]")
     }
     SECTION("test_concatenate_container")
     {
-        using container_type = std::vector<tensor_type>;
+        using container_type = std::vector<decltype(std::declval<tensor_type>().copy(order{}))>;
         auto test_concatenate_container = [](const auto& t){
             auto direction = std::get<0>(t);
             auto tensors = std::get<1>(t);
             auto expected = std::get<2>(t);
-            auto container = std::apply([](const auto&...ts){return container_type{ts.copy()...};}, tensors);
+            auto container = std::apply([](const auto&...ts){return container_type{ts.copy(order{})...};}, tensors);
             auto result = concatenate(direction, container);
             REQUIRE(result == expected);
         };
@@ -708,7 +713,7 @@ TEST_CASE("test_concatenate_exception","[test_combine]")
     }
     SECTION("test_concatenate_container")
     {
-        using container_type = std::vector<tensor_type>;
+        using container_type = std::vector<decltype(std::declval<tensor_type>().copy())>;
         auto test_concatenate_container = [](const auto& t){
             auto direction = std::get<0>(t);
             auto tensors = std::get<1>(t);
@@ -747,11 +752,14 @@ TEST_CASE("test_concatenate_common_type","[test_combine]")
     apply_by_element(test, test_data);
 }
 
-TEST_CASE("test_vstack","[test_combine]")
+TEMPLATE_TEST_CASE("test_vstack","[test_combine]",
+    gtensor::config::c_order,
+    gtensor::config::f_order
+)
 {
+    using order = TestType;
     using value_type = double;
-    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
-    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using tensor_type = gtensor::tensor<value_type, order>;
     using helpers_for_testing::apply_by_element;
     using gtensor::vstack;
     //0tensors,1expected
@@ -794,11 +802,11 @@ TEST_CASE("test_vstack","[test_combine]")
     }
     SECTION("test_vstack_container")
     {
-        using container_type = std::vector<tensor_type>;
+        using container_type = std::vector<decltype(std::declval<tensor_type>().copy(order{}))>;
         auto test = [](const auto& t){
             auto tensors = std::get<0>(t);
             auto expected = std::get<1>(t);
-            auto container = std::apply([](const auto&...ts){return container_type{ts.copy()...};}, tensors);
+            auto container = std::apply([](const auto&...ts){return container_type{ts.copy(order{})...};}, tensors);
             auto result = vstack(container);
             REQUIRE(result == expected);
         };
@@ -809,8 +817,7 @@ TEST_CASE("test_vstack","[test_combine]")
 TEST_CASE("test_vstack_exception","[test_combine]")
 {
     using value_type = double;
-    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
-    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using tensor_type = gtensor::tensor<value_type>;
     using helpers_for_testing::apply_by_element;
     using gtensor::combine_exception;
     using gtensor::vstack;
@@ -835,7 +842,7 @@ TEST_CASE("test_vstack_exception","[test_combine]")
     }
     SECTION("test_vstack_container_exception")
     {
-        using container_type = std::vector<tensor_type>;
+        using container_type = std::vector<decltype(std::declval<tensor_type>().copy())>;
         auto test = [](const auto& t){
             auto tensors = std::get<0>(t);
             auto container = std::apply([](const auto&...ts){return container_type{ts.copy()...};}, tensors);
@@ -845,11 +852,14 @@ TEST_CASE("test_vstack_exception","[test_combine]")
     }
 }
 
-TEST_CASE("test_hstack","[test_combine]")
+TEMPLATE_TEST_CASE("test_hstack","[test_combine]",
+    gtensor::config::c_order,
+    gtensor::config::f_order
+)
 {
+    using order = TestType;
     using value_type = double;
-    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
-    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using tensor_type = gtensor::tensor<value_type, order>;
     using helpers_for_testing::apply_by_element;
     using gtensor::hstack;
     //0tensors,1expected
@@ -875,11 +885,11 @@ TEST_CASE("test_hstack","[test_combine]")
     }
     SECTION("test_hstack_container")
     {
-        using container_type = std::vector<tensor_type>;
+        using container_type = std::vector<decltype(std::declval<tensor_type>().copy(order{}))>;
         auto test = [](const auto& t){
             auto tensors = std::get<0>(t);
             auto expected = std::get<1>(t);
-            auto container = std::apply([](const auto&...ts){return container_type{ts.copy()...};}, tensors);
+            auto container = std::apply([](const auto&...ts){return container_type{ts.copy(order{})...};}, tensors);
             auto result = hstack(container);
             REQUIRE(result == expected);
         };
@@ -890,8 +900,7 @@ TEST_CASE("test_hstack","[test_combine]")
 TEST_CASE("test_hstack_exception","[test_combine]")
 {
     using value_type = double;
-    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
-    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using tensor_type = gtensor::tensor<value_type>;
     using helpers_for_testing::apply_by_element;
     using gtensor::combine_exception;
     using gtensor::hstack;
@@ -915,7 +924,7 @@ TEST_CASE("test_hstack_exception","[test_combine]")
     }
     SECTION("test_hstack_container_exception")
     {
-        using container_type = std::vector<tensor_type>;
+        using container_type = std::vector<decltype(std::declval<tensor_type>().copy())>;
         auto test = [](const auto& t){
             auto tensors = std::get<0>(t);
             auto container = std::apply([](const auto&...ts){return container_type{ts.copy()...};}, tensors);
@@ -925,11 +934,14 @@ TEST_CASE("test_hstack_exception","[test_combine]")
     }
 }
 
-TEST_CASE("test_block_tuple","[test_combine]")
+TEMPLATE_TEST_CASE("test_block_tuple","[test_combine]",
+    gtensor::config::c_order,
+    gtensor::config::f_order
+)
 {
+    using order = TestType;
     using value_type = double;
-    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
-    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using tensor_type = gtensor::tensor<value_type, order>;
     using gtensor::block;
     using helpers_for_testing::apply_by_element;
 
@@ -1010,8 +1022,7 @@ TEST_CASE("test_block_tuple","[test_combine]")
 TEST_CASE("test_block_tuple_exception","[test_combine]")
 {
     using value_type = double;
-    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
-    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using tensor_type = gtensor::tensor<value_type>;
     using gtensor::combine_exception;
     using gtensor::block;
     using helpers_for_testing::apply_by_element;
@@ -1033,11 +1044,14 @@ TEST_CASE("test_block_tuple_exception","[test_combine]")
     apply_by_element(test, test_data);
 }
 
-TEST_CASE("test_block_init_list","[test_combine]")
+TEMPLATE_TEST_CASE("test_block_init_list","[test_combine]",
+    gtensor::config::c_order,
+    gtensor::config::f_order
+)
 {
+    using order = TestType;
     using value_type = double;
-    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
-    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using tensor_type = gtensor::tensor<value_type, order>;
     using gtensor::detail::nested_init_list1;
     using gtensor::detail::nested_init_list2;
     using gtensor::detail::nested_init_list3;
@@ -1099,8 +1113,7 @@ TEST_CASE("test_block_init_list","[test_combine]")
 TEST_CASE("test_block_exception","[test_combine]")
 {
     using value_type = double;
-    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
-    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using tensor_type = gtensor::tensor<value_type>;
     using gtensor::combine_exception;
     using gtensor::detail::nested_init_list1;
     using gtensor::detail::nested_init_list2;
@@ -1118,13 +1131,17 @@ TEST_CASE("test_block_exception","[test_combine]")
     REQUIRE_THROWS_AS(block(nested_init_list3<tensor_type>{{{tensor_type{},tensor_type{}},{tensor_type{}}}, {{tensor_type{}}}}), combine_exception);
 }
 
-TEST_CASE("test_split_split_points","[test_combine]")
+TEMPLATE_TEST_CASE("test_split_split_points","[test_combine]",
+    gtensor::config::c_order,
+    gtensor::config::f_order
+)
 {
+    using order = TestType;
     using value_type = double;
-    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
-    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using tensor_type = gtensor::tensor<value_type, order>;
     using dim_type = typename tensor_type::dim_type;
     using index_type = typename tensor_type::index_type;
+    using config_type = typename tensor_type::config_type;
     using result_type = typename config_type::template container<tensor_type>;
     using gtensor::split;
     using helpers_for_testing::apply_by_element;
@@ -1134,13 +1151,13 @@ TEST_CASE("test_split_split_points","[test_combine]")
         std::make_tuple(tensor_type{}, std::vector<int>{}, dim_type{0}, result_type{tensor_type{}}),
         std::make_tuple(tensor_type{}, std::vector<int>{0}, dim_type{0}, result_type{tensor_type{},tensor_type{}}),
         std::make_tuple(tensor_type{}, std::vector<int>{0,1}, dim_type{0}, result_type{tensor_type{},tensor_type{},tensor_type{}}),
-        std::make_tuple(tensor_type{}.reshape(5,0), std::vector<int>{}, dim_type{0}, result_type{tensor_type{}.reshape(5,0).copy()}),
-        std::make_tuple(tensor_type{}.reshape(5,0), std::vector<int>{0}, dim_type{0}, result_type{tensor_type{}.reshape(0,0).copy(), tensor_type{}.reshape(5,0).copy()}),
+        std::make_tuple(tensor_type{}.reshape(5,0), std::vector<int>{}, dim_type{0}, result_type{tensor_type{}.reshape(5,0).copy(order{})}),
+        std::make_tuple(tensor_type{}.reshape(5,0), std::vector<int>{0}, dim_type{0}, result_type{tensor_type{}.reshape(0,0).copy(order{}), tensor_type{}.reshape(5,0).copy(order{})}),
         std::make_tuple(
             tensor_type{}.reshape(5,0),
             std::vector<int>{0,1},
             dim_type{0},
-            result_type{tensor_type{}.reshape(0,0).copy(), tensor_type{}.reshape(1,0).copy(), tensor_type{}.reshape(4,0).copy()}
+            result_type{tensor_type{}.reshape(0,0).copy(order{}), tensor_type{}.reshape(1,0).copy(order{}), tensor_type{}.reshape(4,0).copy(order{})}
         ),
         std::make_tuple(tensor_type{1}, std::vector<int>{}, dim_type{0}, result_type{tensor_type{1}}),
         std::make_tuple(tensor_type{1}, std::vector<int>{0}, dim_type{0}, result_type{tensor_type{},tensor_type{1}}),
@@ -1156,7 +1173,7 @@ TEST_CASE("test_split_split_points","[test_combine]")
             tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16}},
             std::initializer_list<index_type>{0,2},
             dim_type{0},
-            result_type{tensor_type{}.reshape(0,4).copy(), tensor_type{{1,2,3,4},{5,6,7,8}}, tensor_type{{9,10,11,12},{13,14,15,16}}}
+            result_type{tensor_type{}.reshape(0,4).copy(order{}), tensor_type{{1,2,3,4},{5,6,7,8}}, tensor_type{{9,10,11,12},{13,14,15,16}}}
         ),
         std::make_tuple(
             tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16}},
@@ -1222,13 +1239,17 @@ TEST_CASE("test_split_split_points","[test_combine]")
     apply_by_element(test, test_data);
 }
 
-TEST_CASE("test_split_equal_parts","[test_combine]")
+TEMPLATE_TEST_CASE("test_split_equal_parts","[test_combine]",
+    gtensor::config::c_order,
+    gtensor::config::f_order
+)
 {
+    using order = TestType;
     using value_type = double;
-    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
-    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using tensor_type = gtensor::tensor<value_type, order>;
     using dim_type = typename tensor_type::dim_type;
     using index_type = typename tensor_type::index_type;
+    using config_type = typename tensor_type::config_type;
     using result_type = typename config_type::template container<tensor_type>;
     using gtensor::split;
     using helpers_for_testing::apply_by_element;
@@ -1238,7 +1259,12 @@ TEST_CASE("test_split_equal_parts","[test_combine]")
         std::make_tuple(tensor_type{}, index_type{1}, dim_type{0}, result_type{tensor_type{}}),
         std::make_tuple(tensor_type{}, index_type{2}, dim_type{0}, result_type{tensor_type{},tensor_type{}}),
         std::make_tuple(tensor_type{}, index_type{3}, dim_type{0}, result_type{tensor_type{},tensor_type{},tensor_type{}}),
-        std::make_tuple(tensor_type{}.reshape(3,0), index_type{3}, dim_type{0}, result_type{tensor_type{}.reshape(1,0).copy(),tensor_type{}.reshape(1,0).copy(),tensor_type{}.reshape(1,0).copy()}),
+        std::make_tuple(
+            tensor_type{}.reshape(3,0),
+            index_type{3},
+            dim_type{0},
+            result_type{tensor_type{}.reshape(1,0).copy(order{}),tensor_type{}.reshape(1,0).copy(order{}),tensor_type{}.reshape(1,0).copy(order{})}
+        ),
         std::make_tuple(tensor_type{1}, index_type{1}, dim_type{0}, result_type{tensor_type{1}}),
         std::make_tuple(tensor_type{1,2,3,4,5}, index_type{1}, dim_type{0}, result_type{tensor_type{1,2,3,4,5}}),
         std::make_tuple(tensor_type{1,2,3,4,5}, int{5}, dim_type{0}, result_type{tensor_type{1}, tensor_type{2}, tensor_type{3}, tensor_type{4}, tensor_type{5}}),
@@ -1311,8 +1337,7 @@ TEST_CASE("test_split_equal_parts","[test_combine]")
 TEST_CASE("test_split_exception","[test_combine]")
 {
     using value_type = double;
-    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
-    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using tensor_type = gtensor::tensor<value_type>;
     using gtensor::combine_exception;
     using gtensor::split;
     using helpers_for_testing::apply_by_element;
@@ -1339,11 +1364,15 @@ TEST_CASE("test_split_exception","[test_combine]")
     apply_by_element(test, test_data);
 }
 
-TEST_CASE("test_vsplit","[test_combine]")
+TEMPLATE_TEST_CASE("test_vsplit","[test_combine]",
+    gtensor::config::c_order,
+    gtensor::config::f_order
+)
 {
+    using order = TestType;
     using value_type = double;
-    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
-    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using tensor_type = gtensor::tensor<value_type, order>;
+    using config_type = typename tensor_type::config_type;
     using result_type = typename config_type::template container<tensor_type>;
     using gtensor::vsplit;
     using helpers_for_testing::apply_by_element;
@@ -1366,8 +1395,8 @@ TEST_CASE("test_vsplit","[test_combine]")
                 result_type{tensor_type{{{1},{2}}},tensor_type{{{3},{4}},{{5},{6}}},tensor_type{{{7},{8}},{{9},{10}}}}
             ),
             //split by equal parts
-            std::make_tuple(tensor_type{}.reshape(1,0),1,result_type{tensor_type{}.reshape(1,0).copy()}),
-            std::make_tuple(tensor_type{}.reshape(3,0),3,result_type{tensor_type{}.reshape(1,0).copy(),tensor_type{}.reshape(1,0).copy(),tensor_type{}.reshape(1,0).copy()}),
+            std::make_tuple(tensor_type{}.reshape(1,0),1,result_type{tensor_type{}.reshape(1,0).copy(order{})}),
+            std::make_tuple(tensor_type{}.reshape(3,0),3,result_type{tensor_type{}.reshape(1,0).copy(order{}),tensor_type{}.reshape(1,0).copy(order{}),tensor_type{}.reshape(1,0).copy(order{})}),
             std::make_tuple(tensor_type{{1,2},{3,4},{5,6},{7,8},{9,10}},1,result_type{tensor_type{{1,2},{3,4},{5,6},{7,8},{9,10}}}),
             std::make_tuple(tensor_type{{1,2},{3,4},{5,6},{7,8},{9,10}},5,result_type{tensor_type{{1,2}},tensor_type{{3,4}},tensor_type{{5,6}},tensor_type{{7,8}},tensor_type{{9,10}}}),
             std::make_tuple(
@@ -1407,11 +1436,15 @@ TEST_CASE("test_vsplit","[test_combine]")
     }
 }
 
-TEST_CASE("test_hsplit","[test_combine]")
+TEMPLATE_TEST_CASE("test_hsplit","[test_combine]",
+    gtensor::config::c_order,
+    gtensor::config::f_order
+)
 {
+    using order = TestType;
     using value_type = double;
-    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
-    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using tensor_type = gtensor::tensor<value_type, order>;
+    using config_type = typename tensor_type::config_type;
     using result_type = typename config_type::template container<tensor_type>;
     using gtensor::hsplit;
     using helpers_for_testing::apply_by_element;
@@ -1434,7 +1467,7 @@ TEST_CASE("test_hsplit","[test_combine]")
                 result_type{tensor_type{{{1}},{{5}},{{9}}},tensor_type{{{2},{3}},{{6},{7}},{{10},{11}}},tensor_type{{{4}},{{8}},{{12}}}}
             ),
             //split by equal parts
-            std::make_tuple(tensor_type{}.reshape(0,3),3,result_type{tensor_type{}.reshape(0,1).copy(),tensor_type{}.reshape(0,1).copy(),tensor_type{}.reshape(0,1).copy()}),
+            std::make_tuple(tensor_type{}.reshape(0,3),3,result_type{tensor_type{}.reshape(0,1).copy(order{}),tensor_type{}.reshape(0,1).copy(order{}),tensor_type{}.reshape(0,1).copy(order{})}),
             std::make_tuple(tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12}},1,result_type{tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12}}}),
             std::make_tuple(tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12}},2,result_type{tensor_type{{1,2},{5,6},{9,10}},tensor_type{{3,4},{7,8},{11,12}}}),
             std::make_tuple(
@@ -1477,8 +1510,9 @@ TEST_CASE("test_hsplit","[test_combine]")
 TEST_CASE("test_hsplit_hstack","[test_combine]")
 {
     using value_type = double;
-    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
-    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using tensor_type = gtensor::tensor<value_type>;
+    using order = typename tensor_type::order;
+    using config_type = typename tensor_type::config_type;
     using result_type = typename config_type::template container<tensor_type>;
     using gtensor::hsplit;
     using gtensor::hstack;
@@ -1518,7 +1552,7 @@ TEST_CASE("test_hsplit_hstack","[test_combine]")
             std::make_tuple(std::vector<int>{1,3},result_type{tensor_type{{1},{5},{9}},tensor_type{{2,3},{6,7},{10,11}},tensor_type{{4},{8},{12}}}),
             std::make_tuple(gtensor::tensor<std::size_t>{1,3},result_type{tensor_type{{{1}},{{5}},{{9}}},tensor_type{{{2},{3}},{{6},{7}},{{10},{11}}},tensor_type{{{4}},{{8}},{{12}}}}),
             //split by equal parts
-            std::make_tuple(3,result_type{tensor_type{}.reshape(0,1).copy(),tensor_type{}.reshape(0,1).copy(),tensor_type{}.reshape(0,1).copy()}),
+            std::make_tuple(3,result_type{tensor_type{}.reshape(0,1).copy(order{}),tensor_type{}.reshape(0,1).copy(order{}),tensor_type{}.reshape(0,1).copy(order{})}),
             std::make_tuple(1,result_type{tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12}}}),
             std::make_tuple(2,result_type{tensor_type{{1,2},{5,6},{9,10}},tensor_type{{3,4},{7,8},{11,12}}}),
             std::make_tuple(2,result_type{tensor_type{{{1},{2}},{{5},{6}},{{9},{10}}},tensor_type{{{3},{4}},{{7},{8}},{{11},{12}}}})
@@ -1541,8 +1575,9 @@ TEST_CASE("test_hsplit_hstack","[test_combine]")
 TEST_CASE("test_vsplit_vstack","[test_combine]")
 {
     using value_type = double;
-    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
-    using tensor_type = gtensor::tensor<value_type, config_type>;
+    using tensor_type = gtensor::tensor<value_type>;
+    using order = typename tensor_type::order;
+    using config_type = typename tensor_type::config_type;
     using result_type = typename config_type::template container<tensor_type>;
     using gtensor::vstack;
     using gtensor::vsplit;
@@ -1583,8 +1618,8 @@ TEST_CASE("test_vsplit_vstack","[test_combine]")
             std::make_tuple(std::initializer_list<int>{1,2,3,4},result_type{tensor_type{{1,2}},tensor_type{{3,4}},tensor_type{{5,6}},tensor_type{{7,8}},tensor_type{{9,10}}}),
             std::make_tuple(gtensor::tensor<std::size_t>{1,3},result_type{tensor_type{{{1},{2}}},tensor_type{{{3},{4}},{{5},{6}}},tensor_type{{{7},{8}},{{9},{10}}}}),
             //split by equal parts
-            std::make_tuple(1,result_type{tensor_type{}.reshape(1,0).copy()}),
-            std::make_tuple(3,result_type{tensor_type{}.reshape(1,0).copy(),tensor_type{}.reshape(1,0).copy(),tensor_type{}.reshape(1,0).copy()}),
+            std::make_tuple(1,result_type{tensor_type{}.reshape(1,0).copy(order{})}),
+            std::make_tuple(3,result_type{tensor_type{}.reshape(1,0).copy(order{}),tensor_type{}.reshape(1,0).copy(order{}),tensor_type{}.reshape(1,0).copy(order{})}),
             std::make_tuple(1,result_type{tensor_type{{1,2},{3,4},{5,6},{7,8},{9,10}}}),
             std::make_tuple(5,result_type{tensor_type{{1,2}},tensor_type{{3,4}},tensor_type{{5,6}},tensor_type{{7,8}},tensor_type{{9,10}}}),
             std::make_tuple(2,result_type{tensor_type{{{1},{2}},{{3},{4}}},tensor_type{{{5},{6}},{{7},{8}}}})

@@ -89,6 +89,23 @@ template<typename T, typename...Ts> struct first_tensor_type<T,Ts...>{
 };
 template<typename...Ts> using first_tensor_type_t = typename first_tensor_type<Ts...>::type;
 
+//common order of tensors
+//if all tensors have same order than common order is that same order, Config::order otherwise
+template<typename...> struct common_order;
+template<typename Config>
+struct common_order<Config>{
+    using type = typename Config::order;
+};
+template<typename Config, typename Order, typename...Orders>
+struct common_order<Config,Order,Orders...>{
+    using type = std::conditional_t<
+        std::conjunction_v<std::is_same<Order,Orders>...>,
+        Order,
+        typename Config::order
+    >;
+};
+template<typename Config, typename...Orders> using common_order_t = typename common_order<Config,Orders...>::type;
+
 //standart library may require difference_type to be convertible to integral
 template<typename It, typename T>
 inline void fill(It first, It last, const T& v){
