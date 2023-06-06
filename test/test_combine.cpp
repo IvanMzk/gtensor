@@ -551,6 +551,64 @@ TEST_CASE("test_stack_common_type","[test_combine]")
     apply_by_element(test, test_data);
 }
 
+TEST_CASE("test_stack_common_order","[test_combine]")
+{
+
+    using value_type = int;
+    using gtensor::config::c_order;
+    using gtensor::config::f_order;
+    using gtensor::tensor;
+    using dim_type = typename tensor<value_type>::dim_type;
+    using traverse_order = typename tensor<value_type>::config_type::order;
+    using helpers_for_testing::apply_by_element;
+    using gtensor::stack;
+    //0direction,1tensors,2expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(
+            dim_type{0},
+            std::make_tuple(
+                tensor<value_type, c_order>{{1,2,3},{4,5,6}},
+                tensor<value_type, c_order>{{7,8,9},{10,11,12}},
+                tensor<value_type, c_order>{{13,14,15},{16,17,18}},
+                tensor<value_type, c_order>{{19,20,21},{22,23,24}}
+            ),
+            tensor<value_type, c_order>{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}},{{13,14,15},{16,17,18}},{{19,20,21},{22,23,24}}}
+        ),
+        std::make_tuple(
+            dim_type{1},
+            std::make_tuple(
+                tensor<value_type, f_order>{{1,2,3},{4,5,6}},
+                tensor<value_type, f_order>{{7,8,9},{10,11,12}},
+                tensor<value_type, f_order>{{13,14,15},{16,17,18}},
+                tensor<value_type, f_order>{{19,20,21},{22,23,24}}
+            ),
+            tensor<value_type, f_order>{{{1,2,3},{7,8,9},{13,14,15},{19,20,21}},{{4,5,6},{10,11,12},{16,17,18},{22,23,24}}}
+        ),
+        std::make_tuple(
+            dim_type{2},
+            std::make_tuple(
+                tensor<value_type, f_order>{{1,2,3},{4,5,6}},
+                tensor<value_type, c_order>{{7,8,9},{10,11,12}},
+                tensor<value_type, c_order>{{13,14,15},{16,17,18}},
+                tensor<value_type, f_order>{{19,20,21},{22,23,24}}),
+            tensor<value_type, traverse_order>{{{1,7,13,19},{2,8,14,20},{3,9,15,21}},{{4,10,16,22},{5,11,17,23},{6,12,18,24}}}
+        )
+    );
+    auto test = [](const auto& t){
+        auto direction = std::get<0>(t);
+        auto tensors = std::get<1>(t);
+        auto expected = std::get<2>(t);
+
+        auto apply_tensors = [&direction](const auto&...tensors_){
+            return stack(direction, tensors_...);
+        };
+        auto result = std::apply(apply_tensors, tensors);
+        REQUIRE(std::is_same_v<typename decltype(result)::value_type, typename decltype(expected)::value_type>);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test, test_data);
+}
+
 TEMPLATE_TEST_CASE("test_concatenate","[test_combine]",
     gtensor::config::c_order,
     gtensor::config::f_order
@@ -736,6 +794,49 @@ TEST_CASE("test_concatenate_common_type","[test_combine]")
     auto test_data = std::make_tuple(
         std::make_tuple(dim_type{0}, std::make_tuple(tensor_int32_type{{1,2},{3,4}},tensor_int64_type{{5,6}}), tensor_int64_type{{1,2},{3,4},{5,6}}),
         std::make_tuple(dim_type{1}, std::make_tuple(tensor_int64_type{{1,2},{3,4}},tensor_double_type{{5},{6}}), tensor_double_type{{1,2,5},{3,4,6}})
+    );
+    auto test = [](const auto& t){
+        auto direction = std::get<0>(t);
+        auto tensors = std::get<1>(t);
+        auto expected = std::get<2>(t);
+
+        auto apply_tensors = [&direction](const auto&...tensors_){
+            return concatenate(direction, tensors_...);
+        };
+        auto result = std::apply(apply_tensors, tensors);
+        REQUIRE(std::is_same_v<typename decltype(result)::value_type, typename decltype(expected)::value_type>);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test, test_data);
+}
+
+TEST_CASE("test_concatenate_common_order","[test_combine]")
+{
+    using value_type = int;
+    using gtensor::config::c_order;
+    using gtensor::config::f_order;
+    using gtensor::tensor;
+    using dim_type = typename tensor<value_type>::dim_type;
+    using traverse_order = typename tensor<value_type>::config_type::order;
+    using helpers_for_testing::apply_by_element;
+    using gtensor::concatenate;
+    //0direction,1tensors,2expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(
+            dim_type{0},
+            std::make_tuple(tensor<value_type, c_order>{{{1,2},{3,4}},{{5,6},{7,8}}},tensor<value_type, c_order>{}.reshape(0,2,2),tensor<value_type, c_order>{{{9,10},{11,12}}}),
+            tensor<value_type, c_order>{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}}}
+        ),
+        std::make_tuple(
+            dim_type{1},
+            std::make_tuple(tensor<value_type, f_order>{{{1,2},{3,4}},{{5,6},{7,8}}},tensor<value_type, f_order>{}.reshape(2,0,2),tensor<value_type, f_order>{{{9,10}},{{11,12}}}),
+            tensor<value_type, f_order>{{{1,2},{3,4},{9,10}},{{5,6},{7,8},{11,12}}}
+        ),
+        std::make_tuple(
+            dim_type{2},
+            std::make_tuple(tensor<value_type, f_order>{{{1,2},{3,4}},{{5,6},{7,8}}},tensor<value_type, c_order>{}.reshape(2,2,0),tensor<value_type, c_order>{{{9},{10}},{{11},{12}}}),
+            tensor<value_type, traverse_order>{{{1,2,9},{3,4,10}},{{5,6,11},{7,8,12}}}
+        )
     );
     auto test = [](const auto& t){
         auto direction = std::get<0>(t);
