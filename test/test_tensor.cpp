@@ -1055,7 +1055,12 @@ TEST_CASE("test_tensor_resize","[test_tensor]")
 
 }
 
-TEST_CASE("test_tensor_copy","[test_tensor]"){
+TEMPLATE_TEST_CASE("test_tensor_copy","[test_tensor]",
+    gtensor::config::c_order,
+    gtensor::config::f_order
+)
+{
+    using order = TestType;
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
     using helpers_for_testing::apply_by_element;
@@ -1072,7 +1077,9 @@ TEST_CASE("test_tensor_copy","[test_tensor]"){
     auto test = [](const auto& t){
         auto ten = std::get<0>(t);
         auto expected = std::get<1>(t);
-        auto result = ten.copy();
+        auto result = ten.copy(order{});
+        using result_order = typename decltype(result)::order;
+        REQUIRE(std::is_same_v<result_order,order>);
         REQUIRE(result == expected);
     };
     apply_by_element(test, test_data);

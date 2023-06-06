@@ -116,7 +116,7 @@ public:
     auto equal(const basic_tensor<U>& other)const{
         return gtensor::equal(*this, other);
     }
-    //resize
+    //resize inplace
     template<typename Container>
     void resize(Container&& new_shape){
         resize_(std::forward<Container>(new_shape));
@@ -131,10 +131,11 @@ public:
     void swap(basic_tensor&& other){
         swap(other);
     }
-    //makes tensor by copying shape and elements from this
-    auto copy()const{
-        auto a = traverse_order_adapter<order>();
-        return tensor<value_type,order,config_type>(shape(),a.begin(),a.end());
+    //makes tensor in specified layout by copying shape and elements from this
+    template<typename Order = config::c_order>
+    auto copy(Order order = Order{})const{
+        auto a = traverse_order_adapter<Order>();
+        return tensor<value_type,Order,config_type>(shape(),a.begin(),a.end());
     }
     //check is this and other are tensors and have the same implementation
     template<typename Other>
