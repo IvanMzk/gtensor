@@ -235,7 +235,7 @@ GTENSOR_ITERATOR_OPERATOR_LESS(reduce_iterator);
 GTENSOR_ITERATOR_OPERATOR_GREATER_EQUAL(reduce_iterator);
 GTENSOR_ITERATOR_OPERATOR_LESS_EQUAL(reduce_iterator);
 
-template<typename Config, typename Traverser>
+template<typename Config, typename Traverser, typename Order>
 class reduce_directions_iterator
 {
 protected:
@@ -260,12 +260,12 @@ public:
         flat_index{flat_index_}
     {}
     reduce_directions_iterator& operator++(){
-        traverser.next();
+        traverser.template next<Order>();
         ++flat_index;
         return *this;
     }
     reduce_directions_iterator& operator--(){
-        traverser.prev();
+        traverser.template prev<Order>();
         --flat_index;
         return *this;
     }
@@ -343,7 +343,7 @@ auto slide_end(const Traverser& traverser, const typename Traverser::dim_type& d
     return reduce_iterator<config_type,walker_type>{std::move(walker), direction, direction_size};
 }
 
-template<typename ShT, typename Traverser, typename Directions>
+template<typename Order, typename ShT, typename Traverser, typename Directions>
 auto reduce_begin(const ShT& shape, const Traverser& traverser, const Directions& directions){
     using config_type = typename Traverser::config_type;
     using dim_type = typename config_type::dim_type;
@@ -353,7 +353,7 @@ auto reduce_begin(const ShT& shape, const Traverser& traverser, const Directions
     using traverser_type = gtensor::walker_bidirectional_traverser<config_type, walker_type, traverse_predicate_type>;
 
     if constexpr (detail::is_container_of_type_v<Directions,dim_type>){
-        return reduce_directions_iterator<config_type, traverser_type>{
+        return reduce_directions_iterator<config_type, traverser_type, Order>{
             traverser_type{shape, traverser.walker(), traverse_predicate_type{directions, false}},
             index_type{0}
         };
@@ -361,7 +361,7 @@ auto reduce_begin(const ShT& shape, const Traverser& traverser, const Directions
         return slide_begin(traverser, directions);
     }
 }
-template<typename ShT, typename Traverser, typename Directions>
+template<typename Order, typename ShT, typename Traverser, typename Directions>
 auto reduce_end(const ShT& shape, const Traverser& traverser, const Directions& directions, const typename Traverser::index_type& directions_size){
     using config_type = typename Traverser::config_type;
     using dim_type = typename config_type::dim_type;
@@ -372,8 +372,8 @@ auto reduce_end(const ShT& shape, const Traverser& traverser, const Directions& 
     if constexpr (detail::is_container_of_type_v<Directions,dim_type>){
         traverser_type directions_traverser{shape, traverser.walker(), traverse_predicate_type{directions, false}};
         directions_traverser.to_last();
-        directions_traverser.next();
-        return reduce_directions_iterator<config_type, traverser_type>{std::move(directions_traverser),directions_size};
+        directions_traverser.template next<Order>();
+        return reduce_directions_iterator<config_type, traverser_type, Order>{std::move(directions_traverser),directions_size};
     }else{
         return slide_end(traverser,directions,directions_size);
     }
@@ -389,6 +389,7 @@ class reducer
         using order = typename parent_type::order;
         using value_type = typename parent_type::value_type;
         using config_type = typename parent_type::config_type;
+        using traverse_order = typename config_type::order;
         using dim_type = typename config_type::dim_type;
         using index_type = typename config_type::index_type;
         using directions_container_type = typename config_type::template container<dim_type>;
@@ -434,11 +435,16 @@ class reducer
                     traverse_predicate_type traverse_predicate{directions, true};
                     walker_bidirectional_traverser<config_type, decltype(parent.create_walker()), traverse_predicate_type> traverser{pshape, parent.create_walker(), traverse_predicate};
                     const auto directions_size = detail::make_reduce_directions_size(pshape,parent.size(),directions);
-                    auto res_it = res.begin();
+                    auto a = res.template traverse_order_adapter<order>();
+                    auto res_it = a.begin();
                     do{
-                        *res_it = reduce_f(detail::reduce_begin(pshape,traverser,directions), detail::reduce_end(pshape,traverser,directions,directions_size), std::forward<Args>(args)...);
+                        *res_it = reduce_f(
+                            detail::reduce_begin<traverse_order>(pshape,traverser,directions),
+                            detail::reduce_end<traverse_order>(pshape,traverser,directions,directions_size),
+                            std::forward<Args>(args)...
+                        );
                         ++res_it;
-                    }while(traverser.next());
+                    }while(traverser.template next<order>());
                 }
             }
         }
@@ -483,8 +489,8 @@ class reducer
                         window_step,
                         std::forward<Args>(args)...
                     );
-                    res_traverser.next();
-                }while(parent_traverser.next());
+                    res_traverser.template next<order>();
+                }while(parent_traverser.template next<order>());
             }
         }
         return res;

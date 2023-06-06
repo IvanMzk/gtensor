@@ -1640,88 +1640,88 @@ TEST_CASE("test_tensor_view_interface","[test_tensor]")
     apply_by_element(test,test_data);
 }
 
-// TEST_CASE("test_tensor_reduce","[test_tensor]")
-// {
-//     using value_type = double;
-//     using tensor_type = gtensor::tensor<value_type>;
-//     using dim_type = typename tensor_type::dim_type;
-//     using helpers_for_testing::apply_by_element;
-//     auto sum = [](auto first, auto last){
-//         const auto& init = *first;
-//         return std::accumulate(++first,last,init,std::plus{});
-//     };
+TEST_CASE("test_tensor_reduce","[test_tensor]")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using dim_type = typename tensor_type::dim_type;
+    using helpers_for_testing::apply_by_element;
+    auto sum = [](auto first, auto last){
+        const auto& init = *first;
+        return std::accumulate(++first,last,init,std::plus{});
+    };
 
-//     //0tensor,1direction,2operation,3expected
-//     auto test_data = std::make_tuple(
-//         //single direction
-//         std::make_tuple(tensor_type{1,2,3,4,5},dim_type{0},sum,tensor_type(15)),
-//         std::make_tuple(tensor_type{{1,2,3},{4,5,6}},dim_type{0},sum,tensor_type{5,7,9}),
-//         std::make_tuple(tensor_type{{1,2,3},{4,5,6}},dim_type{1},sum,tensor_type{6,15}),
-//         std::make_tuple(tensor_type{{1,2,3},{4,5,6}}.transpose(),dim_type{0},sum,tensor_type{6,15}),
-//         std::make_tuple(tensor_type{{1,2,3},{4,5,6}}.transpose(),dim_type{1},sum,tensor_type{5,7,9}),
-//         std::make_tuple(tensor_type{{1,2,3},{4,5,6}}+tensor_type{0,1,2}+tensor_type(3),dim_type{0},sum,tensor_type{11,15,19}),
-//         std::make_tuple(tensor_type{{1,2,3},{4,5,6}}+tensor_type{0,1,2}+tensor_type(3),dim_type{1},sum,tensor_type{18,27}),
-//         //directions container
-//         std::make_tuple(tensor_type{1,2,3,4,5},std::vector<dim_type>{0},sum,tensor_type(15)),
-//         std::make_tuple(tensor_type{1,2,3,4,5},std::vector<dim_type>{},sum,tensor_type(15)),
-//         std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::vector<dim_type>{0},sum,tensor_type{5,7,9}),
-//         std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::vector<dim_type>{1},sum,tensor_type{6,15}),
-//         std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::vector<dim_type>{0,1},sum,tensor_type(21)),
-//         std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::vector<dim_type>{},sum,tensor_type(21)),
-//         std::make_tuple(tensor_type{{1,2,3},{4,5,6}}.transpose(),std::vector<dim_type>{0},sum,tensor_type{6,15}),
-//         std::make_tuple(tensor_type{{1,2,3},{4,5,6}}.transpose(),std::vector<dim_type>{1},sum,tensor_type{5,7,9}),
-//         std::make_tuple(tensor_type{{1,2,3},{4,5,6}}.transpose(),std::vector<dim_type>{1,0},sum,tensor_type(21)),
-//         std::make_tuple(tensor_type{{1,2,3},{4,5,6}}+tensor_type{0,1,2}+tensor_type(3),std::vector<dim_type>{0},sum,tensor_type{11,15,19}),
-//         std::make_tuple(tensor_type{{1,2,3},{4,5,6}}+tensor_type{0,1,2}+tensor_type(3),std::vector<dim_type>{1},sum,tensor_type{18,27}),
-//         std::make_tuple(tensor_type{{1,2,3},{4,5,6}}+tensor_type{0,1,2}+tensor_type(3),std::vector<dim_type>{0,1},sum,tensor_type(45))
-//     );
-//     auto test = [](const auto& t){
-//         auto ten = std::get<0>(t);
-//         auto direction = std::get<1>(t);
-//         auto operation = std::get<2>(t);
-//         auto expected = std::get<3>(t);
-//         auto result = ten.reduce(direction,operation);
-//         REQUIRE(result == expected);
-//     };
-//     apply_by_element(test,test_data);
-// }
+    //0tensor,1direction,2operation,3expected
+    auto test_data = std::make_tuple(
+        //single direction
+        std::make_tuple(tensor_type{1,2,3,4,5},dim_type{0},sum,tensor_type(15)),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},dim_type{0},sum,tensor_type{5,7,9}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},dim_type{1},sum,tensor_type{6,15}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}.transpose(),dim_type{0},sum,tensor_type{6,15}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}.transpose(),dim_type{1},sum,tensor_type{5,7,9}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}+tensor_type{0,1,2}+tensor_type(3),dim_type{0},sum,tensor_type{11,15,19}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}+tensor_type{0,1,2}+tensor_type(3),dim_type{1},sum,tensor_type{18,27}),
+        //directions container
+        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<dim_type>{0},sum,tensor_type(15)),
+        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<dim_type>{},sum,tensor_type(15)),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::vector<dim_type>{0},sum,tensor_type{5,7,9}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::vector<dim_type>{1},sum,tensor_type{6,15}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::vector<dim_type>{0,1},sum,tensor_type(21)),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::vector<dim_type>{},sum,tensor_type(21)),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}.transpose(),std::vector<dim_type>{0},sum,tensor_type{6,15}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}.transpose(),std::vector<dim_type>{1},sum,tensor_type{5,7,9}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}.transpose(),std::vector<dim_type>{1,0},sum,tensor_type(21)),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}+tensor_type{0,1,2}+tensor_type(3),std::vector<dim_type>{0},sum,tensor_type{11,15,19}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}+tensor_type{0,1,2}+tensor_type(3),std::vector<dim_type>{1},sum,tensor_type{18,27}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}+tensor_type{0,1,2}+tensor_type(3),std::vector<dim_type>{0,1},sum,tensor_type(45))
+    );
+    auto test = [](const auto& t){
+        auto ten = std::get<0>(t);
+        auto direction = std::get<1>(t);
+        auto operation = std::get<2>(t);
+        auto expected = std::get<3>(t);
+        auto result = ten.reduce(direction,operation);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test,test_data);
+}
 
-// TEST_CASE("test_tensor_slide","[test_tensor]")
-// {
-//     using value_type = double;
-//     using tensor_type = gtensor::tensor<value_type>;
-//     using dim_type = typename tensor_type::dim_type;
-//     using index_type = typename tensor_type::index_type;
-//     using helpers_for_testing::apply_by_element;
-//     auto cumsum = [](auto first, auto last, auto dfirst, auto dlast, auto win_size, auto win_step){
-//         auto cumsum_ = *first;
-//         *dfirst = cumsum_;
-//         for(++dfirst,++first;dfirst!=dlast;++dfirst,++first){
-//             cumsum_+=*first;
-//             *dfirst = cumsum_;
-//         }
-//     };
-//     auto diff_1 = [](auto first, auto last, auto dfirst, auto dlast, auto win_size, auto win_step){
-//         for(;dfirst!=dlast;++dfirst){
-//             auto prev = *first;
-//             *dfirst = *++first - prev;
-//         }
-//     };
-//     //0tensor,1direction,2operation,3window_size,4window_step,5expected
-//     auto test_data = std::make_tuple(
-//         std::make_tuple(tensor_type{1,2,3,4,5},dim_type{0},cumsum,index_type{1},index_type{1},tensor_type{1,3,6,10,15}),
-//         std::make_tuple(tensor_type{1,2,0,4,3,2,5},dim_type{0},diff_1,index_type{2},index_type{1},tensor_type{1,-2,4,-1,-1,3})
-//     );
-//     auto test = [](const auto& t){
-//         auto ten = std::get<0>(t);
-//         auto direction = std::get<1>(t);
-//         auto operation = std::get<2>(t);
-//         auto window_size = std::get<3>(t);
-//         auto window_step = std::get<4>(t);
-//         auto expected = std::get<5>(t);
-//         auto result = ten.slide(direction,operation,window_size,window_step);
-//         REQUIRE(result == expected);
-//     };
-//     apply_by_element(test,test_data);
-// }
+TEST_CASE("test_tensor_slide","[test_tensor]")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using dim_type = typename tensor_type::dim_type;
+    using index_type = typename tensor_type::index_type;
+    using helpers_for_testing::apply_by_element;
+    auto cumsum = [](auto first, auto last, auto dfirst, auto dlast, auto win_size, auto win_step){
+        auto cumsum_ = *first;
+        *dfirst = cumsum_;
+        for(++dfirst,++first;dfirst!=dlast;++dfirst,++first){
+            cumsum_+=*first;
+            *dfirst = cumsum_;
+        }
+    };
+    auto diff_1 = [](auto first, auto last, auto dfirst, auto dlast, auto win_size, auto win_step){
+        for(;dfirst!=dlast;++dfirst){
+            auto prev = *first;
+            *dfirst = *++first - prev;
+        }
+    };
+    //0tensor,1direction,2operation,3window_size,4window_step,5expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(tensor_type{1,2,3,4,5},dim_type{0},cumsum,index_type{1},index_type{1},tensor_type{1,3,6,10,15}),
+        std::make_tuple(tensor_type{1,2,0,4,3,2,5},dim_type{0},diff_1,index_type{2},index_type{1},tensor_type{1,-2,4,-1,-1,3})
+    );
+    auto test = [](const auto& t){
+        auto ten = std::get<0>(t);
+        auto direction = std::get<1>(t);
+        auto operation = std::get<2>(t);
+        auto window_size = std::get<3>(t);
+        auto window_step = std::get<4>(t);
+        auto expected = std::get<5>(t);
+        auto result = ten.slide(direction,operation,window_size,window_step);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test,test_data);
+}
 
