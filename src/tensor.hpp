@@ -289,6 +289,9 @@ public:
     auto transpose(const Container& subs)const{
         return create_view_(view_factory_type::create_transpose_view(*this, subs));
     }
+    auto transpose(std::initializer_list<dim_type> subs)const{
+        return create_view_(view_factory_type::create_transpose_view(*this, subs));
+    }
     //reshape view
     template<typename...Subs, std::enable_if_t<std::conjunction_v<std::is_convertible<Subs,index_type>...>,int> = 0 >
     auto reshape(const Subs&...subs)const{
@@ -296,6 +299,10 @@ public:
     }
     template<typename Container, typename Order = config::c_order, std::enable_if_t<detail::is_container_of_type_v<Container,index_type>,int> = 0 >
     auto reshape(const Container& subs, Order order = Order{})const{
+        return create_view_(view_factory_type::template create_reshape_view<Order>(*this, subs));
+    }
+    template<typename Order = config::c_order>
+    auto reshape(std::initializer_list<index_type> subs, Order order = Order{})const{
         return create_view_(view_factory_type::template create_reshape_view<Order>(*this, subs));
     }
     //mapping view

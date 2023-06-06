@@ -1580,9 +1580,13 @@ TEST_CASE("test_tensor_data_interface_result_type","test_tensor")
 
 TEST_CASE("test_tensor_view_interface","[test_tensor]")
 {
+
+    using gtensor::config::c_order;
+    using gtensor::config::f_order;
     using value_type = double;
     using gtensor::tensor;
     using tensor_type = tensor<value_type>;
+    using shape_type = typename tensor_type::shape_type;
     using slice_type = typename tensor_type::slice_type;
     using nop_type = typename slice_type::nop_type;
     using helpers_for_testing::apply_by_element;
@@ -1609,13 +1613,18 @@ TEST_CASE("test_tensor_view_interface","[test_tensor]")
         std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.transpose(1,0,2), tensor_type{{{1,2},{5,6}},{{3,4},{7,8}}}),
         //container subs
         std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.transpose(std::vector<int>{2,0,1}), tensor_type{{{1,3},{5,7}},{{2,4},{6,8}}}),
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.transpose({2,0,1}), tensor_type{{{1,3},{5,7}},{{2,4},{6,8}}}),
         //reshape view
         //variadic, no subs
         std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reshape(), tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}),
         //variadic, index subs
         std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reshape(-1,1), tensor_type{{1},{2},{3},{4},{5},{6},{7},{8}}),
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reshape(-1,4), tensor_type{{1,2,3,4},{5,6,7,8}}),
         //container subs
         std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reshape(std::vector<int>{2,-1}), tensor_type{{1,2,3,4},{5,6,7,8}}),
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reshape(shape_type{2,2,2}, f_order{}), tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}),
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reshape(shape_type{-1,4}, f_order{}), tensor_type{{1,3,2,4},{5,7,6,8}}),
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reshape({-1,2}, f_order{}), tensor_type{{1,2},{5,6},{3,4},{7,8}}),
         //index mapping view
         std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}(tensor<int>{1,0},tensor<int>{0,1}), tensor_type{{5,6},{3,4}}),
         std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}(tensor<int>(1),tensor<int>{{0,1},{1,0}}), tensor_type{{{5,6},{7,8}},{{7,8},{5,6}}}),
