@@ -44,8 +44,8 @@ template<typename Order> using change_order_t = typename change_order<Order>::ty
 //makes broadcast shape, throws if shapes are not broadcastable
 template<typename ShT>
 inline void make_broadcast_shape_helper(ShT&){}
-template<typename ShT, typename T, typename...Ts>
-inline void make_broadcast_shape_helper(ShT& res, const T& shape, const Ts&...shapes){
+template<typename ShT, typename T>
+inline void make_broadcast_shape_helper(ShT& res, const T& shape){
     using shape_type = ShT;
     using index_type = typename shape_type::value_type;
     auto res_it = res.end();
@@ -61,6 +61,10 @@ inline void make_broadcast_shape_helper(ShT& res, const T& shape, const Ts&...sh
             throw broadcast_exception("shapes are not broadcastable");
         }
     }
+}
+template<typename ShT, typename T, typename...Ts>
+inline void make_broadcast_shape_helper(ShT& res, const T& shape, const Ts&...shapes){
+    make_broadcast_shape_helper(res, shape);
     make_broadcast_shape_helper(res, shapes...);
 }
 template<typename ShT, typename...Ts>
@@ -71,6 +75,26 @@ inline auto make_broadcast_shape(const Ts&...shapes){
     make_broadcast_shape_helper(res, shapes...);
     return res;
 }
+template<typename ShT, typename Container>
+inline auto make_broadcast_shape_container(const Container& shapes){
+    using shape_type = ShT;
+    using index_type = typename shape_type::value_type;
+    using dim_type = typename shape_type::difference_type;
+    dim_type max_dim{0};
+    for (auto it = shapes.begin(), last = shapes.end(); it!=last; ++it){
+        const auto& shape = unwrap_shape(*it);
+        dim_type dim = static_cast<dim_type>(shape.size());
+        max_dim = std::max(max_dim,dim);
+    }
+    auto res = shape_type(max_dim,index_type(-1));
+    for (auto it = shapes.begin(), last = shapes.end(); it!=last; ++it){
+        const auto& shape = unwrap_shape(*it);
+        make_broadcast_shape_helper(res,shape);
+    }
+    return res;
+}
+
+
 
 template<typename T>
 inline T make_shape_element(const T& shape_element){

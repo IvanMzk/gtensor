@@ -12,6 +12,7 @@ TEMPLATE_TEST_CASE("test_make_broadcast_shape","[test_descriptor]", std::vector<
     using result_shape_type = shape_type;
     using helpers_for_testing::apply_by_element;
     using gtensor::detail::make_broadcast_shape;
+    using gtensor::detail::make_broadcast_shape_container;
     //0shapes,1expected broadcast shape
     auto test_data = std::make_tuple(
         std::make_tuple(std::make_tuple(shape_type{}), result_shape_type{}),
@@ -47,16 +48,34 @@ TEMPLATE_TEST_CASE("test_make_broadcast_shape","[test_descriptor]", std::vector<
         std::make_tuple(std::make_tuple(shape_type{2,4}, shape_type{3,1,4}), result_shape_type{3,2,4}),
         std::make_tuple(std::make_tuple(shape_type{2,1}, shape_type{2,4}, shape_type{3,1,4}), result_shape_type{3,2,4})
     );
-    auto test = [](const auto& t){
-        auto shapes = std::get<0>(t);
-        auto expected = std::get<1>(t);
-        auto apply_shapes = [](const auto&...shapes_){
-            return make_broadcast_shape<result_shape_type>(shapes_...);
+    SECTION("test_variadic")
+    {
+        auto test = [](const auto& t){
+            auto shapes = std::get<0>(t);
+            auto expected = std::get<1>(t);
+            auto apply_shapes = [](const auto&...shapes_){
+                return make_broadcast_shape<result_shape_type>(shapes_...);
+            };
+            auto result = std::apply(apply_shapes, shapes);
+            REQUIRE(result == expected);
         };
-        auto result = std::apply(apply_shapes, shapes);
-        REQUIRE(result == expected);
-    };
-    apply_by_element(test, test_data);
+        apply_by_element(test, test_data);
+    }
+    SECTION("test_container")
+    {
+        auto test = [](const auto& t){
+            auto shapes = std::get<0>(t);
+            auto expected = std::get<1>(t);
+            using container_type = std::vector<shape_type>;
+            auto apply_shapes = [](const auto&...shapes_){
+                auto shapes = container_type{shapes_...};
+                return make_broadcast_shape_container<result_shape_type>(shapes);
+            };
+            auto result = std::apply(apply_shapes, shapes);
+            REQUIRE(result == expected);
+        };
+        apply_by_element(test, test_data);
+    }
 }
 
 TEMPLATE_TEST_CASE("test_make_broadcast_shape_exception","[test_descriptor]", std::vector<std::int64_t>)
@@ -64,6 +83,7 @@ TEMPLATE_TEST_CASE("test_make_broadcast_shape_exception","[test_descriptor]", st
     using shape_type = TestType;
     using gtensor::broadcast_exception;
     using gtensor::detail::make_broadcast_shape;
+    using gtensor::detail::make_broadcast_shape_container;
     using helpers_for_testing::apply_by_element;
     //0shapes
     auto test_data = std::make_tuple(
@@ -83,13 +103,28 @@ TEMPLATE_TEST_CASE("test_make_broadcast_shape_exception","[test_descriptor]", st
         std::make_tuple(shape_type{5,1,0}, shape_type{2,1}, shape_type{5,2,2}),
         std::make_tuple(shape_type{5,1,2}, shape_type{2,2}, shape_type{4,4,2})
     );
-    auto test = [](const auto& shapes){
-        auto apply_shapes = [](const auto&...shapes_){
-            return make_broadcast_shape<shape_type>(shapes_...);
+    SECTION("test_variadic")
+    {
+        auto test = [](const auto& shapes){
+            auto apply_shapes = [](const auto&...shapes_){
+                return make_broadcast_shape<shape_type>(shapes_...);
+            };
+            REQUIRE_THROWS_AS(std::apply(apply_shapes, shapes), broadcast_exception);
         };
-        REQUIRE_THROWS_AS(std::apply(apply_shapes, shapes), broadcast_exception);
-    };
-    apply_by_element(test, test_data);
+        apply_by_element(test, test_data);
+    }
+    SECTION("test_container")
+    {
+        auto test = [](const auto& shapes){
+            using container_type = std::vector<shape_type>;
+            auto apply_shapes = [](const auto&...shapes_){
+                auto shapes_container = container_type{shapes_...};
+                return make_broadcast_shape_container<shape_type>(shapes_container);
+            };
+            REQUIRE_THROWS_AS(std::apply(apply_shapes, shapes), broadcast_exception);
+        };
+        apply_by_element(test, test_data);
+    }
 }
 
 TEMPLATE_TEST_CASE("test_make_strides","[test_descriptor]", std::vector<std::int64_t>)
