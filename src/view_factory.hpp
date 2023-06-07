@@ -313,7 +313,7 @@ inline auto mapping_view_chunk_size(const ShT& pshape, const DimT& subs_dim_or_s
 //check subscripts number and directions sizes to be valid
 //check of subscripts indeces defered to place where subscripts should be iterated (result fill or mapping descriptor making)
 template<typename ShT, typename...ShTs>
-inline void check_index_mapping_view_subs(const ShT& pshape, const ShTs&...subs_shapes){
+inline void check_index_mapping_view_subs_variadic(const ShT& pshape, const ShTs&...subs_shapes){
     using dim_type = typename ShT::difference_type;
     using index_type = typename ShT::value_type;
     const dim_type pdim = detail::make_dim(pshape);
@@ -330,6 +330,30 @@ inline void check_index_mapping_view_subs(const ShT& pshape, const ShTs&...subs_
     bool exception_flag = false;
     if((((exception_flag=exception_flag||(*pshape_it == index_type{0} && detail::make_size(subs_shapes) != index_type{0})),++pshape_it,exception_flag)||...)){
         throw subscript_exception("invalid index tensor subscript");
+    }
+}
+
+template<typename ShT, typename Container>
+inline void check_index_mapping_view_subs_container(const ShT& pshape, const Container& shapes){
+    using dim_type = typename ShT::difference_type;
+    using index_type = typename ShT::value_type;
+    const dim_type pdim = detail::make_dim(pshape);
+    const dim_type subs_number = shapes.size();
+    if (pdim == dim_type{0}){
+        throw subscript_exception("can't subscript 0-dim tensor");
+    }
+    //check subs number not exceed parent dim
+    if (subs_number > pdim){
+        throw subscript_exception("invalid subscripts number");
+    }
+    //check zero size parent direction not subscripted with not empty subs
+    auto pshape_it = pshape.begin();
+    for (auto shapes_it = shapes.begin(), shapes_last = shapes.end(); shapes_it!=shapes_last; ++shapes_it,++pshape_it){
+        const auto& shape = unwrap_shape(*shapes_it);
+        if (*pshape_it == index_type{0} && detail::make_size(shape) != index_type{0}){
+            throw subscript_exception("invalid index tensor subscript");
+
+        }
     }
 }
 
@@ -365,32 +389,107 @@ auto fill_index_map(const ShT& pshape, const ShT& pstrides, const IdxT& subs_siz
     index_type i{0};
     if (chunk_size == index_type{1}){
         do{
-            index_type block_first{0};
             dim_type n{0};
-            ((block_first+=check_index(static_cast<index_type>(*subs_traverser.walker()),pshape[n])*pstrides[n],++n),...);
-            index_map[i] = block_first;
+            index_type chunk_first{0};
+            ((chunk_first+=check_index(static_cast<index_type>(*subs_traverser.walker()),pshape[n])*pstrides[n],++n),...);
+            index_map[i] = chunk_first;
             ++i;
         }while(((subs_traverser.template next<Order>()),...));
     }else{
         const index_type stride_step = pstrides[subs_number];
         const index_type map_step = subs_size;
         do{
-            index_type block_first{0};
             dim_type n{0};
+            index_type chunk_first{0};
+            ((chunk_first+=check_index(static_cast<index_type>(*subs_traverser.walker()),pshape[n])*pstrides[n],++n),...);
             if constexpr (std::is_same_v<Order, gtensor::config::c_order>){
-                ((block_first+=check_index(static_cast<index_type>(*subs_traverser.walker()),pshape[n])*pstrides[n],++n),...);
-                for(index_type j{0}; j!=chunk_size; ++j){
-                    index_map[i] = block_first+j;
+                for(index_type chunk_last=chunk_first+chunk_size; chunk_first!=chunk_last; ++chunk_first){
+                    index_map[i] = chunk_first;
                     ++i;
                 }
             }else{
-                ((block_first+=check_index(static_cast<index_type>(*subs_traverser.walker()),pshape[n])*pstrides[n],++n),...);
-                for(index_type j{i}, j_last{i+chunk_size*map_step}; j!=j_last; j+=map_step,block_first+=stride_step){
-                    index_map[j] = block_first;
+                for(index_type j{i}, j_last{i+chunk_size*map_step}; j!=j_last; j+=map_step,chunk_first+=stride_step){
+                    index_map[j] = chunk_first;
                 }
                 ++i;
             }
         }while(((subs_traverser.template next<Order>()),...));
+    }
+}
+
+template<typename Order, typename ShT, typename IdxT, typename IndexMap,  typename Container>
+auto fill_index_map_container(const ShT& pshape, const ShT& pstrides, const IdxT& subs_size, IndexMap& index_map, Container& subs_traversers){
+    using dim_type = typename ShT::difference_type;
+    using index_type = typename ShT::value_type;
+
+    const dim_type subs_number = static_cast<dim_type>(subs_traversers.size());
+    const index_type chunk_size = mapping_view_chunk_size(pshape, subs_number);
+    index_type i{0};
+
+    auto pshape_it = pshape.begin();
+    auto pstrides_it = pstrides.begin();
+    auto traversers_it = subs_traversers.begin();
+    auto traversers_last = subs_traversers.end();
+    auto shape_element = *pshape_it;
+    auto stride_element = *pstrides_it;
+    auto& first_tr = *traversers_it;
+
+    if (chunk_size == index_type{1}){
+        do{
+            index_map[i] = check_index(static_cast<index_type>(*first_tr.walker()), shape_element)*stride_element;
+            ++i;
+        }
+        while (first_tr.template next<Order>());
+
+        for (++traversers_it,++pshape_it,++pstrides_it; traversers_it!=traversers_last; ++traversers_it,++pshape_it,++pstrides_it){
+            auto& tr = *traversers_it;
+            stride_element = *pstrides_it;
+            shape_element = *pshape_it;
+            i = index_type{0};
+            do{
+                index_map[i] += check_index(static_cast<index_type>(*tr.walker()), shape_element)*stride_element;
+                ++i;
+            }
+            while (tr.template next<Order>());
+        }
+    }else{
+        const index_type stride_step = pstrides[subs_number];
+        const index_type map_step = subs_size;
+        do{
+            index_type chunk_first = check_index(static_cast<index_type>(*first_tr.walker()), shape_element)*stride_element;
+            if constexpr (std::is_same_v<Order, gtensor::config::c_order>){
+                for(const index_type chunk_last = chunk_first+chunk_size; chunk_first!=chunk_last; ++chunk_first){
+                    index_map[i] = chunk_first;
+                    ++i;
+                }
+            }else{
+                for(index_type j{i}, j_last{i+chunk_size*map_step}; j!=j_last; j+=map_step,chunk_first+=stride_step){
+                    index_map[j] = chunk_first;
+                }
+                ++i;
+            }
+        }
+        while (first_tr.template next<Order>());
+
+        for (++traversers_it,++pshape_it,++pstrides_it; traversers_it!=traversers_last; ++traversers_it,++pshape_it,++pstrides_it){
+            auto& tr = *traversers_it;
+            stride_element = *pstrides_it;
+            shape_element = *pshape_it;
+            i = index_type{0};
+            do{
+                index_type chunk_first = check_index(static_cast<index_type>(*tr.walker()), shape_element)*stride_element;
+                if constexpr (std::is_same_v<Order, gtensor::config::c_order>){
+                    for(index_type i_last = i+chunk_size; i!=i_last; ++i){
+                        index_map[i] += chunk_first;
+                    }
+                }else{
+                    for(index_type j{i}, j_last{i+chunk_size*map_step}; j!=j_last; j+=map_step){
+                        index_map[j] += chunk_first;
+                    }
+                    ++i;
+                }
+            }while (tr.template next<Order>());
+        }
     }
 }
 
@@ -604,7 +703,7 @@ class view_factory
     }
     //index mapping view
     template<typename...Ts, typename...Subs>
-    static auto create_index_mapping_view_(const basic_tensor<Ts...>& parent, const Subs&...subs){
+    static auto create_index_mapping_view_variadic(const basic_tensor<Ts...>& parent, const Subs&...subs){
         using parent_type = basic_tensor<Ts...>;
         using order = typename parent_type::order;
         using config_type = typename parent_type::config_type;
@@ -613,7 +712,7 @@ class view_factory
         using descriptor_type = mapping_descriptor<config_type,order>;
         using view_type = mapping_view<config_type,order,parent_type>;
         const auto& pshape = parent.shape();
-        detail::check_index_mapping_view_subs(pshape, subs.shape()...);
+        detail::check_index_mapping_view_subs_variadic(pshape, subs.shape()...);
         const auto subs_shape = detail::make_broadcast_shape<shape_type>(subs.shape()...);
         const auto subs_dim = detail::make_dim(subs_shape);
         const auto subs_size = detail::make_size(subs_shape);
@@ -627,6 +726,48 @@ class view_factory
                 subs_size,
                 index_map,
                 walker_forward_traverser<config_type, decltype(subs.create_walker())>{subs_shape, subs.create_walker(subs_dim)}...
+            );
+        }
+        return std::make_shared<view_type>(
+            descriptor_type{std::move(res_shape),std::move(index_map)},
+            parent
+        );
+    }
+    template<typename...Ts, typename Container>
+    static auto create_index_mapping_view_container(const basic_tensor<Ts...>& parent, const Container& subs){
+        using parent_type = basic_tensor<Ts...>;
+        using order = typename parent_type::order;
+        using config_type = typename parent_type::config_type;
+        using index_map_type = typename config_type::index_map_type;
+        using shape_type = typename parent_type::shape_type;
+        using descriptor_type = mapping_descriptor<config_type,order>;
+        using view_type = mapping_view<config_type,order,parent_type>;
+        using subs_tensor_type = typename Container::value_type;
+        using traverser_container_type = typename config_type::template container<walker_forward_traverser<config_type, decltype(std::declval<const subs_tensor_type&>().create_walker())>>;
+        const auto& pshape = parent.shape();
+        const auto shapes = detail::make_shapes_container(subs);
+        detail::check_index_mapping_view_subs_container(pshape, shapes);
+        const auto subs_shape = detail::make_broadcast_shape_container<shape_type>(shapes);
+        const auto subs_dim = detail::make_dim(subs_shape);
+        const auto subs_size = detail::make_size(subs_shape);
+        const auto subs_number = subs.size();
+        auto res_shape = detail::make_index_mapping_view_shape(pshape, subs_shape, subs_number);
+        auto res_size = detail::make_size(res_shape);
+        index_map_type index_map(res_size);
+        if (res_size!=0){
+            traverser_container_type subs_traversers{};
+            if constexpr (detail::is_static_castable_v<typename Container::size_type, typename traverser_container_type::size_type>){
+                subs_traversers.reserve(static_cast<typename traverser_container_type::size_type>(subs_number));
+            }
+            for (const auto& sub : subs){
+                subs_traversers.emplace_back(subs_shape,sub.create_walker(subs_dim));
+            }
+            detail::fill_index_map_container<order>(
+                pshape,
+                parent.strides(),
+                subs_size,
+                index_map,
+                subs_traversers
             );
         }
         return std::make_shared<view_type>(
@@ -741,9 +882,18 @@ public:
         return create_slice_view_variadic(parent, subs...);
     }
     //index mapping view
-    template<typename...Ts, typename...Subs>
+
+    template<typename IdxT, typename...Subs> struct enable_index_mapping_view_variadic_ : std::conjunction<
+        std::bool_constant<detail::is_tensor_of_type_v<Subs,IdxT>>...
+    >{};
+
+    template<typename...Ts, typename...Subs, std::enable_if_t<enable_index_mapping_view_variadic_<typename basic_tensor<Ts...>::index_type, Subs...>::value ,int> =0>
     static auto create_index_mapping_view(const basic_tensor<Ts...>& parent, const Subs&...subs){
-        return create_index_mapping_view_(parent, subs...);
+        return create_index_mapping_view_variadic(parent, subs...);
+    }
+    template<typename...Ts, typename Container, std::enable_if_t<detail::is_container_of_tensor_of_type_v<Container,typename basic_tensor<Ts...>::index_type>,int> =0>
+    static auto create_index_mapping_view(const basic_tensor<Ts...>& parent, const Container& subs){
+        return create_index_mapping_view_container(parent, subs);
     }
     //bool mapping view
     template<typename...Ts, typename Subs>

@@ -94,8 +94,6 @@ inline auto make_broadcast_shape_container(const Container& shapes){
     return res;
 }
 
-
-
 template<typename T>
 inline T make_shape_element(const T& shape_element){
     using shape_element_type = T;

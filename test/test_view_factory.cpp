@@ -790,78 +790,118 @@ TEST_CASE("test_check_transpose_args","[test_view_factory]"){
 }
 
 //test mapping view helpers
-TEST_CASE("test_check_index_mapping_view_subs","[test_view_factory]")
+TEST_CASE("test_check_index_mapping_view_subs_nothrow","[test_view_factory]")
 {
     using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using shape_type = typename config_type::shape_type;
     using gtensor::subscript_exception;
-    using gtensor::detail::check_index_mapping_view_subs;
+    using gtensor::detail::check_index_mapping_view_subs_variadic;
+    using gtensor::detail::check_index_mapping_view_subs_container;
     using helpers_for_testing::apply_by_element;
 
-    SECTION("test_check_index_mapping_view_subs_nothrow")
+    //0pshape,1subs_shapes
+    auto test_data = std::make_tuple(
+        std::make_tuple(shape_type{0},std::make_tuple(shape_type{0})),
+        std::make_tuple(shape_type{0},std::make_tuple(shape_type{1,2,3,0})),
+        std::make_tuple(shape_type{0},std::make_tuple(shape_type{0,1,2,3})),
+        std::make_tuple(shape_type{0},std::make_tuple(shape_type{1,2,0,3})),
+        std::make_tuple(shape_type{1},std::make_tuple(shape_type{0})),
+        std::make_tuple(shape_type{1},std::make_tuple(shape_type{1,2,3,0})),
+        std::make_tuple(shape_type{1},std::make_tuple(shape_type{0,1,2,3})),
+        std::make_tuple(shape_type{1},std::make_tuple(shape_type{5})),
+        std::make_tuple(shape_type{0,1},std::make_tuple(shape_type{0})),
+        std::make_tuple(shape_type{0,1},std::make_tuple(shape_type{1,2,3,0})),
+        std::make_tuple(shape_type{1,0},std::make_tuple(shape_type{1,2,3,0})),
+        std::make_tuple(shape_type{1,0},std::make_tuple(shape_type{1})),
+        std::make_tuple(shape_type{1,0},std::make_tuple(shape_type{5})),
+        std::make_tuple(shape_type{1,0},std::make_tuple(shape_type{5,4,3})),
+        std::make_tuple(shape_type{0,1},std::make_tuple(shape_type{0},shape_type{1})),
+        std::make_tuple(shape_type{0,1},std::make_tuple(shape_type{3,0},shape_type{3,1})),
+        std::make_tuple(shape_type{1,0,1,0},std::make_tuple(shape_type{5})),
+        std::make_tuple(shape_type{1,0,1,0},std::make_tuple(shape_type{3,1},shape_type{3,0})),
+        std::make_tuple(shape_type{1,0,1,0},std::make_tuple(shape_type{3,1},shape_type{3,0},shape_type{1})),
+        std::make_tuple(shape_type{1,0,1,0},std::make_tuple(shape_type{3,1},shape_type{3,0},shape_type{1},shape_type{1,0}))
+    );
+    SECTION("test_variadic")
     {
-        //0pshape,1subs_shapes
-        auto test_data = std::make_tuple(
-            std::make_tuple(shape_type{0},std::make_tuple(shape_type{0})),
-            std::make_tuple(shape_type{0},std::make_tuple(shape_type{1,2,3,0})),
-            std::make_tuple(shape_type{0},std::make_tuple(shape_type{0,1,2,3})),
-            std::make_tuple(shape_type{0},std::make_tuple(shape_type{1,2,0,3})),
-            std::make_tuple(shape_type{1},std::make_tuple(shape_type{0})),
-            std::make_tuple(shape_type{1},std::make_tuple(shape_type{1,2,3,0})),
-            std::make_tuple(shape_type{1},std::make_tuple(shape_type{0,1,2,3})),
-            std::make_tuple(shape_type{1},std::make_tuple(shape_type{5})),
-            std::make_tuple(shape_type{0,1},std::make_tuple(shape_type{0})),
-            std::make_tuple(shape_type{0,1},std::make_tuple(shape_type{1,2,3,0})),
-            std::make_tuple(shape_type{1,0},std::make_tuple(shape_type{1,2,3,0})),
-            std::make_tuple(shape_type{1,0},std::make_tuple(shape_type{1})),
-            std::make_tuple(shape_type{1,0},std::make_tuple(shape_type{5})),
-            std::make_tuple(shape_type{1,0},std::make_tuple(shape_type{5,4,3})),
-            std::make_tuple(shape_type{0,1},std::make_tuple(shape_type{0},shape_type{1})),
-            std::make_tuple(shape_type{0,1},std::make_tuple(shape_type{3,0},shape_type{3,1})),
-            std::make_tuple(shape_type{1,0,1,0},std::make_tuple(shape_type{5})),
-            std::make_tuple(shape_type{1,0,1,0},std::make_tuple(shape_type{3,1},shape_type{3,0})),
-            std::make_tuple(shape_type{1,0,1,0},std::make_tuple(shape_type{3,1},shape_type{3,0},shape_type{1})),
-            std::make_tuple(shape_type{1,0,1,0},std::make_tuple(shape_type{3,1},shape_type{3,0},shape_type{1},shape_type{1,0}))
-        );
         auto test = [](const auto& t){
             auto pshape = std::get<0>(t);
             auto subs_shapes = std::get<1>(t);
             auto apply_subs_shapes = [&pshape](const auto&...subs_shapes_){
-                check_index_mapping_view_subs(pshape, subs_shapes_...);
+                check_index_mapping_view_subs_variadic(pshape, subs_shapes_...);
             };
             REQUIRE_NOTHROW(std::apply(apply_subs_shapes, subs_shapes));
         };
         apply_by_element(test, test_data);
     }
-    SECTION("test_check_index_mapping_view_subs_exception")
+    SECTION("test_container")
     {
-        //0pshape,1subs_shapes
-        auto test_data = std::make_tuple(
-            std::make_tuple(shape_type{},std::make_tuple(shape_type{})),
-            std::make_tuple(shape_type{},std::make_tuple(shape_type{0})),
-            std::make_tuple(shape_type{},std::make_tuple(shape_type{1})),
-            std::make_tuple(shape_type{0},std::make_tuple(shape_type{1})),
-            std::make_tuple(shape_type{0},std::make_tuple(shape_type{1,2,3})),
-            std::make_tuple(shape_type{1},std::make_tuple(shape_type{0},shape_type{0})),
-            std::make_tuple(shape_type{1},std::make_tuple(shape_type{1},shape_type{1})),
-            std::make_tuple(shape_type{0,1},std::make_tuple(shape_type{1})),
-            std::make_tuple(shape_type{0,1},std::make_tuple(shape_type{1},shape_type{0})),
-            std::make_tuple(shape_type{0,1},std::make_tuple(shape_type{1},shape_type{1,2,3})),
-            std::make_tuple(shape_type{1,0},std::make_tuple(shape_type{0},shape_type{1})),
-            std::make_tuple(shape_type{1,0},std::make_tuple(shape_type{0},shape_type{1,2,3})),
-            std::make_tuple(shape_type{1,0},std::make_tuple(shape_type{1},shape_type{1})),
-            std::make_tuple(shape_type{1,0},std::make_tuple(shape_type{1},shape_type{1,2,3})),
-            std::make_tuple(shape_type{1,0},std::make_tuple(shape_type{1},shape_type{0},shape_type{0})),
-            std::make_tuple(shape_type{1,0,1,0},std::make_tuple(shape_type{3,1},shape_type{1,3})),
-            std::make_tuple(shape_type{1,0,1,0},std::make_tuple(shape_type{3,1},shape_type{1,3},shape_type{1})),
-            std::make_tuple(shape_type{1,0,1,0},std::make_tuple(shape_type{3,1},shape_type{3,0},shape_type{1},shape_type{1})),
-            std::make_tuple(shape_type{1,0,1,0},std::make_tuple(shape_type{3,1},shape_type{3,0},shape_type{1},shape_type{1,0},shape_type{1}))
-        );
+        auto test = [](const auto& t){
+            auto pshape = std::get<0>(t);
+            auto subs_shapes = std::get<1>(t);
+            using container_type = typename config_type::template container<shape_type>;
+            auto apply_subs_shapes = [&pshape](const auto&...subs_shapes_){
+                auto shapes = container_type{subs_shapes_...};
+                check_index_mapping_view_subs_container(pshape, shapes);
+            };
+            REQUIRE_NOTHROW(std::apply(apply_subs_shapes, subs_shapes));
+        };
+        apply_by_element(test, test_data);
+    }
+}
+
+TEST_CASE("test_check_index_mapping_view_subs_exception","[test_view_factory]")
+{
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
+    using shape_type = typename config_type::shape_type;
+    using gtensor::subscript_exception;
+    using gtensor::detail::check_index_mapping_view_subs_variadic;
+    using gtensor::detail::check_index_mapping_view_subs_container;
+    using helpers_for_testing::apply_by_element;
+
+    //0pshape,1subs_shapes
+    auto test_data = std::make_tuple(
+        std::make_tuple(shape_type{},std::make_tuple(shape_type{})),
+        std::make_tuple(shape_type{},std::make_tuple(shape_type{0})),
+        std::make_tuple(shape_type{},std::make_tuple(shape_type{1})),
+        std::make_tuple(shape_type{0},std::make_tuple(shape_type{1})),
+        std::make_tuple(shape_type{0},std::make_tuple(shape_type{1,2,3})),
+        std::make_tuple(shape_type{1},std::make_tuple(shape_type{0},shape_type{0})),
+        std::make_tuple(shape_type{1},std::make_tuple(shape_type{1},shape_type{1})),
+        std::make_tuple(shape_type{0,1},std::make_tuple(shape_type{1})),
+        std::make_tuple(shape_type{0,1},std::make_tuple(shape_type{1},shape_type{0})),
+        std::make_tuple(shape_type{0,1},std::make_tuple(shape_type{1},shape_type{1,2,3})),
+        std::make_tuple(shape_type{1,0},std::make_tuple(shape_type{0},shape_type{1})),
+        std::make_tuple(shape_type{1,0},std::make_tuple(shape_type{0},shape_type{1,2,3})),
+        std::make_tuple(shape_type{1,0},std::make_tuple(shape_type{1},shape_type{1})),
+        std::make_tuple(shape_type{1,0},std::make_tuple(shape_type{1},shape_type{1,2,3})),
+        std::make_tuple(shape_type{1,0},std::make_tuple(shape_type{1},shape_type{0},shape_type{0})),
+        std::make_tuple(shape_type{1,0,1,0},std::make_tuple(shape_type{3,1},shape_type{1,3})),
+        std::make_tuple(shape_type{1,0,1,0},std::make_tuple(shape_type{3,1},shape_type{1,3},shape_type{1})),
+        std::make_tuple(shape_type{1,0,1,0},std::make_tuple(shape_type{3,1},shape_type{3,0},shape_type{1},shape_type{1})),
+        std::make_tuple(shape_type{1,0,1,0},std::make_tuple(shape_type{3,1},shape_type{3,0},shape_type{1},shape_type{1,0},shape_type{1}))
+    );
+    SECTION("test_variadic")
+    {
         auto test = [](const auto& t){
             auto pshape = std::get<0>(t);
             auto subs_shapes = std::get<1>(t);
             auto apply_subs_shapes = [&pshape](const auto&...subs_shapes_){
-                check_index_mapping_view_subs(pshape, subs_shapes_...);
+                check_index_mapping_view_subs_variadic(pshape, subs_shapes_...);
+            };
+            REQUIRE_THROWS_AS(std::apply(apply_subs_shapes, subs_shapes), subscript_exception);
+        };
+        apply_by_element(test, test_data);
+    }
+    SECTION("test_container")
+    {
+        auto test = [](const auto& t){
+            auto pshape = std::get<0>(t);
+            auto subs_shapes = std::get<1>(t);
+            using container_type = typename config_type::template container<shape_type>;
+            auto apply_subs_shapes = [&pshape](const auto&...subs_shapes_){
+                auto shapes = container_type{subs_shapes_...};
+                check_index_mapping_view_subs_container(pshape, shapes);
             };
             REQUIRE_THROWS_AS(std::apply(apply_subs_shapes, subs_shapes), subscript_exception);
         };
@@ -1945,17 +1985,36 @@ TEMPLATE_TEST_CASE("test_create_index_mapping_view","[test_view_factory]",
         std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}},std::make_tuple(index_tensor_type{1,3}, index_tensor_type{1}), tensor_type{{7,8},{15,16}}),
         std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}},{{13,14},{15,16}}},std::make_tuple(index_tensor_type{1,3}, index_tensor_type{{1,0},{0,1}}), tensor_type{{{7,8},{13,14}},{{5,6},{15,16}}})
     );
-    auto test = [](const auto& t){
-        auto parent = std::get<0>(t);
-        auto subs = std::get<1>(t);
-        auto expected = std::get<2>(t);
-        auto apply_subs = [&parent](const auto&...subs_){
-            return basic_tensor{view_factory_type::create_index_mapping_view(parent, subs_...)};
+    SECTION("test_variadic")
+    {
+        auto test = [](const auto& t){
+            auto parent = std::get<0>(t);
+            auto subs = std::get<1>(t);
+            auto expected = std::get<2>(t);
+            auto apply_subs = [&parent](const auto&...subs_){
+                return basic_tensor{view_factory_type::create_index_mapping_view(parent, subs_...)};
+            };
+            auto result = std::apply(apply_subs, subs);
+            REQUIRE(result == expected);
         };
-        auto result = std::apply(apply_subs, subs);
-        REQUIRE(result == expected);
-    };
-    apply_by_element(test,test_data);
+        apply_by_element(test,test_data);
+    }
+    SECTION("test_container")
+    {
+        auto test = [](const auto& t){
+            auto parent = std::get<0>(t);
+            auto subs = std::get<1>(t);
+            auto expected = std::get<2>(t);
+            using container_type = typename config_type::template container<index_tensor_type>;
+            auto apply_subs = [&parent](const auto&...subs_){
+                auto subs_container = container_type{subs_.copy(subs_order{})...};
+                return basic_tensor{view_factory_type::create_index_mapping_view(parent, subs_container)};
+            };
+            auto result = std::apply(apply_subs, subs);
+            REQUIRE(result == expected);
+        };
+        apply_by_element(test,test_data);
+    }
 }
 
 TEMPLATE_TEST_CASE("test_create_index_mapping_view_exception","[test_view_factory]",
@@ -1998,16 +2057,34 @@ TEMPLATE_TEST_CASE("test_create_index_mapping_view_exception","[test_view_factor
         std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::make_tuple(index_tensor_type{3}),subscript_exception{""}),
         std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::make_tuple(index_tensor_type{0},index_tensor_type{1,2,3}),subscript_exception{""})
     );
-    auto test = [](const auto& t){
-        auto parent = std::get<0>(t);
-        auto subs = std::get<1>(t);
-        auto exception = std::get<2>(t);
-        auto apply_subs = [&parent](const auto&...subs_){
-            return basic_tensor{view_factory_type::create_index_mapping_view(parent, subs_...)};
+    SECTION("test_variadic")
+    {
+        auto test = [](const auto& t){
+            auto parent = std::get<0>(t);
+            auto subs = std::get<1>(t);
+            auto exception = std::get<2>(t);
+            auto apply_subs = [&parent](const auto&...subs_){
+                return basic_tensor{view_factory_type::create_index_mapping_view(parent, subs_...)};
+            };
+            REQUIRE_THROWS_AS(std::apply(apply_subs, subs), decltype(exception));
         };
-        REQUIRE_THROWS_AS(std::apply(apply_subs, subs), decltype(exception));
-    };
-    apply_by_element(test,test_data);
+        apply_by_element(test,test_data);
+    }
+    SECTION("test_container")
+    {
+        auto test = [](const auto& t){
+            auto parent = std::get<0>(t);
+            auto subs = std::get<1>(t);
+            auto exception = std::get<2>(t);
+            using container_type = typename config_type::template container<index_tensor_type>;
+            auto apply_subs = [&parent](const auto&...subs_){
+                auto subs_container = container_type{subs_.copy(subs_order{})...};
+                return basic_tensor{view_factory_type::create_index_mapping_view(parent, subs_container)};
+            };
+            REQUIRE_THROWS_AS(std::apply(apply_subs, subs), decltype(exception));
+        };
+        apply_by_element(test,test_data);
+    }
 }
 
 //test create_bool_mapping_view

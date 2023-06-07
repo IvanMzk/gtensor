@@ -50,16 +50,6 @@ template<typename T> struct unwrap_shape_type{using type = T;};
 template<typename T> struct unwrap_shape_type<std::reference_wrapper<T>>{using type = std::remove_cv_t<T>;};
 template<typename T> using unwrap_shape_t = typename unwrap_shape_type<T>::type;
 
-template<typename ShT>
-const ShT& unwrap_shape(const ShT& shape){
-    return shape;
-}
-
-template<typename ShT>
-const ShT& unwrap_shape(const std::reference_wrapper<ShT>& shape){
-    return shape.get();
-}
-
 template<typename DimT, typename ShT, typename...ShTs>
 void check_stack_variadic_args(const DimT& direction_, const ShT& shape, const ShTs&...shapes){
     auto dim = detail::make_dim(shape);
@@ -186,24 +176,6 @@ auto make_shapes_tuple(const basic_tensor<Us...>& t, const Ts&...ts){
     }else{  //need copy
         return std::make_tuple(t.shape(), ts.shape()...);
     }
-}
-
-template<typename Container>
-auto make_shapes_container(const Container& ts){
-    using tensor_type = typename Container::value_type;
-    using config_type = typename tensor_type::config_type;
-    using shape_type = typename tensor_type::shape_type;
-    using shapes_type = std::conditional_t<
-        std::is_reference_v<decltype(std::declval<tensor_type>().shape())>,
-        typename config_type::template container<std::reference_wrapper<const shape_type>>,
-        typename config_type::template container<shape_type>
-    >;
-    shapes_type shapes{};
-    shapes.reserve(ts.size());
-    for (const auto& t : ts){
-        shapes.push_back(t.shape());
-    }
-    return shapes;
 }
 
 template<typename Order, typename Container>

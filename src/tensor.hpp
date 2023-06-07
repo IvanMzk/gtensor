@@ -318,6 +318,10 @@ public:
     auto operator()(const Subs&...subs)const{
         return create_view_(view_factory_type::create_index_mapping_view(*this, subs...));
     }
+    template<typename Container, std::enable_if_t<detail::is_container_of_tensor_of_type_v<Container,index_type>,int> =0>
+    auto operator()(const Container& subs)const{
+        return create_view_(view_factory_type::create_index_mapping_view(*this, subs));
+    }
     template<typename Subs, std::enable_if_t<detail::is_bool_tensor_v<Subs> ,int> = 0 >
     auto operator()(const Subs& subs)const{
         return create_view_(view_factory_type::create_bool_mapping_view(*this, subs));

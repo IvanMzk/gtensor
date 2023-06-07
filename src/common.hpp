@@ -66,6 +66,9 @@ template<typename T, typename IdxT> inline constexpr bool is_container_of_type_v
 template<typename T, typename U, typename=void> inline constexpr bool is_tensor_of_type_v = false;
 template<typename T, typename U> inline constexpr bool is_tensor_of_type_v<T,U,std::void_t<std::enable_if_t<is_tensor_v<T>>>> = std::is_convertible_v<typename T::value_type, U>;
 
+template<typename T, typename IdxT, typename = void> inline constexpr bool is_container_of_tensor_of_type_v = false;
+template<typename T, typename IdxT> inline constexpr bool is_container_of_tensor_of_type_v<T, IdxT, std::void_t<std::enable_if_t<is_container_v<T>>>> = is_tensor_of_type_v<typename T::value_type, IdxT>;
+
 template<typename T, typename=void> inline constexpr bool is_bool_tensor_v = false;
 template<typename T> inline constexpr bool is_bool_tensor_v<T,std::void_t<std::enable_if_t<is_tensor_v<T>>>> = std::is_same_v<typename T::value_type, bool>;
 
@@ -181,6 +184,37 @@ inline auto make_direction(const T& shape_or_dim, const Direction& direction){
         static_assert(always_false<T>,"invalid shape_or_dim argument");
     }
 }
+
+//Container is container of tensors
+//return container of shapes (or references of shapes, if possible) of tensors
+template<typename Container>
+auto make_shapes_container(const Container& ts){
+    using tensor_type = typename Container::value_type;
+    using config_type = typename tensor_type::config_type;
+    using shape_type = typename tensor_type::shape_type;
+    using shapes_type = std::conditional_t<
+        std::is_reference_v<decltype(std::declval<tensor_type>().shape())>,
+        typename config_type::template container<std::reference_wrapper<const shape_type>>,
+        typename config_type::template container<shape_type>
+    >;
+    shapes_type shapes{};
+    shapes.reserve(ts.size());
+    for (const auto& t : ts){
+        shapes.push_back(t.shape());
+    }
+    return shapes;
+}
+
+//helper to work with container of shapes
+template<typename ShT>
+const ShT& unwrap_shape(const ShT& shape){
+    return shape;
+}
+template<typename ShT>
+const ShT& unwrap_shape(const std::reference_wrapper<ShT>& shape){
+    return shape.get();
+}
+
 
 }   //end of namespace detail
 }   //end of namespace gtensor

@@ -1626,8 +1626,12 @@ TEST_CASE("test_tensor_view_interface","[test_tensor]")
         std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reshape(shape_type{-1,4}, f_order{}), tensor_type{{1,3,2,4},{5,7,6,8}}),
         std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reshape({-1,2}, f_order{}), tensor_type{{1,2},{5,6},{3,4},{7,8}}),
         //index mapping view
+        //variadic subs
         std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}(tensor<int>{1,0},tensor<int>{0,1}), tensor_type{{5,6},{3,4}}),
         std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}(tensor<int>(1),tensor<int>{{0,1},{1,0}}), tensor_type{{{5,6},{7,8}},{{7,8},{5,6}}}),
+        //container subs
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}(std::vector<tensor<int>>{tensor<int>{1,0},tensor<int>{0,1}}), tensor_type{{5,6},{3,4}}),
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}(std::vector<tensor<int>>{tensor<int>(1),tensor<int>{{0,1},{1,0}}}), tensor_type{{{5,6},{7,8}},{{7,8},{5,6}}}),
         //bool mapping view
         std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}(tensor<bool>{{{true,false},{false,true}}}), tensor_type{1,4})
     );
