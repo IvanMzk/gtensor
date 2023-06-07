@@ -101,8 +101,11 @@ TEST_CASE("test_expression_template_walker","[test_expression_template_engine]")
         auto max_dim = std::get<2>(t);
         auto mover = std::get<3>(t);
         auto expected = std::get<4>(t);
-        auto make_walker = [max_dim,f](auto&&...operands){
-            return expression_template_walker<config_type,F,decltype(operands.create_walker(max_dim))...>{f,operands.create_walker(max_dim)...};
+        auto make_walker_helper = [](auto f_, auto...walkers_){
+            return expression_template_walker<config_type,F,decltype(walkers_)...>{f_,walkers_...};
+        };
+        auto make_walker = [max_dim,f,make_walker_helper](auto...operands){
+            return make_walker_helper(f,operands.create_walker(max_dim)...);
         };
         auto result_walker = std::apply(make_walker, operands);
         mover(result_walker);
@@ -432,3 +435,4 @@ TEMPLATE_TEST_CASE("test_expression_template_operator_a_operator","[test_express
     };
     apply_by_element(test, test_data);
 }
+

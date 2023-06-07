@@ -277,7 +277,7 @@ struct prod
 
 struct cumsum{
     template<typename It, typename DstIt, typename IdxT>
-    void operator()(It first, It last, DstIt dfirst, DstIt dlast, IdxT,IdxT){
+    void operator()(It first, It, DstIt dfirst, DstIt dlast, IdxT,IdxT){
         auto cumsum_ = *first;
         *dfirst = cumsum_;
         for(++dfirst,++first; dfirst!=dlast; ++dfirst,++first){
@@ -289,7 +289,7 @@ struct cumsum{
 
 struct cumprod_reverse{
     template<typename It, typename DstIt, typename IdxT>
-    void operator()(It first, It last, DstIt dfirst, DstIt dlast, IdxT,IdxT){
+    void operator()(It, It last, DstIt dfirst, DstIt dlast, IdxT,IdxT){
         auto cumprod_ = *--last;
         *--dlast = cumprod_;
         while(dlast!=dfirst){
@@ -301,7 +301,7 @@ struct cumprod_reverse{
 
 struct moving_avarage{
     template<typename It, typename DstIt, typename IdxT>
-    void operator()(It first, It last, DstIt dfirst, DstIt dlast, const IdxT& window_size, const IdxT& window_step, const typename std::iterator_traits<It>::value_type& denom){
+    void operator()(It first, It, DstIt dfirst, DstIt dlast, const IdxT& window_size, const IdxT& window_step, const typename std::iterator_traits<It>::value_type& denom){
         using index_type = IdxT;
         using value_type = typename std::iterator_traits<It>::value_type;
         value_type sum{0};
@@ -323,7 +323,7 @@ struct moving_avarage{
 
 struct diff_1{
     template<typename It, typename DstIt, typename IdxT>
-    void operator()(It first, It last, DstIt dfirst, DstIt dlast, const IdxT&, const IdxT&){
+    void operator()(It first, It, DstIt dfirst, DstIt dlast, const IdxT&, const IdxT&){
         for (;dfirst!=dlast;++dfirst){
             auto prev = *first;
             *dfirst = *(++first) - prev;
@@ -333,7 +333,7 @@ struct diff_1{
 
 struct diff_2{
     template<typename It, typename DstIt, typename IdxT>
-    void operator()(It first, It last, DstIt dfirst, DstIt dlast, const IdxT&, const IdxT&){
+    void operator()(It first, It, DstIt dfirst, DstIt dlast, const IdxT&, const IdxT&){
         for (;dfirst!=dlast;++dfirst){
             auto v0 = *first;
             auto v1 = *(++first);

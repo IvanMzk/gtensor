@@ -36,7 +36,7 @@ struct strides_div_type_
 };
 template<typename Config> using strides_div_t = typename strides_div_type_<Config>::type;
 
-template<typename> struct change_order;
+template<typename T> struct change_order{using type = gtensor::config::c_order;};
 template<> struct change_order<gtensor::config::c_order>{using type = gtensor::config::f_order;};
 template<> struct change_order<gtensor::config::f_order>{using type = gtensor::config::c_order;};
 template<typename Order> using change_order_t = typename change_order<Order>::type;

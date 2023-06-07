@@ -134,6 +134,7 @@ public:
     //makes tensor in specified layout by copying shape and elements from this
     template<typename Order = config::c_order>
     auto copy(Order order = Order{})const{
+        (void)(order);
         auto a = traverse_order_adapter<Order>();
         return tensor<value_type,Order,config_type>(shape(),a.begin(),a.end());
     }
@@ -299,10 +300,12 @@ public:
     }
     template<typename Container, typename Order = config::c_order, std::enable_if_t<detail::is_container_of_type_v<Container,index_type>,int> = 0 >
     auto reshape(const Container& subs, Order order = Order{})const{
+        (void)order;
         return create_view_(view_factory_type::template create_reshape_view<Order>(*this, subs));
     }
     template<typename Order = config::c_order>
     auto reshape(std::initializer_list<index_type> subs, Order order = Order{})const{
+        (void)order;
         return create_view_(view_factory_type::template create_reshape_view<Order>(*this, subs));
     }
     //mapping view

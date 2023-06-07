@@ -430,7 +430,7 @@ inline ShT make_bool_mapping_view_shape(const ShT& pshape, const IdxT& subs_true
 }
 
 template<typename Order, typename ShT, typename DimT, typename IdxT, typename IndexContainer, typename SubsIt>
-auto fill_bool_map(const ShT& pshape, const ShT& pstrides, const DimT& subs_dim, const IdxT& chunk_size, IndexContainer& index_container, SubsIt subs_traverser){
+auto fill_bool_map(const ShT& pstrides, const DimT& subs_dim, const IdxT& chunk_size, IndexContainer& index_container, SubsIt subs_traverser){
     using index_type = typename ShT::value_type;
     index_type trues_number{0};
     if (chunk_size == index_type{1}){
@@ -659,7 +659,6 @@ class view_factory
                 index_container.reserve(static_cast<index_container_difference_type>(parent.size()));
             }
             subs_trues_number = detail::fill_bool_map<order>(
-                pshape,
                 parent.strides(),
                 subs_dim,
                 chunk_size,

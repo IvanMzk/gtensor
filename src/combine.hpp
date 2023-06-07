@@ -62,9 +62,8 @@ const ShT& unwrap_shape(const std::reference_wrapper<ShT>& shape){
 
 template<typename DimT, typename ShT, typename...ShTs>
 void check_stack_variadic_args(const DimT& direction_, const ShT& shape, const ShTs&...shapes){
-    using dim_type = DimT;
-    dim_type dim = detail::make_dim(shape);
-    dim_type direction = detail::make_direction(shape,direction_);
+    auto dim = detail::make_dim(shape);
+    auto direction = detail::make_direction(shape,direction_);
     if (direction > dim){
         throw combine_exception{"bad stack direction"};
     }
@@ -98,7 +97,7 @@ void check_stack_container_args(const DimT& direction_, const Container& shapes)
 
 template<typename DimT, typename ShT, typename...ShTs>
 void check_concatenate_variadic_args(const DimT& direction_, const ShT& shape, const ShTs&...shapes){
-    using dim_type = DimT;
+    using dim_type = typename ShT::difference_type;
     dim_type dim = make_dim(shape);
     dim_type direction = make_direction(shape, direction_);
     if (direction >= dim){

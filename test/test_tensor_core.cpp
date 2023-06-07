@@ -302,6 +302,7 @@ TEMPLATE_TEST_CASE("test_storage_core","[test_tensor_implementation]",
     SECTION("test_storage_core_range_constructor"){
         //0layout,1shape,2elements,3expected_shape,4expected_elements
         auto test_data = std::make_tuple(
+            //c_order
             std::make_tuple(c_order{}, shape_type{0}, std::vector<value_type>{}, shape_type{0}, std::vector<value_type>{}),
             std::make_tuple(c_order{}, shape_type{0,3}, std::vector<value_type>{}, shape_type{0,3}, std::vector<value_type>{}),
             std::make_tuple(c_order{}, shape_type{0}, std::vector<value_type>{2,2,2,2}, shape_type{0}, std::vector<value_type>{}),
@@ -312,7 +313,19 @@ TEMPLATE_TEST_CASE("test_storage_core","[test_tensor_implementation]",
             std::make_tuple(c_order{}, shape_type{5}, std::vector<value_type>{1,2,3}, shape_type{5}, std::vector<value_type>{1,2,3,0,0}),
             std::make_tuple(c_order{}, shape_type{3,2}, std::vector<value_type>{1,2,3,4,5,6}, shape_type{3,2}, std::vector<value_type>{1,2,3,4,5,6}),
             std::make_tuple(c_order{}, shape_type{3,2}, std::vector<value_type>{1,2}, shape_type{3,2}, std::vector<value_type>{1,2,0,0,0,0}),
-            std::make_tuple(c_order{}, shape_type{3,2}, std::vector<value_type>{1,2,3,4,5,6,7,8,9,10}, shape_type{3,2}, std::vector<value_type>{1,2,3,4,5,6})
+            std::make_tuple(c_order{}, shape_type{3,2}, std::vector<value_type>{1,2,3,4,5,6,7,8,9,10}, shape_type{3,2}, std::vector<value_type>{1,2,3,4,5,6}),
+            //f_order
+            std::make_tuple(f_order{}, shape_type{0}, std::vector<value_type>{}, shape_type{0}, std::vector<value_type>{}),
+            std::make_tuple(f_order{}, shape_type{0,3}, std::vector<value_type>{}, shape_type{0,3}, std::vector<value_type>{}),
+            std::make_tuple(f_order{}, shape_type{0}, std::vector<value_type>{2,2,2,2}, shape_type{0}, std::vector<value_type>{}),
+            std::make_tuple(f_order{}, shape_type{1}, std::vector<value_type>{2}, shape_type{1}, std::vector<value_type>{2}),
+            std::make_tuple(f_order{}, shape_type{1}, std::vector<value_type>{3,4,5}, shape_type{1}, std::vector<value_type>{3}),
+            std::make_tuple(f_order{}, shape_type{5}, std::vector<value_type>{1,2,3,4,5}, shape_type{5}, std::vector<value_type>{1,2,3,4,5}),
+            std::make_tuple(f_order{}, shape_type{5}, std::vector<value_type>{1,2,3,4,5,6,7,8,9}, shape_type{5}, std::vector<value_type>{1,2,3,4,5}),
+            std::make_tuple(f_order{}, shape_type{5}, std::vector<value_type>{1,2,3}, shape_type{5}, std::vector<value_type>{1,2,3,0,0}),
+            std::make_tuple(f_order{}, shape_type{3,2}, std::vector<value_type>{1,2,3,4,5,6}, shape_type{3,2}, std::vector<value_type>{1,2,3,4,5,6}),
+            std::make_tuple(f_order{}, shape_type{3,2}, std::vector<value_type>{1,2}, shape_type{3,2}, std::vector<value_type>{1,2,0,0,0,0}),
+            std::make_tuple(f_order{}, shape_type{3,2}, std::vector<value_type>{1,2,3,4,5,6,7,8,9,10}, shape_type{3,2}, std::vector<value_type>{1,2,3,4,5,6})
         );
         auto test = [](const auto& t){
             auto layout = std::get<0>(t);
