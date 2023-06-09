@@ -75,12 +75,23 @@ inline basic_tensor<Ts...>& a_operator(F&& f, basic_tensor<Ts...>& lhs, Rhs&& rh
     return lhs;
 }
 
+//return true if two tensors has same shape and elements
 template<typename...Us, typename...Vs>
-static inline auto operator==(const basic_tensor<Us...>& t1, const basic_tensor<Vs...>& t2){
+inline auto operator==(const basic_tensor<Us...>& t1, const basic_tensor<Vs...>& t2){
     if (t1.is_same(t2)){
         return true;
     }else{
         return t1.shape() == t2.shape() && std::equal(t1.begin(), t1.end(), t2.begin());
+    }
+}
+
+//return true if two tensors has same shape and close elements
+template<typename...Us, typename...Vs>
+inline auto tensor_close(const basic_tensor<Us...>& t1, const basic_tensor<Vs...>& t2){
+    if (t1.is_same(t2)){
+        return true;
+    }else{
+        return t1.shape() == t2.shape() && std::equal(t1.begin(), t1.end(), t2.begin(), operations::math_is_close{});
     }
 }
 
@@ -119,7 +130,7 @@ GTENSOR_UNARY_TENSOR_OPERATOR(operator!,operations::logic_not);
 GTENSOR_BINARY_TENSOR_OPERATOR(operator&&,operations::logic_and);
 GTENSOR_BINARY_TENSOR_OPERATOR(operator||,operations::logic_or);
 
-//asignment
+//assignment
 template<typename...Ts, typename Rhs>
 inline basic_tensor<Ts...>& assign(basic_tensor<Ts...>& lhs, Rhs&& rhs){
     using RhsT = std::remove_cv_t<std::remove_reference_t<Rhs>>;
@@ -146,6 +157,52 @@ GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator|=, operations::assign_bitwi
 GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator^=, operations::assign_bitwise_xor);
 GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator<<=, operations::assign_bitwise_lshift);
 GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator>>=, operations::assign_bitwise_rshift);
+
+//math
+//basic
+GTENSOR_UNARY_TENSOR_OPERATOR(abs, operations::math_abs);
+GTENSOR_BINARY_TENSOR_OPERATOR(fmod, operations::math_fmod);
+GTENSOR_BINARY_TENSOR_OPERATOR(remainder, operations::math_remainder);
+GTENSOR_BINARY_TENSOR_OPERATOR(fmax, operations::math_fmax);
+GTENSOR_BINARY_TENSOR_OPERATOR(fmin, operations::math_fmin);
+GTENSOR_BINARY_TENSOR_OPERATOR(fdim, operations::math_fdim);
+//exponential
+GTENSOR_UNARY_TENSOR_OPERATOR(exp, operations::math_exp);
+GTENSOR_UNARY_TENSOR_OPERATOR(exp2, operations::math_exp2);
+GTENSOR_UNARY_TENSOR_OPERATOR(expm1, operations::math_expm1);
+GTENSOR_UNARY_TENSOR_OPERATOR(log, operations::math_log);
+GTENSOR_UNARY_TENSOR_OPERATOR(log10, operations::math_log10);
+GTENSOR_UNARY_TENSOR_OPERATOR(log2, operations::math_log2);
+GTENSOR_UNARY_TENSOR_OPERATOR(log1p, operations::math_log1p);
+//power
+GTENSOR_BINARY_TENSOR_OPERATOR(pow, operations::math_pow);
+GTENSOR_UNARY_TENSOR_OPERATOR(sqrt, operations::math_sqrt);
+GTENSOR_UNARY_TENSOR_OPERATOR(cbrt, operations::math_cbrt);
+GTENSOR_BINARY_TENSOR_OPERATOR(hypot, operations::math_hypot);
+//trigonometric
+GTENSOR_UNARY_TENSOR_OPERATOR(sin, operations::math_sin);
+GTENSOR_UNARY_TENSOR_OPERATOR(cos, operations::math_cos);
+GTENSOR_UNARY_TENSOR_OPERATOR(tan, operations::math_tan);
+GTENSOR_UNARY_TENSOR_OPERATOR(asin, operations::math_asin);
+GTENSOR_UNARY_TENSOR_OPERATOR(acos, operations::math_acos);
+GTENSOR_UNARY_TENSOR_OPERATOR(atan, operations::math_atan);
+GTENSOR_BINARY_TENSOR_OPERATOR(atan2, operations::math_atan2);
+//hyperbolic
+GTENSOR_UNARY_TENSOR_OPERATOR(sinh, operations::math_sinh);
+GTENSOR_UNARY_TENSOR_OPERATOR(cosh, operations::math_cosh);
+GTENSOR_UNARY_TENSOR_OPERATOR(tanh, operations::math_tanh);
+GTENSOR_UNARY_TENSOR_OPERATOR(asinh, operations::math_asinh);
+GTENSOR_UNARY_TENSOR_OPERATOR(acosh, operations::math_acosh);
+GTENSOR_UNARY_TENSOR_OPERATOR(atanh, operations::math_atanh);
+//nearest
+GTENSOR_UNARY_TENSOR_OPERATOR(ceil, operations::math_ceil);
+GTENSOR_UNARY_TENSOR_OPERATOR(floor, operations::math_floor);
+GTENSOR_UNARY_TENSOR_OPERATOR(trunc, operations::math_trunc);
+GTENSOR_UNARY_TENSOR_OPERATOR(round, operations::math_round);
+GTENSOR_UNARY_TENSOR_OPERATOR(nearbyint, operations::math_nearbyint);
+GTENSOR_UNARY_TENSOR_OPERATOR(rint, operations::math_rint);
+//comparison
+GTENSOR_BINARY_TENSOR_OPERATOR(is_close,operations::math_is_close);
 
 }   //end of namespace gtensor
 #endif

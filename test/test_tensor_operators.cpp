@@ -1,4 +1,5 @@
 
+#include <limits>
 #include "catch.hpp"
 #include "helpers_for_testing.hpp"
 #include "tensor.hpp"
@@ -713,4 +714,50 @@ TEST_CASE("test_tensor_assign_operators_semantic","[test_tensor_operators]")
     {
         REQUIRE((lhs>>=tensor_type{1,2,3}) == tensor_type{2,1,0});
     }
+}
+
+//test math functions semantic
+TEST_CASE("test_tensor_math_comparison_functions_semantic","[test_tensor_operators]")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using bool_tensor_type = gtensor::tensor<bool>;
+    SECTION("test_is_close")
+    {
+        static constexpr value_type e = std::numeric_limits<value_type>::epsilon();
+        static constexpr value_type e_2 = e*e;
+        //near zero
+        REQUIRE(gtensor::is_close(tensor_type(0.0),tensor_type(0.0)) == bool_tensor_type(true));
+        REQUIRE(gtensor::is_close(tensor_type(0.0),tensor_type(0.0+e_2)) == bool_tensor_type(true));
+        REQUIRE(gtensor::is_close(tensor_type(0.0),tensor_type(0.0-e_2)) == bool_tensor_type(true));
+        REQUIRE(gtensor::is_close(tensor_type(0.0),tensor_type(0.00001)) == bool_tensor_type(false));
+        REQUIRE(gtensor::is_close(tensor_type(0.0),tensor_type{0.0+e_2,0.0-e_2,0.0}) == bool_tensor_type{true,true,true});
+        REQUIRE(gtensor::equal(tensor_type(0.0),tensor_type{0.0+e_2,0.0-e_2,0.0}) == bool_tensor_type{false,false,true});
+        //near one
+        REQUIRE(gtensor::is_close(tensor_type(1.1),tensor_type{1.1+e,1.1-e,1.1}) == bool_tensor_type{true,true,true});
+        REQUIRE(gtensor::equal(tensor_type(1.1),tensor_type{1.1+e,1.1-e,1.1}) == bool_tensor_type{false,false,true});
+        //near big
+        REQUIRE(gtensor::is_close(tensor_type(4e15),tensor_type{4e15+1.0,4e15-1.0,4e15}) == bool_tensor_type{true,true,true});
+        REQUIRE(gtensor::equal(tensor_type(4e15),tensor_type{4e15+1.0,4e15-1.0,4e15}) == bool_tensor_type{false,false,true});
+    }
+}
+
+TEST_CASE("test_tensor_math_basic_functions_semantic","[test_tensor_operators]")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::tensor_close;
+    SECTION("test_abs")
+    {
+        auto result = gtensor::abs(tensor_type{{0.0,1.1,-2.2},{-4.4,5.5,-6.6}});
+        auto expected = tensor_type{{0.0,1.1,2.2},{4.4,5.5,6.6}};
+        REQUIRE(result == expected);
+    }
+    SECTION("test_fmod")
+    {
+        auto result = gtensor::fmod(tensor_type{{0.0,1.1,-2.2},{4.4,-5.5,-6.6}}, tensor_type{2.0,-3.0,4.0});
+        auto expected = tensor_type{{0.0,1.1,-2.2},{0.4,-2.5,-2.6}};
+        REQUIRE(tensor_close(result,expected));
+    }
+
 }
