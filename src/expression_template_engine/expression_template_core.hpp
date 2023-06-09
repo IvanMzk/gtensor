@@ -6,26 +6,6 @@
 
 namespace gtensor{
 
-namespace detail{
-
-// template<typename...> struct common_order;
-// template<typename Config>
-// struct common_order<Config>{
-//     using type = typename Config::order;
-// };
-// template<typename Config, typename Order, typename...Orders>
-// struct common_order<Config,Order,Orders...>{
-//     using type = std::conditional_t<
-//         std::conjunction_v<std::is_same<Order,Orders>...>,
-//         Order,
-//         typename Config::order
-//     >;
-// };
-// template<typename Config, typename...Orders> using common_order_t = typename common_order<Config,Orders...>::type;
-
-}   //end of namespace detail
-
-
 //expression_template_core represents expression on basic_tensor operands
 //F is expression operation, must provide operator()() on arguments that are operands elements
 //Operands are specializations of basic_tensor

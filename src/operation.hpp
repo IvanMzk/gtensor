@@ -86,18 +86,22 @@ template<typename T> auto round(T t){return std::round(t);}
 template<typename T> auto nearbyint(T t){return std::nearbyint(t);}
 template<typename T> auto rint(T t){return std::rint(t);}
 //comparision
+template<typename T, typename U, typename Tol>
+auto is_close(T t, U u, const Tol relative_tolerance, const Tol absolute_tolerance){
+    using common_type = std::common_type_t<T,U>;
+    static_assert(std::is_arithmetic_v<common_type>,"math::is_close defined for arithmetic types only");
+    if constexpr (std::is_floating_point_v<common_type>){
+        return math::abs(t-u) <= absolute_tolerance + relative_tolerance*(math::abs(t)+math::abs(u));
+    }else{
+        return t==u;
+    }
+}
 template<typename T, typename U>
 auto is_close(T t, U u){
     using common_type = std::common_type_t<T,U>;
-    if constexpr (std::is_floating_point_v<common_type>){
-        static constexpr common_type relative_tolerance = std::numeric_limits<common_type>::epsilon();
-        static constexpr common_type absolute_tolerance = relative_tolerance;
-        return math::abs(t-u) <= absolute_tolerance + relative_tolerance*(math::abs(t)+math::abs(u));
-    }else if constexpr (std::is_integral_v<common_type>){
-        return t==u;
-    }else{
-        static_assert(detail::always_false<common_type>,"math::is_close defined for arithmetic types only");
-    }
+    static_assert(std::is_arithmetic_v<common_type>,"math::is_close defined for arithmetic types only");
+    static constexpr common_type e = std::numeric_limits<common_type>::epsilon();
+    return is_close(t,u,e,e);
 }
 
 }   //end of namespace math
@@ -191,6 +195,21 @@ GTENSOR_FUNCTION(math_nearbyint,math::nearbyint);
 GTENSOR_FUNCTION(math_rint,math::rint);
 //comparison
 GTENSOR_FUNCTION(math_is_close,math::is_close);
+template<typename Tol>
+class math_is_close_tol
+{
+    Tol relative_tolerance_;
+    Tol absolute_tolerance_;
+public:
+    math_is_close_tol(Tol relative_tolerance__, Tol absolute_tolerance__):
+        relative_tolerance_{relative_tolerance__},
+        absolute_tolerance_{absolute_tolerance__}
+        {}
+    template<typename T, typename U>
+    bool operator()(T t, U u){
+        return math::is_close(t,u,relative_tolerance_,absolute_tolerance_);
+    }
+};
 
 }   //end of nemespace operations
 }   //end of namespace gtensor

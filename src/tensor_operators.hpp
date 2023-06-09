@@ -85,13 +85,22 @@ inline auto operator==(const basic_tensor<Us...>& t1, const basic_tensor<Vs...>&
     }
 }
 
-//return true if two tensors has same shape and close elements
+//return true if two tensors has same shape and close elements, using default tolerance
 template<typename...Us, typename...Vs>
 inline auto tensor_close(const basic_tensor<Us...>& t1, const basic_tensor<Vs...>& t2){
     if (t1.is_same(t2)){
         return true;
     }else{
         return t1.shape() == t2.shape() && std::equal(t1.begin(), t1.end(), t2.begin(), operations::math_is_close{});
+    }
+}
+//return true if two tensors has same shape and close elements within specified tolerance
+template<typename...Us, typename...Vs, typename Tol>
+inline auto tensor_close(const basic_tensor<Us...>& t1, const basic_tensor<Vs...>& t2, Tol relative_tolerance, Tol absolute_tolerance){
+    if (t1.is_same(t2)){
+        return true;
+    }else{
+        return t1.shape() == t2.shape() && std::equal(t1.begin(), t1.end(), t2.begin(), operations::math_is_close_tol<Tol>{relative_tolerance,absolute_tolerance});
     }
 }
 
