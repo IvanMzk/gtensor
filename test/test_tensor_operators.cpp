@@ -748,6 +748,49 @@ TEST_CASE("test_tensor_math_comparison_functions_semantic","[test_tensor_operato
         REQUIRE(gtensor::is_close(4E15, tensor_type{4E15+5.0,4E15-5.0,4E15}) == bool_tensor_type{false,false,true});
         REQUIRE(gtensor::equal(tensor_type(4E15), tensor_type{4E15+1.0,4E15-1.0,4E15}) == bool_tensor_type{false,false,true});
     }
+    SECTION("test_is_close_with_tolerance")
+    {
+        //near zero
+        REQUIRE(gtensor::is_close(tensor_type(0.0), tensor_type(0.0), 1E-10, 1E-10) == bool_tensor_type(true));
+        REQUIRE(gtensor::is_close(tensor_type(0.0), tensor_type(0.0+1E-11), 1E-10, 1E-10) == bool_tensor_type(true));
+        REQUIRE(gtensor::is_close(tensor_type(0.0), tensor_type(0.0+1E-21), 1E-10, 1E-10) == bool_tensor_type(true));
+        REQUIRE(gtensor::is_close(tensor_type(0.0), tensor_type(0.0+1E-9), 1E-10, 1E-10) == bool_tensor_type(false));
+        REQUIRE(gtensor::is_close(tensor_type(0.0), tensor_type{0.0+1E-11,0.0-1E-11,0.0+1E-8}, 1E-10, 1E-10) == bool_tensor_type{true,true,false});
+        //near one
+        REQUIRE(gtensor::is_close(tensor_type(1.1), tensor_type{1.1+1E-11,1.1-1E-11,1.1+1E-8}, 1E-10, 1E-10) == bool_tensor_type{true,true,false});
+        //near big
+        REQUIRE(gtensor::is_close(tensor_type(4E15), tensor_type{4E15+1.0,4E15-1.0,4E15+10.0}, 1E-15, 1E-16) == bool_tensor_type{true,true,false});
+    }
+    SECTION("test_isgreater")
+    {
+        auto result = gtensor::isgreater(tensor_type{{0.0,1.1,-2.2},{4.4,-5.5,4.0}}, tensor_type{2.0,-3.0,4.0});
+        auto expected = bool_tensor_type{{false,true,false},{true,false,false}};
+        REQUIRE(result == expected);
+    }
+    SECTION("test_isgreaterequal")
+    {
+        auto result = gtensor::isgreaterequal(tensor_type{{0.0,1.1,-2.2},{4.4,-5.5,4.0}}, tensor_type{2.0,-3.0,4.0});
+        auto expected = bool_tensor_type{{false,true,false},{true,false,true}};
+        REQUIRE(result == expected);
+    }
+    SECTION("test_isless")
+    {
+        auto result = gtensor::isless(tensor_type{{0.0,1.1,-2.2},{4.4,-5.5,4.0}}, tensor_type{2.0,-3.0,4.0});
+        auto expected = bool_tensor_type{{true,false,true},{false,true,false}};
+        REQUIRE(result == expected);
+    }
+    SECTION("test_islessequal")
+    {
+        auto result = gtensor::islessequal(tensor_type{{0.0,1.1,-2.2},{4.4,-5.5,4.0}}, tensor_type{2.0,-3.0,4.0});
+        auto expected = bool_tensor_type{{true,false,true},{false,true,true}};
+        REQUIRE(result == expected);
+    }
+    SECTION("test_islessgreater")
+    {
+        auto result = gtensor::islessgreater(tensor_type{{0.0,1.1,-2.2},{4.4,-5.5,4.0}}, tensor_type{2.0,-3.0,4.0});
+        auto expected = bool_tensor_type{{true,true,true},{true,true,false}};
+        REQUIRE(result == expected);
+    }
 }
 
 TEST_CASE("test_tensor_math_basic_functions_semantic","[test_tensor_operators]")
@@ -771,6 +814,12 @@ TEST_CASE("test_tensor_math_basic_functions_semantic","[test_tensor_operators]")
     {
         auto result = gtensor::remainder(tensor_type{{0.0,1.1,-2.2},{4.4,-5.5,-6.6}}, tensor_type{2.0,-3.0,4.0});
         auto expected = tensor_type{{0.0,1.1,1.8},{0.4,0.5,1.4}};
+        REQUIRE(tensor_close(result,expected));
+    }
+    SECTION("test_fma")
+    {
+        auto result = gtensor::fma(tensor_type{{0.0,1.1,-2.2},{4.4,-5.5,-6.6}}, tensor_type{2.0,-3.0,4.0}, 1.0);
+        auto expected = tensor_type{{1.0,-2.3,-7.8},{9.8,17.5,-25.4}};
         REQUIRE(tensor_close(result,expected));
     }
     SECTION("test_fmax")
@@ -991,6 +1040,38 @@ TEST_CASE("test_tensor_math_nearest_functions_semantic","[test_tensor_operators]
         auto result = gtensor::round(tensor_type{-4.5,-3.7,-2.4,0.0,1.0,2.4,3.7,4.5});
         auto expected = tensor_type{-5.0,-4.0,-2.0,0.0,1.0,2.0,4.0,5.0};
         REQUIRE(tensor_close(result,expected,1E-10,1E-10));
+    }
+}
+
+TEST_CASE("test_tensor_math_classification_functions_semantic","[test_tensor_operators]")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using bool_tensor_type = gtensor::tensor<bool>;
+
+    SECTION("test_isfinite")
+    {
+        auto result = gtensor::isfinite(tensor_type{-1.0/0.0,-1.0,0.0/0.0,std::numeric_limits<value_type>::min()/2.0,0.0,1.0,1.0/0.0});
+        auto expected = bool_tensor_type{false,true,false,true,true,true,false};
+        REQUIRE(result == expected);
+    }
+    SECTION("test_isinf")
+    {
+        auto result = gtensor::isinf(tensor_type{-1.0/0.0,-1.0,0.0/0.0,std::numeric_limits<value_type>::min()/2.0,0.0,1.0,1.0/0.0});
+        auto expected = bool_tensor_type{true,false,false,false,false,false,true};
+        REQUIRE(result == expected);
+    }
+    SECTION("test_isnan")
+    {
+        auto result = gtensor::isnan(tensor_type{-1.0/0.0,-1.0,0.0/0.0,std::numeric_limits<value_type>::min()/2.0,0.0,1.0,1.0/0.0});
+        auto expected = bool_tensor_type{false,false,true,false,false,false,false};
+        REQUIRE(result == expected);
+    }
+    SECTION("test_isnormal")
+    {
+        auto result = gtensor::isnormal(tensor_type{-1.0/0.0,-1.0,0.0/0.0,std::numeric_limits<value_type>::min()/2.0,0.0,1.0,1.0/0.0});
+        auto expected = bool_tensor_type{false,true,false,false,false,true,false};
+        REQUIRE(result == expected);
     }
 }
 

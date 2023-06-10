@@ -45,11 +45,22 @@ inline tensor<Ts...>& NAME(tensor<Ts...>& lhs, Rhs&& rhs){\
     return lhs;\
 }
 
+#define GTENSOR_TENSOR_FUNCTION(NAME,F)\
+template<typename...Args>\
+inline auto NAME(Args&&...args){\
+    static_assert(detail::has_tensor_arg_v<std::remove_cv_t<std::remove_reference_t<Args>>...>,"at least one arg must be tensor");\
+    return n_operator(F{},std::forward<Args>(args)...);\
+}
+
+
 namespace gtensor{
 
 namespace detail{
 
+template<typename...Ts> inline constexpr bool has_tensor_arg_v = (is_tensor_v<Ts>||...);
 template<typename Other, typename T> inline constexpr bool lhs_other_v = std::is_convertible_v<Other,T>||std::is_convertible_v<T,Other>;
+template<typename T> using tensor_value_type_t = std::conditional_t<is_tensor_v<T>, typename T::value_type, T>;
+template<typename...Ts> using tensor_common_value_type_t = std::common_type_t<tensor_value_type_t<Ts>...>;
 
 template<typename...Ts>
 inline basic_tensor<Ts...>& as_basic_tensor(basic_tensor<Ts...>& t){
@@ -169,49 +180,74 @@ GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator>>=, operations::assign_bitw
 
 //math
 //basic
-GTENSOR_UNARY_TENSOR_OPERATOR(abs, operations::math_abs);
-GTENSOR_BINARY_TENSOR_OPERATOR(fmod, operations::math_fmod);
-GTENSOR_BINARY_TENSOR_OPERATOR(remainder, operations::math_remainder);
-GTENSOR_BINARY_TENSOR_OPERATOR(fmax, operations::math_fmax);
-GTENSOR_BINARY_TENSOR_OPERATOR(fmin, operations::math_fmin);
-GTENSOR_BINARY_TENSOR_OPERATOR(fdim, operations::math_fdim);
+GTENSOR_TENSOR_FUNCTION(abs, operations::math_abs);
+GTENSOR_TENSOR_FUNCTION(fmod, operations::math_fmod);
+GTENSOR_TENSOR_FUNCTION(remainder, operations::math_remainder);
+GTENSOR_TENSOR_FUNCTION(fma, operations::math_fma);
+GTENSOR_TENSOR_FUNCTION(fmax, operations::math_fmax);
+GTENSOR_TENSOR_FUNCTION(fmin, operations::math_fmin);
+GTENSOR_TENSOR_FUNCTION(fdim, operations::math_fdim);
 //exponential
-GTENSOR_UNARY_TENSOR_OPERATOR(exp, operations::math_exp);
-GTENSOR_UNARY_TENSOR_OPERATOR(exp2, operations::math_exp2);
-GTENSOR_UNARY_TENSOR_OPERATOR(expm1, operations::math_expm1);
-GTENSOR_UNARY_TENSOR_OPERATOR(log, operations::math_log);
-GTENSOR_UNARY_TENSOR_OPERATOR(log10, operations::math_log10);
-GTENSOR_UNARY_TENSOR_OPERATOR(log2, operations::math_log2);
-GTENSOR_UNARY_TENSOR_OPERATOR(log1p, operations::math_log1p);
+GTENSOR_TENSOR_FUNCTION(exp, operations::math_exp);
+GTENSOR_TENSOR_FUNCTION(exp2, operations::math_exp2);
+GTENSOR_TENSOR_FUNCTION(expm1, operations::math_expm1);
+GTENSOR_TENSOR_FUNCTION(log, operations::math_log);
+GTENSOR_TENSOR_FUNCTION(log10, operations::math_log10);
+GTENSOR_TENSOR_FUNCTION(log2, operations::math_log2);
+GTENSOR_TENSOR_FUNCTION(log1p, operations::math_log1p);
 //power
-GTENSOR_BINARY_TENSOR_OPERATOR(pow, operations::math_pow);
-GTENSOR_UNARY_TENSOR_OPERATOR(sqrt, operations::math_sqrt);
-GTENSOR_UNARY_TENSOR_OPERATOR(cbrt, operations::math_cbrt);
-GTENSOR_BINARY_TENSOR_OPERATOR(hypot, operations::math_hypot);
+GTENSOR_TENSOR_FUNCTION(pow, operations::math_pow);
+GTENSOR_TENSOR_FUNCTION(sqrt, operations::math_sqrt);
+GTENSOR_TENSOR_FUNCTION(cbrt, operations::math_cbrt);
+GTENSOR_TENSOR_FUNCTION(hypot, operations::math_hypot);
 //trigonometric
-GTENSOR_UNARY_TENSOR_OPERATOR(sin, operations::math_sin);
-GTENSOR_UNARY_TENSOR_OPERATOR(cos, operations::math_cos);
-GTENSOR_UNARY_TENSOR_OPERATOR(tan, operations::math_tan);
-GTENSOR_UNARY_TENSOR_OPERATOR(asin, operations::math_asin);
-GTENSOR_UNARY_TENSOR_OPERATOR(acos, operations::math_acos);
-GTENSOR_UNARY_TENSOR_OPERATOR(atan, operations::math_atan);
-GTENSOR_BINARY_TENSOR_OPERATOR(atan2, operations::math_atan2);
+GTENSOR_TENSOR_FUNCTION(sin, operations::math_sin);
+GTENSOR_TENSOR_FUNCTION(cos, operations::math_cos);
+GTENSOR_TENSOR_FUNCTION(tan, operations::math_tan);
+GTENSOR_TENSOR_FUNCTION(asin, operations::math_asin);
+GTENSOR_TENSOR_FUNCTION(acos, operations::math_acos);
+GTENSOR_TENSOR_FUNCTION(atan, operations::math_atan);
+GTENSOR_TENSOR_FUNCTION(atan2, operations::math_atan2);
 //hyperbolic
-GTENSOR_UNARY_TENSOR_OPERATOR(sinh, operations::math_sinh);
-GTENSOR_UNARY_TENSOR_OPERATOR(cosh, operations::math_cosh);
-GTENSOR_UNARY_TENSOR_OPERATOR(tanh, operations::math_tanh);
-GTENSOR_UNARY_TENSOR_OPERATOR(asinh, operations::math_asinh);
-GTENSOR_UNARY_TENSOR_OPERATOR(acosh, operations::math_acosh);
-GTENSOR_UNARY_TENSOR_OPERATOR(atanh, operations::math_atanh);
+GTENSOR_TENSOR_FUNCTION(sinh, operations::math_sinh);
+GTENSOR_TENSOR_FUNCTION(cosh, operations::math_cosh);
+GTENSOR_TENSOR_FUNCTION(tanh, operations::math_tanh);
+GTENSOR_TENSOR_FUNCTION(asinh, operations::math_asinh);
+GTENSOR_TENSOR_FUNCTION(acosh, operations::math_acosh);
+GTENSOR_TENSOR_FUNCTION(atanh, operations::math_atanh);
 //nearest
-GTENSOR_UNARY_TENSOR_OPERATOR(ceil, operations::math_ceil);
-GTENSOR_UNARY_TENSOR_OPERATOR(floor, operations::math_floor);
-GTENSOR_UNARY_TENSOR_OPERATOR(trunc, operations::math_trunc);
-GTENSOR_UNARY_TENSOR_OPERATOR(round, operations::math_round);
-GTENSOR_UNARY_TENSOR_OPERATOR(nearbyint, operations::math_nearbyint);
-GTENSOR_UNARY_TENSOR_OPERATOR(rint, operations::math_rint);
+GTENSOR_TENSOR_FUNCTION(ceil, operations::math_ceil);
+GTENSOR_TENSOR_FUNCTION(floor, operations::math_floor);
+GTENSOR_TENSOR_FUNCTION(trunc, operations::math_trunc);
+GTENSOR_TENSOR_FUNCTION(round, operations::math_round);
+GTENSOR_TENSOR_FUNCTION(nearbyint, operations::math_nearbyint);
+GTENSOR_TENSOR_FUNCTION(rint, operations::math_rint);
+//classification
+GTENSOR_TENSOR_FUNCTION(isfinite, operations::math_isfinite);
+GTENSOR_TENSOR_FUNCTION(isinf, operations::math_isinf);
+GTENSOR_TENSOR_FUNCTION(isnan, operations::math_isnan);
+GTENSOR_TENSOR_FUNCTION(isnormal, operations::math_isnormal);
 //comparison
-GTENSOR_BINARY_TENSOR_OPERATOR(is_close,operations::math_is_close);
+GTENSOR_TENSOR_FUNCTION(isgreater, operations::math_isgreater);
+GTENSOR_TENSOR_FUNCTION(isgreaterequal, operations::math_isgreaterequal);
+GTENSOR_TENSOR_FUNCTION(isless, operations::math_isless);
+GTENSOR_TENSOR_FUNCTION(islessequal, operations::math_islessequal);
+GTENSOR_TENSOR_FUNCTION(islessgreater, operations::math_islessgreater);
+template<typename T, typename U, typename Tol>
+inline auto is_close(T&& t, U&& u, Tol relative_tolerance, Tol absolute_tolerance){
+    using T_ = std::remove_cv_t<std::remove_reference_t<T>>;
+    using U_ = std::remove_cv_t<std::remove_reference_t<U>>;
+    static_assert(detail::has_tensor_arg_v<T_,U_>,"at least one arg must be tensor");
+    using common_value_type = detail::tensor_common_value_type_t<T_,U_>;
+    return n_operator(operations::math_is_close_tol<common_value_type>{relative_tolerance, absolute_tolerance}, std::forward<T>(t), std::forward<U>(u));
+}
+template<typename T, typename U>
+inline auto is_close(T&& t, U&& u){
+    using T_ = std::remove_cv_t<std::remove_reference_t<T>>;
+    using U_ = std::remove_cv_t<std::remove_reference_t<U>>;
+    static_assert(detail::has_tensor_arg_v<T_,U_>,"at least one arg must be tensor");
+    return n_operator(operations::math_is_close{}, std::forward<T>(t), std::forward<U>(u));
+}
 
 }   //end of namespace gtensor
 #endif

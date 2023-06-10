@@ -47,6 +47,7 @@ namespace math{
 template<typename T> auto abs(T t){return std::abs(t);}
 template<typename T, typename U> auto fmod(T t, U u){return std::fmod(t,u);}
 template<typename T, typename U> auto remainder(T t, U u){return std::remainder(t,u);}
+template<typename T, typename U, typename V> auto fma(T t, U u, V v){return std::fma(t,u,v);}
 template<typename T, typename U> auto fmax(T t, U u){return std::fmax(t,u);}
 template<typename T, typename U> auto fmin(T t, U u){return std::fmin(t,u);}
 template<typename T, typename U> auto fdim(T t, U u){return std::fdim(t,u);}
@@ -85,7 +86,17 @@ template<typename T> auto trunc(T t){return std::trunc(t);}
 template<typename T> auto round(T t){return std::round(t);}
 template<typename T> auto nearbyint(T t){return std::nearbyint(t);}
 template<typename T> auto rint(T t){return std::rint(t);}
+//classification
+template<typename T> auto isfinite(T t){return std::isfinite(t);}
+template<typename T> auto isinf(T t){return std::isinf(t);}
+template<typename T> auto isnan(T t){return std::isnan(t);}
+template<typename T> auto isnormal(T t){return std::isnormal(t);}
 //comparision
+template<typename T, typename U> auto isgreater(T t, U u){return std::isgreater(t,u);}
+template<typename T, typename U> auto isgreaterequal(T t, U u){return std::isgreaterequal(t,u);}
+template<typename T, typename U> auto isless(T t, U u){return std::isless(t,u);}
+template<typename T, typename U> auto islessequal(T t, U u){return std::islessequal(t,u);}
+template<typename T, typename U> auto islessgreater(T t, U u){return std::islessgreater(t,u);}
 template<typename T, typename U, typename Tol>
 auto is_close(T t, U u, const Tol relative_tolerance, const Tol absolute_tolerance){
     using common_type = std::common_type_t<T,U>;
@@ -155,6 +166,7 @@ GTENSOR_ASSIGN_OPERATION(assign_bitwise_rshift,>>=);
 GTENSOR_FUNCTION(math_abs,math::abs);
 GTENSOR_FUNCTION(math_fmod,math::fmod);
 GTENSOR_FUNCTION(math_remainder,math::remainder);
+GTENSOR_FUNCTION(math_fma,math::fma);
 GTENSOR_FUNCTION(math_fmax,math::fmax);
 GTENSOR_FUNCTION(math_fmin,math::fmin);
 GTENSOR_FUNCTION(math_fdim,math::fdim);
@@ -193,7 +205,17 @@ GTENSOR_FUNCTION(math_trunc,math::trunc);
 GTENSOR_FUNCTION(math_round,math::round);
 GTENSOR_FUNCTION(math_nearbyint,math::nearbyint);
 GTENSOR_FUNCTION(math_rint,math::rint);
+//classification
+GTENSOR_FUNCTION(math_isfinite,math::isfinite);
+GTENSOR_FUNCTION(math_isinf,math::isinf);
+GTENSOR_FUNCTION(math_isnan,math::isnan);
+GTENSOR_FUNCTION(math_isnormal,math::isnormal);
 //comparison
+GTENSOR_FUNCTION(math_isgreater,math::isgreater);
+GTENSOR_FUNCTION(math_isgreaterequal,math::isgreaterequal);
+GTENSOR_FUNCTION(math_isless,math::isless);
+GTENSOR_FUNCTION(math_islessequal,math::islessequal);
+GTENSOR_FUNCTION(math_islessgreater,math::islessgreater);
 GTENSOR_FUNCTION(math_is_close,math::is_close);
 template<typename Tol>
 class math_is_close_tol
@@ -206,7 +228,7 @@ public:
         absolute_tolerance_{absolute_tolerance__}
         {}
     template<typename T, typename U>
-    bool operator()(T t, U u){
+    bool operator()(T t, U u)const{
         return math::is_close(t,u,relative_tolerance_,absolute_tolerance_);
     }
 };
