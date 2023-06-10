@@ -59,7 +59,10 @@ namespace detail{
 
 template<typename...Ts> inline constexpr bool has_tensor_arg_v = (is_tensor_v<Ts>||...);
 template<typename Other, typename T> inline constexpr bool lhs_other_v = std::is_convertible_v<Other,T>||std::is_convertible_v<T,Other>;
-template<typename T> using tensor_value_type_t = std::conditional_t<is_tensor_v<T>, typename T::value_type, T>;
+
+template<typename T, typename B> struct tensor_value_type{using type = T;};
+template<typename T> struct tensor_value_type<T,std::true_type>{using type = typename T::value_type;};
+template<typename T> using tensor_value_type_t = typename tensor_value_type<T, std::bool_constant<is_tensor_v<T>>>::type;
 template<typename...Ts> using tensor_common_value_type_t = std::common_type_t<tensor_value_type_t<Ts>...>;
 
 template<typename...Ts>
@@ -87,32 +90,50 @@ inline basic_tensor<Ts...>& a_operator(F&& f, basic_tensor<Ts...>& lhs, Rhs&& rh
 }
 
 //return true if two tensors has same shape and elements
+//if equal_nan is true nans compared as equal
 template<typename...Us, typename...Vs>
-inline auto operator==(const basic_tensor<Us...>& t1, const basic_tensor<Vs...>& t2){
-    if (t1.is_same(t2)){
+inline auto tensor_equal(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, bool equal_nan = false){
+    if (u.is_same(v)){
         return true;
     }else{
-        return t1.shape() == t2.shape() && std::equal(t1.begin(), t1.end(), t2.begin());
+        const bool equal_shapes = u.shape() == v.shape();
+        if (equal_nan){
+            return equal_shapes && std::equal(u.begin(), u.end(), v.begin(),[](auto e1, auto e2){return math::isnan(e1) ? math::isnan(e2) : e1==e2;});
+        }else{
+            return equal_shapes && std::equal(u.begin(), u.end(), v.begin());
+        }
     }
+}
+template<typename...Us, typename...Vs>
+inline auto operator==(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v){
+    return tensor_equal(u,v);
 }
 
-//return true if two tensors has same shape and close elements, using default tolerance
-template<typename...Us, typename...Vs>
-inline auto tensor_close(const basic_tensor<Us...>& t1, const basic_tensor<Vs...>& t2){
-    if (t1.is_same(t2)){
-        return true;
-    }else{
-        return t1.shape() == t2.shape() && std::equal(t1.begin(), t1.end(), t2.begin(), operations::math_is_close{});
-    }
-}
 //return true if two tensors has same shape and close elements within specified tolerance
 template<typename...Us, typename...Vs, typename Tol>
-inline auto tensor_close(const basic_tensor<Us...>& t1, const basic_tensor<Vs...>& t2, Tol relative_tolerance, Tol absolute_tolerance){
-    if (t1.is_same(t2)){
+inline auto tensor_close(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, Tol relative_tolerance, Tol absolute_tolerance, bool equal_nan = false){
+    using common_value_type = detail::tensor_common_value_type_t<basic_tensor<Us...>,basic_tensor<Vs...>>;
+    static_assert(std::is_arithmetic_v<common_value_type>,"routine is defined for arithmetic types only");
+    if (u.is_same(v)){
         return true;
     }else{
-        return t1.shape() == t2.shape() && std::equal(t1.begin(), t1.end(), t2.begin(), operations::math_is_close_tol<Tol>{relative_tolerance,absolute_tolerance});
+        const common_value_type relative_tolerance_ = static_cast<common_value_type>(relative_tolerance);
+        const common_value_type absolute_tolerance_ = static_cast<common_value_type>(absolute_tolerance);
+        const bool equal_shapes = u.shape() == v.shape();
+        if (equal_nan){
+            return equal_shapes && std::equal(u.begin(), u.end(), v.begin(), operations::math_is_close<common_value_type,std::true_type>{relative_tolerance_,absolute_tolerance_});
+        }else{
+            return equal_shapes && std::equal(u.begin(), u.end(), v.begin(), operations::math_is_close<common_value_type,std::false_type>{relative_tolerance_,absolute_tolerance_});
+        }
     }
+}
+//return true if two tensors has same shape and close elements, use machine epsilon as tolerance
+template<typename...Us, typename...Vs>
+inline auto tensor_close(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, bool equal_nan = false){
+    using common_value_type = detail::tensor_common_value_type_t<basic_tensor<Us...>,basic_tensor<Vs...>>;
+    static_assert(std::is_arithmetic_v<common_value_type>,"routine is defined for arithmetic types only");
+    static constexpr common_value_type e = std::numeric_limits<common_value_type>::epsilon();
+    return tensor_close(u,v,e,e);
 }
 
 template<typename...Ts>
@@ -233,20 +254,25 @@ GTENSOR_TENSOR_FUNCTION(isgreaterequal, operations::math_isgreaterequal);
 GTENSOR_TENSOR_FUNCTION(isless, operations::math_isless);
 GTENSOR_TENSOR_FUNCTION(islessequal, operations::math_islessequal);
 GTENSOR_TENSOR_FUNCTION(islessgreater, operations::math_islessgreater);
-template<typename T, typename U, typename Tol>
-inline auto is_close(T&& t, U&& u, Tol relative_tolerance, Tol absolute_tolerance){
+template<typename T, typename U, typename Tol, typename EqualNan = std::false_type>
+inline auto is_close(T&& t, U&& u, Tol relative_tolerance, Tol absolute_tolerance, EqualNan equal_nan = EqualNan{}){
     using T_ = std::remove_cv_t<std::remove_reference_t<T>>;
     using U_ = std::remove_cv_t<std::remove_reference_t<U>>;
     static_assert(detail::has_tensor_arg_v<T_,U_>,"at least one arg must be tensor");
     using common_value_type = detail::tensor_common_value_type_t<T_,U_>;
-    return n_operator(operations::math_is_close_tol<common_value_type>{relative_tolerance, absolute_tolerance}, std::forward<T>(t), std::forward<U>(u));
+    const common_value_type relative_tolerance_ = static_cast<common_value_type>(relative_tolerance);
+    const common_value_type absolute_tolerance_ = static_cast<common_value_type>(absolute_tolerance);
+    return n_operator(operations::math_is_close<common_value_type, EqualNan>{relative_tolerance_, absolute_tolerance_}, std::forward<T>(t), std::forward<U>(u));
 }
-template<typename T, typename U>
-inline auto is_close(T&& t, U&& u){
+template<typename T, typename U, typename EqualNan = std::false_type>
+inline auto is_close(T&& t, U&& u, EqualNan equal_nan = EqualNan{}){
     using T_ = std::remove_cv_t<std::remove_reference_t<T>>;
     using U_ = std::remove_cv_t<std::remove_reference_t<U>>;
     static_assert(detail::has_tensor_arg_v<T_,U_>,"at least one arg must be tensor");
-    return n_operator(operations::math_is_close{}, std::forward<T>(t), std::forward<U>(u));
+    using common_value_type = detail::tensor_common_value_type_t<T_,U_>;
+    static_assert(std::is_arithmetic_v<common_value_type>,"routine is defined for arithmetic types only");
+    static constexpr common_value_type e = std::numeric_limits<common_value_type>::epsilon();
+    return is_close(std::forward<T>(t),std::forward<U>(u),e,e,equal_nan);
 }
 
 }   //end of namespace gtensor

@@ -102,17 +102,18 @@ auto is_close(T t, U u, const Tol relative_tolerance, const Tol absolute_toleran
     using common_type = std::common_type_t<T,U>;
     static_assert(std::is_arithmetic_v<common_type>,"math::is_close defined for arithmetic types only");
     if constexpr (std::is_floating_point_v<common_type>){
-        return math::abs(t-u) <= absolute_tolerance + relative_tolerance*(math::abs(t)+math::abs(u));
+        if (t==u){
+            return true;
+        }
+        return math::abs(t-u) < absolute_tolerance + relative_tolerance*(math::abs(t)+math::abs(u));
     }else{
         return t==u;
     }
 }
-template<typename T, typename U>
-auto is_close(T t, U u){
-    using common_type = std::common_type_t<T,U>;
-    static_assert(std::is_arithmetic_v<common_type>,"math::is_close defined for arithmetic types only");
-    static constexpr common_type e = std::numeric_limits<common_type>::epsilon();
-    return is_close(t,u,e,e);
+template<typename T, typename U, typename Tol>
+auto is_close_nan_equal(T t, U u, const Tol relative_tolerance, const Tol absolute_tolerance){
+    const bool is_nan_u = math::isnan(u);
+    return math::isnan(t) ? is_nan_u : (is_nan_u ? false : is_close(t,u,relative_tolerance,absolute_tolerance));
 }
 
 }   //end of namespace math
@@ -216,20 +217,25 @@ GTENSOR_FUNCTION(math_isgreaterequal,math::isgreaterequal);
 GTENSOR_FUNCTION(math_isless,math::isless);
 GTENSOR_FUNCTION(math_islessequal,math::islessequal);
 GTENSOR_FUNCTION(math_islessgreater,math::islessgreater);
-GTENSOR_FUNCTION(math_is_close,math::is_close);
-template<typename Tol>
-class math_is_close_tol
+
+//NanEqual should be std::true_type or std::false_type
+template<typename Tol,typename NanEqual = std::false_type>
+class math_is_close
 {
     Tol relative_tolerance_;
     Tol absolute_tolerance_;
 public:
-    math_is_close_tol(Tol relative_tolerance__, Tol absolute_tolerance__):
+    math_is_close(Tol relative_tolerance__, Tol absolute_tolerance__):
         relative_tolerance_{relative_tolerance__},
         absolute_tolerance_{absolute_tolerance__}
         {}
     template<typename T, typename U>
     bool operator()(T t, U u)const{
-        return math::is_close(t,u,relative_tolerance_,absolute_tolerance_);
+        if constexpr (NanEqual::value){
+            return math::is_close_nan_equal(t,u,relative_tolerance_,absolute_tolerance_);
+        }else{
+            return math::is_close(t,u,relative_tolerance_,absolute_tolerance_);
+        }
     }
 };
 
