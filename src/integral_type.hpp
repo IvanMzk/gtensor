@@ -186,6 +186,8 @@ public:
         integral(other.value())
     {}
 
+    operator T()const{return value_;}
+
     value_type value()const{return value_;}
 
     INTEGRAL_BINARY_ASSIGNMENT_MEMBER_OPERATOR(operator+=,+=);

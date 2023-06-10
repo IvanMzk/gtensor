@@ -67,6 +67,15 @@ auto check_reduce_args(const ShT& shape, const Container& directions){
 }
 
 template<typename ShT>
+auto check_transform_args(const ShT& shape, const typename ShT::difference_type& direction){
+    using dim_type = typename ShT::difference_type;
+    const dim_type dim = detail::make_dim(shape);
+    if (direction >= dim){
+        throw reduce_exception("invalid transform direction: direction is out of bounds");
+    }
+}
+
+template<typename ShT>
 auto make_reduce_shape(const ShT& shape, const typename ShT::difference_type& direction, bool keep_dims){
     using shape_type = ShT;
     using dim_type = typename ShT::difference_type;
@@ -219,7 +228,7 @@ private:
         flat_index+=n;
     }
     walker_type walker;
-    const dim_type reduce_direction;
+    dim_type reduce_direction;
     difference_type flat_index;
 };
 
@@ -387,17 +396,23 @@ class reducer
     static auto reduce_(const basic_tensor<Ts...>& parent, const Directions& directions_, F reduce_f, bool keep_dims, Args&&...args){
         using parent_type = basic_tensor<Ts...>;
         using order = typename parent_type::order;
-        using value_type = typename parent_type::value_type;
         using config_type = typename parent_type::config_type;
         using traverse_order = typename config_type::order;
         using dim_type = typename config_type::dim_type;
         using index_type = typename config_type::index_type;
+        using shape_type = typename config_type::shape_type;
         using directions_container_type = typename config_type::template container<dim_type>;
+        using directions_type = decltype(detail::make_directions<directions_container_type>(std::declval<dim_type>(),directions_));
+        using traverse_predicate_type = detail::reduce_traverse_predicate<config_type, Directions>;
+        using traverser_type = walker_bidirectional_traverser<config_type, decltype(parent.create_walker()), traverse_predicate_type>;
+        using iterator_type = decltype(detail::reduce_begin<traverse_order>(std::declval<shape_type>(),std::declval<traverser_type>(),std::declval<directions_type>()));
+        using result_type = decltype(reduce_f(std::declval<iterator_type>(),std::declval<iterator_type>(),std::declval<Args>()...));
+        using res_value_type = std::remove_cv_t<std::remove_reference_t<result_type>>;
 
         auto directions = detail::make_directions<directions_container_type>(parent.dim(),directions_);
         const auto& pshape = parent.shape();
         detail::check_reduce_args(pshape, directions);
-        auto res = tensor<value_type,order,config_type>{detail::make_reduce_shape(pshape, directions, keep_dims)};
+        auto res = tensor<res_value_type,order,config_type>{detail::make_reduce_shape(pshape, directions, keep_dims)};
         bool reduce_zero_size_direction{false};
         if (parent.size() == index_type{0}){    //check if reduce zero size direction
             if constexpr (detail::is_container_of_type_v<Directions,dim_type>){
@@ -421,10 +436,10 @@ class reducer
         }
         if (!res.empty()){
             if (reduce_zero_size_direction){    //fill with default
-                if constexpr (std::is_default_constructible_v<value_type>){
-                    detail::fill(res.begin(), res.end(), value_type{});
+                if constexpr (std::is_default_constructible_v<res_value_type>){
+                    detail::fill(res.begin(), res.end(), res_value_type{});
                 }else{
-                    throw reduce_exception("reduce can't fill result, value_type is not default constructible");
+                    throw reduce_exception("reduce can't fill result, res_value_type is not default constructible");
                 }
             }else{
                 auto pdim = parent.dim();
@@ -495,6 +510,36 @@ class reducer
         }
         return res;
     }
+
+    template<typename F, typename DimT, typename...Ts, typename...Args>
+    static void transform_(basic_tensor<Ts...>& parent, const DimT& direction_, F transform_f, Args&&...args){
+        using parent_type = basic_tensor<Ts...>;
+        using order = typename parent_type::order;
+        using config_type = typename parent_type::config_type;
+        using dim_type = typename config_type::dim_type;
+
+        const auto& pshape = parent.shape();
+        const dim_type direction = detail::make_direction(pshape,direction_);
+        detail::check_transform_args(pshape, direction);
+        const auto pdim = parent.dim();
+        if (pdim == dim_type{1}){
+            transform_f(parent.begin(), parent.end(), std::forward<Args>(args)...);
+        }else{
+            using traverse_predicate_type = detail::reduce_traverse_predicate<config_type, dim_type>;
+            traverse_predicate_type traverse_predicate{direction, true};
+            walker_bidirectional_traverser<config_type, decltype(parent.create_walker()), traverse_predicate_type> parent_traverser{pshape, parent.create_walker(), traverse_predicate};
+            const auto parent_direction_size = detail::make_slide_direction_size(pshape,direction);
+            do{
+                //0first,1last,2args
+                transform_f(
+                    detail::slide_begin(parent_traverser,direction),
+                    detail::slide_end(parent_traverser,direction,parent_direction_size),
+                    std::forward<Args>(args)...
+                );
+            }while(parent_traverser.template next<order>());
+        }
+    }
+
 public:
     //interface
     template<typename F, typename Directions, typename...Ts, typename...Args>
@@ -506,10 +551,17 @@ public:
     static auto slide(const basic_tensor<Ts...>& t, const DimT& direction, F f, const IdxT& window_size, const IdxT& window_step, Args&&...args){
         return slide_(t,direction,f,window_size,window_step,std::forward<Args>(args)...);
     }
+
+    template<typename...Ts, typename DimT, typename F, typename...Args>
+    static void transform(basic_tensor<Ts...>& t, const DimT& direction, F f, Args&&...args){
+        transform_(t,direction,f,std::forward<Args>(args)...);
+    }
 };
 
 //F is reduce functor that takes iterators range of data to be reduced as arguments and return scalar - reduction result
-//F call operator must be defined like this: template<typename It> Ret operator()(It first, It last){...}
+//F call operator must be defined like this: template<typename It> Ret operator()(It first, It last, Arg1 arg1, Args2 arg2,...){...}
+//where Arg1,Arg2,... is application specific arguments
+//result tensor has value_type that is return type of F
 template<typename F, typename Directions, typename...Ts, typename...Args>
 auto reduce(const basic_tensor<Ts...>& t, const Directions& directions, F f, bool keep_dims, Args&&...args){
     using config_type = typename basic_tensor<Ts...>::config_type;
@@ -518,12 +570,24 @@ auto reduce(const basic_tensor<Ts...>& t, const Directions& directions, F f, boo
 
 //F is slide functor that takes arguments: iterators range of data to be slided, dst iterators range, sliding parameters
 //F call operator must be defined like this:
-//template<typename It,typename DstIt,typename IdxT,typename...Args> void operator()(It first, It last, DstIt dfirst, DstIt dlast, IdxT window_size, IdxT window_step, Args&&...args){...}
-//where Args is application specific arguments
+//template<typename It,typename DstIt,typename IdxT,typename...Args>
+//void operator()(It first, It last, DstIt dfirst, DstIt dlast, IdxT window_size, IdxT window_step, Arg1 arg1, Arg2 arg2,...){...}
+//where Arg1,Arg2,... is application specific arguments
+//result tensor has value_type that is same as source tensor value_type
 template<typename...Ts, typename DimT, typename F, typename IdxT, typename...Args>
 auto slide(const basic_tensor<Ts...>& t, const DimT& direction, F f, const IdxT& window_size, const IdxT& window_step, Args&&...args){
     using config_type = typename basic_tensor<Ts...>::config_type;
     return reducer_selector_t<config_type>::slide(t, direction, f, window_size, window_step,std::forward<Args>(args)...);
+}
+
+//transform tensor inplace along specified direction
+//F is transform functor that takes iterators range of data to be transformed
+//F call operator must be defined like this: template<typename It> void operator()(It first, It last, Arg1 arg1, Args2 arg2,...){...}
+//where Arg1,Arg2,... is application specific arguments
+template<typename...Ts, typename DimT, typename F, typename...Args>
+void transform(basic_tensor<Ts...>& t, const DimT& direction, F f, Args&&...args){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    reducer_selector_t<config_type>::transform(t, direction, f, std::forward<Args>(args)...);
 }
 
 }   //end of namespace gtensor

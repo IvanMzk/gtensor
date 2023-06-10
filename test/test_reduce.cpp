@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "catch.hpp"
 #include "tensor.hpp"
 #include "helpers_for_testing.hpp"
@@ -344,6 +345,13 @@ struct diff_2{
     }
 };
 
+struct sort{
+    template<typename It>
+    void operator()(It first, It last){
+        std::sort(first,last);
+    }
+};
+
 }   //end of namespace test_reduce_
 
 TEST_CASE("test_reduce","[test_reduce]")
@@ -680,6 +688,36 @@ TEST_CASE("test_slide_exception","[test_reduce]")
         auto window_size = std::get<3>(t);
         auto window_step = std::get<4>(t);
         REQUIRE_THROWS_AS(slide(tensor, direction, functor, window_size, window_step), reduce_exception);
+    };
+    apply_by_element(test, test_data);
+}
+
+TEST_CASE("test_transform","[test_reduce]")
+{
+    using value_type = int;
+    using tensor_type = gtensor::tensor<value_type>;
+    using dim_type = typename tensor_type::dim_type;
+    using test_reduce_::sort;
+    using gtensor::transform;
+    using helpers_for_testing::apply_by_element;
+
+    //0tensor,1direction,2functor,3expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(tensor_type{}, dim_type{0}, sort{}, tensor_type{}),
+        std::make_tuple(tensor_type{1,2,3,3,2,1,0}, dim_type{0}, sort{}, tensor_type{0,1,1,2,2,3,3}),
+        std::make_tuple(tensor_type{{2,1,3},{3,0,1}}, dim_type{0}, sort{}, tensor_type{{2,0,1},{3,1,3}}),
+        std::make_tuple(tensor_type{{2,1,3},{3,0,1}}, dim_type{1}, sort{}, tensor_type{{1,2,3},{0,1,3}}),
+        std::make_tuple(tensor_type{{{2,1,3},{3,0,1}},{{0,2,1},{3,0,1}}}, dim_type{0}, sort{}, tensor_type{{{0,1,1},{3,0,1}},{{2,2,3},{3,0,1}}}),
+        std::make_tuple(tensor_type{{{2,1,3},{3,0,1}},{{0,2,1},{3,0,1}}}, dim_type{1}, sort{}, tensor_type{{{2,0,1},{3,1,3}},{{0,0,1},{3,2,1}}}),
+        std::make_tuple(tensor_type{{{2,1,3},{3,0,1}},{{0,2,1},{3,0,1}}}, dim_type{2}, sort{}, tensor_type{{{1,2,3},{0,1,3}},{{0,1,2},{0,1,3}}})
+    );
+    auto test = [](const auto& t){
+        auto tensor = std::get<0>(t);
+        auto direction = std::get<1>(t);
+        auto functor = std::get<2>(t);
+        auto expected = std::get<3>(t);
+        transform(tensor, direction, functor);
+        REQUIRE(tensor == expected);
     };
     apply_by_element(test, test_data);
 }
