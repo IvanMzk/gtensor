@@ -962,3 +962,35 @@ TEST_CASE("test_tensor_math_hyperbolic_functions_semantic","[test_tensor_operato
     }
 }
 
+TEST_CASE("test_tensor_math_nearest_functions_semantic","[test_tensor_operators]")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::tensor_close;
+
+    SECTION("test_ceil")
+    {
+        auto result = gtensor::ceil(tensor_type{-2.4,0.0,1.0,2.4});
+        auto expected = tensor_type{-2.0,0.0,1.0,3.0};
+        REQUIRE(tensor_close(result,expected,1E-10,1E-10));
+    }
+    SECTION("test_floor")
+    {
+        auto result = gtensor::floor(tensor_type{-2.4,0.0,1.0,2.4});
+        auto expected = tensor_type{-3.0,0.0,1.0,2.0};
+        REQUIRE(tensor_close(result,expected,1E-10,1E-10));
+    }
+    SECTION("test_trunc")
+    {
+        auto result = gtensor::trunc(tensor_type{-2.4,0.0,1.0,2.4});
+        auto expected = tensor_type{-2.0,0.0,1.0,2.0};
+        REQUIRE(tensor_close(result,expected,1E-10,1E-10));
+    }
+    SECTION("test_round")
+    {
+        auto result = gtensor::round(tensor_type{-4.5,-3.7,-2.4,0.0,1.0,2.4,3.7,4.5});
+        auto expected = tensor_type{-5.0,-4.0,-2.0,0.0,1.0,2.0,4.0,5.0};
+        REQUIRE(tensor_close(result,expected,1E-10,1E-10));
+    }
+}
+
