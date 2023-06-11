@@ -5,7 +5,7 @@
 #include "tensor.hpp"
 
 //test tensor fuzzy equality
-TEST_CASE("test_tensor_close","test_tensor_operators")
+TEST_CASE("test_tensor_close","test_math")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
@@ -89,7 +89,7 @@ TEST_CASE("test_tensor_close","test_tensor_operators")
 }
 
 //test tensor fuzzy elementwise equality
-TEST_CASE("test_is_close","test_tensor_operators")
+TEST_CASE("test_is_close","test_math")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
@@ -145,8 +145,8 @@ TEST_CASE("test_is_close","test_tensor_operators")
     apply_by_element(test,test_data);
 }
 
-//test math functions semantic
-TEST_CASE("test_tensor_math_comparison_functions_semantic","[test_tensor_operators]")
+//test math element wise functions
+TEST_CASE("test_tensor_math_comparison_functions_semantic","[test_math]")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
@@ -183,7 +183,7 @@ TEST_CASE("test_tensor_math_comparison_functions_semantic","[test_tensor_operato
     }
 }
 
-TEST_CASE("test_tensor_math_basic_functions_semantic","[test_tensor_operators]")
+TEST_CASE("test_tensor_math_basic_functions_semantic","[test_math]")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
@@ -227,7 +227,7 @@ TEST_CASE("test_tensor_math_basic_functions_semantic","[test_tensor_operators]")
 
 }
 
-TEST_CASE("test_tensor_math_exponential_functions_semantic","[test_tensor_operators]")
+TEST_CASE("test_tensor_math_exponential_functions_semantic","[test_math]")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
@@ -276,7 +276,7 @@ TEST_CASE("test_tensor_math_exponential_functions_semantic","[test_tensor_operat
     }
 }
 
-TEST_CASE("test_tensor_math_power_functions_semantic","[test_tensor_operators]")
+TEST_CASE("test_tensor_math_power_functions_semantic","[test_math]")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
@@ -307,7 +307,7 @@ TEST_CASE("test_tensor_math_power_functions_semantic","[test_tensor_operators]")
     }
 }
 
-TEST_CASE("test_tensor_math_trigonometric_functions_semantic","[test_tensor_operators]")
+TEST_CASE("test_tensor_math_trigonometric_functions_semantic","[test_math]")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
@@ -357,7 +357,7 @@ TEST_CASE("test_tensor_math_trigonometric_functions_semantic","[test_tensor_oper
     }
 }
 
-TEST_CASE("test_tensor_math_hyperbolic_functions_semantic","[test_tensor_operators]")
+TEST_CASE("test_tensor_math_hyperbolic_functions_semantic","[test_math]")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
@@ -401,7 +401,7 @@ TEST_CASE("test_tensor_math_hyperbolic_functions_semantic","[test_tensor_operato
     }
 }
 
-TEST_CASE("test_tensor_math_nearest_functions_semantic","[test_tensor_operators]")
+TEST_CASE("test_tensor_math_nearest_functions_semantic","[test_math]")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
@@ -433,7 +433,7 @@ TEST_CASE("test_tensor_math_nearest_functions_semantic","[test_tensor_operators]
     }
 }
 
-TEST_CASE("test_tensor_math_floating_point_manipulation_functions_semantic","[test_tensor_operators]")
+TEST_CASE("test_tensor_math_floating_point_manipulation_functions_semantic","[test_math]")
 {
     using value_type = double;
     using gtensor::tensor;
@@ -486,7 +486,7 @@ TEST_CASE("test_tensor_math_floating_point_manipulation_functions_semantic","[te
     }
 }
 
-TEST_CASE("test_tensor_math_classification_functions_semantic","[test_tensor_operators]")
+TEST_CASE("test_tensor_math_classification_functions_semantic","[test_math]")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
@@ -518,7 +518,7 @@ TEST_CASE("test_tensor_math_classification_functions_semantic","[test_tensor_ope
     }
 }
 
-TEST_CASE("test_tensor_math_rotines_in_rational_domain_functions_semantic","[test_tensor_operators]")
+TEST_CASE("test_tensor_math_rotines_in_rational_domain_functions_semantic","[test_math]")
 {
     using value_type = std::int64_t;
     using tensor_type = gtensor::tensor<value_type>;
@@ -537,3 +537,255 @@ TEST_CASE("test_tensor_math_rotines_in_rational_domain_functions_semantic","[tes
         REQUIRE(result == expected);
     }
 }
+
+//test math functions along axes
+//sum
+TEST_CASE("test_math_sum","test_math")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::sum;
+    using helpers_for_testing::apply_by_element;
+
+    REQUIRE(std::is_same_v<decltype(sum(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>())),tensor_type>);
+    REQUIRE(std::is_same_v<decltype(sum(std::declval<tensor_type>(),std::declval<std::vector<int>>(),std::declval<bool>())),tensor_type>);
+
+    //0tensor,1axes,2keep_dims,3expected
+    auto test_data = std::make_tuple(
+        //keep_dim false
+        std::make_tuple(tensor_type{},0,false,tensor_type(value_type{})),
+        std::make_tuple(tensor_type{},std::vector<int>{0},false,tensor_type(value_type{})),
+        std::make_tuple(tensor_type{},std::vector<int>{},false,tensor_type(value_type{})),
+        std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0,2},false,tensor_type{value_type{},value_type{}}),
+        std::make_tuple(tensor_type{1,2,3,4,5},0,false,tensor_type(15)),
+        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{0},false,tensor_type(15)),
+        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{},false,tensor_type(15)),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},0,false,tensor_type{{8,10,12},{14,16,18}}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},1,false,tensor_type{{5,7,9},{17,19,21}}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},2,false,tensor_type{{6,15},{24,33}}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{0,1},false,tensor_type{22,26,30}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{2,1},false,tensor_type{21,57}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{},false,tensor_type(78)),
+        //keep_dim true
+        std::make_tuple(tensor_type{},0,true,tensor_type{value_type{}}),
+        std::make_tuple(tensor_type{},std::vector<int>{0},true,tensor_type{value_type{}}),
+        std::make_tuple(tensor_type{},std::vector<int>{},true,tensor_type{value_type{}}),
+        std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0,2},true,tensor_type{{{value_type{}},{value_type{}}}}),
+        std::make_tuple(tensor_type{1,2,3,4,5},0,true,tensor_type{15}),
+        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{0},true,tensor_type{15}),
+        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{},true,tensor_type{15}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},0,true,tensor_type{{{8,10,12},{14,16,18}}}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},1,true,tensor_type{{{5,7,9}},{{17,19,21}}}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},2,true,tensor_type{{{6},{15}},{{24},{33}}}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{0,1},true,tensor_type{{{22,26,30}}}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{2,1},true,tensor_type{{{21}},{{57}}}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{},true,tensor_type{{{78}}})
+    );
+    auto test = [](const auto& t){
+        auto ten = std::get<0>(t);
+        auto axes = std::get<1>(t);
+        auto keep_dims = std::get<2>(t);
+        auto expected = std::get<3>(t);
+        auto result = sum(ten,axes,keep_dims);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test,test_data);
+}
+
+TEST_CASE("test_math_sum_initializer_list_axes_all_axes","test_math")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::sum;
+    using helpers_for_testing::apply_by_element;
+
+    REQUIRE(std::is_same_v<decltype(sum(std::declval<tensor_type>(),std::declval<std::initializer_list<int>>(),std::declval<bool>())),tensor_type>);
+
+    REQUIRE(sum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0},false) == tensor_type{{8,10,12},{14,16,18}});
+    REQUIRE(sum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1},false) == tensor_type{22,26,30});
+    REQUIRE(sum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{2,1},true) == tensor_type{{{21}},{{57}}});
+    //all axes
+    REQUIRE(sum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{},false) == tensor_type(78));
+    REQUIRE(sum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},false) == tensor_type(78));
+    REQUIRE(sum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},true) == tensor_type{{{78}}});
+}
+
+//prod
+TEST_CASE("test_math_prod","test_math")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::prod;
+    using helpers_for_testing::apply_by_element;
+
+    REQUIRE(std::is_same_v<decltype(prod(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>())),tensor_type>);
+    REQUIRE(std::is_same_v<decltype(prod(std::declval<tensor_type>(),std::declval<std::vector<int>>(),std::declval<bool>())),tensor_type>);
+
+    //0tensor,1axes,2keep_dims,3expected
+    auto test_data = std::make_tuple(
+        //keep_dim false
+        std::make_tuple(tensor_type{},0,false,tensor_type(value_type{})),
+        std::make_tuple(tensor_type{},std::vector<int>{0},false,tensor_type(value_type{})),
+        std::make_tuple(tensor_type{},std::vector<int>{},false,tensor_type(value_type{})),
+        std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0,2},false,tensor_type{value_type{},value_type{}}),
+        std::make_tuple(tensor_type{1,2,3,4,5},0,false,tensor_type(120)),
+        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{0},false,tensor_type(120)),
+        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{},false,tensor_type(120)),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},0,false,tensor_type{{7,16,27},{40,55,72}}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},1,false,tensor_type{{4,10,18},{70,88,108}}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},2,false,tensor_type{{6,120},{504,1320}}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{0,1},false,tensor_type{280,880,1944}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{2,1},false,tensor_type{720,665280}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{},false,tensor_type(479001600)),
+        //keep_dim true
+        std::make_tuple(tensor_type{},0,true,tensor_type{value_type{}}),
+        std::make_tuple(tensor_type{},std::vector<int>{0},true,tensor_type{value_type{}}),
+        std::make_tuple(tensor_type{},std::vector<int>{},true,tensor_type{value_type{}}),
+        std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0,2},true,tensor_type{{{value_type{}},{value_type{}}}}),
+        std::make_tuple(tensor_type{1,2,3,4,5},0,true,tensor_type{120}),
+        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{0},true,tensor_type{120}),
+        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{},true,tensor_type{120}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},0,true,tensor_type{{{7,16,27},{40,55,72}}}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},1,true,tensor_type{{{4,10,18}},{{70,88,108}}}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},2,true,tensor_type{{{6},{120}},{{504},{1320}}}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{0,1},true,tensor_type{{{280,880,1944}}}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{2,1},true,tensor_type{{{720}},{{665280}}}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{},true,tensor_type{{{479001600}}})
+    );
+    auto test = [](const auto& t){
+        auto ten = std::get<0>(t);
+        auto axes = std::get<1>(t);
+        auto keep_dims = std::get<2>(t);
+        auto expected = std::get<3>(t);
+        auto result = prod(ten,axes,keep_dims);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test,test_data);
+}
+
+TEST_CASE("test_math_prod_initializer_list_axes_all_axes","test_math")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::prod;
+    using helpers_for_testing::apply_by_element;
+
+    REQUIRE(std::is_same_v<decltype(prod(std::declval<tensor_type>(),std::declval<std::initializer_list<int>>(),std::declval<bool>())),tensor_type>);
+
+    REQUIRE(prod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0},false) == tensor_type{{7,16,27},{40,55,72}});
+    REQUIRE(prod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1},false) == tensor_type{280,880,1944});
+    REQUIRE(prod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{2,1},true) == tensor_type{{{720}},{{665280}}});
+    //all axes
+    REQUIRE(prod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{},false) == tensor_type(479001600));
+    REQUIRE(prod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},false) == tensor_type(479001600));
+    REQUIRE(prod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},true) == tensor_type{{{479001600}}});
+}
+
+//cumsum
+TEST_CASE("test_math_cumsum","test_math")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::cumsum;
+    using helpers_for_testing::apply_by_element;
+
+    REQUIRE(std::is_same_v<decltype(cumsum(std::declval<tensor_type>(),std::declval<int>())),tensor_type>);
+
+    //0tensor,1axes,2expected
+    auto test_data = std::make_tuple(
+        //keep_dim false
+        std::make_tuple(tensor_type{},0,tensor_type{}),
+        std::make_tuple(tensor_type{1,2,3,4,5},0,tensor_type{1,3,6,10,15}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},0,tensor_type{{{1,2,3},{4,5,6}},{{8,10,12},{14,16,18}}}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},1,tensor_type{{{1,2,3},{5,7,9}},{{7,8,9},{17,19,21}}}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},2,tensor_type{{{1,3,6},{4,9,15}},{{7,15,24},{10,21,33}}})
+    );
+    auto test = [](const auto& t){
+        auto ten = std::get<0>(t);
+        auto axes = std::get<1>(t);
+        auto expected = std::get<2>(t);
+        auto result = cumsum(ten,axes);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test,test_data);
+}
+
+TEST_CASE("test_math_cumsum_all_axes","test_math")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::cumsum;
+    using helpers_for_testing::apply_by_element;
+
+    REQUIRE(std::is_same_v<decltype(cumsum(std::declval<tensor_type>())),tensor_type>);
+
+    //0tensor,1expected
+    auto test_data = std::make_tuple(
+        //keep_dim false
+        std::make_tuple(tensor_type{},tensor_type{}),
+        std::make_tuple(tensor_type{1,2,3,4,5},tensor_type{1,3,6,10,15}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},tensor_type{1,3,6,10,15,21,28,36,45,55,66,78})
+    );
+    auto test = [](const auto& t){
+        auto ten = std::get<0>(t);
+        auto expected = std::get<1>(t);
+        auto result = cumsum(ten);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test,test_data);
+}
+
+//cumprod
+TEST_CASE("test_math_cumprod","test_math")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::cumprod;
+    using helpers_for_testing::apply_by_element;
+
+    REQUIRE(std::is_same_v<decltype(cumprod(std::declval<tensor_type>(),std::declval<int>())),tensor_type>);
+
+    //0tensor,1axes,2expected
+    auto test_data = std::make_tuple(
+        //keep_dim false
+        std::make_tuple(tensor_type{},0,tensor_type{}),
+        std::make_tuple(tensor_type{1,2,3,4,5},0,tensor_type{1,2,6,24,120}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},0,tensor_type{{{1,2,3},{4,5,6}},{{7,16,27},{40,55,72}}}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},1,tensor_type{{{1,2,3},{4,10,18}},{{7,8,9},{70,88,108}}}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},2,tensor_type{{{1,2,6},{4,20,120}},{{7,56,504},{10,110,1320}}})
+    );
+    auto test = [](const auto& t){
+        auto ten = std::get<0>(t);
+        auto axes = std::get<1>(t);
+        auto expected = std::get<2>(t);
+        auto result = cumprod(ten,axes);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test,test_data);
+}
+
+TEST_CASE("test_math_cumprod_all_axes","test_math")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::cumprod;
+    using helpers_for_testing::apply_by_element;
+
+    REQUIRE(std::is_same_v<decltype(cumprod(std::declval<tensor_type>())),tensor_type>);
+
+    //0tensor,1expected
+    auto test_data = std::make_tuple(
+        //keep_dim false
+        std::make_tuple(tensor_type{},tensor_type{}),
+        std::make_tuple(tensor_type{1,2,3,4,5},tensor_type{1,2,6,24,120}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{1,2,3},{0,4,5}}},tensor_type{1,2,6,24,120,720,720,1440,4320,0,0,0})
+    );
+    auto test = [](const auto& t){
+        auto ten = std::get<0>(t);
+        auto expected = std::get<1>(t);
+        auto result = cumprod(ten);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test,test_data);
+}
+

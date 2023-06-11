@@ -1,6 +1,7 @@
 #ifndef MATH_HPP_
 #define MATH_HPP_
 #include "tensor_operators.hpp"
+#include "reduce.hpp"
 
 #define GTENSOR_TENSOR_FUNCTION(NAME,F)\
 template<typename...Args>\
@@ -122,6 +123,132 @@ inline auto is_close(T&& t, U&& u, EqualNan equal_nan = EqualNan{}){
 //routines in rational domain
 GTENSOR_TENSOR_FUNCTION(gcd,operations::math_gcd);
 GTENSOR_TENSOR_FUNCTION(lcm,operations::math_lcm);
+
+namespace math_reduce_operations{
+
+struct sum
+{
+    template<typename It>
+    auto operator()(It first, It last){
+        using value_type = typename std::iterator_traits<It>::value_type;
+        value_type sum{0};
+        for(;first!=last; ++first){
+            sum+=*first;
+        }
+        return sum;
+    }
+};
+
+struct prod
+{
+    template<typename It>
+    auto operator()(It first, It last){
+        using value_type = typename std::iterator_traits<It>::value_type;
+        value_type prod{1};
+        for(;first!=last; ++first){
+            prod*=*first;
+        }
+        return prod;
+    }
+};
+
+struct cumsum{
+    template<typename It, typename DstIt, typename IdxT>
+    void operator()(It first, It, DstIt dfirst, DstIt dlast, IdxT,IdxT){
+        auto cumsum_ = *first;
+        *dfirst = cumsum_;
+        for(++dfirst,++first; dfirst!=dlast; ++dfirst,++first){
+            cumsum_+=*first;
+            *dfirst = cumsum_;
+        }
+    }
+};
+
+struct cumprod{
+    template<typename It, typename DstIt, typename IdxT>
+    void operator()(It first, It, DstIt dfirst, DstIt dlast, IdxT,IdxT){
+        auto cumprod_ = *first;
+        *dfirst = cumprod_;
+        for(++dfirst,++first; dfirst!=dlast; ++dfirst,++first){
+            cumprod_*=*first;
+            *dfirst = cumprod_;
+        }
+    }
+};
+
+};
+
+//math functions along given axis or axes
+//axes may be scalar or container if multiple axes permitted
+//empty container means apply function along all axes
+
+//sum elements along given axes
+//axes may be scalar or container
+template<typename...Ts, typename Axes>
+auto sum(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
+    return reduce(t,axes,math_reduce_operations::sum{},keep_dims);
+}
+template<typename...Ts>
+auto sum(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::dim_type> axes, bool keep_dims = false){
+    return reduce(t,axes,math_reduce_operations::sum{},keep_dims);
+}
+//sum along all axes
+template<typename...Ts>
+auto sum(const basic_tensor<Ts...>& t, bool keep_dims = false){
+    return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::sum{},keep_dims);
+}
+
+//multiply elements along given axes
+//axes may be scalar or container
+template<typename...Ts, typename Axes>
+auto prod(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
+    return reduce(t,axes,math_reduce_operations::prod{},keep_dims);
+}
+template<typename...Ts>
+auto prod(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::dim_type> axes, bool keep_dims = false){
+    return reduce(t,axes,math_reduce_operations::prod{},keep_dims);
+}
+//prod along all axes
+template<typename...Ts>
+auto prod(const basic_tensor<Ts...>& t, bool keep_dims = false){
+    return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::prod{},keep_dims);
+}
+
+//cumulative sum along given axis
+//axis is scalar
+template<typename...Ts, typename DimT>
+auto cumsum(const basic_tensor<Ts...>& t, const DimT& axis){
+    using index_type = typename basic_tensor<Ts...>::index_type;
+    const index_type window_size = 1;
+    const index_type window_step = 1;
+    return slide(t,axis,math_reduce_operations::cumsum{}, window_size, window_step);
+}
+//cumsum along all axes
+template<typename...Ts>
+auto cumsum(const basic_tensor<Ts...>& t){
+    using index_type = typename basic_tensor<Ts...>::index_type;
+    const index_type window_size = 1;
+    const index_type window_step = 1;
+    return slide(t,math_reduce_operations::cumsum{}, window_size, window_step);
+}
+
+//cumulative product along given axis
+//axis is scalar
+template<typename...Ts, typename DimT>
+auto cumprod(const basic_tensor<Ts...>& t, const DimT& axis){
+    using index_type = typename basic_tensor<Ts...>::index_type;
+    const index_type window_size = 1;
+    const index_type window_step = 1;
+    return slide(t,axis,math_reduce_operations::cumprod{}, window_size, window_step);
+}
+//cumprod along all axes
+template<typename...Ts>
+auto cumprod(const basic_tensor<Ts...>& t){
+    using index_type = typename basic_tensor<Ts...>::index_type;
+    const index_type window_size = 1;
+    const index_type window_step = 1;
+    return slide(t,math_reduce_operations::cumprod{}, window_size, window_step);
+}
 
 }   //end of namespace gtensor
 #endif
