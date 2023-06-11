@@ -5,6 +5,7 @@
 #include "type_selector.hpp"
 #include "tensor_factory.hpp"
 #include "tensor_operators.hpp"
+#include "math.hpp"
 #include "slice.hpp"
 #include "view_factory.hpp"
 #include "reduce.hpp"
