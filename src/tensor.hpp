@@ -493,13 +493,6 @@ public:
     {}
 };
 
-template<typename...Ts>
-auto str(const basic_tensor<Ts...>& t){
-    std::stringstream ss{};
-    ss<<"{"<<detail::shape_to_str(t.shape())<<[&]{for(const auto& i:t){ss<<i<<" ";}; return "}";}();
-    return ss.str();
-}
-
 template<typename T>
 void swap(basic_tensor<T>& u, basic_tensor<T>& v){
     u.swap(v);

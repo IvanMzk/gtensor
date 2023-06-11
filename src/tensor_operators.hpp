@@ -60,6 +60,9 @@ template<typename, typename...Ts> struct tensor_common_value_type{using type = v
 template<typename...Ts> struct tensor_common_value_type<std::void_t<std::common_type_t<tensor_value_type_t<Ts>...>>,Ts...>{using type = std::common_type_t<tensor_value_type_t<Ts>...>;};
 template<typename...Ts> using tensor_common_value_type_t = typename tensor_common_value_type<void,Ts...>::type;
 
+template<typename T, typename U=void> static constexpr bool is_printable_v = false;
+template<typename T> static constexpr bool is_printable_v<T,std::void_t<decltype(std::cout<<std::declval<T>())>> = true;
+
 template<typename...Ts>
 inline basic_tensor<Ts...>& as_basic_tensor(basic_tensor<Ts...>& t){
     return t;
@@ -78,6 +81,19 @@ template<typename...Us, typename...Vs>
 inline auto tensor_equal_helper(std::false_type, const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, bool){    //math::isnan defined for arithmetic types only
     const bool equal_shapes = u.shape() == v.shape();
     return equal_shapes && std::equal(u.begin(), u.end(), v.begin());
+}
+
+template<typename...Ts>
+auto str_helper(std::true_type, const basic_tensor<Ts...>& t){
+    std::stringstream ss{};
+    ss<<"{"<<detail::shape_to_str(t.shape())<<[&]{for(const auto& i:t){ss<<i<<" ";}; return "}";}();
+    return ss.str();
+}
+template<typename...Ts>
+auto str_helper(std::false_type, const basic_tensor<Ts...>& t){
+    std::stringstream ss{};
+    ss<<"{"<<detail::shape_to_str(t.shape())<<"...}";
+    return ss.str();
 }
 
 }   //end of namespace detail
@@ -113,6 +129,13 @@ inline auto tensor_equal(const basic_tensor<Us...>& u, const basic_tensor<Vs...>
 template<typename...Us, typename...Vs>
 inline auto operator==(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v){
     return tensor_equal(u,v);
+}
+
+//return tensor's string representation
+template<typename...Ts>
+auto str(const basic_tensor<Ts...>& t){
+    using value_type = typename basic_tensor<Ts...>::value_type;
+    return detail::str_helper(std::bool_constant<detail::is_printable_v<value_type>>{},t);
 }
 
 template<typename...Ts>
