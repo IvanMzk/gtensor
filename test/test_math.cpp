@@ -433,6 +433,59 @@ TEST_CASE("test_tensor_math_nearest_functions_semantic","[test_tensor_operators]
     }
 }
 
+TEST_CASE("test_tensor_math_floating_point_manipulation_functions_semantic","[test_tensor_operators]")
+{
+    using value_type = double;
+    using gtensor::tensor;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::tensor_close;
+
+    SECTION("test_frexp")
+    {
+        auto result = gtensor::frexp(tensor_type{-1.0,0.0,1.0,2.0,3.0});
+        auto expected = tensor<std::pair<value_type,int>>{
+            std::make_pair(-0.5,1),
+            std::make_pair(0.0,0),
+            std::make_pair(0.5,1),
+            std::make_pair(0.5,2),
+            std::make_pair(0.75,2)
+        };
+        REQUIRE(result == expected);
+    }
+    SECTION("test_ldexp")
+    {
+        auto result = gtensor::ldexp(tensor_type{-1.0,0.0,1.0,2.0}, tensor_type{-1.0,0.0,1.0,2.0});
+        auto expected = tensor_type{-0.5,0.0,2.0,8.0};
+        REQUIRE(tensor_close(result,expected,1E-10,1E-10));
+    }
+    SECTION("test_modf")
+    {
+        auto result = gtensor::modf(tensor_type{-1.5,-0.5,0.0,0.5,1.5,2.0});
+        auto expected = tensor<std::pair<value_type,value_type>>{
+            std::make_pair(-1.0,-0.5),
+            std::make_pair(0.0,-0.5),
+            std::make_pair(0.0,0.0),
+            std::make_pair(0.0,0.5),
+            std::make_pair(1.0,0.5),
+            std::make_pair(2.0,0.0)
+        };
+        REQUIRE(result == expected);
+    }
+    SECTION("test_nextafter")
+    {
+        static constexpr value_type e = std::numeric_limits<value_type>::epsilon();
+        auto result = gtensor::nextafter(tensor_type{1.0,2.0,4.0}, tensor_type(5));
+        auto expected = tensor_type{1.0+e,2.0+(e+e),4.0+(e+e+e+e)};
+        REQUIRE(result == expected);
+    }
+    SECTION("test_copysign")
+    {
+        auto result = gtensor::copysign(tensor_type{-1.0,0.0,1.0,2.0}, tensor_type{-1.0,0.0,1.0,-2.0});
+        auto expected = tensor_type{-1.0,0.0,1.0,-2.0};
+        REQUIRE(tensor_close(result,expected,1E-10,1E-10));
+    }
+}
+
 TEST_CASE("test_tensor_math_classification_functions_semantic","[test_tensor_operators]")
 {
     using value_type = double;
@@ -465,3 +518,22 @@ TEST_CASE("test_tensor_math_classification_functions_semantic","[test_tensor_ope
     }
 }
 
+TEST_CASE("test_tensor_math_rotines_in_rational_domain_functions_semantic","[test_tensor_operators]")
+{
+    using value_type = std::int64_t;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::tensor_close;
+
+    SECTION("test_gcd")
+    {
+        auto result = gtensor::gcd(tensor_type{6,24,18,0}, tensor_type{10,0,-15,0});
+        auto expected = tensor_type{2,24,3,0};
+        REQUIRE(result == expected);
+    }
+    SECTION("test_lcm")
+    {
+        auto result = gtensor::lcm(tensor_type{6,24,18,0}, tensor_type{10,0,-15,0});
+        auto expected = tensor_type{30,0,90,0};
+        REQUIRE(result == expected);
+    }
+}

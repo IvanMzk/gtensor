@@ -11,9 +11,6 @@ inline auto NAME(Args&&...args){\
 
 namespace gtensor{
 
-namespace detail{
-}   //end of namespace detail
-
 //return true if two tensors has same shape and close elements within specified tolerance
 template<typename...Us, typename...Vs, typename Tol>
 inline auto tensor_close(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, Tol relative_tolerance, Tol absolute_tolerance, bool equal_nan = false){
@@ -85,6 +82,12 @@ GTENSOR_TENSOR_FUNCTION(trunc, operations::math_trunc);
 GTENSOR_TENSOR_FUNCTION(round, operations::math_round);
 GTENSOR_TENSOR_FUNCTION(nearbyint, operations::math_nearbyint);
 GTENSOR_TENSOR_FUNCTION(rint, operations::math_rint);
+//floating point manipulation
+GTENSOR_TENSOR_FUNCTION(frexp,operations::math_frexp);
+GTENSOR_TENSOR_FUNCTION(ldexp,operations::math_ldexp);
+GTENSOR_TENSOR_FUNCTION(modf,operations::math_modf);
+GTENSOR_TENSOR_FUNCTION(nextafter,operations::math_nextafter);
+GTENSOR_TENSOR_FUNCTION(copysign,operations::math_copysign);
 //classification
 GTENSOR_TENSOR_FUNCTION(isfinite, operations::math_isfinite);
 GTENSOR_TENSOR_FUNCTION(isinf, operations::math_isinf);
@@ -116,6 +119,9 @@ inline auto is_close(T&& t, U&& u, EqualNan equal_nan = EqualNan{}){
     static constexpr common_value_type e = std::numeric_limits<common_value_type>::epsilon();
     return is_close(std::forward<T>(t),std::forward<U>(u),e,e,equal_nan);
 }
+//routines in rational domain
+GTENSOR_TENSOR_FUNCTION(gcd,operations::math_gcd);
+GTENSOR_TENSOR_FUNCTION(lcm,operations::math_lcm);
 
 }   //end of namespace gtensor
 #endif

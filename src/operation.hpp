@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <limits>
+#include <numeric>
 #include "common.hpp"
 
 #define GTENSOR_UNARY_OPERATION(NAME, OP)\
@@ -86,6 +87,21 @@ template<typename T> auto trunc(T t){return std::trunc(t);}
 template<typename T> auto round(T t){return std::round(t);}
 template<typename T> auto nearbyint(T t){return std::nearbyint(t);}
 template<typename T> auto rint(T t){return std::rint(t);}
+//floating point manipulation
+template<typename T, typename U> auto ldexp(T t, U u){return std::ldexp(t,u);}
+template<typename T, typename U> auto nextafter(T t, U u){return std::nextafter(t,u);}
+template<typename T, typename U> auto copysign(T t, U u){return std::copysign(t,u);}
+template<typename T> auto frexp(T t){
+    int exp{};
+    auto m = std::frexp(t,&exp);
+    return std::make_pair(m,exp);
+}
+template<typename T> auto modf(T t){
+    T i{};
+    auto f = std::modf(t,&i);
+    return std::make_pair(i,f);
+}
+
 //classification
 template<typename T> auto isfinite(T t){return std::isfinite(t);}
 template<typename T> auto isinf(T t){return std::isinf(t);}
@@ -115,7 +131,9 @@ auto is_close_nan_equal(T t, U u, const Tol relative_tolerance, const Tol absolu
     const bool is_nan_u = math::isnan(u);
     return math::isnan(t) ? is_nan_u : (is_nan_u ? false : is_close(t,u,relative_tolerance,absolute_tolerance));
 }
-
+//routines in rational domain
+template<typename T, typename U> auto gcd(T t, U u){return std::gcd(t,u);}
+template<typename T, typename U> auto lcm(T t, U u){return std::lcm(t,u);}
 }   //end of namespace math
 
 namespace operations{
@@ -206,6 +224,12 @@ GTENSOR_FUNCTION(math_trunc,math::trunc);
 GTENSOR_FUNCTION(math_round,math::round);
 GTENSOR_FUNCTION(math_nearbyint,math::nearbyint);
 GTENSOR_FUNCTION(math_rint,math::rint);
+//floating point manipulation
+GTENSOR_FUNCTION(math_ldexp,math::ldexp);
+GTENSOR_FUNCTION(math_nextafter,math::nextafter);
+GTENSOR_FUNCTION(math_copysign,math::copysign);
+GTENSOR_FUNCTION(math_frexp,math::frexp);
+GTENSOR_FUNCTION(math_modf,math::modf);
 //classification
 GTENSOR_FUNCTION(math_isfinite,math::isfinite);
 GTENSOR_FUNCTION(math_isinf,math::isinf);
@@ -224,6 +248,14 @@ class math_is_close
 {
     Tol relative_tolerance_;
     Tol absolute_tolerance_;
+    template<typename T, typename U>
+    bool is_close_(std::true_type, T t, U u)const{
+        return math::is_close_nan_equal(t,u,relative_tolerance_,absolute_tolerance_);
+    }
+    template<typename T, typename U>
+    bool is_close_(std::false_type, T t, U u)const{
+        return math::is_close(t,u,relative_tolerance_,absolute_tolerance_);
+    }
 public:
     math_is_close(Tol relative_tolerance__, Tol absolute_tolerance__):
         relative_tolerance_{relative_tolerance__},
@@ -231,13 +263,12 @@ public:
         {}
     template<typename T, typename U>
     bool operator()(T t, U u)const{
-        if constexpr (NanEqual::value){
-            return math::is_close_nan_equal(t,u,relative_tolerance_,absolute_tolerance_);
-        }else{
-            return math::is_close(t,u,relative_tolerance_,absolute_tolerance_);
-        }
+        return is_close_(typename NanEqual::type{}, t, u);
     }
 };
+//routines in rational domain
+GTENSOR_FUNCTION(math_gcd,math::gcd);
+GTENSOR_FUNCTION(math_lcm,math::lcm);
 
 }   //end of nemespace operations
 }   //end of namespace gtensor
