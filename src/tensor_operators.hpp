@@ -63,11 +63,31 @@ template<typename Other, typename T> inline constexpr bool lhs_other_v = std::is
 template<typename T, typename B> struct tensor_value_type{using type = T;};
 template<typename T> struct tensor_value_type<T,std::true_type>{using type = typename T::value_type;};
 template<typename T> using tensor_value_type_t = typename tensor_value_type<T, std::bool_constant<is_tensor_v<T>>>::type;
-template<typename...Ts> using tensor_common_value_type_t = std::common_type_t<tensor_value_type_t<Ts>...>;
+//from pack of tensors and scalars make common value_type or void if no common value_type
+template<typename, typename...Ts> struct tensor_common_value_type{using type = void;};
+template<typename...Ts> struct tensor_common_value_type<std::void_t<std::common_type_t<tensor_value_type_t<Ts>...>>,Ts...>{using type = std::common_type_t<tensor_value_type_t<Ts>...>;};
+template<typename...Ts> using tensor_common_value_type_t = typename tensor_common_value_type<void,Ts...>::type;
 
 template<typename...Ts>
 inline basic_tensor<Ts...>& as_basic_tensor(basic_tensor<Ts...>& t){
     return t;
+}
+
+//return true if two tensors has same shape and elements
+//if equal_nan is true nans compared as equal
+template<typename...Us, typename...Vs>
+inline auto tensor_equal_helper(std::true_type, const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, bool equal_nan){    //arithmetic value_type overload
+    const bool equal_shapes = u.shape() == v.shape();
+    if (equal_nan){
+        return equal_shapes && std::equal(u.begin(), u.end(), v.begin(),[](auto e1, auto e2){return math::isnan(e1) ? math::isnan(e2) : e1==e2;});
+    }else{
+        return equal_shapes && std::equal(u.begin(), u.end(), v.begin());
+    }
+}
+template<typename...Us, typename...Vs>
+inline auto tensor_equal_helper(std::false_type, const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, bool){    //math::isnan defined for arithmetic types only
+    const bool equal_shapes = u.shape() == v.shape();
+    return equal_shapes && std::equal(u.begin(), u.end(), v.begin());
 }
 
 }   //end of namespace detail
@@ -89,19 +109,13 @@ inline basic_tensor<Ts...>& a_operator(F&& f, basic_tensor<Ts...>& lhs, Rhs&& rh
     return lhs;
 }
 
-//return true if two tensors has same shape and elements
-//if equal_nan is true nans compared as equal
 template<typename...Us, typename...Vs>
 inline auto tensor_equal(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, bool equal_nan = false){
+    using common_value_type = detail::tensor_common_value_type_t<basic_tensor<Us...>, basic_tensor<Vs...>>;
     if (u.is_same(v)){
         return true;
     }else{
-        const bool equal_shapes = u.shape() == v.shape();
-        if (equal_nan){
-            return equal_shapes && std::equal(u.begin(), u.end(), v.begin(),[](auto e1, auto e2){return math::isnan(e1) ? math::isnan(e2) : e1==e2;});
-        }else{
-            return equal_shapes && std::equal(u.begin(), u.end(), v.begin());
-        }
+        return detail::tensor_equal_helper(typename std::is_arithmetic<common_value_type>::type{}, u, v, equal_nan);
     }
 }
 template<typename...Us, typename...Vs>

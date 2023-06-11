@@ -158,28 +158,28 @@ template<typename ShT>
 inline typename ShT::difference_type make_dim(const ShT& shape_or_strides){
     return shape_or_strides.size();
 }
-//make_direction helper to convert and check negative directions
-//positive direction is converted to dim_type and returned as is whithout any checks
-template<typename DimT, typename Direction>
-inline DimT make_direction_helper(const DimT& dim, const Direction& direction){
+//make_axis helper to convert and check negative axis
+//positive axis is converted to dim_type and returned as is whithout any checks
+template<typename DimT, typename Axis>
+inline DimT make_axis_helper(const DimT& dim, const Axis& axis){
     using dim_type = DimT;
-    const dim_type direction_ = static_cast<dim_type>(direction);
-    if (direction_ < dim_type{0}){
-        const dim_type res = dim + direction_;
+    const dim_type axis_ = static_cast<dim_type>(axis);
+    if (axis_ < dim_type{0}){
+        const dim_type res = dim + axis_;
         if (res < dim_type{0}){
-            throw gtensor::dim_exception("invalid negative direction");
+            throw gtensor::dim_exception("invalid negative axis");
         }
         return res;
     }else{
-        return direction_;
+        return axis_;
     }
 }
-template<typename T, typename Direction>
-inline auto make_direction(const T& shape_or_dim, const Direction& direction){
+template<typename T, typename Axis>
+inline auto make_axis(const T& shape_or_dim, const Axis& axis){
     if constexpr (is_container_v<T>){   //shape container
-        return make_direction_helper(make_dim(shape_or_dim), direction);
-    }else if constexpr (std::is_convertible_v<Direction,T>){  //dim scalar
-        return make_direction_helper(shape_or_dim, direction);
+        return make_axis_helper(make_dim(shape_or_dim), axis);
+    }else if constexpr (std::is_convertible_v<Axis,T>){  //dim scalar
+        return make_axis_helper(shape_or_dim, axis);
     }else{
         static_assert(always_false<T>,"invalid shape_or_dim argument");
     }

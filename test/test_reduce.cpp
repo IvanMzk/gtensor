@@ -12,7 +12,7 @@ TEST_CASE("test_check_reduce_args","[test_reduce]")
     using gtensor::reduce_exception;
     using gtensor::detail::check_reduce_args;
 
-    //single reduce direction
+    //single reduce axis
     REQUIRE_NOTHROW(check_reduce_args(shape_type{0},dim_type{0}));
     REQUIRE_NOTHROW(check_reduce_args(shape_type{1},dim_type{0}));
     REQUIRE_NOTHROW(check_reduce_args(shape_type{10},dim_type{0}));
@@ -30,7 +30,7 @@ TEST_CASE("test_check_reduce_args","[test_reduce]")
     REQUIRE_THROWS_AS(check_reduce_args(shape_type{1,0},dim_type{2}), reduce_exception);
     REQUIRE_THROWS_AS(check_reduce_args(shape_type{2,3,4},dim_type{3}), reduce_exception);
 
-    //container of directions
+    //container of axes
     REQUIRE_NOTHROW(check_reduce_args(shape_type{},std::vector<int>{}));
     REQUIRE_NOTHROW(check_reduce_args(shape_type{0},std::vector<int>{}));
     REQUIRE_NOTHROW(check_reduce_args(shape_type{0},std::vector<int>{0}));
@@ -74,9 +74,9 @@ TEST_CASE("test_make_reduce_shape","[test_reduce]")
     using shape_type = config_type::shape_type;
     using gtensor::detail::make_reduce_shape;
     using helpers_for_testing::apply_by_element;
-    //0pshape,1direction,2keep_dims,3expected
+    //0pshape,1axes,2keep_dims,3expected
     auto test_data = std::make_tuple(
-        //single direction
+        //single axis
         //keep_dims is false
         std::make_tuple(shape_type{0},dim_type{0},false,shape_type{}),
         std::make_tuple(shape_type{1},dim_type{0},false,shape_type{}),
@@ -97,8 +97,8 @@ TEST_CASE("test_make_reduce_shape","[test_reduce]")
         std::make_tuple(shape_type{2,3,4},dim_type{0},true,shape_type{1,3,4}),
         std::make_tuple(shape_type{2,3,4},dim_type{1},true,shape_type{2,1,4}),
         std::make_tuple(shape_type{2,3,4},dim_type{2},true,shape_type{2,3,1}),
-        //container of directions
-        //keep_dims is false, empty container (all directions)
+        //container of axees
+        //keep_dims is false, empty container (all axes)
         std::make_tuple(shape_type{},std::vector<int>{},false,shape_type{}),
         std::make_tuple(shape_type{0},std::vector<int>{},false,shape_type{}),
         std::make_tuple(shape_type{1},std::vector<int>{},false,shape_type{}),
@@ -117,7 +117,7 @@ TEST_CASE("test_make_reduce_shape","[test_reduce]")
         std::make_tuple(shape_type{2,3,4},std::vector<int>{0,1,2},false,shape_type{}),
         std::make_tuple(shape_type{2,3,4},std::vector<int>{0},false,shape_type{3,4}),
         std::make_tuple(shape_type{2,3,4},std::vector<int>{2,0},false,shape_type{3}),
-        //keep_dims is true, empty container (all directions)
+        //keep_dims is true, empty container (all axes)
         std::make_tuple(shape_type{},std::vector<int>{},true,shape_type{}),
         std::make_tuple(shape_type{0},std::vector<int>{},true,shape_type{1}),
         std::make_tuple(shape_type{1},std::vector<int>{},true,shape_type{1}),
@@ -139,10 +139,10 @@ TEST_CASE("test_make_reduce_shape","[test_reduce]")
     );
     auto test = [](const auto& t){
         auto pshape = std::get<0>(t);
-        auto direction = std::get<1>(t);
+        auto axes = std::get<1>(t);
         auto keep_dims = std::get<2>(t);
         auto expected = std::get<3>(t);
-        auto result = make_reduce_shape(pshape,direction,keep_dims);
+        auto result = make_reduce_shape(pshape,axes,keep_dims);
         REQUIRE(result == expected);
     };
     apply_by_element(test,test_data);
@@ -197,7 +197,7 @@ TEST_CASE("test_make_slide_shape","[test_reduce]")
     using index_type = config_type::index_type;
     using shape_type = config_type::shape_type;
     using gtensor::detail::make_slide_shape;
-    //0pshape,1direction,2window_size,3window_step,4expected
+    //0pshape,1axis,2window_size,3window_step,4expected
     using test_type = std::tuple<shape_type,dim_type,index_type,index_type,shape_type>;
     auto test_data = GENERATE(
         test_type{shape_type{0},dim_type{0},index_type{1},index_type{1},shape_type{0}},
@@ -222,11 +222,11 @@ TEST_CASE("test_make_slide_shape","[test_reduce]")
         test_type{shape_type{5,30,40},dim_type{2},index_type{10},index_type{3},shape_type{5,30,11}}
     );
     auto pshape = std::get<0>(test_data);
-    auto direction = std::get<1>(test_data);
+    auto axis = std::get<1>(test_data);
     auto window_size = std::get<2>(test_data);
     auto window_step = std::get<3>(test_data);
     auto expected = std::get<4>(test_data);
-    auto result = make_slide_shape(pshape,direction,window_size,window_step);
+    auto result = make_slide_shape(pshape,axis,window_size,window_step);
     REQUIRE(result == expected);
 }
 
@@ -365,9 +365,9 @@ TEST_CASE("test_reduce","[test_reduce]")
     using test_reduce_::min;
     using gtensor::reduce;
     using helpers_for_testing::apply_by_element;
-    //0tensor,1direction,2functor,3keep_dims,4expected
+    //0tensor,1axes,2functor,3keep_dims,4expected
     auto test_data = std::make_tuple(
-        //single direction
+        //single axis
         //keep_dims is false
         std::make_tuple(tensor_type{}, dim_type{0}, sum{}, false, tensor_type(value_type{})),
         std::make_tuple(tensor_type{}.reshape(1,0), dim_type{0}, sum{}, false, tensor_type{}),
@@ -414,7 +414,7 @@ TEST_CASE("test_reduce","[test_reduce]")
         std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{-2}, sum{}, true, tensor_type{{{2,4}},{{10,12}}}),
         std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{2}, sum{}, true, tensor_type{{{1},{5}},{{9},{13}}}),
         std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{-1}, sum{}, true, tensor_type{{{1},{5}},{{9},{13}}}),
-        //directions is container
+        //axes is container
         //keep_dims is false
         std::make_tuple(tensor_type{}, std::vector<dim_type>{0}, sum{}, false, tensor_type(value_type{})),
         std::make_tuple(tensor_type{}, std::vector<dim_type>{}, sum{}, false, tensor_type(value_type{})),
@@ -498,11 +498,11 @@ TEST_CASE("test_reduce","[test_reduce]")
     );
     auto test = [](const auto& t){
         auto tensor = std::get<0>(t);
-        auto direction = std::get<1>(t);
+        auto axes = std::get<1>(t);
         auto functor = std::get<2>(t);
         auto keep_dims = std::get<3>(t);
         auto expected = std::get<4>(t);
-        auto result = reduce(tensor, direction, functor, keep_dims);
+        auto result = reduce(tensor, axes, functor, keep_dims);
         REQUIRE(result == expected);
     };
     apply_by_element(test, test_data);
@@ -516,7 +516,7 @@ TEST_CASE("test_reduce_custom_arg","[test_reduce]")
     using test_reduce_::sum_init;
     using gtensor::reduce;
     using helpers_for_testing::apply_by_element;
-    //0tensor,1direction,2functor,3keep_dims,4init,5expected
+    //0tensor,1axes,2functor,3keep_dims,4init,5expected
     auto test_data = std::make_tuple(
         std::make_tuple(tensor_type{1,2,3,4,5}, dim_type{0}, sum_init{}, false, value_type{0}, tensor_type(15)),
         std::make_tuple(tensor_type{1,2,3,4,5}, dim_type{0}, sum_init{}, true, value_type{-1}, tensor_type{14}),
@@ -525,12 +525,12 @@ TEST_CASE("test_reduce_custom_arg","[test_reduce]")
     );
     auto test = [](const auto& t){
         auto tensor = std::get<0>(t);
-        auto direction = std::get<1>(t);
+        auto axes = std::get<1>(t);
         auto functor = std::get<2>(t);
         auto keep_dims = std::get<3>(t);
         auto init = std::get<4>(t);
         auto expected = std::get<5>(t);
-        auto result = reduce(tensor, direction, functor, keep_dims, init);
+        auto result = reduce(tensor, axes, functor, keep_dims, init);
         REQUIRE(result == expected);
     };
     apply_by_element(test, test_data);
@@ -548,9 +548,9 @@ TEST_CASE("test_reduce_ecxeption","[test_reduce]")
     using helpers_for_testing::apply_by_element;
 
 
-    //0tensor,1direction,2functor,3keep_dim
+    //0tensor,1axes,2functor,3keep_dim
     auto test_data = std::make_tuple(
-        //single direction
+        //single axis
         std::make_tuple(tensor_type(0), dim_type{0}, sum{}, false),
         std::make_tuple(tensor_type{}, dim_type{1}, sum{}, false),
         std::make_tuple(tensor_type{1,2,3,4,5,6}, dim_type{1}, sum{}, false),
@@ -558,7 +558,7 @@ TEST_CASE("test_reduce_ecxeption","[test_reduce]")
         std::make_tuple(tensor_type{{1,2,3,4,5,6}}, dim_type{2}, sum{}, false),
         std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{4}, sum{}, false),
         std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{3}, sum{}, false),
-        //directions container
+        //axes container
         std::make_tuple(tensor_type(0), std::vector<dim_type>{0}, sum{}, false),
         std::make_tuple(tensor_type{0}, std::vector<dim_type>{0,0}, sum{}, false),
         std::make_tuple(tensor_type{0}, std::vector<dim_type>{1,1}, sum{}, false),
@@ -576,10 +576,10 @@ TEST_CASE("test_reduce_ecxeption","[test_reduce]")
     );
     auto test = [](const auto& t){
         auto tensor = std::get<0>(t);
-        auto direction = std::get<1>(t);
+        auto axes = std::get<1>(t);
         auto functor = std::get<2>(t);
         auto keep_dim = std::get<3>(t);
-        REQUIRE_THROWS_AS(reduce(tensor, direction, functor, keep_dim), reduce_exception);
+        REQUIRE_THROWS_AS(reduce(tensor, axes, functor, keep_dim), reduce_exception);
     };
     apply_by_element(test, test_data);
 }
@@ -597,7 +597,7 @@ TEST_CASE("test_slide","[test_reduce]")
     using gtensor::slide;
     using helpers_for_testing::apply_by_element;
 
-    //0tensor,1direction,2functor,3window_size,4window_step,5expected
+    //0tensor,1axis,2functor,3window_size,4window_step,5expected
     auto test_data = std::make_tuple(
         std::make_tuple(tensor_type{}, dim_type{0}, cumsum{}, index_type{1}, index_type{1}, tensor_type{}),
         std::make_tuple(tensor_type{1}, dim_type{0}, cumsum{}, index_type{1}, index_type{1}, tensor_type{1}),
@@ -614,12 +614,12 @@ TEST_CASE("test_slide","[test_reduce]")
     );
     auto test = [](const auto& t){
         auto tensor = std::get<0>(t);
-        auto direction = std::get<1>(t);
+        auto axis = std::get<1>(t);
         auto functor = std::get<2>(t);
         auto window_size = std::get<3>(t);
         auto window_step = std::get<4>(t);
         auto expected = std::get<5>(t);
-        auto result = slide(tensor, direction, functor, window_size, window_step);
+        auto result = slide(tensor, axis, functor, window_size, window_step);
         REQUIRE(result == expected);
     };
     apply_by_element(test, test_data);
@@ -635,7 +635,7 @@ TEST_CASE("test_slide_custom_arg","[test_reduce]")
     using gtensor::slide;
     using helpers_for_testing::apply_by_element;
 
-    //0tensor,1direction,2functor,3window_size,4window_step,5denom,6expected
+    //0tensor,1axis,2functor,3window_size,4window_step,5denom,6expected
     auto test_data = std::make_tuple(
         std::make_tuple(tensor_type{}, dim_type{0}, moving_avarage{}, index_type{1}, index_type{1}, value_type{1}, tensor_type{}),
         std::make_tuple(tensor_type{1}, dim_type{0}, moving_avarage{}, index_type{1}, index_type{1}, value_type{1}, tensor_type{1}),
@@ -647,13 +647,13 @@ TEST_CASE("test_slide_custom_arg","[test_reduce]")
     );
     auto test = [](const auto& t){
         auto tensor = std::get<0>(t);
-        auto direction = std::get<1>(t);
+        auto axis = std::get<1>(t);
         auto functor = std::get<2>(t);
         auto window_size = std::get<3>(t);
         auto window_step = std::get<4>(t);
         auto denom = std::get<5>(t);
         auto expected = std::get<6>(t);
-        auto result = slide(tensor, direction, functor, window_size, window_step,denom);
+        auto result = slide(tensor, axis, functor, window_size, window_step,denom);
         REQUIRE(result == expected);
     };
     apply_by_element(test, test_data);
@@ -670,7 +670,7 @@ TEST_CASE("test_slide_exception","[test_reduce]")
     using gtensor::slide;
     using helpers_for_testing::apply_by_element;
 
-    //0tensor,1direction,2functor,3window_size,4window_step
+    //0tensor,1axis,2functor,3window_size,4window_step
     auto test_data = std::make_tuple(
         std::make_tuple(tensor_type(0), dim_type{0}, cumsum{}, index_type{1}, index_type{1}),
         std::make_tuple(tensor_type{}, dim_type{1}, cumsum{}, index_type{1}, index_type{1}),
@@ -683,11 +683,11 @@ TEST_CASE("test_slide_exception","[test_reduce]")
     );
     auto test = [](const auto& t){
         auto tensor = std::get<0>(t);
-        auto direction = std::get<1>(t);
+        auto axis = std::get<1>(t);
         auto functor = std::get<2>(t);
         auto window_size = std::get<3>(t);
         auto window_step = std::get<4>(t);
-        REQUIRE_THROWS_AS(slide(tensor, direction, functor, window_size, window_step), reduce_exception);
+        REQUIRE_THROWS_AS(slide(tensor, axis, functor, window_size, window_step), reduce_exception);
     };
     apply_by_element(test, test_data);
 }
@@ -701,7 +701,7 @@ TEST_CASE("test_transform","[test_reduce]")
     using gtensor::transform;
     using helpers_for_testing::apply_by_element;
 
-    //0tensor,1direction,2functor,3expected
+    //0tensor,1axis,2functor,3expected
     auto test_data = std::make_tuple(
         std::make_tuple(tensor_type{}, dim_type{0}, sort{}, tensor_type{}),
         std::make_tuple(tensor_type{1,2,3,3,2,1,0}, dim_type{0}, sort{}, tensor_type{0,1,1,2,2,3,3}),
@@ -713,10 +713,10 @@ TEST_CASE("test_transform","[test_reduce]")
     );
     auto test = [](const auto& t){
         auto tensor = std::get<0>(t);
-        auto direction = std::get<1>(t);
+        auto axis = std::get<1>(t);
         auto functor = std::get<2>(t);
         auto expected = std::get<3>(t);
-        transform(tensor, direction, functor);
+        transform(tensor, axis, functor);
         REQUIRE(tensor == expected);
     };
     apply_by_element(test, test_data);
