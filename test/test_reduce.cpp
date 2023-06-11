@@ -630,6 +630,42 @@ TEST_CASE("test_slide","[test_reduce]")
     apply_by_element(test, test_data);
 }
 
+TEST_CASE("test_slide_flatten","[test_reduce]")
+{
+    using value_type = int;
+    using tensor_type = gtensor::tensor<value_type>;
+    using index_type = typename tensor_type::index_type;
+    using test_reduce_::cumprod_reverse;
+    using test_reduce_::cumsum;
+    using test_reduce_::diff_1;
+    using test_reduce_::diff_2;
+    using gtensor::slide;
+    using helpers_for_testing::apply_by_element;
+
+    //0tensor,1functor,2window_size,3window_step,4expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(tensor_type{}, cumsum{}, index_type{1}, index_type{1}, tensor_type{}),
+        std::make_tuple(tensor_type{1}, cumsum{}, index_type{1}, index_type{1}, tensor_type{1}),
+        std::make_tuple(tensor_type{1,2,3,4,5}, cumsum{}, index_type{1}, index_type{1}, tensor_type{1,3,6,10,15}),
+        std::make_tuple(tensor_type{1,2,3,4,5}, cumprod_reverse{}, index_type{1}, index_type{1}, tensor_type{120,120,60,20,5}),
+        std::make_tuple(tensor_type{1,3,2,5,7,4,6,7,8}, diff_1{}, index_type{2}, index_type{1}, tensor_type{2,-1,3,2,-3,2,1,1}),
+        std::make_tuple(tensor_type{1,3,2,5,7,4,6,7,8}, diff_2{}, index_type{3}, index_type{1}, tensor_type{-3,4,-1,-5,5,-1,0}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9}}, cumsum{}, index_type{1}, index_type{1}, tensor_type{1,3,6,10,15,21,28,36,45}),
+        std::make_tuple(tensor_type{{1,3,2},{5,7,4},{6,7,8}}, diff_1{}, index_type{2}, index_type{1}, tensor_type{2,-1,3,2,-3,2,1,1}),
+        std::make_tuple(tensor_type{{1,3,2},{5,7,4},{6,7,8}}, diff_2{}, index_type{3}, index_type{1}, tensor_type{-3,4,-1,-5,5,-1,0})
+    );
+    auto test = [](const auto& t){
+        auto tensor = std::get<0>(t);
+        auto functor = std::get<1>(t);
+        auto window_size = std::get<2>(t);
+        auto window_step = std::get<3>(t);
+        auto expected = std::get<4>(t);
+        auto result = slide(tensor, functor, window_size, window_step);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test, test_data);
+}
+
 TEST_CASE("test_slide_custom_arg","[test_reduce]")
 {
     using value_type = int;
@@ -693,6 +729,33 @@ TEST_CASE("test_slide_exception","[test_reduce]")
         auto window_size = std::get<3>(t);
         auto window_step = std::get<4>(t);
         REQUIRE_THROWS_AS(slide(tensor, axis, functor, window_size, window_step), reduce_exception);
+    };
+    apply_by_element(test, test_data);
+}
+
+TEST_CASE("test_slide_flatten_exception","[test_reduce]")
+{
+    using value_type = int;
+    using tensor_type = gtensor::tensor<value_type>;
+    using index_type = typename tensor_type::index_type;
+    using gtensor::reduce_exception;
+    using test_reduce_::cumsum;
+    using gtensor::slide;
+    using helpers_for_testing::apply_by_element;
+
+    //0tensor,1functor,2window_size,3window_step
+    auto test_data = std::make_tuple(
+        std::make_tuple(tensor_type(0), cumsum{}, index_type{2}, index_type{1}),
+        std::make_tuple(tensor_type{1}, cumsum{}, index_type{2}, index_type{1}),
+        std::make_tuple(tensor_type{1,2,3,4,5}, cumsum{}, index_type{6}, index_type{1}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, cumsum{}, index_type{7}, index_type{1})
+    );
+    auto test = [](const auto& t){
+        auto tensor = std::get<0>(t);
+        auto functor = std::get<1>(t);
+        auto window_size = std::get<2>(t);
+        auto window_step = std::get<3>(t);
+        REQUIRE_THROWS_AS(slide(tensor, functor, window_size, window_step), reduce_exception);
     };
     apply_by_element(test, test_data);
 }

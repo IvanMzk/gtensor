@@ -129,6 +129,15 @@ auto make_reduce_shape(const ShT& shape, const Container& axes, bool keep_dims){
     }
 }
 
+template<typename IdxT>
+auto check_slide_args(const IdxT& size, const IdxT& window_size){
+    using index_type = IdxT;
+    if (size > 0){
+        if (window_size > size || window_size <= index_type{0}){
+            throw reduce_exception("bad sliding window size");
+        }
+    }
+}
 template<typename ShT, typename DimT, typename IdxT>
 auto check_slide_args(const ShT& shape, const DimT& axis, const IdxT& window_size){
     using dim_type = DimT;
@@ -144,14 +153,18 @@ auto check_slide_args(const ShT& shape, const DimT& axis, const IdxT& window_siz
         }
     }
 }
+template<typename IdxT>
+auto make_slide_size(const IdxT& size, const IdxT& window_size, const IdxT& window_step){
+    return (size - window_size)/window_step + IdxT{1};
+}
 template<typename ShT, typename DimT, typename IdxT>
 auto make_slide_shape(const ShT& shape, const DimT& axis, const IdxT& window_size, const IdxT& window_step){
     using index_type = IdxT;
     using shape_type = ShT;
     shape_type res(shape);
-    index_type axis_size = shape[axis];
+    const index_type axis_size = shape[axis];
     if (axis_size != index_type{0}){
-        index_type result_axis_size = (axis_size - window_size)/window_step + index_type{1};
+        const index_type result_axis_size = make_slide_size(axis_size, window_size, window_step);
         res[axis] = result_axis_size;
     }
     return res;
@@ -442,8 +455,8 @@ class reducer
                     throw reduce_exception("reduce can't fill result, res_value_type is not default constructible");
                 }
             }else{
-                auto pdim = parent.dim();
-                if (pdim == dim_type{1}){
+                const auto res_size = res.size();
+                if (res_size == index_type{1}){
                     *res.begin() = reduce_f(parent.begin(), parent.end(), std::forward<Args>(args)...);
                 }else{
                     using traverse_predicate_type = detail::reduce_traverse_predicate<config_type, axes_type>;
@@ -511,6 +524,26 @@ class reducer
         return res;
     }
 
+    template<typename...Ts, typename F, typename IdxT, typename...Args>
+    static auto slide_(const basic_tensor<Ts...>& parent, F slide_f, const IdxT& window_size_, const IdxT& window_step_, Args&&...args)
+    {
+        using parent_type = basic_tensor<Ts...>;
+        using order = typename parent_type::order;
+        using value_type = typename parent_type::value_type;
+        using config_type = typename parent_type::config_type;
+        using index_type = typename config_type::index_type;
+        using shape_type = typename config_type::shape_type;
+        const auto psize = parent.size();
+        const index_type window_size = static_cast<index_type>(window_size_);
+        const index_type window_step = static_cast<index_type>(window_step_);
+        detail::check_slide_args(psize, window_size);
+        auto res = tensor<value_type,order,config_type>{shape_type{detail::make_slide_size(psize, window_size, window_step)}};
+        if (!res.empty()){
+            slide_f(parent.begin(), parent.end(), res.begin(), res.end(), window_size,window_step,std::forward<Args>(args)...);
+        }
+        return res;
+    }
+
     template<typename F, typename DimT, typename...Ts, typename...Args>
     static void transform_(basic_tensor<Ts...>& parent, const DimT& axis_, F transform_f, Args&&...args){
         using parent_type = basic_tensor<Ts...>;
@@ -552,6 +585,11 @@ public:
         return slide_(t,axis,f,window_size,window_step,std::forward<Args>(args)...);
     }
 
+    template<typename...Ts, typename F, typename IdxT, typename...Args>
+    static auto slide(const basic_tensor<Ts...>& t, F f, const IdxT& window_size, const IdxT& window_step, Args&&...args){
+        return slide_(t,f,window_size,window_step,std::forward<Args>(args)...);
+    }
+
     template<typename...Ts, typename DimT, typename F, typename...Args>
     static void transform(basic_tensor<Ts...>& t, const DimT& axis, F f, Args&&...args){
         transform_(t,axis,f,std::forward<Args>(args)...);
@@ -578,6 +616,12 @@ template<typename...Ts, typename DimT, typename F, typename IdxT, typename...Arg
 auto slide(const basic_tensor<Ts...>& t, const DimT& axis, F f, const IdxT& window_size, const IdxT& window_step, Args&&...args){
     using config_type = typename basic_tensor<Ts...>::config_type;
     return reducer_selector_t<config_type>::slide(t, axis, f, window_size, window_step,std::forward<Args>(args)...);
+}
+//slide like over flatten
+template<typename...Ts, typename F, typename IdxT, typename...Args>
+auto slide(const basic_tensor<Ts...>& t, F f, const IdxT& window_size, const IdxT& window_step, Args&&...args){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return reducer_selector_t<config_type>::slide(t, f, window_size, window_step,std::forward<Args>(args)...);
 }
 
 //transform tensor inplace along specified axis
