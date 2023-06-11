@@ -251,14 +251,22 @@ public:
     auto traverse_order_adapter()const{
         return detail::traverse_order_adapter<const impl_type,TraverseOrder>{impl()};
     }
-    //reduce
-    template<typename Directions, typename F>
-    auto reduce(const Directions& directions, F f, bool keep_dims=false)const{
-        return gtensor::reduce(*this, directions, f, keep_dims);
+    //reduce_slide_transform
+    template<typename Axes, typename F>
+    auto reduce(const Axes& axes, F f, bool keep_dims=false)const{
+        return gtensor::reduce(*this, axes, f, keep_dims);
     }
     template<typename F>
-    auto slide(const dim_type& direction, F f, const index_type& window_size, const index_type& window_step)const{
-        return gtensor::slide(*this, direction, f, window_size, window_step);
+    auto reduce(std::initializer_list<dim_type> axes, F f, bool keep_dims=false)const{
+        return gtensor::reduce(*this, axes, f, keep_dims);
+    }
+    template<typename F>
+    auto slide(const dim_type& axis, F f, const index_type& window_size, const index_type& window_step)const{
+        return gtensor::slide(*this, axis, f, window_size, window_step);
+    }
+    template<typename F>
+    void transform(const dim_type& axis, F f){
+        gtensor::transform(*this, axis, f);
     }
     //view construction operators and methods
     //slice view

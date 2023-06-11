@@ -1655,9 +1655,9 @@ TEST_CASE("test_tensor_reduce","[test_tensor]")
         return std::accumulate(++first,last,init,std::plus{});
     };
 
-    //0tensor,1direction,2operation,3expected
+    //0tensor,1axes,2operation,3expected
     auto test_data = std::make_tuple(
-        //single direction
+        //single axis
         std::make_tuple(tensor_type{1,2,3,4,5},dim_type{0},sum,tensor_type(15)),
         std::make_tuple(tensor_type{{1,2,3},{4,5,6}},dim_type{0},sum,tensor_type{5,7,9}),
         std::make_tuple(tensor_type{{1,2,3},{4,5,6}},dim_type{1},sum,tensor_type{6,15}),
@@ -1665,7 +1665,7 @@ TEST_CASE("test_tensor_reduce","[test_tensor]")
         std::make_tuple(tensor_type{{1,2,3},{4,5,6}}.transpose(),dim_type{1},sum,tensor_type{5,7,9}),
         std::make_tuple(tensor_type{{1,2,3},{4,5,6}}+tensor_type{0,1,2}+tensor_type(3),dim_type{0},sum,tensor_type{11,15,19}),
         std::make_tuple(tensor_type{{1,2,3},{4,5,6}}+tensor_type{0,1,2}+tensor_type(3),dim_type{1},sum,tensor_type{18,27}),
-        //directions container
+        //axes container
         std::make_tuple(tensor_type{1,2,3,4,5},std::vector<dim_type>{0},sum,tensor_type(15)),
         std::make_tuple(tensor_type{1,2,3,4,5},std::vector<dim_type>{},sum,tensor_type(15)),
         std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::vector<dim_type>{0},sum,tensor_type{5,7,9}),
@@ -1681,13 +1681,27 @@ TEST_CASE("test_tensor_reduce","[test_tensor]")
     );
     auto test = [](const auto& t){
         auto ten = std::get<0>(t);
-        auto direction = std::get<1>(t);
+        auto axes = std::get<1>(t);
         auto operation = std::get<2>(t);
         auto expected = std::get<3>(t);
-        auto result = ten.reduce(direction,operation);
+        auto result = ten.reduce(axes,operation);
         REQUIRE(result == expected);
     };
     apply_by_element(test,test_data);
+}
+
+TEST_CASE("test_tensor_reduce_initializer_list_axes","[test_tensor]")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using helpers_for_testing::apply_by_element;
+    auto sum = [](auto first, auto last){
+        const auto& init = *first;
+        return std::accumulate(++first,last,init,std::plus{});
+    };
+    REQUIRE(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reduce({0},sum) == tensor_type{{6,8},{10,12}});
+    REQUIRE(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reduce({0,1},sum) == tensor_type{16,20});
+    REQUIRE(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reduce({0,2},sum) == tensor_type{14,22});
 }
 
 TEST_CASE("test_tensor_slide","[test_tensor]")

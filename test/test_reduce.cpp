@@ -494,7 +494,12 @@ TEST_CASE("test_reduce","[test_reduce]")
         std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{1,2}, sum{}, true, tensor_type{{{6}},{{22}}}),
         std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{2,0}, prod{}, true, tensor_type{{{0},{252}}}),
         std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{-2,-1}, sum{}, true, tensor_type{{{6}},{{22}}}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{-1,-3}, prod{}, true, tensor_type{{{0},{252}}})
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{-1,-3}, prod{}, true, tensor_type{{{0},{252}}}),
+        //axes in initializer_list
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::initializer_list<dim_type>{-2,-1}, sum{}, false, tensor_type{6,22}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::initializer_list<dim_type>{-1,-3}, prod{}, false, tensor_type{0,252}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::initializer_list<dim_type>{1,2}, sum{}, true, tensor_type{{{6}},{{22}}}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::initializer_list<dim_type>{2,0}, prod{}, true, tensor_type{{{0},{252}}})
     );
     auto test = [](const auto& t){
         auto tensor = std::get<0>(t);

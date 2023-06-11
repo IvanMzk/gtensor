@@ -446,7 +446,7 @@ class reducer
                 if (pdim == dim_type{1}){
                     *res.begin() = reduce_f(parent.begin(), parent.end(), std::forward<Args>(args)...);
                 }else{
-                    using traverse_predicate_type = detail::reduce_traverse_predicate<config_type, Axes>;
+                    using traverse_predicate_type = detail::reduce_traverse_predicate<config_type, axes_type>;
                     traverse_predicate_type traverse_predicate{axes, true};
                     walker_bidirectional_traverser<config_type, decltype(parent.create_walker()), traverse_predicate_type> traverser{pshape, parent.create_walker(), traverse_predicate};
                     const auto axes_size = detail::make_reduce_axes_size(pshape,parent.size(),axes);
