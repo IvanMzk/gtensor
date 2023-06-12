@@ -243,7 +243,7 @@ struct diff_2{
 //axes may be scalar or container if multiple axes permitted
 //empty container means apply function along all axes
 
-//test if all elements along given axes evaluate true
+//test if all elements along given axes evaluate to true
 //axes may be scalar or container
 template<typename...Ts, typename Axes>
 auto all(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
@@ -257,6 +257,22 @@ auto all(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tens
 template<typename...Ts>
 auto all(const basic_tensor<Ts...>& t, bool keep_dims = false){
     return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::all{},keep_dims);
+}
+
+//test if any of elements along given axes evaluate to true
+//axes may be scalar or container
+template<typename...Ts, typename Axes>
+auto any(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
+    return reduce(t,axes,math_reduce_operations::any{},keep_dims);
+}
+template<typename...Ts>
+auto any(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::dim_type> axes, bool keep_dims = false){
+    return reduce(t,axes,math_reduce_operations::any{},keep_dims);
+}
+//any along all axes
+template<typename...Ts>
+auto any(const basic_tensor<Ts...>& t, bool keep_dims = false){
+    return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::any{},keep_dims);
 }
 
 //min element along given axes
