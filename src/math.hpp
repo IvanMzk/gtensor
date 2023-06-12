@@ -42,6 +42,7 @@ GTENSOR_TENSOR_FUNCTION(fmax, operations::math_fmax);
 GTENSOR_TENSOR_FUNCTION(fmin, operations::math_fmin);
 GTENSOR_TENSOR_FUNCTION(fdim, operations::math_fdim);
 GTENSOR_TENSOR_FUNCTION(clip, operations::math_clip);
+GTENSOR_TENSOR_FUNCTION(divmod, operations::math_divmod);
 //exponential
 GTENSOR_TENSOR_FUNCTION(exp, operations::math_exp);
 GTENSOR_TENSOR_FUNCTION(exp2, operations::math_exp2);

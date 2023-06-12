@@ -44,6 +44,7 @@ struct NAME{\
 namespace gtensor{
 
 namespace math{
+template<typename T> auto floor(T t);
 //basic
 template<typename T> auto abs(T t){return std::abs(t);}
 template<typename T, typename U> auto fmod(T t, U u){return std::fmod(t,u);}
@@ -54,6 +55,10 @@ template<typename T, typename U> auto fmin(T t, U u){return std::fmin(t,u);}
 template<typename T, typename U> auto fdim(T t, U u){return std::fdim(t,u);}
 template<typename T, typename U, typename V> auto clip(T t, U min, V max){
     return t > max ? max : t < min ? min : t;
+}
+template<typename T, typename U> auto divmod(T num, U denom){
+    const auto q = floor(num/denom);
+    return std::make_pair(q,num-q*denom);
 }
 //exponential
 template<typename T> auto exp(T t){return std::exp(t);}
@@ -212,6 +217,7 @@ GTENSOR_FUNCTION(math_fmax,math::fmax);
 GTENSOR_FUNCTION(math_fmin,math::fmin);
 GTENSOR_FUNCTION(math_fdim,math::fdim);
 GTENSOR_FUNCTION(math_clip,math::clip);
+GTENSOR_FUNCTION(math_divmod,math::divmod);
 //exponential
 GTENSOR_FUNCTION(math_exp,math::exp);
 GTENSOR_FUNCTION(math_exp2,math::exp2);

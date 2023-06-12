@@ -223,6 +223,7 @@ TEST_CASE("test_tensor_math_basic_functions_semantic","[test_math]")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::tensor;
     using gtensor::tensor_close;
     SECTION("test_abs")
     {
@@ -265,6 +266,28 @@ TEST_CASE("test_tensor_math_basic_functions_semantic","[test_math]")
         auto result = gtensor::clip(tensor_type{{0.0,1.1,-2.2},{4.4,-5.5,-6.6}}, tensor_type{0.0,1.0,2.0}, 3.0);
         auto expected = tensor_type{{0.0,1.1,2.0},{3.0,1.0,2.0}};
         REQUIRE(result == expected);
+    }
+    SECTION("test_divmod")
+    {
+        auto result = gtensor::divmod(tensor_type{-3.0,-2.0,0.0,1.0,5.0}, tensor_type{1.2,-1.6,1.0,2.0,-2.0});
+        auto expected = tensor<std::pair<value_type,value_type>>{
+            std::make_pair(-3.0,0.6),
+            std::make_pair(1.0,-0.4),
+            std::make_pair(0.0,0.0),
+            std::make_pair(0.0,1.0),
+            std::make_pair(-3.0,-1.0)
+        };
+        REQUIRE(
+            std::equal(
+                result.begin(),
+                result.end(),
+                expected.begin(),
+                expected.end(),
+                [](auto res, auto exp){
+                    return gtensor::math::is_close(res.first, exp.first, 1E-10, 1E-10) && gtensor::math::is_close(res.second, exp.second, 1E-10, 1E-10);
+                }
+            )
+        );
     }
 }
 
