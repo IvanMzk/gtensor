@@ -8,6 +8,7 @@
 TEST_CASE("test_tensor_close","test_math")
 {
     using value_type = double;
+    using gtensor::tensor;
     using tensor_type = gtensor::tensor<value_type>;
     using gtensor::tensor_close;
     using helpers_for_testing::apply_by_element;
@@ -72,7 +73,24 @@ TEST_CASE("test_tensor_close","test_math")
         std::make_tuple(tensor_type(1E15),tensor_type(1E15+1),1E-14,1E-10,false,true),
         //big: relative tolerance plays
         std::make_tuple(tensor_type(1E15),tensor_type(1E15+1),1E-15,1E-10,false,true),
-        std::make_tuple(tensor_type(1E15),tensor_type(1E15+1),1E-16,1E-10,false,false)
+        std::make_tuple(tensor_type(1E15),tensor_type(1E15+1),1E-16,1E-10,false,false),
+        //not floating point type
+        std::make_tuple(tensor<int>{1,2,3,4,5},tensor<int>{1,2,3,4,5},1E-10,1E-10,false,true),
+        std::make_tuple(tensor<int>{1,2,3,4,5},tensor<int>{1,2,3,4,6},1E-10,1E-10,false,false),
+        std::make_tuple(tensor<int>{1,2,3,4,5},tensor<int>{1,2,3,4,5},1E-10,1E-10,true,true),
+        std::make_tuple(tensor<int>{1,2,3,4,5},tensor<int>{1,2,3,4,6},1E-10,1E-10,true,false),
+        //mixed types
+        std::make_tuple(tensor<int>{1,2,3,4,5},tensor<double>{1.0,2.0,3.0,4.0,5.0},1E-10,1E-10,false,true),
+        std::make_tuple(tensor<double>{1.0,2.0+1E-11,3.0,4.0,5.0},tensor<int>{1,2,3,4,5},1E-10,1E-10,false,true),
+        std::make_tuple(tensor<double>{1.0,2.0+1E-8,3.0,4.0,5.0},tensor<int>{1,2,3,4,5},1E-10,1E-10,false,false),
+        std::make_tuple(tensor<int>{1,2,3,4,5},tensor<double>{1.0,2.0,3.0,4.0,5.0},1E-10,1E-10,true,true),
+        std::make_tuple(tensor<double>{1.0,2.0+1E-11,3.0,4.0,5.0},tensor<int>{1,2,3,4,5},1E-10,1E-10,true,true),
+        std::make_tuple(tensor<double>{1.0,2.0+1E-8,3.0,4.0,5.0},tensor<int>{1,2,3,4,5},1E-10,1E-10,true,false),
+        std::make_tuple(tensor<double>{1.0,2.0,nan,4.0,5.0},tensor<int>{1,2,3,4,5},1E-10,1E-10,false,false),
+        std::make_tuple(tensor<double>{1.0,2.0,nan,4.0,5.0},tensor<int>{1,2,3,4,5},1E-10,1E-10,true,false),
+        std::make_tuple(tensor<double>{1.0,2.0,3.0,4.0,5.0},tensor<float>{1.0,2.0+1E-11,3.0,4.0,5.0},1E-10,1E-10,false,true),
+        std::make_tuple(tensor<double>{1.0,nan,3.0,4.0,5.0},tensor<float>{1.0,nan,3.0,4.0,5.0},1E-10,1E-10,false,false),
+        std::make_tuple(tensor<double>{1.0,nan,3.0,4.0,5.0},tensor<float>{1.0,nan,3.0,4.0,5.0},1E-10,1E-10,true,true)
     );
     auto test = [](const auto& t){
         auto ten_0 = std::get<0>(t);
@@ -92,6 +110,7 @@ TEST_CASE("test_tensor_close","test_math")
 TEST_CASE("test_is_close","test_math")
 {
     using value_type = double;
+    using gtensor::tensor;
     using tensor_type = gtensor::tensor<value_type>;
     using bool_tensor_type = gtensor::tensor<bool>;
     using gtensor::is_close;
@@ -129,7 +148,24 @@ TEST_CASE("test_is_close","test_math")
         //nans
         std::make_tuple(tensor_type{inf,2.2,nan,3.3}, tensor_type{inf,2.2,nan,3.3}, 1E-10, 1E-10, std::true_type{}, bool_tensor_type{true,true,true,true}),
         std::make_tuple(tensor_type{inf,2.2,nan,3.3}, tensor_type{inf,2.2,1.1,3.3}, 1E-10, 1E-10, std::true_type{}, bool_tensor_type{true,true,false,true}),
-        std::make_tuple(tensor_type{inf,2.2,1.1,3.3}, tensor_type{inf,2.2,nan,3.3}, 1E-10, 1E-10, std::true_type{}, bool_tensor_type{true,true,false,true})
+        std::make_tuple(tensor_type{inf,2.2,1.1,3.3}, tensor_type{inf,2.2,nan,3.3}, 1E-10, 1E-10, std::true_type{}, bool_tensor_type{true,true,false,true}),
+        //not floating point type
+        std::make_tuple(tensor<int>{1,2,3,4}, tensor<int>{1,2,3,4}, 1E-10, 1E-10, std::false_type{}, bool_tensor_type{true,true,true,true}),
+        std::make_tuple(tensor<int>{1,2,3,4}, tensor<int>{1,2,3,3}, 1E-10, 1E-10, std::false_type{}, bool_tensor_type{true,true,true,false}),
+        std::make_tuple(tensor<int>{1,2,3,4}, tensor<int>{1,2,3,4}, 1E-10, 1E-10, std::true_type{}, bool_tensor_type{true,true,true,true}),
+        std::make_tuple(tensor<int>{1,2,3,4}, tensor<int>{1,2,3,3}, 1E-10, 1E-10, std::true_type{}, bool_tensor_type{true,true,true,false}),
+        //mixed types
+        std::make_tuple(tensor<int>{1,2,3,4}, tensor<double>{1.0,2.0,3.0,4.0}, 1E-10, 1E-10, std::false_type{}, bool_tensor_type{true,true,true,true}),
+        std::make_tuple(tensor<double>{1.0,2.0+1E-11,3.0,4.0}, tensor<int>{1,2,3,4}, 1E-10, 1E-10, std::false_type{}, bool_tensor_type{true,true,true,true}),
+        std::make_tuple(tensor<double>{1.0,2.0+1E-8,3.0,4.0},tensor<int>{1,2,3,4},1E-10,1E-10, std::false_type{}, bool_tensor_type{true,false,true,true}),
+        std::make_tuple(tensor<int>{1,2,3,4},tensor<double>{1.0,2.0,3.0,4.0},1E-10,1E-10,std::true_type{}, bool_tensor_type{true,true,true,true}),
+        std::make_tuple(tensor<double>{1.0,2.0+1E-11,3.0,4.0},tensor<int>{1,2,3,4},1E-10,1E-10,std::true_type{}, bool_tensor_type{true,true,true,true}),
+        std::make_tuple(tensor<double>{1.0,2.0+1E-8,3.0,4.0},tensor<int>{1,2,3,4},1E-10,1E-10,std::true_type{}, bool_tensor_type{true,false,true,true}),
+        std::make_tuple(tensor<double>{1.0,2.0,nan,4.0},tensor<int>{1,2,3,4},1E-10,1E-10, std::false_type{}, bool_tensor_type{true,true,false,true}),
+        std::make_tuple(tensor<double>{1.0,2.0,nan,4.0},tensor<int>{1,2,3,4},1E-10,1E-10,std::true_type{}, bool_tensor_type{true,true,false,true}),
+        std::make_tuple(tensor<double>{1.0,2.0,3.0,4.0},tensor<float>{1.0,2.0+1E-11,3.0,4.0},1E-10,1E-10, std::false_type{}, bool_tensor_type{true,true,true,true}),
+        std::make_tuple(tensor<double>{1.0,nan,3.0,4.0},tensor<float>{1.0,nan,3.0,4.0},1E-10,1E-10, std::false_type{}, bool_tensor_type{true,false,true,true}),
+        std::make_tuple(tensor<double>{1.0,nan,3.0,4.0},tensor<float>{1.0,nan,3.0,4.0},1E-10,1E-10,std::true_type{}, bool_tensor_type{true,true,true,true})
     );
     auto test = [](const auto& t){
         auto ten_0 = std::get<0>(t);
