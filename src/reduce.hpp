@@ -316,7 +316,7 @@ class reduce_traverse_predicate
     static_assert(detail::is_container_of_type_v<axes_type,dim_type> || std::is_convertible_v<axes_type,dim_type>);
 
     const axes_type* axes_;
-    const bool inverse_;
+    bool inverse_;
 
     bool is_in_axes(const dim_type& d)const{
         if constexpr (detail::is_container_of_type_v<axes_type,dim_type>){

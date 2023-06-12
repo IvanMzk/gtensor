@@ -126,6 +126,22 @@ GTENSOR_TENSOR_FUNCTION(lcm,operations::math_lcm);
 
 namespace math_reduce_operations{
 
+struct amin
+{
+    template<typename It>
+    auto operator()(It first, It last){
+        return *std::min_element(first,last);;
+    }
+};
+
+struct amax
+{
+    template<typename It>
+    auto operator()(It first, It last){
+        return *std::max_element(first,last);;
+    }
+};
+
 struct sum
 {
     template<typename It>
@@ -204,6 +220,38 @@ struct diff_2{
 //math functions along given axis or axes
 //axes may be scalar or container if multiple axes permitted
 //empty container means apply function along all axes
+
+//min element along given axes
+//axes may be scalar or container
+template<typename...Ts, typename Axes>
+auto amin(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
+    return reduce(t,axes,math_reduce_operations::amin{},keep_dims);
+}
+template<typename...Ts>
+auto amin(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::dim_type> axes, bool keep_dims = false){
+    return reduce(t,axes,math_reduce_operations::amin{},keep_dims);
+}
+//amin along all axes
+template<typename...Ts>
+auto amin(const basic_tensor<Ts...>& t, bool keep_dims = false){
+    return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::amin{},keep_dims);
+}
+
+//max element along given axes
+//axes may be scalar or container
+template<typename...Ts, typename Axes>
+auto amax(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
+    return reduce(t,axes,math_reduce_operations::amax{},keep_dims);
+}
+template<typename...Ts>
+auto amax(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::dim_type> axes, bool keep_dims = false){
+    return reduce(t,axes,math_reduce_operations::amax{},keep_dims);
+}
+//amax along all axes
+template<typename...Ts>
+auto amax(const basic_tensor<Ts...>& t, bool keep_dims = false){
+    return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::amax{},keep_dims);
+}
 
 //sum elements along given axes
 //axes may be scalar or container
