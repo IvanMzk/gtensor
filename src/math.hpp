@@ -186,6 +186,19 @@ struct diff_1{
     }
 };
 
+struct diff_2{
+    template<typename It, typename DstIt, typename IdxT>
+    void operator()(It first, It, DstIt dfirst, DstIt dlast, const IdxT&, const IdxT&){
+        for (;dfirst!=dlast;++dfirst){
+            auto v0 = *first;
+            auto v1 = *(++first);
+            auto v2 = *(++first);
+            *dfirst = v2-v1-v1+v0;
+            --first;
+        }
+    }
+};
+
 };
 
 //math functions along given axis or axes
@@ -273,6 +286,14 @@ auto diff(const basic_tensor<Ts...>& t, std::size_t n = 1, const typename basic_
         auto res = slide(t, axis, math_reduce_operations::diff_1{}, window_size, window_step);
         return diff(res, --n, axis);
     }
+}
+//more efficient, none recursive implementation of second differences
+template<typename...Ts>
+auto diff2(const basic_tensor<Ts...>& t, const typename basic_tensor<Ts...>::dim_type axis = -1){
+    using index_type = typename basic_tensor<Ts...>::index_type;
+    const index_type window_size = 3;
+    const index_type window_step = 1;
+    return slide(t, axis, math_reduce_operations::diff_2{}, window_size, window_step);
 }
 
 
