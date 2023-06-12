@@ -245,10 +245,22 @@ auto flat_to_flat(const StT& strides, const CStT& cstrides, IdxT offset, IdxT id
 }
 
 template<typename Descriptor>
+class converter
+{
+    const Descriptor* desc_;
+public:
+    converter(const Descriptor& desc__):
+        desc_{&desc__}
+    {}
+    template<typename IdxT>
+    decltype(auto) operator()(const IdxT& idx)const{
+        return desc_->convert_order_inline(idx);
+    }
+};
+
+template<typename Descriptor>
 auto make_order_converter(const Descriptor& desc){
-    return [&desc](const auto& idx){
-        return desc.convert_order_inline(idx);
-    };
+    return converter<Descriptor>{desc};
 }
 
 template<typename Config, typename Mode> class strides_div_extension;
