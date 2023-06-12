@@ -45,6 +45,13 @@ inline tensor<Ts...>& NAME(tensor<Ts...>& lhs, Rhs&& rhs){\
     return lhs;\
 }
 
+#define GTENSOR_TENSOR_FUNCTION(NAME,F)\
+template<typename...Args>\
+inline auto NAME(Args&&...args){\
+    static_assert(detail::has_tensor_arg_v<std::remove_cv_t<std::remove_reference_t<Args>>...>,"at least one arg must be tensor");\
+    return n_operator(F{},std::forward<Args>(args)...);\
+}
+
 namespace gtensor{
 
 namespace detail{
@@ -149,6 +156,9 @@ auto cast(T&& t){
     ASSERT_TENSOR(std::remove_cv_t<std::remove_reference_t<T>>);
     return n_operator(operations::cast<To>{}, std::forward<T>(t));
 }
+
+//like ternary operator
+GTENSOR_TENSOR_FUNCTION(where,operations::where);
 
 //arithmetic
 GTENSOR_UNARY_TENSOR_OPERATOR(operator+,operations::unary_plus);

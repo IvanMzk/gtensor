@@ -150,6 +150,15 @@ struct cast
     }
 };
 
+//ternary
+struct where
+{
+    template<typename T, typename U, typename V>
+    auto operator()(T t, U u, V v)const{
+        return t ? u : v;
+    }
+};
+
 //arithmetic
 GTENSOR_UNARY_OPERATION(unary_plus,+);
 GTENSOR_UNARY_OPERATION(unary_minus,-);
