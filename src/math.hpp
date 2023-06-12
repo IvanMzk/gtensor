@@ -48,6 +48,7 @@ GTENSOR_TENSOR_FUNCTION(fma, operations::math_fma);
 GTENSOR_TENSOR_FUNCTION(fmax, operations::math_fmax);
 GTENSOR_TENSOR_FUNCTION(fmin, operations::math_fmin);
 GTENSOR_TENSOR_FUNCTION(fdim, operations::math_fdim);
+GTENSOR_TENSOR_FUNCTION(clip, operations::math_clip);
 //exponential
 GTENSOR_TENSOR_FUNCTION(exp, operations::math_exp);
 GTENSOR_TENSOR_FUNCTION(exp2, operations::math_exp2);
@@ -89,6 +90,18 @@ GTENSOR_TENSOR_FUNCTION(ldexp,operations::math_ldexp);
 GTENSOR_TENSOR_FUNCTION(modf,operations::math_modf);
 GTENSOR_TENSOR_FUNCTION(nextafter,operations::math_nextafter);
 GTENSOR_TENSOR_FUNCTION(copysign,operations::math_copysign);
+template<typename T>
+inline auto nan_to_num(
+    T&& t,
+    typename std::remove_cv_t<std::remove_reference_t<T>>::value_type nan = 0,
+    typename std::remove_cv_t<std::remove_reference_t<T>>::value_type pos_inf = std::numeric_limits<typename std::remove_cv_t<std::remove_reference_t<T>>::value_type>::max(),
+    typename std::remove_cv_t<std::remove_reference_t<T>>::value_type neg_inf = std::numeric_limits<typename std::remove_cv_t<std::remove_reference_t<T>>::value_type>::min()
+)
+{
+    ASSERT_TENSOR(std::remove_cv_t<std::remove_reference_t<T>>);
+    using value_type = typename std::remove_cv_t<std::remove_reference_t<T>>::value_type;
+    return n_operator(operations::math_nan_to_num<value_type>{nan,pos_inf,neg_inf}, std::forward<T>(t));
+}
 //classification
 GTENSOR_TENSOR_FUNCTION(isfinite, operations::math_isfinite);
 GTENSOR_TENSOR_FUNCTION(isinf, operations::math_isinf);

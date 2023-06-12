@@ -224,7 +224,12 @@ TEST_CASE("test_tensor_math_basic_functions_semantic","[test_math]")
         auto expected = tensor_type{{0.0,4.1,0.0},{2.4,0.0,0.0}};
         REQUIRE(tensor_close(result,expected));
     }
-
+    SECTION("test_clip")
+    {
+        auto result = gtensor::clip(tensor_type{{0.0,1.1,-2.2},{4.4,-5.5,-6.6}}, tensor_type{0.0,1.0,2.0}, 3.0);
+        auto expected = tensor_type{{0.0,1.1,2.0},{3.0,1.0,2.0}};
+        REQUIRE(result == expected);
+    }
 }
 
 TEST_CASE("test_tensor_math_exponential_functions_semantic","[test_math]")
@@ -483,6 +488,27 @@ TEST_CASE("test_tensor_math_floating_point_manipulation_functions_semantic","[te
         auto result = gtensor::copysign(tensor_type{-1.0,0.0,1.0,2.0}, tensor_type{-1.0,0.0,1.0,-2.0});
         auto expected = tensor_type{-1.0,0.0,1.0,-2.0};
         REQUIRE(tensor_close(result,expected,1E-10,1E-10));
+    }
+    SECTION("test_nan_to_num")
+    {
+        static constexpr value_type nan = std::numeric_limits<value_type>::quiet_NaN();
+        static constexpr value_type inf = std::numeric_limits<value_type>::infinity();
+        auto result = gtensor::nan_to_num(tensor_type{0.0,nan,1.0,2.2,-3.3,inf,nan,-inf}, value_type{1E-100},value_type{1E50},value_type{-1E50});
+        auto expected = tensor_type{0.0,1E-100,1.0,2.2,-3.3,1E50,1E-100,-1E50};
+        REQUIRE(result == expected);
+    }
+    SECTION("test_nan_to_num_defaults")
+    {
+        static constexpr value_type nan = std::numeric_limits<value_type>::quiet_NaN();
+        static constexpr value_type inf = std::numeric_limits<value_type>::infinity();
+
+        static constexpr value_type nan_num = 0.0;
+        static constexpr value_type pos_inf_num = std::numeric_limits<value_type>::max();
+        static constexpr value_type neg_inf_num = std::numeric_limits<value_type>::min();
+
+        auto result = gtensor::nan_to_num(tensor_type{0.0,nan,1.0,2.2,-3.3,inf,nan,-inf});
+        auto expected = tensor_type{0.0,nan_num,1.0,2.2,-3.3,pos_inf_num,nan_num,neg_inf_num};
+        REQUIRE(result == expected);
     }
 }
 

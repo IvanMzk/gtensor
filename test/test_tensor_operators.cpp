@@ -622,6 +622,33 @@ TEST_CASE("test_tensor_equal_routine","test_tensor_operators")
     apply_by_element(test,test_data);
 }
 
+//test cast
+TEST_CASE("test_cast","test_tensor_operators")
+{
+    using gtensor::tensor;
+    using gtensor::cast;
+    using helpers_for_testing::apply_by_element;
+    //0ten,1cast_type_value,2expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(tensor<int>(1),double{},tensor<double>(1)),
+        std::make_tuple(tensor<int>{1,2,3,4,5},double{},tensor<double>{1,2,3,4,5}),
+        std::make_tuple(tensor<double>{1.1,2.2,3.3,4.4,5.5},std::size_t{},tensor<std::size_t>{1,2,3,4,5}),
+        std::make_tuple(tensor<double>{-1.1,-2.2,3.3,4.4,5.5},std::int64_t{},tensor<std::int64_t>{-1,-2,3,4,5})
+    );
+    auto test = [](const auto& t){
+        auto ten = std::get<0>(t);
+        auto cast_type_value = std::get<1>(t);
+        using cast_type = decltype(cast_type_value);
+        auto expected = std::get<2>(t);
+        auto result = cast<cast_type>(ten);
+        using result_value_type = typename decltype(result)::value_type;
+        using expected_value_type = typename decltype(expected)::value_type;
+        REQUIRE(std::is_same_v<result_value_type,expected_value_type>);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test,test_data);
+}
+
 //test operators semantic
 TEST_CASE("test_tensor_arithmetic_operators_semantic","[test_tensor_operators]")
 {
