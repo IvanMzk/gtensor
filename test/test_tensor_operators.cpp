@@ -555,6 +555,7 @@ TEST_CASE("test_gtensor_assign_operator_compound_assign_operator_exception","[te
 TEST_CASE("test_tensor_equal_routine","test_tensor_operators")
 {
     using value_type = double;
+    using gtensor::tensor;
     using tensor_type = gtensor::tensor<value_type>;
     using gtensor::tensor_equal;
     using helpers_for_testing::apply_by_element;
@@ -607,8 +608,23 @@ TEST_CASE("test_tensor_equal_routine","test_tensor_operators")
         std::make_tuple(tensor_type{1,2,3,4,5,6},tensor_type{0,2,3,4,5,6},true,false),
         std::make_tuple(tensor_type{nan,2.0,3.0,4.0,5.0,6.0},tensor_type{nan,2.0,3.0,4.0,5.0,6.0},true,true),
         std::make_tuple(tensor_type{nan,2.0,3.0,4.0,5.0,6.0},tensor_type{1.0,2.0,3.0,4.0,5.0,6.0},false,false),
-        std::make_tuple(tensor_type{1,2,3,4,5,6},tensor_type{{1,2,3},{4,5,6}},true,false)
-
+        std::make_tuple(tensor_type{1,2,3,4,5,6},tensor_type{{1,2,3},{4,5,6}},true,false),
+        //not floating point type
+        std::make_tuple(tensor<int>{1,2,3,4,5},tensor<int>{1,2,3,4,5},false,true),
+        std::make_tuple(tensor<int>{1,2,3,4,5},tensor<int>{1,2,3,4,6},false,false),
+        std::make_tuple(tensor<int>{1,2,3,4,5},tensor<int>{1,2,3,4,5},true,true),
+        std::make_tuple(tensor<int>{1,2,3,4,5},tensor<int>{1,2,3,4,6},true,false),
+        //mixed types
+        std::make_tuple(tensor<int>{1,2,3,4,5},tensor<double>{1.0,2.0,3.0,4.0,5.0},false,true),
+        std::make_tuple(tensor<double>{1.0,2.0+1E-15,3.0,4.0,5.0},tensor<int>{1,2,3,4,5},false,false),
+        std::make_tuple(tensor<int>{1,2,3,4,5},tensor<double>{1.0,2.0,3.0,4.0,5.0},true,true),
+        std::make_tuple(tensor<double>{1.0,2.0+1E-15,3.0,4.0,5.0},tensor<int>{1,2,3,4,5},true,false),
+        std::make_tuple(tensor<double>{1.0,2.0,nan,4.0,5.0},tensor<int>{1,2,3,4,5},false,false),
+        std::make_tuple(tensor<double>{1.0,2.0,nan,4.0,5.0},tensor<int>{1,2,3,4,5},true,false),
+        std::make_tuple(tensor<double>{1.0,2.0,3.0,4.0,5.0},tensor<float>{1.0,2.0,3.0,4.0,5.0},false,true),
+        std::make_tuple(tensor<double>{1.0,2.0,3.0,4.0,5.0},tensor<float>{1.0,2.0+1E-6,3.0,4.0,5.0},false,false),
+        std::make_tuple(tensor<double>{1.0,nan,3.0,4.0,5.0},tensor<float>{1.0,nan,3.0,4.0,5.0},false,false),
+        std::make_tuple(tensor<double>{1.0,nan,3.0,4.0,5.0},tensor<float>{1.0,nan,3.0,4.0,5.0},true,true)
     );
     auto test = [](const auto& t){
         auto ten_0 = std::get<0>(t);
