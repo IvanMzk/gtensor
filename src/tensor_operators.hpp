@@ -143,6 +143,13 @@ std::ostream& operator<<(std::ostream& os, const basic_tensor<Ts...>& t){
     return os<<str(t);
 }
 
+//cast
+template<typename To, typename T>
+auto cast(T&& t){
+    ASSERT_TENSOR(std::remove_cv_t<std::remove_reference_t<T>>);
+    return n_operator(operations::cast<To>{}, std::forward<T>(t));
+}
+
 //arithmetic
 GTENSOR_UNARY_TENSOR_OPERATOR(operator+,operations::unary_plus);
 GTENSOR_UNARY_TENSOR_OPERATOR(operator-,operations::unary_minus);

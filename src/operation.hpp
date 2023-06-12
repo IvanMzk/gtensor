@@ -52,6 +52,9 @@ template<typename T, typename U, typename V> auto fma(T t, U u, V v){return std:
 template<typename T, typename U> auto fmax(T t, U u){return std::fmax(t,u);}
 template<typename T, typename U> auto fmin(T t, U u){return std::fmin(t,u);}
 template<typename T, typename U> auto fdim(T t, U u){return std::fdim(t,u);}
+template<typename T, typename U, typename V> auto clip(T t, U min, V max){
+    return t > max ? max : t < min ? min : t;
+}
 //exponential
 template<typename T> auto exp(T t){return std::exp(t);}
 template<typename T> auto exp2(T t){return std::exp2(t);}
@@ -101,7 +104,6 @@ template<typename T> auto modf(T t){
     auto f = std::modf(t,&i);
     return std::make_pair(i,f);
 }
-
 //classification
 template<typename T> auto isfinite(T t){return std::isfinite(t);}
 template<typename T> auto isinf(T t){return std::isinf(t);}
@@ -137,6 +139,17 @@ template<typename T, typename U> auto lcm(T t, U u){return std::lcm(t,u);}
 }   //end of namespace math
 
 namespace operations{
+
+//cast
+template<typename To>
+struct cast
+{
+    template<typename T>
+    To operator()(T t)const{
+        return static_cast<To>(t);
+    }
+};
+
 //arithmetic
 GTENSOR_UNARY_OPERATION(unary_plus,+);
 GTENSOR_UNARY_OPERATION(unary_minus,-);
@@ -189,6 +202,7 @@ GTENSOR_FUNCTION(math_fma,math::fma);
 GTENSOR_FUNCTION(math_fmax,math::fmax);
 GTENSOR_FUNCTION(math_fmin,math::fmin);
 GTENSOR_FUNCTION(math_fdim,math::fdim);
+GTENSOR_FUNCTION(math_clip,math::clip);
 //exponential
 GTENSOR_FUNCTION(math_exp,math::exp);
 GTENSOR_FUNCTION(math_exp2,math::exp2);
@@ -230,6 +244,30 @@ GTENSOR_FUNCTION(math_nextafter,math::nextafter);
 GTENSOR_FUNCTION(math_copysign,math::copysign);
 GTENSOR_FUNCTION(math_frexp,math::frexp);
 GTENSOR_FUNCTION(math_modf,math::modf);
+
+template<typename T>
+class math_nan_to_num
+{
+    T nan_;
+    T pos_inf_;
+    T neg_inf_;
+public:
+    math_nan_to_num(T nan__, T pos_inf__, T neg_inf__):
+        nan_{nan__},
+        pos_inf_{pos_inf__},
+        neg_inf_{neg_inf__}
+    {}
+    T operator()(T t)const{
+        if (math::isfinite(t)){
+            return t;
+        }else if (math::isnan(t)){
+            return nan_;
+        }else{
+            return t > T(0) ? pos_inf_ : neg_inf_;
+        }
+    }
+};
+
 //classification
 GTENSOR_FUNCTION(math_isfinite,math::isfinite);
 GTENSOR_FUNCTION(math_isinf,math::isinf);
