@@ -601,6 +601,79 @@ TEST_CASE("test_tensor_math_rotines_in_rational_domain_functions_semantic","[tes
 }
 
 //test math functions along axes
+//all
+TEST_CASE("test_math_all","test_math")
+{
+    using value_type = int;
+    using tensor_type = gtensor::tensor<value_type>;
+    using bool_tensor_type = gtensor::tensor<bool>;
+    using gtensor::all;
+    using helpers_for_testing::apply_by_element;
+
+    REQUIRE(std::is_same_v<decltype(all(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>())),bool_tensor_type>);
+    REQUIRE(std::is_same_v<decltype(all(std::declval<tensor_type>(),std::declval<std::vector<int>>(),std::declval<bool>())),bool_tensor_type>);
+
+    //0tensor,1axes,2keep_dims,3expected
+    auto test_data = std::make_tuple(
+        //keep_dim false
+        std::make_tuple(tensor_type{},0,false,bool_tensor_type(bool{})),
+        std::make_tuple(tensor_type{},std::vector<int>{0},false,bool_tensor_type(bool{})),
+        std::make_tuple(tensor_type{},std::vector<int>{},false,bool_tensor_type(bool{})),
+        std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0,2},false,bool_tensor_type{bool{},bool{}}),
+        std::make_tuple(tensor_type{5,2,1,-1,4,4},0,false,bool_tensor_type(true)),
+        std::make_tuple(tensor_type{5,0,1,-1,4,4},0,false,bool_tensor_type(false)),
+        std::make_tuple(tensor_type{{{1,5,0},{2,0,-1}},{{7,0,9},{1,11,3}}},0,false,bool_tensor_type{{true,false,false},{true,false,true}}),
+        std::make_tuple(tensor_type{{{1,5,0},{2,0,-1}},{{7,0,9},{1,11,3}}},1,false,bool_tensor_type{{true,false,false},{true,false,true}}),
+        std::make_tuple(tensor_type{{{1,5,0},{2,0,-1}},{{7,0,9},{1,11,3}}},2,false,bool_tensor_type{{false,false},{false,true}}),
+        std::make_tuple(tensor_type{{{1,5,0},{2,0,-1}},{{7,0,9},{1,11,3}}},std::vector<int>{0,1},false,bool_tensor_type{true,false,false}),
+        std::make_tuple(tensor_type{{{1,5,0},{2,0,-1}},{{7,0,9},{1,11,3}}},std::vector<int>{2,1},false,bool_tensor_type{false,false}),
+        std::make_tuple(tensor_type{{{1,5,0},{2,0,-1}},{{7,0,9},{1,11,3}}},std::vector<int>{},false,bool_tensor_type(false)),
+        //keep_dim true
+        std::make_tuple(tensor_type{},0,true,bool_tensor_type{bool{}}),
+        std::make_tuple(tensor_type{},std::vector<int>{0},true,bool_tensor_type{bool{}}),
+        std::make_tuple(tensor_type{},std::vector<int>{},true,bool_tensor_type{bool{}}),
+        std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0,2},true,bool_tensor_type{{{bool{}},{bool{}}}}),
+        std::make_tuple(tensor_type{5,2,1,-1,4,4},0,true,bool_tensor_type{true}),
+        std::make_tuple(tensor_type{5,0,1,-1,4,4},0,true,bool_tensor_type{false}),
+        std::make_tuple(tensor_type{{{1,5,0},{2,0,-1}},{{7,0,9},{1,11,3}}},0,true,bool_tensor_type{{{true,false,false},{true,false,true}}}),
+        std::make_tuple(tensor_type{{{1,5,0},{2,0,-1}},{{7,0,9},{1,11,3}}},1,true,bool_tensor_type{{{true,false,false}},{{true,false,true}}}),
+        std::make_tuple(tensor_type{{{1,5,0},{2,0,-1}},{{7,0,9},{1,11,3}}},2,true,bool_tensor_type{{{false},{false}},{{false},{true}}}),
+        std::make_tuple(tensor_type{{{1,5,0},{2,0,-1}},{{7,0,9},{1,11,3}}},std::vector<int>{0,1},true,bool_tensor_type{{{true,false,false}}}),
+        std::make_tuple(tensor_type{{{1,5,0},{2,0,-1}},{{7,0,9},{1,11,3}}},std::vector<int>{2,1},true,bool_tensor_type{{{false}},{{false}}}),
+        std::make_tuple(tensor_type{{{1,5,0},{2,0,-1}},{{7,0,9},{1,11,3}}},std::vector<int>{},true,bool_tensor_type{{{false}}})
+    );
+    auto test = [](const auto& t){
+        auto ten = std::get<0>(t);
+        auto axes = std::get<1>(t);
+        auto keep_dims = std::get<2>(t);
+        auto expected = std::get<3>(t);
+        auto result = all(ten,axes,keep_dims);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test,test_data);
+}
+
+TEST_CASE("test_math_all_initializer_list_axes_all_axes","test_math")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using bool_tensor_type = gtensor::tensor<bool>;
+    using gtensor::all;
+    using helpers_for_testing::apply_by_element;
+
+    REQUIRE(std::is_same_v<decltype(all(std::declval<tensor_type>(),std::declval<std::initializer_list<int>>(),std::declval<bool>())),bool_tensor_type>);
+
+    REQUIRE(all(tensor_type{{{1,5,0},{2,0,-1}},{{7,0,9},{1,11,3}}},{1},false) == bool_tensor_type{{true,false,false},{true,false,true}});
+    REQUIRE(all(tensor_type{{{1,5,0},{2,0,-1}},{{7,0,9},{1,11,3}}},{2,1},false) == bool_tensor_type{false,false});
+    REQUIRE(all(tensor_type{{{1,5,0},{2,0,-1}},{{7,0,9},{1,11,3}}},{0,1},true) == bool_tensor_type{{{true,false,false}}});
+    //all axes
+    REQUIRE(all(tensor_type{{{1,5,6},{2,6,-1}},{{7,2,9},{1,11,3}}},false) == tensor_type(true));
+    REQUIRE(all(tensor_type{{{1,5,0},{2,0,-1}},{{7,0,9},{1,11,3}}},false) == tensor_type(false));
+    REQUIRE(all(tensor_type{{{1,5,0},{2,0,-1}},{{7,0,9},{1,11,3}}},{},false) == tensor_type(false));
+    REQUIRE(all(tensor_type{{{1,5,0},{2,0,-1}},{{7,0,9},{1,11,3}}},true) == tensor_type{{{false}}});
+    REQUIRE(all(tensor_type{{{1,5,6},{2,6,-1}},{{7,2,9},{1,11,3}}},false) == tensor_type{{{true}}});
+}
+
 //amin
 TEST_CASE("test_math_amin","test_math")
 {

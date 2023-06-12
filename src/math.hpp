@@ -132,6 +132,22 @@ GTENSOR_TENSOR_FUNCTION(lcm,operations::math_lcm);
 
 namespace math_reduce_operations{
 
+struct all
+{
+    template<typename It>
+    auto operator()(It first, It last){
+        return std::all_of(first,last,[](const auto& e){return static_cast<bool>(e);});
+    }
+};
+
+struct any
+{
+    template<typename It>
+    auto operator()(It first, It last){
+        return std::any_of(first,last,[](const auto& e){return static_cast<bool>(e);});
+    }
+};
+
 struct amin
 {
     template<typename It>
@@ -226,6 +242,22 @@ struct diff_2{
 //math functions along given axis or axes
 //axes may be scalar or container if multiple axes permitted
 //empty container means apply function along all axes
+
+//test if all elements along given axes evaluate true
+//axes may be scalar or container
+template<typename...Ts, typename Axes>
+auto all(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
+    return reduce(t,axes,math_reduce_operations::all{},keep_dims);
+}
+template<typename...Ts>
+auto all(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::dim_type> axes, bool keep_dims = false){
+    return reduce(t,axes,math_reduce_operations::all{},keep_dims);
+}
+//all along all axes
+template<typename...Ts>
+auto all(const basic_tensor<Ts...>& t, bool keep_dims = false){
+    return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::all{},keep_dims);
+}
 
 //min element along given axes
 //axes may be scalar or container
