@@ -17,9 +17,9 @@ inline auto tensor_close(const basic_tensor<Us...>& u, const basic_tensor<Vs...>
         const common_value_type absolute_tolerance_ = static_cast<common_value_type>(absolute_tolerance);
         const bool equal_shapes = u.shape() == v.shape();
         if (equal_nan){
-            return equal_shapes && std::equal(u.begin(), u.end(), v.begin(), operations::math_is_close<common_value_type,std::true_type>{relative_tolerance_,absolute_tolerance_});
+            return equal_shapes && std::equal(u.begin(), u.end(), v.begin(), operations::math_isclose<common_value_type,std::true_type>{relative_tolerance_,absolute_tolerance_});
         }else{
-            return equal_shapes && std::equal(u.begin(), u.end(), v.begin(), operations::math_is_close<common_value_type,std::false_type>{relative_tolerance_,absolute_tolerance_});
+            return equal_shapes && std::equal(u.begin(), u.end(), v.begin(), operations::math_isclose<common_value_type,std::false_type>{relative_tolerance_,absolute_tolerance_});
         }
     }
 }
@@ -108,24 +108,24 @@ GTENSOR_TENSOR_FUNCTION(isless, operations::math_isless);
 GTENSOR_TENSOR_FUNCTION(islessequal, operations::math_islessequal);
 GTENSOR_TENSOR_FUNCTION(islessgreater, operations::math_islessgreater);
 template<typename T, typename U, typename Tol, typename EqualNan = std::false_type>
-inline auto is_close(T&& t, U&& u, Tol relative_tolerance, Tol absolute_tolerance, EqualNan equal_nan = EqualNan{}){
+inline auto isclose(T&& t, U&& u, Tol relative_tolerance, Tol absolute_tolerance, EqualNan equal_nan = EqualNan{}){
     using T_ = std::remove_cv_t<std::remove_reference_t<T>>;
     using U_ = std::remove_cv_t<std::remove_reference_t<U>>;
     static_assert(detail::has_tensor_arg_v<T_,U_>,"at least one arg must be tensor");
     using common_value_type = detail::tensor_common_value_type_t<T_,U_>;
     const common_value_type relative_tolerance_ = static_cast<common_value_type>(relative_tolerance);
     const common_value_type absolute_tolerance_ = static_cast<common_value_type>(absolute_tolerance);
-    return n_operator(operations::math_is_close<common_value_type, EqualNan>{relative_tolerance_, absolute_tolerance_}, std::forward<T>(t), std::forward<U>(u));
+    return n_operator(operations::math_isclose<common_value_type, EqualNan>{relative_tolerance_, absolute_tolerance_}, std::forward<T>(t), std::forward<U>(u));
 }
 template<typename T, typename U, typename EqualNan = std::false_type>
-inline auto is_close(T&& t, U&& u, EqualNan equal_nan = EqualNan{}){
+inline auto isclose(T&& t, U&& u, EqualNan equal_nan = EqualNan{}){
     using T_ = std::remove_cv_t<std::remove_reference_t<T>>;
     using U_ = std::remove_cv_t<std::remove_reference_t<U>>;
     static_assert(detail::has_tensor_arg_v<T_,U_>,"at least one arg must be tensor");
     using common_value_type = detail::tensor_common_value_type_t<T_,U_>;
     static_assert(std::is_arithmetic_v<common_value_type>,"routine is defined for arithmetic types only");
     static constexpr common_value_type e = std::numeric_limits<common_value_type>::epsilon();
-    return is_close(std::forward<T>(t),std::forward<U>(u),e,e,equal_nan);
+    return isclose(std::forward<T>(t),std::forward<U>(u),e,e,equal_nan);
 }
 //routines in rational domain
 GTENSOR_TENSOR_FUNCTION(gcd,operations::math_gcd);

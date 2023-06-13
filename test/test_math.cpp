@@ -107,13 +107,13 @@ TEST_CASE("test_tensor_close","test_math")
 }
 
 //test tensor fuzzy elementwise equality
-TEST_CASE("test_is_close","test_math")
+TEST_CASE("test_isclose","test_math")
 {
     using value_type = double;
     using gtensor::tensor;
     using tensor_type = gtensor::tensor<value_type>;
     using bool_tensor_type = gtensor::tensor<bool>;
-    using gtensor::is_close;
+    using gtensor::isclose;
     using helpers_for_testing::apply_by_element;
     static constexpr value_type nan = std::numeric_limits<value_type>::quiet_NaN();
     static constexpr value_type inf = std::numeric_limits<value_type>::infinity();
@@ -175,7 +175,7 @@ TEST_CASE("test_is_close","test_math")
         auto equal_nan = std::get<4>(t);
         auto expected = std::get<5>(t);
 
-        auto result = is_close(ten_0,ten_1,relative_tolerance,absolute_tolerance,equal_nan);
+        auto result = isclose(ten_0,ten_1,relative_tolerance,absolute_tolerance,equal_nan);
         REQUIRE(result == expected);
     };
     apply_by_element(test,test_data);
@@ -284,7 +284,7 @@ TEST_CASE("test_tensor_math_basic_functions_semantic","[test_math]")
                 expected.begin(),
                 expected.end(),
                 [](auto res, auto exp){
-                    return gtensor::math::is_close(res.first, exp.first, 1E-10, 1E-10) && gtensor::math::is_close(res.second, exp.second, 1E-10, 1E-10);
+                    return gtensor::math::isclose(res.first, exp.first, 1E-10, 1E-10) && gtensor::math::isclose(res.second, exp.second, 1E-10, 1E-10);
                 }
             )
         );

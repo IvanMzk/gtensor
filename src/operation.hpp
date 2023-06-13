@@ -121,9 +121,9 @@ template<typename T, typename U> auto isless(T t, U u){return std::isless(t,u);}
 template<typename T, typename U> auto islessequal(T t, U u){return std::islessequal(t,u);}
 template<typename T, typename U> auto islessgreater(T t, U u){return std::islessgreater(t,u);}
 template<typename T, typename U, typename Tol>
-auto is_close(T t, U u, const Tol relative_tolerance, const Tol absolute_tolerance){
+auto isclose(T t, U u, const Tol relative_tolerance, const Tol absolute_tolerance){
     using common_type = std::common_type_t<T,U>;
-    static_assert(std::is_arithmetic_v<common_type>,"math::is_close defined for arithmetic types only");
+    static_assert(std::is_arithmetic_v<common_type>,"math::isclose defined for arithmetic types only");
     if constexpr (std::is_floating_point_v<common_type>){
         if (t==u){
             return true;
@@ -134,9 +134,9 @@ auto is_close(T t, U u, const Tol relative_tolerance, const Tol absolute_toleran
     }
 }
 template<typename T, typename U, typename Tol>
-auto is_close_nan_equal(T t, U u, const Tol relative_tolerance, const Tol absolute_tolerance){
+auto isclose_nan_equal(T t, U u, const Tol relative_tolerance, const Tol absolute_tolerance){
     const bool is_nan_u = math::isnan(u);
-    return math::isnan(t) ? is_nan_u : (is_nan_u ? false : is_close(t,u,relative_tolerance,absolute_tolerance));
+    return math::isnan(t) ? is_nan_u : (is_nan_u ? false : isclose(t,u,relative_tolerance,absolute_tolerance));
 }
 //routines in rational domain
 template<typename T, typename U> auto gcd(T t, U u){return std::gcd(t,u);}
@@ -297,26 +297,26 @@ GTENSOR_FUNCTION(math_islessgreater,math::islessgreater);
 
 //NanEqual should be std::true_type or std::false_type
 template<typename Tol,typename NanEqual = std::false_type>
-class math_is_close
+class math_isclose
 {
     Tol relative_tolerance_;
     Tol absolute_tolerance_;
     template<typename T, typename U>
-    bool is_close_(std::true_type, T t, U u)const{
-        return math::is_close_nan_equal(t,u,relative_tolerance_,absolute_tolerance_);
+    bool isclose_(std::true_type, T t, U u)const{
+        return math::isclose_nan_equal(t,u,relative_tolerance_,absolute_tolerance_);
     }
     template<typename T, typename U>
-    bool is_close_(std::false_type, T t, U u)const{
-        return math::is_close(t,u,relative_tolerance_,absolute_tolerance_);
+    bool isclose_(std::false_type, T t, U u)const{
+        return math::isclose(t,u,relative_tolerance_,absolute_tolerance_);
     }
 public:
-    math_is_close(Tol relative_tolerance__, Tol absolute_tolerance__):
+    math_isclose(Tol relative_tolerance__, Tol absolute_tolerance__):
         relative_tolerance_{relative_tolerance__},
         absolute_tolerance_{absolute_tolerance__}
         {}
     template<typename T, typename U>
     bool operator()(T t, U u)const{
-        return is_close_(typename NanEqual::type{}, t, u);
+        return isclose_(typename NanEqual::type{}, t, u);
     }
 };
 //routines in rational domain
