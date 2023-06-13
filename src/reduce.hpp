@@ -594,6 +594,12 @@ public:
     //interface
     template<typename F, typename Axes, typename...Ts, typename...Args>
     static auto reduce(const basic_tensor<Ts...>& t, const Axes& axes, F f, bool keep_dims, Args&&...args){
+        using dim_type = typename basic_tensor<Ts...>::dim_type;
+        if constexpr (detail::is_container_of_type_v<Axes,dim_type>){
+            if (axes.size() == 1){
+                return reduce_(t,*axes.begin(),f,keep_dims,std::forward<Args>(args)...);
+            }
+        }
         return reduce_(t,axes,f,keep_dims,std::forward<Args>(args)...);
     }
 
