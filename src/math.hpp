@@ -8,18 +8,14 @@ namespace gtensor{
 //return true if two tensors have same shape and close elements within specified tolerance
 template<typename...Us, typename...Vs, typename Tol>
 inline auto tensor_close(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, Tol relative_tolerance, Tol absolute_tolerance, bool equal_nan = false){
-    using common_value_type = detail::tensor_common_value_type_t<basic_tensor<Us...>,basic_tensor<Vs...>>;
-    static_assert(std::is_arithmetic_v<common_value_type>,"routine is defined for arithmetic types only");
     if (u.is_same(v)){
         return true;
     }else{
-        const common_value_type relative_tolerance_ = static_cast<common_value_type>(relative_tolerance);
-        const common_value_type absolute_tolerance_ = static_cast<common_value_type>(absolute_tolerance);
         const bool equal_shapes = u.shape() == v.shape();
         if (equal_nan){
-            return equal_shapes && std::equal(u.begin(), u.end(), v.begin(), operations::math_isclose<common_value_type,std::true_type>{relative_tolerance_,absolute_tolerance_});
+            return equal_shapes && std::equal(u.begin(), u.end(), v.begin(), operations::math_isclose<Tol,std::true_type>{relative_tolerance,absolute_tolerance});
         }else{
-            return equal_shapes && std::equal(u.begin(), u.end(), v.begin(), operations::math_isclose<common_value_type,std::false_type>{relative_tolerance_,absolute_tolerance_});
+            return equal_shapes && std::equal(u.begin(), u.end(), v.begin(), operations::math_isclose<Tol,std::false_type>{relative_tolerance,absolute_tolerance});
         }
     }
 }
@@ -27,28 +23,23 @@ inline auto tensor_close(const basic_tensor<Us...>& u, const basic_tensor<Vs...>
 template<typename...Us, typename...Vs>
 inline auto tensor_close(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, bool equal_nan = false){
     using common_value_type = detail::tensor_common_value_type_t<basic_tensor<Us...>,basic_tensor<Vs...>>;
-    static_assert(std::is_arithmetic_v<common_value_type>,"routine is defined for arithmetic types only");
-    static constexpr common_value_type e = std::numeric_limits<common_value_type>::epsilon();
-    return tensor_close(u,v,e,e);
+    static constexpr common_value_type e = math::numeric_traits<common_value_type>::epsilon();
+    return tensor_close(u,v,e,e,equal_nan);
 }
 
 //return true if two tensors have close elements within specified tolerance
 //shapes may not be equal, but must broadcast
 template<typename...Us, typename...Vs, typename Tol>
 inline auto allclose(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, Tol relative_tolerance, Tol absolute_tolerance, bool equal_nan = false){
-    using common_value_type = detail::tensor_common_value_type_t<basic_tensor<Us...>,basic_tensor<Vs...>>;
     using shape_type = typename basic_tensor<Us...>::shape_type;
-    static_assert(std::is_arithmetic_v<common_value_type>,"routine is defined for arithmetic types only");
     if (u.is_same(v)){
         return true;
     }else{
-        const common_value_type relative_tolerance_ = static_cast<common_value_type>(relative_tolerance);
-        const common_value_type absolute_tolerance_ = static_cast<common_value_type>(absolute_tolerance);
         auto common_shape = detail::make_broadcast_shape<shape_type>(u.shape(),v.shape());
         if (equal_nan){
-            return std::equal(u.begin(common_shape), u.end(common_shape), v.begin(common_shape), operations::math_isclose<common_value_type,std::true_type>{relative_tolerance_,absolute_tolerance_});
+            return std::equal(u.begin(common_shape), u.end(common_shape), v.begin(common_shape), operations::math_isclose<Tol,std::true_type>{relative_tolerance,absolute_tolerance});
         }else{
-            return std::equal(u.begin(common_shape), u.end(common_shape), v.begin(common_shape), operations::math_isclose<common_value_type,std::false_type>{relative_tolerance_,absolute_tolerance_});
+            return std::equal(u.begin(common_shape), u.end(common_shape), v.begin(common_shape), operations::math_isclose<Tol,std::false_type>{relative_tolerance,absolute_tolerance});
         }
     }
 }
@@ -56,9 +47,8 @@ inline auto allclose(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v,
 template<typename...Us, typename...Vs>
 inline auto allclose(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, bool equal_nan = false){
     using common_value_type = detail::tensor_common_value_type_t<basic_tensor<Us...>,basic_tensor<Vs...>>;
-    static_assert(std::is_arithmetic_v<common_value_type>,"routine is defined for arithmetic types only");
-    static constexpr common_value_type e = std::numeric_limits<common_value_type>::epsilon();
-    return allclose(u,v,e,e);
+    static constexpr common_value_type e = math::numeric_traits<common_value_type>::epsilon();
+    return allclose(u,v,e,e,equal_nan);
 }
 
 //element wise math functions

@@ -75,34 +75,6 @@ inline basic_tensor<Ts...>& as_basic_tensor(basic_tensor<Ts...>& t){
     return t;
 }
 
-template<typename...Us, typename...Vs>
-inline auto tensor_equal_helper(std::true_type, const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, bool equal_nan){    //arithmetic value_type overload
-    const bool equal_shapes = u.shape() == v.shape();
-    if (equal_nan){
-        return equal_shapes && std::equal(u.begin(), u.end(), v.begin(),[](auto e1, auto e2){return math::isnan(e1) ? math::isnan(e2) : e1==e2;});
-    }else{
-        return equal_shapes && std::equal(u.begin(), u.end(), v.begin());
-    }
-}
-template<typename...Us, typename...Vs>
-inline auto tensor_equal_helper(std::false_type, const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, bool){    //math::isnan defined for arithmetic types only
-    const bool equal_shapes = u.shape() == v.shape();
-    return equal_shapes && std::equal(u.begin(), u.end(), v.begin());
-}
-
-template<typename...Ts>
-auto str_helper(std::true_type, const basic_tensor<Ts...>& t){
-    std::stringstream ss{};
-    ss<<"{"<<detail::shape_to_str(t.shape())<<[&]{for(const auto& i:t){ss<<i<<" ";}; return "}";}();
-    return ss.str();
-}
-template<typename...Ts>
-auto str_helper(std::false_type, const basic_tensor<Ts...>& t){
-    std::stringstream ss{};
-    ss<<"{"<<detail::shape_to_str(t.shape())<<"...}";
-    return ss.str();
-}
-
 }   //end of namespace detail
 
 //generalized broadcast operator
@@ -126,11 +98,15 @@ inline basic_tensor<Ts...>& a_operator(F&& f, basic_tensor<Ts...>& lhs, Rhs&& rh
 //if equal_nan is true nans compared as equal
 template<typename...Us, typename...Vs>
 inline auto tensor_equal(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, bool equal_nan = false){
-    using common_value_type = detail::tensor_common_value_type_t<basic_tensor<Us...>, basic_tensor<Vs...>>;
     if (u.is_same(v)){
         return true;
     }else{
-        return detail::tensor_equal_helper(typename std::is_arithmetic<common_value_type>::type{}, u, v, equal_nan);
+        const bool equal_shapes = u.shape() == v.shape();
+        if (equal_nan){
+            return equal_shapes && std::equal(u.begin(), u.end(), v.begin(),gtensor::operations::math_isequal_nan_equal{});
+        }else{
+            return equal_shapes && std::equal(u.begin(), u.end(), v.begin());
+        }
     }
 }
 template<typename...Us, typename...Vs>
@@ -142,7 +118,13 @@ inline auto operator==(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& 
 template<typename...Ts>
 auto str(const basic_tensor<Ts...>& t){
     using value_type = typename basic_tensor<Ts...>::value_type;
-    return detail::str_helper(std::bool_constant<detail::is_printable_v<value_type>>{},t);
+    std::stringstream ss{};
+    if constexpr (detail::is_printable_v<value_type>){
+        ss<<"{"<<detail::shape_to_str(t.shape())<<[&]{for(const auto& i:t){ss<<i<<" ";}; return "}";}();
+    }else{
+        ss<<"{"<<detail::shape_to_str(t.shape())<<"...}";
+    }
+    return ss.str();
 }
 
 template<typename...Ts>

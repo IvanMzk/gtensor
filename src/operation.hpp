@@ -43,21 +43,41 @@ namespace gtensor{
 
 namespace math{
 
+template<typename, typename> struct default_numeric_traits;
+
+//arbitrary type
 template<typename T>
-struct numeric_traits{
+struct default_numeric_traits<T,std::false_type>
+{
+    static constexpr bool is_specialized(){return false;}
+    static constexpr bool is_integral(){return false;}
+    static constexpr bool is_floating_point(){return false;}
+    static constexpr bool is_iec559(){return false;}
+    static constexpr bool has_nan(){return false;}
+    static constexpr T lowest(){static_assert(detail::always_false<T>,"not defined");}
+    static constexpr T min(){static_assert(detail::always_false<T>,"not defined");}
+    static constexpr T max(){static_assert(detail::always_false<T>,"not defined");}
+    static constexpr T epsilon(){static_assert(detail::always_false<T>,"not defined");}
+};
+//arithmetic type
+template<typename T>
+struct default_numeric_traits<T,std::true_type>
+{
+    static constexpr bool is_specialized(){return true;}
     static constexpr bool is_integral(){return std::is_integral_v<T>;}
     static constexpr bool is_floating_point(){return std::is_floating_point_v<T>;}
-    static constexpr bool is_arithmetic(){return is_integral() || is_floating_point();}
     static constexpr bool is_iec559(){return std::numeric_limits<T>::is_iec559;}
     static constexpr bool has_nan(){return is_iec559();}
     static constexpr T lowest(){return std::numeric_limits<T>::lowest();}
     static constexpr T min(){return std::numeric_limits<T>::min();}
     static constexpr T max(){return std::numeric_limits<T>::max();}
     static constexpr T epsilon(){
-        static_assert(is_floating_point(),"no sense for non floating_point types");
+        static_assert(is_floating_point(),"not defined for non floating point types");
         return std::numeric_limits<T>::epsilon();
     }
 };
+
+template<typename T> struct numeric_traits : default_numeric_traits<T,typename std::is_arithmetic<T>::type>{};
 
 template<typename T> auto floor(T t);
 //basic
@@ -125,48 +145,55 @@ template<typename T> auto modf(T t){
     return std::make_pair(i,f);
 }
 //classification
-template<typename T> auto isfinite(T t){return std::isfinite(t);}
-template<typename T> auto isinf(T t){return std::isinf(t);}
-template<typename T> auto isnan(T t){return std::isnan(t);}
-template<typename T> auto isnormal(T t){return std::isnormal(t);}
+template<typename T> bool isfinite(T t){return std::isfinite(t);}
+template<typename T> bool isinf(T t){return std::isinf(t);}
+template<typename T> bool isnan(T t){
+    if constexpr (numeric_traits<T>::has_nan()){
+        return std::isnan(t);
+    }else{
+        return false;
+    }
+}
+template<typename T> bool isnormal(T t){return std::isnormal(t);}
 //comparision
-template<typename T, typename U> auto isgreater(T t, U u){return std::isgreater(t,u);}
-template<typename T, typename U> auto isgreaterequal(T t, U u){return std::isgreaterequal(t,u);}
-template<typename T, typename U> auto isless(T t, U u){return std::isless(t,u);}
-template<typename T, typename U> auto islessequal(T t, U u){return std::islessequal(t,u);}
-template<typename T, typename U> auto islessgreater(T t, U u){return std::islessgreater(t,u);}
+template<typename T, typename U> bool isgreater(T t, U u){return std::isgreater(t,u);}
+template<typename T, typename U> bool isgreaterequal(T t, U u){return std::isgreaterequal(t,u);}
+template<typename T, typename U> bool isless(T t, U u){return std::isless(t,u);}
+template<typename T, typename U> bool islessequal(T t, U u){return std::islessequal(t,u);}
+template<typename T, typename U> bool islessgreater(T t, U u){return std::islessgreater(t,u);}
 template<typename T, typename U, typename Tol>
-auto isclose(T t, U u, const Tol relative_tolerance, const Tol absolute_tolerance){
-    static_assert(numeric_traits<T>::is_floating_point() || numeric_traits<U>::is_floating_point(), "math::isclose should be used with floating point types");
-    if (t==u){return true;} //infinity or exact
+bool isclose(T t, U u, const Tol relative_tolerance, const Tol absolute_tolerance){
+    if (t==u){return true;} //exact
     return math::abs(t-u) < absolute_tolerance + relative_tolerance*(math::abs(t)+math::abs(u));
 }
 template<typename T, typename U, typename Tol>
-auto isclose_nan_equal(T t, U u, const Tol relative_tolerance, const Tol absolute_tolerance){
+bool isclose_nan_equal(T t, U u, const Tol relative_tolerance, const Tol absolute_tolerance){
     static constexpr bool t_has_nan = numeric_traits<T>::has_nan();
     static constexpr bool u_has_nan = numeric_traits<U>::has_nan();
-    static_assert(t_has_nan || u_has_nan, "math::isclose_nan_equal should be used with types that has nan");
     if constexpr (t_has_nan && u_has_nan){
         const bool is_nan_u = math::isnan(u);
         return math::isnan(t) ? is_nan_u : (is_nan_u ? false : isclose(t,u,relative_tolerance,absolute_tolerance));
     }else if constexpr (t_has_nan){
-        return math::isnan(t) ? false : isclose(t,u,relative_tolerance,absolute_tolerance));
+        return math::isnan(t) ? false : isclose(t,u,relative_tolerance,absolute_tolerance);
+    }else if constexpr (u_has_nan){
+        return math::isnan(u) ? false : isclose(t,u,relative_tolerance,absolute_tolerance);
     }else{
-        return math::isnan(u) ? false : isclose(t,u,relative_tolerance,absolute_tolerance));
+        return isclose(t,u,relative_tolerance,absolute_tolerance);
     }
 }
-template<typename T, typename U, typename Tol>
-auto isequal_nan_equal(T t, U u, const Tol relative_tolerance, const Tol absolute_tolerance){
+template<typename T, typename U>
+bool isequal_nan_equal(T t, U u){
     static constexpr bool t_has_nan = numeric_traits<T>::has_nan();
     static constexpr bool u_has_nan = numeric_traits<U>::has_nan();
-    static_assert(t_has_nan || u_has_nan, "math::isequal_nan_equal should be used with types that has nan");
     if constexpr (t_has_nan && u_has_nan){
         const bool is_nan_u = math::isnan(u);
-        return math::isnan(t) ? is_nan_u : (is_nan_u ? false : t==u;
+        return math::isnan(t) ? is_nan_u : (is_nan_u ? false : t==u);
     }else if constexpr (t_has_nan){
         return math::isnan(t) ? false : t==u;
-    }else{
+    }else if constexpr (u_has_nan){
         return math::isnan(u) ? false : t==u;
+    }else{
+        return t==u;
     }
 }
 //routines in rational domain
@@ -325,6 +352,7 @@ GTENSOR_FUNCTION(math_isgreaterequal,math::isgreaterequal);
 GTENSOR_FUNCTION(math_isless,math::isless);
 GTENSOR_FUNCTION(math_islessequal,math::islessequal);
 GTENSOR_FUNCTION(math_islessgreater,math::islessgreater);
+GTENSOR_FUNCTION(math_isequal_nan_equal,math::isequal_nan_equal);
 
 //NanEqual should be std::true_type or std::false_type
 template<typename Tol,typename NanEqual = std::false_type>
