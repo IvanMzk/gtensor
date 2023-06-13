@@ -419,7 +419,7 @@ auto diff(const basic_tensor<Ts...>& t, std::size_t n = 1, const typename basic_
         return diff(res, --n, axis);
     }
 }
-//more efficient, none recursive implementation of second differences
+//none recursive implementation of second differences, more efficient than diff with n=2
 template<typename...Ts>
 auto diff2(const basic_tensor<Ts...>& t, const typename basic_tensor<Ts...>::dim_type axis = -1){
     using index_type = typename basic_tensor<Ts...>::index_type;

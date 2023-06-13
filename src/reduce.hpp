@@ -457,7 +457,13 @@ class reducer
             }else{
                 const auto res_size = res.size();
                 if (res_size == index_type{1}){
-                    *res.begin() = reduce_f(parent.begin(), parent.end(), std::forward<Args>(args)...);
+                    const auto pdim = parent.dim();
+                    if (pdim == dim_type{1}){
+                        auto a = parent.template traverse_order_adapter<order>();
+                        *res.begin() = reduce_f(a.begin(), a.end(), std::forward<Args>(args)...);
+                    }else{
+                        *res.begin() = reduce_f(parent.begin(), parent.end(), std::forward<Args>(args)...);
+                    }
                 }else{
                     using traverse_predicate_type = detail::reduce_traverse_predicate<config_type, axes_type>;
                     traverse_predicate_type traverse_predicate{axes, true};
@@ -495,9 +501,11 @@ class reducer
         detail::check_slide_args(pshape, axis, window_size);
         auto res = tensor<value_type,order,config_type>{detail::make_slide_shape(pshape, axis, window_size, window_step)};
         if (!res.empty()){
-            auto pdim = parent.dim();
+            const auto pdim = parent.dim();
             if (pdim == dim_type{1}){
-                slide_f(parent.begin(), parent.end(), res.begin(), res.end(), window_size,window_step,std::forward<Args>(args)...);
+                auto parent_a = parent.template traverse_order_adapter<order>();
+                auto res_a = res.template traverse_order_adapter<order>();
+                slide_f(parent_a.begin(), parent_a.end(), res_a.begin(), res_a.end(), window_size,window_step,std::forward<Args>(args)...);
             }else{
                 using traverse_predicate_type = detail::reduce_traverse_predicate<config_type, dim_type>;
                 traverse_predicate_type traverse_predicate{axis, true};
@@ -531,6 +539,7 @@ class reducer
         using order = typename parent_type::order;
         using value_type = typename parent_type::value_type;
         using config_type = typename parent_type::config_type;
+        using dim_type = typename config_type::dim_type;
         using index_type = typename config_type::index_type;
         using shape_type = typename config_type::shape_type;
         const auto psize = parent.size();
@@ -539,7 +548,15 @@ class reducer
         detail::check_slide_args(psize, window_size);
         auto res = tensor<value_type,order,config_type>{shape_type{detail::make_slide_size(psize, window_size, window_step)}};
         if (!res.empty()){
-            slide_f(parent.begin(), parent.end(), res.begin(), res.end(), window_size,window_step,std::forward<Args>(args)...);
+            const auto pdim = parent.dim();
+            auto res_a = res.template traverse_order_adapter<order>();
+            if (pdim == dim_type{1}){
+                auto parent_a = parent.template traverse_order_adapter<order>();
+                slide_f(parent_a.begin(), parent_a.end(), res_a.begin(), res_a.end(), window_size,window_step,std::forward<Args>(args)...);
+            }else{
+                auto parent_a = parent.template traverse_order_adapter<config::c_order>();
+                slide_f(parent_a.begin(), parent_a.end(), res_a.begin(), res_a.end(), window_size,window_step,std::forward<Args>(args)...);
+            }
         }
         return res;
     }
@@ -617,7 +634,7 @@ auto slide(const basic_tensor<Ts...>& t, const DimT& axis, F f, const IdxT& wind
     using config_type = typename basic_tensor<Ts...>::config_type;
     return reducer_selector_t<config_type>::slide(t, axis, f, window_size, window_step,std::forward<Args>(args)...);
 }
-//slide like over flatten
+//slide like over flatten in c_order
 template<typename...Ts, typename F, typename IdxT, typename...Args>
 auto slide(const basic_tensor<Ts...>& t, F f, const IdxT& window_size, const IdxT& window_step, Args&&...args){
     using config_type = typename basic_tensor<Ts...>::config_type;

@@ -630,10 +630,14 @@ TEST_CASE("test_slide","[test_reduce]")
     apply_by_element(test, test_data);
 }
 
-TEST_CASE("test_slide_flatten","[test_reduce]")
+TEMPLATE_TEST_CASE("test_slide_flatten","[test_reduce]",
+    gtensor::config::c_order,
+    gtensor::config::f_order
+)
 {
+    using order = TestType;
     using value_type = int;
-    using tensor_type = gtensor::tensor<value_type>;
+    using tensor_type = gtensor::tensor<value_type,order>;
     using index_type = typename tensor_type::index_type;
     using test_reduce_::cumprod_reverse;
     using test_reduce_::cumsum;
