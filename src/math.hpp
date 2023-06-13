@@ -118,7 +118,7 @@ inline auto nan_to_num(
     T&& t,
     typename std::remove_cv_t<std::remove_reference_t<T>>::value_type nan = 0,
     typename std::remove_cv_t<std::remove_reference_t<T>>::value_type pos_inf = std::numeric_limits<typename std::remove_cv_t<std::remove_reference_t<T>>::value_type>::max(),
-    typename std::remove_cv_t<std::remove_reference_t<T>>::value_type neg_inf = std::numeric_limits<typename std::remove_cv_t<std::remove_reference_t<T>>::value_type>::min()
+    typename std::remove_cv_t<std::remove_reference_t<T>>::value_type neg_inf = std::numeric_limits<typename std::remove_cv_t<std::remove_reference_t<T>>::value_type>::lowest()
 )
 {
     ASSERT_TENSOR(std::remove_cv_t<std::remove_reference_t<T>>);
@@ -178,11 +178,47 @@ struct any
     }
 };
 
+//ignoring nan
+struct nanmin
+{
+    template<typename It>
+    auto operator()(It first, It last){
+        auto res = *first;
+        //need find first not nan
+        //makes sence only if is_iec559
+        if (gtensor::math::isnan(res)){
+            return res;
+        }
+        for(++first; first!=last; ++first){
+            const auto& e = *first;
+            if (e < res){   //always false if e is nan
+                res = e;
+            }
+        }
+        return res;
+    }
+};
+
+//propagates nan
 struct amin
 {
     template<typename It>
     auto operator()(It first, It last){
-        return *std::min_element(first,last);;
+        auto res = *first;
+        if (gtensor::math::isnan(res)){
+            return res;
+        }
+        for(++first; first!=last; ++first){
+            const auto& e = *first;
+            if (gtensor::math::isnan(e)){
+                return e;
+            }else{
+                if (e < res){
+                    res = e;
+                }
+            }
+        }
+        return res;
     }
 };
 
@@ -190,7 +226,21 @@ struct amax
 {
     template<typename It>
     auto operator()(It first, It last){
-        return *std::max_element(first,last);;
+        auto res = *first;
+        if (gtensor::math::isnan(res)){
+            return res;
+        }
+        for(++first; first!=last; ++first){
+            const auto& e = *first;
+            if (gtensor::math::isnan(e)){
+                return e;
+            }else{
+                if (e > res){
+                    res = e;
+                }
+            }
+        }
+        return res;
     }
 };
 

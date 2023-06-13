@@ -39,11 +39,26 @@ struct NAME{\
     }\
 };
 
-#define GTENSOR_OPERATION_TAG(NAME) struct NAME{};
-
 namespace gtensor{
 
 namespace math{
+
+template<typename T>
+struct numeric_traits{
+    static constexpr bool is_integral(){return std::is_integral_v<T>;}
+    static constexpr bool is_floating_point(){return std::is_floating_point_v<T>;}
+    static constexpr bool is_arithmetic(){return is_integral() || is_floating_point();}
+    static constexpr bool is_iec559(){return std::numeric_limits<T>::is_iec559;}
+    static constexpr bool has_nan(){return is_iec559();}
+    static constexpr T lowest(){return std::numeric_limits<T>::lowest();}
+    static constexpr T min(){return std::numeric_limits<T>::min();}
+    static constexpr T max(){return std::numeric_limits<T>::max();}
+    static constexpr T epsilon(){
+        static_assert(is_floating_point(),"no sense for non floating_point types");
+        return std::numeric_limits<T>::epsilon();
+    }
+};
+
 template<typename T> auto floor(T t);
 //basic
 template<typename T> auto abs(T t){return std::abs(t);}
@@ -122,21 +137,37 @@ template<typename T, typename U> auto islessequal(T t, U u){return std::islesseq
 template<typename T, typename U> auto islessgreater(T t, U u){return std::islessgreater(t,u);}
 template<typename T, typename U, typename Tol>
 auto isclose(T t, U u, const Tol relative_tolerance, const Tol absolute_tolerance){
-    using common_type = std::common_type_t<T,U>;
-    static_assert(std::is_arithmetic_v<common_type>,"math::isclose defined for arithmetic types only");
-    if constexpr (std::is_floating_point_v<common_type>){
-        if (t==u){
-            return true;
-        }
-        return math::abs(t-u) < absolute_tolerance + relative_tolerance*(math::abs(t)+math::abs(u));
-    }else{
-        return t==u;
-    }
+    static_assert(numeric_traits<T>::is_floating_point() || numeric_traits<U>::is_floating_point(), "math::isclose should be used with floating point types");
+    if (t==u){return true;} //infinity or exact
+    return math::abs(t-u) < absolute_tolerance + relative_tolerance*(math::abs(t)+math::abs(u));
 }
 template<typename T, typename U, typename Tol>
 auto isclose_nan_equal(T t, U u, const Tol relative_tolerance, const Tol absolute_tolerance){
-    const bool is_nan_u = math::isnan(u);
-    return math::isnan(t) ? is_nan_u : (is_nan_u ? false : isclose(t,u,relative_tolerance,absolute_tolerance));
+    static constexpr bool t_has_nan = numeric_traits<T>::has_nan();
+    static constexpr bool u_has_nan = numeric_traits<U>::has_nan();
+    static_assert(t_has_nan || u_has_nan, "math::isclose_nan_equal should be used with types that has nan");
+    if constexpr (t_has_nan && u_has_nan){
+        const bool is_nan_u = math::isnan(u);
+        return math::isnan(t) ? is_nan_u : (is_nan_u ? false : isclose(t,u,relative_tolerance,absolute_tolerance));
+    }else if constexpr (t_has_nan){
+        return math::isnan(t) ? false : isclose(t,u,relative_tolerance,absolute_tolerance));
+    }else{
+        return math::isnan(u) ? false : isclose(t,u,relative_tolerance,absolute_tolerance));
+    }
+}
+template<typename T, typename U, typename Tol>
+auto isequal_nan_equal(T t, U u, const Tol relative_tolerance, const Tol absolute_tolerance){
+    static constexpr bool t_has_nan = numeric_traits<T>::has_nan();
+    static constexpr bool u_has_nan = numeric_traits<U>::has_nan();
+    static_assert(t_has_nan || u_has_nan, "math::isequal_nan_equal should be used with types that has nan");
+    if constexpr (t_has_nan && u_has_nan){
+        const bool is_nan_u = math::isnan(u);
+        return math::isnan(t) ? is_nan_u : (is_nan_u ? false : t==u;
+    }else if constexpr (t_has_nan){
+        return math::isnan(t) ? false : t==u;
+    }else{
+        return math::isnan(u) ? false : t==u;
+    }
 }
 //routines in rational domain
 template<typename T, typename U> auto gcd(T t, U u){return std::gcd(t,u);}
@@ -324,5 +355,6 @@ GTENSOR_FUNCTION(math_gcd,math::gcd);
 GTENSOR_FUNCTION(math_lcm,math::lcm);
 
 }   //end of nemespace operations
+
 }   //end of namespace gtensor
 #endif

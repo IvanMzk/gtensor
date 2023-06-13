@@ -667,7 +667,7 @@ TEST_CASE("test_tensor_math_floating_point_manipulation_functions_semantic","[te
 
         static constexpr value_type nan_num = 0.0;
         static constexpr value_type pos_inf_num = std::numeric_limits<value_type>::max();
-        static constexpr value_type neg_inf_num = std::numeric_limits<value_type>::min();
+        static constexpr value_type neg_inf_num = std::numeric_limits<value_type>::lowest();
 
         auto result = gtensor::nan_to_num(tensor_type{0.0,nan,1.0,2.2,-3.3,inf,nan,-inf});
         auto expected = tensor_type{0.0,nan_num,1.0,2.2,-3.3,pos_inf_num,nan_num,neg_inf_num};
