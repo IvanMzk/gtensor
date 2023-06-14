@@ -103,9 +103,9 @@ inline auto tensor_equal(const basic_tensor<Us...>& u, const basic_tensor<Vs...>
     }else{
         const bool equal_shapes = u.shape() == v.shape();
         if (equal_nan){
-            return equal_shapes && std::equal(u.begin(), u.end(), v.begin(),gtensor::operations::math_isequal_nan_equal{});
+            return equal_shapes && std::equal(u.begin(), u.end(), v.begin(), gtensor::operations::math_isequal<std::true_type>{});
         }else{
-            return equal_shapes && std::equal(u.begin(), u.end(), v.begin());
+            return equal_shapes && std::equal(u.begin(), u.end(), v.begin(), gtensor::operations::math_isequal<std::false_type>{});
         }
     }
 }

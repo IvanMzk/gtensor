@@ -7,7 +7,7 @@
 #include <numeric>
 #include "common.hpp"
 
-#define GTENSOR_UNARY_OPERATION(NAME, OP)\
+#define GTENSOR_UNARY_OPERATOR_FUNCTOR(NAME, OP)\
 struct NAME{\
     template<typename T>\
     auto operator()(T&& arg)const{\
@@ -15,7 +15,7 @@ struct NAME{\
     }\
 };
 
-#define GTENSOR_BINARY_OPERATION(NAME, OP)\
+#define GTENSOR_BINARY_OPERATOR_FUNCTOR(NAME, OP)\
 struct NAME{\
     template<typename T1, typename T2>\
     auto operator()(T1&& arg1, T2&& arg2)const{\
@@ -23,7 +23,7 @@ struct NAME{\
     }\
 };
 
-#define GTENSOR_ASSIGN_OPERATION(NAME, OP)\
+#define GTENSOR_ASSIGN_OPERATOR_FUNCTOR(NAME, OP)\
 struct NAME{\
     template<typename T1, typename T2>\
     void operator()(T1&& arg1, T2&& arg2)const{\
@@ -31,7 +31,7 @@ struct NAME{\
     }\
 };
 
-#define GTENSOR_FUNCTION(NAME, F)\
+#define GTENSOR_FUNCTION_FUNCTOR(NAME, F)\
 struct NAME{\
     template<typename...Args>\
     auto operator()(Args&&...args)const{\
@@ -223,100 +223,100 @@ struct where
 };
 
 //arithmetic
-GTENSOR_UNARY_OPERATION(unary_plus,+);
-GTENSOR_UNARY_OPERATION(unary_minus,-);
-GTENSOR_BINARY_OPERATION(add,+);
-GTENSOR_BINARY_OPERATION(sub,-);
-GTENSOR_BINARY_OPERATION(mul,*);
-GTENSOR_BINARY_OPERATION(div,/);
-GTENSOR_BINARY_OPERATION(mod,%);
+GTENSOR_UNARY_OPERATOR_FUNCTOR(unary_plus,+);
+GTENSOR_UNARY_OPERATOR_FUNCTOR(unary_minus,-);
+GTENSOR_BINARY_OPERATOR_FUNCTOR(add,+);
+GTENSOR_BINARY_OPERATOR_FUNCTOR(sub,-);
+GTENSOR_BINARY_OPERATOR_FUNCTOR(mul,*);
+GTENSOR_BINARY_OPERATOR_FUNCTOR(div,/);
+GTENSOR_BINARY_OPERATOR_FUNCTOR(mod,%);
 
 //bitwise
-GTENSOR_UNARY_OPERATION(bitwise_not,~);
-GTENSOR_BINARY_OPERATION(bitwise_and,&);
-GTENSOR_BINARY_OPERATION(bitwise_or,|);
-GTENSOR_BINARY_OPERATION(bitwise_xor,^);
-GTENSOR_BINARY_OPERATION(bitwise_lshift,<<);
-GTENSOR_BINARY_OPERATION(bitwise_rshift,>>);
+GTENSOR_UNARY_OPERATOR_FUNCTOR(bitwise_not,~);
+GTENSOR_BINARY_OPERATOR_FUNCTOR(bitwise_and,&);
+GTENSOR_BINARY_OPERATOR_FUNCTOR(bitwise_or,|);
+GTENSOR_BINARY_OPERATOR_FUNCTOR(bitwise_xor,^);
+GTENSOR_BINARY_OPERATOR_FUNCTOR(bitwise_lshift,<<);
+GTENSOR_BINARY_OPERATOR_FUNCTOR(bitwise_rshift,>>);
 
 //comparison
-GTENSOR_BINARY_OPERATION(equal,==);
-GTENSOR_BINARY_OPERATION(not_equal,!=);
-GTENSOR_BINARY_OPERATION(greater,>);
-GTENSOR_BINARY_OPERATION(greater_equal,>=);
-GTENSOR_BINARY_OPERATION(less,<);
-GTENSOR_BINARY_OPERATION(less_equal,<=);
+GTENSOR_BINARY_OPERATOR_FUNCTOR(equal,==);
+GTENSOR_BINARY_OPERATOR_FUNCTOR(not_equal,!=);
+GTENSOR_BINARY_OPERATOR_FUNCTOR(greater,>);
+GTENSOR_BINARY_OPERATOR_FUNCTOR(greater_equal,>=);
+GTENSOR_BINARY_OPERATOR_FUNCTOR(less,<);
+GTENSOR_BINARY_OPERATOR_FUNCTOR(less_equal,<=);
 
 //logical
-GTENSOR_UNARY_OPERATION(logic_not,!);
-GTENSOR_BINARY_OPERATION(logic_and,&&);
-GTENSOR_BINARY_OPERATION(logic_or,||);
+GTENSOR_UNARY_OPERATOR_FUNCTOR(logic_not,!);
+GTENSOR_BINARY_OPERATOR_FUNCTOR(logic_and,&&);
+GTENSOR_BINARY_OPERATOR_FUNCTOR(logic_or,||);
 
 //asignment
-GTENSOR_ASSIGN_OPERATION(assign,=);
-GTENSOR_ASSIGN_OPERATION(assign_add,+=);
-GTENSOR_ASSIGN_OPERATION(assign_sub,-=);
-GTENSOR_ASSIGN_OPERATION(assign_mul,*=);
-GTENSOR_ASSIGN_OPERATION(assign_div,/=);
-GTENSOR_ASSIGN_OPERATION(assign_mod,%=);
-GTENSOR_ASSIGN_OPERATION(assign_bitwise_and,&=);
-GTENSOR_ASSIGN_OPERATION(assign_bitwise_or,|=);
-GTENSOR_ASSIGN_OPERATION(assign_bitwise_xor,^=);
-GTENSOR_ASSIGN_OPERATION(assign_bitwise_lshift,<<=);
-GTENSOR_ASSIGN_OPERATION(assign_bitwise_rshift,>>=);
+GTENSOR_ASSIGN_OPERATOR_FUNCTOR(assign,=);
+GTENSOR_ASSIGN_OPERATOR_FUNCTOR(assign_add,+=);
+GTENSOR_ASSIGN_OPERATOR_FUNCTOR(assign_sub,-=);
+GTENSOR_ASSIGN_OPERATOR_FUNCTOR(assign_mul,*=);
+GTENSOR_ASSIGN_OPERATOR_FUNCTOR(assign_div,/=);
+GTENSOR_ASSIGN_OPERATOR_FUNCTOR(assign_mod,%=);
+GTENSOR_ASSIGN_OPERATOR_FUNCTOR(assign_bitwise_and,&=);
+GTENSOR_ASSIGN_OPERATOR_FUNCTOR(assign_bitwise_or,|=);
+GTENSOR_ASSIGN_OPERATOR_FUNCTOR(assign_bitwise_xor,^=);
+GTENSOR_ASSIGN_OPERATOR_FUNCTOR(assign_bitwise_lshift,<<=);
+GTENSOR_ASSIGN_OPERATOR_FUNCTOR(assign_bitwise_rshift,>>=);
 
 //math
 //basic
-GTENSOR_FUNCTION(math_abs,math::abs);
-GTENSOR_FUNCTION(math_fmod,math::fmod);
-GTENSOR_FUNCTION(math_remainder,math::remainder);
-GTENSOR_FUNCTION(math_fma,math::fma);
-GTENSOR_FUNCTION(math_fmax,math::fmax);
-GTENSOR_FUNCTION(math_fmin,math::fmin);
-GTENSOR_FUNCTION(math_fdim,math::fdim);
-GTENSOR_FUNCTION(math_clip,math::clip);
-GTENSOR_FUNCTION(math_divmod,math::divmod);
+GTENSOR_FUNCTION_FUNCTOR(math_abs,math::abs);
+GTENSOR_FUNCTION_FUNCTOR(math_fmod,math::fmod);
+GTENSOR_FUNCTION_FUNCTOR(math_remainder,math::remainder);
+GTENSOR_FUNCTION_FUNCTOR(math_fma,math::fma);
+GTENSOR_FUNCTION_FUNCTOR(math_fmax,math::fmax);
+GTENSOR_FUNCTION_FUNCTOR(math_fmin,math::fmin);
+GTENSOR_FUNCTION_FUNCTOR(math_fdim,math::fdim);
+GTENSOR_FUNCTION_FUNCTOR(math_clip,math::clip);
+GTENSOR_FUNCTION_FUNCTOR(math_divmod,math::divmod);
 //exponential
-GTENSOR_FUNCTION(math_exp,math::exp);
-GTENSOR_FUNCTION(math_exp2,math::exp2);
-GTENSOR_FUNCTION(math_expm1,math::expm1);
-GTENSOR_FUNCTION(math_log,math::log);
-GTENSOR_FUNCTION(math_log10,math::log10);
-GTENSOR_FUNCTION(math_log2,math::log2);
-GTENSOR_FUNCTION(math_log1p,math::log1p);
+GTENSOR_FUNCTION_FUNCTOR(math_exp,math::exp);
+GTENSOR_FUNCTION_FUNCTOR(math_exp2,math::exp2);
+GTENSOR_FUNCTION_FUNCTOR(math_expm1,math::expm1);
+GTENSOR_FUNCTION_FUNCTOR(math_log,math::log);
+GTENSOR_FUNCTION_FUNCTOR(math_log10,math::log10);
+GTENSOR_FUNCTION_FUNCTOR(math_log2,math::log2);
+GTENSOR_FUNCTION_FUNCTOR(math_log1p,math::log1p);
 //power
-GTENSOR_FUNCTION(math_pow,math::pow);
-GTENSOR_FUNCTION(math_sqrt,math::sqrt);
-GTENSOR_FUNCTION(math_cbrt,math::cbrt);
-GTENSOR_FUNCTION(math_hypot,math::hypot);
+GTENSOR_FUNCTION_FUNCTOR(math_pow,math::pow);
+GTENSOR_FUNCTION_FUNCTOR(math_sqrt,math::sqrt);
+GTENSOR_FUNCTION_FUNCTOR(math_cbrt,math::cbrt);
+GTENSOR_FUNCTION_FUNCTOR(math_hypot,math::hypot);
 //trigonometric
-GTENSOR_FUNCTION(math_sin,math::sin);
-GTENSOR_FUNCTION(math_cos,math::cos);
-GTENSOR_FUNCTION(math_tan,math::tan);
-GTENSOR_FUNCTION(math_asin,math::asin);
-GTENSOR_FUNCTION(math_acos,math::acos);
-GTENSOR_FUNCTION(math_atan,math::atan);
-GTENSOR_FUNCTION(math_atan2,math::atan2);
+GTENSOR_FUNCTION_FUNCTOR(math_sin,math::sin);
+GTENSOR_FUNCTION_FUNCTOR(math_cos,math::cos);
+GTENSOR_FUNCTION_FUNCTOR(math_tan,math::tan);
+GTENSOR_FUNCTION_FUNCTOR(math_asin,math::asin);
+GTENSOR_FUNCTION_FUNCTOR(math_acos,math::acos);
+GTENSOR_FUNCTION_FUNCTOR(math_atan,math::atan);
+GTENSOR_FUNCTION_FUNCTOR(math_atan2,math::atan2);
 //hyperbolic
-GTENSOR_FUNCTION(math_sinh,math::sinh);
-GTENSOR_FUNCTION(math_cosh,math::cosh);
-GTENSOR_FUNCTION(math_tanh,math::tanh);
-GTENSOR_FUNCTION(math_asinh,math::asinh);
-GTENSOR_FUNCTION(math_acosh,math::acosh);
-GTENSOR_FUNCTION(math_atanh,math::atanh);
+GTENSOR_FUNCTION_FUNCTOR(math_sinh,math::sinh);
+GTENSOR_FUNCTION_FUNCTOR(math_cosh,math::cosh);
+GTENSOR_FUNCTION_FUNCTOR(math_tanh,math::tanh);
+GTENSOR_FUNCTION_FUNCTOR(math_asinh,math::asinh);
+GTENSOR_FUNCTION_FUNCTOR(math_acosh,math::acosh);
+GTENSOR_FUNCTION_FUNCTOR(math_atanh,math::atanh);
 //nearest
-GTENSOR_FUNCTION(math_ceil,math::ceil);
-GTENSOR_FUNCTION(math_floor,math::floor);
-GTENSOR_FUNCTION(math_trunc,math::trunc);
-GTENSOR_FUNCTION(math_round,math::round);
-GTENSOR_FUNCTION(math_nearbyint,math::nearbyint);
-GTENSOR_FUNCTION(math_rint,math::rint);
+GTENSOR_FUNCTION_FUNCTOR(math_ceil,math::ceil);
+GTENSOR_FUNCTION_FUNCTOR(math_floor,math::floor);
+GTENSOR_FUNCTION_FUNCTOR(math_trunc,math::trunc);
+GTENSOR_FUNCTION_FUNCTOR(math_round,math::round);
+GTENSOR_FUNCTION_FUNCTOR(math_nearbyint,math::nearbyint);
+GTENSOR_FUNCTION_FUNCTOR(math_rint,math::rint);
 //floating point manipulation
-GTENSOR_FUNCTION(math_ldexp,math::ldexp);
-GTENSOR_FUNCTION(math_nextafter,math::nextafter);
-GTENSOR_FUNCTION(math_copysign,math::copysign);
-GTENSOR_FUNCTION(math_frexp,math::frexp);
-GTENSOR_FUNCTION(math_modf,math::modf);
+GTENSOR_FUNCTION_FUNCTOR(math_ldexp,math::ldexp);
+GTENSOR_FUNCTION_FUNCTOR(math_nextafter,math::nextafter);
+GTENSOR_FUNCTION_FUNCTOR(math_copysign,math::copysign);
+GTENSOR_FUNCTION_FUNCTOR(math_frexp,math::frexp);
+GTENSOR_FUNCTION_FUNCTOR(math_modf,math::modf);
 
 template<typename T>
 class math_nan_to_num
@@ -342,17 +342,16 @@ public:
 };
 
 //classification
-GTENSOR_FUNCTION(math_isfinite,math::isfinite);
-GTENSOR_FUNCTION(math_isinf,math::isinf);
-GTENSOR_FUNCTION(math_isnan,math::isnan);
-GTENSOR_FUNCTION(math_isnormal,math::isnormal);
+GTENSOR_FUNCTION_FUNCTOR(math_isfinite,math::isfinite);
+GTENSOR_FUNCTION_FUNCTOR(math_isinf,math::isinf);
+GTENSOR_FUNCTION_FUNCTOR(math_isnan,math::isnan);
+GTENSOR_FUNCTION_FUNCTOR(math_isnormal,math::isnormal);
 //comparison
-GTENSOR_FUNCTION(math_isgreater,math::isgreater);
-GTENSOR_FUNCTION(math_isgreaterequal,math::isgreaterequal);
-GTENSOR_FUNCTION(math_isless,math::isless);
-GTENSOR_FUNCTION(math_islessequal,math::islessequal);
-GTENSOR_FUNCTION(math_islessgreater,math::islessgreater);
-GTENSOR_FUNCTION(math_isequal_nan_equal,math::isequal_nan_equal);
+GTENSOR_FUNCTION_FUNCTOR(math_isgreater,math::isgreater);
+GTENSOR_FUNCTION_FUNCTOR(math_isgreaterequal,math::isgreaterequal);
+GTENSOR_FUNCTION_FUNCTOR(math_isless,math::isless);
+GTENSOR_FUNCTION_FUNCTOR(math_islessequal,math::islessequal);
+GTENSOR_FUNCTION_FUNCTOR(math_islessgreater,math::islessgreater);
 
 //NanEqual should be std::true_type or std::false_type
 template<typename Tol,typename NanEqual = std::false_type>
@@ -378,11 +377,29 @@ public:
         return isclose_(typename NanEqual::type{}, t, u);
     }
 };
-//routines in rational domain
-GTENSOR_FUNCTION(math_gcd,math::gcd);
-GTENSOR_FUNCTION(math_lcm,math::lcm);
 
-}   //end of nemespace operations
+//NanEqual should be std::true_type or std::false_type
+template<typename NanEqual = std::false_type>
+class math_isequal
+{
+    template<typename T, typename U>
+    bool isequal_(std::true_type, T t, U u)const{
+        return math::isequal_nan_equal(t,u);
+    }
+    template<typename T, typename U>
+    bool isequal_(std::false_type, T t, U u)const{
+        return t==u;
+    }
+public:
+    template<typename T, typename U>
+    bool operator()(T t, U u)const{
+        return isequal_(typename NanEqual::type{}, t, u);
+    }
+};
+
+//routines in rational domain
+GTENSOR_FUNCTION_FUNCTOR(math_gcd,math::gcd);
+GTENSOR_FUNCTION_FUNCTOR(math_lcm,math::lcm);}   //end of nemespace operations
 
 }   //end of namespace gtensor
 #endif

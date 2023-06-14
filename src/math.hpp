@@ -1,5 +1,6 @@
 #ifndef MATH_HPP_
 #define MATH_HPP_
+#include <functional>
 #include "tensor_operators.hpp"
 #include "reduce.hpp"
 
@@ -131,19 +132,14 @@ inline auto isclose(T&& t, U&& u, Tol relative_tolerance, Tol absolute_tolerance
     using T_ = std::remove_cv_t<std::remove_reference_t<T>>;
     using U_ = std::remove_cv_t<std::remove_reference_t<U>>;
     static_assert(detail::has_tensor_arg_v<T_,U_>,"at least one arg must be tensor");
-    using common_value_type = detail::tensor_common_value_type_t<T_,U_>;
-    const common_value_type relative_tolerance_ = static_cast<common_value_type>(relative_tolerance);
-    const common_value_type absolute_tolerance_ = static_cast<common_value_type>(absolute_tolerance);
-    return n_operator(operations::math_isclose<common_value_type, EqualNan>{relative_tolerance_, absolute_tolerance_}, std::forward<T>(t), std::forward<U>(u));
+    return n_operator(operations::math_isclose<Tol, EqualNan>{relative_tolerance, absolute_tolerance}, std::forward<T>(t), std::forward<U>(u));
 }
 template<typename T, typename U, typename EqualNan = std::false_type>
 inline auto isclose(T&& t, U&& u, EqualNan equal_nan = EqualNan{}){
     using T_ = std::remove_cv_t<std::remove_reference_t<T>>;
     using U_ = std::remove_cv_t<std::remove_reference_t<U>>;
-    static_assert(detail::has_tensor_arg_v<T_,U_>,"at least one arg must be tensor");
     using common_value_type = detail::tensor_common_value_type_t<T_,U_>;
-    static_assert(std::is_arithmetic_v<common_value_type>,"routine is defined for arithmetic types only");
-    static constexpr common_value_type e = std::numeric_limits<common_value_type>::epsilon();
+    static constexpr common_value_type e = math::numeric_traits<common_value_type>::epsilon();
     return isclose(std::forward<T>(t),std::forward<U>(u),e,e,equal_nan);
 }
 //routines in rational domain
@@ -168,20 +164,68 @@ struct any
     }
 };
 
-//ignoring nan
-struct nanmin
+//find extremum propagating nan
+//Comparator should be like std::less for minimum and like std::greater for maximum
+//Comparator result must be false when any argument is nan
+template<template<typename> typename Comparator>
+struct extremum
 {
     template<typename It>
     auto operator()(It first, It last){
+        using value_type = typename std::iterator_traits<It>::value_type;
         auto res = *first;
-        //need find first not nan
-        //makes sence only if is_iec559
-        if (gtensor::math::isnan(res)){
-            return res;
+        Comparator<value_type> cmp{};
+        if constexpr (gtensor::math::numeric_traits<value_type>::has_nan()){
+            if (gtensor::math::isnan(res)){
+                return res;
+            }
+            for(++first; first!=last; ++first){
+                const auto& e = *first;
+                if (gtensor::math::isnan(e)){
+                    return e;
+                }else{
+                    if (cmp(e,res)){
+                        res = e;
+                    }
+                }
+            }
+        }else{
+            for(++first; first!=last; ++first){
+                const auto& e = *first;
+                if (cmp(e,res)){
+                        res = e;
+                }
+            }
         }
+        return res;
+    }
+};
+
+//find extremum ignoring nan
+//Comparator should be like std::less for minimum and like std::greater for maximum
+//Comparator result must be false when any argument is nan
+template<template<typename> typename Comparator>
+struct nanextremum
+{
+    template<typename It>
+    auto operator()(It first, It last){
+        using value_type = typename std::iterator_traits<It>::value_type;
+        if constexpr (gtensor::math::numeric_traits<value_type>::has_nan()){
+            //find first not nan
+            for(;first!=last; ++first){
+                if (!gtensor::math::isnan(*first)){
+                    break;
+                }
+            }
+            if (first == last){ //all nans, return last nan
+                return --first,*first;
+            }
+        }
+        Comparator<value_type> cmp{};
+        auto res = *first;
         for(++first; first!=last; ++first){
             const auto& e = *first;
-            if (e < res){   //always false if e is nan
+            if (cmp(e,res)){   //must be false if e is nan, res always not nan
                 res = e;
             }
         }
@@ -189,100 +233,134 @@ struct nanmin
     }
 };
 
-//propagates nan
-struct amin
+using amin = extremum<std::less>;
+using amax = extremum<std::greater>;
+using nanmin = nanextremum<std::less>;
+using nanmax = nanextremum<std::greater>;
+
+//accumulate propagating nan
+//Operation should be like std::plus for sum and like std::multiplies for prod
+//Operation result must be nan when any argument is nan
+template<template<typename> typename Operation>
+struct accumulate
 {
     template<typename It>
     auto operator()(It first, It last){
+        using value_type = typename std::iterator_traits<It>::value_type;
         auto res = *first;
-        if (gtensor::math::isnan(res)){
-            return res;
+        Operation<value_type> op{};
+        if constexpr (gtensor::math::numeric_traits<value_type>::has_nan()){
+            if (gtensor::math::isnan(res)){
+                return res;
+            }
         }
         for(++first; first!=last; ++first){
-            const auto& e = *first;
-            if (gtensor::math::isnan(e)){
-                return e;
-            }else{
-                if (e < res){
-                    res = e;
+            res = op(res,*first);   //must return nan if any of arguments is nan
+        }
+        return res;
+    }
+};
+
+//accumulate ignoring nan (like treating nan as zero for sum and as one for prod)
+//Operation should be like std::plus for sum and like std::multiplies for prod
+//Operation result must be nan when any argument is nan
+template<template<typename> typename Operation>
+struct nanaccumulate
+{
+    template<typename It>
+    auto operator()(It first, It last){
+        using value_type = typename std::iterator_traits<It>::value_type;
+        auto res = *first;
+        Operation<value_type> op{};
+        if constexpr (gtensor::math::numeric_traits<value_type>::has_nan()){
+            for(++first; first!=last; ++first){
+                const auto& e = *first;
+                if (!gtensor::math::isnan(e)){
+                    res = op(res,e);
                 }
+            }
+        }else{
+            for(++first; first!=last; ++first){
+                res = op(res,*first);
             }
         }
         return res;
     }
 };
 
-struct amax
-{
-    template<typename It>
-    auto operator()(It first, It last){
+template<typename T> struct plus : public std::plus<T>{static constexpr T value = T(0);};
+template<typename T> struct multiplies : public std::multiplies<T>{static constexpr T value = T(1);};
+
+using sum = accumulate<plus>;
+using prod = accumulate<multiplies>;
+using nansum = nanaccumulate<plus>;
+using nanprod = nanaccumulate<multiplies>;
+
+//cumulate propagating nan
+//Operation should be like std::plus for cumsum and like std::multiplies for cumprod
+//Operation result must be nan when any argument is nan
+template<template<typename> typename Operation>
+struct cumulate{
+    template<typename It, typename DstIt, typename IdxT>
+    void operator()(It first, It, DstIt dfirst, DstIt dlast, IdxT,IdxT){
+        using value_type = typename std::iterator_traits<It>::value_type;
+        Operation<value_type> op{};
         auto res = *first;
-        if (gtensor::math::isnan(res)){
-            return res;
+        *dfirst = res;
+        for(++dfirst,++first; dfirst!=dlast; ++dfirst,++first){
+            res=op(res,*first);
+            *dfirst = res;
         }
-        for(++first; first!=last; ++first){
-            const auto& e = *first;
-            if (gtensor::math::isnan(e)){
-                return e;
-            }else{
-                if (e > res){
-                    res = e;
+    }
+};
+
+//cumulate ignoring nan (like treating nan as zero for cumsum and as one for cumprod)
+//Operation should be like std::plus for cumsum and like std::multiplies for cumprod and has value static member (zero for plus, one for multiplies)
+//Operation result must be nan when any argument is nan
+template<template<typename> typename Operation>
+struct nancumulate{
+    template<typename It, typename DstIt, typename IdxT>
+    void operator()(It first, It, DstIt dfirst, DstIt dlast, IdxT,IdxT){
+        using value_type = typename std::iterator_traits<It>::value_type;
+        Operation<value_type> op{};
+        if constexpr (gtensor::math::numeric_traits<value_type>::has_nan()){
+            //find first not nan
+            for(;dfirst!=dlast; ++dfirst,++first){
+                const auto& e = *first;
+                if (!gtensor::math::isnan(e)){
+                    *dfirst = e;
+                    break;
+                }else{
+                    *dfirst = Operation<value_type>::value;
                 }
             }
+            if (dfirst == dlast){
+                return;
+            }
+            auto res = *dfirst; //res not nan
+            for(++dfirst,++first; dfirst!=dlast; ++dfirst,++first){
+                const auto& e = *first;
+                if (!gtensor::math::isnan(e)){
+                    res=op(res,e);
+                }
+                *dfirst = res;
+            }
         }
-        return res;
-    }
-};
-
-struct sum
-{
-    template<typename It>
-    auto operator()(It first, It last){
-        using value_type = typename std::iterator_traits<It>::value_type;
-        value_type sum{0};
-        for(;first!=last; ++first){
-            sum+=*first;
-        }
-        return sum;
-    }
-};
-
-struct prod
-{
-    template<typename It>
-    auto operator()(It first, It last){
-        using value_type = typename std::iterator_traits<It>::value_type;
-        value_type prod{1};
-        for(;first!=last; ++first){
-            prod*=*first;
-        }
-        return prod;
-    }
-};
-
-struct cumsum{
-    template<typename It, typename DstIt, typename IdxT>
-    void operator()(It first, It, DstIt dfirst, DstIt dlast, IdxT,IdxT){
-        auto cumsum_ = *first;
-        *dfirst = cumsum_;
-        for(++dfirst,++first; dfirst!=dlast; ++dfirst,++first){
-            cumsum_+=*first;
-            *dfirst = cumsum_;
+        else{
+            auto res = *first;
+            *dfirst = res;
+            for(++dfirst,++first; dfirst!=dlast; ++dfirst,++first){
+                res=op(res,*first);
+                *dfirst = res;
+            }
         }
     }
 };
 
-struct cumprod{
-    template<typename It, typename DstIt, typename IdxT>
-    void operator()(It first, It, DstIt dfirst, DstIt dlast, IdxT,IdxT){
-        auto cumprod_ = *first;
-        *dfirst = cumprod_;
-        for(++dfirst,++first; dfirst!=dlast; ++dfirst,++first){
-            cumprod_*=*first;
-            *dfirst = cumprod_;
-        }
-    }
-};
+using cumsum = cumulate<plus>;
+using cumprod = cumulate<multiplies>;
+using nancumsum = nancumulate<plus>;
+using nancumprod = nancumulate<multiplies>;
 
 struct diff_1{
     template<typename It, typename DstIt, typename IdxT>
@@ -307,7 +385,7 @@ struct diff_2{
     }
 };
 
-};
+}   //end of namespace math_reduce_operations
 
 //math functions along given axis or axes
 //axes may be scalar or container if multiple axes permitted
@@ -467,6 +545,42 @@ auto diff2(const basic_tensor<Ts...>& t, const typename basic_tensor<Ts...>::dim
     const index_type window_step = 1;
     return slide(t, axis, math_reduce_operations::diff_2{}, window_size, window_step);
 }
+
+
+//nan ignoring versions
+
+//min element along given axes ignoring nan
+//axes may be scalar or container
+template<typename...Ts, typename Axes>
+auto nanmin(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
+    return reduce(t,axes,math_reduce_operations::nanmin{},keep_dims);
+}
+template<typename...Ts>
+auto nanmin(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::dim_type> axes, bool keep_dims = false){
+    return reduce(t,axes,math_reduce_operations::nanmin{},keep_dims);
+}
+//nanmin along all axes
+template<typename...Ts>
+auto nanmin(const basic_tensor<Ts...>& t, bool keep_dims = false){
+    return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::nanmin{},keep_dims);
+}
+
+//max element along given axes ignoring nan
+//axes may be scalar or container
+template<typename...Ts, typename Axes>
+auto nanmax(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
+    return reduce(t,axes,math_reduce_operations::nanmax{},keep_dims);
+}
+template<typename...Ts>
+auto nanmax(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::dim_type> axes, bool keep_dims = false){
+    return reduce(t,axes,math_reduce_operations::nanmax{},keep_dims);
+}
+//nanmax along all axes
+template<typename...Ts>
+auto nanmax(const basic_tensor<Ts...>& t, bool keep_dims = false){
+    return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::nanmax{},keep_dims);
+}
+
 
 
 
