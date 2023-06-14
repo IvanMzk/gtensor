@@ -270,21 +270,25 @@ struct nanaccumulate
     template<typename It>
     auto operator()(It first, It last){
         using value_type = typename std::iterator_traits<It>::value_type;
-        auto res = *first;
-        Operation<value_type> op{};
+        using operation_type = Operation<value_type>;
+        operation_type op{};
         if constexpr (gtensor::math::numeric_traits<value_type>::has_nan()){
+            const auto& e = *first;
+            auto res = gtensor::math::isnan(e) ? operation_type::value : e;
             for(++first; first!=last; ++first){
                 const auto& e = *first;
                 if (!gtensor::math::isnan(e)){
                     res = op(res,e);
                 }
             }
+            return res;
         }else{
+            auto res = *first;
             for(++first; first!=last; ++first){
                 res = op(res,*first);
             }
+            return res;
         }
-        return res;
     }
 };
 
@@ -547,7 +551,7 @@ auto diff2(const basic_tensor<Ts...>& t, const typename basic_tensor<Ts...>::dim
 }
 
 
-//nan ignoring versions
+//nan versions
 
 //min element along given axes ignoring nan
 //axes may be scalar or container
@@ -579,6 +583,38 @@ auto nanmax(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_t
 template<typename...Ts>
 auto nanmax(const basic_tensor<Ts...>& t, bool keep_dims = false){
     return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::nanmax{},keep_dims);
+}
+
+//sum elements along given axes, treating nan as zero
+//axes may be scalar or container
+template<typename...Ts, typename Axes>
+auto nansum(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
+    return reduce(t,axes,math_reduce_operations::nansum{},keep_dims);
+}
+template<typename...Ts>
+auto nansum(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::dim_type> axes, bool keep_dims = false){
+    return reduce(t,axes,math_reduce_operations::nansum{},keep_dims);
+}
+//nansum along all axes
+template<typename...Ts>
+auto nansum(const basic_tensor<Ts...>& t, bool keep_dims = false){
+    return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::nansum{},keep_dims);
+}
+
+//multiply elements along given axes, treating nan as one
+//axes may be scalar or container
+template<typename...Ts, typename Axes>
+auto nanprod(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
+    return reduce(t,axes,math_reduce_operations::nanprod{},keep_dims);
+}
+template<typename...Ts>
+auto nanprod(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::dim_type> axes, bool keep_dims = false){
+    return reduce(t,axes,math_reduce_operations::nanprod{},keep_dims);
+}
+//nanprod along all axes
+template<typename...Ts>
+auto nanprod(const basic_tensor<Ts...>& t, bool keep_dims = false){
+    return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::nanprod{},keep_dims);
 }
 
 

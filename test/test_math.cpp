@@ -1265,16 +1265,19 @@ TEST_CASE("test_math_amax_nanmax_nan_values","test_math")
     apply_by_element(test,test_data);
 }
 
-//sum
-TEST_CASE("test_math_sum","test_math")
+//sum,nansum
+TEST_CASE("test_math_sum_nansum","test_math")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
     using gtensor::sum;
+    using gtensor::nansum;
     using helpers_for_testing::apply_by_element;
 
     REQUIRE(std::is_same_v<decltype(sum(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>())),tensor_type>);
     REQUIRE(std::is_same_v<decltype(sum(std::declval<tensor_type>(),std::declval<std::vector<int>>(),std::declval<bool>())),tensor_type>);
+    REQUIRE(std::is_same_v<decltype(nansum(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>())),tensor_type>);
+    REQUIRE(std::is_same_v<decltype(nansum(std::declval<tensor_type>(),std::declval<std::vector<int>>(),std::declval<bool>())),tensor_type>);
 
     //0tensor,1axes,2keep_dims,3expected
     auto test_data = std::make_tuple(
@@ -1307,26 +1310,43 @@ TEST_CASE("test_math_sum","test_math")
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{2,1},true,tensor_type{{{21}},{{57}}}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{},true,tensor_type{{{78}}})
     );
-    auto test = [](const auto& t){
-        auto ten = std::get<0>(t);
-        auto axes = std::get<1>(t);
-        auto keep_dims = std::get<2>(t);
-        auto expected = std::get<3>(t);
-        auto result = sum(ten,axes,keep_dims);
-        REQUIRE(result == expected);
-    };
-    apply_by_element(test,test_data);
+    SECTION("test_sum")
+    {
+        auto test = [](const auto& t){
+            auto ten = std::get<0>(t);
+            auto axes = std::get<1>(t);
+            auto keep_dims = std::get<2>(t);
+            auto expected = std::get<3>(t);
+            auto result = sum(ten,axes,keep_dims);
+            REQUIRE(result == expected);
+        };
+        apply_by_element(test,test_data);
+    }
+    SECTION("test_nansum")
+    {
+        auto test = [](const auto& t){
+            auto ten = std::get<0>(t);
+            auto axes = std::get<1>(t);
+            auto keep_dims = std::get<2>(t);
+            auto expected = std::get<3>(t);
+            auto result = nansum(ten,axes,keep_dims);
+            REQUIRE(result == expected);
+        };
+        apply_by_element(test,test_data);
+    }
 }
 
-TEST_CASE("test_math_sum_initializer_list_axes_all_axes","test_math")
+TEST_CASE("test_math_sum_nansum_initializer_list_axes_all_axes","test_math")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
     using gtensor::sum;
+    using gtensor::nansum;
     using helpers_for_testing::apply_by_element;
 
     REQUIRE(std::is_same_v<decltype(sum(std::declval<tensor_type>(),std::declval<std::initializer_list<int>>(),std::declval<bool>())),tensor_type>);
-
+    REQUIRE(std::is_same_v<decltype(nansum(std::declval<tensor_type>(),std::declval<std::initializer_list<int>>(),std::declval<bool>())),tensor_type>);
+    //sum
     REQUIRE(sum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0},false) == tensor_type{{8,10,12},{14,16,18}});
     REQUIRE(sum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1},false) == tensor_type{22,26,30});
     REQUIRE(sum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{2,1},true) == tensor_type{{{21}},{{57}}});
@@ -1334,18 +1354,63 @@ TEST_CASE("test_math_sum_initializer_list_axes_all_axes","test_math")
     REQUIRE(sum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{},false) == tensor_type(78));
     REQUIRE(sum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},false) == tensor_type(78));
     REQUIRE(sum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},true) == tensor_type{{{78}}});
+    //nansum
+    REQUIRE(nansum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0},false) == tensor_type{{8,10,12},{14,16,18}});
+    REQUIRE(nansum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1},false) == tensor_type{22,26,30});
+    REQUIRE(nansum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{2,1},true) == tensor_type{{{21}},{{57}}});
+    //all axes
+    REQUIRE(nansum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{},false) == tensor_type(78));
+    REQUIRE(nansum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},false) == tensor_type(78));
+    REQUIRE(nansum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},true) == tensor_type{{{78}}});
 }
 
-//prod
-TEST_CASE("test_math_prod","test_math")
+TEST_CASE("test_math_sum_nansum_nan_values","test_math")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::sum;
+    using gtensor::nansum;
+    using gtensor::tensor_equal;
+    using helpers_for_testing::apply_by_element;
+    static constexpr value_type nan = std::numeric_limits<value_type>::quiet_NaN();
+    //0result,1expected
+    auto test_data = std::make_tuple(
+        //sum
+        std::make_tuple(sum(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}}), tensor_type(nan)),
+        std::make_tuple(sum(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}},0), tensor_type{nan,nan,nan}),
+        std::make_tuple(sum(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}},1), tensor_type{nan,nan,nan}),
+        std::make_tuple(sum(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}}), tensor_type(nan)),
+        std::make_tuple(sum(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}},0), tensor_type{nan,nan,nan,10.0}),
+        std::make_tuple(sum(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}},1), tensor_type{nan,nan,nan,nan}),
+        //nansum
+        std::make_tuple(nansum(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}}), tensor_type(0.0)),
+        std::make_tuple(nansum(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}},0), tensor_type{0.0,0.0,0.0}),
+        std::make_tuple(nansum(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}},1), tensor_type{0.0,0.0,0.0}),
+        std::make_tuple(nansum(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}}), tensor_type(16.5)),
+        std::make_tuple(nansum(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}},0), tensor_type{1.0,5.5,0.0,10.0}),
+        std::make_tuple(nansum(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}},1), tensor_type{1.0,3.5,5.5,6.5})
+    );
+    auto test = [](const auto& t){
+        auto result = std::get<0>(t);
+        auto expected = std::get<1>(t);
+        REQUIRE(tensor_equal(result,expected,true));
+    };
+    apply_by_element(test,test_data);
+}
+
+//prod,nanprod
+TEST_CASE("test_math_prod_nanprod","test_math")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
     using gtensor::prod;
+    using gtensor::nanprod;
     using helpers_for_testing::apply_by_element;
 
     REQUIRE(std::is_same_v<decltype(prod(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>())),tensor_type>);
     REQUIRE(std::is_same_v<decltype(prod(std::declval<tensor_type>(),std::declval<std::vector<int>>(),std::declval<bool>())),tensor_type>);
+    REQUIRE(std::is_same_v<decltype(nanprod(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>())),tensor_type>);
+    REQUIRE(std::is_same_v<decltype(nanprod(std::declval<tensor_type>(),std::declval<std::vector<int>>(),std::declval<bool>())),tensor_type>);
 
     //0tensor,1axes,2keep_dims,3expected
     auto test_data = std::make_tuple(
@@ -1378,26 +1443,43 @@ TEST_CASE("test_math_prod","test_math")
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{2,1},true,tensor_type{{{720}},{{665280}}}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{},true,tensor_type{{{479001600}}})
     );
-    auto test = [](const auto& t){
-        auto ten = std::get<0>(t);
-        auto axes = std::get<1>(t);
-        auto keep_dims = std::get<2>(t);
-        auto expected = std::get<3>(t);
-        auto result = prod(ten,axes,keep_dims);
-        REQUIRE(result == expected);
-    };
-    apply_by_element(test,test_data);
+    SECTION("test_prod")
+    {
+        auto test = [](const auto& t){
+            auto ten = std::get<0>(t);
+            auto axes = std::get<1>(t);
+            auto keep_dims = std::get<2>(t);
+            auto expected = std::get<3>(t);
+            auto result = prod(ten,axes,keep_dims);
+            REQUIRE(result == expected);
+        };
+        apply_by_element(test,test_data);
+    }
+    SECTION("test_nanprod")
+    {
+        auto test = [](const auto& t){
+            auto ten = std::get<0>(t);
+            auto axes = std::get<1>(t);
+            auto keep_dims = std::get<2>(t);
+            auto expected = std::get<3>(t);
+            auto result = nanprod(ten,axes,keep_dims);
+            REQUIRE(result == expected);
+        };
+        apply_by_element(test,test_data);
+    }
 }
 
-TEST_CASE("test_math_prod_initializer_list_axes_all_axes","test_math")
+TEST_CASE("test_math_prod_nanprod_initializer_list_axes_all_axes","test_math")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
     using gtensor::prod;
+    using gtensor::nanprod;
     using helpers_for_testing::apply_by_element;
 
     REQUIRE(std::is_same_v<decltype(prod(std::declval<tensor_type>(),std::declval<std::initializer_list<int>>(),std::declval<bool>())),tensor_type>);
-
+    REQUIRE(std::is_same_v<decltype(nanprod(std::declval<tensor_type>(),std::declval<std::initializer_list<int>>(),std::declval<bool>())),tensor_type>);
+    //prod
     REQUIRE(prod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0},false) == tensor_type{{7,16,27},{40,55,72}});
     REQUIRE(prod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1},false) == tensor_type{280,880,1944});
     REQUIRE(prod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{2,1},true) == tensor_type{{{720}},{{665280}}});
@@ -1405,6 +1487,48 @@ TEST_CASE("test_math_prod_initializer_list_axes_all_axes","test_math")
     REQUIRE(prod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{},false) == tensor_type(479001600));
     REQUIRE(prod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},false) == tensor_type(479001600));
     REQUIRE(prod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},true) == tensor_type{{{479001600}}});
+    //nanprod
+    REQUIRE(nanprod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0},false) == tensor_type{{7,16,27},{40,55,72}});
+    REQUIRE(nanprod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1},false) == tensor_type{280,880,1944});
+    REQUIRE(nanprod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{2,1},true) == tensor_type{{{720}},{{665280}}});
+    //all axes
+    REQUIRE(nanprod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{},false) == tensor_type(479001600));
+    REQUIRE(nanprod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},false) == tensor_type(479001600));
+    REQUIRE(nanprod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},true) == tensor_type{{{479001600}}});
+}
+
+TEST_CASE("test_math_prod_nanprod_nan_values","test_math")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::prod;
+    using gtensor::nanprod;
+    using gtensor::tensor_equal;
+    using helpers_for_testing::apply_by_element;
+    static constexpr value_type nan = std::numeric_limits<value_type>::quiet_NaN();
+    //0result,1expected
+    auto test_data = std::make_tuple(
+        //prod
+        std::make_tuple(prod(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}}), tensor_type(nan)),
+        std::make_tuple(prod(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}},0), tensor_type{nan,nan,nan}),
+        std::make_tuple(prod(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}},1), tensor_type{nan,nan,nan}),
+        std::make_tuple(prod(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}}), tensor_type(nan)),
+        std::make_tuple(prod(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}},0), tensor_type{nan,nan,nan,24.0}),
+        std::make_tuple(prod(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}},1), tensor_type{nan,nan,nan,nan}),
+        //nanprod
+        std::make_tuple(nanprod(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}}), tensor_type(1.0)),
+        std::make_tuple(nanprod(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}},0), tensor_type{1.0,1.0,1.0}),
+        std::make_tuple(nanprod(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}},1), tensor_type{1.0,1.0,1.0}),
+        std::make_tuple(nanprod(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}}), tensor_type(36.0)),
+        std::make_tuple(nanprod(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}},0), tensor_type{0.25,6.0,1.0,24.0}),
+        std::make_tuple(nanprod(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}},1), tensor_type{1.0,3.0,3.0,4.0})
+    );
+    auto test = [](const auto& t){
+        auto result = std::get<0>(t);
+        auto expected = std::get<1>(t);
+        REQUIRE(tensor_equal(result,expected,true));
+    };
+    apply_by_element(test,test_data);
 }
 
 //cumsum
