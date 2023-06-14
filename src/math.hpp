@@ -326,22 +326,12 @@ struct nancumulate{
     template<typename It, typename DstIt, typename IdxT>
     void operator()(It first, It, DstIt dfirst, DstIt dlast, IdxT,IdxT){
         using value_type = typename std::iterator_traits<It>::value_type;
-        Operation<value_type> op{};
+        using operation_type = Operation<value_type>;
+        operation_type op{};
         if constexpr (gtensor::math::numeric_traits<value_type>::has_nan()){
-            //find first not nan
-            for(;dfirst!=dlast; ++dfirst,++first){
-                const auto& e = *first;
-                if (!gtensor::math::isnan(e)){
-                    *dfirst = e;
-                    break;
-                }else{
-                    *dfirst = Operation<value_type>::value;
-                }
-            }
-            if (dfirst == dlast){
-                return;
-            }
-            auto res = *dfirst; //res not nan
+            const auto& e = *first;
+            auto res = gtensor::math::isnan(e) ? operation_type::value : e;
+            *dfirst = res;
             for(++dfirst,++first; dfirst!=dlast; ++dfirst,++first){
                 const auto& e = *first;
                 if (!gtensor::math::isnan(e)){
@@ -615,6 +605,42 @@ auto nanprod(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_
 template<typename...Ts>
 auto nanprod(const basic_tensor<Ts...>& t, bool keep_dims = false){
     return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::nanprod{},keep_dims);
+}
+
+//cumulative sum along given axis, treating nan as zero
+//axis is scalar
+template<typename...Ts, typename DimT>
+auto nancumsum(const basic_tensor<Ts...>& t, const DimT& axis){
+    using index_type = typename basic_tensor<Ts...>::index_type;
+    const index_type window_size = 1;
+    const index_type window_step = 1;
+    return slide(t,axis,math_reduce_operations::nancumsum{}, window_size, window_step);
+}
+//nancumsum along all axes
+template<typename...Ts>
+auto nancumsum(const basic_tensor<Ts...>& t){
+    using index_type = typename basic_tensor<Ts...>::index_type;
+    const index_type window_size = 1;
+    const index_type window_step = 1;
+    return slide(t,math_reduce_operations::nancumsum{}, window_size, window_step);
+}
+
+//cumulative product along given axis, treating nan as one
+//axis is scalar
+template<typename...Ts, typename DimT>
+auto nancumprod(const basic_tensor<Ts...>& t, const DimT& axis){
+    using index_type = typename basic_tensor<Ts...>::index_type;
+    const index_type window_size = 1;
+    const index_type window_step = 1;
+    return slide(t,axis,math_reduce_operations::nancumprod{}, window_size, window_step);
+}
+//nancumprod along all axes
+template<typename...Ts>
+auto nancumprod(const basic_tensor<Ts...>& t){
+    using index_type = typename basic_tensor<Ts...>::index_type;
+    const index_type window_size = 1;
+    const index_type window_step = 1;
+    return slide(t,math_reduce_operations::nancumprod{}, window_size, window_step);
 }
 
 
