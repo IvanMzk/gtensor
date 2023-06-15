@@ -167,14 +167,14 @@ struct any
 //find extremum propagating nan
 //Comparator should be like std::less for minimum and like std::greater for maximum
 //Comparator result must be false when any argument is nan
-template<template<typename> typename Comparator>
+template<typename Comparator>
 struct extremum
 {
     template<typename It>
     auto operator()(It first, It last){
         using value_type = typename std::iterator_traits<It>::value_type;
         auto res = *first;
-        Comparator<value_type> cmp{};
+        Comparator comparator{};
         if constexpr (gtensor::math::numeric_traits<value_type>::has_nan()){
             if (gtensor::math::isnan(res)){
                 return res;
@@ -184,7 +184,7 @@ struct extremum
                 if (gtensor::math::isnan(e)){
                     return e;
                 }else{
-                    if (cmp(e,res)){
+                    if (comparator(e,res)){
                         res = e;
                     }
                 }
@@ -192,7 +192,7 @@ struct extremum
         }else{
             for(++first; first!=last; ++first){
                 const auto& e = *first;
-                if (cmp(e,res)){
+                if (comparator(e,res)){
                         res = e;
                 }
             }
@@ -204,7 +204,7 @@ struct extremum
 //find extremum ignoring nan
 //Comparator should be like std::less for minimum and like std::greater for maximum
 //Comparator result must be false when any argument is nan
-template<template<typename> typename Comparator>
+template<typename Comparator>
 struct nanextremum
 {
     template<typename It>
@@ -221,11 +221,11 @@ struct nanextremum
                 return --first,*first;
             }
         }
-        Comparator<value_type> cmp{};
+        Comparator comparator{};
         auto res = *first;
         for(++first; first!=last; ++first){
             const auto& e = *first;
-            if (cmp(e,res)){   //must be false if e is nan, res always not nan
+            if (comparator(e,res)){   //must be false if e is nan, res always not nan
                 res = e;
             }
         }
@@ -233,29 +233,35 @@ struct nanextremum
     }
 };
 
-using amin = extremum<std::less>;
-using amax = extremum<std::greater>;
-using nanmin = nanextremum<std::less>;
-using nanmax = nanextremum<std::greater>;
+using amin = extremum<std::less<void>>;
+using amax = extremum<std::greater<void>>;
+using nanmin = nanextremum<std::less<void>>;
+using nanmax = nanextremum<std::greater<void>>;
 
 //accumulate propagating nan
 //Operation should be like std::plus for sum and like std::multiplies for prod
 //Operation result must be nan when any argument is nan
-template<template<typename> typename Operation>
+template<typename Operation>
 struct accumulate
 {
+    Operation operation_{};
+    accumulate() = default;
+    template<typename Operation_, std::enable_if_t<!std::is_same_v<accumulate,std::remove_cv_t<std::remove_reference_t<Operation_>>> ,int> =0>
+    explicit accumulate(Operation_&& operation__):
+        operation_{std::forward<Operation_>(operation__)}
+    {}
+
     template<typename It>
     auto operator()(It first, It last){
         using value_type = typename std::iterator_traits<It>::value_type;
         auto res = *first;
-        Operation<value_type> op{};
         if constexpr (gtensor::math::numeric_traits<value_type>::has_nan()){
             if (gtensor::math::isnan(res)){
                 return res;
             }
         }
         for(++first; first!=last; ++first){
-            res = op(res,*first);   //must return nan if any of arguments is nan
+            res = operation_(res,*first);   //must return nan if any of arguments is nan
         }
         return res;
     }
@@ -264,36 +270,41 @@ struct accumulate
 //accumulate ignoring nan (like treating nan as zero for sum and as one for prod)
 //Operation should be like std::plus for sum and like std::multiplies for prod
 //Operation result must be nan when any argument is nan
-template<template<typename> typename Operation>
+template<typename Operation>
 struct nanaccumulate
 {
+    Operation operation_{};
+    nanaccumulate() = default;
+    template<typename Operation_, std::enable_if_t<!std::is_same_v<nanaccumulate,std::remove_cv_t<std::remove_reference_t<Operation_>>> ,int> =0>
+    explicit nanaccumulate(Operation_&& operation__):
+        operation_{std::forward<Operation_>(operation__)}
+    {}
+
     template<typename It>
     auto operator()(It first, It last){
         using value_type = typename std::iterator_traits<It>::value_type;
-        using operation_type = Operation<value_type>;
-        operation_type op{};
         if constexpr (gtensor::math::numeric_traits<value_type>::has_nan()){
             const auto& e = *first;
-            auto res = gtensor::math::isnan(e) ? operation_type::value : e;
+            auto res = gtensor::math::isnan(e) ? Operation::template value<value_type> : e;
             for(++first; first!=last; ++first){
                 const auto& e = *first;
                 if (!gtensor::math::isnan(e)){
-                    res = op(res,e);
+                    res = operation_(res,e);
                 }
             }
             return res;
         }else{
             auto res = *first;
             for(++first; first!=last; ++first){
-                res = op(res,*first);
+                res = operation_(res,*first);
             }
             return res;
         }
     }
 };
 
-template<typename T> struct plus : public std::plus<T>{static constexpr T value = T(0);};
-template<typename T> struct multiplies : public std::multiplies<T>{static constexpr T value = T(1);};
+struct plus : public std::plus<void>{template<typename T> static constexpr T value = T(0);};
+struct multiplies : public std::multiplies<void>{template<typename T> static constexpr T value = T(1);};
 
 using sum = accumulate<plus>;
 using prod = accumulate<multiplies>;
@@ -303,17 +314,16 @@ using nanprod = nanaccumulate<multiplies>;
 //cumulate propagating nan
 //Operation should be like std::plus for cumsum and like std::multiplies for cumprod
 //Operation result must be nan when any argument is nan
-template<template<typename> typename Operation>
+template<typename Operation>
 struct cumulate
 {
     template<typename It, typename DstIt>
     void operator()(It first, It, DstIt dfirst, DstIt dlast){
-        using value_type = typename std::iterator_traits<It>::value_type;
-        Operation<value_type> op{};
+        Operation operation{};
         auto res = *first;
         *dfirst = res;
         for(++dfirst,++first; dfirst!=dlast; ++dfirst,++first){
-            res=op(res,*first);
+            res=operation(res,*first);
             *dfirst = res;
         }
     }
@@ -322,22 +332,21 @@ struct cumulate
 //cumulate ignoring nan (like treating nan as zero for cumsum and as one for cumprod)
 //Operation should be like std::plus for cumsum and like std::multiplies for cumprod and has value static member (zero for plus, one for multiplies)
 //Operation result must be nan when any argument is nan
-template<template<typename> typename Operation>
+template<typename Operation>
 struct nancumulate
 {
     template<typename It, typename DstIt>
     void operator()(It first, It, DstIt dfirst, DstIt dlast){
         using value_type = typename std::iterator_traits<It>::value_type;
-        using operation_type = Operation<value_type>;
-        operation_type op{};
+        Operation operation{};
         if constexpr (gtensor::math::numeric_traits<value_type>::has_nan()){
             const auto& e = *first;
-            auto res = gtensor::math::isnan(e) ? operation_type::value : e;
+            auto res = gtensor::math::isnan(e) ? Operation::template value<value_type> : e;
             *dfirst = res;
             for(++dfirst,++first; dfirst!=dlast; ++dfirst,++first){
                 const auto& e = *first;
                 if (!gtensor::math::isnan(e)){
-                    res=op(res,e);
+                    res=operation(res,e);
                 }
                 *dfirst = res;
             }
@@ -346,7 +355,7 @@ struct nancumulate
             auto res = *first;
             *dfirst = res;
             for(++dfirst,++first; dfirst!=dlast; ++dfirst,++first){
-                res=op(res,*first);
+                res=operation(res,*first);
                 *dfirst = res;
             }
         }
