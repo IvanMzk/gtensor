@@ -1003,9 +1003,12 @@ TEST_CASE("test_math_any_initializer_list_axes_any_axes","test_math")
 }
 
 //amin,nanmin
-TEST_CASE("test_math_amin_nanmin","test_math")
+TEMPLATE_TEST_CASE("test_math_amin_nanmin","test_math",
+    double,
+    int
+)
 {
-    using value_type = double;
+    using value_type = TestType;
     using tensor_type = gtensor::tensor<value_type>;
     using gtensor::amin;
     using gtensor::nanmin;
@@ -1073,9 +1076,12 @@ TEST_CASE("test_math_amin_nanmin","test_math")
     }
 }
 
-TEST_CASE("test_math_amin_nanmin_initializer_list_axes_all_axes","test_math")
+TEMPLATE_TEST_CASE("test_math_amin_nanmin_initializer_list_axes_all_axes","test_math",
+    double,
+    int
+)
 {
-    using value_type = double;
+    using value_type = TestType;
     using tensor_type = gtensor::tensor<value_type>;
     using gtensor::amin;
     using gtensor::nanmin;
@@ -1143,9 +1149,12 @@ TEST_CASE("test_math_amin_nanmin_nan_values","test_math")
 }
 
 //amax,nanmax
-TEST_CASE("test_math_amax_nanmax","test_math")
+TEMPLATE_TEST_CASE("test_math_amax_nanmax","test_math",
+    double,
+    int
+)
 {
-    using value_type = double;
+    using value_type = TestType;
     using tensor_type = gtensor::tensor<value_type>;
     using gtensor::amax;
     using gtensor::nanmax;
@@ -1213,9 +1222,12 @@ TEST_CASE("test_math_amax_nanmax","test_math")
     }
 }
 
-TEST_CASE("test_math_amax_nanmax_initializer_list_axes_all_axes","test_math")
+TEMPLATE_TEST_CASE("test_math_amax_nanmax_initializer_list_axes_all_axes","test_math",
+    double,
+    int
+)
 {
-    using value_type = double;
+    using value_type = TestType;
     using tensor_type = gtensor::tensor<value_type>;
     using gtensor::amax;
     using helpers_for_testing::apply_by_element;
@@ -1282,9 +1294,12 @@ TEST_CASE("test_math_amax_nanmax_nan_values","test_math")
 }
 
 //sum,nansum
-TEST_CASE("test_math_sum_nansum","test_math")
+TEMPLATE_TEST_CASE("test_math_sum_nansum","test_math",
+    double,
+    int
+)
 {
-    using value_type = double;
+    using value_type = TestType;
     using tensor_type = gtensor::tensor<value_type>;
     using gtensor::sum;
     using gtensor::nansum;
@@ -1352,9 +1367,12 @@ TEST_CASE("test_math_sum_nansum","test_math")
     }
 }
 
-TEST_CASE("test_math_sum_nansum_initializer_list_axes_all_axes","test_math")
+TEMPLATE_TEST_CASE("test_math_sum_nansum_initializer_list_axes_all_axes","test_math",
+    double,
+    int
+)
 {
-    using value_type = double;
+    using value_type = TestType;
     using tensor_type = gtensor::tensor<value_type>;
     using gtensor::sum;
     using gtensor::nansum;
@@ -1425,9 +1443,12 @@ TEST_CASE("test_math_sum_nansum_nan_values","test_math")
 }
 
 //prod,nanprod
-TEST_CASE("test_math_prod_nanprod","test_math")
+TEMPLATE_TEST_CASE("test_math_prod_nanprod","test_math",
+    double,
+    int
+)
 {
-    using value_type = double;
+    using value_type = TestType;
     using tensor_type = gtensor::tensor<value_type>;
     using gtensor::prod;
     using gtensor::nanprod;
@@ -1495,7 +1516,10 @@ TEST_CASE("test_math_prod_nanprod","test_math")
     }
 }
 
-TEST_CASE("test_math_prod_nanprod_initializer_list_axes_all_axes","test_math")
+TEMPLATE_TEST_CASE("test_math_prod_nanprod_initializer_list_axes_all_axes","test_math",
+    double,
+    int
+)
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
@@ -1570,9 +1594,12 @@ TEST_CASE("test_math_prod_nanprod_nan_values","test_math")
 }
 
 //cumsum, nancumsum
-TEST_CASE("test_math_cumsum_nancumsum","test_math")
+TEMPLATE_TEST_CASE("test_math_cumsum_nancumsum","test_math",
+    double,
+    int
+)
 {
-    using value_type = double;
+    using value_type = TestType;
     using tensor_type = gtensor::tensor<value_type>;
     using gtensor::cumsum;
     using helpers_for_testing::apply_by_element;
@@ -1613,9 +1640,12 @@ TEST_CASE("test_math_cumsum_nancumsum","test_math")
     }
 }
 
-TEST_CASE("test_math_cumsum_nancumsum_all_axes","test_math")
+TEMPLATE_TEST_CASE("test_math_cumsum_nancumsum_all_axes","test_math",
+    double,
+    int
+)
 {
-    using value_type = double;
+    using value_type = TestType;
     using tensor_type = gtensor::tensor<value_type>;
     using gtensor::cumsum;
     using helpers_for_testing::apply_by_element;
@@ -1711,9 +1741,12 @@ TEST_CASE("test_math_cumsum_nancumsum_nan_values","test_math")
 }
 
 //cumprod
-TEST_CASE("test_math_cumprod_nancumprod","test_math")
+TEMPLATE_TEST_CASE("test_math_cumprod_nancumprod","test_math",
+    double,
+    int
+)
 {
-    using value_type = double;
+    using value_type = TestType;
     using tensor_type = gtensor::tensor<value_type>;
     using gtensor::cumprod;
     using helpers_for_testing::apply_by_element;
@@ -1754,9 +1787,12 @@ TEST_CASE("test_math_cumprod_nancumprod","test_math")
     }
 }
 
-TEST_CASE("test_math_cumprod_nancumprod_all_axes","test_math")
+TEMPLATE_TEST_CASE("test_math_cumprod_nancumprod_all_axes","test_math",
+    double,
+    int
+)
 {
-    using value_type = double;
+    using value_type = TestType;
     using tensor_type = gtensor::tensor<value_type>;
     using gtensor::cumprod;
     using helpers_for_testing::apply_by_element;
