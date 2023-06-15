@@ -1112,15 +1112,23 @@ TEST_CASE("test_math_amin_nanmin_nan_values","test_math")
     using gtensor::tensor_equal;
     using helpers_for_testing::apply_by_element;
     static constexpr value_type nan = std::numeric_limits<value_type>::quiet_NaN();
+    static constexpr value_type pos_inf = std::numeric_limits<value_type>::infinity();
+    static constexpr value_type neg_inf = -std::numeric_limits<value_type>::infinity();
     //0result,1expected
     auto test_data = std::make_tuple(
         //amin
+        std::make_tuple(amin(tensor_type{1.0,0.5,2.0,pos_inf,3.0}), tensor_type(0.5)),
+        std::make_tuple(amin(tensor_type{1.0,0.5,2.0,neg_inf,3.0}), tensor_type(neg_inf)),
+        std::make_tuple(amin(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf}), tensor_type(nan)),
         std::make_tuple(amin(tensor_type{{nan,nan,nan,4.0,0.0,3.0},{2.0,0.0,nan,-1.0,1.0,1.0}}), tensor_type(nan)),
         std::make_tuple(amin(tensor_type{{nan,nan,nan,4.0,0.0,3.0},{2.0,0.0,nan,-1.0,1.0,1.0}},0), tensor_type{nan,nan,nan,-1.0,0.0,1.0}),
         std::make_tuple(amin(tensor_type{{nan,nan,nan,4.0,0.0,3.0},{2.0,0.0,nan,-1.0,1.0,1.0}},1), tensor_type{nan,nan}),
         std::make_tuple(amin(tensor_type{{4.0,-1.0,3.0,nan},{nan,0.1,5.0,1.0}},0), tensor_type{nan,-1.0,3.0,nan}),
         std::make_tuple(amin(tensor_type{{4.0,-1.0,3.0,nan},{2.0,0.1,5.0,1.0}},1), tensor_type{nan,0.1}),
         //nanmin
+        std::make_tuple(nanmin(tensor_type{1.0,0.5,2.0,pos_inf,3.0}), tensor_type(0.5)),
+        std::make_tuple(nanmin(tensor_type{1.0,0.5,2.0,neg_inf,3.0}), tensor_type(neg_inf)),
+        std::make_tuple(nanmin(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf}), tensor_type(neg_inf)),
         std::make_tuple(nanmin(tensor_type{{nan,nan,nan},{nan,nan,nan}}), tensor_type(nan)),
         std::make_tuple(nanmin(tensor_type{{nan,nan,nan},{nan,1.1,nan},{0.1,2.0,nan}}), tensor_type(0.1)),
         std::make_tuple(nanmin(tensor_type{{nan,nan,nan},{nan,1.1,nan},{0.1,2.0,nan}},0), tensor_type{0.1,1.1,nan}),
@@ -1243,15 +1251,23 @@ TEST_CASE("test_math_amax_nanmax_nan_values","test_math")
     using gtensor::tensor_equal;
     using helpers_for_testing::apply_by_element;
     static constexpr value_type nan = std::numeric_limits<value_type>::quiet_NaN();
+    static constexpr value_type pos_inf = std::numeric_limits<value_type>::infinity();
+    static constexpr value_type neg_inf = -std::numeric_limits<value_type>::infinity();
     //0result,1expected
     auto test_data = std::make_tuple(
         //amax
+        std::make_tuple(amax(tensor_type{1.0,0.5,2.0,pos_inf,3.0}), tensor_type(pos_inf)),
+        std::make_tuple(amax(tensor_type{1.0,0.5,2.0,neg_inf,3.0}), tensor_type(3.0)),
+        std::make_tuple(amax(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf}), tensor_type(nan)),
         std::make_tuple(amax(tensor_type{{nan,nan,nan,4.0,0.0,3.0},{2.0,0.0,nan,-1.0,1.0,1.0}}), tensor_type(nan)),
         std::make_tuple(amax(tensor_type{{nan,nan,nan,4.0,0.0,3.0},{2.0,0.0,nan,-1.0,1.0,1.0}},0), tensor_type{nan,nan,nan,4.0,1.0,3.0}),
         std::make_tuple(amax(tensor_type{{nan,nan,nan,4.0,0.0,3.0},{2.0,0.0,nan,-1.0,1.0,1.0}},1), tensor_type{nan,nan}),
         std::make_tuple(amax(tensor_type{{4.0,-1.0,3.0,nan},{nan,0.1,5.0,1.0}},0), tensor_type{nan,0.1,5.0,nan}),
         std::make_tuple(amax(tensor_type{{4.0,-1.0,3.0,nan},{2.0,0.1,5.0,1.0}},1), tensor_type{nan,5.0}),
         //nanmax
+        std::make_tuple(nanmax(tensor_type{1.0,0.5,2.0,pos_inf,3.0}), tensor_type(pos_inf)),
+        std::make_tuple(nanmax(tensor_type{1.0,0.5,2.0,neg_inf,3.0}), tensor_type(3.0)),
+        std::make_tuple(nanmax(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf}), tensor_type(pos_inf)),
         std::make_tuple(nanmax(tensor_type{{nan,nan,nan},{nan,nan,nan}}), tensor_type(nan)),
         std::make_tuple(nanmax(tensor_type{{nan,nan,nan},{nan,1.1,nan},{0.1,2.0,nan}}), tensor_type(2.0)),
         std::make_tuple(nanmax(tensor_type{{nan,nan,nan},{nan,1.1,nan},{0.1,2.0,nan}},0), tensor_type{0.1,2.0,nan}),
@@ -1373,9 +1389,15 @@ TEST_CASE("test_math_sum_nansum_nan_values","test_math")
     using gtensor::tensor_equal;
     using helpers_for_testing::apply_by_element;
     static constexpr value_type nan = std::numeric_limits<value_type>::quiet_NaN();
+    static constexpr value_type pos_inf = std::numeric_limits<value_type>::infinity();
+    static constexpr value_type neg_inf = -std::numeric_limits<value_type>::infinity();
     //0result,1expected
     auto test_data = std::make_tuple(
         //sum
+        std::make_tuple(sum(tensor_type{1.0,0.5,2.0,4.0,3.0,pos_inf}), tensor_type(pos_inf)),
+        std::make_tuple(sum(tensor_type{1.0,0.5,2.0,neg_inf,3.0,4.0}), tensor_type(neg_inf)),
+        std::make_tuple(sum(tensor_type{1.0,0.5,2.0,neg_inf,3.0,pos_inf}), tensor_type(nan)),
+        std::make_tuple(sum(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf}), tensor_type(nan)),
         std::make_tuple(sum(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}}), tensor_type(nan)),
         std::make_tuple(sum(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}},0), tensor_type{nan,nan,nan}),
         std::make_tuple(sum(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}},1), tensor_type{nan,nan,nan}),
@@ -1383,6 +1405,10 @@ TEST_CASE("test_math_sum_nansum_nan_values","test_math")
         std::make_tuple(sum(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}},0), tensor_type{nan,nan,nan,10.0}),
         std::make_tuple(sum(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}},1), tensor_type{nan,nan,nan,nan}),
         //nansum
+        std::make_tuple(nansum(tensor_type{1.0,nan,2.0,4.0,3.0,pos_inf}), tensor_type(pos_inf)),
+        std::make_tuple(nansum(tensor_type{1.0,nan,2.0,neg_inf,3.0,4.0}), tensor_type(neg_inf)),
+        std::make_tuple(nansum(tensor_type{1.0,0.5,2.0,neg_inf,3.0,pos_inf}), tensor_type(nan)),
+        std::make_tuple(nansum(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf}), tensor_type(nan)),
         std::make_tuple(nansum(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}}), tensor_type(0.0)),
         std::make_tuple(nansum(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}},0), tensor_type{0.0,0.0,0.0}),
         std::make_tuple(nansum(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}},1), tensor_type{0.0,0.0,0.0}),
@@ -1506,9 +1532,16 @@ TEST_CASE("test_math_prod_nanprod_nan_values","test_math")
     using gtensor::tensor_equal;
     using helpers_for_testing::apply_by_element;
     static constexpr value_type nan = std::numeric_limits<value_type>::quiet_NaN();
+    static constexpr value_type pos_inf = std::numeric_limits<value_type>::infinity();
+    static constexpr value_type neg_inf = -std::numeric_limits<value_type>::infinity();
     //0result,1expected
     auto test_data = std::make_tuple(
         //prod
+        std::make_tuple(prod(tensor_type{1.0,0.5,2.0,4.0,3.0,pos_inf}), tensor_type(pos_inf)),
+        std::make_tuple(prod(tensor_type{1.0,0.5,2.0,neg_inf,3.0,4.0}), tensor_type(neg_inf)),
+        std::make_tuple(prod(tensor_type{1.0,0.5,2.0,neg_inf,3.0,pos_inf}), tensor_type(neg_inf)),
+        std::make_tuple(prod(tensor_type{1.0,0.0,2.0,neg_inf,3.0,pos_inf}), tensor_type(nan)),
+        std::make_tuple(prod(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf}), tensor_type(nan)),
         std::make_tuple(prod(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}}), tensor_type(nan)),
         std::make_tuple(prod(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}},0), tensor_type{nan,nan,nan}),
         std::make_tuple(prod(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}},1), tensor_type{nan,nan,nan}),
@@ -1516,6 +1549,11 @@ TEST_CASE("test_math_prod_nanprod_nan_values","test_math")
         std::make_tuple(prod(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}},0), tensor_type{nan,nan,nan,24.0}),
         std::make_tuple(prod(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}},1), tensor_type{nan,nan,nan,nan}),
         //nanprod
+        std::make_tuple(nanprod(tensor_type{1.0,nan,2.0,4.0,3.0,pos_inf}), tensor_type(pos_inf)),
+        std::make_tuple(nanprod(tensor_type{1.0,nan,2.0,neg_inf,3.0,4.0}), tensor_type(neg_inf)),
+        std::make_tuple(nanprod(tensor_type{1.0,0.5,2.0,neg_inf,3.0,pos_inf}), tensor_type(neg_inf)),
+        std::make_tuple(nanprod(tensor_type{1.0,0.0,2.0,neg_inf,3.0,pos_inf}), tensor_type(nan)),
+        std::make_tuple(nanprod(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf}), tensor_type(neg_inf)),
         std::make_tuple(nanprod(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}}), tensor_type(1.0)),
         std::make_tuple(nanprod(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}},0), tensor_type{1.0,1.0,1.0}),
         std::make_tuple(nanprod(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}},1), tensor_type{1.0,1.0,1.0}),
@@ -1623,9 +1661,15 @@ TEST_CASE("test_math_cumsum_nancumsum_nan_values","test_math")
     using gtensor::tensor_equal;
     using helpers_for_testing::apply_by_element;
     static constexpr value_type nan = std::numeric_limits<value_type>::quiet_NaN();
+    static constexpr value_type pos_inf = std::numeric_limits<value_type>::infinity();
+    static constexpr value_type neg_inf = -std::numeric_limits<value_type>::infinity();
     //0result,1expected
     auto test_data = std::make_tuple(
         //cumsum
+        std::make_tuple(cumsum(tensor_type{1.0,0.5,2.0,pos_inf,3.0,4.0}), tensor_type{1.0,1.5,3.5,pos_inf,pos_inf,pos_inf}),
+        std::make_tuple(cumsum(tensor_type{1.0,0.5,2.0,neg_inf,3.0,4.0}), tensor_type{1.0,1.5,3.5,neg_inf,neg_inf,neg_inf}),
+        std::make_tuple(cumsum(tensor_type{1.0,0.5,2.0,neg_inf,3.0,pos_inf}), tensor_type{1.0,1.5,3.5,neg_inf,neg_inf,nan}),
+        std::make_tuple(cumsum(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf}), tensor_type{1.0,nan,nan,nan,nan,nan}),
         std::make_tuple(cumsum(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}}), tensor_type{nan,nan,nan,nan,nan,nan,nan,nan,nan}),
         std::make_tuple(cumsum(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}},0), tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}}),
         std::make_tuple(cumsum(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}},1), tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}}),
@@ -1640,6 +1684,10 @@ TEST_CASE("test_math_cumsum_nancumsum_nan_values","test_math")
             tensor_type{{nan,nan,nan,nan},{nan,nan,nan,nan},{0.5,2.5,nan,nan},{0.5,3.5,nan,nan}}
         ),
         //nancumsum
+        std::make_tuple(nancumsum(tensor_type{1.0,0.5,2.0,pos_inf,3.0,4.0}), tensor_type{1.0,1.5,3.5,pos_inf,pos_inf,pos_inf}),
+        std::make_tuple(nancumsum(tensor_type{1.0,0.5,2.0,neg_inf,3.0,4.0}), tensor_type{1.0,1.5,3.5,neg_inf,neg_inf,neg_inf}),
+        std::make_tuple(nancumsum(tensor_type{1.0,0.5,2.0,neg_inf,3.0,pos_inf}), tensor_type{1.0,1.5,3.5,neg_inf,neg_inf,nan}),
+        std::make_tuple(nancumsum(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf}), tensor_type{1.0,1.0,3.0,neg_inf,neg_inf,nan}),
         std::make_tuple(nancumsum(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}}), tensor_type{0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}),
         std::make_tuple(nancumsum(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}},0), tensor_type{{0.0,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}}),
         std::make_tuple(nancumsum(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}},1), tensor_type{{0.0,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0}}),
@@ -1754,9 +1802,16 @@ TEST_CASE("test_math_cumprod_nancumprod_nan_values","test_math")
     using gtensor::tensor_equal;
     using helpers_for_testing::apply_by_element;
     static constexpr value_type nan = std::numeric_limits<value_type>::quiet_NaN();
+    static constexpr value_type pos_inf = std::numeric_limits<value_type>::infinity();
+    static constexpr value_type neg_inf = -std::numeric_limits<value_type>::infinity();
     //0result,1expected
     auto test_data = std::make_tuple(
         //cumprod
+        std::make_tuple(cumprod(tensor_type{1.0,0.5,2.0,pos_inf,4.0,3.0}), tensor_type{1.0,0.5,1.0,pos_inf,pos_inf,pos_inf}),
+        std::make_tuple(cumprod(tensor_type{1.0,0.5,2.0,neg_inf,3.0,4.0}), tensor_type{1.0,0.5,1.0,neg_inf,neg_inf,neg_inf}),
+        std::make_tuple(cumprod(tensor_type{1.0,0.5,2.0,neg_inf,3.0,pos_inf}), tensor_type{1.0,0.5,1.0,neg_inf,neg_inf,neg_inf}),
+        std::make_tuple(cumprod(tensor_type{1.0,0.0,2.0,neg_inf,3.0,pos_inf}), tensor_type{1.0,0.0,0.0,nan,nan,nan}),
+        std::make_tuple(cumprod(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf}), tensor_type{1.0,nan,nan,nan,nan,nan}),
         std::make_tuple(cumprod(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}}), tensor_type{nan,nan,nan,nan,nan,nan,nan,nan,nan}),
         std::make_tuple(cumprod(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}},0), tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}}),
         std::make_tuple(cumprod(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}},1), tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}}),
@@ -1771,6 +1826,11 @@ TEST_CASE("test_math_cumprod_nancumprod_nan_values","test_math")
             tensor_type{{nan,nan,nan,nan},{nan,nan,nan,nan},{0.5,1.0,nan,nan},{0.5,1.5,nan,nan}}
         ),
         //nancumprod
+        std::make_tuple(nancumprod(tensor_type{1.0,nan,2.0,pos_inf,4.0,3.0}), tensor_type{1.0,1.0,2.0,pos_inf,pos_inf,pos_inf}),
+        std::make_tuple(nancumprod(tensor_type{1.0,nan,2.0,neg_inf,3.0,4.0}), tensor_type{1.0,1.0,2.0,neg_inf,neg_inf,neg_inf}),
+        std::make_tuple(nancumprod(tensor_type{1.0,0.5,2.0,neg_inf,3.0,pos_inf}), tensor_type{1.0,0.5,1.0,neg_inf,neg_inf,neg_inf}),
+        std::make_tuple(nancumprod(tensor_type{1.0,0.0,2.0,neg_inf,3.0,pos_inf}), tensor_type{1.0,0.0,0.0,nan,nan,nan}),
+        std::make_tuple(nancumprod(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf}), tensor_type{1.0,1.0,2.0,neg_inf,neg_inf,neg_inf}),
         std::make_tuple(nancumprod(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}}), tensor_type{1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0}),
         std::make_tuple(nancumprod(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}},0), tensor_type{{1.0,1.0,1.0},{1.0,1.0,1.0},{1.0,1.0,1.0}}),
         std::make_tuple(nancumprod(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}},1), tensor_type{{1.0,1.0,1.0},{1.0,1.0,1.0},{1.0,1.0,1.0}}),
