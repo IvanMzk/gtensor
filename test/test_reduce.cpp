@@ -277,8 +277,8 @@ struct prod
 };
 
 struct cumsum{
-    template<typename It, typename DstIt, typename IdxT>
-    void operator()(It first, It, DstIt dfirst, DstIt dlast, IdxT,IdxT){
+    template<typename It, typename DstIt>
+    void operator()(It first, It, DstIt dfirst, DstIt dlast){
         auto cumsum_ = *first;
         *dfirst = cumsum_;
         for(++dfirst,++first; dfirst!=dlast; ++dfirst,++first){
@@ -289,8 +289,8 @@ struct cumsum{
 };
 
 struct cumprod_reverse{
-    template<typename It, typename DstIt, typename IdxT>
-    void operator()(It, It last, DstIt dfirst, DstIt dlast, IdxT,IdxT){
+    template<typename It, typename DstIt>
+    void operator()(It, It last, DstIt dfirst, DstIt dlast){
         auto cumprod_ = *--last;
         *--dlast = cumprod_;
         while(dlast!=dfirst){
@@ -323,8 +323,8 @@ struct moving_avarage{
 };
 
 struct diff_1{
-    template<typename It, typename DstIt, typename IdxT>
-    void operator()(It first, It, DstIt dfirst, DstIt dlast, const IdxT&, const IdxT&){
+    template<typename It, typename DstIt>
+    void operator()(It first, It, DstIt dfirst, DstIt dlast){
         for (;dfirst!=dlast;++dfirst){
             auto prev = *first;
             *dfirst = *(++first) - prev;
@@ -333,8 +333,8 @@ struct diff_1{
 };
 
 struct diff_2{
-    template<typename It, typename DstIt, typename IdxT>
-    void operator()(It first, It, DstIt dfirst, DstIt dlast, const IdxT&, const IdxT&){
+    template<typename It, typename DstIt>
+    void operator()(It first, It, DstIt dfirst, DstIt dlast){
         for (;dfirst!=dlast;++dfirst){
             auto v0 = *first;
             auto v1 = *(++first);
@@ -698,7 +698,7 @@ TEST_CASE("test_slide_custom_arg","[test_reduce]")
         auto window_step = std::get<4>(t);
         auto denom = std::get<5>(t);
         auto expected = std::get<6>(t);
-        auto result = slide(tensor, axis, functor, window_size, window_step,denom);
+        auto result = slide(tensor, axis, functor, window_size, window_step, window_size, window_step, denom);
         REQUIRE(result == expected);
     };
     apply_by_element(test, test_data);

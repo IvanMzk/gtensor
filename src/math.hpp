@@ -305,8 +305,8 @@ using nanprod = nanaccumulate<multiplies>;
 //Operation result must be nan when any argument is nan
 template<template<typename> typename Operation>
 struct cumulate{
-    template<typename It, typename DstIt, typename IdxT>
-    void operator()(It first, It, DstIt dfirst, DstIt dlast, IdxT,IdxT){
+    template<typename It, typename DstIt>
+    void operator()(It first, It, DstIt dfirst, DstIt dlast){
         using value_type = typename std::iterator_traits<It>::value_type;
         Operation<value_type> op{};
         auto res = *first;
@@ -323,8 +323,8 @@ struct cumulate{
 //Operation result must be nan when any argument is nan
 template<template<typename> typename Operation>
 struct nancumulate{
-    template<typename It, typename DstIt, typename IdxT>
-    void operator()(It first, It, DstIt dfirst, DstIt dlast, IdxT,IdxT){
+    template<typename It, typename DstIt>
+    void operator()(It first, It, DstIt dfirst, DstIt dlast){
         using value_type = typename std::iterator_traits<It>::value_type;
         using operation_type = Operation<value_type>;
         operation_type op{};
@@ -357,8 +357,8 @@ using nancumsum = nancumulate<plus>;
 using nancumprod = nancumulate<multiplies>;
 
 struct diff_1{
-    template<typename It, typename DstIt, typename IdxT>
-    void operator()(It first, It, DstIt dfirst, DstIt dlast, const IdxT&, const IdxT&){
+    template<typename It, typename DstIt>
+    void operator()(It first, It, DstIt dfirst, DstIt dlast){
         for (;dfirst!=dlast;++dfirst){
             auto prev = *first;
             *dfirst = *(++first) - prev;
@@ -367,8 +367,8 @@ struct diff_1{
 };
 
 struct diff_2{
-    template<typename It, typename DstIt, typename IdxT>
-    void operator()(It first, It, DstIt dfirst, DstIt dlast, const IdxT&, const IdxT&){
+    template<typename It, typename DstIt>
+    void operator()(It first, It, DstIt dfirst, DstIt dlast){
         for (;dfirst!=dlast;++dfirst){
             auto v0 = *first;
             auto v1 = *(++first);

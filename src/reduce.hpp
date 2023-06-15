@@ -505,7 +505,7 @@ class reducer
             if (pdim == dim_type{1}){
                 auto parent_a = parent.template traverse_order_adapter<order>();
                 auto res_a = res.template traverse_order_adapter<order>();
-                slide_f(parent_a.begin(), parent_a.end(), res_a.begin(), res_a.end(), window_size,window_step,std::forward<Args>(args)...);
+                slide_f(parent_a.begin(), parent_a.end(), res_a.begin(), res_a.end(), std::forward<Args>(args)...);
             }else{
                 using traverse_predicate_type = detail::reduce_traverse_predicate<config_type, dim_type>;
                 traverse_predicate_type traverse_predicate{axis, true};
@@ -515,14 +515,12 @@ class reducer
                 const auto parent_axis_size = detail::make_slide_axis_size(pshape,axis);
                 const auto res_axis_size = detail::make_slide_axis_size(res_shape,axis);
                 do{
-                    //0first,1last,2dst_first,3dst_last,4window_size,5window_step,6args
+                    //0first,1last,2dst_first,3dst_last,4args
                     slide_f(
                         detail::slide_begin(parent_traverser,axis),
                         detail::slide_end(parent_traverser,axis,parent_axis_size),
                         detail::slide_begin(res_traverser,axis),
                         detail::slide_end(res_traverser,axis,res_axis_size),
-                        window_size,
-                        window_step,
                         std::forward<Args>(args)...
                     );
                     res_traverser.template next<order>();
@@ -552,10 +550,10 @@ class reducer
             auto res_a = res.template traverse_order_adapter<order>();
             if (pdim == dim_type{1}){
                 auto parent_a = parent.template traverse_order_adapter<order>();
-                slide_f(parent_a.begin(), parent_a.end(), res_a.begin(), res_a.end(), window_size,window_step,std::forward<Args>(args)...);
+                slide_f(parent_a.begin(), parent_a.end(), res_a.begin(), res_a.end(), std::forward<Args>(args)...);
             }else{
                 auto parent_a = parent.template traverse_order_adapter<config::c_order>();
-                slide_f(parent_a.begin(), parent_a.end(), res_a.begin(), res_a.end(), window_size,window_step,std::forward<Args>(args)...);
+                slide_f(parent_a.begin(), parent_a.end(), res_a.begin(), res_a.end(), std::forward<Args>(args)...);
             }
         }
         return res;
