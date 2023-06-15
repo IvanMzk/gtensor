@@ -244,7 +244,6 @@ using nanmax = nanextremum<std::greater<void>>;
 template<typename Operation>
 struct accumulate
 {
-    Operation operation_{};
     accumulate() = default;
     template<typename Operation_, std::enable_if_t<!std::is_same_v<accumulate,std::remove_cv_t<std::remove_reference_t<Operation_>>> ,int> =0>
     explicit accumulate(Operation_&& operation__):
@@ -265,6 +264,10 @@ struct accumulate
         }
         return res;
     }
+
+    const auto& operation()const{return operation_;}
+private:
+    Operation operation_{};
 };
 
 //accumulate ignoring nan (like treating nan as zero for sum and as one for prod)
@@ -273,7 +276,6 @@ struct accumulate
 template<typename Operation>
 struct nanaccumulate
 {
-    Operation operation_{};
     nanaccumulate() = default;
     template<typename Operation_, std::enable_if_t<!std::is_same_v<nanaccumulate,std::remove_cv_t<std::remove_reference_t<Operation_>>> ,int> =0>
     explicit nanaccumulate(Operation_&& operation__):
@@ -301,6 +303,10 @@ struct nanaccumulate
             return res;
         }
     }
+
+    const auto& operation()const{return operation_;}
+private:
+    Operation operation_{};
 };
 
 struct plus : public std::plus<void>{template<typename T> static constexpr T value = T(0);};
@@ -380,16 +386,53 @@ struct mean{
     }
 };
 
+template<typename DiffT>
+struct counting_plus
+{
+    template<typename T> static constexpr T value = T(0);
+    template<typename U, typename V>
+    auto operator()(U&& u, V&& v){
+        ++counter_;
+        return std::forward<U>(u) + std::forward<V>(v);
+    }
+    DiffT counter()const{return counter_;}
+private:
+    DiffT counter_{0};
+};
+
 struct nanmean{
     template<typename It>
     auto operator()(It first, It last){
         using value_type = typename std::iterator_traits<It>::value_type;
+        using difference_type = typename std::iterator_traits<It>::difference_type;
         using res_type = std::conditional_t<
             gtensor::math::numeric_traits<value_type>::is_floating_point(),
             value_type,
             typename gtensor::math::numeric_traits<value_type>::floating_point_type
         >;
-        return static_cast<res_type>(nansum{}(first,last)) / static_cast<res_type>(last - first);
+        if constexpr (gtensor::math::numeric_traits<value_type>::has_nan()){
+            //find first not nan
+            for(;first!=last; ++first){
+                if (!gtensor::math::isnan(*first)){
+                    break;
+                }
+            }
+            if (first == last){ //all nans, return last nan
+                return --first,*first;
+            }
+            auto sum = *first;
+            difference_type counter{1};
+            for(++first; first!=last; ++first){
+                const auto& e = *first;
+                if (!gtensor::math::isnan(e)){
+                    sum+=e;
+                    ++counter;
+                }
+            }
+            return static_cast<res_type>(sum) / static_cast<res_type>(counter);
+        }else{
+            return mean{}(first,last);
+        }
     }
 };
 
