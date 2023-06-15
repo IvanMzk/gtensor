@@ -629,9 +629,8 @@ auto reduce(const basic_tensor<Ts...>& t, const Axes& axes, F f, bool keep_dims,
 
 //F is slide functor that takes arguments: iterators range of data to be slided, dst iterators range, sliding parameters
 //F call operator must be defined like this:
-//template<typename It,typename DstIt,typename IdxT,typename...Args>
-//void operator()(It first, It last, DstIt dfirst, DstIt dlast, IdxT window_size, IdxT window_step, Arg1 arg1, Arg2 arg2,...){...}
-//where Arg1,Arg2,... is application specific arguments
+//template<typename It,typename DstIt,typename IdxT,typename...Args> void operator()(It first, It last, DstIt dfirst, DstIt dlast, Args...){...}
+//where Args is optional application specific parameters
 //result tensor has value_type that is same as source tensor value_type
 template<typename...Ts, typename DimT, typename F, typename IdxT, typename...Args>
 auto slide(const basic_tensor<Ts...>& t, const DimT& axis, F f, const IdxT& window_size, const IdxT& window_step, Args&&...args){
