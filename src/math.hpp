@@ -252,13 +252,7 @@ struct accumulate
 
     template<typename It>
     auto operator()(It first, It last){
-        using value_type = typename std::iterator_traits<It>::value_type;
         auto res = *first;
-        if constexpr (gtensor::math::numeric_traits<value_type>::has_nan()){
-            if (gtensor::math::isnan(res)){
-                return res;
-            }
-        }
         for(++first; first!=last; ++first){
             res = operation_(res,*first);   //must return nan if any of arguments is nan
         }
@@ -383,8 +377,12 @@ struct mean
             value_type,
             typename gtensor::math::numeric_traits<value_type>::floating_point_type
         >;
-        const auto n = last - first;
-        return static_cast<res_type>(sum{}(first,last)) / static_cast<res_type>(n);
+        const auto n = static_cast<res_type>(last-first);
+        auto sum_ = static_cast<res_type>(*first);
+        for(++first; first!=last; ++first){
+            sum_ += static_cast<const res_type&>(*first);
+        }
+        return sum_ / n;
     }
 };
 
@@ -409,16 +407,17 @@ struct nanmean
             if (first == last){ //all nans, return last nan
                 return --first,*first;
             }
-            auto sum = *first;
+            auto sum = static_cast<res_type>(*first);
             difference_type counter{1};
             for(++first; first!=last; ++first){
-                const auto& e = *first;
+                const auto& e = static_cast<const res_type&>(*first);
                 if (!gtensor::math::isnan(e)){
                     sum+=e;
                     ++counter;
                 }
             }
-            return static_cast<res_type>(sum) / static_cast<res_type>(counter);
+            const auto n = static_cast<res_type>(counter);
+            return sum / n;
         }else{
             return mean{}(first,last);
         }
