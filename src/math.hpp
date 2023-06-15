@@ -373,7 +373,8 @@ using cumprod = cumulate<multiplies>;
 using nancumsum = nancumulate<plus>;
 using nancumprod = nancumulate<multiplies>;
 
-struct mean{
+struct mean
+{
     template<typename It>
     auto operator()(It first, It last){
         using value_type = typename std::iterator_traits<It>::value_type;
@@ -382,25 +383,13 @@ struct mean{
             value_type,
             typename gtensor::math::numeric_traits<value_type>::floating_point_type
         >;
-        return static_cast<res_type>(sum{}(first,last)) / static_cast<res_type>(last - first);
+        const auto n = last - first;
+        return static_cast<res_type>(sum{}(first,last)) / static_cast<res_type>(n);
     }
 };
 
-template<typename DiffT>
-struct counting_plus
+struct nanmean
 {
-    template<typename T> static constexpr T value = T(0);
-    template<typename U, typename V>
-    auto operator()(U&& u, V&& v){
-        ++counter_;
-        return std::forward<U>(u) + std::forward<V>(v);
-    }
-    DiffT counter()const{return counter_;}
-private:
-    DiffT counter_{0};
-};
-
-struct nanmean{
     template<typename It>
     auto operator()(It first, It last){
         using value_type = typename std::iterator_traits<It>::value_type;
@@ -432,6 +421,68 @@ struct nanmean{
             return static_cast<res_type>(sum) / static_cast<res_type>(counter);
         }else{
             return mean{}(first,last);
+        }
+    }
+};
+
+struct var
+{
+    template<typename It>
+    auto operator()(It first, It last){
+        using value_type = typename std::iterator_traits<It>::value_type;
+        using res_type = std::conditional_t<
+            gtensor::math::numeric_traits<value_type>::is_floating_point(),
+            value_type,
+            typename gtensor::math::numeric_traits<value_type>::floating_point_type
+        >;
+        const auto n = static_cast<res_type>(last-first);
+        auto sum = static_cast<res_type>(*first);
+        auto sum_2 = sum*sum;
+        for(++first; first!=last; ++first){
+            const auto& e = static_cast<const res_type&>(*first);
+            sum+=e;
+            sum_2+=e*e;
+        }
+        return (n*sum_2 - sum*sum)/(n*n);
+    }
+};
+
+struct nanvar
+{
+    template<typename It>
+    auto operator()(It first, It last){
+        using value_type = typename std::iterator_traits<It>::value_type;
+        using difference_type = typename std::iterator_traits<It>::difference_type;
+        using res_type = std::conditional_t<
+            gtensor::math::numeric_traits<value_type>::is_floating_point(),
+            value_type,
+            typename gtensor::math::numeric_traits<value_type>::floating_point_type
+        >;
+        if constexpr (gtensor::math::numeric_traits<value_type>::has_nan()){
+            //find first not nan
+            for(;first!=last; ++first){
+                if (!gtensor::math::isnan(*first)){
+                    break;
+                }
+            }
+            if (first == last){ //all nans, return last nan
+                return --first,*first;
+            }
+            auto sum = static_cast<res_type>(*first);
+            auto sum_2 = sum*sum;
+            difference_type counter{1};
+            for(++first; first!=last; ++first){
+                const auto& e = static_cast<const res_type&>(*first);
+                if (!gtensor::math::isnan(e)){
+                    sum+=e;
+                    sum_2+=e*e;
+                    ++counter;
+                }
+            }
+            const auto n = static_cast<res_type>(counter);
+            return (n*sum_2 - sum*sum)/(n*n);
+        }else{
+            return var{}(first,last);
         }
     }
 };
@@ -615,6 +666,22 @@ auto mean(const basic_tensor<Ts...>& t, bool keep_dims = false){
     return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::mean{},keep_dims);
 }
 
+//variance of elements along given axes
+//axes may be scalar or container
+template<typename...Ts, typename Axes>
+auto var(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
+    return reduce(t,axes,math_reduce_operations::var{},keep_dims);
+}
+template<typename...Ts>
+auto var(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::dim_type> axes, bool keep_dims = false){
+    return reduce(t,axes,math_reduce_operations::var{},keep_dims);
+}
+//var along all axes
+template<typename...Ts>
+auto var(const basic_tensor<Ts...>& t, bool keep_dims = false){
+    return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::var{},keep_dims);
+}
+
 
 
 //n-th difference along given axis
@@ -743,7 +810,7 @@ auto nancumprod(const basic_tensor<Ts...>& t){
     return slide(t,math_reduce_operations::nancumprod{}, window_size, window_step);
 }
 
-//mean of elements along given axes, treating nan as zero
+//mean of elements along given axes, ignoring nan
 //axes may be scalar or container
 template<typename...Ts, typename Axes>
 auto nanmean(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
@@ -759,6 +826,21 @@ auto nanmean(const basic_tensor<Ts...>& t, bool keep_dims = false){
     return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::nanmean{},keep_dims);
 }
 
+//variance of elements along given axes, ignoring nan
+//axes may be scalar or container
+template<typename...Ts, typename Axes>
+auto nanvar(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
+    return reduce(t,axes,math_reduce_operations::nanvar{},keep_dims);
+}
+template<typename...Ts>
+auto nanvar(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::dim_type> axes, bool keep_dims = false){
+    return reduce(t,axes,math_reduce_operations::nanvar{},keep_dims);
+}
+//nanvar along all axes
+template<typename...Ts>
+auto nanvar(const basic_tensor<Ts...>& t, bool keep_dims = false){
+    return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::nanvar{},keep_dims);
+}
 
 }   //end of namespace gtensor
 #endif
