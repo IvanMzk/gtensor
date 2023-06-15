@@ -304,7 +304,8 @@ using nanprod = nanaccumulate<multiplies>;
 //Operation should be like std::plus for cumsum and like std::multiplies for cumprod
 //Operation result must be nan when any argument is nan
 template<template<typename> typename Operation>
-struct cumulate{
+struct cumulate
+{
     template<typename It, typename DstIt>
     void operator()(It first, It, DstIt dfirst, DstIt dlast){
         using value_type = typename std::iterator_traits<It>::value_type;
@@ -322,7 +323,8 @@ struct cumulate{
 //Operation should be like std::plus for cumsum and like std::multiplies for cumprod and has value static member (zero for plus, one for multiplies)
 //Operation result must be nan when any argument is nan
 template<template<typename> typename Operation>
-struct nancumulate{
+struct nancumulate
+{
     template<typename It, typename DstIt>
     void operator()(It first, It, DstIt dfirst, DstIt dlast){
         using value_type = typename std::iterator_traits<It>::value_type;
@@ -356,7 +358,34 @@ using cumprod = cumulate<multiplies>;
 using nancumsum = nancumulate<plus>;
 using nancumprod = nancumulate<multiplies>;
 
-struct diff_1{
+struct mean{
+    template<typename It>
+    auto operator()(It first, It last){
+        using value_type = typename std::iterator_traits<It>::value_type;
+        using res_type = std::conditional_t<
+            gtensor::math::numeric_traits<value_type>::is_floating_point(),
+            value_type,
+            typename gtensor::math::numeric_traits<value_type>::floating_point_type
+        >;
+        return static_cast<res_type>(sum{}(first,last)) / static_cast<res_type>(last - first);
+    }
+};
+
+struct nanmean{
+    template<typename It>
+    auto operator()(It first, It last){
+        using value_type = typename std::iterator_traits<It>::value_type;
+        using res_type = std::conditional_t<
+            gtensor::math::numeric_traits<value_type>::is_floating_point(),
+            value_type,
+            typename gtensor::math::numeric_traits<value_type>::floating_point_type
+        >;
+        return static_cast<res_type>(nansum{}(first,last)) / static_cast<res_type>(last - first);
+    }
+};
+
+struct diff_1
+{
     template<typename It, typename DstIt>
     void operator()(It first, It, DstIt dfirst, DstIt dlast){
         for (;dfirst!=dlast;++dfirst){
@@ -366,7 +395,8 @@ struct diff_1{
     }
 };
 
-struct diff_2{
+struct diff_2
+{
     template<typename It, typename DstIt>
     void operator()(It first, It, DstIt dfirst, DstIt dlast){
         for (;dfirst!=dlast;++dfirst){
@@ -517,6 +547,24 @@ auto cumprod(const basic_tensor<Ts...>& t){
     return slide(t,math_reduce_operations::cumprod{}, window_size, window_step);
 }
 
+//mean of elements along given axes
+//axes may be scalar or container
+template<typename...Ts, typename Axes>
+auto mean(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
+    return reduce(t,axes,math_reduce_operations::mean{},keep_dims);
+}
+template<typename...Ts>
+auto mean(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::dim_type> axes, bool keep_dims = false){
+    return reduce(t,axes,math_reduce_operations::mean{},keep_dims);
+}
+//mean along all axes
+template<typename...Ts>
+auto mean(const basic_tensor<Ts...>& t, bool keep_dims = false){
+    return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::mean{},keep_dims);
+}
+
+
+
 //n-th difference along given axis
 //axis is scalar, default is last axis
 template<typename...Ts>
@@ -643,7 +691,21 @@ auto nancumprod(const basic_tensor<Ts...>& t){
     return slide(t,math_reduce_operations::nancumprod{}, window_size, window_step);
 }
 
-
+//mean of elements along given axes, treating nan as zero
+//axes may be scalar or container
+template<typename...Ts, typename Axes>
+auto nanmean(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
+    return reduce(t,axes,math_reduce_operations::nanmean{},keep_dims);
+}
+template<typename...Ts>
+auto nanmean(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::dim_type> axes, bool keep_dims = false){
+    return reduce(t,axes,math_reduce_operations::nanmean{},keep_dims);
+}
+//nanmean along all axes
+template<typename...Ts>
+auto nanmean(const basic_tensor<Ts...>& t, bool keep_dims = false){
+    return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::nanmean{},keep_dims);
+}
 
 
 }   //end of namespace gtensor

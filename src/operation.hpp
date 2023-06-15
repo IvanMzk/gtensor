@@ -77,7 +77,13 @@ struct default_numeric_traits<T,std::true_type>
     }
 };
 
-template<typename T> struct numeric_traits : default_numeric_traits<T,typename std::is_arithmetic<T>::type>{};
+template<typename T> struct numeric_traits : default_numeric_traits<T,typename std::is_arithmetic<T>::type>
+{
+    //default types for numeric_traits of arithmetic types
+    //may be changed in specialization when other class(set) of data types is used
+    using floating_point_type = double;
+    using integral_type = std::int64_t;
+};
 
 template<typename T> auto floor(T t);
 //basic

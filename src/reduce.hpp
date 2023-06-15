@@ -298,6 +298,9 @@ public:
         return !(*this == other);
     }
     result_type operator*() const{return *traverser.walker();}
+    //extention, bidirectional access is sufficient for reduce operations but having difference may be useful
+    //making iterator random access leads to unneccessary complications in random_access_traverser implementation
+    inline difference_type friend operator-(const reduce_axes_iterator& lhs, const reduce_axes_iterator& rhs){return lhs.flat_index - rhs.flat_index;}
 private:
     traverser_type traverser;
     difference_type flat_index;
@@ -617,9 +620,11 @@ public:
     }
 };
 
-//F is reduce functor that takes iterators range of data to be reduced as arguments and return scalar - reduction result
-//F call operator must be defined like this: template<typename It> Ret operator()(It first, It last, Arg1 arg1, Args2 arg2,...){...}
-//where Arg1,Arg2,... is application specific arguments
+//make tensor reduction along axis or axes
+//F is reduce functor with parameters: iterators range of data to be reduced, optional parameters; must return scalar - reduction result
+//iterator is at least bidirectional, with difference operator extension
+//F call operator must be defined like this: template<typename It,typename...Args> Ret operator()(It first, It last, Args...){...}
+//where Args is optinal, application specific parameters
 //result tensor has value_type that is return type of F
 template<typename F, typename Axes, typename...Ts, typename...Args>
 auto reduce(const basic_tensor<Ts...>& t, const Axes& axes, F f, bool keep_dims, Args&&...args){
@@ -627,10 +632,11 @@ auto reduce(const basic_tensor<Ts...>& t, const Axes& axes, F f, bool keep_dims,
     return reducer_selector_t<config_type>::reduce(t, axes, f, keep_dims, std::forward<Args>(args)...);
 }
 
-//F is slide functor that takes arguments: iterators range of data to be slided, dst iterators range, sliding parameters
-//F call operator must be defined like this:
-//template<typename It,typename DstIt,typename IdxT,typename...Args> void operator()(It first, It last, DstIt dfirst, DstIt dlast, Args...){...}
-//where Args is optional application specific parameters
+//make tensor that is result of applying F to sliding window over axis
+//F is slide functor that takes iterators range of data to be slided, dst iterators range, optional parameters
+//both iterators is random access
+//F call operator must be defined like this: template<typename It,typename DstIt,typename...Args> void operator()(It first, It last, DstIt dfirst, DstIt dlast, Args...){...}
+//where Args is optional, application specific parameters
 //result tensor has value_type that is same as source tensor value_type
 template<typename...Ts, typename DimT, typename F, typename IdxT, typename...Args>
 auto slide(const basic_tensor<Ts...>& t, const DimT& axis, F f, const IdxT& window_size, const IdxT& window_step, Args&&...args){
