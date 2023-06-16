@@ -6,6 +6,25 @@
 
 namespace gtensor{
 
+namespace detail{
+
+template<typename Config, typename ShT, typename Predicate, typename Order>
+auto make_strides_div_predicate(const ShT& shape, const Predicate& predicate, Order order){
+    using dim_type = typename ShT::difference_type;
+    const dim_type dim = detail::make_dim(shape);
+    ShT tmp{};
+    tmp.reserve(dim);
+    for (dim_type i{0}; i!=dim; ++i){
+        if (predicate(i)){
+            tmp.push_back(shape[i]);
+        }
+    }
+    return detail::make_strides_div<Config>(tmp, order);
+}
+
+}   //end of namespace detail
+
+
 //basic indexer is data accessor that uses flat index to address data
 //indexers can be chained to make data view
 template<typename...> class basic_indexer;
@@ -418,8 +437,75 @@ private:
     }
 };
 
+template<typename Config, typename Walker, typename Order, typename Predicate = TraverseAllPredicate>
+class walker_random_access_traverser : public walker_bidirectional_traverser<Config, Walker, Predicate>
+{
+    ASSERT_ORDER(Order);
+    using walker_bidirectional_traverser_base = walker_bidirectional_traverser<Config, Walker, Predicate>;
+    using strides_div_type = detail::strides_div_t<Config>;
+    using walker_bidirectional_traverser_base::walker_;
+    using walker_bidirectional_traverser_base::index_;
+    using walker_bidirectional_traverser_base::dim_;
+    using walker_bidirectional_traverser_base::predicate_;
+    strides_div_type strides_;
+public:
+    using typename walker_bidirectional_traverser_base::config_type;
+    using typename walker_bidirectional_traverser_base::dim_type;
+    using typename walker_bidirectional_traverser_base::index_type;
+    using typename walker_bidirectional_traverser_base::shape_type;
+    template<typename Walker_, typename Predicate_>
+    walker_random_access_traverser(const shape_type& shape__, Walker_&& walker__, Predicate_&& predicate__):
+        walker_bidirectional_traverser_base(shape__, std::forward<Walker_>(walker__), std::forward<Predicate_>(predicate__)),
+        strides_{detail::make_strides_div_predicate<config_type>(shape__,predicate_,Order{})}
+    {}
+
+    bool next(){return walker_bidirectional_traverser_base::template next<Order>();}
+    bool prev(){return walker_bidirectional_traverser_base::template prev<Order>();}
+
+    //n must be in range [0,size-1], where size = make_size(shape__)
+    void move(index_type n){
+        walker_.reset_back();
+        if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
+            move_c(n);
+        }else{
+            move_f(n);
+        }
+    }
+private:
+    void move_c(index_type n){
+        auto index_it = index_.begin();
+        auto strides_it = strides_.begin();
+        for (dim_type direction{0}, last{dim_}; direction!=last; ++direction,++index_it){
+            if (predicate_(direction)){
+                auto steps = detail::divide(n,*strides_it);
+                if (steps!=index_type{0}){
+                    walker_.walk(direction,steps);
+                }
+                *index_it = steps;
+                ++strides_it;
+            }
+        }
+    }
+    void move_f(index_type n){
+        auto index_it = index_.end();
+        auto strides_it = strides_.end();
+        for (dim_type direction{dim_}, first{0}; direction!=first;){
+            --direction;
+            --index_it;
+            if (predicate_(direction)){
+                --strides_it;
+                auto steps = detail::divide(n,*strides_it);
+                if (steps!=index_type{0}){
+                    walker_.walk(direction,steps);
+                }
+                *index_it = steps;
+            }
+        }
+    }
+};
+
 template<typename Config, typename Walker, typename Order>
-class walker_random_access_traverser : public walker_bidirectional_traverser<Config, Walker, TraverseAllPredicate>
+class walker_random_access_traverser<Config,Walker,Order,TraverseAllPredicate> : public walker_bidirectional_traverser<Config, Walker, TraverseAllPredicate>
 {
     ASSERT_ORDER(Order);
     using walker_bidirectional_traverser_base = walker_bidirectional_traverser<Config, Walker, TraverseAllPredicate>;
