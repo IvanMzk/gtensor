@@ -486,6 +486,22 @@ struct nanvar
     }
 };
 
+struct std
+{
+    template<typename It>
+    auto operator()(It first, It last){
+        return gtensor::math::sqrt(var{}(first,last));
+    }
+};
+
+struct nanstd
+{
+    template<typename It>
+    auto operator()(It first, It last){
+        return gtensor::math::sqrt(nanvar{}(first,last));
+    }
+};
+
 struct diff_1
 {
     template<typename It, typename DstIt>
@@ -681,6 +697,22 @@ auto var(const basic_tensor<Ts...>& t, bool keep_dims = false){
     return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::var{},keep_dims);
 }
 
+//standart deviation of elements along given axes
+//axes may be scalar or container
+template<typename...Ts, typename Axes>
+auto std(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
+    return reduce(t,axes,math_reduce_operations::std{},keep_dims);
+}
+template<typename...Ts>
+auto std(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::dim_type> axes, bool keep_dims = false){
+    return reduce(t,axes,math_reduce_operations::std{},keep_dims);
+}
+//std along all axes
+template<typename...Ts>
+auto std(const basic_tensor<Ts...>& t, bool keep_dims = false){
+    return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::std{},keep_dims);
+}
+
 
 
 //n-th difference along given axis
@@ -839,6 +871,22 @@ auto nanvar(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_t
 template<typename...Ts>
 auto nanvar(const basic_tensor<Ts...>& t, bool keep_dims = false){
     return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::nanvar{},keep_dims);
+}
+
+//standart deviation of elements along given axes, ignoring nan
+//axes may be scalar or container
+template<typename...Ts, typename Axes>
+auto nanstd(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
+    return reduce(t,axes,math_reduce_operations::nanstd{},keep_dims);
+}
+template<typename...Ts>
+auto nanstd(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::dim_type> axes, bool keep_dims = false){
+    return reduce(t,axes,math_reduce_operations::nanstd{},keep_dims);
+}
+//nanstd along all axes
+template<typename...Ts>
+auto nanstd(const basic_tensor<Ts...>& t, bool keep_dims = false){
+    return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::nanstd{},keep_dims);
 }
 
 }   //end of namespace gtensor

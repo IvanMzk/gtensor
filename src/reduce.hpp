@@ -621,10 +621,10 @@ public:
 };
 
 //make tensor reduction along axis or axes
+//axes is scalar or container, if axes is empty container reduce like over flatten (all axes)
 //F is reduce functor with parameters: iterators range of data to be reduced, optional parameters; must return scalar - reduction result
 //iterator is at least bidirectional, with difference operator extension
-//F call operator must be defined like this: template<typename It,typename...Args> Ret operator()(It first, It last, Args...){...}
-//where Args is optinal, application specific parameters
+//F call operator must be defined like this: template<typename It,typename...Args> Ret operator()(It first, It last, Args...){...}, Args is optional parameters
 //result tensor has value_type that is return type of F
 template<typename F, typename Axes, typename...Ts, typename...Args>
 auto reduce(const basic_tensor<Ts...>& t, const Axes& axes, F f, bool keep_dims, Args&&...args){
@@ -632,9 +632,8 @@ auto reduce(const basic_tensor<Ts...>& t, const Axes& axes, F f, bool keep_dims,
     return reducer_selector_t<config_type>::reduce(t, axes, f, keep_dims, std::forward<Args>(args)...);
 }
 
-//make tensor that is result of applying F to sliding window over axis
-//F is slide functor that takes iterators range of data to be slided, dst iterators range, optional parameters
-//both iterators is random access
+//make tensor that is result of applying F to sliding window over axis, axis is scalar
+//F is slide functor that takes iterators range of data to be slided, dst iterators range, optional parameters, both iterators are random access
 //F call operator must be defined like this: template<typename It,typename DstIt,typename...Args> void operator()(It first, It last, DstIt dfirst, DstIt dlast, Args...){...}
 //where Args is optional, application specific parameters
 //result tensor has value_type that is same as source tensor value_type
