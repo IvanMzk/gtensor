@@ -359,34 +359,11 @@ class reducer
         const auto& pshape = parent.shape();
         detail::check_reduce_args(pshape, axes);
         auto res = tensor<res_value_type,order,config_type>{detail::make_reduce_shape(pshape, axes, keep_dims)};
-        bool reduce_zero_size_axis{false};
-        if (parent.size() == index_type{0}){    //check if reduce zero size axis
-            if constexpr (detail::is_container_of_type_v<Axes,dim_type>){
-                if (axes.size()==0){
-                    reduce_zero_size_axis = true;
-                }else{
-                    for(const auto& d : axes){
-                        if (pshape[d] == index_type{0}){
-                            reduce_zero_size_axis = true;
-                            break;
-                        }
-                    }
-                }
-            }else if constexpr (std::is_convertible_v<Axes,dim_type>){
-                if (pshape[axes] == index_type{0}){
-                    reduce_zero_size_axis = true;
-                }
-            }else{
-                static_assert(detail::always_false<Axes>, "invalid axes argument");
-            }
-        }
         if (!res.empty()){
-            if (reduce_zero_size_axis){    //fill with default
-                if constexpr (std::is_default_constructible_v<res_value_type>){
-                    detail::fill(res.begin(), res.end(), res_value_type{});
-                }else{
-                    throw reduce_exception("reduce can't fill result, res_value_type is not default constructible");
-                }
+            if (parent.empty()){    //zero size axis is reduced
+                auto a = parent.template traverse_order_adapter<order>();
+                const auto e = reduce_f(a.begin(), a.end(), std::forward<Args>(args)...);
+                detail::fill(res.begin(), res.end(), e);
             }else{
                 const auto res_size = res.size();
                 if (res_size == index_type{1}){
@@ -559,7 +536,6 @@ public:
 //make tensor reduction along axis or axes
 //axes is scalar or container, if axes is empty container reduce like over flatten (all axes)
 //F is reduce functor with parameters: iterators range of data to be reduced, optional parameters; must return scalar - reduction result
-//iterator is at least bidirectional, with difference operator extension
 //F call operator must be defined like this: template<typename It,typename...Args> Ret operator()(It first, It last, Args...){...}, Args is optional parameters
 //result tensor has value_type that is return type of F
 template<typename F, typename Axes, typename...Ts, typename...Args>
@@ -569,9 +545,9 @@ auto reduce(const basic_tensor<Ts...>& t, const Axes& axes, F f, bool keep_dims,
 }
 
 //make tensor that is result of applying F to sliding window over axis, axis is scalar
-//F is slide functor that takes iterators range of data to be slided, dst iterators range, optional parameters, both iterators are random access
+//F is slide functor that takes iterators range of data to be slided, dst iterators range, optional parameters
 //F call operator must be defined like this: template<typename It,typename DstIt,typename...Args> void operator()(It first, It last, DstIt dfirst, DstIt dlast, Args...){...}
-//where Args is optional, application specific parameters
+//where Args is optional parameters
 //result tensor has value_type that is same as source tensor value_type
 template<typename...Ts, typename DimT, typename F, typename IdxT, typename...Args>
 auto slide(const basic_tensor<Ts...>& t, const DimT& axis, F f, const IdxT& window_size, const IdxT& window_step, Args&&...args){
@@ -587,8 +563,7 @@ auto slide(const basic_tensor<Ts...>& t, F f, const IdxT& window_size, const Idx
 
 //transform tensor inplace along specified axis
 //F is transform functor that takes iterators range of data to be transformed
-//F call operator must be defined like this: template<typename It> void operator()(It first, It last, Arg1 arg1, Args2 arg2,...){...}
-//where Arg1,Arg2,... is application specific arguments
+//F call operator must be defined like this: template<typename It, typename...Args> void operator()(It first, It last, Args..){...} Args is optional parameters
 template<typename...Ts, typename DimT, typename F, typename...Args>
 void transform(basic_tensor<Ts...>& t, const DimT& axis, F f, Args&&...args){
     using config_type = typename basic_tensor<Ts...>::config_type;

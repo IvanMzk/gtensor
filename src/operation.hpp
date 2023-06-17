@@ -58,6 +58,7 @@ struct default_numeric_traits<T,std::false_type>
     static constexpr T min(){static_assert(detail::always_false<T>,"not defined");}
     static constexpr T max(){static_assert(detail::always_false<T>,"not defined");}
     static constexpr T epsilon(){static_assert(detail::always_false<T>,"not defined");}
+    static constexpr T nan(){static_assert(detail::always_false<T>,"not defined");}
 };
 //arithmetic type
 template<typename T>
@@ -74,6 +75,10 @@ struct default_numeric_traits<T,std::true_type>
     static constexpr T epsilon(){
         static_assert(is_floating_point(),"not defined for non floating point types");
         return std::numeric_limits<T>::epsilon();
+    }
+    static constexpr T nan(){
+        static_assert(has_nan(),"not defined");
+        return std::numeric_limits<T>::quiet_NaN();
     }
 };
 

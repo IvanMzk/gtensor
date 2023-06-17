@@ -1,10 +1,18 @@
 #ifndef MATH_HPP_
 #define MATH_HPP_
 #include <functional>
+#include <algorithm>
 #include "tensor_operators.hpp"
 #include "reduce.hpp"
 
 namespace gtensor{
+
+class math_exception : public std::runtime_error{
+public:
+    explicit math_exception(const char* what):
+        runtime_error(what)
+    {}
+};
 
 //return true if two tensors have same shape and close elements within specified tolerance
 template<typename...Us, typename...Vs, typename Tol>
@@ -486,7 +494,7 @@ struct nanvar
     }
 };
 
-struct std
+struct stdev
 {
     template<typename It>
     auto operator()(It first, It last){
@@ -502,21 +510,51 @@ struct nanstd
     }
 };
 
-// struct median
-// {
-//     template<typename It, typename Config>
-//     auto operator()(It first, It last, Config){
-//         using value_type = std::iterator_traits<It>::value_type;
-//         using index_type = typename Config::index_type;
-//         using container_type = typename Config::template container<value_type>;
-//         using container_difference_type = typename container_type::difference_type;
-//         const auto n = static_cast<container_difference_type>(last - first);
+struct median
+{
+    template<typename It, typename Config>
+    auto operator()(It first, It last, Config){
+        using value_type = typename std::iterator_traits<It>::value_type;
+        using container_type = typename Config::template container<value_type>;
+        using container_difference_type = typename container_type::difference_type;
+        using res_type = std::conditional_t<
+            gtensor::math::numeric_traits<value_type>::is_floating_point(),
+            value_type,
+            typename gtensor::math::numeric_traits<value_type>::floating_point_type
+        >;
+        const container_difference_type n = static_cast<container_difference_type>(last - first);
+        const container_difference_type half_n = n/container_difference_type{2};
+        container_type elements_(first,last);
+        if constexpr (gtensor::math::numeric_traits<value_type>::has_nan()){
+            try{
+                std::nth_element(
+                    elements_.begin(),
+                    elements_.begin()+half_n,
+                    elements_.end(),
+                    [](const auto& l, const auto& r){
+                        if (gtensor::math::isnan(l+r)){
+                            throw math_exception{"nan found"};
+                        }
+                        return l<r;
+                    }
+                );
+            }catch(math_exception){
+                return gtensor::math::numeric_traits<res_type>::nan();
+            }
+        }else{
+            std::nth_element(elements_.begin(),elements_.begin()+half_n,elements_.end());
+        }
 
-//         const container_difference_type half_n = n/2 + 1;
-//         container_type indexes(n);
-//         std::iota(indexes.begin(), indexes.end(), index_type{0});
-//     }
-// };
+        res_type res = static_cast<res_type>(elements_[half_n]);
+        if (!(n & container_difference_type{1})){   //n is even
+            //const auto max_e = amax{}(elements_.begin(),elements_.begin()+ --half_n);
+            const auto max_e = std::max_element(elements_.begin(),elements_.begin()+half_n);
+            res+= static_cast<res_type>(max_e);
+            res/=res_type{2};
+        }
+        return res;
+    }
+};
 
 struct diff_1
 {
@@ -717,16 +755,35 @@ auto var(const basic_tensor<Ts...>& t, bool keep_dims = false){
 //axes may be scalar or container
 template<typename...Ts, typename Axes>
 auto std(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
-    return reduce(t,axes,math_reduce_operations::std{},keep_dims);
+    return reduce(t,axes,math_reduce_operations::stdev{},keep_dims);
 }
 template<typename...Ts>
 auto std(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::dim_type> axes, bool keep_dims = false){
-    return reduce(t,axes,math_reduce_operations::std{},keep_dims);
+    return reduce(t,axes,math_reduce_operations::stdev{},keep_dims);
 }
 //std along all axes
 template<typename...Ts>
 auto std(const basic_tensor<Ts...>& t, bool keep_dims = false){
-    return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::std{},keep_dims);
+    return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::stdev{},keep_dims);
+}
+
+//median of elements along given axes
+//axes may be scalar or container
+template<typename...Ts, typename Axes>
+auto median(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return reduce(t,axes,math_reduce_operations::median{},keep_dims,config_type{});
+}
+template<typename...Ts>
+auto median(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::dim_type> axes, bool keep_dims = false){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return reduce(t,axes,math_reduce_operations::median{},keep_dims,config_type{});
+}
+//std along all axes
+template<typename...Ts>
+auto median(const basic_tensor<Ts...>& t, bool keep_dims = false){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::median{},keep_dims,config_type{});
 }
 
 
