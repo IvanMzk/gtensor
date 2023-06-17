@@ -125,7 +125,8 @@ GTENSOR_ITERATOR_OPERATOR_GREATER_EQUAL(indexer_iterator);
 GTENSOR_ITERATOR_OPERATOR_LESS_EQUAL(indexer_iterator);
 
 //random access iterator, use walker data accessor
-template<typename Config, typename Walker, typename Order>
+//Predicate specifies which directions to traverse, for custom predicate strides_div should be created using make_strides_div_predicate routine
+template<typename Config, typename Walker, typename Order, typename Predicate = TraverseAllPredicate>
 class walker_iterator
 {
 protected:
@@ -135,7 +136,7 @@ protected:
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     using strides_div_type = detail::strides_div_t<config_type>;
-    using traverser_type = walker_random_access_traverser<config_type, walker_type, Order>;
+    using traverser_type = walker_random_access_traverser<config_type, walker_type, Order, Predicate>;
 public:
     using iterator_category = std::random_access_iterator_tag;
     using difference_type = typename config_type::index_type;
@@ -145,9 +146,9 @@ public:
     using const_reference = typename detail::iterator_internals_selector<result_type>::const_reference;
 
     //begin should be constructed with zero flat_index_ argument, end with size() flat_index_argument
-    template<typename Walker_>
-    walker_iterator(Walker_&& walker_, const shape_type& shape_, const strides_div_type& strides_, const difference_type& flat_index_):
-        traverser{shape_, strides_, std::forward<Walker_>(walker_)},
+    template<typename Walker_, typename Predicate_>
+    walker_iterator(Walker_&& walker_, const shape_type& shape_, const strides_div_type& strides_, const difference_type& flat_index_, Predicate_&& predicate__):
+        traverser{shape_, strides_, std::forward<Walker_>(walker_), std::forward<Predicate_>(predicate__)},
         flat_index{flat_index_}
     {
         if (flat_index_ > difference_type{0}){
@@ -155,6 +156,10 @@ public:
             traverser.next();
         }
     }
+    template<typename P = Predicate, typename Walker_, std::enable_if_t<std::is_same_v<P,TraverseAllPredicate>,int> = 0>
+    walker_iterator(Walker_&& walker_, const shape_type& shape_, const strides_div_type& strides_, const difference_type& flat_index_):
+        walker_iterator{std::forward<Walker_>(walker_), shape_, strides_, flat_index_, TraverseAllPredicate{}}
+    {}
     walker_iterator& operator++(){
         traverser.next();
         ++flat_index;

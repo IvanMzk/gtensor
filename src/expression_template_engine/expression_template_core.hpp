@@ -43,7 +43,7 @@ public:
 private:
     template<typename U, std::size_t...I>
     static auto create_walker_helper(U& instance, dim_type max_dim, std::index_sequence<I...>){
-        return expression_template_walker<config_type,F,decltype(std::get<I>(instance.operands_).create_walker(max_dim))...>{
+        return expression_template_walker<config_type,std::remove_cv_t<F>,decltype(std::get<I>(instance.operands_).create_walker(max_dim))...>{
             instance.f_,
             std::get<I>(instance.operands_).create_walker(max_dim)...
         };

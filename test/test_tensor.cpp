@@ -1712,7 +1712,7 @@ TEST_CASE("test_tensor_slide","[test_tensor]")
     using index_type = typename tensor_type::index_type;
     using helpers_for_testing::apply_by_element;
     //auto cumsum = [](auto first, auto last, auto dfirst, auto dlast, auto win_size, auto win_step){
-    auto cumsum = [](auto first, auto, auto dfirst, auto dlast, auto, auto){
+    auto cumsum = [](auto first, auto, auto dfirst, auto dlast){
         auto cumsum_ = *first;
         *dfirst = cumsum_;
         for(++dfirst,++first;dfirst!=dlast;++dfirst,++first){
@@ -1721,7 +1721,7 @@ TEST_CASE("test_tensor_slide","[test_tensor]")
         }
     };
     //auto diff_1 = [](auto first, auto last, auto dfirst, auto dlast, auto win_size, auto win_step){
-    auto diff_1 = [](auto first, auto, auto dfirst, auto dlast, auto, auto){
+    auto diff_1 = [](auto first, auto, auto dfirst, auto dlast){
         for(;dfirst!=dlast;++dfirst){
             auto prev = *first;
             *dfirst = *++first - prev;
