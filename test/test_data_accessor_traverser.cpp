@@ -594,7 +594,7 @@ TEST_CASE("test_walker_random_access_traverser_predicate","test_data_accessor")
     using gtensor::detail::make_strides;
     using gtensor::detail::make_adapted_strides;
     using gtensor::detail::make_reset_strides;
-    using gtensor::detail::make_dividers;
+    using gtensor::detail::make_strides_div_predicate;
     using test_walker_traverser::do_next;
     using test_walker_traverser::do_prev;
     using helpers_for_testing::apply_by_element;
@@ -651,12 +651,13 @@ TEST_CASE("test_walker_random_access_traverser_predicate","test_data_accessor")
         using traverser_type = gtensor::walker_random_access_traverser<config_type, walker_type, decltype(traverse_order), decltype(predicate)>;
         auto indexer = indexer_type{storage};
         auto strides = make_strides(shape, elements_order);
+        auto strides_div = make_strides_div_predicate<config_type>(shape,predicate,traverse_order);
         auto adapted_strides = make_adapted_strides(shape,strides);
         auto reset_strides = make_reset_strides(shape,strides);
         index_type offset{0};
         dim_type max_dim = gtensor::detail::make_dim(shape);
         auto walker =  walker_type{adapted_strides, reset_strides, offset, indexer, max_dim};
-        auto traverser = traverser_type{shape, walker, predicate};
+        auto traverser = traverser_type{shape, strides_div, walker, predicate};
         auto result_is_next = command(traverser);
         auto result_index = traverser.index();
         auto result_element = *traverser.walker();

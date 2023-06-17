@@ -502,6 +502,22 @@ struct nanstd
     }
 };
 
+// struct median
+// {
+//     template<typename It, typename Config>
+//     auto operator()(It first, It last, Config){
+//         using value_type = std::iterator_traits<It>::value_type;
+//         using index_type = typename Config::index_type;
+//         using container_type = typename Config::template container<value_type>;
+//         using container_difference_type = typename container_type::difference_type;
+//         const auto n = static_cast<container_difference_type>(last - first);
+
+//         const container_difference_type half_n = n/2 + 1;
+//         container_type indexes(n);
+//         std::iota(indexes.begin(), indexes.end(), index_type{0});
+//     }
+// };
+
 struct diff_1
 {
     template<typename It, typename DstIt>

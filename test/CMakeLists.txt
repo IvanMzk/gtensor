@@ -27,8 +27,8 @@ target_sources(Test PRIVATE
 #
     #${CMAKE_CURRENT_SOURCE_DIR}/test_data_accessor_indexer.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_data_accessor_walker.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_data_accessor_traverser.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_iterator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_data_accessor_traverser.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_iterator.cpp
 #
     #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_core.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_implementation.cpp
@@ -36,7 +36,7 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_SOURCE_DIR}/test_view_factory.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_expression_template_engine.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_operators.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_math_along_axes.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_math_along_axes.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_math_close.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_math_elementwise.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor.cpp

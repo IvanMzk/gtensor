@@ -267,7 +267,7 @@ protected:
     using shape_type = typename Config::shape_type;
     using result_type = decltype(*std::declval<traverser_type>().walker());
 public:
-    using iterator_category = std::bidirectional_iterator_tag;
+    using iterator_category = std::random_access_iterator_tag;
     using difference_type = index_type;
     using value_type = typename detail::iterator_internals_selector<result_type>::value_type;
     using pointer = typename detail::iterator_internals_selector<result_type>::pointer;
@@ -282,32 +282,43 @@ public:
         flat_index{flat_index_}
     {}
     reduce_axes_iterator& operator++(){
-        traverser.template next<Order>();
+        traverser.next();
         ++flat_index;
         return *this;
     }
     reduce_axes_iterator& operator--(){
-        traverser.template prev<Order>();
+        traverser.prev();
         --flat_index;
         return *this;
     }
-    bool operator==(const reduce_axes_iterator& other){
-        return flat_index == other.flat_index;
+    reduce_axes_iterator& operator+=(difference_type n){
+        advance(n);
+        return *this;
     }
-    bool operator!=(const reduce_axes_iterator& other){
-        return !(*this == other);
-    }
+    result_type operator[](difference_type n)const{return *(*this+n);}
     result_type operator*() const{return *traverser.walker();}
-    //extention, bidirectional access is sufficient for reduce operations but having difference may be useful
-    //making iterator random access leads to unneccessary complications in random_access_traverser implementation
     inline difference_type friend operator-(const reduce_axes_iterator& lhs, const reduce_axes_iterator& rhs){return lhs.flat_index - rhs.flat_index;}
 private:
+    void advance(difference_type n){
+        flat_index+=n;
+        traverser.move(flat_index);
+    }
+
     traverser_type traverser;
     difference_type flat_index;
 };
 
+GTENSOR_ITERATOR_OPERATOR_ASSIGN_MINUS(reduce_axes_iterator);
+GTENSOR_ITERATOR_OPERATOR_PLUS(reduce_axes_iterator);
+GTENSOR_ITERATOR_OPERATOR_MINUS(reduce_axes_iterator);
 GTENSOR_ITERATOR_OPERATOR_POSTFIX_INC(reduce_axes_iterator);
 GTENSOR_ITERATOR_OPERATOR_POSTFIX_DEC(reduce_axes_iterator);
+GTENSOR_ITERATOR_OPERATOR_EQUAL(reduce_axes_iterator);
+GTENSOR_ITERATOR_OPERATOR_NOT_EQUAL(reduce_axes_iterator);
+GTENSOR_ITERATOR_OPERATOR_GREATER(reduce_axes_iterator);
+GTENSOR_ITERATOR_OPERATOR_LESS(reduce_axes_iterator);
+GTENSOR_ITERATOR_OPERATOR_GREATER_EQUAL(reduce_axes_iterator);
+GTENSOR_ITERATOR_OPERATOR_LESS_EQUAL(reduce_axes_iterator);
 
 template<typename Config, typename Axes>
 class reduce_traverse_predicate
@@ -368,17 +379,18 @@ auto slide_end(const Traverser& traverser, const typename Traverser::dim_type& a
     return reduce_iterator<config_type,walker_type>{std::move(walker), axis, axis_size};
 }
 
-template<typename Order, typename ShT, typename Traverser, typename Axes>
+template<typename ShT, typename Traverser, typename Axes>
 auto reduce_begin(const ShT& shape, const Traverser& traverser, const Axes& axes){
     using config_type = typename Traverser::config_type;
+    using traverse_order = typename config_type::order;
     using dim_type = typename config_type::dim_type;
     using index_type = typename config_type::index_type;
     using walker_type = std::decay_t<decltype(traverser.walker())>;
     using traverse_predicate_type = detail::reduce_traverse_predicate<config_type, Axes>;
-    using traverser_type = gtensor::walker_bidirectional_traverser<config_type, walker_type, traverse_predicate_type>;
+    using traverser_type = gtensor::walker_random_access_traverser<config_type, walker_type, traverse_order, traverse_predicate_type>;
 
     if constexpr (detail::is_container_of_type_v<Axes,dim_type>){
-        return reduce_axes_iterator<config_type, traverser_type, Order>{
+        return reduce_axes_iterator<config_type, traverser_type, traverse_order>{
             traverser_type{shape, traverser.walker(), traverse_predicate_type{axes, false}},
             index_type{0}
         };
@@ -386,19 +398,20 @@ auto reduce_begin(const ShT& shape, const Traverser& traverser, const Axes& axes
         return slide_begin(traverser, axes);
     }
 }
-template<typename Order, typename ShT, typename Traverser, typename Axes>
+template<typename ShT, typename Traverser, typename Axes>
 auto reduce_end(const ShT& shape, const Traverser& traverser, const Axes& axes, const typename Traverser::index_type& axes_size){
     using config_type = typename Traverser::config_type;
+    using traverse_order = typename config_type::order;
     using dim_type = typename config_type::dim_type;
     using walker_type = std::decay_t<decltype(traverser.walker())>;
     using traverse_predicate_type = detail::reduce_traverse_predicate<config_type, Axes>;
-    using traverser_type = gtensor::walker_bidirectional_traverser<config_type, walker_type, traverse_predicate_type>;
+    using traverser_type = gtensor::walker_random_access_traverser<config_type, walker_type, traverse_order, traverse_predicate_type>;
 
     if constexpr (detail::is_container_of_type_v<Axes,dim_type>){
         traverser_type axes_traverser{shape, traverser.walker(), traverse_predicate_type{axes, false}};
         axes_traverser.to_last();
-        axes_traverser.template next<Order>();
-        return reduce_axes_iterator<config_type, traverser_type, Order>{std::move(axes_traverser),axes_size};
+        axes_traverser.next();
+        return reduce_axes_iterator<config_type, traverser_type, traverse_order>{std::move(axes_traverser),axes_size};
     }else{
         return slide_end(traverser,axes,axes_size);
     }
@@ -413,15 +426,14 @@ class reducer
         using parent_type = basic_tensor<Ts...>;
         using order = typename parent_type::order;
         using config_type = typename parent_type::config_type;
-        using traverse_order = typename config_type::order;
         using dim_type = typename config_type::dim_type;
         using index_type = typename config_type::index_type;
         using shape_type = typename config_type::shape_type;
         using axes_container_type = typename config_type::template container<dim_type>;
         using axes_type = decltype(detail::make_axes<axes_container_type>(std::declval<dim_type>(),axes_));
-        using traverse_predicate_type = detail::reduce_traverse_predicate<config_type, Axes>;
-        using traverser_type = walker_bidirectional_traverser<config_type, decltype(parent.create_walker()), traverse_predicate_type>;
-        using iterator_type = decltype(detail::reduce_begin<traverse_order>(std::declval<shape_type>(),std::declval<traverser_type>(),std::declval<axes_type>()));
+        using traverse_predicate_type = detail::reduce_traverse_predicate<config_type, axes_type>;
+        using traverser_type = walker_random_access_traverser<config_type, decltype(parent.create_walker()), order, traverse_predicate_type>;
+        using iterator_type = decltype(detail::reduce_begin(std::declval<shape_type>(),std::declval<traverser_type>(),std::declval<axes_type>()));
         using result_type = decltype(reduce_f(std::declval<iterator_type>(),std::declval<iterator_type>(),std::declval<Args>()...));
         using res_value_type = std::remove_cv_t<std::remove_reference_t<result_type>>;
 
@@ -468,20 +480,19 @@ class reducer
                         *res.begin() = reduce_f(parent.begin(), parent.end(), std::forward<Args>(args)...);
                     }
                 }else{
-                    using traverse_predicate_type = detail::reduce_traverse_predicate<config_type, axes_type>;
                     traverse_predicate_type traverse_predicate{axes, true};
-                    walker_bidirectional_traverser<config_type, decltype(parent.create_walker()), traverse_predicate_type> traverser{pshape, parent.create_walker(), traverse_predicate};
+                    traverser_type traverser{pshape, parent.create_walker(), traverse_predicate};
                     const auto axes_size = detail::make_reduce_axes_size(pshape,parent.size(),axes);
                     auto a = res.template traverse_order_adapter<order>();
                     auto res_it = a.begin();
                     do{
                         *res_it = reduce_f(
-                            detail::reduce_begin<traverse_order>(pshape,traverser,axes),
-                            detail::reduce_end<traverse_order>(pshape,traverser,axes,axes_size),
+                            detail::reduce_begin(pshape,traverser,axes),
+                            detail::reduce_end(pshape,traverser,axes,axes_size),
                             std::forward<Args>(args)...
                         );
                         ++res_it;
-                    }while(traverser.template next<order>());
+                    }while(traverser.next());
                 }
             }
         }

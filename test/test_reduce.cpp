@@ -256,6 +256,37 @@ struct sum
         return std::accumulate(++first,last,init,std::plus{});
     }
 };
+struct sum_random_access
+{
+    template<typename It>
+    auto operator()(It first, It last){
+        using difference_type = typename std::iterator_traits<It>::difference_type;
+        using value_type = typename std::iterator_traits<It>::value_type;
+        const auto n = last-first;
+        difference_type i{0};
+        value_type res = first[i];
+        for (++i;i!=n; ++i){
+            res+=first[i];
+        }
+        return res;
+    }
+};
+struct sum_random_access_reverse
+{
+    template<typename It>
+    auto operator()(It first, It last){
+        using difference_type = typename std::iterator_traits<It>::difference_type;
+        using value_type = typename std::iterator_traits<It>::value_type;
+        const auto n = last-first;
+        difference_type i{-1};
+        value_type res = last[i];
+        for (--i;i!=-n-1; --i){
+            res+=last[i];
+        }
+        return res;
+    }
+};
+
 struct sum_init
 {
     template<typename It>
@@ -360,6 +391,8 @@ TEST_CASE("test_reduce","[test_reduce]")
     using tensor_type = gtensor::tensor<value_type>;
     using dim_type = typename tensor_type::dim_type;
     using test_reduce_::sum;
+    using test_reduce_::sum_random_access;
+    using test_reduce_::sum_random_access_reverse;
     using test_reduce_::prod;
     using test_reduce_::max;
     using test_reduce_::min;
@@ -386,7 +419,8 @@ TEST_CASE("test_reduce","[test_reduce]")
         std::make_tuple(tensor_type{{1,6,7,9},{4,5,7,0}}, dim_type{0}, max{}, false, tensor_type{4,6,7,9}),
         std::make_tuple(tensor_type{{1,6,7,9},{4,5,7,0}}, dim_type{1}, min{}, false, tensor_type{1,0}),
         std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{0}, sum{}, false, tensor_type{{4,6},{8,10}}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{-3}, sum{}, false, tensor_type{{4,6},{8,10}}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{-3}, sum_random_access{}, false, tensor_type{{4,6},{8,10}}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{-3}, sum_random_access_reverse{}, false, tensor_type{{4,6},{8,10}}),
         std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{1}, sum{}, false, tensor_type{{2,4},{10,12}}),
         std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{-2}, sum{}, false, tensor_type{{2,4},{10,12}}),
         std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{2}, sum{}, false, tensor_type{{1,5},{9,13}}),
@@ -451,7 +485,8 @@ TEST_CASE("test_reduce","[test_reduce]")
         std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{1}, sum{}, false, tensor_type{{2,4},{10,12}}),
         std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{1}, prod{}, false, tensor_type{{0,3},{24,35}}),
         std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{2}, sum{}, false, tensor_type{{1,5},{9,13}}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{1,2}, sum{}, false, tensor_type{6,22}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{1,2}, sum_random_access{}, false, tensor_type{6,22}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{1,2}, sum_random_access_reverse{}, false, tensor_type{6,22}),
         std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{2,0}, prod{}, false, tensor_type{0,252}),
         std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{-2,-1}, sum{}, false, tensor_type{6,22}),
         std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{-1,-3}, prod{}, false, tensor_type{0,252}),
@@ -793,3 +828,4 @@ TEST_CASE("test_transform","[test_reduce]")
     };
     apply_by_element(test, test_data);
 }
+
