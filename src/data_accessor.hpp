@@ -437,47 +437,38 @@ private:
     }
 };
 
-template<typename Config, typename Walker, typename Order, typename Predicate = TraverseAllPredicate>
-class walker_random_access_traverser : public walker_bidirectional_traverser<Config, Walker, Predicate>
+template<typename Config, typename Walker, typename Order, typename Predicate>
+class walker_random_access_traverser_common : public walker_bidirectional_traverser<Config, Walker, Predicate>
 {
     ASSERT_ORDER(Order);
     using walker_bidirectional_traverser_base = walker_bidirectional_traverser<Config, Walker, Predicate>;
-    using strides_div_type = detail::strides_div_t<Config>;
     using typename walker_bidirectional_traverser_base::predicate_type;
     using walker_bidirectional_traverser_base::walker_;
     using walker_bidirectional_traverser_base::index_;
     using walker_bidirectional_traverser_base::dim_;
     using walker_bidirectional_traverser_base::predicate_;
-    const strides_div_type* strides_;
-    Walker offset_;
-public:
+protected:
     using typename walker_bidirectional_traverser_base::config_type;
     using typename walker_bidirectional_traverser_base::dim_type;
     using typename walker_bidirectional_traverser_base::index_type;
     using typename walker_bidirectional_traverser_base::shape_type;
-    template<typename Walker_, typename Predicate_>
-    walker_random_access_traverser(const shape_type& shape__, const strides_div_type& strides__, Walker_&& walker__, Predicate_&& predicate__):
-        walker_bidirectional_traverser_base(shape__, std::forward<Walker_>(walker__), std::forward<Predicate_>(predicate__)),
-        strides_{&strides__},
-        offset_{walker_}
-    {}
-    template<typename P = Predicate, typename Walker_, std::enable_if_t<std::is_same_v<P,TraverseAllPredicate>,int> = 0>
-    walker_random_access_traverser(const shape_type& shape__, const strides_div_type& strides__, Walker_&& walker__):
-        walker_random_access_traverser{shape__,strides__,std::forward<Walker_>(walker__),TraverseAllPredicate{}}
-    {}
-
-    bool next(){return walker_bidirectional_traverser_base::template next<Order>();}
-    bool prev(){return walker_bidirectional_traverser_base::template prev<Order>();}
-
-    //n must be in range [0,size-1], where size = make_size(shape__)
-    void move(index_type n){
-        walker_ = offset_;
+    using strides_div_type = detail::strides_div_t<Config>;
+    void move_(index_type n){
         if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
             move_c(n);
         }else{
             move_f(n);
         }
     }
+public:
+    template<typename Walker_, typename Predicate_>
+    walker_random_access_traverser_common(const shape_type& shape__, const strides_div_type& strides__, Walker_&& walker__, Predicate_&& predicate__):
+        walker_bidirectional_traverser_base(shape__, std::forward<Walker_>(walker__), std::forward<Predicate_>(predicate__)),
+        strides_{&strides__}
+    {}
+    bool next(){return walker_bidirectional_traverser_base::template next<Order>();}
+    bool prev(){return walker_bidirectional_traverser_base::template prev<Order>();}
+
 private:
     void move_c(index_type n){
         auto index_it = index_.begin();
@@ -515,6 +506,59 @@ private:
             }
             *index_it = steps;
         }
+    }
+
+    const strides_div_type* strides_;
+};
+
+template<typename Config, typename Walker, typename Order, typename Predicate = TraverseAllPredicate>
+class walker_random_access_traverser : public walker_random_access_traverser_common<Config,Walker,Order,Predicate>
+{
+    ASSERT_ORDER(Order);
+    using walker_random_access_traverser_common_base = walker_random_access_traverser_common<Config,Walker,Order,Predicate>;
+    using typename walker_random_access_traverser_common_base::strides_div_type;
+    Walker offset_;
+public:
+    using typename walker_random_access_traverser_common_base::config_type;
+    using typename walker_random_access_traverser_common_base::dim_type;
+    using typename walker_random_access_traverser_common_base::index_type;
+    using typename walker_random_access_traverser_common_base::shape_type;
+    using walker_random_access_traverser_common_base::walker;
+    template<typename Walker_, typename Predicate_>
+    walker_random_access_traverser(const shape_type& shape__, const strides_div_type& strides__, Walker_&& walker__, Predicate_&& predicate__):
+        walker_random_access_traverser_common_base{shape__, strides__, std::forward<Walker_>(walker__), std::forward<Predicate_>(predicate__)},
+        offset_{walker()}
+    {}
+
+    //n must be in range [0,size-1], where size = make_size(shape__)
+    void move(index_type n){
+        walker() = offset_;
+        walker_random_access_traverser_common_base::move_(n);
+    }
+};
+
+template<typename Config, typename Walker, typename Order>
+class walker_random_access_traverser<Config,Walker,Order,TraverseAllPredicate> : public walker_random_access_traverser_common<Config,Walker,Order,TraverseAllPredicate>
+{
+    ASSERT_ORDER(Order);
+    using walker_random_access_traverser_common_base = walker_random_access_traverser_common<Config,Walker,Order,TraverseAllPredicate>;
+    using strides_div_type = typename walker_random_access_traverser_common_base::strides_div_type;
+public:
+    using typename walker_random_access_traverser_common_base::config_type;
+    using typename walker_random_access_traverser_common_base::dim_type;
+    using typename walker_random_access_traverser_common_base::index_type;
+    using typename walker_random_access_traverser_common_base::shape_type;
+    using walker_random_access_traverser_common_base::walker_random_access_traverser_common_base;
+
+    template<typename Walker_>
+    walker_random_access_traverser(const shape_type& shape__, const strides_div_type& strides__, Walker_&& walker__):
+        walker_random_access_traverser_common_base{shape__,strides__,std::forward<Walker_>(walker__),TraverseAllPredicate{}}
+    {}
+
+    //n must be in range [0,size-1], where size = make_size(shape__)
+    void move(index_type n){
+        walker_random_access_traverser_common_base::walker().reset_back();
+        walker_random_access_traverser_common_base::move_(n);
     }
 };
 
