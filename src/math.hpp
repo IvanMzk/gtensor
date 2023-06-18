@@ -172,17 +172,28 @@ struct any
     }
 };
 
+struct no_initial{};
+template<typename Initial, typename T> constexpr bool is_initial_v = !std::is_same_v<Initial,no_initial> && detail::is_static_castable_v<Initial,T>;
+
 //find extremum propagating nan
 //Comparator should be like std::less for minimum and like std::greater for maximum
 //Comparator result must be false when any argument is nan
 template<typename Comparator>
 struct extremum
 {
-    template<typename It>
-    auto operator()(It first, It last){
+    template<typename It, typename Initial = no_initial>
+    auto operator()(It first, It last, const Initial& initial = Initial{}){
         using value_type = typename std::iterator_traits<It>::value_type;
-        auto res = *first;
+        static constexpr bool is_initial = is_initial_v<Initial,value_type>;
+        if (first == last){
+            if constexpr (is_initial){
+                return static_cast<value_type>(initial);
+            }else{
+                throw reduce_exception("cant reduce zero size dimension without initial value");
+            }
+        }
         Comparator comparator{};
+        auto res = *first;
         if constexpr (gtensor::math::numeric_traits<value_type>::has_nan()){
             if (gtensor::math::isnan(res)){
                 return res;
@@ -205,7 +216,12 @@ struct extremum
                 }
             }
         }
-        return res;
+        if constexpr (is_initial){
+            const auto& initial_ = static_cast<const value_type&>(initial);
+            return comparator(initial_,res) ? initial_ : res;
+        }else{
+            return res;
+        }
     }
 };
 
@@ -215,9 +231,17 @@ struct extremum
 template<typename Comparator>
 struct nanextremum
 {
-    template<typename It>
-    auto operator()(It first, It last){
+    template<typename It, typename Initial = no_initial>
+    auto operator()(It first, It last, const Initial& initial = Initial{}){
         using value_type = typename std::iterator_traits<It>::value_type;
+        static constexpr bool is_initial = is_initial_v<Initial,value_type>;
+        if (first == last){
+            if constexpr (is_initial){
+                return static_cast<value_type>(initial);
+            }else{
+                throw reduce_exception("cant reduce zero size dimension without initial value");
+            }
+        }
         if constexpr (gtensor::math::numeric_traits<value_type>::has_nan()){
             //find first not nan
             for(;first!=last; ++first){
@@ -237,7 +261,12 @@ struct nanextremum
                 res = e;
             }
         }
-        return res;
+        if constexpr (is_initial){
+            const auto& initial_ = static_cast<const value_type&>(initial);
+            return comparator(initial_,res) ? initial_ : res;
+        }else{
+            return res;
+        }
     }
 };
 
@@ -587,69 +616,50 @@ struct diff_2
 //axes may be scalar or container if multiple axes permitted
 //empty container means apply function along all axes
 
+#define GTENSOR_MATH_REDUCE_ROUTINE(name,functor)\
+template<typename...Ts, typename Axes>\
+auto name(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){\
+    return reduce(t,axes,functor{},keep_dims);\
+}\
+template<typename...Ts>\
+auto name(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::dim_type> axes, bool keep_dims = false){\
+    return reduce(t,axes,functor{},keep_dims);\
+}\
+template<typename...Ts>\
+auto name(const basic_tensor<Ts...>& t, bool keep_dims = false){\
+    return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},functor{},keep_dims);\
+}
+
+#define GTENSOR_MATH_REDUCE_INITIAL_ROUTINE(name,functor)\
+template<typename...Ts, typename Axes, typename Initial = math_reduce_operations::no_initial>\
+auto name(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false, const Initial& initial = Initial{}){\
+    return reduce(t,axes,functor{},keep_dims,initial);\
+}\
+template<typename...Ts, typename Initial = math_reduce_operations::no_initial>\
+auto name(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::dim_type> axes, bool keep_dims = false, const Initial& initial = Initial{}){\
+    return reduce(t,axes,functor{},keep_dims,initial);\
+}\
+template<typename...Ts, typename Initial = math_reduce_operations::no_initial>\
+auto name(const basic_tensor<Ts...>& t, bool keep_dims = false, const Initial& initial = Initial{}){\
+    return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},functor{},keep_dims,initial);\
+}
+
+
 //test if all elements along given axes evaluate to true
 //axes may be scalar or container
-template<typename...Ts, typename Axes>
-auto all(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
-    return reduce(t,axes,math_reduce_operations::all{},keep_dims);
-}
-template<typename...Ts>
-auto all(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::dim_type> axes, bool keep_dims = false){
-    return reduce(t,axes,math_reduce_operations::all{},keep_dims);
-}
-//all along all axes
-template<typename...Ts>
-auto all(const basic_tensor<Ts...>& t, bool keep_dims = false){
-    return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::all{},keep_dims);
-}
+GTENSOR_MATH_REDUCE_ROUTINE(all,math_reduce_operations::all);
 
 //test if any of elements along given axes evaluate to true
 //axes may be scalar or container
-template<typename...Ts, typename Axes>
-auto any(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
-    return reduce(t,axes,math_reduce_operations::any{},keep_dims);
-}
-template<typename...Ts>
-auto any(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::dim_type> axes, bool keep_dims = false){
-    return reduce(t,axes,math_reduce_operations::any{},keep_dims);
-}
-//any along all axes
-template<typename...Ts>
-auto any(const basic_tensor<Ts...>& t, bool keep_dims = false){
-    return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::any{},keep_dims);
-}
+GTENSOR_MATH_REDUCE_ROUTINE(any,math_reduce_operations::any);
 
 //min element along given axes
 //axes may be scalar or container
-template<typename...Ts, typename Axes>
-auto amin(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
-    return reduce(t,axes,math_reduce_operations::amin{},keep_dims);
-}
-template<typename...Ts>
-auto amin(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::dim_type> axes, bool keep_dims = false){
-    return reduce(t,axes,math_reduce_operations::amin{},keep_dims);
-}
-//amin along all axes
-template<typename...Ts>
-auto amin(const basic_tensor<Ts...>& t, bool keep_dims = false){
-    return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::amin{},keep_dims);
-}
+GTENSOR_MATH_REDUCE_INITIAL_ROUTINE(amin,math_reduce_operations::amin);
 
-//max element along given axes
-//axes may be scalar or container
-template<typename...Ts, typename Axes>
-auto amax(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
-    return reduce(t,axes,math_reduce_operations::amax{},keep_dims);
-}
-template<typename...Ts>
-auto amax(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::dim_type> axes, bool keep_dims = false){
-    return reduce(t,axes,math_reduce_operations::amax{},keep_dims);
-}
-//amax along all axes
-template<typename...Ts>
-auto amax(const basic_tensor<Ts...>& t, bool keep_dims = false){
-    return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::amax{},keep_dims);
-}
+// //max element along given axes
+// //axes may be scalar or container
+GTENSOR_MATH_REDUCE_INITIAL_ROUTINE(amax,math_reduce_operations::amax);
 
 //sum elements along given axes
 //axes may be scalar or container
@@ -816,35 +826,11 @@ auto diff2(const basic_tensor<Ts...>& t, const typename basic_tensor<Ts...>::dim
 
 //min element along given axes ignoring nan
 //axes may be scalar or container
-template<typename...Ts, typename Axes>
-auto nanmin(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
-    return reduce(t,axes,math_reduce_operations::nanmin{},keep_dims);
-}
-template<typename...Ts>
-auto nanmin(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::dim_type> axes, bool keep_dims = false){
-    return reduce(t,axes,math_reduce_operations::nanmin{},keep_dims);
-}
-//nanmin along all axes
-template<typename...Ts>
-auto nanmin(const basic_tensor<Ts...>& t, bool keep_dims = false){
-    return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::nanmin{},keep_dims);
-}
+GTENSOR_MATH_REDUCE_INITIAL_ROUTINE(nanmin,math_reduce_operations::nanmin);
 
 //max element along given axes ignoring nan
 //axes may be scalar or container
-template<typename...Ts, typename Axes>
-auto nanmax(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
-    return reduce(t,axes,math_reduce_operations::nanmax{},keep_dims);
-}
-template<typename...Ts>
-auto nanmax(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::dim_type> axes, bool keep_dims = false){
-    return reduce(t,axes,math_reduce_operations::nanmax{},keep_dims);
-}
-//nanmax along all axes
-template<typename...Ts>
-auto nanmax(const basic_tensor<Ts...>& t, bool keep_dims = false){
-    return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::nanmax{},keep_dims);
-}
+GTENSOR_MATH_REDUCE_INITIAL_ROUTINE(nanmax,math_reduce_operations::nanmax);
 
 //sum elements along given axes, treating nan as zero
 //axes may be scalar or container

@@ -222,296 +222,360 @@ TEST_CASE("test_math_any_nan_values","test_math")
 }
 
 
-// //amin,nanmin
-// TEMPLATE_TEST_CASE("test_math_amin_nanmin","test_math",
-//     double,
-//     int
-// )
-// {
-//     using value_type = TestType;
-//     using tensor_type = gtensor::tensor<value_type>;
-//     using gtensor::amin;
-//     using gtensor::nanmin;
-//     using helpers_for_testing::apply_by_element;
+//amin,nanmin
+TEMPLATE_TEST_CASE("test_math_amin_nanmin","test_math",
+    double,
+    int
+)
+{
+    using value_type = TestType;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::amin;
+    using gtensor::nanmin;
+    using helpers_for_testing::apply_by_element;
 
-//     REQUIRE(std::is_same_v<decltype(amin(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>())),tensor_type>);
-//     REQUIRE(std::is_same_v<decltype(amin(std::declval<tensor_type>(),std::declval<std::vector<int>>(),std::declval<bool>())),tensor_type>);
-//     REQUIRE(std::is_same_v<decltype(nanmin(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>())),tensor_type>);
-//     REQUIRE(std::is_same_v<decltype(nanmin(std::declval<tensor_type>(),std::declval<std::vector<int>>(),std::declval<bool>())),tensor_type>);
+    REQUIRE(std::is_same_v<typename decltype(amin(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>(),std::declval<value_type>()))::value_type, value_type>);
+    REQUIRE(std::is_same_v<typename decltype(amin(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>()))::value_type, value_type>);
+    REQUIRE(std::is_same_v<typename decltype(amin(std::declval<tensor_type>(),std::declval<std::vector<int>>(),std::declval<bool>()))::value_type, value_type>);
+    REQUIRE(std::is_same_v<typename decltype(nanmin(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>(),std::declval<value_type>()))::value_type, value_type>);
+    REQUIRE(std::is_same_v<typename decltype(nanmin(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>()))::value_type, value_type>);
+    REQUIRE(std::is_same_v<typename decltype(nanmin(std::declval<tensor_type>(),std::declval<std::vector<int>>(),std::declval<bool>()))::value_type, value_type>);
 
-//     //0tensor,1axes,2keep_dims,3expected
-//     auto test_data = std::make_tuple(
-//         //keep_dim false
-//         std::make_tuple(tensor_type{},0,false,tensor_type(value_type{})),
-//         std::make_tuple(tensor_type{},std::vector<int>{0},false,tensor_type(value_type{})),
-//         std::make_tuple(tensor_type{},std::vector<int>{},false,tensor_type(value_type{})),
-//         std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0,2},false,tensor_type{value_type{},value_type{}}),
-//         std::make_tuple(tensor_type{5,2,1,-1,4,4},0,false,tensor_type(-1)),
-//         std::make_tuple(tensor_type{5,2,1,-1,4,4},std::vector<int>{0},false,tensor_type(-1)),
-//         std::make_tuple(tensor_type{5,2,1,-1,4,4},std::vector<int>{},false,tensor_type(-1)),
-//         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},0,false,tensor_type{{1,4,3},{1,0,-1}}),
-//         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},1,false,tensor_type{{1,0,-1},{1,4,2}}),
-//         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},2,false,tensor_type{{1,-1},{4,1}}),
-//         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{0,1},false,tensor_type{1,0,-1}),
-//         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{2,1},false,tensor_type{-1,1}),
-//         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{},false,tensor_type(-1)),
-//         //keep_dim true
-//         std::make_tuple(tensor_type{},0,true,tensor_type{value_type{}}),
-//         std::make_tuple(tensor_type{},std::vector<int>{0},true,tensor_type{value_type{}}),
-//         std::make_tuple(tensor_type{},std::vector<int>{},true,tensor_type{value_type{}}),
-//         std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0,2},true,tensor_type{{{value_type{}},{value_type{}}}}),
-//         std::make_tuple(tensor_type{5,2,1,-1,4,4},0,true,tensor_type{-1}),
-//         std::make_tuple(tensor_type{5,2,1,-1,4,4},std::vector<int>{0},true,tensor_type{-1}),
-//         std::make_tuple(tensor_type{5,2,1,-1,4,4},std::vector<int>{},true,tensor_type{-1}),
-//         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},0,true,tensor_type{{{1,4,3},{1,0,-1}}}),
-//         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},1,true,tensor_type{{{1,0,-1}},{{1,4,2}}}),
-//         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},2,true,tensor_type{{{1},{-1}},{{4},{1}}}),
-//         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{0,1},true,tensor_type{{{1,0,-1}}}),
-//         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{2,1},true,tensor_type{{{-1}},{{1}}}),
-//         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{},true,tensor_type{{{-1}}})
-//     );
-//     SECTION("test_amin")
-//     {
-//         auto test = [](const auto& t){
-//             auto ten = std::get<0>(t);
-//             auto axes = std::get<1>(t);
-//             auto keep_dims = std::get<2>(t);
-//             auto expected = std::get<3>(t);
-//             auto result = amin(ten,axes,keep_dims);
-//             REQUIRE(result == expected);
-//         };
-//         apply_by_element(test,test_data);
-//     }
-//     SECTION("test_nanmin")
-//     {
-//         auto test = [](const auto& t){
-//             auto ten = std::get<0>(t);
-//             auto axes = std::get<1>(t);
-//             auto keep_dims = std::get<2>(t);
-//             auto expected = std::get<3>(t);
-//             auto result = nanmin(ten,axes,keep_dims);
-//             REQUIRE(result == expected);
-//         };
-//         apply_by_element(test,test_data);
-//     }
-// }
+    //0tensor,1axes,2keep_dims,3initial,4expected
+    auto test_data = std::make_tuple(
+        //keep_dim false
+        std::make_tuple(tensor_type{},0,false,value_type{100},tensor_type(value_type{100})),
+        std::make_tuple(tensor_type{},std::vector<int>{0},false,value_type{100},tensor_type(value_type{100})),
+        std::make_tuple(tensor_type{},std::vector<int>{},false,value_type{100},tensor_type(value_type{100})),
+        std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0,2},false,value_type{100},tensor_type{value_type{100},value_type{100}}),
+        std::make_tuple(tensor_type{5},0,false,value_type{100},tensor_type(5)),
+        std::make_tuple(tensor_type{5,2,1,-1,4,4},0,false,value_type{100},tensor_type(-1)),
+        std::make_tuple(tensor_type{5,2,1,-1,4,4},std::vector<int>{0},false,value_type{100},tensor_type(-1)),
+        std::make_tuple(tensor_type{5,2,1,-1,4,4},std::vector<int>{},false,value_type{100},tensor_type(-1)),
+        std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},0,false,value_type{100},tensor_type{{1,4,3},{1,0,-1}}),
+        std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},1,false,value_type{100},tensor_type{{1,0,-1},{1,4,2}}),
+        std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},2,false,value_type{100},tensor_type{{1,-1},{4,1}}),
+        std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{0,1},false,value_type{100},tensor_type{1,0,-1}),
+        std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{2,1},false,value_type{100},tensor_type{-1,1}),
+        std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{},false,value_type{100},tensor_type(-1)),
+        //keep_dim true
+        std::make_tuple(tensor_type{},0,true,value_type{100},tensor_type{value_type{100}}),
+        std::make_tuple(tensor_type{},std::vector<int>{0},true,value_type{100},tensor_type{value_type{100}}),
+        std::make_tuple(tensor_type{},std::vector<int>{},true,value_type{100},tensor_type{value_type{100}}),
+        std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0,2},true,value_type{100},tensor_type{{{value_type{100}},{value_type{100}}}}),
+        std::make_tuple(tensor_type{5},0,true,value_type{100},tensor_type{5}),
+        std::make_tuple(tensor_type{5,2,1,-1,4,4},0,true,value_type{100},tensor_type{-1}),
+        std::make_tuple(tensor_type{5,2,1,-1,4,4},std::vector<int>{0},true,value_type{100},tensor_type{-1}),
+        std::make_tuple(tensor_type{5,2,1,-1,4,4},std::vector<int>{},true,value_type{100},tensor_type{-1}),
+        std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},0,true,value_type{100},tensor_type{{{1,4,3},{1,0,-1}}}),
+        std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},1,true,value_type{100},tensor_type{{{1,0,-1}},{{1,4,2}}}),
+        std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},2,true,value_type{100},tensor_type{{{1},{-1}},{{4},{1}}}),
+        std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{0,1},true,value_type{100},tensor_type{{{1,0,-1}}}),
+        std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{2,1},true,value_type{100},tensor_type{{{-1}},{{1}}}),
+        std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{},true,value_type{100},tensor_type{{{-1}}}),
+        //initial is min
+        std::make_tuple(tensor_type{5,2,1,-1,4,4},0,false,value_type{-2},tensor_type(-2)),
+        std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},2,false,value_type{1},tensor_type{{1,-1},{1,1}})
+    );
+    SECTION("test_amin")
+    {
+        auto test = [](const auto& t){
+            auto ten = std::get<0>(t);
+            auto axes = std::get<1>(t);
+            auto keep_dims = std::get<2>(t);
+            auto initial = std::get<3>(t);
+            auto expected = std::get<4>(t);
+            auto result = amin(ten,axes,keep_dims,initial);
+            REQUIRE(result == expected);
+        };
+        apply_by_element(test,test_data);
+    }
+    SECTION("test_nanmin")
+    {
+        auto test = [](const auto& t){
+            auto ten = std::get<0>(t);
+            auto axes = std::get<1>(t);
+            auto keep_dims = std::get<2>(t);
+            auto initial = std::get<3>(t);
+            auto expected = std::get<4>(t);
+            auto result = nanmin(ten,axes,keep_dims,initial);
+            REQUIRE(result == expected);
+        };
+        apply_by_element(test,test_data);
+    }
+}
 
-// TEMPLATE_TEST_CASE("test_math_amin_nanmin_initializer_list_axes_all_axes","test_math",
-//     double,
-//     int
-// )
-// {
-//     using value_type = TestType;
-//     using tensor_type = gtensor::tensor<value_type>;
-//     using gtensor::amin;
-//     using gtensor::nanmin;
-//     using helpers_for_testing::apply_by_element;
+TEMPLATE_TEST_CASE("test_math_amin_nanmin_initializer_list_axes_all_axes","test_math",
+    double,
+    int
+)
+{
+    using value_type = TestType;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::amin;
+    using gtensor::nanmin;
+    using helpers_for_testing::apply_by_element;
 
-//     REQUIRE(std::is_same_v<decltype(amin(std::declval<tensor_type>(),std::declval<std::initializer_list<int>>(),std::declval<bool>())),tensor_type>);
-//     REQUIRE(std::is_same_v<decltype(nanmin(std::declval<tensor_type>(),std::declval<std::initializer_list<int>>(),std::declval<bool>())),tensor_type>);
+    REQUIRE(std::is_same_v<typename decltype(amin(std::declval<tensor_type>(),std::declval<std::initializer_list<int>>(),std::declval<bool>(),std::declval<value_type>()))::value_type,value_type>);
+    REQUIRE(std::is_same_v<typename decltype(amin(std::declval<tensor_type>(),std::declval<std::initializer_list<int>>(),std::declval<bool>()))::value_type,value_type>);
+    REQUIRE(std::is_same_v<typename decltype(nanmin(std::declval<tensor_type>(),std::declval<std::initializer_list<int>>(),std::declval<bool>(),std::declval<value_type>()))::value_type,value_type>);
+    REQUIRE(std::is_same_v<typename decltype(nanmin(std::declval<tensor_type>(),std::declval<std::initializer_list<int>>(),std::declval<bool>()))::value_type,value_type>);
 
-//     //amin
-//     REQUIRE(amin(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{1},false) == tensor_type{{1,0,-1},{1,4,2}});
-//     REQUIRE(amin(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{2,1},false) == tensor_type{-1,1});
-//     REQUIRE(amin(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{0,1},true) == tensor_type{{{1,0,-1}}});
-//     //all axes
-//     REQUIRE(amin(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},false) == tensor_type(-1));
-//     REQUIRE(amin(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{},false) == tensor_type(-1));
-//     REQUIRE(amin(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},true) == tensor_type{{{-1}}});
+    //amin
+    REQUIRE(amin(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{1},false) == tensor_type{{1,0,-1},{1,4,2}});
+    REQUIRE(amin(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{2,1},false) == tensor_type{-1,1});
+    REQUIRE(amin(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{0,1},true) == tensor_type{{{1,0,-1}}});
+    //all axes
+    REQUIRE(amin(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},false) == tensor_type(-1));
+    REQUIRE(amin(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{},false) == tensor_type(-1));
+    REQUIRE(amin(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},true) == tensor_type{{{-1}}});
 
-//     //nanmin
-//     REQUIRE(nanmin(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{1},false) == tensor_type{{1,0,-1},{1,4,2}});
-//     REQUIRE(nanmin(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{2,1},false) == tensor_type{-1,1});
-//     REQUIRE(nanmin(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{0,1},true) == tensor_type{{{1,0,-1}}});
-//     //all axes
-//     REQUIRE(nanmin(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},false) == tensor_type(-1));
-//     REQUIRE(nanmin(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{},false) == tensor_type(-1));
-//     REQUIRE(nanmin(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},true) == tensor_type{{{-1}}});
-// }
+    //nanmin
+    REQUIRE(nanmin(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{1},false) == tensor_type{{1,0,-1},{1,4,2}});
+    REQUIRE(nanmin(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{2,1},false) == tensor_type{-1,1});
+    REQUIRE(nanmin(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{0,1},true) == tensor_type{{{1,0,-1}}});
+    //all axes
+    REQUIRE(nanmin(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},false) == tensor_type(-1));
+    REQUIRE(nanmin(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{},false) == tensor_type(-1));
+    REQUIRE(nanmin(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},true) == tensor_type{{{-1}}});
+}
 
-// TEST_CASE("test_math_amin_nanmin_nan_values","test_math")
-// {
-//     using value_type = double;
-//     using tensor_type = gtensor::tensor<value_type>;
-//     using gtensor::amin;
-//     using gtensor::nanmin;
-//     using gtensor::tensor_equal;
-//     using helpers_for_testing::apply_by_element;
-//     static constexpr value_type nan = std::numeric_limits<value_type>::quiet_NaN();
-//     static constexpr value_type pos_inf = std::numeric_limits<value_type>::infinity();
-//     static constexpr value_type neg_inf = -std::numeric_limits<value_type>::infinity();
-//     //0result,1expected
-//     auto test_data = std::make_tuple(
-//         //amin
-//         std::make_tuple(amin(tensor_type{1.0,0.5,2.0,pos_inf,3.0}), tensor_type(0.5)),
-//         std::make_tuple(amin(tensor_type{1.0,0.5,2.0,neg_inf,3.0}), tensor_type(neg_inf)),
-//         std::make_tuple(amin(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf}), tensor_type(nan)),
-//         std::make_tuple(amin(tensor_type{{nan,nan,nan,4.0,0.0,3.0},{2.0,0.0,nan,-1.0,1.0,1.0}}), tensor_type(nan)),
-//         std::make_tuple(amin(tensor_type{{nan,nan,nan,4.0,0.0,3.0},{2.0,0.0,nan,-1.0,1.0,1.0}},0), tensor_type{nan,nan,nan,-1.0,0.0,1.0}),
-//         std::make_tuple(amin(tensor_type{{nan,nan,nan,4.0,0.0,3.0},{2.0,0.0,nan,-1.0,1.0,1.0}},1), tensor_type{nan,nan}),
-//         std::make_tuple(amin(tensor_type{{4.0,-1.0,3.0,nan},{nan,0.1,5.0,1.0}},0), tensor_type{nan,-1.0,3.0,nan}),
-//         std::make_tuple(amin(tensor_type{{4.0,-1.0,3.0,nan},{2.0,0.1,5.0,1.0}},1), tensor_type{nan,0.1}),
-//         //nanmin
-//         std::make_tuple(nanmin(tensor_type{1.0,0.5,2.0,pos_inf,3.0}), tensor_type(0.5)),
-//         std::make_tuple(nanmin(tensor_type{1.0,0.5,2.0,neg_inf,3.0}), tensor_type(neg_inf)),
-//         std::make_tuple(nanmin(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf}), tensor_type(neg_inf)),
-//         std::make_tuple(nanmin(tensor_type{{nan,nan,nan},{nan,nan,nan}}), tensor_type(nan)),
-//         std::make_tuple(nanmin(tensor_type{{nan,nan,nan},{nan,1.1,nan},{0.1,2.0,nan}}), tensor_type(0.1)),
-//         std::make_tuple(nanmin(tensor_type{{nan,nan,nan},{nan,1.1,nan},{0.1,2.0,nan}},0), tensor_type{0.1,1.1,nan}),
-//         std::make_tuple(nanmin(tensor_type{{nan,nan,nan},{nan,1.1,nan},{0.1,2.0,nan}},1), tensor_type{nan,1.1,0.1})
-//     );
-//     auto test = [](const auto& t){
-//         auto result = std::get<0>(t);
-//         auto expected = std::get<1>(t);
-//         REQUIRE(tensor_equal(result,expected,true));
-//     };
-//     apply_by_element(test,test_data);
-// }
+TEMPLATE_TEST_CASE("test_math_amin_nanmin_exception","test_math",
+    double,
+    int
+)
+{
+    using value_type = TestType;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::reduce_exception;
+    using gtensor::amin;
+    using gtensor::nanmin;
 
-// //amax,nanmax
-// TEMPLATE_TEST_CASE("test_math_amax_nanmax","test_math",
-//     double,
-//     int
-// )
-// {
-//     using value_type = TestType;
-//     using tensor_type = gtensor::tensor<value_type>;
-//     using gtensor::amax;
-//     using gtensor::nanmax;
-//     using helpers_for_testing::apply_by_element;
+    //amin
+    REQUIRE_THROWS_AS(amin(tensor_type{}),reduce_exception);
+    REQUIRE_THROWS_AS(amin(tensor_type{}.reshape(0,2,3),{0,1}),reduce_exception);
+    REQUIRE_NOTHROW(amin(tensor_type{}.reshape(0,2,3),{1,2}));
+    //nanmin
+    REQUIRE_THROWS_AS(nanmin(tensor_type{}),reduce_exception);
+    REQUIRE_THROWS_AS(nanmin(tensor_type{}.reshape(0,2,3),{0,1}),reduce_exception);
+    REQUIRE_NOTHROW(nanmin(tensor_type{}.reshape(0,2,3),{1,2}));
+}
 
-//     REQUIRE(std::is_same_v<decltype(amax(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>())),tensor_type>);
-//     REQUIRE(std::is_same_v<decltype(amax(std::declval<tensor_type>(),std::declval<std::vector<int>>(),std::declval<bool>())),tensor_type>);
-//     REQUIRE(std::is_same_v<decltype(nanmax(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>())),tensor_type>);
-//     REQUIRE(std::is_same_v<decltype(nanmax(std::declval<tensor_type>(),std::declval<std::vector<int>>(),std::declval<bool>())),tensor_type>);
+TEST_CASE("test_math_amin_nanmin_nan_values","test_math")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::amin;
+    using gtensor::nanmin;
+    using gtensor::tensor_equal;
+    using helpers_for_testing::apply_by_element;
+    static constexpr value_type nan = std::numeric_limits<value_type>::quiet_NaN();
+    static constexpr value_type pos_inf = std::numeric_limits<value_type>::infinity();
+    static constexpr value_type neg_inf = -std::numeric_limits<value_type>::infinity();
+    //0result,1expected
+    auto test_data = std::make_tuple(
+        //amin
+        std::make_tuple(amin(tensor_type{1.0,0.5,2.0,pos_inf,3.0}), tensor_type(0.5)),
+        std::make_tuple(amin(tensor_type{1.0,0.5,2.0,neg_inf,3.0}), tensor_type(neg_inf)),
+        std::make_tuple(amin(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf}), tensor_type(nan)),
+        std::make_tuple(amin(tensor_type{{nan,nan,nan,4.0,0.0,3.0},{2.0,0.0,nan,-1.0,1.0,1.0}}), tensor_type(nan)),
+        std::make_tuple(amin(tensor_type{{nan,nan,nan,4.0,0.0,3.0},{2.0,0.0,nan,-1.0,1.0,1.0}},0), tensor_type{nan,nan,nan,-1.0,0.0,1.0}),
+        std::make_tuple(amin(tensor_type{{nan,nan,nan,4.0,0.0,3.0},{2.0,0.0,nan,-1.0,1.0,1.0}},1), tensor_type{nan,nan}),
+        std::make_tuple(amin(tensor_type{{4.0,-1.0,3.0,nan},{nan,0.1,5.0,1.0}},0), tensor_type{nan,-1.0,3.0,nan}),
+        std::make_tuple(amin(tensor_type{{4.0,-1.0,3.0,nan},{2.0,0.1,5.0,1.0}},1), tensor_type{nan,0.1}),
+        //nanmin
+        std::make_tuple(nanmin(tensor_type{1.0,0.5,2.0,pos_inf,3.0}), tensor_type(0.5)),
+        std::make_tuple(nanmin(tensor_type{1.0,0.5,2.0,neg_inf,3.0}), tensor_type(neg_inf)),
+        std::make_tuple(nanmin(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf}), tensor_type(neg_inf)),
+        std::make_tuple(nanmin(tensor_type{{nan,nan,nan},{nan,nan,nan}}), tensor_type(nan)),
+        std::make_tuple(nanmin(tensor_type{{nan,nan,nan},{nan,1.1,nan},{0.1,2.0,nan}}), tensor_type(0.1)),
+        std::make_tuple(nanmin(tensor_type{{nan,nan,nan},{nan,1.1,nan},{0.1,2.0,nan}},0), tensor_type{0.1,1.1,nan}),
+        std::make_tuple(nanmin(tensor_type{{nan,nan,nan},{nan,1.1,nan},{0.1,2.0,nan}},1), tensor_type{nan,1.1,0.1})
+    );
+    auto test = [](const auto& t){
+        auto result = std::get<0>(t);
+        auto expected = std::get<1>(t);
+        REQUIRE(tensor_equal(result,expected,true));
+    };
+    apply_by_element(test,test_data);
+}
 
-//     //0tensor,1axes,2keep_dims,3expected
-//     auto test_data = std::make_tuple(
-//         //keep_dim false
-//         std::make_tuple(tensor_type{},0,false,tensor_type(value_type{})),
-//         std::make_tuple(tensor_type{},std::vector<int>{0},false,tensor_type(value_type{})),
-//         std::make_tuple(tensor_type{},std::vector<int>{},false,tensor_type(value_type{})),
-//         std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0,2},false,tensor_type{value_type{},value_type{}}),
-//         std::make_tuple(tensor_type{5,2,1,-1,4,4},0,false,tensor_type(5)),
-//         std::make_tuple(tensor_type{5,2,1,-1,4,4},std::vector<int>{0},false,tensor_type(5)),
-//         std::make_tuple(tensor_type{5,2,1,-1,4,4},std::vector<int>{},false,tensor_type(5)),
-//         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},0,false,tensor_type{{7,5,9},{2,11,2}}),
-//         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},1,false,tensor_type{{2,5,3},{7,11,9}}),
-//         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},2,false,tensor_type{{5,2},{9,11}}),
-//         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{0,1},false,tensor_type{7,11,9}),
-//         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{2,1},false,tensor_type{5,11}),
-//         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{},false,tensor_type(11)),
-//         //keep_dim true
-//         std::make_tuple(tensor_type{},0,true,tensor_type{value_type{}}),
-//         std::make_tuple(tensor_type{},std::vector<int>{0},true,tensor_type{value_type{}}),
-//         std::make_tuple(tensor_type{},std::vector<int>{},true,tensor_type{value_type{}}),
-//         std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0,2},true,tensor_type{{{value_type{}},{value_type{}}}}),
-//         std::make_tuple(tensor_type{5,2,1,-1,4,4},0,true,tensor_type{5}),
-//         std::make_tuple(tensor_type{5,2,1,-1,4,4},std::vector<int>{0},true,tensor_type{5}),
-//         std::make_tuple(tensor_type{5,2,1,-1,4,4},std::vector<int>{},true,tensor_type{5}),
-//         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},0,true,tensor_type{{{7,5,9},{2,11,2}}}),
-//         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},1,true,tensor_type{{{2,5,3}},{{7,11,9}}}),
-//         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},2,true,tensor_type{{{5},{2}},{{9},{11}}}),
-//         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{0,1},true,tensor_type{{{7,11,9}}}),
-//         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{2,1},true,tensor_type{{{5}},{{11}}}),
-//         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{},true,tensor_type{{{11}}})
-//     );
-//     SECTION("test_amax")
-//     {
-//         auto test = [](const auto& t){
-//             auto ten = std::get<0>(t);
-//             auto axes = std::get<1>(t);
-//             auto keep_dims = std::get<2>(t);
-//             auto expected = std::get<3>(t);
-//             auto result = amax(ten,axes,keep_dims);
-//             REQUIRE(result == expected);
-//         };
-//         apply_by_element(test,test_data);
-//     }
-//     SECTION("test_nanmax")
-//     {
-//         auto test = [](const auto& t){
-//             auto ten = std::get<0>(t);
-//             auto axes = std::get<1>(t);
-//             auto keep_dims = std::get<2>(t);
-//             auto expected = std::get<3>(t);
-//             auto result = nanmax(ten,axes,keep_dims);
-//             REQUIRE(result == expected);
-//         };
-//         apply_by_element(test,test_data);
-//     }
-// }
+//amax,nanmax
+TEMPLATE_TEST_CASE("test_math_amax_nanmax","test_math",
+    double,
+    int
+)
+{
+    using value_type = TestType;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::amax;
+    using gtensor::nanmax;
+    using helpers_for_testing::apply_by_element;
 
-// TEMPLATE_TEST_CASE("test_math_amax_nanmax_initializer_list_axes_all_axes","test_math",
-//     double,
-//     int
-// )
-// {
-//     using value_type = TestType;
-//     using tensor_type = gtensor::tensor<value_type>;
-//     using gtensor::amax;
-//     using helpers_for_testing::apply_by_element;
+    REQUIRE(std::is_same_v<typename decltype(amax(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>(),std::declval<value_type>()))::value_type,value_type>);
+    REQUIRE(std::is_same_v<typename decltype(amax(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>()))::value_type,value_type>);
+    REQUIRE(std::is_same_v<typename decltype(amax(std::declval<tensor_type>(),std::declval<std::vector<int>>(),std::declval<bool>()))::value_type,value_type>);
+    REQUIRE(std::is_same_v<typename decltype(nanmax(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>(),std::declval<value_type>()))::value_type,value_type>);
+    REQUIRE(std::is_same_v<typename decltype(nanmax(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>()))::value_type,value_type>);
+    REQUIRE(std::is_same_v<typename decltype(nanmax(std::declval<tensor_type>(),std::declval<std::vector<int>>(),std::declval<bool>()))::value_type,value_type>);
 
-//     REQUIRE(std::is_same_v<decltype(amax(std::declval<tensor_type>(),std::declval<std::initializer_list<int>>(),std::declval<bool>())),tensor_type>);
-//     REQUIRE(std::is_same_v<decltype(nanmax(std::declval<tensor_type>(),std::declval<std::initializer_list<int>>(),std::declval<bool>())),tensor_type>);
+    //0tensor,1axes,2keep_dims,3initial,4expected
+    auto test_data = std::make_tuple(
+        //keep_dim false
+        std::make_tuple(tensor_type{},0,false,value_type{-100},tensor_type(value_type{-100})),
+        std::make_tuple(tensor_type{},std::vector<int>{0},false,value_type{-100},tensor_type(value_type{-100})),
+        std::make_tuple(tensor_type{},std::vector<int>{},false,value_type{-100},tensor_type(value_type{-100})),
+        std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0,2},false,value_type{-100},tensor_type{value_type{-100},value_type{-100}}),
+        std::make_tuple(tensor_type{5},0,false,value_type{-100},tensor_type(5)),
+        std::make_tuple(tensor_type{5,2,1,-1,4,4},0,false,value_type{-100},tensor_type(5)),
+        std::make_tuple(tensor_type{5,2,1,-1,4,4},std::vector<int>{0},false,value_type{-100},tensor_type(5)),
+        std::make_tuple(tensor_type{5,2,1,-1,4,4},std::vector<int>{},false,value_type{-100},tensor_type(5)),
+        std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},0,false,value_type{-100},tensor_type{{7,5,9},{2,11,2}}),
+        std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},1,false,value_type{-100},tensor_type{{2,5,3},{7,11,9}}),
+        std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},2,false,value_type{-100},tensor_type{{5,2},{9,11}}),
+        std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{0,1},false,value_type{-100},tensor_type{7,11,9}),
+        std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{2,1},false,value_type{-100},tensor_type{5,11}),
+        std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{},false,value_type{-100},tensor_type(11)),
+        //keep_dim true
+        std::make_tuple(tensor_type{},0,true,value_type{-100},tensor_type{value_type{-100}}),
+        std::make_tuple(tensor_type{},std::vector<int>{0},true,value_type{-100},tensor_type{value_type{-100}}),
+        std::make_tuple(tensor_type{},std::vector<int>{},true,value_type{-100},tensor_type{value_type{-100}}),
+        std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0,2},true,value_type{-100},tensor_type{{{value_type{-100}},{value_type{-100}}}}),
+        std::make_tuple(tensor_type{5},0,true,value_type{-100},tensor_type{5}),
+        std::make_tuple(tensor_type{5,2,1,-1,4,4},0,true,value_type{-100},tensor_type{5}),
+        std::make_tuple(tensor_type{5,2,1,-1,4,4},std::vector<int>{0},true,value_type{-100},tensor_type{5}),
+        std::make_tuple(tensor_type{5,2,1,-1,4,4},std::vector<int>{},true,value_type{-100},tensor_type{5}),
+        std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},0,true,value_type{-100},tensor_type{{{7,5,9},{2,11,2}}}),
+        std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},1,true,value_type{-100},tensor_type{{{2,5,3}},{{7,11,9}}}),
+        std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},2,true,value_type{-100},tensor_type{{{5},{2}},{{9},{11}}}),
+        std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{0,1},true,value_type{-100},tensor_type{{{7,11,9}}}),
+        std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{2,1},true,value_type{-100},tensor_type{{{5}},{{11}}}),
+        std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{},true,value_type{-100},tensor_type{{{11}}}),
+        //initial is max
+        std::make_tuple(tensor_type{5,2,1,-1,4,4},0,false,value_type{6},tensor_type(6)),
+        std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},2,false,value_type{3},tensor_type{{5,3},{9,11}})
+    );
+    SECTION("test_amax")
+    {
+        auto test = [](const auto& t){
+            auto ten = std::get<0>(t);
+            auto axes = std::get<1>(t);
+            auto keep_dims = std::get<2>(t);
+            auto initial = std::get<3>(t);
+            auto expected = std::get<4>(t);
+            auto result = amax(ten,axes,keep_dims,initial);
+            REQUIRE(result == expected);
+        };
+        apply_by_element(test,test_data);
+    }
+    SECTION("test_nanmax")
+    {
+        auto test = [](const auto& t){
+            auto ten = std::get<0>(t);
+            auto axes = std::get<1>(t);
+            auto keep_dims = std::get<2>(t);
+            auto initial = std::get<3>(t);
+            auto expected = std::get<4>(t);
+            auto result = nanmax(ten,axes,keep_dims,initial);
+            REQUIRE(result == expected);
+        };
+        apply_by_element(test,test_data);
+    }
+}
 
-//     //amax
-//     REQUIRE(amax(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{1},false) == tensor_type{{2,5,3},{7,11,9}});
-//     REQUIRE(amax(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{2,1},false) == tensor_type{5,11});
-//     REQUIRE(amax(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{0,1},true) == tensor_type{{{7,11,9}}});
-//     //all axes
-//     REQUIRE(amax(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},false) == tensor_type(11));
-//     REQUIRE(amax(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{},false) == tensor_type(11));
-//     REQUIRE(amax(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},true) == tensor_type{{{11}}});
+TEMPLATE_TEST_CASE("test_math_amax_nanmax_initializer_list_axes_all_axes","test_math",
+    double,
+    int
+)
+{
+    using value_type = TestType;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::amax;
+    using helpers_for_testing::apply_by_element;
 
-//     //nanmax
-//     REQUIRE(nanmax(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{1},false) == tensor_type{{2,5,3},{7,11,9}});
-//     REQUIRE(nanmax(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{2,1},false) == tensor_type{5,11});
-//     REQUIRE(nanmax(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{0,1},true) == tensor_type{{{7,11,9}}});
-//     //all axes
-//     REQUIRE(nanmax(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},false) == tensor_type(11));
-//     REQUIRE(nanmax(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{},false) == tensor_type(11));
-//     REQUIRE(nanmax(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},true) == tensor_type{{{11}}});
-// }
+    REQUIRE(std::is_same_v<typename decltype(amax(std::declval<tensor_type>(),std::declval<std::initializer_list<int>>(),std::declval<bool>(),std::declval<value_type>()))::value_type,value_type>);
+    REQUIRE(std::is_same_v<typename decltype(amax(std::declval<tensor_type>(),std::declval<std::initializer_list<int>>(),std::declval<bool>()))::value_type,value_type>);
+    REQUIRE(std::is_same_v<typename decltype(nanmax(std::declval<tensor_type>(),std::declval<std::initializer_list<int>>(),std::declval<bool>(),std::declval<value_type>()))::value_type,value_type>);
+    REQUIRE(std::is_same_v<typename decltype(nanmax(std::declval<tensor_type>(),std::declval<std::initializer_list<int>>(),std::declval<bool>()))::value_type,value_type>);
 
-// TEST_CASE("test_math_amax_nanmax_nan_values","test_math")
-// {
-//     using value_type = double;
-//     using tensor_type = gtensor::tensor<value_type>;
-//     using gtensor::amax;
-//     using gtensor::nanmax;
-//     using gtensor::tensor_equal;
-//     using helpers_for_testing::apply_by_element;
-//     static constexpr value_type nan = std::numeric_limits<value_type>::quiet_NaN();
-//     static constexpr value_type pos_inf = std::numeric_limits<value_type>::infinity();
-//     static constexpr value_type neg_inf = -std::numeric_limits<value_type>::infinity();
-//     //0result,1expected
-//     auto test_data = std::make_tuple(
-//         //amax
-//         std::make_tuple(amax(tensor_type{1.0,0.5,2.0,pos_inf,3.0}), tensor_type(pos_inf)),
-//         std::make_tuple(amax(tensor_type{1.0,0.5,2.0,neg_inf,3.0}), tensor_type(3.0)),
-//         std::make_tuple(amax(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf}), tensor_type(nan)),
-//         std::make_tuple(amax(tensor_type{{nan,nan,nan,4.0,0.0,3.0},{2.0,0.0,nan,-1.0,1.0,1.0}}), tensor_type(nan)),
-//         std::make_tuple(amax(tensor_type{{nan,nan,nan,4.0,0.0,3.0},{2.0,0.0,nan,-1.0,1.0,1.0}},0), tensor_type{nan,nan,nan,4.0,1.0,3.0}),
-//         std::make_tuple(amax(tensor_type{{nan,nan,nan,4.0,0.0,3.0},{2.0,0.0,nan,-1.0,1.0,1.0}},1), tensor_type{nan,nan}),
-//         std::make_tuple(amax(tensor_type{{4.0,-1.0,3.0,nan},{nan,0.1,5.0,1.0}},0), tensor_type{nan,0.1,5.0,nan}),
-//         std::make_tuple(amax(tensor_type{{4.0,-1.0,3.0,nan},{2.0,0.1,5.0,1.0}},1), tensor_type{nan,5.0}),
-//         //nanmax
-//         std::make_tuple(nanmax(tensor_type{1.0,0.5,2.0,pos_inf,3.0}), tensor_type(pos_inf)),
-//         std::make_tuple(nanmax(tensor_type{1.0,0.5,2.0,neg_inf,3.0}), tensor_type(3.0)),
-//         std::make_tuple(nanmax(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf}), tensor_type(pos_inf)),
-//         std::make_tuple(nanmax(tensor_type{{nan,nan,nan},{nan,nan,nan}}), tensor_type(nan)),
-//         std::make_tuple(nanmax(tensor_type{{nan,nan,nan},{nan,1.1,nan},{0.1,2.0,nan}}), tensor_type(2.0)),
-//         std::make_tuple(nanmax(tensor_type{{nan,nan,nan},{nan,1.1,nan},{0.1,2.0,nan}},0), tensor_type{0.1,2.0,nan}),
-//         std::make_tuple(nanmax(tensor_type{{nan,nan,nan},{nan,1.1,nan},{0.1,2.0,nan}},1), tensor_type{nan,1.1,2.0})
-//     );
-//     auto test = [](const auto& t){
-//         auto result = std::get<0>(t);
-//         auto expected = std::get<1>(t);
-//         REQUIRE(tensor_equal(result,expected,true));
-//     };
-//     apply_by_element(test,test_data);
-// }
+    //amax
+    REQUIRE(amax(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{1},false) == tensor_type{{2,5,3},{7,11,9}});
+    REQUIRE(amax(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{2,1},false) == tensor_type{5,11});
+    REQUIRE(amax(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{0,1},true) == tensor_type{{{7,11,9}}});
+    //all axes
+    REQUIRE(amax(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},false) == tensor_type(11));
+    REQUIRE(amax(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{},false) == tensor_type(11));
+    REQUIRE(amax(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},true) == tensor_type{{{11}}});
+
+    //nanmax
+    REQUIRE(nanmax(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{1},false) == tensor_type{{2,5,3},{7,11,9}});
+    REQUIRE(nanmax(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{2,1},false) == tensor_type{5,11});
+    REQUIRE(nanmax(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{0,1},true) == tensor_type{{{7,11,9}}});
+    //all axes
+    REQUIRE(nanmax(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},false) == tensor_type(11));
+    REQUIRE(nanmax(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{},false) == tensor_type(11));
+    REQUIRE(nanmax(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},true) == tensor_type{{{11}}});
+}
+
+TEMPLATE_TEST_CASE("test_math_amax_nanmax_exception","test_math",
+    double,
+    int
+)
+{
+    using value_type = TestType;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::reduce_exception;
+    using gtensor::amax;
+    using gtensor::nanmax;
+
+    //amax
+    REQUIRE_THROWS_AS(amax(tensor_type{}),reduce_exception);
+    REQUIRE_THROWS_AS(amax(tensor_type{}.reshape(0,2,3),{0,1}),reduce_exception);
+    REQUIRE_NOTHROW(amax(tensor_type{}.reshape(0,2,3),{1,2}));
+    //nanmax
+    REQUIRE_THROWS_AS(nanmax(tensor_type{}),reduce_exception);
+    REQUIRE_THROWS_AS(nanmax(tensor_type{}.reshape(0,2,3),{0,1}),reduce_exception);
+    REQUIRE_NOTHROW(nanmax(tensor_type{}.reshape(0,2,3),{1,2}));
+}
+
+TEST_CASE("test_math_amax_nanmax_nan_values","test_math")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::amax;
+    using gtensor::nanmax;
+    using gtensor::tensor_equal;
+    using helpers_for_testing::apply_by_element;
+    static constexpr value_type nan = std::numeric_limits<value_type>::quiet_NaN();
+    static constexpr value_type pos_inf = std::numeric_limits<value_type>::infinity();
+    static constexpr value_type neg_inf = -std::numeric_limits<value_type>::infinity();
+    //0result,1expected
+    auto test_data = std::make_tuple(
+        //amax
+        std::make_tuple(amax(tensor_type{1.0,0.5,2.0,pos_inf,3.0}), tensor_type(pos_inf)),
+        std::make_tuple(amax(tensor_type{1.0,0.5,2.0,neg_inf,3.0}), tensor_type(3.0)),
+        std::make_tuple(amax(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf}), tensor_type(nan)),
+        std::make_tuple(amax(tensor_type{{nan,nan,nan,4.0,0.0,3.0},{2.0,0.0,nan,-1.0,1.0,1.0}}), tensor_type(nan)),
+        std::make_tuple(amax(tensor_type{{nan,nan,nan,4.0,0.0,3.0},{2.0,0.0,nan,-1.0,1.0,1.0}},0), tensor_type{nan,nan,nan,4.0,1.0,3.0}),
+        std::make_tuple(amax(tensor_type{{nan,nan,nan,4.0,0.0,3.0},{2.0,0.0,nan,-1.0,1.0,1.0}},1), tensor_type{nan,nan}),
+        std::make_tuple(amax(tensor_type{{4.0,-1.0,3.0,nan},{nan,0.1,5.0,1.0}},0), tensor_type{nan,0.1,5.0,nan}),
+        std::make_tuple(amax(tensor_type{{4.0,-1.0,3.0,nan},{2.0,0.1,5.0,1.0}},1), tensor_type{nan,5.0}),
+        //nanmax
+        std::make_tuple(nanmax(tensor_type{1.0,0.5,2.0,pos_inf,3.0}), tensor_type(pos_inf)),
+        std::make_tuple(nanmax(tensor_type{1.0,0.5,2.0,neg_inf,3.0}), tensor_type(3.0)),
+        std::make_tuple(nanmax(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf}), tensor_type(pos_inf)),
+        std::make_tuple(nanmax(tensor_type{{nan,nan,nan},{nan,nan,nan}}), tensor_type(nan)),
+        std::make_tuple(nanmax(tensor_type{{nan,nan,nan},{nan,1.1,nan},{0.1,2.0,nan}}), tensor_type(2.0)),
+        std::make_tuple(nanmax(tensor_type{{nan,nan,nan},{nan,1.1,nan},{0.1,2.0,nan}},0), tensor_type{0.1,2.0,nan}),
+        std::make_tuple(nanmax(tensor_type{{nan,nan,nan},{nan,1.1,nan},{0.1,2.0,nan}},1), tensor_type{nan,1.1,2.0})
+    );
+    auto test = [](const auto& t){
+        auto result = std::get<0>(t);
+        auto expected = std::get<1>(t);
+        REQUIRE(tensor_equal(result,expected,true));
+    };
+    apply_by_element(test,test_data);
+}
 
 // //sum,nansum
 // TEMPLATE_TEST_CASE("test_math_sum_nansum","test_math",
