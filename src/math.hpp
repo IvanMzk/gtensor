@@ -179,6 +179,32 @@ template<typename Initial, typename T> constexpr bool is_initial_v = !std::is_sa
 template<typename F, typename T, typename=void> constexpr bool has_initial_v = false;
 template<typename F, typename T> constexpr bool has_initial_v<F,T,std::void_t<decltype(F::template value<T>)>> = true;
 
+template<typename Functor, typename It, typename Initial>
+auto reduce_empty(const It&, const Initial& initial){
+    using value_type = typename std::iterator_traits<It>::value_type;
+    if constexpr (is_initial_v<Initial,value_type>){
+        return static_cast<value_type>(initial);
+    }else if constexpr(has_initial_v<Functor,value_type>){
+        return Functor::template value<value_type>;
+    }else{  //no initial, throw
+        throw reduce_exception("cant reduce zero size dimension without initial value");
+        return value_type{};    //need same return type
+    }
+}
+
+template<typename Functor, typename It, typename Initial>
+auto make_initial(It& first, const Initial& initial){
+    using value_type = typename std::iterator_traits<It>::value_type;
+    if constexpr (is_initial_v<Initial,value_type>){
+        return static_cast<value_type>(initial);
+    }else if constexpr(has_initial_v<Functor,value_type>){
+        return Functor::template value<value_type>;
+    }else{  //use first element as initial and inc first
+        auto res = *first;
+        return ++first,res;
+    }
+}
+
 //find extremum propagating nan
 //Comparator should be like std::less for minimum and like std::greater for maximum
 //Comparator result must be false when any argument is nan
@@ -188,44 +214,26 @@ struct extremum
     template<typename It, typename Initial = no_initial>
     auto operator()(It first, It last, const Initial& initial = Initial{}){
         using value_type = typename std::iterator_traits<It>::value_type;
-        static constexpr bool is_initial = is_initial_v<Initial,value_type>;
         if (first == last){
-            if constexpr (is_initial){
-                return static_cast<value_type>(initial);
-            }else{
-                throw reduce_exception("cant reduce zero size dimension without initial value");
-            }
+            return reduce_empty<Comparator>(first,initial);
         }
         Comparator comparator{};
-        auto res = *first;
-        if constexpr (gtensor::math::numeric_traits<value_type>::has_nan()){
-            if (gtensor::math::isnan(res)){
-                return res;
-            }
-            for(++first; first!=last; ++first){
-                const auto& e = *first;
-                if (gtensor::math::isnan(e)){
-                    return e;
-                }else{
-                    if (comparator(e,res)){
-                        res = e;
-                    }
-                }
-            }
-        }else{
-            for(++first; first!=last; ++first){
-                const auto& e = *first;
-                if (comparator(e,res)){
-                        res = e;
-                }
-            }
-        }
-        if constexpr (is_initial){
-            const auto& initial_ = static_cast<const value_type&>(initial);
-            return comparator(initial_,res) ? initial_ : res;
-        }else{
+        auto res = make_initial<Comparator>(first,initial);
+        if (gtensor::math::isnan(res)){
             return res;
         }
+        for(;first!=last; ++first){
+            const auto& e = *first;
+            if constexpr (gtensor::math::numeric_traits<value_type>::has_nan()){
+                if (gtensor::math::isnan(e)){
+                    return e;
+                }
+            }
+            if (comparator(e,res)){
+                res = e;
+            }
+        }
+        return res;
     }
 };
 
@@ -238,13 +246,8 @@ struct nanextremum
     template<typename It, typename Initial = no_initial>
     auto operator()(It first, It last, const Initial& initial = Initial{}){
         using value_type = typename std::iterator_traits<It>::value_type;
-        static constexpr bool is_initial = is_initial_v<Initial,value_type>;
         if (first == last){
-            if constexpr (is_initial){
-                return static_cast<value_type>(initial);
-            }else{
-                throw reduce_exception("cant reduce zero size dimension without initial value");
-            }
+            return reduce_empty<Comparator>(first,initial);
         }
         if constexpr (gtensor::math::numeric_traits<value_type>::has_nan()){
             //find first not nan
@@ -258,19 +261,14 @@ struct nanextremum
             }
         }
         Comparator comparator{};
-        auto res = *first;
-        for(++first; first!=last; ++first){
+        auto res = make_initial<Comparator>(first,initial);
+        for(;first!=last; ++first){
             const auto& e = *first;
             if (comparator(e,res)){   //must be false if e is nan, res always not nan
                 res = e;
             }
         }
-        if constexpr (is_initial){
-            const auto& initial_ = static_cast<const value_type&>(initial);
-            return comparator(initial_,res) ? initial_ : res;
-        }else{
-            return res;
-        }
+        return res;
     }
 };
 
@@ -278,19 +276,6 @@ using amin = extremum<std::less<void>>;
 using amax = extremum<std::greater<void>>;
 using nanmin = nanextremum<std::less<void>>;
 using nanmax = nanextremum<std::greater<void>>;
-
-template<typename It, typename Initial, typename Functor>
-auto make_initial(It& first, const Initial& initial, const Functor&){
-    using value_type = typename std::iterator_traits<It>::value_type;
-    if constexpr (is_initial_v<Initial,value_type>){
-        return static_cast<value_type>(initial);
-    }else if constexpr(has_initial_v<Functor,value_type>){
-        return Functor::template value<value_type>;
-    }else{  //use first element as initial and inc first
-        auto res = *first;
-        return ++first,res;
-    }
-}
 
 //accumulate propagating nan
 //Operation should be like std::plus for sum and like std::multiplies for prod
@@ -300,17 +285,11 @@ struct accumulate
 {
     template<typename It, typename Initial>
     auto operator()(It first, It last, const Initial& initial){
-        using value_type = typename std::iterator_traits<It>::value_type;
-        static constexpr bool is_initial = is_initial_v<Initial,value_type>;
         if (first == last){
-            if constexpr (is_initial){
-                return static_cast<value_type>(initial);
-            }else{
-                return Operation::template value<value_type>;
-            }
+            return reduce_empty<Operation>(first,initial);
         }
         Operation operation{};
-        auto res = make_initial(first,initial,operation);
+        auto res = make_initial<Operation>(first,initial);
         for(;first!=last; ++first){
             res = operation(res,*first);   //must return nan if any of arguments is nan
         }
@@ -327,25 +306,18 @@ struct nanaccumulate
     template<typename It, typename Initial>
     auto operator()(It first, It last, const Initial& initial){
         using value_type = typename std::iterator_traits<It>::value_type;
-        static constexpr bool is_initial = is_initial_v<Initial,value_type>;
         if (first == last){
-            if constexpr (is_initial){
-                return static_cast<value_type>(initial);
-            }else{
-                return Operation::template value<value_type>;
-            }
+            return reduce_empty<Operation>(first,initial);
         }
         Operation operation{};
-        auto res = make_initial(first,initial,operation);
-        if constexpr (gtensor::math::numeric_traits<value_type>::has_nan()){
-            for(;first!=last; ++first){
+        auto res = make_initial<Operation>(first,initial);
+        for(;first!=last; ++first){
+            if constexpr (gtensor::math::numeric_traits<value_type>::has_nan()){
                 const auto& e = *first;
                 if (!gtensor::math::isnan(e)){
                     res = operation(res,e);
                 }
-            }
-        }else{
-            for(;first!=last; ++first){
+            }else{
                 res = operation(res,*first);
             }
         }
@@ -386,7 +358,7 @@ template<typename Operation>
 struct nancumulate
 {
     template<typename It, typename DstIt>
-    void operator()(It first, It, DstIt dfirst, DstIt dlast){
+    void operator()(It first, It last, DstIt dfirst, DstIt dlast){
         using value_type = typename std::iterator_traits<It>::value_type;
         Operation operation{};
         if constexpr (gtensor::math::numeric_traits<value_type>::has_nan()){
@@ -402,12 +374,7 @@ struct nancumulate
             }
         }
         else{
-            auto res = *first;
-            *dfirst = res;
-            for(++dfirst,++first; dfirst!=dlast; ++dfirst,++first){
-                res=operation(res,*first);
-                *dfirst = res;
-            }
+            cumulate<Operation>{}(first,last,dfirst,dlast);
         }
     }
 };
