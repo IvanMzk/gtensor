@@ -173,7 +173,11 @@ struct any
 };
 
 struct no_initial{};
+//test if initial argument contain valid initial value
 template<typename Initial, typename T> constexpr bool is_initial_v = !std::is_same_v<Initial,no_initial> && detail::is_static_castable_v<Initial,T>;
+//test if functor F has initial value
+template<typename F, typename T, typename=void> constexpr bool has_initial_v = false;
+template<typename F, typename T> constexpr bool has_initial_v<F,T,std::void_t<decltype(F::template value<T>)>> = true;
 
 //find extremum propagating nan
 //Comparator should be like std::less for minimum and like std::greater for maximum
@@ -275,30 +279,43 @@ using amax = extremum<std::greater<void>>;
 using nanmin = nanextremum<std::less<void>>;
 using nanmax = nanextremum<std::greater<void>>;
 
+template<typename It, typename Initial, typename Functor>
+auto make_initial(It& first, const Initial& initial, const Functor&){
+    using value_type = typename std::iterator_traits<It>::value_type;
+    if constexpr (is_initial_v<Initial,value_type>){
+        return static_cast<value_type>(initial);
+    }else if constexpr(has_initial_v<Functor,value_type>){
+        return Functor::template value<value_type>;
+    }else{  //use first element as initial and inc first
+        auto res = *first;
+        return ++first,res;
+    }
+}
+
 //accumulate propagating nan
 //Operation should be like std::plus for sum and like std::multiplies for prod
 //Operation result must be nan when any argument is nan
 template<typename Operation>
 struct accumulate
 {
-    accumulate() = default;
-    template<typename Operation_, std::enable_if_t<!std::is_same_v<accumulate,std::remove_cv_t<std::remove_reference_t<Operation_>>> ,int> =0>
-    explicit accumulate(Operation_&& operation__):
-        operation_{std::forward<Operation_>(operation__)}
-    {}
-
-    template<typename It>
-    auto operator()(It first, It last){
-        auto res = *first;
-        for(++first; first!=last; ++first){
-            res = operation_(res,*first);   //must return nan if any of arguments is nan
+    template<typename It, typename Initial>
+    auto operator()(It first, It last, const Initial& initial){
+        using value_type = typename std::iterator_traits<It>::value_type;
+        static constexpr bool is_initial = is_initial_v<Initial,value_type>;
+        if (first == last){
+            if constexpr (is_initial){
+                return static_cast<value_type>(initial);
+            }else{
+                return Operation::template value<value_type>;
+            }
+        }
+        Operation operation{};
+        auto res = make_initial(first,initial,operation);
+        for(;first!=last; ++first){
+            res = operation(res,*first);   //must return nan if any of arguments is nan
         }
         return res;
     }
-
-    const auto& operation()const{return operation_;}
-private:
-    Operation operation_{};
 };
 
 //accumulate ignoring nan (like treating nan as zero for sum and as one for prod)
@@ -307,37 +324,33 @@ private:
 template<typename Operation>
 struct nanaccumulate
 {
-    nanaccumulate() = default;
-    template<typename Operation_, std::enable_if_t<!std::is_same_v<nanaccumulate,std::remove_cv_t<std::remove_reference_t<Operation_>>> ,int> =0>
-    explicit nanaccumulate(Operation_&& operation__):
-        operation_{std::forward<Operation_>(operation__)}
-    {}
-
-    template<typename It>
-    auto operator()(It first, It last){
+    template<typename It, typename Initial>
+    auto operator()(It first, It last, const Initial& initial){
         using value_type = typename std::iterator_traits<It>::value_type;
+        static constexpr bool is_initial = is_initial_v<Initial,value_type>;
+        if (first == last){
+            if constexpr (is_initial){
+                return static_cast<value_type>(initial);
+            }else{
+                return Operation::template value<value_type>;
+            }
+        }
+        Operation operation{};
+        auto res = make_initial(first,initial,operation);
         if constexpr (gtensor::math::numeric_traits<value_type>::has_nan()){
-            const auto& e = *first;
-            auto res = gtensor::math::isnan(e) ? Operation::template value<value_type> : e;
-            for(++first; first!=last; ++first){
+            for(;first!=last; ++first){
                 const auto& e = *first;
                 if (!gtensor::math::isnan(e)){
-                    res = operation_(res,e);
+                    res = operation(res,e);
                 }
             }
-            return res;
         }else{
-            auto res = *first;
-            for(++first; first!=last; ++first){
-                res = operation_(res,*first);
+            for(;first!=last; ++first){
+                res = operation(res,*first);
             }
-            return res;
         }
+        return res;
     }
-
-    const auto& operation()const{return operation_;}
-private:
-    Operation operation_{};
 };
 
 struct plus : public std::plus<void>{template<typename T> static constexpr T value = T(0);};
@@ -663,35 +676,11 @@ GTENSOR_MATH_REDUCE_INITIAL_ROUTINE(amax,math_reduce_operations::amax);
 
 //sum elements along given axes
 //axes may be scalar or container
-template<typename...Ts, typename Axes>
-auto sum(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
-    return reduce(t,axes,math_reduce_operations::sum{},keep_dims);
-}
-template<typename...Ts>
-auto sum(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::dim_type> axes, bool keep_dims = false){
-    return reduce(t,axes,math_reduce_operations::sum{},keep_dims);
-}
-//sum along all axes
-template<typename...Ts>
-auto sum(const basic_tensor<Ts...>& t, bool keep_dims = false){
-    return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::sum{},keep_dims);
-}
+GTENSOR_MATH_REDUCE_INITIAL_ROUTINE(sum,math_reduce_operations::sum);
 
 //multiply elements along given axes
 //axes may be scalar or container
-template<typename...Ts, typename Axes>
-auto prod(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
-    return reduce(t,axes,math_reduce_operations::prod{},keep_dims);
-}
-template<typename...Ts>
-auto prod(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::dim_type> axes, bool keep_dims = false){
-    return reduce(t,axes,math_reduce_operations::prod{},keep_dims);
-}
-//prod along all axes
-template<typename...Ts>
-auto prod(const basic_tensor<Ts...>& t, bool keep_dims = false){
-    return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::prod{},keep_dims);
-}
+GTENSOR_MATH_REDUCE_INITIAL_ROUTINE(prod,math_reduce_operations::prod);
 
 //cumulative sum along given axis
 //axis is scalar
@@ -834,35 +823,11 @@ GTENSOR_MATH_REDUCE_INITIAL_ROUTINE(nanmax,math_reduce_operations::nanmax);
 
 //sum elements along given axes, treating nan as zero
 //axes may be scalar or container
-template<typename...Ts, typename Axes>
-auto nansum(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
-    return reduce(t,axes,math_reduce_operations::nansum{},keep_dims);
-}
-template<typename...Ts>
-auto nansum(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::dim_type> axes, bool keep_dims = false){
-    return reduce(t,axes,math_reduce_operations::nansum{},keep_dims);
-}
-//nansum along all axes
-template<typename...Ts>
-auto nansum(const basic_tensor<Ts...>& t, bool keep_dims = false){
-    return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::nansum{},keep_dims);
-}
+GTENSOR_MATH_REDUCE_INITIAL_ROUTINE(nansum,math_reduce_operations::nansum);
 
 //multiply elements along given axes, treating nan as one
 //axes may be scalar or container
-template<typename...Ts, typename Axes>
-auto nanprod(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
-    return reduce(t,axes,math_reduce_operations::nanprod{},keep_dims);
-}
-template<typename...Ts>
-auto nanprod(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::dim_type> axes, bool keep_dims = false){
-    return reduce(t,axes,math_reduce_operations::nanprod{},keep_dims);
-}
-//nanprod along all axes
-template<typename...Ts>
-auto nanprod(const basic_tensor<Ts...>& t, bool keep_dims = false){
-    return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::nanprod{},keep_dims);
-}
+GTENSOR_MATH_REDUCE_INITIAL_ROUTINE(nanprod,math_reduce_operations::nanprod);
 
 //cumulative sum along given axis, treating nan as zero
 //axis is scalar
