@@ -467,6 +467,9 @@ struct var
             value_type,
             typename gtensor::math::numeric_traits<value_type>::floating_point_type
         >;
+        if (first == last){
+            return reduce_empty<res_type>();
+        }
         const auto n = static_cast<res_type>(last-first);
         auto sum = static_cast<res_type>(*first);
         auto sum_2 = sum*sum;
@@ -490,7 +493,10 @@ struct nanvar
             value_type,
             typename gtensor::math::numeric_traits<value_type>::floating_point_type
         >;
-        if constexpr (gtensor::math::numeric_traits<value_type>::has_nan()){
+        if (first == last){
+            return reduce_empty<res_type>();
+        }
+        if constexpr (gtensor::math::numeric_traits<value_type>::has_nan() && gtensor::math::numeric_traits<res_type>::has_nan()){
             //find first not nan
             for(;first!=last; ++first){
                 if (!gtensor::math::isnan(*first)){
@@ -527,7 +533,7 @@ struct stdev
     }
 };
 
-struct nanstd
+struct nanstdev
 {
     template<typename It>
     auto operator()(It first, It last){
@@ -692,51 +698,13 @@ GTENSOR_MATH_CUMULATE_ROUTINE(cumprod,math_reduce_operations::cumprod);
 //axes may be scalar or container
 GTENSOR_MATH_REDUCE_ROUTINE(mean,math_reduce_operations::mean);
 
-// template<typename...Ts, typename Axes>
-// auto mean(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
-//     return reduce(t,axes,math_reduce_operations::mean{},keep_dims);
-// }
-// template<typename...Ts>
-// auto mean(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::dim_type> axes, bool keep_dims = false){
-//     return reduce(t,axes,math_reduce_operations::mean{},keep_dims);
-// }
-// //mean along all axes
-// template<typename...Ts>
-// auto mean(const basic_tensor<Ts...>& t, bool keep_dims = false){
-//     return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::mean{},keep_dims);
-// }
-
 //variance of elements along given axes
 //axes may be scalar or container
-template<typename...Ts, typename Axes>
-auto var(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
-    return reduce(t,axes,math_reduce_operations::var{},keep_dims);
-}
-template<typename...Ts>
-auto var(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::dim_type> axes, bool keep_dims = false){
-    return reduce(t,axes,math_reduce_operations::var{},keep_dims);
-}
-//var along all axes
-template<typename...Ts>
-auto var(const basic_tensor<Ts...>& t, bool keep_dims = false){
-    return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::var{},keep_dims);
-}
+GTENSOR_MATH_REDUCE_ROUTINE(var,math_reduce_operations::var);
 
 //standart deviation of elements along given axes
 //axes may be scalar or container
-template<typename...Ts, typename Axes>
-auto std(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
-    return reduce(t,axes,math_reduce_operations::stdev{},keep_dims);
-}
-template<typename...Ts>
-auto std(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::dim_type> axes, bool keep_dims = false){
-    return reduce(t,axes,math_reduce_operations::stdev{},keep_dims);
-}
-//std along all axes
-template<typename...Ts>
-auto std(const basic_tensor<Ts...>& t, bool keep_dims = false){
-    return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::stdev{},keep_dims);
-}
+GTENSOR_MATH_REDUCE_ROUTINE(std,math_reduce_operations::stdev);
 
 //median of elements along given axes
 //axes may be scalar or container
@@ -813,51 +781,13 @@ GTENSOR_MATH_CUMULATE_ROUTINE(nancumprod,math_reduce_operations::nancumprod);
 //axes may be scalar or container
 GTENSOR_MATH_REDUCE_ROUTINE(nanmean,math_reduce_operations::nanmean);
 
-// template<typename...Ts, typename Axes>
-// auto nanmean(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
-//     return reduce(t,axes,math_reduce_operations::nanmean{},keep_dims);
-// }
-// template<typename...Ts>
-// auto nanmean(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::dim_type> axes, bool keep_dims = false){
-//     return reduce(t,axes,math_reduce_operations::nanmean{},keep_dims);
-// }
-// //nanmean along all axes
-// template<typename...Ts>
-// auto nanmean(const basic_tensor<Ts...>& t, bool keep_dims = false){
-//     return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::nanmean{},keep_dims);
-// }
-
 //variance of elements along given axes, ignoring nan
 //axes may be scalar or container
-template<typename...Ts, typename Axes>
-auto nanvar(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
-    return reduce(t,axes,math_reduce_operations::nanvar{},keep_dims);
-}
-template<typename...Ts>
-auto nanvar(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::dim_type> axes, bool keep_dims = false){
-    return reduce(t,axes,math_reduce_operations::nanvar{},keep_dims);
-}
-//nanvar along all axes
-template<typename...Ts>
-auto nanvar(const basic_tensor<Ts...>& t, bool keep_dims = false){
-    return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::nanvar{},keep_dims);
-}
+GTENSOR_MATH_REDUCE_ROUTINE(nanvar,math_reduce_operations::nanvar);
 
 //standart deviation of elements along given axes, ignoring nan
 //axes may be scalar or container
-template<typename...Ts, typename Axes>
-auto nanstd(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
-    return reduce(t,axes,math_reduce_operations::nanstd{},keep_dims);
-}
-template<typename...Ts>
-auto nanstd(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::dim_type> axes, bool keep_dims = false){
-    return reduce(t,axes,math_reduce_operations::nanstd{},keep_dims);
-}
-//nanstd along all axes
-template<typename...Ts>
-auto nanstd(const basic_tensor<Ts...>& t, bool keep_dims = false){
-    return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::nanstd{},keep_dims);
-}
+GTENSOR_MATH_REDUCE_ROUTINE(nanstd,math_reduce_operations::nanstdev);
 
 }   //end of namespace gtensor
 #endif
