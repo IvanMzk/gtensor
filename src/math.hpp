@@ -353,8 +353,8 @@ struct nanaccumulate
     }
 };
 
-struct plus : public std::plus<void>{template<typename T> static constexpr T value = T(0);};
-struct multiplies : public std::multiplies<void>{template<typename T> static constexpr T value = T(1);};
+struct plus : public std::plus<void>{template<typename T> inline static const T value = T(0);};
+struct multiplies : public std::multiplies<void>{template<typename T> inline static const T value = T(1);};
 
 using sum = accumulate<plus>;
 using prod = accumulate<multiplies>;
@@ -657,6 +657,21 @@ auto name(const basic_tensor<Ts...>& t, bool keep_dims = false, const Initial& i
     return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},functor{},keep_dims,initial);\
 }
 
+#define GTENSOR_MATH_CUMULATE_ROUTINE(name,functor)\
+template<typename...Ts, typename DimT>\
+auto name(const basic_tensor<Ts...>& t, const DimT& axis){\
+    using index_type = typename basic_tensor<Ts...>::index_type;\
+    const index_type window_size = 1;\
+    const index_type window_step = 1;\
+    return slide(t,axis,functor{}, window_size, window_step);\
+}\
+template<typename...Ts>\
+auto name(const basic_tensor<Ts...>& t){\
+    using index_type = typename basic_tensor<Ts...>::index_type;\
+    const index_type window_size = 1;\
+    const index_type window_step = 1;\
+    return slide(t,functor{}, window_size, window_step);\
+}
 
 //test if all elements along given axes evaluate to true
 //axes may be scalar or container
@@ -684,39 +699,11 @@ GTENSOR_MATH_REDUCE_INITIAL_ROUTINE(prod,math_reduce_operations::prod);
 
 //cumulative sum along given axis
 //axis is scalar
-template<typename...Ts, typename DimT>
-auto cumsum(const basic_tensor<Ts...>& t, const DimT& axis){
-    using index_type = typename basic_tensor<Ts...>::index_type;
-    const index_type window_size = 1;
-    const index_type window_step = 1;
-    return slide(t,axis,math_reduce_operations::cumsum{}, window_size, window_step);
-}
-//cumsum along all axes
-template<typename...Ts>
-auto cumsum(const basic_tensor<Ts...>& t){
-    using index_type = typename basic_tensor<Ts...>::index_type;
-    const index_type window_size = 1;
-    const index_type window_step = 1;
-    return slide(t,math_reduce_operations::cumsum{}, window_size, window_step);
-}
+GTENSOR_MATH_CUMULATE_ROUTINE(cumsum,math_reduce_operations::cumsum);
 
 //cumulative product along given axis
 //axis is scalar
-template<typename...Ts, typename DimT>
-auto cumprod(const basic_tensor<Ts...>& t, const DimT& axis){
-    using index_type = typename basic_tensor<Ts...>::index_type;
-    const index_type window_size = 1;
-    const index_type window_step = 1;
-    return slide(t,axis,math_reduce_operations::cumprod{}, window_size, window_step);
-}
-//cumprod along all axes
-template<typename...Ts>
-auto cumprod(const basic_tensor<Ts...>& t){
-    using index_type = typename basic_tensor<Ts...>::index_type;
-    const index_type window_size = 1;
-    const index_type window_step = 1;
-    return slide(t,math_reduce_operations::cumprod{}, window_size, window_step);
-}
+GTENSOR_MATH_CUMULATE_ROUTINE(cumprod,math_reduce_operations::cumprod);
 
 //mean of elements along given axes
 //axes may be scalar or container
@@ -831,39 +818,11 @@ GTENSOR_MATH_REDUCE_INITIAL_ROUTINE(nanprod,math_reduce_operations::nanprod);
 
 //cumulative sum along given axis, treating nan as zero
 //axis is scalar
-template<typename...Ts, typename DimT>
-auto nancumsum(const basic_tensor<Ts...>& t, const DimT& axis){
-    using index_type = typename basic_tensor<Ts...>::index_type;
-    const index_type window_size = 1;
-    const index_type window_step = 1;
-    return slide(t,axis,math_reduce_operations::nancumsum{}, window_size, window_step);
-}
-//nancumsum along all axes
-template<typename...Ts>
-auto nancumsum(const basic_tensor<Ts...>& t){
-    using index_type = typename basic_tensor<Ts...>::index_type;
-    const index_type window_size = 1;
-    const index_type window_step = 1;
-    return slide(t,math_reduce_operations::nancumsum{}, window_size, window_step);
-}
+GTENSOR_MATH_CUMULATE_ROUTINE(nancumsum,math_reduce_operations::nancumsum);
 
 //cumulative product along given axis, treating nan as one
 //axis is scalar
-template<typename...Ts, typename DimT>
-auto nancumprod(const basic_tensor<Ts...>& t, const DimT& axis){
-    using index_type = typename basic_tensor<Ts...>::index_type;
-    const index_type window_size = 1;
-    const index_type window_step = 1;
-    return slide(t,axis,math_reduce_operations::nancumprod{}, window_size, window_step);
-}
-//nancumprod along all axes
-template<typename...Ts>
-auto nancumprod(const basic_tensor<Ts...>& t){
-    using index_type = typename basic_tensor<Ts...>::index_type;
-    const index_type window_size = 1;
-    const index_type window_step = 1;
-    return slide(t,math_reduce_operations::nancumprod{}, window_size, window_step);
-}
+GTENSOR_MATH_CUMULATE_ROUTINE(nancumprod,math_reduce_operations::nancumprod);
 
 //mean of elements along given axes, ignoring nan
 //axes may be scalar or container
