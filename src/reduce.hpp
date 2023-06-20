@@ -354,11 +354,13 @@ class reducer
         );
         using result_type = decltype(reduce_f(std::declval<iterator_type>(),std::declval<iterator_type>(),std::declval<Args>()...));
         using res_value_type = std::remove_cv_t<std::remove_reference_t<result_type>>;
+        using res_config_type = config::extend_config_t<config_type,res_value_type>;
+
 
         auto axes = detail::make_axes<axes_container_type>(parent.dim(),axes_);
         const auto& pshape = parent.shape();
         detail::check_reduce_args(pshape, axes);
-        auto res = tensor<res_value_type,order,config_type>{detail::make_reduce_shape(pshape, axes, keep_dims)};
+        auto res = tensor<res_value_type,order,res_config_type>{detail::make_reduce_shape(pshape, axes, keep_dims)};
         if (!res.empty()){
             if (parent.empty()){    //zero size axis is reduced
                 auto a = parent.template traverse_order_adapter<order>();
