@@ -1715,7 +1715,6 @@
 // }
 
 // //median,nanmedian
-// //std,nanstd
 // TEMPLATE_TEST_CASE("test_math_median_nanmedian_floating_point_values","test_math",
 //     double,
 //     int

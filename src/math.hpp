@@ -384,6 +384,14 @@ using cumprod = cumulate<multiplies>;
 using nancumsum = nancumulate<plus>;
 using nancumprod = nancumulate<multiplies>;
 
+//result floating point type for mean,var,stdev,median
+//T is value_type of source
+template<typename T> using result_floating_point_t = std::conditional_t<
+    gtensor::math::numeric_traits<T>::is_floating_point(),
+    T,
+    typename gtensor::math::numeric_traits<T>::floating_point_type
+>;
+
 template<typename T>
 auto reduce_empty(){
     if constexpr (gtensor::math::numeric_traits<T>::has_nan()){
@@ -399,11 +407,7 @@ struct mean
     template<typename It>
     auto operator()(It first, It last){
         using value_type = typename std::iterator_traits<It>::value_type;
-        using res_type = std::conditional_t<
-            gtensor::math::numeric_traits<value_type>::is_floating_point(),
-            value_type,
-            typename gtensor::math::numeric_traits<value_type>::floating_point_type
-        >;
+        using res_type = result_floating_point_t<value_type>;
         if (first == last){
             return reduce_empty<res_type>();
         }
@@ -422,11 +426,7 @@ struct nanmean
     auto operator()(It first, It last){
         using value_type = typename std::iterator_traits<It>::value_type;
         using difference_type = typename std::iterator_traits<It>::difference_type;
-        using res_type = std::conditional_t<
-            gtensor::math::numeric_traits<value_type>::is_floating_point(),
-            value_type,
-            typename gtensor::math::numeric_traits<value_type>::floating_point_type
-        >;
+        using res_type = result_floating_point_t<value_type>;
         if (first == last){
             return reduce_empty<res_type>();
         }
@@ -462,11 +462,7 @@ struct var
     template<typename It>
     auto operator()(It first, It last){
         using value_type = typename std::iterator_traits<It>::value_type;
-        using res_type = std::conditional_t<
-            gtensor::math::numeric_traits<value_type>::is_floating_point(),
-            value_type,
-            typename gtensor::math::numeric_traits<value_type>::floating_point_type
-        >;
+        using res_type = result_floating_point_t<value_type>;
         if (first == last){
             return reduce_empty<res_type>();
         }
@@ -488,11 +484,7 @@ struct nanvar
     auto operator()(It first, It last){
         using value_type = typename std::iterator_traits<It>::value_type;
         using difference_type = typename std::iterator_traits<It>::difference_type;
-        using res_type = std::conditional_t<
-            gtensor::math::numeric_traits<value_type>::is_floating_point(),
-            value_type,
-            typename gtensor::math::numeric_traits<value_type>::floating_point_type
-        >;
+        using res_type = result_floating_point_t<value_type>;
         if (first == last){
             return reduce_empty<res_type>();
         }
@@ -553,11 +545,7 @@ struct median_nanmedian
         using difference_type = typename std::iterator_traits<It>::difference_type;
         using container_type = typename Config::template container<value_type>;
         using container_difference_type = typename container_type::difference_type;
-        using res_type = std::conditional_t<
-            gtensor::math::numeric_traits<value_type>::is_floating_point(),
-            value_type,
-            typename gtensor::math::numeric_traits<value_type>::floating_point_type
-        >;
+        using res_type = result_floating_point_t<value_type>;
         if (first == last){
             return reduce_empty<res_type>();
         }
