@@ -653,8 +653,8 @@ template<typename...Ts, typename Axes>\
 auto name(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){\
     return reduce(t,axes,functor{},keep_dims __VA_OPT__(,) __VA_ARGS__);\
 }\
-template<typename...Ts>\
-auto name(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::dim_type> axes, bool keep_dims = false){\
+template<typename...Ts, typename DimT>\
+auto name(const basic_tensor<Ts...>& t, std::initializer_list<DimT> axes, bool keep_dims = false){\
     return reduce(t,axes,functor{},keep_dims __VA_OPT__(,) __VA_ARGS__);\
 }\
 template<typename...Ts>\
@@ -667,8 +667,8 @@ template<typename...Ts, typename Axes, typename Initial = math_reduce_operations
 auto name(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false, const Initial& initial = Initial{}){\
     return reduce(t,axes,functor{},keep_dims,initial __VA_OPT__(,) __VA_ARGS__);\
 }\
-template<typename...Ts, typename Initial = math_reduce_operations::no_initial>\
-auto name(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::dim_type> axes, bool keep_dims = false, const Initial& initial = Initial{}){\
+template<typename...Ts, typename DimT, typename Initial = math_reduce_operations::no_initial>\
+auto name(const basic_tensor<Ts...>& t, std::initializer_list<DimT> axes, bool keep_dims = false, const Initial& initial = Initial{}){\
     return reduce(t,axes,functor{},keep_dims,initial __VA_OPT__(,) __VA_ARGS__);\
 }\
 template<typename...Ts, typename Initial = math_reduce_operations::no_initial>\
@@ -740,32 +740,7 @@ GTENSOR_MATH_REDUCE_ROUTINE(std,math_reduce_operations::stdev);
 //axes may be scalar or container
 GTENSOR_MATH_REDUCE_ROUTINE(median,math_reduce_operations::median,typename basic_tensor<Ts...>::config_type{});
 
-//n-th difference along given axis
-//axis is scalar, default is last axis
-template<typename...Ts>
-auto diff(const basic_tensor<Ts...>& t, std::size_t n = 1, const typename basic_tensor<Ts...>::dim_type axis = -1){
-    using index_type = typename basic_tensor<Ts...>::index_type;
-    const index_type window_size = 2;
-    const index_type window_step = 1;
-    if (n==0){
-        return t;
-    }else{
-        auto res = slide(t, axis, math_reduce_operations::diff_1{}, window_size, window_step);
-        return diff(res, --n, axis);
-    }
-}
-//none recursive implementation of second differences, more efficient than diff with n=2
-template<typename...Ts>
-auto diff2(const basic_tensor<Ts...>& t, const typename basic_tensor<Ts...>::dim_type axis = -1){
-    using index_type = typename basic_tensor<Ts...>::index_type;
-    const index_type window_size = 3;
-    const index_type window_step = 1;
-    return slide(t, axis, math_reduce_operations::diff_2{}, window_size, window_step);
-}
-
-
 //nan versions
-
 //min element along given axes ignoring nan
 //axes may be scalar or container
 GTENSOR_MATH_REDUCE_INITIAL_ROUTINE(nanmin,math_reduce_operations::nanmin);
@@ -805,6 +780,30 @@ GTENSOR_MATH_REDUCE_ROUTINE(nanstd,math_reduce_operations::nanstdev);
 //median of elements along given axes, ignoring nan
 //axes may be scalar or container
 GTENSOR_MATH_REDUCE_ROUTINE(nanmedian,math_reduce_operations::nanmedian,typename basic_tensor<Ts...>::config_type{});
+
+//n-th difference along given axis
+//axis is scalar, default is last axis
+template<typename...Ts, typename DimT>
+auto diff(const basic_tensor<Ts...>& t, std::size_t n = 1, const DimT& axis = -1){
+    using index_type = typename basic_tensor<Ts...>::index_type;
+    const index_type window_size = 2;
+    const index_type window_step = 1;
+    if (n==0){
+        return t;
+    }else{
+        auto res = slide(t, axis, math_reduce_operations::diff_1{}, window_size, window_step);
+        return diff(res, --n, axis);
+    }
+}
+//none recursive implementation of second differences, more efficient than diff with n=2
+template<typename...Ts, typename DimT>
+auto diff2(const basic_tensor<Ts...>& t, const DimT& axis = -1){
+    using index_type = typename basic_tensor<Ts...>::index_type;
+    const index_type window_size = 3;
+    const index_type window_step = 1;
+    return slide(t, axis, math_reduce_operations::diff_2{}, window_size, window_step);
+}
+
 
 }   //end of namespace gtensor
 #endif
