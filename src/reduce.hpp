@@ -399,21 +399,23 @@ class reducer
         return res;
     }
 
-    template<typename...Ts, typename DimT, typename F, typename IdxT, typename...Args>
+    template<typename ResultT, typename...Ts, typename DimT, typename F, typename IdxT, typename...Args>
     static auto slide_(const basic_tensor<Ts...>& parent, const DimT& axis_, F slide_f, const IdxT& window_size_, const IdxT& window_step_, Args&&...args)
     {
         using parent_type = basic_tensor<Ts...>;
         using order = typename parent_type::order;
-        using value_type = typename parent_type::value_type;
         using config_type = typename parent_type::config_type;
         using index_type = typename config_type::index_type;
         using dim_type = typename config_type::dim_type;
+        using res_value_type = ResultT;
+        using res_config_type = gtensor::config::extend_config_t<config_type,res_value_type>;
+
         const auto& pshape = parent.shape();
         const dim_type axis = detail::make_axis(pshape,axis_);
         const index_type window_size = static_cast<index_type>(window_size_);
         const index_type window_step = static_cast<index_type>(window_step_);
         detail::check_slide_args(pshape, axis, window_size);
-        auto res = tensor<value_type,order,config_type>{detail::make_slide_shape(pshape, axis, window_size, window_step)};
+        auto res = tensor<res_value_type,order,res_config_type>{detail::make_slide_shape(pshape, axis, window_size, window_step)};
         if (!res.empty()){
             const auto pdim = parent.dim();
             if (pdim == dim_type{1}){
@@ -446,21 +448,23 @@ class reducer
         return res;
     }
 
-    template<typename...Ts, typename F, typename IdxT, typename...Args>
+    template<typename ResultT, typename...Ts, typename F, typename IdxT, typename...Args>
     static auto slide_(const basic_tensor<Ts...>& parent, F slide_f, const IdxT& window_size_, const IdxT& window_step_, Args&&...args)
     {
         using parent_type = basic_tensor<Ts...>;
         using order = typename parent_type::order;
-        using value_type = typename parent_type::value_type;
         using config_type = typename parent_type::config_type;
         using dim_type = typename config_type::dim_type;
         using index_type = typename config_type::index_type;
         using shape_type = typename config_type::shape_type;
+        using res_value_type = ResultT;
+        using res_config_type = gtensor::config::extend_config_t<config_type,res_value_type>;
+
         const auto psize = parent.size();
         const index_type window_size = static_cast<index_type>(window_size_);
         const index_type window_step = static_cast<index_type>(window_step_);
         detail::check_slide_args(psize, window_size);
-        auto res = tensor<value_type,order,config_type>{shape_type{detail::make_slide_size(psize, window_size, window_step)}};
+        auto res = tensor<res_value_type,order,res_config_type>{shape_type{detail::make_slide_size(psize, window_size, window_step)}};
         if (!res.empty()){
             const auto pdim = parent.dim();
             auto res_a = res.template traverse_order_adapter<order>();
@@ -519,14 +523,14 @@ public:
         return reduce_(t,axes,f,keep_dims,std::forward<Args>(args)...);
     }
 
-    template<typename...Ts, typename DimT, typename F, typename IdxT, typename...Args>
+    template<typename ResultT, typename...Ts, typename DimT, typename F, typename IdxT, typename...Args>
     static auto slide(const basic_tensor<Ts...>& t, const DimT& axis, F f, const IdxT& window_size, const IdxT& window_step, Args&&...args){
-        return slide_(t,axis,f,window_size,window_step,std::forward<Args>(args)...);
+        return slide_<ResultT>(t,axis,f,window_size,window_step,std::forward<Args>(args)...);
     }
 
-    template<typename...Ts, typename F, typename IdxT, typename...Args>
+    template<typename ResultT, typename...Ts, typename F, typename IdxT, typename...Args>
     static auto slide(const basic_tensor<Ts...>& t, F f, const IdxT& window_size, const IdxT& window_step, Args&&...args){
-        return slide_(t,f,window_size,window_step,std::forward<Args>(args)...);
+        return slide_<ResultT>(t,f,window_size,window_step,std::forward<Args>(args)...);
     }
 
     template<typename...Ts, typename DimT, typename F, typename...Args>
@@ -554,13 +558,26 @@ auto reduce(const basic_tensor<Ts...>& t, const Axes& axes, F f, bool keep_dims,
 template<typename...Ts, typename DimT, typename F, typename IdxT, typename...Args>
 auto slide(const basic_tensor<Ts...>& t, const DimT& axis, F f, const IdxT& window_size, const IdxT& window_step, Args&&...args){
     using config_type = typename basic_tensor<Ts...>::config_type;
-    return reducer_selector_t<config_type>::slide(t, axis, f, window_size, window_step,std::forward<Args>(args)...);
+    using value_type = typename basic_tensor<Ts...>::value_type;
+    return reducer_selector_t<config_type>::template slide<value_type>(t, axis, f, window_size, window_step,std::forward<Args>(args)...);
 }
 //slide like over flatten in c_order
 template<typename...Ts, typename F, typename IdxT, typename...Args>
 auto slide(const basic_tensor<Ts...>& t, F f, const IdxT& window_size, const IdxT& window_step, Args&&...args){
     using config_type = typename basic_tensor<Ts...>::config_type;
-    return reducer_selector_t<config_type>::slide(t, f, window_size, window_step,std::forward<Args>(args)...);
+    using value_type = typename basic_tensor<Ts...>::value_type;
+    return reducer_selector_t<config_type>::template slide<value_type>(t, f, window_size, window_step,std::forward<Args>(args)...);
+}
+//slide with explicit result value_type specialization
+template<typename ResultT, typename...Ts, typename DimT, typename F, typename IdxT, typename...Args>
+auto slide(const basic_tensor<Ts...>& t, const DimT& axis, F f, const IdxT& window_size, const IdxT& window_step, Args&&...args){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return reducer_selector_t<config_type>::template slide<ResultT>(t, axis, f, window_size, window_step,std::forward<Args>(args)...);
+}
+template<typename ResultT, typename...Ts, typename F, typename IdxT, typename...Args>
+auto slide(const basic_tensor<Ts...>& t, F f, const IdxT& window_size, const IdxT& window_step, Args&&...args){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return reducer_selector_t<config_type>::template slide<ResultT>(t, f, window_size, window_step,std::forward<Args>(args)...);
 }
 
 //transform tensor inplace along specified axis
