@@ -550,6 +550,7 @@ struct median_nanmedian
     template<typename It, typename Config>
     auto operator()(It first, It last, Config){
         using value_type = typename std::iterator_traits<It>::value_type;
+        using difference_type = typename std::iterator_traits<It>::difference_type;
         using container_type = typename Config::template container<value_type>;
         using container_difference_type = typename container_type::difference_type;
         using res_type = std::conditional_t<
@@ -560,9 +561,10 @@ struct median_nanmedian
         if (first == last){
             return reduce_empty<res_type>();
         }
-        const container_difference_type n = static_cast<container_difference_type>(last - first);
         container_type elements_{};
-        elements_.reserve(n);
+        if constexpr (detail::is_static_castable_v<difference_type,container_difference_type>){
+            elements_.reserve(static_cast<container_difference_type>(last - first));
+        }
         if constexpr (gtensor::math::numeric_traits<value_type>::has_nan()){
             try{
                 std::copy_if(first,last,std::back_inserter(elements_),Predicate{});
@@ -799,6 +801,10 @@ GTENSOR_MATH_REDUCE_ROUTINE(nanvar,math_reduce_operations::nanvar);
 //standart deviation of elements along given axes, ignoring nan
 //axes may be scalar or container
 GTENSOR_MATH_REDUCE_ROUTINE(nanstd,math_reduce_operations::nanstdev);
+
+//median of elements along given axes, ignoring nan
+//axes may be scalar or container
+GTENSOR_MATH_REDUCE_ROUTINE(nanmedian,math_reduce_operations::nanmedian,typename basic_tensor<Ts...>::config_type{});
 
 }   //end of namespace gtensor
 #endif

@@ -1734,7 +1734,7 @@ TEMPLATE_TEST_CASE("test_math_median_nanmedian_floating_point_values","test_math
     using value_type = TestType;
     using tensor_type = gtensor::tensor<value_type>;
     using gtensor::median;
-    //using gtensor::nanmedian;
+    using gtensor::nanmedian;
     using gtensor::tensor_close;
     using helpers_for_testing::apply_by_element;
 
@@ -1743,8 +1743,8 @@ TEMPLATE_TEST_CASE("test_math_median_nanmedian_floating_point_values","test_math
     using result_tensor_type = gtensor::tensor<result_value_type>;
     REQUIRE(std::is_same_v<typename decltype(median(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>()))::value_type,result_value_type>);
     REQUIRE(std::is_same_v<typename decltype(median(std::declval<tensor_type>(),std::declval<std::vector<int>>(),std::declval<bool>()))::value_type,result_value_type>);
-    //REQUIRE(std::is_same_v<typename decltype(nanmedian(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>()))::value_type,result_value_type>);
-    //REQUIRE(std::is_same_v<typename decltype(nanmedian(std::declval<tensor_type>(),std::declval<std::vector<int>>(),std::declval<bool>()))::value_type,result_value_type>);
+    REQUIRE(std::is_same_v<typename decltype(nanmedian(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>()))::value_type,result_value_type>);
+    REQUIRE(std::is_same_v<typename decltype(nanmedian(std::declval<tensor_type>(),std::declval<std::vector<int>>(),std::declval<bool>()))::value_type,result_value_type>);
 
     //0tensor,1axes,2keep_dims,3expected
     auto test_data = std::make_tuple(
@@ -1785,18 +1785,18 @@ TEMPLATE_TEST_CASE("test_math_median_nanmedian_floating_point_values","test_math
         };
         apply_by_element(test,test_data);
     }
-    // SECTION("test_nanmedian")
-    // {
-    //     auto test = [](const auto& t){
-    //         auto ten = std::get<0>(t);
-    //         auto axes = std::get<1>(t);
-    //         auto keep_dims = std::get<2>(t);
-    //         auto expected = std::get<3>(t);
-    //         auto result = nanmedian(ten,axes,keep_dims);
-    //         REQUIRE(tensor_close(result, expected,1E-2,1E-2));
-    //     };
-    //     apply_by_element(test,test_data);
-    // }
+    SECTION("test_nanmedian")
+    {
+        auto test = [](const auto& t){
+            auto ten = std::get<0>(t);
+            auto axes = std::get<1>(t);
+            auto keep_dims = std::get<2>(t);
+            auto expected = std::get<3>(t);
+            auto result = nanmedian(ten,axes,keep_dims);
+            REQUIRE(tensor_equal(result,expected,true));
+        };
+        apply_by_element(test,test_data);
+    }
 }
 
 TEMPLATE_TEST_CASE("test_math_median_nanmedian_initializer_list_axes_all_axes","test_math",
@@ -1807,20 +1807,24 @@ TEMPLATE_TEST_CASE("test_math_median_nanmedian_initializer_list_axes_all_axes","
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
     using gtensor::median;
-    //using gtensor::nanmedian;
+    using gtensor::nanmedian;
     using gtensor::tensor_close;
     using helpers_for_testing::apply_by_element;
     using result_value_type = typename gtensor::math::numeric_traits<value_type>::floating_point_type;
     using result_tensor_type = gtensor::tensor<result_value_type>;
 
     REQUIRE(std::is_same_v<typename decltype(median(std::declval<tensor_type>(),std::declval<std::initializer_list<int>>(),std::declval<bool>()))::value_type,result_value_type>);
-    //REQUIRE(std::is_same_v<typename decltype(nanmedian(std::declval<tensor_type>(),std::declval<std::initializer_list<int>>(),std::declval<bool>()))::value_type,result_value_type>);
+    REQUIRE(std::is_same_v<typename decltype(nanmedian(std::declval<tensor_type>(),std::declval<std::initializer_list<int>>(),std::declval<bool>()))::value_type,result_value_type>);
     //median
     REQUIRE(median(tensor_type{{1,1,0,2,5,-1},{-2,3,1,6,0,4},{3,2,2,7,1,-2},{1,0,-2,4,3,2},{5,3,1,5,7,1}},{0},false) == result_tensor_type{1,2,1,5,3,1});
     REQUIRE(median(tensor_type{{1,1,0,2,5,-1},{-2,3,1,6,0,4},{3,2,2,7,1,-2},{1,0,-2,4,3,2},{5,3,1,5,7,1}},{1}) == result_tensor_type{1.0,2.0,2.0,1.5,4.0});
     REQUIRE(median(tensor_type{{1,1,0,2,5,-1},{-2,3,1,6,0,4},{3,2,2,7,1,-2},{1,0,-2,4,3,2},{5,3,1,5,7,1}},{1,0}) == result_tensor_type(2.0));
     REQUIRE(median(tensor_type{{1,1,0,2,5,-1},{-2,3,1,6,0,4},{3,2,2,7,1,-2},{1,0,-2,4,3,2},{5,3,1,5,7,1}}) == result_tensor_type(2.0));
     //nanmedian
+    REQUIRE(nanmedian(tensor_type{{1,1,0,2,5,-1},{-2,3,1,6,0,4},{3,2,2,7,1,-2},{1,0,-2,4,3,2},{5,3,1,5,7,1}},{0},false) == result_tensor_type{1,2,1,5,3,1});
+    REQUIRE(nanmedian(tensor_type{{1,1,0,2,5,-1},{-2,3,1,6,0,4},{3,2,2,7,1,-2},{1,0,-2,4,3,2},{5,3,1,5,7,1}},{1}) == result_tensor_type{1.0,2.0,2.0,1.5,4.0});
+    REQUIRE(nanmedian(tensor_type{{1,1,0,2,5,-1},{-2,3,1,6,0,4},{3,2,2,7,1,-2},{1,0,-2,4,3,2},{5,3,1,5,7,1}},{1,0}) == result_tensor_type(2.0));
+    REQUIRE(nanmedian(tensor_type{{1,1,0,2,5,-1},{-2,3,1,6,0,4},{3,2,2,7,1,-2},{1,0,-2,4,3,2},{5,3,1,5,7,1}}) == result_tensor_type(2.0));
 }
 
 TEST_CASE("test_math_median_nanmedian_nan_values","test_math")
@@ -1843,16 +1847,23 @@ TEST_CASE("test_math_median_nanmedian_nan_values","test_math")
         std::make_tuple(median(tensor_type{1.0,0.5,2.0,neg_inf,3.0,pos_inf}), tensor_type(1.5)),
         std::make_tuple(median(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf}), tensor_type(nan)),
         std::make_tuple(median(tensor_type{{nan,nan,nan,nan},{nan,nan,nan,nan},{nan,nan,nan,nan},{nan,nan,nan,nan},{nan,nan,nan,nan}}), tensor_type(nan)),
+        std::make_tuple(median(tensor_type{{1.0,nan,nan,2.0},{nan,nan,nan,-3.0},{nan,nan,nan,3.0},{nan,nan,nan,8.0},{2.0,1.0,0.0,4.0}}), tensor_type(nan)),
         std::make_tuple(median(tensor_type{{1.0,nan,nan,2.0},{nan,nan,nan,-3.0},{nan,nan,nan,3.0},{nan,nan,nan,8.0},{2.0,1.0,0.0,4.0}},0), tensor_type{nan,nan,nan,3.0}),
-        std::make_tuple(median(tensor_type{{1.0,nan,nan,2.0},{nan,nan,nan,-3.0},{nan,nan,nan,3.0},{nan,nan,nan,8.0},{2.0,1.0,0.0,4.0}},1), tensor_type{nan,nan,nan,nan,1.5})
-
+        std::make_tuple(median(tensor_type{{1.0,nan,nan,2.0},{nan,nan,nan,-3.0},{nan,nan,nan,3.0},{nan,nan,nan,8.0},{2.0,1.0,0.0,4.0}},1), tensor_type{nan,nan,nan,nan,1.5}),
         //nanmedian
+        std::make_tuple(nanmedian(tensor_type{1.0,0.5,nan,4.0,3.0,2.0}), tensor_type(2.0)),
+        std::make_tuple(nanmedian(tensor_type{1.0,0.5,2.0,4.0,3.0,pos_inf}), tensor_type(2.5)),
+        std::make_tuple(nanmedian(tensor_type{1.0,0.5,2.0,neg_inf,3.0,4.0}), tensor_type(1.5)),
+        std::make_tuple(nanmedian(tensor_type{1.0,0.5,2.0,neg_inf,3.0,pos_inf}), tensor_type(1.5)),
+        std::make_tuple(nanmedian(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf}), tensor_type(2.0)),
+        std::make_tuple(nanmedian(tensor_type{{nan,nan,nan,nan},{nan,nan,nan,nan},{nan,nan,nan,nan},{nan,nan,nan,nan},{nan,nan,nan,nan}}), tensor_type(nan)),
+        std::make_tuple(nanmedian(tensor_type{{1.0,nan,nan,2.0},{nan,nan,nan,-3.0},{nan,nan,nan,3.0},{nan,nan,nan,8.0},{2.0,1.0,0.0,4.0}}), tensor_type(2.0)),
+        std::make_tuple(nanmedian(tensor_type{{1.0,nan,nan,2.0},{nan,nan,nan,-3.0},{nan,nan,nan,3.0},{nan,nan,nan,8.0},{2.0,1.0,0.0,4.0}},0), tensor_type{1.5,1.0,0.0,3.0}),
+        std::make_tuple(nanmedian(tensor_type{{1.0,nan,nan,2.0},{nan,nan,nan,-3.0},{nan,nan,nan,3.0},{nan,nan,nan,8.0},{2.0,1.0,0.0,4.0}},1), tensor_type{1.5,-3.0,3.0,8.0,1.5})
     );
     auto test = [](const auto& t){
         auto result = std::get<0>(t);
         auto expected = std::get<1>(t);
-        std::cout<<std::endl<<result;
-        std::cout<<std::endl<<expected;
         REQUIRE(tensor_equal(result,expected,true));
     };
     apply_by_element(test,test_data);
