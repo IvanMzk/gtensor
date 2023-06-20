@@ -848,7 +848,7 @@
 //     int
 // )
 // {
-//     using value_type = double;
+//     using value_type = TestType;
 //     using tensor_type = gtensor::tensor<value_type>;
 //     using gtensor::prod;
 //     using gtensor::nanprod;
@@ -1313,7 +1313,7 @@
 //     int
 // )
 // {
-//     using value_type = double;
+//     using value_type = TestType;
 //     using tensor_type = gtensor::tensor<value_type>;
 //     using gtensor::mean;
 //     using gtensor::nanmean;
@@ -1473,7 +1473,7 @@
 //     int
 // )
 // {
-//     using value_type = double;
+//     using value_type = TestType;
 //     using tensor_type = gtensor::tensor<value_type>;
 //     using gtensor::var;
 //     using gtensor::nanvar;
@@ -1636,7 +1636,7 @@
 //     int
 // )
 // {
-//     using value_type = double;
+//     using value_type = TestType;
 //     using tensor_type = gtensor::tensor<value_type>;
 //     using gtensor::std;
 //     using gtensor::nanstd;
@@ -1793,7 +1793,7 @@
 //     int
 // )
 // {
-//     using value_type = double;
+//     using value_type = TestType;
 //     using tensor_type = gtensor::tensor<value_type>;
 //     using gtensor::median;
 //     using gtensor::nanmedian;
@@ -1916,4 +1916,144 @@ TEST_CASE("test_math_diff2","test_math")
     apply_by_element(test,test_data);
 }
 
+//average
+TEMPLATE_TEST_CASE("test_math_average","test_math",
+    double,
+    int
+)
+{
+    using value_type = TestType;
+    using tensor_type = gtensor::tensor<value_type>;
+    using dim_type = typename tensor_type::dim_type;
+    using gtensor::average;
+    using helpers_for_testing::apply_by_element;
 
+    using result_value_type = typename gtensor::math::numeric_traits<value_type>::floating_point_type;
+    using result_tensor_type = gtensor::tensor<result_value_type>;
+
+    REQUIRE(std::is_same_v<
+        typename decltype(average(std::declval<tensor_type>(),std::declval<std::vector<dim_type>>(),std::declval<std::vector<value_type>>(),std::declval<bool>()))::value_type,
+        result_value_type>
+    );
+    REQUIRE(std::is_same_v<
+        typename decltype(average(std::declval<tensor_type>(),std::declval<std::vector<dim_type>>(),std::declval<std::vector<value_type>>(),std::declval<bool>()))::value_type,
+        result_value_type>
+    );
+
+    //0tensor,1axes,2keep_dims,3weights,4expected
+    auto test_data = std::make_tuple(
+        //keep_dim false
+        std::make_tuple(tensor_type{6},dim_type{0},false,std::vector<value_type>{2},result_tensor_type(6.0)),
+        std::make_tuple(tensor_type{1,2,3,4,5,6},dim_type{0},false,std::vector<value_type>{6,5,4,3,2,1},result_tensor_type(2.666)),
+        std::make_tuple(tensor_type{{1,2,2,0,1,3},{-1,3,2,2,0,4},{4,2,3,1,1,0},{4,3,8,1,6,2}},dim_type{0},false,tensor_type{1,2,2,1},result_tensor_type{1.833,2.5,3.333,1.166,1.5,2.166}),
+        std::make_tuple(tensor_type{{1,2,2,0,1,3},{-1,3,2,2,0,4},{4,2,3,1,1,0},{4,3,8,1,6,2}},dim_type{1},false,tensor_type{1,2,2,2,2,1},result_tensor_type{1.4,1.7,1.8,4.2}),
+        std::make_tuple(
+            tensor_type{{1,2,2,0,1,3},{-1,3,2,2,0,4},{4,2,3,1,1,0},{4,3,8,1,6,2}},
+            std::vector<dim_type>{1,0},
+            false,
+            tensor_type{1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1},
+            result_tensor_type(2.15)
+        ),
+        //keep_dim true
+        std::make_tuple(tensor_type{6},dim_type{0},true,std::vector<value_type>{2},result_tensor_type{6.0}),
+        std::make_tuple(tensor_type{1,2,3,4,5,6},dim_type{0},true,std::vector<value_type>{6,5,4,3,2,1},result_tensor_type{2.666}),
+        std::make_tuple(tensor_type{{1,2,2,0,1,3},{-1,3,2,2,0,4},{4,2,3,1,1,0},{4,3,8,1,6,2}},dim_type{0},true,tensor_type{1,2,2,1},result_tensor_type{{1.833,2.5,3.333,1.166,1.5,2.166}}),
+        std::make_tuple(tensor_type{{1,2,2,0,1,3},{-1,3,2,2,0,4},{4,2,3,1,1,0},{4,3,8,1,6,2}},dim_type{1},true,tensor_type{1,2,2,2,2,1},result_tensor_type{{1.4},{1.7},{1.8},{4.2}}),
+        std::make_tuple(
+            tensor_type{{1,2,2,0,1,3},{-1,3,2,2,0,4},{4,2,3,1,1,0},{4,3,8,1,6,2}},
+            std::vector<dim_type>{1,0},
+            true,
+            tensor_type{1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1},
+            result_tensor_type{{2.15}}
+        )
+    );
+    auto test = [](const auto& t){
+        auto ten = std::get<0>(t);
+        auto axes = std::get<1>(t);
+        auto keep_dims = std::get<2>(t);
+        auto weights = std::get<3>(t);
+        auto expected = std::get<4>(t);
+        auto result = average(ten,axes,weights,keep_dims);
+        REQUIRE(tensor_close(result,expected,1E-2,1E-2));
+    };
+    apply_by_element(test,test_data);
+}
+
+TEMPLATE_TEST_CASE("test_math_average_initializer_list_axes_all_axes","test_math",
+    double,
+    int
+)
+{
+    using value_type = TestType;
+    using tensor_type = gtensor::tensor<value_type>;
+    using dim_type = typename tensor_type::dim_type;
+    using gtensor::average;
+    using gtensor::tensor_close;
+    using helpers_for_testing::apply_by_element;
+    using result_value_type = typename gtensor::math::numeric_traits<value_type>::floating_point_type;
+    using result_tensor_type = gtensor::tensor<result_value_type>;
+
+    REQUIRE(std::is_same_v<
+        typename decltype(average(std::declval<tensor_type>(),std::declval<std::initializer_list<dim_type>>(),std::declval<std::vector<value_type>>(),std::declval<bool>()))::value_type,
+        result_value_type>
+    );
+    REQUIRE(
+        tensor_close(
+            average(tensor_type{{1,2,2,0,1,3},{-1,3,2,2,0,4},{4,2,3,1,1,0},{4,3,8,1,6,2}},{0},tensor_type{1,2,2,1}),
+            result_tensor_type{1.833,2.5,3.333,1.166,1.5,2.166},
+            1E-2,
+            1E-2
+        )
+    );
+    REQUIRE(
+        tensor_close(
+            average(tensor_type{{1,2,2,0,1,3},{-1,3,2,2,0,4},{4,2,3,1,1,0},{4,3,8,1,6,2}},{0,1},tensor_type{1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1}),
+            result_tensor_type(2.15),
+            1E-2,
+            1E-2
+        )
+    );
+    //all axes
+    REQUIRE(
+        tensor_close(
+            average(tensor_type{{1,2,2,0,1,3},{-1,3,2,2,0,4},{4,2,3,1,1,0},{4,3,8,1,6,2}},tensor_type{1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1}),
+            result_tensor_type(2.15),
+            1E-2,
+            1E-2
+        )
+    );
+}
+
+TEMPLATE_TEST_CASE("test_math_average_exception","test_math",
+    double,
+    int
+)
+{
+    using value_type = TestType;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::average;
+    using gtensor::reduce_exception;
+    using helpers_for_testing::apply_by_element;
+
+    //0tensor,1axes,2keep_dims,3weights
+    auto test_data = std::make_tuple(
+        //zero size weights
+        std::make_tuple(tensor_type{},0,false,tensor_type{}),
+        std::make_tuple(tensor_type{1,2,3,4,5},0,false,tensor_type{1,1,0,-1,-1}),
+        //weights size not match size along axes
+        std::make_tuple(tensor_type{1,2,3,4,5},0,false,tensor_type{1,1,2}),
+        std::make_tuple(tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12}},0,false,tensor_type{1,1,2,2}),
+        std::make_tuple(tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12}},0,false,tensor_type{1,2}),
+        std::make_tuple(tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12}},1,false,tensor_type{1,2,2}),
+        std::make_tuple(tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12}},1,false,tensor_type{1,2,2,1,1}),
+        std::make_tuple(tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12}},std::vector<int>{1,0},false,tensor_type{1,2,2,1,1})
+    );
+    auto test = [](const auto& t){
+        auto ten = std::get<0>(t);
+        auto axes = std::get<1>(t);
+        auto keep_dims = std::get<2>(t);
+        auto weights = std::get<3>(t);
+        REQUIRE_THROWS_AS(average(ten,axes,weights,keep_dims), reduce_exception);
+    };
+    apply_by_element(test,test_data);
+}

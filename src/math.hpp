@@ -384,7 +384,7 @@ using cumprod = cumulate<multiplies>;
 using nancumsum = nancumulate<plus>;
 using nancumprod = nancumulate<multiplies>;
 
-//result floating point type for mean,var,stdev,median
+//result floating point type for routines where floating point result is mandatory (mean,nanmean,var,nanvar,...)
 //T is value_type of source
 template<typename T> using result_floating_point_t = std::conditional_t<
     gtensor::math::numeric_traits<T>::is_floating_point(),
@@ -604,7 +604,7 @@ struct nanmedian_predicate
 using median = median_nanmedian<median_predicate>;
 using nanmedian = median_nanmedian<nanmedian_predicate>;
 
-
+//first finite difference
 struct diff_1
 {
     template<typename It, typename DstIt>
@@ -616,6 +616,7 @@ struct diff_1
     }
 };
 
+//second finite difference
 struct diff_2
 {
     template<typename It, typename DstIt>
@@ -629,6 +630,66 @@ struct diff_2
         }
     }
 };
+
+template<typename T, typename U>
+void check_weights(const T& n, const U& n_weights){
+    auto test = [](const auto& n_, const auto& n_weights_){
+        if (n_!=n_weights_){
+            throw reduce_exception("length of weights not compatible with specified axes");
+        }
+    };
+    if constexpr (detail::is_static_castable_v<U,T>){
+        test(n,static_cast<T>(n_weights));
+    }else if constexpr (detail::is_static_castable_v<T,U>){
+        test(static_cast<U>(n),n_weights);
+    }else{
+        static_assert(detail::always_false<T,U>, "types not convertible to each other");
+    }
+}
+
+//average
+//T is source value_type
+template<typename T>
+class average
+{
+    using res_type = result_floating_point_t<T>;
+    res_type weights_sum{0};
+public:
+    //Weights is container, weights size must be equal to last-first
+    template<typename It, typename Container>
+    auto operator()(It first, It last, const Container& weights){
+        using value_type = typename std::iterator_traits<It>::value_type;
+        static_assert(std::is_same_v<T,value_type>,"invalid average template T type argument");
+        static_assert(detail::is_container_of_type_v<Container,res_type>,"invalid weights argument");
+
+        const auto n = last - first;
+        const auto n_weights = weights.size();
+        check_weights(n,n_weights);
+
+        res_type res{0};
+        auto weights_it = weights.begin();
+        if (weights_sum == res_type{0}){    //additional compute weights sum
+            for (;first!=last; ++first,++weights_it){
+                const auto& w = static_cast<const res_type&>(*weights_it);
+                weights_sum+=w;
+                res+=static_cast<const res_type&>(*first)*w;
+            }
+            if (weights_sum == res_type{0}){
+                throw reduce_exception("weights sum to zero");
+            }
+        }else{
+            for (;first!=last; ++first,++weights_it){
+                const auto& w = static_cast<const res_type&>(*weights_it);
+                res+=static_cast<const res_type&>(*first)*w;
+            }
+        }
+        return res / weights_sum;
+    }
+};
+
+
+
+
 
 }   //end of namespace math_reduce_operations
 
@@ -791,6 +852,30 @@ auto diff2(const basic_tensor<Ts...>& t, const DimT& axis = -1){
     const index_type window_step = 1;
     return slide(t, axis, math_reduce_operations::diff_2{}, window_size, window_step);
 }
+
+//average
+//axes may be scalar or container
+//weights is container, size of weights must be size along given axes, weights must not sum to zero
+template<typename...Ts, typename Axes, typename Container, std::enable_if_t<detail::is_container_v<Container>,int> =0>
+auto average(const basic_tensor<Ts...>& t, const Axes& axes, const Container& weights, bool keep_dims=false){
+    using value_type = typename basic_tensor<Ts...>::value_type;
+    return reduce(t,axes,math_reduce_operations::average<value_type>{},keep_dims,weights);
+}
+template<typename...Ts, typename DimT, typename Container, std::enable_if_t<detail::is_container_v<Container>,int> =0>
+auto average(const basic_tensor<Ts...>& t, std::initializer_list<DimT> axes, const Container& weights, bool keep_dims=false){
+    using value_type = typename basic_tensor<Ts...>::value_type;
+    return reduce(t,axes,math_reduce_operations::average<value_type>{},keep_dims,weights);
+}
+//average over all axes
+template<typename...Ts, typename Container, std::enable_if_t<detail::is_container_v<Container>,int> =0>
+auto average(const basic_tensor<Ts...>& t, const Container& weights, bool keep_dims=false){
+    using value_type = typename basic_tensor<Ts...>::value_type;
+    using dim_type = typename basic_tensor<Ts...>::dim_type;
+    return reduce(t,std::initializer_list<dim_type>{},math_reduce_operations::average<value_type>{},keep_dims,weights);
+}
+
+
+
 
 
 }   //end of namespace gtensor
