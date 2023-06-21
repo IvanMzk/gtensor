@@ -632,7 +632,7 @@ struct diff_2
 };
 
 template<typename T, typename U>
-void check_weights(const T& n, const U& n_weights){
+void check_weights_size(const T& n, const U& n_weights){
     auto test = [](const auto& n_, const auto& n_weights_){
         if (n_!=n_weights_){
             throw reduce_exception("length of weights not compatible with specified axes");
@@ -644,6 +644,13 @@ void check_weights(const T& n, const U& n_weights){
         test(static_cast<U>(n),n_weights);
     }else{
         static_assert(detail::always_false<T,U>, "types not convertible to each other");
+    }
+}
+
+template<typename T>
+void check_weights_sum(const T& sum){
+    if (sum == T{0}){
+        throw reduce_exception("weights sum to zero");
     }
 }
 
@@ -664,7 +671,7 @@ public:
 
         const auto n = last - first;
         const auto n_weights = weights.size();
-        check_weights(n,n_weights);
+        check_weights_size(n,n_weights);
 
         res_type res{0};
         auto weights_it = weights.begin();
@@ -674,9 +681,7 @@ public:
                 weights_sum+=w;
                 res+=static_cast<const res_type&>(*first)*w;
             }
-            if (weights_sum == res_type{0}){
-                throw reduce_exception("weights sum to zero");
-            }
+            check_weights_sum(weights_sum);
         }else{
             for (;first!=last; ++first,++weights_it){
                 const auto& w = static_cast<const res_type&>(*weights_it);
@@ -687,6 +692,46 @@ public:
     }
 };
 
+//moving average
+//T is source value_type
+template<typename T>
+class moving_average
+{
+    using res_type = result_floating_point_t<T>;
+    res_type weights_sum{0};
+public:
+    template<typename It, typename DstIt, typename Container, typename IdxT>
+    auto operator()(It first, It last, DstIt dfirst, DstIt dlast, const Container& weights, const IdxT& step){
+        using dst_value_type = typename std::iterator_traits<DstIt>::value_type;
+        using difference_type = typename std::iterator_traits<It>::difference_type;
+        static_assert(std::is_same_v<res_type,dst_value_type>,"invalid average template T type argument");
+        static_assert(detail::is_container_of_type_v<Container,res_type>,"invalid weights argument");
+
+        const auto n_weights = weights.size();
+        const auto window_size = static_cast<difference_type>(n_weights);
+        const auto window_step = static_cast<difference_type>(step);
+        for (;dfirst!=dlast; ++dfirst,first+=window_step){
+            auto weights_it = weights.begin();
+            auto window_it = first;
+            auto window_last = window_it+window_size;
+            res_type res{0};
+            if (weights_sum == res_type{0}){    //additional compute weights sum
+                for (;window_it!=window_last; ++window_it,++weights_it){
+                    const auto& w = static_cast<const res_type&>(*weights_it);
+                    weights_sum+=w;
+                    res+=static_cast<const res_type&>(*window_it)*w;
+                }
+                check_weights_sum(weights_sum);
+            }else{
+                for (;window_it!=window_last; ++window_it,++weights_it){
+                    const auto& w = static_cast<const res_type&>(*weights_it);
+                    res+=static_cast<const res_type&>(*window_it)*w;
+                }
+            }
+            *dfirst = res / weights_sum;
+        }
+    }
+};
 
 
 
@@ -853,7 +898,7 @@ auto diff2(const basic_tensor<Ts...>& t, const DimT& axis = -1){
     return slide(t, axis, math_reduce_operations::diff_2{}, window_size, window_step);
 }
 
-//average
+//average along given axes
 //axes may be scalar or container
 //weights is container, size of weights must be size along given axes, weights must not sum to zero
 template<typename...Ts, typename Axes, typename Container, std::enable_if_t<detail::is_container_v<Container>,int> =0>
@@ -874,8 +919,17 @@ auto average(const basic_tensor<Ts...>& t, const Container& weights, bool keep_d
     return reduce(t,std::initializer_list<dim_type>{},math_reduce_operations::average<value_type>{},keep_dims,weights);
 }
 
-
-
+//moving average along given axis
+//axis is scalar
+//weights is container, moving window size is weights size, weights must not sum to zero
+//result axis size will be (size - window_size)/step + 1, where size is source axis size
+template<typename...Ts, typename DimT, typename Container, typename IdxT, std::enable_if_t<detail::is_container_v<Container>,int> =0>
+auto moving_average(const basic_tensor<Ts...>& t, const DimT& axis, const Container& weights, const IdxT& step = 1){
+    using value_type = typename basic_tensor<Ts...>::value_type;
+    using res_type = math_reduce_operations::result_floating_point_t<value_type>;
+    const IdxT window_size = weights.size();
+    return slide<res_type>(t,axis,math_reduce_operations::moving_average<value_type>{},window_size,step,weights,step);
+}
 
 
 }   //end of namespace gtensor
