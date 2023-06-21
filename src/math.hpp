@@ -704,6 +704,7 @@ class moving_average
 public:
     template<typename It, typename DstIt, typename Container, typename IdxT>
     auto operator()(It first, It, DstIt dfirst, DstIt dlast, const Container& weights, const IdxT& step){
+        using value_type = typename std::iterator_traits<It>::value_type;
         using dst_value_type = typename std::iterator_traits<DstIt>::value_type;
         using difference_type = typename std::iterator_traits<It>::difference_type;
         static_assert(std::is_same_v<res_type,dst_value_type>,"invalid average template T type argument");
@@ -712,25 +713,11 @@ public:
         const auto n_weights = weights.size();
         const auto window_size = static_cast<difference_type>(n_weights);
         const auto window_step = static_cast<difference_type>(step);
+        average<value_type> average_maker{};
         for (;dfirst!=dlast; ++dfirst,first+=window_step){
-            auto weights_it = weights.begin();
-            auto window_it = first;
-            auto window_last = window_it+window_size;
-            res_type res{0};
-            if (weights_sum == res_type{0}){    //additional compute weights sum
-                for (;window_it!=window_last; ++window_it,++weights_it){
-                    const auto& w = static_cast<const res_type&>(*weights_it);
-                    weights_sum+=w;
-                    res+=static_cast<const res_type&>(*window_it)*w;
-                }
-                check_weights_sum(weights_sum);
-                normalizer/=weights_sum;
-            }else{
-                for (;window_it!=window_last; ++window_it,++weights_it){
-                    res+=static_cast<const res_type&>(*window_it)*static_cast<const res_type&>(*weights_it);
-                }
-            }
-            *dfirst = res*normalizer;
+            auto window_first = first;
+            auto window_last = window_first+window_size;
+            *dfirst = average_maker(window_first,window_last,weights);
         }
     }
 };
