@@ -132,10 +132,8 @@ auto make_reduce_shape(const ShT& shape, const Container& axes, bool keep_dims){
 template<typename IdxT>
 auto check_slide_args(const IdxT& size, const IdxT& window_size){
     using index_type = IdxT;
-    if (size > 0){
-        if (window_size > size || window_size <= index_type{0}){
-            throw reduce_exception("bad sliding window size");
-        }
+    if (window_size > size || window_size <= index_type{0}){
+        throw reduce_exception("bad sliding window size");
     }
 }
 template<typename ShT, typename DimT, typename IdxT>
@@ -147,11 +145,7 @@ auto check_slide_args(const ShT& shape, const DimT& axis, const IdxT& window_siz
         throw reduce_exception("bad slide axis");
     }
     index_type axis_size = shape[axis];
-    if (axis_size > 0){
-        if (window_size > axis_size || window_size <= index_type{0}){
-            throw reduce_exception("bad sliding window size");
-        }
-    }
+    check_slide_args(axis_size,window_size);
 }
 template<typename IdxT>
 auto make_slide_size(const IdxT& size, const IdxT& window_size, const IdxT& window_step){
@@ -568,7 +562,7 @@ auto slide(const basic_tensor<Ts...>& t, F f, const IdxT& window_size, const Idx
     using value_type = typename basic_tensor<Ts...>::value_type;
     return reducer_selector_t<config_type>::template slide<value_type>(t, f, window_size, window_step,std::forward<Args>(args)...);
 }
-//slide with explicit result value_type specialization
+//as above, but with explicit result value_type specialization
 template<typename ResultT, typename...Ts, typename DimT, typename F, typename IdxT, typename...Args>
 auto slide(const basic_tensor<Ts...>& t, const DimT& axis, F f, const IdxT& window_size, const IdxT& window_step, Args&&...args){
     using config_type = typename basic_tensor<Ts...>::config_type;
