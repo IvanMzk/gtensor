@@ -715,9 +715,7 @@ public:
         const auto window_step = static_cast<difference_type>(step);
         average<value_type> average_maker{};
         for (;dfirst!=dlast; ++dfirst,first+=window_step){
-            auto window_first = first;
-            auto window_last = window_first+window_size;
-            *dfirst = average_maker(window_first,window_last,weights);
+            *dfirst = average_maker(first,first+window_size,weights);
         }
     }
 };
@@ -750,14 +748,9 @@ struct moving_mean
                 }
             }
         }else{  //calculate full window every iteration
+            mean mean_maker{};
             for(;dfirst!=dlast; ++dfirst,first+=window_step){
-                auto window_it = first;
-                auto window_last = window_it+window_size;
-                res_type res{0};
-                for (;window_it!=window_last; ++window_it){
-                    res+=static_cast<const res_type&>(*window_it);
-                }
-                *dfirst = res*normalizer;
+                *dfirst = mean_maker(first,first+window_size);
             }
         }
     }
