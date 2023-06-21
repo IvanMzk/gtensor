@@ -130,22 +130,25 @@ auto make_reduce_shape(const ShT& shape, const Container& axes, bool keep_dims){
 }
 
 template<typename IdxT>
-auto check_slide_args(const IdxT& size, const IdxT& window_size){
+auto check_slide_args(const IdxT& size, const IdxT& window_size, const IdxT& window_step){
     using index_type = IdxT;
     if (window_size > size || window_size <= index_type{0}){
-        throw reduce_exception("bad sliding window size");
+        throw reduce_exception("invalid sliding window size");
+    }
+    if (window_step < index_type{1}){
+        throw reduce_exception("invalid sliding window step");
     }
 }
 template<typename ShT, typename DimT, typename IdxT>
-auto check_slide_args(const ShT& shape, const DimT& axis, const IdxT& window_size){
+auto check_slide_args(const ShT& shape, const DimT& axis, const IdxT& window_size, const IdxT& window_step){
     using dim_type = DimT;
     using index_type = IdxT;
     const dim_type dim = detail::make_dim(shape);
     if (axis >= dim){
-        throw reduce_exception("bad slide axis");
+        throw reduce_exception("invalid slide axis");
     }
     index_type axis_size = shape[axis];
-    check_slide_args(axis_size,window_size);
+    check_slide_args(axis_size,window_size,window_step);
 }
 template<typename IdxT>
 auto make_slide_size(const IdxT& size, const IdxT& window_size, const IdxT& window_step){
@@ -408,7 +411,7 @@ class reducer
         const dim_type axis = detail::make_axis(pshape,axis_);
         const index_type window_size = static_cast<index_type>(window_size_);
         const index_type window_step = static_cast<index_type>(window_step_);
-        detail::check_slide_args(pshape, axis, window_size);
+        detail::check_slide_args(pshape, axis, window_size, window_step);
         auto res = tensor<res_value_type,order,res_config_type>{detail::make_slide_shape(pshape, axis, window_size, window_step)};
         if (!res.empty()){
             const auto pdim = parent.dim();
@@ -457,7 +460,7 @@ class reducer
         const auto psize = parent.size();
         const index_type window_size = static_cast<index_type>(window_size_);
         const index_type window_step = static_cast<index_type>(window_step_);
-        detail::check_slide_args(psize, window_size);
+        detail::check_slide_args(psize, window_size, window_step);
         auto res = tensor<res_value_type,order,res_config_type>{shape_type{detail::make_slide_size(psize, window_size, window_step)}};
         if (!res.empty()){
             const auto pdim = parent.dim();

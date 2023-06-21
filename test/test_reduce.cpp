@@ -158,38 +158,44 @@ TEST_CASE("test_check_slide_args","[test_reduce]")
     using gtensor::detail::check_slide_args;
 
 
-    REQUIRE_NOTHROW(check_slide_args(shape_type{1},dim_type{0},index_type{1}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{10},dim_type{0},index_type{1}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{10},dim_type{0},index_type{2}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{10},dim_type{0},index_type{5}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{10},dim_type{0},index_type{10}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{1,0},dim_type{0},index_type{1}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,0},dim_type{0},index_type{1}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,0},dim_type{0},index_type{2}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,0},dim_type{1},index_type{1}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,0},dim_type{1},index_type{2}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,0},dim_type{1},index_type{3}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,4},dim_type{0},index_type{1}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,4},dim_type{0},index_type{2}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,4},dim_type{1},index_type{1}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,4},dim_type{1},index_type{2}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,4},dim_type{1},index_type{3}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,4},dim_type{2},index_type{1}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,4},dim_type{2},index_type{2}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,4},dim_type{2},index_type{3}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,4},dim_type{2},index_type{4}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{1},dim_type{0},index_type{1},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{10},dim_type{0},index_type{1},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{10},dim_type{0},index_type{2},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{10},dim_type{0},index_type{5},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{10},dim_type{0},index_type{10},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{1,0},dim_type{0},index_type{1},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,0},dim_type{0},index_type{1},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,0},dim_type{0},index_type{2},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,0},dim_type{1},index_type{1},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,0},dim_type{1},index_type{2},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,0},dim_type{1},index_type{3},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,4},dim_type{0},index_type{1},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,4},dim_type{0},index_type{2},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,4},dim_type{1},index_type{1},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,4},dim_type{1},index_type{2},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,4},dim_type{1},index_type{3},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,4},dim_type{2},index_type{1},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,4},dim_type{2},index_type{2},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,4},dim_type{2},index_type{3},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,4},dim_type{2},index_type{4},index_type{1}));
 
-    REQUIRE_THROWS_AS(check_slide_args(shape_type{0},dim_type{0},index_type{0}), reduce_exception);
-    REQUIRE_THROWS_AS(check_slide_args(shape_type{0},dim_type{0},index_type{1}), reduce_exception);
-    REQUIRE_THROWS_AS(check_slide_args(shape_type{0},dim_type{0},index_type{2}), reduce_exception);
-    REQUIRE_THROWS_AS(check_slide_args(shape_type{},dim_type{0},index_type{1}), reduce_exception);
-    REQUIRE_THROWS_AS(check_slide_args(shape_type{0},dim_type{1},index_type{1}), reduce_exception);
-    REQUIRE_THROWS_AS(check_slide_args(shape_type{10},dim_type{1},index_type{1}), reduce_exception);
-    REQUIRE_THROWS_AS(check_slide_args(shape_type{10},dim_type{0},index_type{11}), reduce_exception);
-    REQUIRE_THROWS_AS(check_slide_args(shape_type{2,3,4},dim_type{3},index_type{1}), reduce_exception);
-    REQUIRE_THROWS_AS(check_slide_args(shape_type{2,3,4},dim_type{0},index_type{3}), reduce_exception);
-    REQUIRE_THROWS_AS(check_slide_args(shape_type{2,3,4},dim_type{1},index_type{4}), reduce_exception);
-    REQUIRE_THROWS_AS(check_slide_args(shape_type{2,3,4},dim_type{2},index_type{5}), reduce_exception);
+    //zero window_size
+    REQUIRE_THROWS_AS(check_slide_args(shape_type{0},dim_type{0},index_type{0},index_type{1}), reduce_exception);
+    //window_size greater than axis size
+    REQUIRE_THROWS_AS(check_slide_args(shape_type{0},dim_type{0},index_type{1},index_type{1}), reduce_exception);
+    REQUIRE_THROWS_AS(check_slide_args(shape_type{0},dim_type{0},index_type{2},index_type{1}), reduce_exception);
+    REQUIRE_THROWS_AS(check_slide_args(shape_type{},dim_type{0},index_type{1},index_type{1}), reduce_exception);
+    REQUIRE_THROWS_AS(check_slide_args(shape_type{10},dim_type{0},index_type{11},index_type{1}), reduce_exception);
+    REQUIRE_THROWS_AS(check_slide_args(shape_type{2,3,4},dim_type{0},index_type{3},index_type{1}), reduce_exception);
+    REQUIRE_THROWS_AS(check_slide_args(shape_type{2,3,4},dim_type{1},index_type{4},index_type{1}), reduce_exception);
+    REQUIRE_THROWS_AS(check_slide_args(shape_type{2,3,4},dim_type{2},index_type{5},index_type{1}), reduce_exception);
+    //invalid axis
+    REQUIRE_THROWS_AS(check_slide_args(shape_type{0},dim_type{1},index_type{1},index_type{1}), reduce_exception);
+    REQUIRE_THROWS_AS(check_slide_args(shape_type{10},dim_type{1},index_type{1},index_type{1}), reduce_exception);
+    REQUIRE_THROWS_AS(check_slide_args(shape_type{2,3,4},dim_type{3},index_type{1},index_type{1}), reduce_exception);
+    //zero window_step
+    REQUIRE_THROWS_AS(check_slide_args(shape_type{10},dim_type{0},index_type{3},index_type{0}), reduce_exception);
+    REQUIRE_THROWS_AS(check_slide_args(shape_type{2,3,4},dim_type{1},index_type{1},index_type{0}), reduce_exception);
 }
 
 TEST_CASE("test_make_slide_shape","[test_reduce]")
