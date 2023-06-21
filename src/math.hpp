@@ -661,6 +661,7 @@ class average
 {
     using res_type = result_floating_point_t<T>;
     res_type weights_sum{0};
+    res_type normalizer{1};
 public:
     //Weights is container, weights size must be equal to last-first
     template<typename It, typename Container>
@@ -682,13 +683,13 @@ public:
                 res+=static_cast<const res_type&>(*first)*w;
             }
             check_weights_sum(weights_sum);
+            normalizer/=weights_sum;
         }else{
             for (;first!=last; ++first,++weights_it){
-                const auto& w = static_cast<const res_type&>(*weights_it);
-                res+=static_cast<const res_type&>(*first)*w;
+                res+=static_cast<const res_type&>(*first)*static_cast<const res_type&>(*weights_it);
             }
         }
-        return res / weights_sum;
+        return res*normalizer;
     }
 };
 
@@ -699,9 +700,10 @@ class moving_average
 {
     using res_type = result_floating_point_t<T>;
     res_type weights_sum{0};
+    res_type normalizer{1};
 public:
     template<typename It, typename DstIt, typename Container, typename IdxT>
-    auto operator()(It first, It last, DstIt dfirst, DstIt dlast, const Container& weights, const IdxT& step){
+    auto operator()(It first, It, DstIt dfirst, DstIt dlast, const Container& weights, const IdxT& step){
         using dst_value_type = typename std::iterator_traits<DstIt>::value_type;
         using difference_type = typename std::iterator_traits<It>::difference_type;
         static_assert(std::is_same_v<res_type,dst_value_type>,"invalid average template T type argument");
@@ -722,19 +724,57 @@ public:
                     res+=static_cast<const res_type&>(*window_it)*w;
                 }
                 check_weights_sum(weights_sum);
+                normalizer/=weights_sum;
             }else{
                 for (;window_it!=window_last; ++window_it,++weights_it){
-                    const auto& w = static_cast<const res_type&>(*weights_it);
-                    res+=static_cast<const res_type&>(*window_it)*w;
+                    res+=static_cast<const res_type&>(*window_it)*static_cast<const res_type&>(*weights_it);
                 }
             }
-            *dfirst = res / weights_sum;
+            *dfirst = res*normalizer;
         }
     }
 };
 
+//moving mean
+struct moving_mean
+{
+    template<typename It, typename DstIt, typename IdxT>
+    auto operator()(It first, It, DstIt dfirst, DstIt dlast, const IdxT& win_size, const IdxT& step){
+        using difference_type = typename std::iterator_traits<It>::difference_type;
+        using res_type = typename std::iterator_traits<DstIt>::value_type;
 
-
+        const auto window_size = static_cast<difference_type>(win_size);
+        const auto window_step = static_cast<difference_type>(step);
+        const auto normalizer = res_type{1}/static_cast<res_type>(win_size);
+        if (window_size > difference_type{2}*window_step){  //not recalculate overlapping region
+            auto window_it = first;
+            auto window_last = first+window_size;
+            res_type res{0};
+            for (;window_it!=window_last; ++window_it){
+                res+=static_cast<const res_type&>(*window_it);
+            }
+            for(;dfirst!=dlast; ++dfirst){
+                *dfirst = res*normalizer;
+                for (difference_type i{0}; i!=window_step; ++i,++first){
+                    res-=static_cast<const res_type&>(*first);
+                }
+                for (difference_type i{0}; i!=window_step; ++i,++window_it){
+                    res+=static_cast<const res_type&>(*window_it);
+                }
+            }
+        }else{  //calculate full window every iteration
+            for(;dfirst!=dlast; ++dfirst,first+=window_step){
+                auto window_it = first;
+                auto window_last = window_it+window_size;
+                res_type res{0};
+                for (;window_it!=window_last; ++window_it){
+                    res+=static_cast<const res_type&>(*window_it);
+                }
+                *dfirst = res*normalizer;
+            }
+        }
+    }
+};
 
 }   //end of namespace math_reduce_operations
 
@@ -919,16 +959,25 @@ auto average(const basic_tensor<Ts...>& t, const Container& weights, bool keep_d
     return reduce(t,std::initializer_list<dim_type>{},math_reduce_operations::average<value_type>{},keep_dims,weights);
 }
 
-//moving average along given axis
-//axis is scalar
+//moving average along given axis, axis is scalar
 //weights is container, moving window size is weights size, weights must not sum to zero
-//result axis size will be (size - window_size)/step + 1, where size is source axis size
+//result axis size will be (n - window_size)/step + 1, where n is source axis size
 template<typename...Ts, typename DimT, typename Container, typename IdxT, std::enable_if_t<detail::is_container_v<Container>,int> =0>
 auto moving_average(const basic_tensor<Ts...>& t, const DimT& axis, const Container& weights, const IdxT& step = 1){
     using value_type = typename basic_tensor<Ts...>::value_type;
     using res_type = math_reduce_operations::result_floating_point_t<value_type>;
     const IdxT window_size = weights.size();
     return slide<res_type>(t,axis,math_reduce_operations::moving_average<value_type>{},window_size,step,weights,step);
+}
+
+//moving mean along given axis, axis is scalar
+//window_size must be greater zero and less_equal than axis size
+//result axis size will be (n - window_size)/step + 1, where n is source axis size
+template<typename...Ts, typename DimT, typename IdxT>
+auto moving_mean(const basic_tensor<Ts...>& t, const DimT& axis, const IdxT& window_size, const IdxT& step = 1){
+    using value_type = typename basic_tensor<Ts...>::value_type;
+    using res_type = math_reduce_operations::result_floating_point_t<value_type>;
+    return slide<res_type>(t,axis,math_reduce_operations::moving_mean{},window_size,step,window_size,step);
 }
 
 

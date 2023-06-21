@@ -2089,6 +2089,7 @@ TEMPLATE_TEST_CASE("test_math_moving_average","test_math",
         std::make_tuple(tensor_type{5,6},0,tensor_type{2},1,result_tensor_type{5,6}),
         std::make_tuple(tensor_type{5,6},0,tensor_type{2,3},1,result_tensor_type{5.6}),
         std::make_tuple(tensor_type{1,2,3,4,5,6,7,8,9,10},0,tensor_type{1,2,2,1},1,result_tensor_type{2.5,3.5,4.5,5.5,6.5,7.5,8.5}),
+        std::make_tuple(tensor_type{1,2,3,4,5,6,7,8,9,10},0,tensor_type{1,1,1,2},1,result_tensor_type{2.8,3.8,4.8,5.8,6.8,7.8,8.8}),
         std::make_tuple(tensor_type{1,2,3,4,5,6,7,8,9,10},0,tensor_type{1,2,2,1},2,result_tensor_type{2.5,4.5,6.5,8.5}),
         std::make_tuple(tensor_type{1,2,3,4,5,6,7,8,9,10},0,tensor_type{2,3,3,2},5,result_tensor_type{2.5,7.5}),
         std::make_tuple(tensor_type{1,2,3,4,5,6,7,8,9,10},0,tensor_type{1,2,3},3,result_tensor_type{2.333,5.333,8.333}),
@@ -2128,7 +2129,9 @@ TEMPLATE_TEST_CASE("test_math_moving_average_exception","test_math",
         std::make_tuple(tensor_type{1,2,3,4,5},0,tensor_type{1,-1,0},1),
         //weights size greater than axis size
         std::make_tuple(tensor_type{},0,tensor_type{1},1),
-        std::make_tuple(tensor_type{1,2,3,4,5},0,tensor_type{1,1,2,2,3,3},1)
+        std::make_tuple(tensor_type{1,2,3,4,5},0,tensor_type{1,1,2,2,3,3},1),
+        //zero step
+        std::make_tuple(tensor_type{1,2,3,4,5},0,tensor_type{1,1,2},0)
     );
     auto test = [](const auto& t){
         auto ten = std::get<0>(t);
@@ -2139,3 +2142,86 @@ TEMPLATE_TEST_CASE("test_math_moving_average_exception","test_math",
     };
     apply_by_element(test,test_data);
 }
+
+//moving mean
+TEMPLATE_TEST_CASE("test_math_moving_mean","test_math",
+    double,
+    int
+)
+{
+    using value_type = TestType;
+    using tensor_type = gtensor::tensor<value_type>;
+    using dim_type = typename tensor_type::dim_type;
+    using index_type = typename tensor_type::index_type;
+    using gtensor::tensor_close;
+    using gtensor::moving_mean;
+    using helpers_for_testing::apply_by_element;
+
+    using result_value_type = typename gtensor::math::numeric_traits<value_type>::floating_point_type;
+    using result_tensor_type = gtensor::tensor<result_value_type>;
+
+    REQUIRE(std::is_same_v<
+        typename decltype(moving_mean(std::declval<tensor_type>(),std::declval<dim_type>(),std::declval<index_type>(),std::declval<index_type>()))::value_type,
+        result_value_type>
+    );
+
+    //0tensor,1axis,2window_size,3step,4expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(tensor_type{}.reshape(0,4,5),1,2,1,result_tensor_type{}.reshape(0,3,5)),
+        std::make_tuple(tensor_type{}.reshape(0,4,5),2,3,1,result_tensor_type{}.reshape(0,4,3)),
+        std::make_tuple(tensor_type{5},0,1,1,result_tensor_type{5}),
+        std::make_tuple(tensor_type{5},0,1,2,result_tensor_type{5}),
+        std::make_tuple(tensor_type{5,6},0,1,1,result_tensor_type{5,6}),
+        std::make_tuple(tensor_type{5,6},0,2,1,result_tensor_type{5.5}),
+        std::make_tuple(tensor_type{1,2,3,4,5,6,7,8,9,10},0,4,1,result_tensor_type{2.5,3.5,4.5,5.5,6.5,7.5,8.5}),
+        std::make_tuple(tensor_type{1,2,3,4,5,6,7,8,9,10},0,4,2,result_tensor_type{2.5,4.5,6.5,8.5}),
+        std::make_tuple(tensor_type{1,2,3,4,5,5,4,3,2,1},0,4,3,result_tensor_type{2.5,4.5,2.5}),
+        std::make_tuple(tensor_type{1,2,3,4,5,6,7,8,9,10},0,4,4,result_tensor_type{2.5,6.5}),
+        std::make_tuple(tensor_type{{3,1,0,-1,4},{1,2,5,2,3},{0,1,-2,5,7},{5,2,0,4,1}},0,3,1,result_tensor_type{{1.333,1.333,1.0,2.0,4.666},{2.0,1.666,1.0,3.666,3.666}}),
+        std::make_tuple(tensor_type{{3,1,0,-1,4},{1,2,5,2,3},{0,1,-2,5,7},{5,2,0,4,1}},1,3,1,result_tensor_type{{1.333,0.0,1.0},{2.666,3.0,3.333},{-0.333,1.333,3.333},{2.333,2.0,1.666}})
+    );
+    auto test = [](const auto& t){
+        auto ten = std::get<0>(t);
+        auto axis = std::get<1>(t);
+        auto window_size = std::get<2>(t);
+        auto step = std::get<3>(t);
+        auto expected = std::get<4>(t);
+        auto result = moving_mean(ten,axis,window_size,step);
+        REQUIRE(tensor_close(result,expected,1E-2,1E-2));
+    };
+    apply_by_element(test,test_data);
+}
+
+TEMPLATE_TEST_CASE("test_math_moving_mean_exception","test_math",
+    double,
+    int
+)
+{
+    using value_type = TestType;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::moving_mean;
+    using gtensor::reduce_exception;
+    using helpers_for_testing::apply_by_element;
+
+    //0tensor,1axis,2window_size,3step
+    auto test_data = std::make_tuple(
+        //zero window size
+        std::make_tuple(tensor_type{},0,0,1),
+        std::make_tuple(tensor_type{}.reshape(0,4,5),0,0,1),
+        std::make_tuple(tensor_type{1,2,3},0,0,1),
+        //window_size size greater than axis size
+        std::make_tuple(tensor_type{},0,1,1),
+        std::make_tuple(tensor_type{1,2,3,4,5},0,6,1),
+        //zero step
+        std::make_tuple(tensor_type{1,2,3,4,5},0,3,0)
+    );
+    auto test = [](const auto& t){
+        auto ten = std::get<0>(t);
+        auto axis = std::get<1>(t);
+        auto window_size = std::get<2>(t);
+        auto step = std::get<3>(t);
+        REQUIRE_THROWS_AS(moving_mean(ten,axis,window_size,step), reduce_exception);
+    };
+    apply_by_element(test,test_data);
+}
+
