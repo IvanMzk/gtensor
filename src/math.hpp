@@ -592,7 +592,6 @@ struct quantile_nanquantile
     }
 };
 
-
 struct quantile_predicate
 {
     template<typename T>
@@ -618,77 +617,21 @@ struct nanquantile_predicate
 using quantile = quantile_nanquantile<quantile_predicate>;
 using nanquantile = quantile_nanquantile<nanquantile_predicate>;
 
-
-//Predicate is use in copy_if that copy elements to temporary storage
-//median: Predicate must throw reduce_exception on nan element, true otherwise
-//nanmedian: Predicate must return false on nan element, true otherwise
-template<typename Predicate>
-struct median_nanmedian
+struct median
 {
     template<typename It, typename Config>
-    auto operator()(It first, It last, Config){
-        using value_type = typename std::iterator_traits<It>::value_type;
-        using difference_type = typename std::iterator_traits<It>::difference_type;
-        using container_type = typename Config::template container<value_type>;
-        using container_difference_type = typename container_type::difference_type;
-        using res_type = result_floating_point_t<value_type>;
-        if (first == last){
-            return reduce_empty<res_type>();
-        }
-        container_type elements_{};
-        if constexpr (detail::is_static_castable_v<difference_type,container_difference_type>){
-            elements_.reserve(static_cast<container_difference_type>(last - first));
-        }
-        if constexpr (gtensor::math::numeric_traits<value_type>::has_nan()){
-            try{
-                std::copy_if(first,last,std::back_inserter(elements_),Predicate{});
-            }catch(reduce_exception){
-                return gtensor::math::numeric_traits<res_type>::nan();
-            }
-        }else{
-            std::copy(first,last,std::back_inserter(elements_));
-        }
-        const container_difference_type n_elements = elements_.size();
-        if (n_elements == container_difference_type{0}){    //all nan
-            return gtensor::math::numeric_traits<res_type>::nan();
-        }
-        const container_difference_type half_n_elements = n_elements/container_difference_type{2};
-        std::nth_element(elements_.begin(),elements_.begin()+half_n_elements,elements_.end());
-
-        auto res = static_cast<res_type>(elements_[half_n_elements]);
-        if (!(n_elements & container_difference_type{1})){   //n_elements is even
-            const auto max_e = *std::max_element(elements_.begin(),elements_.begin()+half_n_elements);
-            res+= static_cast<res_type>(max_e);
-            res/=res_type{2};
-        }
-        return res;
+    auto operator()(It first, It last, Config config){
+        return quantile{}(first, last, 0.5, config);
     }
 };
 
-struct median_predicate
+struct nanmedian
 {
-    template<typename T>
-    bool operator()(const T& t){
-        if (gtensor::math::isnan(t)){
-            throw reduce_exception("");
-        }
-        return true;
+    template<typename It, typename Config>
+    auto operator()(It first, It last, Config config){
+        return nanquantile{}(first, last, 0.5, config);
     }
 };
-
-struct nanmedian_predicate
-{
-    template<typename T>
-    bool operator()(const T& t){
-        if (gtensor::math::isnan(t)){
-            return false;
-        }
-        return true;
-    }
-};
-
-using median = median_nanmedian<median_predicate>;
-using nanmedian = median_nanmedian<nanmedian_predicate>;
 
 //first finite difference
 struct diff_1
