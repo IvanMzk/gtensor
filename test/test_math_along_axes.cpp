@@ -1858,6 +1858,187 @@
 //     apply_by_element(test,test_data);
 // }
 
+//quantile,nanquantile
+TEMPLATE_TEST_CASE("test_math_quantile_nanquantile_floating_point_values","test_math",
+    double,
+    int
+)
+{
+    using value_type = TestType;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::quantile;
+    using gtensor::nanquantile;
+    using gtensor::tensor_close;
+    using helpers_for_testing::apply_by_element;
+
+    using result_value_type = typename gtensor::math::numeric_traits<value_type>::floating_point_type;
+    static constexpr result_value_type nan = gtensor::math::numeric_traits<result_value_type>::nan();
+    using result_tensor_type = gtensor::tensor<result_value_type>;
+    REQUIRE(std::is_same_v<typename decltype(quantile(std::declval<tensor_type>(),std::declval<int>(),std::declval<result_value_type>(),std::declval<bool>()))::value_type,result_value_type>);
+    REQUIRE(std::is_same_v<typename decltype(quantile(std::declval<tensor_type>(),std::declval<std::vector<int>>(),std::declval<result_value_type>(),std::declval<bool>()))::value_type,result_value_type>);
+    REQUIRE(std::is_same_v<typename decltype(nanquantile(std::declval<tensor_type>(),std::declval<int>(),std::declval<result_value_type>(),std::declval<bool>()))::value_type,result_value_type>);
+    REQUIRE(std::is_same_v<typename decltype(nanquantile(std::declval<tensor_type>(),std::declval<std::vector<int>>(),std::declval<result_value_type>(),std::declval<bool>()))::value_type,result_value_type>);
+
+    //0tensor,1axes,2quantile,3keep_dims,4expected
+    auto test_data = std::make_tuple(
+        //keep_dim false
+        std::make_tuple(tensor_type{},0,result_value_type{0.5},false,result_tensor_type(nan)),
+        std::make_tuple(tensor_type{},std::vector<int>{0},result_value_type{0.5},false,result_tensor_type(nan)),
+        std::make_tuple(tensor_type{},std::vector<int>{},result_value_type{0.5},false,result_tensor_type(nan)),
+        std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0,2},result_value_type{0.5},false,result_tensor_type{nan,nan}),
+        std::make_tuple(tensor_type{5},0,result_value_type{0.5},false,result_tensor_type(5)),
+        std::make_tuple(tensor_type{5},0,result_value_type{0.0},false,result_tensor_type(5)),
+        std::make_tuple(tensor_type{5},0,result_value_type{0.2},false,result_tensor_type(5)),
+        std::make_tuple(tensor_type{5},0,result_value_type{0.8},false,result_tensor_type(5)),
+        std::make_tuple(tensor_type{5},0,result_value_type{1.0},false,result_tensor_type(5)),
+        std::make_tuple(tensor_type{5,6},0,result_value_type{0.5},false,result_tensor_type(5.5)),
+        std::make_tuple(tensor_type{6,5},0,result_value_type{0.0},false,result_tensor_type(5.0)),
+        std::make_tuple(tensor_type{6,5},0,result_value_type{0.2},false,result_tensor_type(5.2)),
+        std::make_tuple(tensor_type{5,6},0,result_value_type{0.8},false,result_tensor_type(5.8)),
+        std::make_tuple(tensor_type{5,6},0,result_value_type{1.0},false,result_tensor_type(6.0)),
+        std::make_tuple(tensor_type{1,3,3,5,2,6,0,2,-1,1,4},0,result_value_type{0.5},false,result_tensor_type(2.0)),
+        std::make_tuple(tensor_type{1,3,3,5,2,6,0,2,-1,1,4},0,result_value_type{0.0},false,result_tensor_type(-1.0)),
+        std::make_tuple(tensor_type{1,3,3,5,2,6,0,2,-1,1,4},0,result_value_type{0.2},false,result_tensor_type(1.0)),
+        std::make_tuple(tensor_type{1,3,3,5,2,6,0,2,-1,1,4},0,result_value_type{0.8},false,result_tensor_type(4.0)),
+        std::make_tuple(tensor_type{1,3,3,5,2,6,0,2,-1,1,4},0,result_value_type{1.0},false,result_tensor_type(6.0)),
+        std::make_tuple(tensor_type{1,3,3,5,2,6,0,2,-1,1,4,5},0,result_value_type{0.5},false,result_tensor_type(2.5)),
+        std::make_tuple(tensor_type{1,3,3,5,2,6,0,2,-1,1,4,5},0,result_value_type{0.0},false,result_tensor_type(-1.0)),
+        std::make_tuple(tensor_type{1,3,3,5,2,6,0,2,-1,1,4,5},0,result_value_type{0.2},false,result_tensor_type(1.0)),
+        std::make_tuple(tensor_type{1,3,3,5,2,6,0,2,-1,1,4,5},0,result_value_type{0.8},false,result_tensor_type(4.8)),
+        std::make_tuple(tensor_type{1,3,3,5,2,6,0,2,-1,1,4,5},0,result_value_type{1.0},false,result_tensor_type(6.0)),
+        std::make_tuple(tensor_type{{1,1,0,2,5,-1},{-2,3,1,6,0,4},{3,2,2,7,1,-2},{1,0,-2,4,3,2},{5,3,1,5,7,1}},0,result_value_type{0.3},false,result_tensor_type{1.0,1.2,0.2,4.2,1.4,-0.6}),
+        std::make_tuple(tensor_type{{1,1,0,2,5,-1},{-2,3,1,6,0,4},{3,2,2,7,1,-2},{1,0,-2,4,3,2},{5,3,1,5,7,1}},1,result_value_type{0.3},false,result_tensor_type{0.5,0.5,1.5,0.5,2.0}),
+        std::make_tuple(tensor_type{{1,1,0,2,5,-1},{-2,3,1,6,0,4},{3,2,2,7,1,-2},{1,0,-2,4,3,2},{5,3,1,5,7,1}},std::vector<int>{1,0},result_value_type{0.3},false,result_tensor_type(1.0)),
+        // //keep_dim true
+        std::make_tuple(tensor_type{{1,1,0,2,5,-1},{-2,3,1,6,0,4},{3,2,2,7,1,-2},{1,0,-2,4,3,2},{5,3,1,5,7,1}},0,result_value_type{0.3},true,result_tensor_type{{1.0,1.2,0.2,4.2,1.4,-0.6}}),
+        std::make_tuple(tensor_type{{1,1,0,2,5,-1},{-2,3,1,6,0,4},{3,2,2,7,1,-2},{1,0,-2,4,3,2},{5,3,1,5,7,1}},1,result_value_type{0.3},true,result_tensor_type{{0.5},{0.5},{1.5},{0.5},{2.0}}),
+        std::make_tuple(tensor_type{{1,1,0,2,5,-1},{-2,3,1,6,0,4},{3,2,2,7,1,-2},{1,0,-2,4,3,2},{5,3,1,5,7,1}},std::vector<int>{1,0},result_value_type{0.3},true,result_tensor_type{{1.0}})
+
+    );
+    SECTION("test_quantile")
+    {
+        auto test = [](const auto& t){
+            auto ten = std::get<0>(t);
+            auto axes = std::get<1>(t);
+            auto q = std::get<2>(t);
+            auto keep_dims = std::get<3>(t);
+            auto expected = std::get<4>(t);
+            auto result = quantile(ten,axes,q,keep_dims);
+            REQUIRE(tensor_close(result,expected,true));
+        };
+        apply_by_element(test,test_data);
+    }
+    SECTION("test_nanquantile")
+    {
+        auto test = [](const auto& t){
+            auto ten = std::get<0>(t);
+            auto axes = std::get<1>(t);
+            auto q = std::get<2>(t);
+            auto keep_dims = std::get<3>(t);
+            auto expected = std::get<4>(t);
+            auto result = nanquantile(ten,axes,q,keep_dims);
+            REQUIRE(tensor_close(result,expected,true));
+        };
+        apply_by_element(test,test_data);
+    }
+}
+
+TEMPLATE_TEST_CASE("test_math_quantile_nanquantile_initializer_list_axes_all_axes","test_math",
+    double,
+    int
+)
+{
+    using value_type = TestType;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::quantile;
+    using gtensor::nanquantile;
+    using gtensor::tensor_close;
+    using helpers_for_testing::apply_by_element;
+    using result_value_type = typename gtensor::math::numeric_traits<value_type>::floating_point_type;
+    using result_tensor_type = gtensor::tensor<result_value_type>;
+
+    REQUIRE(
+        std::is_same_v<
+            typename decltype(quantile(std::declval<tensor_type>(),std::declval<std::initializer_list<int>>(),std::declval<result_value_type>(),std::declval<bool>()))::value_type,
+            result_value_type
+        >
+    );
+    REQUIRE(
+        std::is_same_v<
+            typename decltype(nanquantile(std::declval<tensor_type>(),std::declval<std::initializer_list<int>>(),std::declval<result_value_type>(),std::declval<bool>()))::value_type,
+            result_value_type
+        >
+    );
+    //quantile
+    REQUIRE(tensor_close(quantile(tensor_type{{1,1,0,2,5,-1},{-2,3,1,6,0,4},{3,2,2,7,1,-2},{1,0,-2,4,3,2},{5,3,1,5,7,1}},{0},0.3,false), result_tensor_type{1.0,1.2,0.2,4.2,1.4,-0.6}));
+    REQUIRE(tensor_close(quantile(tensor_type{{1,1,0,2,5,-1},{-2,3,1,6,0,4},{3,2,2,7,1,-2},{1,0,-2,4,3,2},{5,3,1,5,7,1}},{1},0.3), result_tensor_type{0.5,0.5,1.5,0.5,2.0}));
+    REQUIRE(tensor_close(quantile(tensor_type{{1,1,0,2,5,-1},{-2,3,1,6,0,4},{3,2,2,7,1,-2},{1,0,-2,4,3,2},{5,3,1,5,7,1}},{1,0},0.3), result_tensor_type(1.0)));
+    REQUIRE(tensor_close(quantile(tensor_type{{1,1,0,2,5,-1},{-2,3,1,6,0,4},{3,2,2,7,1,-2},{1,0,-2,4,3,2},{5,3,1,5,7,1}},0.3), result_tensor_type(1.0)));
+    //nanquantile
+    REQUIRE(tensor_close(nanquantile(tensor_type{{1,1,0,2,5,-1},{-2,3,1,6,0,4},{3,2,2,7,1,-2},{1,0,-2,4,3,2},{5,3,1,5,7,1}},{0},0.3,false), result_tensor_type{1.0,1.2,0.2,4.2,1.4,-0.6}));
+    REQUIRE(tensor_close(nanquantile(tensor_type{{1,1,0,2,5,-1},{-2,3,1,6,0,4},{3,2,2,7,1,-2},{1,0,-2,4,3,2},{5,3,1,5,7,1}},{1},0.3), result_tensor_type{0.5,0.5,1.5,0.5,2.0}));
+    REQUIRE(tensor_close(nanquantile(tensor_type{{1,1,0,2,5,-1},{-2,3,1,6,0,4},{3,2,2,7,1,-2},{1,0,-2,4,3,2},{5,3,1,5,7,1}},{1,0},0.3), result_tensor_type(1.0)));
+    REQUIRE(tensor_close(nanquantile(tensor_type{{1,1,0,2,5,-1},{-2,3,1,6,0,4},{3,2,2,7,1,-2},{1,0,-2,4,3,2},{5,3,1,5,7,1}},0.3), result_tensor_type(1.0)));
+}
+
+//quantile,nanquantile
+TEMPLATE_TEST_CASE("test_math_quantile_nanquantile_exception","test_math",
+    double,
+    int
+)
+{
+    using value_type = TestType;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::math_exception;
+    using gtensor::quantile;
+    using gtensor::nanquantile;
+
+    REQUIRE_THROWS_AS(quantile(tensor_type{1,2,3,4,5},1.1), math_exception);
+    REQUIRE_THROWS_AS(nanquantile(tensor_type{1,2,3,4,5},1.1), math_exception);
+}
+
+TEST_CASE("test_math_quantile_nanquantile_nan_values","test_math")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::quantile;
+    //using gtensor::nanquantile;
+    using gtensor::tensor_equal;
+    using helpers_for_testing::apply_by_element;
+    static constexpr value_type nan = std::numeric_limits<value_type>::quiet_NaN();
+    static constexpr value_type pos_inf = std::numeric_limits<value_type>::infinity();
+    static constexpr value_type neg_inf = -std::numeric_limits<value_type>::infinity();
+    //0result,1expected
+    auto test_data = std::make_tuple(
+        //quantile
+        std::make_tuple(quantile(tensor_type{1.0,0.5,nan,4.0,3.0,2.0}, value_type{0.5}), tensor_type(nan)),
+        std::make_tuple(quantile(tensor_type{1.0,0.5,2.0,4.0,3.0,pos_inf}, value_type{0.5}), tensor_type(2.5)),
+        std::make_tuple(quantile(tensor_type{1.0,0.5,2.0,neg_inf,3.0,4.0}, value_type{0.5}), tensor_type(1.5)),
+        std::make_tuple(quantile(tensor_type{1.0,0.5,2.0,neg_inf,3.0,pos_inf}, value_type{0.5}), tensor_type(1.5)),
+        std::make_tuple(quantile(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf}, value_type{0.5}), tensor_type(nan)),
+        std::make_tuple(quantile(tensor_type{{nan,nan,nan,nan},{nan,nan,nan,nan},{nan,nan,nan,nan},{nan,nan,nan,nan},{nan,nan,nan,nan}}, value_type{0.5}), tensor_type(nan)),
+        std::make_tuple(quantile(tensor_type{{1.0,nan,nan,2.0},{nan,nan,nan,-3.0},{nan,nan,nan,3.0},{nan,nan,nan,8.0},{2.0,1.0,0.0,4.0}}, value_type{0.5}), tensor_type(nan)),
+        std::make_tuple(quantile(tensor_type{{1.0,nan,nan,2.0},{nan,nan,nan,-3.0},{nan,nan,nan,3.0},{nan,nan,nan,8.0},{2.0,1.0,0.0,4.0}},0, value_type{0.5}), tensor_type{nan,nan,nan,3.0}),
+        std::make_tuple(quantile(tensor_type{{1.0,nan,nan,2.0},{nan,nan,nan,-3.0},{nan,nan,nan,3.0},{nan,nan,nan,8.0},{2.0,1.0,0.0,4.0}},1, value_type{0.5}), tensor_type{nan,nan,nan,nan,1.5}),
+        //nanquantile
+        std::make_tuple(nanquantile(tensor_type{1.0,0.5,nan,4.0,3.0,2.0}, value_type{0.5}), tensor_type(2.0)),
+        std::make_tuple(nanquantile(tensor_type{1.0,0.5,2.0,4.0,3.0,pos_inf}, value_type{0.5}), tensor_type(2.5)),
+        std::make_tuple(nanquantile(tensor_type{1.0,0.5,2.0,neg_inf,3.0,4.0}, value_type{0.5}), tensor_type(1.5)),
+        std::make_tuple(nanquantile(tensor_type{1.0,0.5,2.0,neg_inf,3.0,pos_inf}, value_type{0.5}), tensor_type(1.5)),
+        std::make_tuple(nanquantile(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf}, value_type{0.5}), tensor_type(2.0)),
+        std::make_tuple(nanquantile(tensor_type{{nan,nan,nan,nan},{nan,nan,nan,nan},{nan,nan,nan,nan},{nan,nan,nan,nan},{nan,nan,nan,nan}}, value_type{0.5}), tensor_type(nan)),
+        std::make_tuple(nanquantile(tensor_type{{1.0,nan,nan,2.0},{nan,nan,nan,-3.0},{nan,nan,nan,3.0},{nan,nan,nan,8.0},{2.0,1.0,0.0,4.0}}, value_type{0.5}), tensor_type(2.0)),
+        std::make_tuple(nanquantile(tensor_type{{1.0,nan,nan,2.0},{nan,nan,nan,-3.0},{nan,nan,nan,3.0},{nan,nan,nan,8.0},{2.0,1.0,0.0,4.0}},0, value_type{0.5}), tensor_type{1.5,1.0,0.0,3.0}),
+        std::make_tuple(nanquantile(tensor_type{{1.0,nan,nan,2.0},{nan,nan,nan,-3.0},{nan,nan,nan,3.0},{nan,nan,nan,8.0},{2.0,1.0,0.0,4.0}},1, value_type{0.5}), tensor_type{1.5,-3.0,3.0,8.0,1.5})
+    );
+    auto test = [](const auto& t){
+        auto result = std::get<0>(t);
+        auto expected = std::get<1>(t);
+        REQUIRE(tensor_equal(result,expected,true));
+    };
+    apply_by_element(test,test_data);
+}
+
 //diff
 TEST_CASE("test_math_diff","test_math")
 {

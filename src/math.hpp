@@ -533,6 +533,92 @@ struct nanstdev
     }
 };
 
+template<typename Q>
+void check_quantile(const Q& q){
+    if (q>Q{1} || q<Q{0}){
+        throw math_exception("quntile must be in range [0,1]");
+    }
+}
+
+//Predicate is use in copy_if that copy elements to temporary storage
+//quantile: Predicate must throw reduce_exception on nan element, true otherwise
+//nanquantile: Predicate must return false on nan element, true otherwise
+template<typename Predicate>
+struct quantile_nanquantile
+{
+    //quantile must be in range from 0 to 1 incluseve
+    template<typename It, typename Q, typename Config>
+    auto operator()(It first, It last, const Q& quantile, Config){
+        using value_type = typename std::iterator_traits<It>::value_type;
+        using difference_type = typename std::iterator_traits<It>::difference_type;
+        using container_type = typename Config::template container<value_type>;
+        using container_difference_type = typename container_type::difference_type;
+        using res_type = result_floating_point_t<value_type>;
+        if (first == last){
+            return reduce_empty<res_type>();
+        }
+        check_quantile(quantile);
+        container_type elements_{};
+        if constexpr (detail::is_static_castable_v<difference_type,container_difference_type>){
+            elements_.reserve(static_cast<container_difference_type>(last - first));
+        }
+        if constexpr (gtensor::math::numeric_traits<value_type>::has_nan()){
+            try{
+                std::copy_if(first,last,std::back_inserter(elements_),Predicate{});
+            }catch(reduce_exception){
+                return gtensor::math::numeric_traits<res_type>::nan();
+            }
+        }else{
+            std::copy(first,last,std::back_inserter(elements_));
+        }
+        const container_difference_type n_elements = elements_.size();
+        if (n_elements == container_difference_type{0}){    //all nan
+            return gtensor::math::numeric_traits<res_type>::nan();
+        }
+
+        const auto& q = static_cast<const res_type&>(quantile);
+        const auto q_index = q*static_cast<res_type>(n_elements-1);
+        const auto q_index_decomposed = gtensor::math::modf(q_index);
+        const auto g = q_index_decomposed.second; //q_index fractional part
+        auto i = static_cast<container_difference_type>(q_index_decomposed.first);  //q_index integral part
+
+        std::nth_element(elements_.begin(),elements_.begin()+i,elements_.end());
+        auto res = static_cast<res_type>(elements_[i]);
+        if (g != res_type{0}){  //interpolation needed
+            const auto next_after_i = *std::min_element(elements_.begin()+ ++i,elements_.end());
+            res+=(static_cast<res_type>(next_after_i)-res)*g;
+        }
+        return res;
+    }
+};
+
+
+struct quantile_predicate
+{
+    template<typename T>
+    bool operator()(const T& t){
+        if (gtensor::math::isnan(t)){
+            throw reduce_exception("");
+        }
+        return true;
+    }
+};
+
+struct nanquantile_predicate
+{
+    template<typename T>
+    bool operator()(const T& t){
+        if (gtensor::math::isnan(t)){
+            return false;
+        }
+        return true;
+    }
+};
+
+using quantile = quantile_nanquantile<quantile_predicate>;
+using nanquantile = quantile_nanquantile<nanquantile_predicate>;
+
+
 //Predicate is use in copy_if that copy elements to temporary storage
 //median: Predicate must throw reduce_exception on nan element, true otherwise
 //nanmedian: Predicate must return false on nan element, true otherwise
@@ -854,6 +940,25 @@ GTENSOR_MATH_REDUCE_ROUTINE(std,math_reduce_operations::stdev);
 //axes may be scalar or container
 GTENSOR_MATH_REDUCE_ROUTINE(median,math_reduce_operations::median,typename basic_tensor<Ts...>::config_type{});
 
+//quantile of elements along given axes
+//axes may be scalar or container
+template<typename...Ts, typename Axes, typename Q>
+auto quantile(const basic_tensor<Ts...>& t, const Axes& axes, const Q& q, bool keep_dims = false){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return reduce(t,axes,math_reduce_operations::quantile{},keep_dims,q,config_type{});
+}
+template<typename...Ts, typename DimT, typename Q>
+auto quantile(const basic_tensor<Ts...>& t, std::initializer_list<DimT> axes, const Q& q, bool keep_dims = false){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return reduce(t,axes,math_reduce_operations::quantile{},keep_dims,q,config_type{});
+}
+template<typename...Ts, typename Q>
+auto quantile(const basic_tensor<Ts...>& t, const Q& q, bool keep_dims = false){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::quantile{},keep_dims,q,config_type{});
+}
+
+
 //nan versions
 //min element along given axes ignoring nan
 //axes may be scalar or container
@@ -894,6 +999,24 @@ GTENSOR_MATH_REDUCE_ROUTINE(nanstd,math_reduce_operations::nanstdev);
 //median of elements along given axes, ignoring nan
 //axes may be scalar or container
 GTENSOR_MATH_REDUCE_ROUTINE(nanmedian,math_reduce_operations::nanmedian,typename basic_tensor<Ts...>::config_type{});
+
+//quantile of elements along given axes, ignoring nan
+//axes may be scalar or container
+template<typename...Ts, typename Axes, typename Q>
+auto nanquantile(const basic_tensor<Ts...>& t, const Axes& axes, const Q& q, bool keep_dims = false){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return reduce(t,axes,math_reduce_operations::nanquantile{},keep_dims,q,config_type{});
+}
+template<typename...Ts, typename DimT, typename Q>
+auto nanquantile(const basic_tensor<Ts...>& t, std::initializer_list<DimT> axes, const Q& q, bool keep_dims = false){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return reduce(t,axes,math_reduce_operations::nanquantile{},keep_dims,q,config_type{});
+}
+template<typename...Ts, typename Q>
+auto nanquantile(const basic_tensor<Ts...>& t, const Q& q, bool keep_dims = false){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},math_reduce_operations::nanquantile{},keep_dims,q,config_type{});
+}
 
 //n-th difference along given axis
 //axis is scalar, default is last axis
