@@ -5,60 +5,67 @@
 #include "tensor_operators.hpp"
 #include "reduce.hpp"
 
+#define GTENSOR_TENSOR_MATH_ROUTINE(NAME,F)\
+template<typename...Args>\
+inline auto NAME(Args&&...args){\
+    static_assert(detail::has_tensor_arg_v<std::remove_cv_t<std::remove_reference_t<Args>>...>,"at least one arg must be tensor");\
+    return n_operator(F{},std::forward<Args>(args)...);\
+}
+
 namespace gtensor{
 
 //element wise math functions
 //basic
-GTENSOR_TENSOR_FUNCTION(abs, operations::math_abs);
-GTENSOR_TENSOR_FUNCTION(fmod, operations::math_fmod);
-GTENSOR_TENSOR_FUNCTION(remainder, operations::math_remainder);
-GTENSOR_TENSOR_FUNCTION(fma, operations::math_fma);
-GTENSOR_TENSOR_FUNCTION(fmax, operations::math_fmax);
-GTENSOR_TENSOR_FUNCTION(fmin, operations::math_fmin);
-GTENSOR_TENSOR_FUNCTION(fdim, operations::math_fdim);
-GTENSOR_TENSOR_FUNCTION(clip, operations::math_clip);
-GTENSOR_TENSOR_FUNCTION(divmod, operations::math_divmod);
+GTENSOR_TENSOR_MATH_ROUTINE(abs, operations::math_abs);
+GTENSOR_TENSOR_MATH_ROUTINE(fmod, operations::math_fmod);
+GTENSOR_TENSOR_MATH_ROUTINE(remainder, operations::math_remainder);
+GTENSOR_TENSOR_MATH_ROUTINE(fma, operations::math_fma);
+GTENSOR_TENSOR_MATH_ROUTINE(fmax, operations::math_fmax);
+GTENSOR_TENSOR_MATH_ROUTINE(fmin, operations::math_fmin);
+GTENSOR_TENSOR_MATH_ROUTINE(fdim, operations::math_fdim);
+GTENSOR_TENSOR_MATH_ROUTINE(clip, operations::math_clip);
+GTENSOR_TENSOR_MATH_ROUTINE(divmod, operations::math_divmod);
 //exponential
-GTENSOR_TENSOR_FUNCTION(exp, operations::math_exp);
-GTENSOR_TENSOR_FUNCTION(exp2, operations::math_exp2);
-GTENSOR_TENSOR_FUNCTION(expm1, operations::math_expm1);
-GTENSOR_TENSOR_FUNCTION(log, operations::math_log);
-GTENSOR_TENSOR_FUNCTION(log10, operations::math_log10);
-GTENSOR_TENSOR_FUNCTION(log2, operations::math_log2);
-GTENSOR_TENSOR_FUNCTION(log1p, operations::math_log1p);
+GTENSOR_TENSOR_MATH_ROUTINE(exp, operations::math_exp);
+GTENSOR_TENSOR_MATH_ROUTINE(exp2, operations::math_exp2);
+GTENSOR_TENSOR_MATH_ROUTINE(expm1, operations::math_expm1);
+GTENSOR_TENSOR_MATH_ROUTINE(log, operations::math_log);
+GTENSOR_TENSOR_MATH_ROUTINE(log10, operations::math_log10);
+GTENSOR_TENSOR_MATH_ROUTINE(log2, operations::math_log2);
+GTENSOR_TENSOR_MATH_ROUTINE(log1p, operations::math_log1p);
 //power
-GTENSOR_TENSOR_FUNCTION(pow, operations::math_pow);
-GTENSOR_TENSOR_FUNCTION(sqrt, operations::math_sqrt);
-GTENSOR_TENSOR_FUNCTION(cbrt, operations::math_cbrt);
-GTENSOR_TENSOR_FUNCTION(hypot, operations::math_hypot);
+GTENSOR_TENSOR_MATH_ROUTINE(pow, operations::math_pow);
+GTENSOR_TENSOR_MATH_ROUTINE(sqrt, operations::math_sqrt);
+GTENSOR_TENSOR_MATH_ROUTINE(cbrt, operations::math_cbrt);
+GTENSOR_TENSOR_MATH_ROUTINE(hypot, operations::math_hypot);
 //trigonometric
-GTENSOR_TENSOR_FUNCTION(sin, operations::math_sin);
-GTENSOR_TENSOR_FUNCTION(cos, operations::math_cos);
-GTENSOR_TENSOR_FUNCTION(tan, operations::math_tan);
-GTENSOR_TENSOR_FUNCTION(asin, operations::math_asin);
-GTENSOR_TENSOR_FUNCTION(acos, operations::math_acos);
-GTENSOR_TENSOR_FUNCTION(atan, operations::math_atan);
-GTENSOR_TENSOR_FUNCTION(atan2, operations::math_atan2);
+GTENSOR_TENSOR_MATH_ROUTINE(sin, operations::math_sin);
+GTENSOR_TENSOR_MATH_ROUTINE(cos, operations::math_cos);
+GTENSOR_TENSOR_MATH_ROUTINE(tan, operations::math_tan);
+GTENSOR_TENSOR_MATH_ROUTINE(asin, operations::math_asin);
+GTENSOR_TENSOR_MATH_ROUTINE(acos, operations::math_acos);
+GTENSOR_TENSOR_MATH_ROUTINE(atan, operations::math_atan);
+GTENSOR_TENSOR_MATH_ROUTINE(atan2, operations::math_atan2);
 //hyperbolic
-GTENSOR_TENSOR_FUNCTION(sinh, operations::math_sinh);
-GTENSOR_TENSOR_FUNCTION(cosh, operations::math_cosh);
-GTENSOR_TENSOR_FUNCTION(tanh, operations::math_tanh);
-GTENSOR_TENSOR_FUNCTION(asinh, operations::math_asinh);
-GTENSOR_TENSOR_FUNCTION(acosh, operations::math_acosh);
-GTENSOR_TENSOR_FUNCTION(atanh, operations::math_atanh);
+GTENSOR_TENSOR_MATH_ROUTINE(sinh, operations::math_sinh);
+GTENSOR_TENSOR_MATH_ROUTINE(cosh, operations::math_cosh);
+GTENSOR_TENSOR_MATH_ROUTINE(tanh, operations::math_tanh);
+GTENSOR_TENSOR_MATH_ROUTINE(asinh, operations::math_asinh);
+GTENSOR_TENSOR_MATH_ROUTINE(acosh, operations::math_acosh);
+GTENSOR_TENSOR_MATH_ROUTINE(atanh, operations::math_atanh);
 //nearest
-GTENSOR_TENSOR_FUNCTION(ceil, operations::math_ceil);
-GTENSOR_TENSOR_FUNCTION(floor, operations::math_floor);
-GTENSOR_TENSOR_FUNCTION(trunc, operations::math_trunc);
-GTENSOR_TENSOR_FUNCTION(round, operations::math_round);
-GTENSOR_TENSOR_FUNCTION(nearbyint, operations::math_nearbyint);
-GTENSOR_TENSOR_FUNCTION(rint, operations::math_rint);
+GTENSOR_TENSOR_MATH_ROUTINE(ceil, operations::math_ceil);
+GTENSOR_TENSOR_MATH_ROUTINE(floor, operations::math_floor);
+GTENSOR_TENSOR_MATH_ROUTINE(trunc, operations::math_trunc);
+GTENSOR_TENSOR_MATH_ROUTINE(round, operations::math_round);
+GTENSOR_TENSOR_MATH_ROUTINE(nearbyint, operations::math_nearbyint);
+GTENSOR_TENSOR_MATH_ROUTINE(rint, operations::math_rint);
 //floating point manipulation
-GTENSOR_TENSOR_FUNCTION(frexp,operations::math_frexp);
-GTENSOR_TENSOR_FUNCTION(ldexp,operations::math_ldexp);
-GTENSOR_TENSOR_FUNCTION(modf,operations::math_modf);
-GTENSOR_TENSOR_FUNCTION(nextafter,operations::math_nextafter);
-GTENSOR_TENSOR_FUNCTION(copysign,operations::math_copysign);
+GTENSOR_TENSOR_MATH_ROUTINE(frexp,operations::math_frexp);
+GTENSOR_TENSOR_MATH_ROUTINE(ldexp,operations::math_ldexp);
+GTENSOR_TENSOR_MATH_ROUTINE(modf,operations::math_modf);
+GTENSOR_TENSOR_MATH_ROUTINE(nextafter,operations::math_nextafter);
+GTENSOR_TENSOR_MATH_ROUTINE(copysign,operations::math_copysign);
 template<typename T>
 inline auto nan_to_num(
     T&& t,
@@ -72,19 +79,19 @@ inline auto nan_to_num(
     return n_operator(operations::math_nan_to_num<value_type>{nan,pos_inf,neg_inf}, std::forward<T>(t));
 }
 //classification
-GTENSOR_TENSOR_FUNCTION(isfinite, operations::math_isfinite);
-GTENSOR_TENSOR_FUNCTION(isinf, operations::math_isinf);
-GTENSOR_TENSOR_FUNCTION(isnan, operations::math_isnan);
-GTENSOR_TENSOR_FUNCTION(isnormal, operations::math_isnormal);
+GTENSOR_TENSOR_MATH_ROUTINE(isfinite, operations::math_isfinite);
+GTENSOR_TENSOR_MATH_ROUTINE(isinf, operations::math_isinf);
+GTENSOR_TENSOR_MATH_ROUTINE(isnan, operations::math_isnan);
+GTENSOR_TENSOR_MATH_ROUTINE(isnormal, operations::math_isnormal);
 //comparison
-GTENSOR_TENSOR_FUNCTION(isgreater, operations::math_isgreater);
-GTENSOR_TENSOR_FUNCTION(isgreaterequal, operations::math_isgreaterequal);
-GTENSOR_TENSOR_FUNCTION(isless, operations::math_isless);
-GTENSOR_TENSOR_FUNCTION(islessequal, operations::math_islessequal);
-GTENSOR_TENSOR_FUNCTION(islessgreater, operations::math_islessgreater);
+GTENSOR_TENSOR_MATH_ROUTINE(isgreater, operations::math_isgreater);
+GTENSOR_TENSOR_MATH_ROUTINE(isgreaterequal, operations::math_isgreaterequal);
+GTENSOR_TENSOR_MATH_ROUTINE(isless, operations::math_isless);
+GTENSOR_TENSOR_MATH_ROUTINE(islessequal, operations::math_islessequal);
+GTENSOR_TENSOR_MATH_ROUTINE(islessgreater, operations::math_islessgreater);
 //routines in rational domain
-GTENSOR_TENSOR_FUNCTION(gcd,operations::math_gcd);
-GTENSOR_TENSOR_FUNCTION(lcm,operations::math_lcm);
+GTENSOR_TENSOR_MATH_ROUTINE(gcd,operations::math_gcd);
+GTENSOR_TENSOR_MATH_ROUTINE(lcm,operations::math_lcm);
 
 namespace math_reduce_operations{
 
@@ -472,6 +479,7 @@ auto diff2(const basic_tensor<Ts...>& t, const DimT& axis = -1){
     return slide(t, axis, math_reduce_operations::diff_2{}, window_size, window_step);
 }
 
+#undef GTENSOR_TENSOR_MATH_ROUTINE
 #undef GTENSOR_MATH_REDUCE_ROUTINE
 #undef GTENSOR_MATH_REDUCE_INITIAL_ROUTINE
 #undef GTENSOR_MATH_CUMULATE_ROUTINE

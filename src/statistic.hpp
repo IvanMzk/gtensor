@@ -422,6 +422,7 @@ GTENSOR_STATISTIC_REDUCE_ROUTINE(median,statistic_reduce_operations::median,type
 
 //quantile of elements along given axes
 //axes may be scalar or container
+//q must be in range [0,1]
 template<typename...Ts, typename Axes, typename Q>
 auto quantile(const basic_tensor<Ts...>& t, const Axes& axes, const Q& q, bool keep_dims = false){
     using config_type = typename basic_tensor<Ts...>::config_type;

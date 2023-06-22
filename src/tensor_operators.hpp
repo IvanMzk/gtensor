@@ -263,5 +263,10 @@ GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator^=, operations::assign_bitwi
 GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator<<=, operations::assign_bitwise_lshift);
 GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator>>=, operations::assign_bitwise_rshift);
 
+#undef GTENSOR_UNARY_TENSOR_OPERATOR
+#undef GTENSOR_BINARY_TENSOR_OPERATOR
+#undef GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR
+#undef GTENSOR_TENSOR_FUNCTION
+
 }   //end of namespace gtensor
 #endif
