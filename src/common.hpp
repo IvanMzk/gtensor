@@ -18,7 +18,12 @@ public:
     {}
 };
 
+
+
 namespace detail{
+
+//tag to indicate argument of deducible type has no value
+struct no_value{};
 
 #define ASSERT_ORDER(order) static_assert(std::is_same_v<order, gtensor::config::c_order>||std::is_same_v<order, gtensor::config::f_order>, "order must be c_order or f_order");
 #define ASSERT_TENSOR(t) static_assert(detail::is_tensor_v<t>,"tensor expected");

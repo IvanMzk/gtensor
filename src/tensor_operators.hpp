@@ -114,6 +114,52 @@ inline auto operator==(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& 
     return tensor_equal(u,v);
 }
 
+//return true if two tensors have same shape and close elements within specified tolerance
+template<typename...Us, typename...Vs, typename Tol>
+inline auto tensor_close(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, Tol relative_tolerance, Tol absolute_tolerance, bool equal_nan = false){
+    if (u.is_same(v)){
+        return true;
+    }else{
+        const bool equal_shapes = u.shape() == v.shape();
+        if (equal_nan){
+            return equal_shapes && std::equal(u.begin(), u.end(), v.begin(), operations::math_isclose<Tol,std::true_type>{relative_tolerance,absolute_tolerance});
+        }else{
+            return equal_shapes && std::equal(u.begin(), u.end(), v.begin(), operations::math_isclose<Tol,std::false_type>{relative_tolerance,absolute_tolerance});
+        }
+    }
+}
+//return true if two tensors have same shape and close elements, use machine epsilon as tolerance
+template<typename...Us, typename...Vs>
+inline auto tensor_close(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, bool equal_nan = false){
+    using common_value_type = detail::tensor_common_value_type_t<basic_tensor<Us...>,basic_tensor<Vs...>>;
+    static constexpr common_value_type e = math::numeric_traits<common_value_type>::epsilon();
+    return tensor_close(u,v,e,e,equal_nan);
+}
+
+//return true if two tensors have close elements within specified tolerance
+//shapes may not be equal, but must broadcast
+template<typename...Us, typename...Vs, typename Tol>
+inline auto allclose(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, Tol relative_tolerance, Tol absolute_tolerance, bool equal_nan = false){
+    using shape_type = typename basic_tensor<Us...>::shape_type;
+    if (u.is_same(v)){
+        return true;
+    }else{
+        auto common_shape = detail::make_broadcast_shape<shape_type>(u.shape(),v.shape());
+        if (equal_nan){
+            return std::equal(u.begin(common_shape), u.end(common_shape), v.begin(common_shape), operations::math_isclose<Tol,std::true_type>{relative_tolerance,absolute_tolerance});
+        }else{
+            return std::equal(u.begin(common_shape), u.end(common_shape), v.begin(common_shape), operations::math_isclose<Tol,std::false_type>{relative_tolerance,absolute_tolerance});
+        }
+    }
+}
+//return true if two tensors have close elements, use machine epsilon as tolerance
+template<typename...Us, typename...Vs>
+inline auto allclose(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, bool equal_nan = false){
+    using common_value_type = detail::tensor_common_value_type_t<basic_tensor<Us...>,basic_tensor<Vs...>>;
+    static constexpr common_value_type e = math::numeric_traits<common_value_type>::epsilon();
+    return allclose(u,v,e,e,equal_nan);
+}
+
 //return tensor's string representation
 template<typename...Ts>
 auto str(const basic_tensor<Ts...>& t){
@@ -159,13 +205,30 @@ GTENSOR_BINARY_TENSOR_OPERATOR(operator^,operations::bitwise_xor);
 GTENSOR_BINARY_TENSOR_OPERATOR(operator<<,operations::bitwise_lshift);
 GTENSOR_BINARY_TENSOR_OPERATOR(operator>>,operations::bitwise_rshift);
 
-//comparison
+//strict comparison
 GTENSOR_BINARY_TENSOR_OPERATOR(equal,operations::equal);
 GTENSOR_BINARY_TENSOR_OPERATOR(not_equal,operations::not_equal);
 GTENSOR_BINARY_TENSOR_OPERATOR(operator>,operations::greater);
 GTENSOR_BINARY_TENSOR_OPERATOR(operator>=,operations::greater_equal);
 GTENSOR_BINARY_TENSOR_OPERATOR(operator<,operations::less);
 GTENSOR_BINARY_TENSOR_OPERATOR(operator<=,operations::less_equal);
+
+//close comparison
+template<typename T, typename U, typename Tol, typename EqualNan = std::false_type>
+inline auto isclose(T&& t, U&& u, Tol relative_tolerance, Tol absolute_tolerance, EqualNan equal_nan = EqualNan{}){
+    using T_ = std::remove_cv_t<std::remove_reference_t<T>>;
+    using U_ = std::remove_cv_t<std::remove_reference_t<U>>;
+    static_assert(detail::has_tensor_arg_v<T_,U_>,"at least one arg must be tensor");
+    return n_operator(operations::math_isclose<Tol, EqualNan>{relative_tolerance, absolute_tolerance}, std::forward<T>(t), std::forward<U>(u));
+}
+template<typename T, typename U, typename EqualNan = std::false_type>
+inline auto isclose(T&& t, U&& u, EqualNan equal_nan = EqualNan{}){
+    using T_ = std::remove_cv_t<std::remove_reference_t<T>>;
+    using U_ = std::remove_cv_t<std::remove_reference_t<U>>;
+    using common_value_type = detail::tensor_common_value_type_t<T_,U_>;
+    static constexpr common_value_type e = math::numeric_traits<common_value_type>::epsilon();
+    return isclose(std::forward<T>(t),std::forward<U>(u),e,e,equal_nan);
+}
 
 //logical
 GTENSOR_UNARY_TENSOR_OPERATOR(operator!,operations::logic_not);

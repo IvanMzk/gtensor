@@ -244,7 +244,7 @@ struct max
 {
     template<typename It>
     auto operator()(It first, It last){
-        if (first==last){throw gtensor::math_exception{"call max on empty range"};}
+        if (first==last){throw gtensor::reduce_exception{"call max on empty range"};}
         const auto& init = *first;
         return std::accumulate(++first,last,init, [](const auto& u, const auto& v){return std::max(u,v);});
     }
@@ -253,7 +253,7 @@ struct min
 {
     template<typename It>
     auto operator()(It first, It last){
-        if (first==last){throw gtensor::math_exception{"call max on empty range"};}
+        if (first==last){throw gtensor::reduce_exception{"call max on empty range"};}
         const auto& init = *first;
         return std::accumulate(++first,last,init, [](const auto& u, const auto& v){return std::min(u,v);});
     }
