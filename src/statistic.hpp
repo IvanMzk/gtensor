@@ -18,6 +18,29 @@ template<typename T> using result_floating_point_t = std::conditional_t<
     typename gtensor::math::numeric_traits<T>::floating_point_type
 >;
 
+//peak-to-peak
+struct ptp
+{
+    template<typename It>
+    auto operator()(It first, It last){
+        if (first==last){
+            throw reduce_exception("cant reduce zero size dimension");
+        }
+        auto min = *first;
+        auto max = min;
+        for (++first; first!=last; ++first){
+            const auto& e = *first;
+            if(e<min){
+                min = e;
+            }
+            if(e>max){
+                max = e;
+            }
+        }
+        return max-min;
+    }
+};
+
 template<typename T>
 auto reduce_empty(){
     if constexpr (gtensor::math::numeric_traits<T>::has_nan()){
@@ -403,6 +426,10 @@ template<typename...Ts>\
 auto name(const basic_tensor<Ts...>& t, bool keep_dims = false){\
     return reduce(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},functor{},keep_dims __VA_OPT__(,) __VA_ARGS__);\
 }
+
+//peak-to-peak of elements along given axes
+//axes may be scalar or container
+GTENSOR_STATISTIC_REDUCE_ROUTINE(ptp,statistic_reduce_operations::ptp);
 
 //mean of elements along given axes
 //axes may be scalar or container

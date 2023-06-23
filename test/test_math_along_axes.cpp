@@ -1364,3 +1364,4 @@ TEST_CASE("test_math_gradient_exception","test_math")
     REQUIRE_THROWS_AS(gradient(tensor_type{1,2,3,4,5},0,std::vector<double>{1,2}), reduce_exception);
     REQUIRE_THROWS_AS(gradient(tensor_type{1,2,3,4,5},0,std::vector<double>{1,2,3,4,5,6}), reduce_exception);
 }
+

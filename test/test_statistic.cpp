@@ -5,8 +5,58 @@
 #include "tensor.hpp"
 #include "statistic.hpp"
 
+//ptp
+TEMPLATE_TEST_CASE("test_statistic_ptp","test_statistic",
+    double,
+    int
+)
+{
+    using value_type = TestType;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::ptp;
+    using helpers_for_testing::apply_by_element;
+
+    //0tensor,1axes,2keep_dims,3expected
+    auto test_data = std::make_tuple(
+        //keep_dim false
+        std::make_tuple(tensor_type{5},0,false,tensor_type(0)),
+        std::make_tuple(tensor_type{5,6},0,false,tensor_type(1)),
+        std::make_tuple(tensor_type{1,2,3,4,5},0,false,tensor_type(4)),
+        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{0},false,tensor_type(4)),
+        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{},false,tensor_type(4)),
+        std::make_tuple(tensor_type{{{5,2,8},{4,1,0}},{{3,7,7},{2,3,9}}},0,false,tensor_type{{2,5,1},{2,2,9}}),
+        std::make_tuple(tensor_type{{{5,2,8},{4,1,0}},{{3,7,7},{2,3,9}}},1,false,tensor_type{{1,1,8},{1,4,2}}),
+        std::make_tuple(tensor_type{{{5,2,8},{4,1,0}},{{3,7,7},{2,3,9}}},2,false,tensor_type{{6,4},{4,7}}),
+        std::make_tuple(tensor_type{{{5,2,8},{4,1,0}},{{3,7,7},{2,3,9}}},std::vector<int>{0,2},false,tensor_type{6,9}),
+        std::make_tuple(tensor_type{{{5,2,8},{4,1,0}},{{3,7,7},{2,3,9}}},std::vector<int>{},false,tensor_type(9)),
+        //keep_dim true
+        std::make_tuple(tensor_type{{{5,2,8},{4,1,0}},{{3,7,7},{2,3,9}}},0,true,tensor_type{{{2,5,1},{2,2,9}}}),
+        std::make_tuple(tensor_type{{{5,2,8},{4,1,0}},{{3,7,7},{2,3,9}}},std::vector<int>{},true,tensor_type{{{9}}})
+    );
+
+    auto test = [](const auto& t){
+        auto ten = std::get<0>(t);
+        auto axes = std::get<1>(t);
+        auto keep_dims = std::get<2>(t);
+        auto expected = std::get<3>(t);
+        auto result = ptp(ten,axes,keep_dims);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test,test_data);
+}
+
+TEST_CASE("test_statistic_ptp_exception","test_math")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::reduce_exception;
+    using gtensor::ptp;
+    //zero size axis
+    REQUIRE_THROWS_AS(ptp(tensor_type{},0), reduce_exception);
+}
+
 //mean,nanmean
-TEMPLATE_TEST_CASE("test_math_mean_nanmean_normal_values","test_math",
+TEMPLATE_TEST_CASE("test_statistic_mean_nanmean_normal_values","test_statistic",
     double,
     int
 )
@@ -85,7 +135,7 @@ TEMPLATE_TEST_CASE("test_math_mean_nanmean_normal_values","test_math",
     }
 }
 
-TEMPLATE_TEST_CASE("test_math_mean_nanmean_initializer_list_axes_all_axes","test_math",
+TEMPLATE_TEST_CASE("test_statistic_mean_nanmean_initializer_list_axes_all_axes","test_statistic",
     double,
     int
 )
@@ -121,7 +171,7 @@ TEMPLATE_TEST_CASE("test_math_mean_nanmean_initializer_list_axes_all_axes","test
     REQUIRE(nanmean(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},true) == result_tensor_type{{{6.5}}});
 }
 
-TEST_CASE("test_math_mean_nanmean_nan_values","test_math")
+TEST_CASE("test_statistic_mean_nanmean_nan_values","test_statistic")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
@@ -166,7 +216,7 @@ TEST_CASE("test_math_mean_nanmean_nan_values","test_math")
 }
 
 //var,nanvar
-TEMPLATE_TEST_CASE("test_math_var_nanvar_normal_values","test_math",
+TEMPLATE_TEST_CASE("test_statistic_var_nanvar_normal_values","test_statistic",
     double,
     int
 )
@@ -245,7 +295,7 @@ TEMPLATE_TEST_CASE("test_math_var_nanvar_normal_values","test_math",
     }
 }
 
-TEMPLATE_TEST_CASE("test_math_var_nanvar_initializer_list_axes_all_axes","test_math",
+TEMPLATE_TEST_CASE("test_statistic_var_nanvar_initializer_list_axes_all_axes","test_statistic",
     double,
     int
 )
@@ -282,7 +332,7 @@ TEMPLATE_TEST_CASE("test_math_var_nanvar_initializer_list_axes_all_axes","test_m
     REQUIRE(tensor_close(nanvar(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},true), result_tensor_type{{{11.916}}}, 1E-2, 1E-2));
 }
 
-TEST_CASE("test_math_var_nanvar_nan_values","test_math")
+TEST_CASE("test_statistic_var_nanvar_nan_values","test_statistic")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
@@ -329,7 +379,7 @@ TEST_CASE("test_math_var_nanvar_nan_values","test_math")
 }
 
 //std,nanstd
-TEMPLATE_TEST_CASE("test_math_std_nanstd_normal_values","test_math",
+TEMPLATE_TEST_CASE("test_statistic_std_nanstd_normal_values","test_statistic",
     double,
     int
 )
@@ -408,7 +458,7 @@ TEMPLATE_TEST_CASE("test_math_std_nanstd_normal_values","test_math",
     }
 }
 
-TEMPLATE_TEST_CASE("test_math_std_nanstd_initializer_list_axes_all_axes","test_math",
+TEMPLATE_TEST_CASE("test_statistic_std_nanstd_initializer_list_axes_all_axes","test_statistic",
     double,
     int
 )
@@ -445,7 +495,7 @@ TEMPLATE_TEST_CASE("test_math_std_nanstd_initializer_list_axes_all_axes","test_m
     REQUIRE(tensor_close(nanstd(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},true), result_tensor_type{{{3.452}}}, 1E-2, 1E-2));
 }
 
-TEST_CASE("test_math_std_nanstd_nan_values","test_math")
+TEST_CASE("test_statistic_std_nanstd_nan_values","test_statistic")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
@@ -492,7 +542,7 @@ TEST_CASE("test_math_std_nanstd_nan_values","test_math")
 }
 
 //median,nanmedian
-TEMPLATE_TEST_CASE("test_math_median_nanmedian_normal_values","test_math",
+TEMPLATE_TEST_CASE("test_statistic_median_nanmedian_normal_values","test_statistic",
     double,
     int
 )
@@ -565,7 +615,7 @@ TEMPLATE_TEST_CASE("test_math_median_nanmedian_normal_values","test_math",
     }
 }
 
-TEMPLATE_TEST_CASE("test_math_median_nanmedian_initializer_list_axes_all_axes","test_math",
+TEMPLATE_TEST_CASE("test_statistic_median_nanmedian_initializer_list_axes_all_axes","test_statistic",
     double,
     int
 )
@@ -593,7 +643,7 @@ TEMPLATE_TEST_CASE("test_math_median_nanmedian_initializer_list_axes_all_axes","
     REQUIRE(nanmedian(tensor_type{{1,1,0,2,5,-1},{-2,3,1,6,0,4},{3,2,2,7,1,-2},{1,0,-2,4,3,2},{5,3,1,5,7,1}}) == result_tensor_type(2.0));
 }
 
-TEST_CASE("test_math_median_nanmedian_nan_values","test_math")
+TEST_CASE("test_statistic_median_nanmedian_nan_values","test_statistic")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
@@ -636,7 +686,7 @@ TEST_CASE("test_math_median_nanmedian_nan_values","test_math")
 }
 
 //quantile,nanquantile
-TEMPLATE_TEST_CASE("test_math_quantile_nanquantile_normal_values","test_math",
+TEMPLATE_TEST_CASE("test_statistic_quantile_nanquantile_normal_values","test_statistic",
     double,
     int
 )
@@ -720,7 +770,7 @@ TEMPLATE_TEST_CASE("test_math_quantile_nanquantile_normal_values","test_math",
     }
 }
 
-TEMPLATE_TEST_CASE("test_math_quantile_nanquantile_initializer_list_axes_all_axes","test_math",
+TEMPLATE_TEST_CASE("test_statistic_quantile_nanquantile_initializer_list_axes_all_axes","test_statistic",
     double,
     int
 )
@@ -758,7 +808,7 @@ TEMPLATE_TEST_CASE("test_math_quantile_nanquantile_initializer_list_axes_all_axe
     REQUIRE(tensor_close(nanquantile(tensor_type{{1,1,0,2,5,-1},{-2,3,1,6,0,4},{3,2,2,7,1,-2},{1,0,-2,4,3,2},{5,3,1,5,7,1}},0.3), result_tensor_type(1.0)));
 }
 
-TEMPLATE_TEST_CASE("test_math_quantile_nanquantile_exception","test_math",
+TEMPLATE_TEST_CASE("test_statistic_quantile_nanquantile_exception","test_statistic",
     double,
     int
 )
@@ -773,7 +823,7 @@ TEMPLATE_TEST_CASE("test_math_quantile_nanquantile_exception","test_math",
     REQUIRE_THROWS_AS(nanquantile(tensor_type{1,2,3,4,5},1.1), reduce_exception);
 }
 
-TEST_CASE("test_math_quantile_nanquantile_nan_values","test_math")
+TEST_CASE("test_statistic_quantile_nanquantile_nan_values","test_statistic")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
@@ -816,7 +866,7 @@ TEST_CASE("test_math_quantile_nanquantile_nan_values","test_math")
 }
 
 //average
-TEMPLATE_TEST_CASE("test_math_average","test_math",
+TEMPLATE_TEST_CASE("test_statistic_average","test_statistic",
     double,
     int
 )
@@ -878,7 +928,7 @@ TEMPLATE_TEST_CASE("test_math_average","test_math",
     apply_by_element(test,test_data);
 }
 
-TEMPLATE_TEST_CASE("test_math_average_initializer_list_axes_all_axes","test_math",
+TEMPLATE_TEST_CASE("test_statistic_average_initializer_list_axes_all_axes","test_statistic",
     double,
     int
 )
@@ -923,7 +973,7 @@ TEMPLATE_TEST_CASE("test_math_average_initializer_list_axes_all_axes","test_math
     );
 }
 
-TEMPLATE_TEST_CASE("test_math_average_exception","test_math",
+TEMPLATE_TEST_CASE("test_statistic_average_exception","test_statistic",
     double,
     int
 )
@@ -958,7 +1008,7 @@ TEMPLATE_TEST_CASE("test_math_average_exception","test_math",
 }
 
 //moving average
-TEMPLATE_TEST_CASE("test_math_moving_average","test_math",
+TEMPLATE_TEST_CASE("test_statistic_moving_average","test_statistic",
     double,
     int
 )
@@ -1007,7 +1057,7 @@ TEMPLATE_TEST_CASE("test_math_moving_average","test_math",
     apply_by_element(test,test_data);
 }
 
-TEMPLATE_TEST_CASE("test_math_moving_average_exception","test_math",
+TEMPLATE_TEST_CASE("test_statistic_moving_average_exception","test_statistic",
     double,
     int
 )
@@ -1043,7 +1093,7 @@ TEMPLATE_TEST_CASE("test_math_moving_average_exception","test_math",
 }
 
 //moving mean
-TEMPLATE_TEST_CASE("test_math_moving_mean","test_math",
+TEMPLATE_TEST_CASE("test_statistic_moving_mean","test_statistic",
     double,
     int
 )
@@ -1091,7 +1141,7 @@ TEMPLATE_TEST_CASE("test_math_moving_mean","test_math",
     apply_by_element(test,test_data);
 }
 
-TEMPLATE_TEST_CASE("test_math_moving_mean_exception","test_math",
+TEMPLATE_TEST_CASE("test_statistic_moving_mean_exception","test_statistic",
     double,
     int
 )
