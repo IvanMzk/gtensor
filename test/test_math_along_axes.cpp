@@ -1283,3 +1283,84 @@ TEST_CASE("test_math_diff2","test_math")
     };
     apply_by_element(test,test_data);
 }
+
+//gradient
+TEMPLATE_TEST_CASE("test_math_gradient","test_math",
+    double,
+    int
+)
+{
+    using value_type = TestType;
+    using tensor_type = gtensor::tensor<value_type>;
+    using dim_type = typename tensor_type::dim_type;
+    using gtensor::gradient;
+    using gtensor::tensor_close;
+    using helpers_for_testing::apply_by_element;
+    using result_value_type = gtensor::math::make_floating_point_t<value_type>;
+    using result_tensor_type = gtensor::tensor<result_value_type>;
+
+    REQUIRE(std::is_same_v<typename decltype(gradient(std::declval<tensor_type>(),std::declval<dim_type>(),std::declval<value_type>()))::value_type,result_value_type>);
+    REQUIRE(std::is_same_v<typename decltype(gradient(std::declval<tensor_type>(),std::declval<dim_type>(),std::declval<std::vector<value_type>>()))::value_type,result_value_type>);
+
+    //0tensor,1axis,2spacing,3expected
+    auto test_data = std::make_tuple(
+        //spacing is scalar
+        std::make_tuple(tensor_type{1,1},0,1,result_tensor_type{0.0,0.0}),
+        std::make_tuple(tensor_type{1,2},0,1,result_tensor_type{1.0,1.0}),
+        std::make_tuple(tensor_type{3,1},0,0.8,result_tensor_type{-2.5,-2.5}),
+        std::make_tuple(tensor_type{1,2,4,7,11,16},0,1,result_tensor_type{1.0,1.5,2.5,3.5,4.5,5.0}),
+        std::make_tuple(tensor_type{1,2,4,7,11,16,12,12,4},0,0.2,result_tensor_type{5.0,7.5,12.5,17.5,22.5,2.5,-10.0,-20.0,-40.0}),
+        std::make_tuple(
+            tensor_type{{2,-1,0,2,3},{4,3,2,0,1},{-2,3,2,1,1},{4,0,1,1,3},{2,1,3,0,-1}},
+            0,
+            0.8,
+            result_tensor_type{{2.5,5.0,2.5,-2.5,-2.5},{-2.5,2.5,1.25,-0.625,-1.25},{0.0,-1.875,-0.625,0.625,1.25},{2.5,-1.25,0.625,-0.625,-1.25},{-2.5,1.25,2.5,-1.25,-5.0}}
+        ),
+        std::make_tuple(
+            tensor_type{{2,-1,0,2,3},{4,3,2,0,1},{-2,3,2,1,1},{4,0,1,1,3},{2,1,3,0,-1}},
+            1,
+            0.8,
+            result_tensor_type{{-3.75,-1.25,1.875,1.875,1.25},{-1.25,-1.25,-1.875,-0.625,1.25},{6.25,2.5,-1.25,-0.625,0.0},{-5.0,-1.875,0.625,1.25,2.5},{-1.25,0.625,-0.625,-2.5,-1.25}}
+        ),
+        //spacing is container
+        std::make_tuple(tensor_type{1,1},0,tensor_type{1,2},result_tensor_type{0.0,0.0}),
+        std::make_tuple(tensor_type{1,2},0,tensor_type{1,3},result_tensor_type{0.5,0.5}),
+        std::make_tuple(tensor_type{3,1},0,std::vector<double>{0.8,1.0},result_tensor_type{-10.0,-10.0}),
+        std::make_tuple(tensor_type{1,2,4,7,11,16},0,std::vector<double>{0.0,1.0,1.5,3.5,4.0,6.0},result_tensor_type{1.0,3.0,3.5,6.7,6.9,2.5}),
+        std::make_tuple(tensor_type{1,2,4,7,11,16,12,12,4},0,std::vector<double>{0.0,1.0,1.5,3.5,4.0,5.0,5.5,6.0,6.5},result_tensor_type{1.0,3.0,3.5,6.7,7.0,-3.666,-4.0,-8.0,-16.0}),
+        std::make_tuple(
+            tensor_type{{2,-1,0,2,3},{4,3,2,0,1},{-2,3,2,1,1},{4,0,1,1,3},{2,1,3,0,-1}},
+            0,
+            std::vector<double>{-1,0.2,0.8,1.5,2.0},
+            result_tensor_type{{1.666,3.333,1.666,-1.666,-1.666},{-6.111,1.111,0.555,0.555,-0.555},{-1.428,-1.978,-0.659,0.897,1.318},{1.238,-0.619,1.738,-1.166,-3.476},{-4.0,2.0,4.0,-2.0,-8.0}}
+        ),
+        std::make_tuple(
+            tensor_type{{2,-1,0,2,3},{4,3,2,0,1},{-2,3,2,1,1},{4,0,1,1,3},{2,1,3,0,-1}},
+            1,
+            std::vector<double>{0.0,0.7,1.2,2.3,2.5},
+            result_tensor_type{{-4.285,-0.619,1.943,4.510,5.0},{-1.428,-1.761,-1.943,3.951,5.0},{7.142,1.809,-1.659,-0.139,0.0},{-5.714,-1.214,1.375,8.461,10.0},{-1.428,1.738,1.897,-4.650,-5.0}}
+        )
+    );
+    auto test = [](const auto& t){
+        auto ten = std::get<0>(t);
+        auto axis = std::get<1>(t);
+        auto spacing = std::get<2>(t);
+        auto expected = std::get<3>(t);
+        auto result = gradient(ten,axis,spacing);
+        REQUIRE(tensor_close(result,expected,1E-2,1E-2));
+    };
+    apply_by_element(test,test_data);
+}
+
+TEST_CASE("test_math_gradient_exception","test_math")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::reduce_exception;
+    using gtensor::gradient;
+    //too few points
+    REQUIRE_THROWS_AS(gradient(tensor_type{1},0), reduce_exception);
+    //coordinates not match size along axis
+    REQUIRE_THROWS_AS(gradient(tensor_type{1,2,3,4,5},0,std::vector<double>{1,2}), reduce_exception);
+    REQUIRE_THROWS_AS(gradient(tensor_type{1,2,3,4,5},0,std::vector<double>{1,2,3,4,5,6}), reduce_exception);
+}

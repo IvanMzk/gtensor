@@ -349,6 +349,86 @@ struct diff_2
     }
 };
 
+template<typename T, typename U>
+void check_spacing_size(const T& n, const U& n_spacing){
+    auto test = [](const auto& n_, const auto& n_spacing_){
+        if (n_!=n_spacing_){
+            throw reduce_exception("length of spacing not compatible with specified axes");
+        }
+    };
+    if constexpr (detail::is_static_castable_v<U,T>){
+        test(n,static_cast<T>(n_spacing));
+    }else if constexpr (detail::is_static_castable_v<T,U>){
+        test(static_cast<U>(n),n_spacing);
+    }else{
+        static_assert(detail::always_false<T,U>, "types not convertible to each other");
+    }
+}
+
+//e0,e1,e2 are stencil elements
+//hs is bakward delta (from e1 to e0), hd is forward delta (from e1 to e2)
+template<typename T>
+auto make_gradient(const T& e0, const T& e1, const T& e2, const T& hs, const T& hd){
+    const auto hs_sqr = hs*hs;
+    const auto hd_sqr = hd*hd;
+    return (e1*(hd_sqr-hs_sqr) + e2*hs_sqr -e0*hd_sqr)/(hd*hs*(hd+hs));
+}
+
+//gradient
+//2-nd order accuracy gradient approximation
+struct gradient
+{
+    //Spacing may be scalar (uniform) or container (not uniform)
+    //if container, its size must equal to size along axis that is last-first
+    template<typename It, typename DstIt, typename Spacing>
+    auto operator()(It first, It last, DstIt dfirst, DstIt dlast, const Spacing& spacing){
+        using value_type = typename std::iterator_traits<It>::value_type;
+        using dst_value_type = typename std::iterator_traits<DstIt>::value_type;
+        using res_type = gtensor::math::make_floating_point_t<value_type>;
+        static_assert(std::is_same_v<dst_value_type,res_type>,"invalid DstIt value_type");
+        const auto n = last-first;
+        if (n<2){
+            throw reduce_exception("gradient requires at least 2 points");
+        }
+        if constexpr (detail::is_container_of_type_v<Spacing,res_type>){    //spacing is coordinates, not uniform
+            check_spacing_size(n,spacing.size());
+            auto spacing_it = spacing.begin();
+            auto t0 = *spacing_it;
+            auto t1 = *++spacing_it;
+            auto hs = static_cast<res_type>(t1-t0);
+            auto e0 = static_cast<res_type>(*first);
+            auto e1 = static_cast<res_type>(*++first);
+            *dfirst = (e1-e0) / hs;
+            for(++first,++dfirst,++spacing_it; first!=last; ++first,++dfirst,++spacing_it){
+                const auto& e2 = static_cast<const res_type&>(*first);
+                const auto& t2 = *spacing_it;
+                const auto& hd = static_cast<const res_type&>(t2-t1);
+                *dfirst = make_gradient(e0,e1,e2,hs,hd);
+                hs = hd;
+                t1 = t2;
+                e0 = e1;
+                e1 = e2;
+            }
+            *dfirst = (e1-e0) / hs;
+        }else if constexpr (detail::is_static_castable_v<Spacing,res_type>){    //spacing is delta, uniform
+            const auto spacing_inv = res_type{1}/static_cast<const res_type&>(spacing);
+            const auto spacing_2_inv = res_type{0.5}/static_cast<const res_type&>(spacing);
+            auto e0 = *first;
+            auto e1 = *++first;
+            *dfirst = static_cast<const res_type&>(e1-e0)*spacing_inv;
+            for(++first,++dfirst; first!=last; ++first,++dfirst){
+                auto e2 = *first;
+                *dfirst = static_cast<const res_type&>(e2-e0)*spacing_2_inv;
+                e0 = e1;
+                e1 = e2;
+            }
+            *dfirst = static_cast<const res_type&>(e1-e0)*spacing_inv;
+        }else{
+            static_assert(detail::always_false<Spacing>, "invalid spacing argument");
+        }
+    }
+};
+
 }   //end of namespace math_reduce_operations
 
 //math functions along given axis or axes
@@ -477,6 +557,24 @@ auto diff2(const basic_tensor<Ts...>& t, const DimT& axis = -1){
     const index_type window_size = 3;
     const index_type window_step = 1;
     return slide(t, axis, math_reduce_operations::diff_2{}, window_size, window_step);
+}
+
+//gradient along given axis, interior points has 2-nd order accuracy approximation using central difference, boundary points has 1-st order accuracy approximation
+//axis is scalar
+//spacing is scalar or container, scalar means uniform sample distance, container specifies coordinates along dimension
+//container must be the same size as size along axis
+template<typename...Ts, typename DimT, typename Spacing>
+auto gradient(const basic_tensor<Ts...>& t, const DimT& axis, const Spacing& spacing){
+    using index_type = typename basic_tensor<Ts...>::index_type;
+    using value_type = typename basic_tensor<Ts...>::value_type;
+    using res_type = gtensor::math::make_floating_point_t<value_type>;
+    const index_type window_size = 1;
+    const index_type window_step = 1;
+    return slide<res_type>(t, axis, math_reduce_operations::gradient{}, window_size, window_step, spacing);
+}
+template<typename...Ts, typename DimT>
+auto gradient(const basic_tensor<Ts...>& t, const DimT& axis){
+    return gradient(t,axis,1);
 }
 
 #undef GTENSOR_TENSOR_MATH_ROUTINE

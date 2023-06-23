@@ -90,6 +90,13 @@ template<typename T> struct numeric_traits : default_numeric_traits<T,typename s
     using integral_type = std::int64_t;
 };
 
+//floating point type corresponding to T
+template<typename T> using make_floating_point_t = std::conditional_t<
+    gtensor::math::numeric_traits<T>::is_floating_point(),
+    T,
+    typename gtensor::math::numeric_traits<T>::floating_point_type
+>;
+
 template<typename T> auto floor(T t);
 //basic
 template<typename T> auto abs(T t){return std::abs(t);}
