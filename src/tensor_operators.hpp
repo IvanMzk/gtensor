@@ -56,7 +56,6 @@ namespace gtensor{
 
 namespace detail{
 
-template<typename...Ts> inline constexpr bool has_tensor_arg_v = (is_tensor_v<Ts>||...);
 template<typename Other, typename T> inline constexpr bool lhs_other_v = std::is_convertible_v<Other,T>||std::is_convertible_v<T,Other>;
 
 template<typename T, typename B> struct tensor_value_type{using type = T;};

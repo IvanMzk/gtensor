@@ -2,7 +2,7 @@
 #define TENSOR_MATH_HPP_
 #include <functional>
 #include <algorithm>
-#include "tensor_operators.hpp"
+#include "operations.hpp"
 #include "reduce.hpp"
 
 #define GTENSOR_TENSOR_MATH_ROUTINE(NAME,F)\
@@ -14,7 +14,7 @@ inline auto NAME(Args&&...args){\
 
 namespace gtensor{
 
-//element wise math functions
+//elementwise math functions
 //basic
 GTENSOR_TENSOR_MATH_ROUTINE(abs, operations::math_abs);
 GTENSOR_TENSOR_MATH_ROUTINE(fmod, operations::math_fmod);

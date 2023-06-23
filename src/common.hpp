@@ -66,6 +66,7 @@ template<typename T> inline constexpr bool is_container_v<T, std::void_t<decltyp
 template<typename T> inline constexpr bool is_tensor_v = false;
 template<typename...Ts> inline constexpr bool is_tensor_v<gtensor::tensor<Ts...>> = true;
 template<typename...Ts> inline constexpr bool is_tensor_v<gtensor::basic_tensor<Ts...>> = true;
+template<typename...Ts> inline constexpr bool has_tensor_arg_v = (is_tensor_v<Ts>||...);
 
 template<typename T, typename IdxT, typename = void> inline constexpr bool is_container_of_type_v = false;
 template<typename T, typename IdxT> inline constexpr bool is_container_of_type_v<T, IdxT, std::void_t<std::enable_if_t<is_container_v<T>>>> = std::is_convertible_v<typename T::value_type,IdxT>;
