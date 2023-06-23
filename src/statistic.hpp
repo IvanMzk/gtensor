@@ -543,6 +543,9 @@ auto moving_mean(const basic_tensor<Ts...>& t, const DimT& axis, const IdxT& win
     return slide<res_type>(t,axis,statistic_reduce_operations::moving_mean{},window_size,step,window_size,step);
 }
 
+
+
+
 #undef GTENSOR_STATISTIC_REDUCE_ROUTINE
 
 }   //end of namespace gtensor

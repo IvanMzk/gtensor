@@ -1,8 +1,7 @@
 #ifndef TENSOR_HPP_
 #define TENSOR_HPP_
 
-#include <sstream>
-#include "type_selector.hpp"
+#include "module_selector.hpp"
 #include "tensor_factory.hpp"
 #include "tensor_operators.hpp"
 #include "slice.hpp"

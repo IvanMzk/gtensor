@@ -5,8 +5,8 @@
 #include <stdexcept>
 #include <algorithm>
 #include "common.hpp"
-#include "tensor_init_list.hpp"
-#include "type_selector.hpp"
+#include "init_list_helper.hpp"
+#include "module_selector.hpp"
 #include "tensor.hpp"
 
 namespace gtensor{

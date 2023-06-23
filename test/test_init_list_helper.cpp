@@ -1,9 +1,9 @@
 #include <tuple>
 #include "catch.hpp"
-#include "tensor_init_list.hpp"
+#include "init_list_helper.hpp"
 #include "helpers_for_testing.hpp"
 
-TEST_CASE("test_list_depth","[test_tensor_init_list]")
+TEST_CASE("test_list_depth","[test_init_list_helper]")
 {
     using gtensor::detail::nested_init_list1;
     using gtensor::detail::nested_init_list2;
@@ -14,7 +14,7 @@ TEST_CASE("test_list_depth","[test_tensor_init_list]")
     REQUIRE(nested_initialiser_list_depth<nested_init_list3<int>>::value == 3);
 }
 
-TEST_CASE("test_nested_initialiser_list_value_type","[test_tensor_init_list]")
+TEST_CASE("test_nested_initialiser_list_value_type","[test_init_list_helper]")
 {
     using gtensor::detail::nested_init_list1;
     using gtensor::detail::nested_init_list2;
@@ -25,7 +25,7 @@ TEST_CASE("test_nested_initialiser_list_value_type","[test_tensor_init_list]")
     REQUIRE(std::is_same_v<nested_initialiser_list_value_type<nested_init_list3<std::tuple<int,float>>>::type, std::tuple<int,float>>);
 }
 
-TEMPLATE_TEST_CASE("test_list_parser","[test_tensor_init_list]",std::vector<std::size_t>, std::vector<std::int64_t>)
+TEMPLATE_TEST_CASE("test_list_parser","[test_init_list_helper]",std::vector<std::size_t>, std::vector<std::int64_t>)
 {
     using container_type = TestType;
     using value_type = typename container_type::value_type;
@@ -44,7 +44,7 @@ TEMPLATE_TEST_CASE("test_list_parser","[test_tensor_init_list]",std::vector<std:
     REQUIRE(list_parse<value_type, container_type>(nested_init_list3<int>{{{1},{2}},{{3},{4}},{{5},{6}}}) == container_type{3,2,1});
 }
 
-TEMPLATE_TEST_CASE("test_list_parser_exception","[test_tensor_init_list]",std::vector<std::size_t>, std::vector<std::int64_t>)
+TEMPLATE_TEST_CASE("test_list_parser_exception","[test_init_list_helper]",std::vector<std::size_t>, std::vector<std::int64_t>)
 {
     using container_type = TestType;
     using value_type = typename container_type::value_type;
@@ -63,7 +63,7 @@ TEMPLATE_TEST_CASE("test_list_parser_exception","[test_tensor_init_list]",std::v
     REQUIRE_THROWS_AS((list_parse<value_type, container_type>(nested_init_list3<int>{{{1,2},{2}},{{3},{4}},{{5},{6}}})), tensor_init_list_exception);
 }
 
-TEST_CASE("test_copy_from_list","[test_tensor_init_list]")
+TEST_CASE("test_copy_from_list","[test_init_list_helper]")
 {
     using container_type = std::vector<int>;
     using gtensor::detail::nested_init_list1;
@@ -112,7 +112,7 @@ TEST_CASE("test_copy_from_list","[test_tensor_init_list]")
     REQUIRE(result == expected);
 }
 
-TEST_CASE("test_list_size","[test_tensor_init_list]")
+TEST_CASE("test_list_size","[test_init_list_helper]")
 {
     using gtensor::detail::nested_init_list1;
     using gtensor::detail::nested_init_list2;

@@ -4,7 +4,6 @@
 #include <type_traits>
 #include <iterator>
 #include "common.hpp"
-#include "tensor_init_list.hpp"
 #include "descriptor.hpp"
 #include "data_accessor.hpp"
 #include "iterator.hpp"

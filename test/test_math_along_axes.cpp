@@ -3,7 +3,7 @@
 #include "catch.hpp"
 #include "helpers_for_testing.hpp"
 #include "tensor.hpp"
-#include "math.hpp"
+#include "tensor_math.hpp"
 
 //test math functions along axes
 //all

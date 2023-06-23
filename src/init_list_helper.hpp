@@ -1,5 +1,5 @@
-#ifndef TENSOR_INIT_LIST_HPP_
-#define TENSOR_INIT_LIST_HPP_
+#ifndef INIT_LIST_HELPER_HPP_
+#define INIT_LIST_HELPER_HPP_
 
 #include <initializer_list>
 #include <iostream>

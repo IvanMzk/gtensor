@@ -1,7 +1,7 @@
 #ifndef REDUCE_HPP_
 #define REDUCE_HPP_
 
-#include "type_selector.hpp"
+#include "module_selector.hpp"
 #include "common.hpp"
 #include "iterator.hpp"
 #include "tensor.hpp"

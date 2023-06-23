@@ -1,5 +1,5 @@
-#ifndef TYPE_SELECTOR_HPP_
-#define TYPE_SELECTOR_HPP_
+#ifndef MODULE_SELECTOR_HPP_
+#define MODULE_SELECTOR_HPP_
 
 #include "config.hpp"
 

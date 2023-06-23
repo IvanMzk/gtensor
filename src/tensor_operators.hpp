@@ -1,8 +1,8 @@
 #ifndef TENSOR_OPERATORS_HPP_
 #define TENSOR_OPERATORS_HPP_
 
-#include "type_selector.hpp"
-#include "operation.hpp"
+#include "module_selector.hpp"
+#include "operations.hpp"
 #include "expression_template_operator.hpp"
 
 #define GTENSOR_UNARY_TENSOR_OPERATOR(NAME,F)\
@@ -77,7 +77,7 @@ inline basic_tensor<Ts...>& as_basic_tensor(basic_tensor<Ts...>& t){
 
 }   //end of namespace detail
 
-//generalized broadcast operator
+//generalized elementwise broadcast operator
 template<typename F, typename...Operands>
 inline auto n_operator(F&& f, Operands&&...operands){
     using config_type = typename detail::first_tensor_type_t<std::remove_cv_t<std::remove_reference_t<Operands>>...>::config_type;
@@ -85,7 +85,7 @@ inline auto n_operator(F&& f, Operands&&...operands){
     return operator_selector_t<config_type, operation_type>::n_operator(std::forward<F>(f),std::forward<Operands>(operands)...);
 }
 
-//generalized broadcast assign
+//generalized elementwise broadcast assign
 template<typename F, typename Rhs, typename...Ts>
 inline basic_tensor<Ts...>& a_operator(F&& f, basic_tensor<Ts...>& lhs, Rhs&& rhs){
     using config_type = typename basic_tensor<Ts...>::config_type;

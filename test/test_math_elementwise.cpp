@@ -3,7 +3,7 @@
 #include "catch.hpp"
 #include "helpers_for_testing.hpp"
 #include "tensor.hpp"
-#include "math.hpp"
+#include "tensor_math.hpp"
 
 //test math element wise functions
 TEST_CASE("test_tensor_math_comparison_functions_semantic","[test_math]")

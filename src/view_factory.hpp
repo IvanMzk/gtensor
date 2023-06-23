@@ -1,7 +1,7 @@
 #ifndef VIEW_FACTORY_HPP_
 #define VIEW_FACTORY_HPP_
 
-#include "type_selector.hpp"
+#include "module_selector.hpp"
 #include "common.hpp"
 #include "slice.hpp"
 #include "descriptor.hpp"
