@@ -5,53 +5,6 @@
 #include "operations.hpp"
 #include "expression_template_operator.hpp"
 
-#define GTENSOR_UNARY_TENSOR_OPERATOR(NAME,F)\
-template<typename Impl>\
-inline auto NAME(const basic_tensor<Impl>& t){\
-    return n_operator(F{},t);\
-}\
-template<typename Impl>\
-inline auto NAME(basic_tensor<Impl>&& t){\
-    return n_operator(F{},std::move(t));\
-}
-
-#define GTENSOR_BINARY_TENSOR_OPERATOR(NAME,F)\
-template<typename...Ts, typename Other>\
-inline auto NAME(const basic_tensor<Ts...>& t, Other&& other){\
-    return n_operator(F{},t,std::forward<Other>(other));\
-}\
-template<typename...Ts, typename Other>\
-inline auto NAME(basic_tensor<Ts...>&& t, Other&& other){\
-    return n_operator(F{},std::move(t),std::forward<Other>(other));\
-}\
-template<typename Other, typename...Ts, std::enable_if_t<detail::lhs_other_v<std::decay_t<Other>,typename basic_tensor<Ts...>::value_type>,int> =0>\
-inline auto NAME(Other&& other, const basic_tensor<Ts...>& t){\
-    return n_operator(F{},std::forward<Other>(other),t);\
-}\
-template<typename Other, typename...Ts, std::enable_if_t<detail::lhs_other_v<std::decay_t<Other>,typename basic_tensor<Ts...>::value_type>,int> =0>\
-inline auto NAME(Other&& other, basic_tensor<Ts...>&& t){\
-    return n_operator(F{},std::forward<Other>(other),std::move(t));\
-}
-
-#define GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(NAME,F)\
-template<typename...Ts, typename Rhs>\
-inline basic_tensor<Ts...>& NAME(basic_tensor<Ts...>& lhs, Rhs&& rhs){\
-    a_operator(F{},lhs,std::forward<Rhs>(rhs));\
-    return lhs;\
-}\
-template<typename...Ts, typename Rhs>\
-inline tensor<Ts...>& NAME(tensor<Ts...>& lhs, Rhs&& rhs){\
-    NAME(detail::as_basic_tensor(lhs),std::forward<Rhs>(rhs));\
-    return lhs;\
-}
-
-#define GTENSOR_TENSOR_FUNCTION(NAME,F)\
-template<typename...Args>\
-inline auto NAME(Args&&...args){\
-    static_assert(detail::has_tensor_arg_v<std::remove_cv_t<std::remove_reference_t<Args>>...>,"at least one arg must be tensor");\
-    return n_operator(F{},std::forward<Args>(args)...);\
-}
-
 namespace gtensor{
 
 namespace detail{
@@ -76,100 +29,264 @@ inline basic_tensor<Ts...>& as_basic_tensor(basic_tensor<Ts...>& t){
 
 }   //end of namespace detail
 
-//generalized elementwise broadcast operator
+//generalized elementwise broadcast n-arity operator
+//F is operation functor which perform on operands elements
+//F's call operator arity must be equal to operands number,
+//Operands may be scalar or tensor, operands shapes must broadcast
+//result is tensor, result's value_type is f's call operator result type;
 template<typename F, typename...Operands>
 inline auto n_operator(F&& f, Operands&&...operands){
     using config_type = typename detail::first_tensor_type_t<std::remove_cv_t<std::remove_reference_t<Operands>>...>::config_type;
     using operation_type = std::decay_t<F>;
-    return operator_selector_t<config_type, operation_type>::n_operator(std::forward<F>(f),std::forward<Operands>(operands)...);
+    return generalized_operator_selector_t<config_type, operation_type>::n_operator(std::forward<F>(f),std::forward<Operands>(operands)...);
 }
 
-//generalized elementwise broadcast assign
+//generalized elementwise broadcast assign operator
+//F is assign operation functor
+//F's call operator takes reference to lhs and rhs elements and should have assign semantic or compaund assign semantic, return is discarded
+//Lhs is tensor, Rhs tensor or scalar, shapes of lhs and rhs must broadcast
+//result is reference to lhs
 template<typename F, typename Rhs, typename...Ts>
 inline basic_tensor<Ts...>& a_operator(F&& f, basic_tensor<Ts...>& lhs, Rhs&& rhs){
     using config_type = typename basic_tensor<Ts...>::config_type;
     using operation_type = std::decay_t<F>;
-    operator_selector_t<config_type, operation_type>::a_operator(std::forward<F>(f),lhs,std::forward<Rhs>(rhs));
+    generalized_operator_selector_t<config_type, operation_type>::a_operator(std::forward<F>(f),lhs,std::forward<Rhs>(rhs));
     return lhs;
 }
+
+//tensor operators and related functions implementation
+
+#define GTENSOR_TENSOR_OPERATOR_FUNCTION(NAME,F)\
+template<typename...Args>\
+static auto NAME(Args&&...args){\
+    static_assert(detail::has_tensor_arg_v<std::remove_cv_t<std::remove_reference_t<Args>>...>,"at least one arg must be tensor");\
+    return n_operator(F{},std::forward<Args>(args)...);\
+}
+
+#define GTENSOR_TENSOR_OPERATOR_COMPOUND_ASSIGNMENT_FUNCTION(NAME,F)\
+template<typename...Ts, typename Rhs>\
+static basic_tensor<Ts...>& NAME(basic_tensor<Ts...>& lhs, Rhs&& rhs){\
+    a_operator(F{},lhs,std::forward<Rhs>(rhs));\
+    return lhs;\
+}\
+template<typename...Ts, typename Rhs>\
+static tensor<Ts...>& NAME(tensor<Ts...>& lhs, Rhs&& rhs){\
+    NAME(detail::as_basic_tensor(lhs),std::forward<Rhs>(rhs));\
+    return lhs;\
+}
+
+struct tensor_operators
+{
+    //return true if two tensors has same shape and elements
+    //if equal_nan is true nans compared as equal
+    template<typename...Us, typename...Vs>
+    static bool tensor_equal(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, bool equal_nan = false){
+        if (u.is_same(v)){
+            return true;
+        }else{
+            const bool equal_shapes = u.shape() == v.shape();
+            if (equal_nan){
+                return equal_shapes && std::equal(u.begin(), u.end(), v.begin(), gtensor::operations::math_isequal<std::true_type>{});
+            }else{
+                return equal_shapes && std::equal(u.begin(), u.end(), v.begin(), gtensor::operations::math_isequal<std::false_type>{});
+            }
+        }
+    }
+
+    //return true if two tensors have same shape and close elements within specified tolerance
+    template<typename...Us, typename...Vs, typename Tol>
+    static bool tensor_close(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, Tol relative_tolerance, Tol absolute_tolerance, bool equal_nan = false){
+        if (u.is_same(v)){
+            return true;
+        }else{
+            const bool equal_shapes = u.shape() == v.shape();
+            if (equal_nan){
+                return equal_shapes && std::equal(u.begin(), u.end(), v.begin(), operations::math_isclose<Tol,std::true_type>{relative_tolerance,absolute_tolerance});
+            }else{
+                return equal_shapes && std::equal(u.begin(), u.end(), v.begin(), operations::math_isclose<Tol,std::false_type>{relative_tolerance,absolute_tolerance});
+            }
+        }
+    }
+    //return true if two tensors have same shape and close elements, use machine epsilon as tolerance
+    template<typename...Us, typename...Vs>
+    static bool tensor_close(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, bool equal_nan = false){
+        using common_value_type = detail::tensor_common_value_type_t<basic_tensor<Us...>,basic_tensor<Vs...>>;
+        static constexpr common_value_type e = math::numeric_traits<common_value_type>::epsilon();
+        return tensor_close(u,v,e,e,equal_nan);
+    }
+
+    //return true if two tensors have close elements within specified tolerance
+    //shapes may not be equal, but must broadcast
+    template<typename...Us, typename...Vs, typename Tol>
+    static bool allclose(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, Tol relative_tolerance, Tol absolute_tolerance, bool equal_nan = false){
+        using shape_type = typename basic_tensor<Us...>::shape_type;
+        if (u.is_same(v)){
+            return true;
+        }else{
+            auto common_shape = detail::make_broadcast_shape<shape_type>(u.shape(),v.shape());
+            if (equal_nan){
+                return std::equal(u.begin(common_shape), u.end(common_shape), v.begin(common_shape), operations::math_isclose<Tol,std::true_type>{relative_tolerance,absolute_tolerance});
+            }else{
+                return std::equal(u.begin(common_shape), u.end(common_shape), v.begin(common_shape), operations::math_isclose<Tol,std::false_type>{relative_tolerance,absolute_tolerance});
+            }
+        }
+    }
+    //return true if two tensors have close elements, use machine epsilon as tolerance
+    template<typename...Us, typename...Vs>
+    static bool allclose(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, bool equal_nan = false){
+        using common_value_type = detail::tensor_common_value_type_t<basic_tensor<Us...>,basic_tensor<Vs...>>;
+        static constexpr common_value_type e = math::numeric_traits<common_value_type>::epsilon();
+        return allclose(u,v,e,e,equal_nan);
+    }
+
+    //return tensor's string representation
+    template<typename...Ts>
+    static auto str(const basic_tensor<Ts...>& t){
+        using value_type = typename basic_tensor<Ts...>::value_type;
+        std::stringstream ss{};
+        if constexpr (detail::is_printable_v<value_type>){
+            ss<<"{"<<detail::shape_to_str(t.shape())<<[&]{for(const auto& i:t){ss<<i<<" ";}; return "}";}();
+        }else{
+            ss<<"{"<<detail::shape_to_str(t.shape())<<"...}";
+        }
+        return ss.str();
+    }
+
+    //cast
+    template<typename To, typename T>
+    static auto cast(T&& t){
+        ASSERT_TENSOR(std::remove_cv_t<std::remove_reference_t<T>>);
+        return n_operator(operations::cast<To>{}, std::forward<T>(t));
+    }
+
+    //like ternary operator
+    GTENSOR_TENSOR_OPERATOR_FUNCTION(where,operations::where);
+
+    //arithmetic
+    GTENSOR_TENSOR_OPERATOR_FUNCTION(unary_plus,operations::unary_plus);
+    GTENSOR_TENSOR_OPERATOR_FUNCTION(unary_minus,operations::unary_minus);
+    GTENSOR_TENSOR_OPERATOR_FUNCTION(add,operations::add);
+    GTENSOR_TENSOR_OPERATOR_FUNCTION(sub,operations::sub);
+    GTENSOR_TENSOR_OPERATOR_FUNCTION(mul,operations::mul);
+    GTENSOR_TENSOR_OPERATOR_FUNCTION(div,operations::div);
+    GTENSOR_TENSOR_OPERATOR_FUNCTION(mod,operations::mod);
+
+    //bitwise
+    GTENSOR_TENSOR_OPERATOR_FUNCTION(bitwise_not,operations::bitwise_not);
+    GTENSOR_TENSOR_OPERATOR_FUNCTION(bitwise_and,operations::bitwise_and);
+    GTENSOR_TENSOR_OPERATOR_FUNCTION(bitwise_or,operations::bitwise_or);
+    GTENSOR_TENSOR_OPERATOR_FUNCTION(bitwise_xor,operations::bitwise_xor);
+    GTENSOR_TENSOR_OPERATOR_FUNCTION(bitwise_lshift,operations::bitwise_lshift);
+    GTENSOR_TENSOR_OPERATOR_FUNCTION(bitwise_rshift,operations::bitwise_rshift);
+
+    //strict comparison
+    GTENSOR_TENSOR_OPERATOR_FUNCTION(equal,operations::equal);
+    GTENSOR_TENSOR_OPERATOR_FUNCTION(not_equal,operations::not_equal);
+    GTENSOR_TENSOR_OPERATOR_FUNCTION(greater,operations::greater);
+    GTENSOR_TENSOR_OPERATOR_FUNCTION(greater_equal,operations::greater_equal);
+    GTENSOR_TENSOR_OPERATOR_FUNCTION(less,operations::less);
+    GTENSOR_TENSOR_OPERATOR_FUNCTION(less_equal,operations::less_equal);
+
+    //close comparison
+    template<typename T, typename U, typename Tol, typename EqualNan = std::false_type>
+    static auto isclose(T&& t, U&& u, Tol relative_tolerance, Tol absolute_tolerance, EqualNan equal_nan = EqualNan{}){
+        using T_ = std::remove_cv_t<std::remove_reference_t<T>>;
+        using U_ = std::remove_cv_t<std::remove_reference_t<U>>;
+        static_assert(detail::has_tensor_arg_v<T_,U_>,"at least one arg must be tensor");
+        return n_operator(operations::math_isclose<Tol, EqualNan>{relative_tolerance, absolute_tolerance}, std::forward<T>(t), std::forward<U>(u));
+    }
+    template<typename T, typename U, typename EqualNan = std::false_type>
+    static auto isclose(T&& t, U&& u, EqualNan equal_nan = EqualNan{}){
+        using T_ = std::remove_cv_t<std::remove_reference_t<T>>;
+        using U_ = std::remove_cv_t<std::remove_reference_t<U>>;
+        using common_value_type = detail::tensor_common_value_type_t<T_,U_>;
+        static constexpr common_value_type e = math::numeric_traits<common_value_type>::epsilon();
+        return isclose(std::forward<T>(t),std::forward<U>(u),e,e,equal_nan);
+    }
+
+    //logical
+    GTENSOR_TENSOR_OPERATOR_FUNCTION(logic_not,operations::logic_not);
+    GTENSOR_TENSOR_OPERATOR_FUNCTION(logic_and,operations::logic_and);
+    GTENSOR_TENSOR_OPERATOR_FUNCTION(logic_or,operations::logic_or);
+
+    //elementwise assignment
+    template<typename...Ts, typename Rhs>
+    static basic_tensor<Ts...>& assign(basic_tensor<Ts...>& lhs, Rhs&& rhs){
+        using RhsT = std::remove_cv_t<std::remove_reference_t<Rhs>>;
+        static_assert(detail::is_tensor_v<RhsT>||std::is_convertible_v<RhsT,typename basic_tensor<Ts...>::value_type>);
+        if (lhs.is_same(rhs)){
+            return lhs;
+        }
+        a_operator(operations::assign{},lhs,std::forward<Rhs>(rhs));
+        return lhs;
+    }
+    template<typename...Ts, typename Rhs>
+    static tensor<Ts...>& assign(tensor<Ts...>& lhs, Rhs&& rhs){
+        assign(detail::as_basic_tensor(lhs),std::forward<Rhs>(rhs));
+        return lhs;
+    }
+
+    //elementwise compound assignment
+    GTENSOR_TENSOR_OPERATOR_COMPOUND_ASSIGNMENT_FUNCTION(assign_add,operations::assign_add);
+    GTENSOR_TENSOR_OPERATOR_COMPOUND_ASSIGNMENT_FUNCTION(assign_sub,operations::assign_sub);
+    GTENSOR_TENSOR_OPERATOR_COMPOUND_ASSIGNMENT_FUNCTION(assign_mul,operations::assign_mul);
+    GTENSOR_TENSOR_OPERATOR_COMPOUND_ASSIGNMENT_FUNCTION(assign_div,operations::assign_div);
+    GTENSOR_TENSOR_OPERATOR_COMPOUND_ASSIGNMENT_FUNCTION(assign_mod,operations::assign_mod);
+    GTENSOR_TENSOR_OPERATOR_COMPOUND_ASSIGNMENT_FUNCTION(assign_bitwise_and,operations::assign_bitwise_and);
+    GTENSOR_TENSOR_OPERATOR_COMPOUND_ASSIGNMENT_FUNCTION(assign_bitwise_or,operations::assign_bitwise_or);
+    GTENSOR_TENSOR_OPERATOR_COMPOUND_ASSIGNMENT_FUNCTION(assign_bitwise_xor,operations::assign_bitwise_xor);
+    GTENSOR_TENSOR_OPERATOR_COMPOUND_ASSIGNMENT_FUNCTION(assign_bitwise_lshift,operations::assign_bitwise_lshift);
+    GTENSOR_TENSOR_OPERATOR_COMPOUND_ASSIGNMENT_FUNCTION(assign_bitwise_rshift,operations::assign_bitwise_rshift);
+};  //end of tensor_operators
+
+//tensor operators and related functions frontend
+//frontend use compile-time dispatch to select implementation, see module_selector.hpp
 
 //return true if two tensors has same shape and elements
 //if equal_nan is true nans compared as equal
 template<typename...Us, typename...Vs>
-inline auto tensor_equal(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, bool equal_nan = false){
-    if (u.is_same(v)){
-        return true;
-    }else{
-        const bool equal_shapes = u.shape() == v.shape();
-        if (equal_nan){
-            return equal_shapes && std::equal(u.begin(), u.end(), v.begin(), gtensor::operations::math_isequal<std::true_type>{});
-        }else{
-            return equal_shapes && std::equal(u.begin(), u.end(), v.begin(), gtensor::operations::math_isequal<std::false_type>{});
-        }
-    }
+bool tensor_equal(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, bool equal_nan = false){
+    using config_type = typename basic_tensor<Us...>::config_type;
+    return gtensor::tensor_operators_selector_t<config_type>::tensor_equal(u,v,equal_nan);
 }
+
 template<typename...Us, typename...Vs>
-inline auto operator==(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v){
+bool operator==(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v){
     return tensor_equal(u,v);
 }
 
 //return true if two tensors have same shape and close elements within specified tolerance
 template<typename...Us, typename...Vs, typename Tol>
-inline auto tensor_close(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, Tol relative_tolerance, Tol absolute_tolerance, bool equal_nan = false){
-    if (u.is_same(v)){
-        return true;
-    }else{
-        const bool equal_shapes = u.shape() == v.shape();
-        if (equal_nan){
-            return equal_shapes && std::equal(u.begin(), u.end(), v.begin(), operations::math_isclose<Tol,std::true_type>{relative_tolerance,absolute_tolerance});
-        }else{
-            return equal_shapes && std::equal(u.begin(), u.end(), v.begin(), operations::math_isclose<Tol,std::false_type>{relative_tolerance,absolute_tolerance});
-        }
-    }
+bool tensor_close(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, Tol relative_tolerance, Tol absolute_tolerance, bool equal_nan = false){
+    using config_type = typename basic_tensor<Us...>::config_type;
+    return gtensor::tensor_operators_selector_t<config_type>::tensor_close(u,v,relative_tolerance,absolute_tolerance,equal_nan);
 }
 //return true if two tensors have same shape and close elements, use machine epsilon as tolerance
 template<typename...Us, typename...Vs>
-inline auto tensor_close(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, bool equal_nan = false){
-    using common_value_type = detail::tensor_common_value_type_t<basic_tensor<Us...>,basic_tensor<Vs...>>;
-    static constexpr common_value_type e = math::numeric_traits<common_value_type>::epsilon();
-    return tensor_close(u,v,e,e,equal_nan);
+bool tensor_close(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, bool equal_nan = false){
+    using config_type = typename basic_tensor<Us...>::config_type;
+    return gtensor::tensor_operators_selector_t<config_type>::tensor_close(u,v,equal_nan);
 }
 
 //return true if two tensors have close elements within specified tolerance
 //shapes may not be equal, but must broadcast
 template<typename...Us, typename...Vs, typename Tol>
-inline auto allclose(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, Tol relative_tolerance, Tol absolute_tolerance, bool equal_nan = false){
-    using shape_type = typename basic_tensor<Us...>::shape_type;
-    if (u.is_same(v)){
-        return true;
-    }else{
-        auto common_shape = detail::make_broadcast_shape<shape_type>(u.shape(),v.shape());
-        if (equal_nan){
-            return std::equal(u.begin(common_shape), u.end(common_shape), v.begin(common_shape), operations::math_isclose<Tol,std::true_type>{relative_tolerance,absolute_tolerance});
-        }else{
-            return std::equal(u.begin(common_shape), u.end(common_shape), v.begin(common_shape), operations::math_isclose<Tol,std::false_type>{relative_tolerance,absolute_tolerance});
-        }
-    }
+bool allclose(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, Tol relative_tolerance, Tol absolute_tolerance, bool equal_nan = false){
+    using config_type = typename basic_tensor<Us...>::config_type;
+    return gtensor::tensor_operators_selector_t<config_type>::allclose(u,v,relative_tolerance,absolute_tolerance,equal_nan);
 }
 //return true if two tensors have close elements, use machine epsilon as tolerance
 template<typename...Us, typename...Vs>
-inline auto allclose(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, bool equal_nan = false){
-    using common_value_type = detail::tensor_common_value_type_t<basic_tensor<Us...>,basic_tensor<Vs...>>;
-    static constexpr common_value_type e = math::numeric_traits<common_value_type>::epsilon();
-    return allclose(u,v,e,e,equal_nan);
+bool allclose(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, bool equal_nan = false){
+    using config_type = typename basic_tensor<Us...>::config_type;
+    return gtensor::tensor_operators_selector_t<config_type>::allclose(u,v,equal_nan);
 }
 
 //return tensor's string representation
 template<typename...Ts>
 auto str(const basic_tensor<Ts...>& t){
-    using value_type = typename basic_tensor<Ts...>::value_type;
-    std::stringstream ss{};
-    if constexpr (detail::is_printable_v<value_type>){
-        ss<<"{"<<detail::shape_to_str(t.shape())<<[&]{for(const auto& i:t){ss<<i<<" ";}; return "}";}();
-    }else{
-        ss<<"{"<<detail::shape_to_str(t.shape())<<"...}";
-    }
-    return ss.str();
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return gtensor::tensor_operators_selector_t<config_type>::str(t);
 }
 
 template<typename...Ts>
@@ -177,95 +294,148 @@ std::ostream& operator<<(std::ostream& os, const basic_tensor<Ts...>& t){
     return os<<str(t);
 }
 
+//elementwise tensor operators and related functions frontend
+
+#define GTENSOR_UNARY_TENSOR_OPERATOR(NAME,F)\
+template<typename...Ts>\
+auto NAME(const basic_tensor<Ts...>& t){\
+    using config_type = typename basic_tensor<Ts...>::config_type;\
+    return gtensor::tensor_operators_selector_t<config_type>::F(t);\
+}\
+template<typename...Ts>\
+auto NAME(basic_tensor<Ts...>&& t){\
+    using config_type = typename basic_tensor<Ts...>::config_type;\
+    return gtensor::tensor_operators_selector_t<config_type>::F(std::move(t));\
+}
+
+#define GTENSOR_BINARY_TENSOR_OPERATOR(NAME,F)\
+template<typename...Ts, typename Other>\
+auto NAME(const basic_tensor<Ts...>& t, Other&& other){\
+    using config_type = typename basic_tensor<Ts...>::config_type;\
+    return gtensor::tensor_operators_selector_t<config_type>::F(t, std::forward<Other>(other));\
+}\
+template<typename...Ts, typename Other>\
+auto NAME(basic_tensor<Ts...>&& t, Other&& other){\
+    using config_type = typename basic_tensor<Ts...>::config_type;\
+    return gtensor::tensor_operators_selector_t<config_type>::F(std::move(t), std::forward<Other>(other));\
+}\
+template<typename Other, typename...Ts, std::enable_if_t<detail::lhs_other_v<std::decay_t<Other>,typename basic_tensor<Ts...>::value_type>,int> =0>\
+auto NAME(Other&& other, const basic_tensor<Ts...>& t){\
+    using config_type = typename basic_tensor<Ts...>::config_type;\
+    return gtensor::tensor_operators_selector_t<config_type>::F(std::forward<Other>(other),t);\
+}\
+template<typename Other, typename...Ts, std::enable_if_t<detail::lhs_other_v<std::decay_t<Other>,typename basic_tensor<Ts...>::value_type>,int> =0>\
+auto NAME(Other&& other, basic_tensor<Ts...>&& t){\
+    using config_type = typename basic_tensor<Ts...>::config_type;\
+    return gtensor::tensor_operators_selector_t<config_type>::F(std::forward<Other>(other),std::move(t));\
+}
+
+#define GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(NAME,F)\
+template<typename...Ts, typename Rhs>\
+basic_tensor<Ts...>& NAME(basic_tensor<Ts...>& lhs, Rhs&& rhs){\
+    using config_type = typename basic_tensor<Ts...>::config_type;\
+    return gtensor::tensor_operators_selector_t<config_type>::F(lhs,std::forward<Rhs>(rhs));\
+}\
+template<typename...Ts, typename Rhs>\
+tensor<Ts...>& NAME(tensor<Ts...>& lhs, Rhs&& rhs){\
+    using config_type = typename tensor<Ts...>::config_type;\
+    return gtensor::tensor_operators_selector_t<config_type>::F(lhs,std::forward<Rhs>(rhs));\
+}
+
 //cast
 template<typename To, typename T>
 auto cast(T&& t){
-    ASSERT_TENSOR(std::remove_cv_t<std::remove_reference_t<T>>);
-    return n_operator(operations::cast<To>{}, std::forward<T>(t));
+    using T_ = std::remove_cv_t<std::remove_reference_t<T>>;
+    ASSERT_TENSOR(T_);
+    return gtensor::tensor_operators_selector_t<typename T_::config_type>::template cast<To>(std::forward<T>(t));
 }
 
-//like ternary operator
-GTENSOR_TENSOR_FUNCTION(where,operations::where);
+//elementwise ternary operator, arguments can be tensor or scalar, shapes must broadcast
+//t is condition, u,v are variants
+template<typename T, typename U, typename V>
+auto where(T&& t, U&& u, V&& v){
+    using T_ = std::remove_cv_t<std::remove_reference_t<T>>;
+    using U_ = std::remove_cv_t<std::remove_reference_t<U>>;
+    using V_ = std::remove_cv_t<std::remove_reference_t<V>>;
+    using config_type = typename detail::first_tensor_type_t<T_,U_,V_>::config_type;
+    return gtensor::tensor_operators_selector_t<config_type>::where(std::forward<T>(t),std::forward<U>(u),std::forward<V>(v));
+}
 
 //arithmetic
-GTENSOR_UNARY_TENSOR_OPERATOR(operator+,operations::unary_plus);
-GTENSOR_UNARY_TENSOR_OPERATOR(operator-,operations::unary_minus);
-GTENSOR_BINARY_TENSOR_OPERATOR(operator+,operations::add);
-GTENSOR_BINARY_TENSOR_OPERATOR(operator-,operations::sub);
-GTENSOR_BINARY_TENSOR_OPERATOR(operator*,operations::mul);
-GTENSOR_BINARY_TENSOR_OPERATOR(operator/,operations::div);
-GTENSOR_BINARY_TENSOR_OPERATOR(operator%,operations::mod);
+GTENSOR_UNARY_TENSOR_OPERATOR(operator+,unary_plus);
+GTENSOR_UNARY_TENSOR_OPERATOR(operator-,unary_minus);
+GTENSOR_BINARY_TENSOR_OPERATOR(operator+,add);
+GTENSOR_BINARY_TENSOR_OPERATOR(operator-,sub);
+GTENSOR_BINARY_TENSOR_OPERATOR(operator*,mul);
+GTENSOR_BINARY_TENSOR_OPERATOR(operator/,div);
+GTENSOR_BINARY_TENSOR_OPERATOR(operator%,mod);
 
 //bitwise
-GTENSOR_UNARY_TENSOR_OPERATOR(operator~,operations::bitwise_not);
-GTENSOR_BINARY_TENSOR_OPERATOR(operator&,operations::bitwise_and);
-GTENSOR_BINARY_TENSOR_OPERATOR(operator|,operations::bitwise_or);
-GTENSOR_BINARY_TENSOR_OPERATOR(operator^,operations::bitwise_xor);
-GTENSOR_BINARY_TENSOR_OPERATOR(operator<<,operations::bitwise_lshift);
-GTENSOR_BINARY_TENSOR_OPERATOR(operator>>,operations::bitwise_rshift);
+GTENSOR_UNARY_TENSOR_OPERATOR(operator~,bitwise_not);
+GTENSOR_BINARY_TENSOR_OPERATOR(operator&,bitwise_and);
+GTENSOR_BINARY_TENSOR_OPERATOR(operator|,bitwise_or);
+GTENSOR_BINARY_TENSOR_OPERATOR(operator^,bitwise_xor);
+GTENSOR_BINARY_TENSOR_OPERATOR(operator<<,bitwise_lshift);
+GTENSOR_BINARY_TENSOR_OPERATOR(operator>>,bitwise_rshift);
 
 //strict comparison
-GTENSOR_BINARY_TENSOR_OPERATOR(equal,operations::equal);
-GTENSOR_BINARY_TENSOR_OPERATOR(not_equal,operations::not_equal);
-GTENSOR_BINARY_TENSOR_OPERATOR(operator>,operations::greater);
-GTENSOR_BINARY_TENSOR_OPERATOR(operator>=,operations::greater_equal);
-GTENSOR_BINARY_TENSOR_OPERATOR(operator<,operations::less);
-GTENSOR_BINARY_TENSOR_OPERATOR(operator<=,operations::less_equal);
+GTENSOR_BINARY_TENSOR_OPERATOR(equal,equal);
+GTENSOR_BINARY_TENSOR_OPERATOR(not_equal,not_equal);
+GTENSOR_BINARY_TENSOR_OPERATOR(operator>,greater);
+GTENSOR_BINARY_TENSOR_OPERATOR(operator>=,greater_equal);
+GTENSOR_BINARY_TENSOR_OPERATOR(operator<,less);
+GTENSOR_BINARY_TENSOR_OPERATOR(operator<=,less_equal);
 
 //close comparison
 template<typename T, typename U, typename Tol, typename EqualNan = std::false_type>
 inline auto isclose(T&& t, U&& u, Tol relative_tolerance, Tol absolute_tolerance, EqualNan equal_nan = EqualNan{}){
     using T_ = std::remove_cv_t<std::remove_reference_t<T>>;
     using U_ = std::remove_cv_t<std::remove_reference_t<U>>;
-    static_assert(detail::has_tensor_arg_v<T_,U_>,"at least one arg must be tensor");
-    return n_operator(operations::math_isclose<Tol, EqualNan>{relative_tolerance, absolute_tolerance}, std::forward<T>(t), std::forward<U>(u));
+    using config_type = typename detail::first_tensor_type_t<T_,U_>::config_type;
+    return gtensor::tensor_operators_selector_t<config_type>::isclose(std::forward<T>(t),std::forward<U>(u),relative_tolerance,absolute_tolerance,equal_nan);
 }
 template<typename T, typename U, typename EqualNan = std::false_type>
 inline auto isclose(T&& t, U&& u, EqualNan equal_nan = EqualNan{}){
     using T_ = std::remove_cv_t<std::remove_reference_t<T>>;
     using U_ = std::remove_cv_t<std::remove_reference_t<U>>;
-    using common_value_type = detail::tensor_common_value_type_t<T_,U_>;
-    static constexpr common_value_type e = math::numeric_traits<common_value_type>::epsilon();
-    return isclose(std::forward<T>(t),std::forward<U>(u),e,e,equal_nan);
+    using config_type = typename detail::first_tensor_type_t<T_,U_>::config_type;
+    return gtensor::tensor_operators_selector_t<config_type>::isclose(std::forward<T>(t),std::forward<U>(u),equal_nan);
 }
 
 //logical
-GTENSOR_UNARY_TENSOR_OPERATOR(operator!,operations::logic_not);
-GTENSOR_BINARY_TENSOR_OPERATOR(operator&&,operations::logic_and);
-GTENSOR_BINARY_TENSOR_OPERATOR(operator||,operations::logic_or);
+GTENSOR_UNARY_TENSOR_OPERATOR(operator!,logic_not);
+GTENSOR_BINARY_TENSOR_OPERATOR(operator&&,logic_and);
+GTENSOR_BINARY_TENSOR_OPERATOR(operator||,logic_or);
 
-//assignment
+//elementwise assignment
 template<typename...Ts, typename Rhs>
 inline basic_tensor<Ts...>& assign(basic_tensor<Ts...>& lhs, Rhs&& rhs){
-    using RhsT = std::remove_cv_t<std::remove_reference_t<Rhs>>;
-    static_assert(detail::is_tensor_v<RhsT>||std::is_convertible_v<RhsT,typename basic_tensor<Ts...>::value_type>);
-    if (lhs.is_same(rhs)){
-        return lhs;
-    }
-    a_operator(operations::assign{},lhs,std::forward<Rhs>(rhs));
-    return lhs;
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return gtensor::tensor_operators_selector_t<config_type>::assign(lhs,std::forward<Rhs>(rhs));
 }
 template<typename...Ts, typename Rhs>
 inline tensor<Ts...>& assign(tensor<Ts...>& lhs, Rhs&& rhs){
-    assign(detail::as_basic_tensor(lhs),std::forward<Rhs>(rhs));
-    return lhs;
+    using config_type = typename tensor<Ts...>::config_type;
+    return gtensor::tensor_operators_selector_t<config_type>::assign(lhs,std::forward<Rhs>(rhs));
 }
-//compound assignment
-GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator+=, operations::assign_add);
-GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator-=, operations::assign_sub);
-GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator*=, operations::assign_mul);
-GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator/=, operations::assign_div);
-GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator%=, operations::assign_mod);
-GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator&=, operations::assign_bitwise_and);
-GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator|=, operations::assign_bitwise_or);
-GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator^=, operations::assign_bitwise_xor);
-GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator<<=, operations::assign_bitwise_lshift);
-GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator>>=, operations::assign_bitwise_rshift);
 
+//elementwise compound assignment
+GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator+=,assign_add);
+GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator-=,assign_sub);
+GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator*=,assign_mul);
+GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator/=,assign_div);
+GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator%=,assign_mod);
+GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator&=,assign_bitwise_and);
+GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator|=,assign_bitwise_or);
+GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator^=,assign_bitwise_xor);
+GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator<<=,assign_bitwise_lshift);
+GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR(operator>>=,assign_bitwise_rshift);
+
+#undef GTENSOR_TENSOR_OPERATOR_FUNCTION
+#undef GTENSOR_TENSOR_OPERATOR_COMPOUND_ASSIGNMENT_FUNCTION
 #undef GTENSOR_UNARY_TENSOR_OPERATOR
 #undef GTENSOR_BINARY_TENSOR_OPERATOR
 #undef GTENSOR_COMPOUND_ASSIGNMENT_TENSOR_OPERATOR
-#undef GTENSOR_TENSOR_FUNCTION
 
 }   //end of namespace gtensor
 #endif

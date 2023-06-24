@@ -10,6 +10,7 @@ class view_factory;
 template<typename F> class expression_template_operator;
 class reducer;
 class combiner;
+struct tensor_operators;
 
 
 //storage implementation factory selector
@@ -42,9 +43,9 @@ public:
 };
 template<typename...Ts> using view_factory_selector_t = typename view_factory_selector<Ts...>::type;
 
-//operator selector
+//generalized operator selector
 template<typename Config, typename...Ts>
-class operator_selector
+class generalized_operator_selector
 {
     using config_type = Config;
     template<typename...> struct selector_;
@@ -55,7 +56,22 @@ class operator_selector
 public:
     using type = typename selector_<typename config_type::engine, Ts...>::type;
 };
-template<typename...Ts> using operator_selector_t = typename operator_selector<Ts...>::type;
+template<typename...Ts> using generalized_operator_selector_t = typename generalized_operator_selector<Ts...>::type;
+
+//tensor operators selector
+template<typename Config, typename...Ts>
+class tensor_operators_selector
+{
+    using config_type = Config;
+    template<typename...> struct selector_;
+    template<typename Dummy> struct selector_<config::engine_expression_template,Dummy>
+    {
+        using type = tensor_operators;
+    };
+public:
+    using type = typename selector_<typename config_type::engine, void, Ts...>::type;
+};
+template<typename...Ts> using tensor_operators_selector_t = typename tensor_operators_selector<Ts...>::type;
 
 //reducer selector
 template<typename Config, typename...Ts>
