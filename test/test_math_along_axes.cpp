@@ -229,12 +229,16 @@ TEMPLATE_TEST_CASE("test_math_amin_nanmin","test_math",
     using value_type = TestType;
     using tensor_type = gtensor::tensor<value_type>;
     using gtensor::amin;
+    using gtensor::min;
     using gtensor::nanmin;
     using helpers_for_testing::apply_by_element;
 
     REQUIRE(std::is_same_v<typename decltype(amin(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>(),std::declval<value_type>()))::value_type, value_type>);
     REQUIRE(std::is_same_v<typename decltype(amin(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>()))::value_type, value_type>);
     REQUIRE(std::is_same_v<typename decltype(amin(std::declval<tensor_type>(),std::declval<std::vector<int>>(),std::declval<bool>()))::value_type, value_type>);
+    REQUIRE(std::is_same_v<typename decltype(min(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>(),std::declval<value_type>()))::value_type, value_type>);
+    REQUIRE(std::is_same_v<typename decltype(min(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>()))::value_type, value_type>);
+    REQUIRE(std::is_same_v<typename decltype(min(std::declval<tensor_type>(),std::declval<std::vector<int>>(),std::declval<bool>()))::value_type, value_type>);
     REQUIRE(std::is_same_v<typename decltype(nanmin(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>(),std::declval<value_type>()))::value_type, value_type>);
     REQUIRE(std::is_same_v<typename decltype(nanmin(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>()))::value_type, value_type>);
     REQUIRE(std::is_same_v<typename decltype(nanmin(std::declval<tensor_type>(),std::declval<std::vector<int>>(),std::declval<bool>()))::value_type, value_type>);
@@ -284,6 +288,19 @@ TEMPLATE_TEST_CASE("test_math_amin_nanmin","test_math",
             auto initial = std::get<3>(t);
             auto expected = std::get<4>(t);
             auto result = amin(ten,axes,keep_dims,initial);
+            REQUIRE(result == expected);
+        };
+        apply_by_element(test,test_data);
+    }
+    SECTION("test_min")
+    {
+        auto test = [](const auto& t){
+            auto ten = std::get<0>(t);
+            auto axes = std::get<1>(t);
+            auto keep_dims = std::get<2>(t);
+            auto initial = std::get<3>(t);
+            auto expected = std::get<4>(t);
+            auto result = min(ten,axes,keep_dims,initial);
             REQUIRE(result == expected);
         };
         apply_by_element(test,test_data);
@@ -414,12 +431,16 @@ TEMPLATE_TEST_CASE("test_math_amax_nanmax","test_math",
     using value_type = TestType;
     using tensor_type = gtensor::tensor<value_type>;
     using gtensor::amax;
+    using gtensor::max;
     using gtensor::nanmax;
     using helpers_for_testing::apply_by_element;
 
     REQUIRE(std::is_same_v<typename decltype(amax(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>(),std::declval<value_type>()))::value_type,value_type>);
     REQUIRE(std::is_same_v<typename decltype(amax(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>()))::value_type,value_type>);
     REQUIRE(std::is_same_v<typename decltype(amax(std::declval<tensor_type>(),std::declval<std::vector<int>>(),std::declval<bool>()))::value_type,value_type>);
+    REQUIRE(std::is_same_v<typename decltype(max(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>(),std::declval<value_type>()))::value_type,value_type>);
+    REQUIRE(std::is_same_v<typename decltype(max(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>()))::value_type,value_type>);
+    REQUIRE(std::is_same_v<typename decltype(max(std::declval<tensor_type>(),std::declval<std::vector<int>>(),std::declval<bool>()))::value_type,value_type>);
     REQUIRE(std::is_same_v<typename decltype(nanmax(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>(),std::declval<value_type>()))::value_type,value_type>);
     REQUIRE(std::is_same_v<typename decltype(nanmax(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>()))::value_type,value_type>);
     REQUIRE(std::is_same_v<typename decltype(nanmax(std::declval<tensor_type>(),std::declval<std::vector<int>>(),std::declval<bool>()))::value_type,value_type>);
@@ -469,6 +490,19 @@ TEMPLATE_TEST_CASE("test_math_amax_nanmax","test_math",
             auto initial = std::get<3>(t);
             auto expected = std::get<4>(t);
             auto result = amax(ten,axes,keep_dims,initial);
+            REQUIRE(result == expected);
+        };
+        apply_by_element(test,test_data);
+    }
+    SECTION("test_max")
+    {
+        auto test = [](const auto& t){
+            auto ten = std::get<0>(t);
+            auto axes = std::get<1>(t);
+            auto keep_dims = std::get<2>(t);
+            auto initial = std::get<3>(t);
+            auto expected = std::get<4>(t);
+            auto result = max(ten,axes,keep_dims,initial);
             REQUIRE(result == expected);
         };
         apply_by_element(test,test_data);

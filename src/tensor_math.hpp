@@ -367,10 +367,12 @@ GTENSOR_TENSOR_MATH_REDUCE_ROUTINE(any,any);
 //min element along given axes
 //axes may be scalar or container
 GTENSOR_TENSOR_MATH_REDUCE_INITIAL_ROUTINE(amin,amin);
+GTENSOR_TENSOR_MATH_REDUCE_INITIAL_ROUTINE(min,amin);
 
 // //max element along given axes
 // //axes may be scalar or container
 GTENSOR_TENSOR_MATH_REDUCE_INITIAL_ROUTINE(amax,amax);
+GTENSOR_TENSOR_MATH_REDUCE_INITIAL_ROUTINE(max,amax);
 
 //sum elements along given axes
 //axes may be scalar or container
