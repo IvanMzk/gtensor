@@ -10,14 +10,6 @@ namespace gtensor{
 
 namespace statistic_reduce_operations{
 
-//result floating point type for routines where floating point result is mandatory (mean,nanmean,var,nanvar,...)
-//T is value_type of source
-template<typename T> using result_floating_point_t = std::conditional_t<
-    gtensor::math::numeric_traits<T>::is_floating_point(),
-    T,
-    typename gtensor::math::numeric_traits<T>::floating_point_type
->;
-
 //peak-to-peak
 struct ptp
 {
@@ -56,7 +48,7 @@ struct mean
     template<typename It>
     auto operator()(It first, It last){
         using value_type = typename std::iterator_traits<It>::value_type;
-        using res_type = result_floating_point_t<value_type>;
+        using res_type = gtensor::math::make_floating_point_t<value_type>;
         if (first == last){
             return reduce_empty<res_type>();
         }
@@ -75,7 +67,7 @@ struct nanmean
     auto operator()(It first, It last){
         using value_type = typename std::iterator_traits<It>::value_type;
         using difference_type = typename std::iterator_traits<It>::difference_type;
-        using res_type = result_floating_point_t<value_type>;
+        using res_type = gtensor::math::make_floating_point_t<value_type>;
         if (first == last){
             return reduce_empty<res_type>();
         }
@@ -111,7 +103,7 @@ struct var
     template<typename It>
     auto operator()(It first, It last){
         using value_type = typename std::iterator_traits<It>::value_type;
-        using res_type = result_floating_point_t<value_type>;
+        using res_type = gtensor::math::make_floating_point_t<value_type>;
         if (first == last){
             return reduce_empty<res_type>();
         }
@@ -133,7 +125,7 @@ struct nanvar
     auto operator()(It first, It last){
         using value_type = typename std::iterator_traits<It>::value_type;
         using difference_type = typename std::iterator_traits<It>::difference_type;
-        using res_type = result_floating_point_t<value_type>;
+        using res_type = gtensor::math::make_floating_point_t<value_type>;
         if (first == last){
             return reduce_empty<res_type>();
         }
@@ -202,7 +194,7 @@ struct quantile_nanquantile
         using difference_type = typename std::iterator_traits<It>::difference_type;
         using container_type = typename Config::template container<value_type>;
         using container_difference_type = typename container_type::difference_type;
-        using res_type = result_floating_point_t<value_type>;
+        using res_type = gtensor::math::make_floating_point_t<value_type>;
         if (first == last){
             return reduce_empty<res_type>();
         }
@@ -310,7 +302,7 @@ void check_weights_sum(const T& sum){
 template<typename T>
 class average
 {
-    using res_type = result_floating_point_t<T>;
+    using res_type = gtensor::math::make_floating_point_t<T>;
     res_type weights_sum{0};
     res_type normalizer{1};
 public:
@@ -349,7 +341,7 @@ public:
 template<typename T>
 class moving_average
 {
-    using res_type = result_floating_point_t<T>;
+    using res_type = gtensor::math::make_floating_point_t<T>;
     res_type weights_sum{0};
     res_type normalizer{1};
 public:
@@ -528,7 +520,7 @@ auto average(const basic_tensor<Ts...>& t, const Container& weights, bool keep_d
 template<typename...Ts, typename DimT, typename Container, typename IdxT, std::enable_if_t<detail::is_container_v<Container>,int> =0>
 auto moving_average(const basic_tensor<Ts...>& t, const DimT& axis, const Container& weights, const IdxT& step = 1){
     using value_type = typename basic_tensor<Ts...>::value_type;
-    using res_type = statistic_reduce_operations::result_floating_point_t<value_type>;
+    using res_type = gtensor::math::make_floating_point_t<value_type>;
     const IdxT window_size = weights.size();
     return slide<res_type>(t,axis,statistic_reduce_operations::moving_average<value_type>{},window_size,step,weights,step);
 }
@@ -539,7 +531,7 @@ auto moving_average(const basic_tensor<Ts...>& t, const DimT& axis, const Contai
 template<typename...Ts, typename DimT, typename IdxT>
 auto moving_mean(const basic_tensor<Ts...>& t, const DimT& axis, const IdxT& window_size, const IdxT& step = 1){
     using value_type = typename basic_tensor<Ts...>::value_type;
-    using res_type = statistic_reduce_operations::result_floating_point_t<value_type>;
+    using res_type = gtensor::math::make_floating_point_t<value_type>;
     return slide<res_type>(t,axis,statistic_reduce_operations::moving_mean{},window_size,step,window_size,step);
 }
 
