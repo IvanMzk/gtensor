@@ -11,6 +11,7 @@ template<typename F> class expression_template_operator;
 class reducer;
 class combiner;
 struct tensor_operators;
+struct tensor_math;
 
 
 //storage implementation factory selector
@@ -72,6 +73,21 @@ public:
     using type = typename selector_<typename config_type::engine, void, Ts...>::type;
 };
 template<typename...Ts> using tensor_operators_selector_t = typename tensor_operators_selector<Ts...>::type;
+
+//tensor math selector
+template<typename Config, typename...Ts>
+class tensor_math_selector
+{
+    using config_type = Config;
+    template<typename...> struct selector_;
+    template<typename Dummy> struct selector_<config::engine_expression_template,Dummy>
+    {
+        using type = tensor_math;
+    };
+public:
+    using type = typename selector_<typename config_type::engine, void, Ts...>::type;
+};
+template<typename...Ts> using tensor_math_selector_t = typename tensor_math_selector<Ts...>::type;
 
 //reducer selector
 template<typename Config, typename...Ts>

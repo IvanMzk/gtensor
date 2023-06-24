@@ -240,7 +240,7 @@ struct tensor_operators
 };  //end of tensor_operators
 
 //tensor operators and related functions frontend
-//frontend use compile-time dispatch to select implementation, see module_selector.hpp
+//frontend uses compile-time dispatch to select implementation, see module_selector.hpp
 
 //return true if two tensors has same shape and elements
 //if equal_nan is true nans compared as equal
