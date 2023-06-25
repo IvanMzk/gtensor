@@ -9,6 +9,16 @@
 
 namespace gtensor{
 
+namespace detail{
+
+template<typename P, typename T, typename U=void> constexpr bool is_pair_of_type_v = false;
+template<typename P, typename T> constexpr bool is_pair_of_type_v<P,T,std::void_t<decltype(std::declval<P>().first),decltype(std::declval<P>().second)>> =
+    std::is_convertible_v<decltype(std::declval<P>().first),T> && std::is_convertible_v<decltype(std::declval<P>().second),T>;
+
+}
+
+enum class histogram_algorithm : std::size_t {automatic,fd,scott,rice,sturges,sqrt};
+
 //tensor statistic functions implementation
 
 #define GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(NAME,F)\
@@ -113,6 +123,156 @@ struct statistic
         using value_type = typename basic_tensor<Ts...>::value_type;
         using res_type = gtensor::math::make_floating_point_t<value_type>;
         return slide<res_type>(t,axis,statistic_reduce_operations::moving_mean{},window_size,step,window_size,step);
+    }
+
+    //histogram
+    //Bins can be integral type or container or histogram_algorithm enum
+    //Range is pair like type
+    template<typename...Ts, typename Bins, typename Range>
+    static auto histogram(const basic_tensor<Ts...>& t, const Bins& bins, const Range& range, bool density = false){
+        using config_type = typename basic_tensor<Ts...>::config_type;
+        using value_type = typename basic_tensor<Ts...>::value_type;
+        using index_type = typename basic_tensor<Ts...>::index_type;
+        using order = typename basic_tensor<Ts...>::order;
+        using container_type = typename config_type::template container<value_type>;
+        using container_difference_type = typename container_type::difference_type;
+
+        //check_range(range);   //is range no_value or pair and first<=second
+        //check_bins(bins);     //is bins integral or container or enum
+
+        auto a = t.template traverse_order_adapter<order>();
+        if constexpr (detail::is_container_of_type_v<Bins, value_type>){    //not uniform bin width, need copy and sort data
+            container_type elements_{};
+            if constexpr (detail::is_static_castable_v<index_type,container_difference_type>){
+                const auto n = static_cast<container_difference_type>(t.size());
+                elements_.reserve(n);
+            }
+            if constexpr (std::is_same_v<Range,detail::no_value>){
+                std::copy(a.begin(),a.end(),std::back_inserter(elements_));
+            }else{
+                const auto rmin = static_cast<value_type>(range.first);
+                const auto rmax = static_cast<value_type>(range.second);
+                auto is_in_range = [rmin,rmax](const auto& e){return e>=rmin && e<=rmax;};
+                std::copy_if(a.begin(),a.end(),std::back_inserter(elements_),is_in_range);
+            }
+            return make_non_uniform_histogram(elements_.begin(),elements_.end(),bins,density);
+        }else{  //uniform, bin is integral or enum
+            if constexpr (std::is_same_v<Range,detail::no_value>){  //range is t.min(), t.max(),
+                if (t.empty()){
+                    const auto min = value_type{0};
+                    const auto max = value_type{1};
+                    return make_uniform_histogram<config_type>(a.begin(), a.end(), bins, min, max, min, max, density);
+                }
+                const auto min_max = statistic_reduce_operations::min_max{}(a.begin(),a.end());
+                const auto min = min_max.first;
+                const auto max = min_max.second;
+                return make_uniform_histogram<config_type>(a.begin(), a.end(), bins, min, max, min, max, density);
+            }else{
+                const auto rmin = static_cast<value_type>(range.first);
+                const auto rmax = static_cast<value_type>(range.second);
+                if (t.empty()){
+                    const auto min = value_type{0};
+                    const auto max = value_type{1};
+                    return make_uniform_histogram<config_type>(a.begin(), a.end(), bins, min, max, rmin, rmax, density);
+                }
+                container_type elements_{};
+                if constexpr (detail::is_static_castable_v<index_type,container_difference_type>){
+                    const auto n = static_cast<container_difference_type>(t.size());
+                    elements_.reserve(n);
+                }
+                auto it = a.begin();
+                auto min = *it;
+                auto max = min;
+                for (auto last=a.end(); it!=last; ++it){
+                    const auto& e = *it;
+                    if (e>=rmin && e<=rmax){
+                        elements_.push_back(e);
+                        if (e<min){
+                            min=e;
+                        }else if (e>max){
+                            max=e;
+                        }
+                    }
+                }
+                return make_uniform_histogram<config_type>(elements_.begin(), elements_.end(), bins, min, max, rmin, rmax, density);
+            }
+        }
+
+    }
+
+    template<typename...Ts, typename Bins>
+    static auto histogram(const basic_tensor<Ts...>& t, const Bins& bins, bool density = false){
+        return histogram(t,bins,detail::no_value{},density);
+    }
+private:
+
+    //first,last - elements range that are within histogram range argument, all elements range if histogram range argument is no_value
+    template<typename Config, typename It, typename Bins, typename T>
+    static auto make_uniform_histogram(It first, It last, const Bins& bins, const T& min, const T& max, const T& rmin, const T& rmax, bool density){
+        using index_type = typename Config::index_type;
+        using order = typename Config::order;
+        using value_type = typename std::iterator_traits<It>::value_type;
+        using integral_type = gtensor::math::make_integral_t<value_type>;
+        using fp_type = gtensor::math::make_floating_point_t<value_type>;
+        using res_value_type = fp_type;
+        using res_type = tensor<res_value_type,order,Config>;
+
+        const auto bins_ = make_bins(first,last,bins,min,max,rmin,rmax);
+        const auto bin_width = bins_.first;
+        const auto bins_number = static_cast<index_type>(static_cast<integral_type>(bins_.second));
+
+        std::cout<<std::endl<<bins_number;
+        std::cout<<std::endl<<bin_width;
+
+        res_type res({bins_number},fp_type{0});
+        auto a = res.template traverse_order_adapter<order>();
+        auto res_indexer = a.create_indexer();
+        for (;first!=last; ++first){
+            auto i = static_cast<index_type>(static_cast<integral_type>((*first - rmin)/bin_width));
+            if (i == bins_number){  //add elements that equal to range upper boundary to last bin (last bin includes upper boundary)
+                --i;
+            }
+            res_indexer[i]+=res_value_type{1};
+        }
+
+        return res;
+    }
+
+    template<typename It, typename Bins, typename T>
+    static auto make_bins(It first, It last, const Bins& bins, const T& min, const T& max, const T& rmin, const T& rmax){
+        using value_type = typename std::iterator_traits<It>::value_type;
+        using fp_type = gtensor::math::make_floating_point_t<value_type>;
+
+        if constexpr (std::is_same_v<Bins,histogram_algorithm>){
+            if (first == last){ //cant use bin width estimators
+                const auto nh = static_cast<fp_type>(1);
+                const auto h = (rmax-rmin)/nh;
+                return std::make_pair(h,nh);
+            }
+            const auto h = make_bin_width(first,last,bins,min,max);
+            const auto nh = gtensor::math::ceil((rmax-rmin)/h);
+            return std::make_pair(h,nh);
+        }else{
+            const auto nh = static_cast<fp_type>(bins);
+            const auto h = (rmax-rmin)/nh;
+            return std::make_pair(h,nh);
+        }
+    }
+
+    template<typename It, typename T>
+    static auto make_bin_width(It first, It last, histogram_algorithm bins, const T& min, const T& max){
+        const auto n = last - first;
+        switch (bins){
+            case histogram_algorithm::automatic:
+            case histogram_algorithm::fd:
+            case histogram_algorithm::scott:
+            case histogram_algorithm::rice:
+                return (max-min)/gtensor::math::cbrt(n)*2;
+            case histogram_algorithm::sqrt:
+                return (max-min)/gtensor::math::sqrt(n);
+            case histogram_algorithm::sturges:
+                return (max-min)/(gtensor::math::log2(n)+1);
+        };
     }
 
 };  //end of struct statistic
@@ -249,6 +409,14 @@ auto moving_mean(const basic_tensor<Ts...>& t, const DimT& axis, const IdxT& win
     return statistic_selector_t<config_type>::moving_mean(t,axis,window_size,step);
 }
 
+//histogram
+//Bins can be integral type or container or histogram_algorithm enum
+//Range is pair like type
+template<typename...Ts, typename Bins, typename Range>
+auto histogram(const basic_tensor<Ts...>& t, const Bins& bins, const Range& range, bool density){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return statistic_selector_t<config_type>::histogram(t,bins,range,density);
+}
 
 #undef GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION
 #undef GTENSOR_TENSOR_STATISTIC_REDUCE_ROUTINE

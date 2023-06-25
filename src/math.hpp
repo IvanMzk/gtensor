@@ -64,6 +64,12 @@ template<typename T> using make_floating_point_t = std::conditional_t<
     T,
     typename gtensor::math::numeric_traits<T>::floating_point_type
 >;
+//integral type corresponding to T
+template<typename T> using make_integral_t = std::conditional_t<
+    gtensor::math::numeric_traits<T>::is_integral(),
+    T,
+    typename gtensor::math::numeric_traits<T>::integral_type
+>;
 
 template<typename T> auto floor(T t);
 //basic

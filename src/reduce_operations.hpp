@@ -350,7 +350,7 @@ struct gradient
 namespace statistic_reduce_operations{
 
 //peak-to-peak
-struct ptp
+struct min_max
 {
     template<typename It>
     auto operator()(It first, It last){
@@ -363,12 +363,21 @@ struct ptp
             const auto& e = *first;
             if(e<min){
                 min = e;
+                continue;
             }
             if(e>max){
                 max = e;
             }
         }
-        return max-min;
+        return std::make_pair(min,max);
+    }
+};
+struct ptp
+{
+    template<typename It>
+    auto operator()(It first, It last){
+        auto mm = min_max{}(first,last);
+        return mm.second - mm.first;
     }
 };
 
