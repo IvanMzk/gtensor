@@ -226,13 +226,14 @@ private:
         using res_value_type = fp_type;
         using res_type = tensor<res_value_type,order,Config>;
 
+        const auto n = static_cast<fp_type>(static_cast<integral_type>(last - first));
         const auto bins_ = make_bins<Config>(first,last,bins,min,max,rmin,rmax);
         const auto bin_width = bins_.first;
         const auto bins_number = static_cast<index_type>(static_cast<integral_type>(bins_.second));
 
-        std::cout<<std::endl<<"rmin,rmax "<<rmin<<" "<<rmax;
-        std::cout<<std::endl<<"bins_number "<<bins_number;
-        std::cout<<std::endl<<"bin_width "<<bin_width;
+        // std::cout<<std::endl<<"rmin,rmax "<<rmin<<" "<<rmax;
+        // std::cout<<std::endl<<"bins_number "<<bins_number;
+        // std::cout<<std::endl<<"bin_width "<<bin_width;
 
         res_type res_bins({bins_number},fp_type{0});
         auto a = res_bins.template traverse_order_adapter<order>();
@@ -243,6 +244,12 @@ private:
                 --i;
             }
             res_bins_indexer[i]+=res_value_type{1};
+        }
+        if (density){
+            const auto normalizer = 1/(n*bin_width);
+            std::for_each(a.begin(),a.end(),[normalizer](auto& e){
+                e*=normalizer;
+            });
         }
         res_type res_intervals({bins_number+index_type{1}},fp_type{rmin});
         auto res_intervals_a = res_intervals.template traverse_order_adapter<order>();
@@ -284,6 +291,7 @@ private:
         using value_type = typename std::iterator_traits<It>::value_type;
         using integral_type = gtensor::math::make_integral_t<value_type>;
         using fp_type = gtensor::math::make_floating_point_t<value_type>;
+
         const auto n = static_cast<fp_type>(static_cast<integral_type>(last - first));
         auto make_sturges = [n,min,max]{return (max-min)/(gtensor::math::log2(n)+1);};
         auto make_fd = [n,first,last]{

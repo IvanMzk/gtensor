@@ -1196,12 +1196,18 @@ TEMPLATE_TEST_CASE("test_statistic_histogram","test_statistic",
         std::make_tuple(tensor_type{3,1,4,2,6,5,6,1,0,-1,3,7,1},2,no_value{},false,result_tensor_type{6,7},result_tensor_type{-1,3,7}),
         std::make_tuple(tensor_type{3,1,4,2,6,5,6,1,0,-1,3,7,1},5,no_value{},false,result_tensor_type{2,4,2,2,3},result_tensor_type{-1.0,0.6,2.2,3.8,5.4,7.0}),
         std::make_tuple(tensor_type{3,1,4,2,6,5,6,1,0,-1,3,7,1},7,no_value{},false,result_tensor_type{2,3,1,2,1,1,3},result_tensor_type{-1.0,0.143,1.286,2.429,3.571,4.714,5.857,7.0}),
-        // //bins integral, range
+        //bins integral, range
         std::make_tuple(tensor_type{3,1,4,2,6,5,6,1,0,-1,3,7,1},5,std::make_pair(2,6),false,result_tensor_type{1,2,1,1,2},result_tensor_type{2.0,2.8,3.6,4.4,5.2,6.0}),
         std::make_tuple(tensor_type{3,1,4,2,6,5,6,1,0,-1,3,7,1},7,std::make_pair(2,6),false,result_tensor_type{1,2,0,1,0,1,2},result_tensor_type{2.0,2.571,3.142,3.714,4.285,4.857,5.428,6.0}),
         std::make_tuple(tensor_type{3,1,4,2,6,5,6,1,0,-1,3,7,1},7,std::make_pair(-4,6),false,result_tensor_type{0,0,2,3,3,1,3},result_tensor_type{-4.0,-2.571,-1.142,0.285,1.714,3.142,4.571,6.0}),
         std::make_tuple(tensor_type{3,1,4,2,6,5,6,1,0,-1,3,7,1},7,std::make_pair(3,11),false,result_tensor_type{3,1,2,1,0,0,0},result_tensor_type{3.0,4.142,5.285,6.428,7.571,8.714,9.857,11.0}),
         std::make_tuple(tensor_type{3,1,4,2,6,5,6,1,0,-1,3,7,1},7,std::make_pair(-5.3,13.3),false,result_tensor_type{0,2,4,4,3,0,0},result_tensor_type{-5.3,-2.643,0.014,2.671,5.329,7.986,10.643,13.3}),
+        //density
+        std::make_tuple(tensor_type{3,1,4,2,6,5,6,1,0,-1,3,7,1},1,no_value{},true,result_tensor_type{0.125},result_tensor_type{-1,7}),
+        std::make_tuple(tensor_type{3,1,4,2,6,5,6,1,0,-1,3,7,1},2,no_value{},true,result_tensor_type{0.115,0.135},result_tensor_type{-1,3,7}),
+        std::make_tuple(tensor_type{3,1,4,2,6,5,6,1,0,-1,3,7,1},5,no_value{},true,result_tensor_type{0.096,0.192,0.096,0.096,0.144},result_tensor_type{-1.0,0.6,2.2,3.8,5.4,7.0}),
+        std::make_tuple(tensor_type{3,1,4,2,6,5,6,1,0,-1,3,7,1},7,no_value{},true,result_tensor_type{0.135,0.202,0.067,0.135,0.067,0.067,0.202},result_tensor_type{-1.0,0.143,1.286,2.429,3.571,4.714,5.857,7.0}),
+        std::make_tuple(tensor_type{3,1,4,2,6,5,6,1,0,-1,3,7,1},7,std::make_pair(2,6),true,result_tensor_type{0.25,0.5,0.0,0.25,0.0,0.25,0.5},result_tensor_type{2.0,2.571,3.142,3.714,4.285,4.857,5.428,6.0}),
         // //corner cases
         // //empty source
         std::make_tuple(tensor_type{},1,no_value{},false,result_tensor_type{0},result_tensor_type{0.0,1.0}),
@@ -1234,7 +1240,7 @@ TEMPLATE_TEST_CASE("test_statistic_histogram","test_statistic",
         auto expected_intervals = std::get<5>(t);
 
         auto result = histogram(ten,bins,range,density);
-        REQUIRE(result.first == expected_bins);
+        REQUIRE(tensor_close(result.first,expected_bins,1E-2,1E-2));
         REQUIRE(tensor_close(result.second,expected_intervals,1E-2,1E-2));
     };
     apply_by_element(test,test_data);
@@ -1269,6 +1275,11 @@ TEST_CASE("test_statistic_histogram_algorithm","test_statistic")
         std::make_tuple(gauss_100,10,std::make_pair(-1,1),false,result_tensor_type{7,5,4,9,9,9,6,6,9,7},result_tensor_type{-1.0,-0.8,-0.6,-0.4,-0.2,0.0,0.2,0.4,0.6,0.8,1.0}),
         std::make_tuple(uniform_100,10,no_value{},false,result_tensor_type{15,9,7,14,6,10,8,8,9,14},result_tensor_type{0.014,0.112,0.21,0.308,0.406,0.503,0.601,0.699,0.797,0.895,0.993}),
         std::make_tuple(uniform_100,10,std::make_pair(0.15,0.85),false,result_tensor_type{6,6,7,8,5,8,4,6,5,7},result_tensor_type{0.15,0.22,0.29,0.36,0.43,0.5,0.57,0.64,0.71,0.78,0.85}),
+        //integral,density
+        std::make_tuple(gauss_100,10,no_value{},true,result_tensor_type{0.02,0.059,0.059,0.138,0.336,0.414,0.336,0.355,0.158,0.099},result_tensor_type{-2.907,-2.4,-1.894,-1.387,-0.88,-0.373,0.133,0.64,1.147,1.653,2.16}),
+        std::make_tuple(gauss_100,10,std::make_pair(-1,1),true,result_tensor_type{0.493,0.352,0.282,0.634,0.634,0.634,0.423,0.423,0.634,0.493},result_tensor_type{-1.0,-0.8,-0.6,-0.4,-0.2,0.0,0.2,0.4,0.6,0.8,1.0}),
+        std::make_tuple(uniform_100,10,no_value{},true,result_tensor_type{1.532,0.919,0.715,1.43,0.613,1.021,0.817,0.817,0.919,1.43},result_tensor_type{0.014,0.112,0.21,0.308,0.406,0.503,0.601,0.699,0.797,0.895,0.993}),
+        std::make_tuple(uniform_100,10,std::make_pair(0.15,0.85),true,result_tensor_type{1.382,1.382,1.613,1.843,1.152,1.843,0.922,1.382,1.152,1.613},result_tensor_type{0.15,0.22,0.29,0.36,0.43,0.5,0.57,0.64,0.71,0.78,0.85}),
         //automatic
         std::make_tuple(gauss_100,histogram_algorithm::automatic,no_value{},false,result_tensor_type{1,3,3,7,17,21,17,18,8,5},result_tensor_type{-2.907,-2.4,-1.894,-1.387,-0.88,-0.373,0.133,0.64,1.147,1.653,2.16}),
         std::make_tuple(uniform_100,histogram_algorithm::automatic,no_value{},false,result_tensor_type{18,11,11,11,11,8,13,17},result_tensor_type{0.014,0.136,0.259,0.381,0.503,0.626,0.748,0.871,0.993}),
@@ -1298,7 +1309,7 @@ TEST_CASE("test_statistic_histogram_algorithm","test_statistic")
         auto expected_intervals = std::get<5>(t);
 
         auto result = histogram(ten,bins,range,density);
-        REQUIRE(result.first == expected_bins);
+        REQUIRE(tensor_close(result.first,expected_bins,1E-2,1E-2));
         REQUIRE(tensor_close(result.second,expected_intervals,1E-2,1E-2));
     };
     apply_by_element(test,test_data);
