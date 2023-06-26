@@ -71,6 +71,13 @@ template<typename T> using make_integral_t = std::conditional_t<
     typename gtensor::math::numeric_traits<T>::integral_type
 >;
 
+template<typename T>
+struct numeric_constants
+{
+    static constexpr T pi(){return T{3.141592653589793238463};}
+    static constexpr T e(){return T{2.71828182845904523536};}
+};
+
 template<typename T> auto floor(T t);
 //basic
 template<typename T> auto abs(T t){return std::abs(t);}
