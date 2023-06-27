@@ -1175,7 +1175,7 @@
 // }
 
 //histogram
-TEMPLATE_TEST_CASE("test_statistic_histogram","test_statistic",
+TEMPLATE_TEST_CASE("test_statistic_uniform_bins_histogram","test_statistic",
     double,
     int
 )
@@ -1259,6 +1259,68 @@ TEMPLATE_TEST_CASE("test_statistic_histogram","test_statistic",
     apply_by_element(test,test_data);
 }
 
+TEMPLATE_TEST_CASE("test_statistic_not_uniform_bins_histogram","test_statistic",
+    double,
+    int
+)
+{
+    using value_type = TestType;
+    using tensor_type = gtensor::tensor<value_type>;
+    using fp_type = gtensor::math::make_floating_point_t<value_type>;
+    using weights_tensor_type = gtensor::tensor<fp_type>;
+    using result_tensor_type = gtensor::tensor<fp_type>;
+    using gtensor::detail::no_value;
+    using gtensor::tensor_close;
+    using gtensor::histogram;
+    using helpers_for_testing::apply_by_element;
+
+    //0tensor,1bins,2range,3density,4weights,5expected_bins,6expected_intervals
+    auto test_data = std::make_tuple(
+        //bins container, no weights
+        std::make_tuple(tensor_type{3,1,4,2,6,5,6,1,0,-1,3,7,1},tensor_type{0,5},no_value{},false,no_value{},result_tensor_type{9},result_tensor_type{0,5}),
+        std::make_tuple(tensor_type{3,1,4,2,6,5,6,1,0,-1,3,7,1},tensor_type{0,1,3},no_value{},false,no_value{},result_tensor_type{1,6},result_tensor_type{0,1,3}),
+        std::make_tuple(tensor_type{3,1,4,2,6,5,6,1,0,-1,3,7,1},tensor_type{0,2,4,7},no_value{},false,no_value{},result_tensor_type{4,3,5},result_tensor_type{0,2,4,7}),
+        std::make_tuple(tensor_type{3,1,4,2,6,5,6,1,0,-1,3,7,1},tensor_type{-2,1,2,3,6,8},no_value{},false,no_value{},result_tensor_type{2,3,1,4,3},result_tensor_type{-2,1,2,3,6,8}),
+        std::make_tuple(tensor_type{3,1,4,2,6,5,6,1,0,-1,3,7,1},tensor_type{-2,1,1,3,6,8},no_value{},false,no_value{},result_tensor_type{2,0,4,4,3},result_tensor_type{-2,1,1,3,6,8}),
+        std::make_tuple(tensor_type{3,1,4,2,6,5,6,1,0,-1,3,7,1},tensor_type{3,4,6,15},no_value{},false,no_value{},result_tensor_type{2,2,3},result_tensor_type{3,4,6,15}),
+        //bins container, density
+        std::make_tuple(tensor_type{3,1,4,2,6,5,6,1,0,-1,3,7,1},tensor_type{0,5},no_value{},true,no_value{},result_tensor_type{0.2},result_tensor_type{0,5}),
+        std::make_tuple(tensor_type{3,1,4,2,6,5,6,1,0,-1,3,7,1},tensor_type{0,1,3},no_value{},true,no_value{},result_tensor_type{0.143,0.429},result_tensor_type{0,1,3}),
+        std::make_tuple(tensor_type{3,1,4,2,6,5,6,1,0,-1,3,7,1},tensor_type{0,2,4,6,8},no_value{},true,no_value{},result_tensor_type{0.167,0.125,0.083,0.125},result_tensor_type{0,2,4,6,8}),
+        std::make_tuple(tensor_type{3,1,4,2,6,5,6,1,0,-1,3,7,1},tensor_type{0,2,4,7},no_value{},true,no_value{},result_tensor_type{0.167,0.125,0.139},result_tensor_type{0,2,4,7}),
+        std::make_tuple(tensor_type{3,1,4,2,6,5,6,1,0,-1,3,7,1},tensor_type{-2,1,2,3,6,8},no_value{},true,no_value{},result_tensor_type{0.051,0.231,0.077,0.103,0.115},result_tensor_type{-2,1,2,3,6,8}),
+        std::make_tuple(tensor_type{3,1,4,2,6,5,6,1,0,-1,3,7,1},tensor_type{3,4,6,15},no_value{},true,no_value{},result_tensor_type{0.286,0.143,0.048},result_tensor_type{3,4,6,15}),
+        //bins container, weights
+        std::make_tuple(tensor_type{3,1,4,2,6,5,6,1,0,-1,3,7,1},tensor_type{0,5},no_value{},false,weights_tensor_type{0.5,0.7,1.0,1.0,1.0,1.3,1.5,1.3,1.0,1.0,1.0,0.7,0.5},result_tensor_type{8.3},result_tensor_type{0,5}),
+        std::make_tuple(tensor_type{3,1,4,2,6,5,6,1,0,-1,3,7,1},tensor_type{0,2,4,7},no_value{},false,weights_tensor_type{0.5,0.7,1.0,1.0,1.0,1.3,1.5,1.3,1.0,1.0,1.0,0.7,0.5},result_tensor_type{3.5,2.5,5.5},result_tensor_type{0,2,4,7}),
+        std::make_tuple(tensor_type{3,1,4,2,6,5,6,1,0,-1,3,7,1},tensor_type{-2,1,2,3,6,8},no_value{},false,weights_tensor_type{0.5,0.7,1.0,1.0,1.0,1.3,1.5,1.3,1.0,1.0,1.0,0.7,0.5},result_tensor_type{2.0,2.5,1.0,3.8,3.2},result_tensor_type{-2,1,2,3,6,8}),
+        std::make_tuple(tensor_type{3,1,4,2,6,5,6,1,0,-1,3,7,1},tensor_type{-2,1,1,3,6,8},no_value{},false,weights_tensor_type{0.5,0.7,1.0,1.0,1.0,1.3,1.5,1.3,1.0,1.0,1.0,0.7,0.5},result_tensor_type{2.0,0.0,3.5,3.8,3.2},result_tensor_type{-2,1,1,3,6,8}),
+        std::make_tuple(tensor_type{3,1,4,2,6,5,6,1,0,-1,3,7,1},tensor_type{3,4,6,15},no_value{},false,weights_tensor_type{0.5,0.7,1.0,1.0,1.0,1.3,1.5,1.3,1.0,1.0,1.0,0.7,0.5},result_tensor_type{1.5,2.3,3.2},result_tensor_type{3,4,6,15}),
+        //corner cases
+        //too few edges
+        std::make_tuple(tensor_type{3,1,4,2,6,5,6,1,0,-1,3,7,1},tensor_type{3},no_value{},false,no_value{},result_tensor_type{},result_tensor_type{3}),
+        std::make_tuple(tensor_type{3,1,4,2,6,5,6,1,0,-1,3,7,1},tensor_type{},no_value{},false,no_value{},result_tensor_type{},result_tensor_type{}),
+        //equal edges
+        std::make_tuple(tensor_type{3,1,4,2,6,5,6,1,0,-1,3,7,1},tensor_type{3,3},no_value{},false,no_value{},result_tensor_type{2},result_tensor_type{3,3}),
+        std::make_tuple(tensor_type{3,1,4,2,6,5,6,1,0,-1,3,7,1},tensor_type{3,3,3,3},no_value{},false,no_value{},result_tensor_type{0,0,2},result_tensor_type{3,3,3,3})
+    );
+
+    auto test = [](const auto& t){
+        auto ten = std::get<0>(t);
+        auto bins = std::get<1>(t);
+        auto range = std::get<2>(t);
+        auto density = std::get<3>(t);
+        auto weights = std::get<4>(t);
+        auto expected_bins = std::get<5>(t);
+        auto expected_intervals = std::get<6>(t);
+
+        auto result = histogram(ten,bins,range,density,weights);
+        REQUIRE(tensor_close(result.first,expected_bins,1E-2,1E-2));
+        REQUIRE(tensor_close(result.second,expected_intervals,1E-2,1E-2));
+    };
+    apply_by_element(test,test_data);
+}
+
 TEST_CASE("test_statistic_histogram_algorithm","test_statistic")
 {
     using value_type = double;
@@ -1296,6 +1358,11 @@ TEST_CASE("test_statistic_histogram_algorithm","test_statistic")
         //integral,weights
         std::make_tuple(gauss_100,10,no_value{},false,uniform_100,result_tensor_type{0.321,1.145,0.44,3.65,8.805,10.85,9.347,8.619,3.684,2.728},result_tensor_type{-2.907,-2.4,-1.894,-1.387,-0.88,-0.373,0.133,0.64,1.147,1.653,2.16}),
         std::make_tuple(gauss_100,10,std::make_pair(-1,1),false,uniform_100,result_tensor_type{4.556,2.664,1.218,3.835,5.252,5.378,2.129,3.907,4.94,3.87},result_tensor_type{-1.0,-0.8,-0.6,-0.4,-0.2,0.0,0.2,0.4,0.6,0.8,1.0}),
+        //edges
+        std::make_tuple(uniform_100,tensor_type{0.1,0.22,0.37,0.4,0.5,0.77,0.9},no_value{},false,no_value{},result_tensor_type{12.0,13.0,7.0,6.0,22.0,13.0},result_tensor_type{0.1,0.22,0.37,0.4,0.5,0.77,0.9}),
+        std::make_tuple(uniform_100,tensor_type{0.1,0.22,0.37,0.4,0.5,0.77,0.9},std::make_pair(0.15,0.85),false,no_value{},result_tensor_type{12.0,13.0,7.0,6.0,22.0,13.0},result_tensor_type{0.1,0.22,0.37,0.4,0.5,0.77,0.9}),
+        //edges, density
+        std::make_tuple(uniform_100,tensor_type{0.1,0.22,0.37,0.4,0.5,0.77,0.9},no_value{},true,no_value{},result_tensor_type{1.37,1.187,3.196,0.822,1.116,1.37},result_tensor_type{0.1,0.22,0.37,0.4,0.5,0.77,0.9}),
         //automatic
         std::make_tuple(gauss_100,histogram_algorithm::automatic,no_value{},false,no_value{},result_tensor_type{1,3,3,7,17,21,17,18,8,5},result_tensor_type{-2.907,-2.4,-1.894,-1.387,-0.88,-0.373,0.133,0.64,1.147,1.653,2.16}),
         std::make_tuple(uniform_100,histogram_algorithm::automatic,no_value{},false,no_value{},result_tensor_type{18,11,11,11,11,8,13,17},result_tensor_type{0.014,0.136,0.259,0.381,0.503,0.626,0.748,0.871,0.993}),

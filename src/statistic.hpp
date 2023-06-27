@@ -11,9 +11,20 @@ namespace gtensor{
 
 namespace detail{
 
+template<typename P, typename U=void> constexpr bool is_pair_v = false;
+template<typename P> constexpr bool is_pair_v<P,std::void_t<decltype(std::declval<P>().first),decltype(std::declval<P>().second)>> = true;
+
 template<typename P, typename T, typename U=void> constexpr bool is_pair_of_type_v = false;
-template<typename P, typename T> constexpr bool is_pair_of_type_v<P,T,std::void_t<decltype(std::declval<P>().first),decltype(std::declval<P>().second)>> =
+template<typename P, typename T> constexpr bool is_pair_of_type_v<P,T,std::void_t<std::enable_if_t<is_pair_v<P>>>> =
     std::is_convertible_v<decltype(std::declval<P>().first),T> && std::is_convertible_v<decltype(std::declval<P>().second),T>;
+
+template<typename P>
+struct pair_first_type{
+    template<typename Dummy, typename> struct selector_{using type = decltype(std::declval<P>().first);};
+    template<typename Dummy> struct selector_<Dummy,std::false_type>{using type = P;};
+    using type = selector_<void,std::bool_constant<is_pair_v<P>>>;
+};
+template<typename T> using pair_first_t = typename pair_first_type<T>::type;
 
 }
 
@@ -126,7 +137,7 @@ struct statistic
     }
 
     //histogram
-    //Bins can be integral type or container or histogram_algorithm enum
+    //Bins can be integral type or histogram_algorithm enum or container with at least bidirectional iterator
     //Range is pair like type
     //weights is tensor of same shape as t
     template<typename...Ts, typename Bins, typename Range, typename Weights>
@@ -136,8 +147,11 @@ struct statistic
         using fp_type = gtensor::math::make_floating_point_t<value_type>;
         using index_type = typename basic_tensor<Ts...>::index_type;
         using order = typename basic_tensor<Ts...>::order;
+        using res_value_type = fp_type;
+        using res_config_type = config::extend_config_t<config_type,res_value_type>;
+        using res_type = tensor<res_value_type,order,res_config_type>;
         using container_type = typename config_type::template container<fp_type>;
-        using container_difference_type = typename container_type::difference_type;
+        using container_pair_type = typename config_type::template container<std::pair<fp_type,fp_type>>;
         static constexpr bool has_weights = detail::is_tensor_of_type_v<Weights,fp_type>;
         static_assert(has_weights || std::is_same_v<Weights,detail::no_value>,"invalid weights argument");
 
@@ -164,27 +178,39 @@ struct statistic
         //check_bins(bins);     //is bins integral or container or enum
 
         auto a = t.template traverse_order_adapter<order>();
-        if constexpr (detail::is_container_of_type_v<Bins, value_type>){    //not uniform bin width, need copy and sort data
-            container_type elements_{};
-            if constexpr (detail::is_static_castable_v<index_type,container_difference_type>){
-                const auto n = static_cast<container_difference_type>(t.size());
-                elements_.reserve(n);
+        if constexpr (detail::is_container_of_type_v<Bins, value_type>){    //not uniform bin width, need copy and sort data, range doesnt matter
+            const auto edges_number = static_cast<index_type>(bins.size());
+            auto edges_first = bins.begin();
+            auto edges_last = bins.end();
+            if (edges_number < 2){  //too few edges
+                return std::make_pair(res_type{},res_type({edges_number},edges_first,edges_last));
             }
-            if constexpr (std::is_same_v<Range,detail::no_value>){
-                std::copy(a.begin(),a.end(),std::back_inserter(elements_));
-            }else{
-                const auto rmin = static_cast<value_type>(range.first);
-                const auto rmax = static_cast<value_type>(range.second);
-                auto is_in_range = [rmin,rmax](const auto& e){return e>=rmin && e<=rmax;};
-                std::copy_if(a.begin(),a.end(),std::back_inserter(elements_),is_in_range);
+            const auto& rmin = static_cast<const fp_type&>(*edges_first);
+            const auto& rmax = static_cast<const fp_type&>(*--edges_last);
+            auto is_in_range = [rmin,rmax](const auto& e){return e>=rmin && e<=rmax;};
+            if constexpr (has_weights){
+                container_pair_type elements_weights{};
+                detail::reserve(elements_weights,t.size());
+                auto weights_it = weights_begin();
+                for (auto it=a.begin(),last=a.end(); it!=last; ++it,++weights_it){
+                    const auto& e = static_cast<const fp_type&>(*it);
+                    if (is_in_range(e)){
+                        elements_weights.emplace_back(e,static_cast<const fp_type&>(*weights_it));
+                    }
+                }
+                return make_non_uniform_histogram<res_type>(elements_weights.begin(),elements_weights.end(),bins,density);
+            }else{  //no weights
+                container_type elements{};
+                detail::reserve(elements,t.size());
+                std::copy_if(a.begin(),a.end(),std::back_inserter(elements),is_in_range);
+                return make_non_uniform_histogram<res_type>(elements.begin(),elements.end(),bins,density);
             }
-            return make_non_uniform_histogram(elements_.begin(),elements_.end(),bins,density);
         }else{  //uniform, bins is integral or enum
             fp_type min{0};
             fp_type max{1};
             if constexpr (std::is_same_v<Range,detail::no_value>){  //range is t.min(), t.max(),
                 if (t.empty()){
-                    return make_uniform_histogram<config_type>(a.begin(), a.end(), weights_begin(), weights_end(), bins, min, max, min, max, density);
+                    return make_uniform_histogram<res_type>(a.begin(), a.end(), weights_begin(), weights_end(), bins, min, max, min, max, density);
                 }
                 const auto min_max = statistic_reduce_operations::min_max{}(a.begin(),a.end());
                 min = static_cast<fp_type>(min_max.first);
@@ -195,7 +221,7 @@ struct statistic
                     rmin-=0.5;
                     rmax+=0.5;
                 }
-                return make_uniform_histogram<config_type>(a.begin(), a.end(), weights_begin(), weights_end(), bins, min, max, rmin, rmax, density);
+                return make_uniform_histogram<res_type>(a.begin(), a.end(), weights_begin(), weights_end(), bins, min, max, rmin, rmax, density);
             }else{
                 auto rmin = static_cast<fp_type>(range.first);
                 auto rmax = static_cast<fp_type>(range.second);
@@ -204,25 +230,22 @@ struct statistic
                     rmax+=0.5;
                 }
                 if (t.empty()){
-                    return make_uniform_histogram<config_type>(a.begin(), a.end(), weights_begin(), weights_end(), bins, min, max, rmin, rmax, density);
+                    return make_uniform_histogram<res_type>(a.begin(), a.end(), weights_begin(), weights_end(), bins, min, max, rmin, rmax, density);
                 }
                 if constexpr (has_weights){
                     container_type elements_{};
                     container_type weights_{};
-                    if constexpr (detail::is_static_castable_v<index_type,container_difference_type>){
-                        const auto n = static_cast<container_difference_type>(t.size());
-                        elements_.reserve(n);
-                        weights_.reserve(n);
-                    }
+                    detail::reserve(elements_,t.size());
+                    detail::reserve(weights_,t.size());
                     auto it = a.begin();
-                    auto weights_it = weights.template traverse_order_adapter<order>().begin();
+                    auto weights_it = weights_begin();
                     min = *it;
                     max = min;
                     for (auto last=a.end(); it!=last; ++it,++weights_it){
                         const auto& e = static_cast<const fp_type&>(*it);
                         if (e>=rmin && e<=rmax){
                             elements_.push_back(e);
-                            weights_.push_back(*weights_it);
+                            weights_.push_back(static_cast<const fp_type&>(*weights_it));
                             if (e<min){
                                 min=e;
                             }else if (e>max){
@@ -230,13 +253,10 @@ struct statistic
                             }
                         }
                     }
-                    return make_uniform_histogram<config_type>(elements_.begin(), elements_.end(), weights_.begin(), weights_.end(), bins, min, max, rmin, rmax, density);
+                    return make_uniform_histogram<res_type>(elements_.begin(), elements_.end(), weights_.begin(), weights_.end(), bins, min, max, rmin, rmax, density);
                 }else{  //no weights
                     container_type elements_{};
-                    if constexpr (detail::is_static_castable_v<index_type,container_difference_type>){
-                        const auto n = static_cast<container_difference_type>(t.size());
-                        elements_.reserve(n);
-                    }
+                    detail::reserve(elements_,t.size());
                     auto it = a.begin();
                     min = *it;
                     max = min;
@@ -251,7 +271,7 @@ struct statistic
                             }
                         }
                     }
-                    return make_uniform_histogram<config_type>(elements_.begin(), elements_.end(), weights_begin(), weights_end(), bins, min, max, rmin, rmax, density);
+                    return make_uniform_histogram<res_type>(elements_.begin(), elements_.end(), weights_begin(), weights_end(), bins, min, max, rmin, rmax, density);
                 }
             }
         }
@@ -264,28 +284,110 @@ struct statistic
     }
 private:
 
+    //first,last - range of elements or element,weight pairs within specified edges
+    //edges is container of bins edges, must have at least two edges
+    template<typename ResultT, typename It, typename Container>
+    static auto make_non_uniform_histogram(It first, It last, const Container& edges, bool density){
+        using res_type = ResultT;
+        using order = typename res_type::order;
+        using index_type = typename res_type::index_type;
+        using res_value_type = typename res_type::value_type;
+        using integral_type = gtensor::math::make_integral_t<res_value_type>;
+        using it_value_type = typename std::iterator_traits<It>::value_type;
+        static constexpr bool has_weights = detail::is_pair_v<it_value_type>;
+
+        const auto n = static_cast<res_value_type>(static_cast<integral_type>(last - first));
+        std::sort(
+            first,
+            last,
+            [](const auto& l, const auto& r){
+                if constexpr (has_weights){
+                    return l.first < r.first;
+                }else{
+                    return l < r;
+                }
+            }
+        );
+        const auto edges_number = static_cast<index_type>(edges.size());
+        res_type res_bins({edges_number-1},res_value_type{0});
+        auto a = res_bins.template traverse_order_adapter<order>();
+
+        auto res_bins_it = a.begin();
+        auto edges_it=edges.begin();
+        auto edges_last=edges.end();
+        auto edge_min = static_cast<res_value_type>(*edges_it);
+        for (++edges_it,--edges_last; edges_it!=edges_last; ++edges_it,++res_bins_it){
+            auto edge_max = static_cast<res_value_type>(*edges_it);
+            for (;first!=last; ++first){
+                if constexpr (has_weights){
+                    const auto& e = (*first).first;
+                    if (e>=edge_min && e<edge_max){
+                        *res_bins_it+=(*first).second;
+                    }else{
+                        break;
+                    }
+                }else{
+                    const auto& e = *first;
+                    if (e>=edge_min && e<edge_max){
+                        *res_bins_it+=res_value_type{1};
+                    }else{
+                        break;
+                    }
+                }
+            }
+            edge_min = edge_max;
+        }
+        //last bin, include upper edge
+        const auto edge_max = static_cast<res_value_type>(*edges_it);
+        for (;first!=last; ++first){
+            if constexpr (has_weights){
+                const auto& e = (*first).first;
+                if (e>=edge_min && e<=edge_max){
+                    *res_bins_it+=(*first).second;
+                }else{
+                    break;
+                }
+            }else{
+                const auto& e = *first;
+                if (e>=edge_min && e<=edge_max){
+                    *res_bins_it+=res_value_type{1};
+                }else{
+                    break;
+                }
+            }
+        }
+        if (density){
+            auto edges_it=edges.begin();
+            auto edge_min = static_cast<res_value_type>(*edges_it);
+            ++edges_it;
+            for (auto it=a.begin(),last=a.end(); it!=last; ++it,++edges_it){
+                auto edge_max = static_cast<res_value_type>(*edges_it);
+                *it/=n*(edge_max-edge_min);
+                edge_min = edge_max;
+            }
+        }
+        return std::make_pair(res_bins,res_type({edges_number},edges.begin(),edges.end()));
+    }
+
     //first,last - elements range that are within histogram range argument, all elements range if histogram range argument is no_value
-    template<typename Config, typename It, typename WeightsIt, typename Bins, typename T>
+    template<typename ResultT, typename It, typename WeightsIt, typename Bins, typename T>
     static auto make_uniform_histogram(It first, It last, WeightsIt wfirst, WeightsIt wlast, const Bins& bins, const T& min, const T& max, const T& rmin, const T& rmax, bool density){
-        using index_type = typename Config::index_type;
-        using order = typename Config::order;
-        using value_type = typename std::iterator_traits<It>::value_type;
-        using integral_type = gtensor::math::make_integral_t<value_type>;
-        using fp_type = gtensor::math::make_floating_point_t<value_type>;
-        using res_value_type = fp_type;
-        using res_type = tensor<res_value_type,order,Config>;
+
+        using res_type = ResultT;
+        using order = typename res_type::order;
+        using config_type = typename res_type::config_type;
+        using index_type = typename res_type::index_type;
+        using res_value_type = typename res_type::value_type;
+        using integral_type = gtensor::math::make_integral_t<res_value_type>;
+
         static constexpr bool has_weights = !std::is_same_v<WeightsIt,detail::no_value>;
 
-        const auto n = static_cast<fp_type>(static_cast<integral_type>(last - first));
-        const auto bins_ = make_bins<Config>(first,last,bins,min,max,rmin,rmax);
+        const auto n = static_cast<res_value_type>(static_cast<integral_type>(last - first));
+        const auto bins_ = make_bins<config_type>(first,last,bins,min,max,rmin,rmax);
         const auto bin_width = bins_.first;
         const auto bins_number = static_cast<index_type>(static_cast<integral_type>(bins_.second));
 
-        // std::cout<<std::endl<<"rmin,rmax "<<rmin<<" "<<rmax;
-        // std::cout<<std::endl<<"bins_number "<<bins_number;
-        // std::cout<<std::endl<<"bin_width "<<bin_width;
-
-        res_type res_bins({bins_number},fp_type{0});
+        res_type res_bins({bins_number},res_value_type{0});
         auto a = res_bins.template traverse_order_adapter<order>();
         auto res_bins_indexer = a.create_indexer();
         if constexpr (has_weights){
@@ -308,12 +410,10 @@ private:
         //normalize res_bins if density is true
         if (density){
             const auto normalizer = 1/(n*bin_width);
-            std::for_each(a.begin(),a.end(),[normalizer](auto& e){
-                e*=normalizer;
-            });
+            std::for_each(a.begin(),a.end(),[normalizer](auto& e){e*=normalizer;});
         }
         //make intervals
-        res_type res_intervals({bins_number+index_type{1}},fp_type{rmin});
+        res_type res_intervals({bins_number+index_type{1}},res_value_type{rmin});
         auto res_intervals_a = res_intervals.template traverse_order_adapter<order>();
         auto res_intervals_it = res_intervals_a.begin();
         auto res_intervals_last = res_intervals_a.end();

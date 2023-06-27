@@ -160,6 +160,18 @@ inline It next(It it, typename std::iterator_traits<It>::difference_type n = 1)
     return it;
 }
 
+//reserve space in arbitrary container, if possible
+template<typename Container, typename T>
+bool reserve(Container& container, const T& n){
+    using Container_ = std::remove_cv_t<Container>;
+    using difference_type = typename Container_::difference_type;
+    if constexpr (is_static_castable_v<T,difference_type>){
+        container.reserve(static_cast<const difference_type&>(n));
+        return true;
+    }
+    return false;
+}
+
 //returns dimension for given shape argument
 //guarantes result is signed (assuming shape container difference_type is signed, as it must be)
 template<typename ShT>
