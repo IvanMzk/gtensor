@@ -33,7 +33,7 @@ template<typename F, typename T, typename=void> constexpr bool has_initial_v = f
 template<typename F, typename T> constexpr bool has_initial_v<F,T,std::void_t<decltype(F::template value<T>)>> = true;
 
 template<typename Functor, typename It, typename Initial>
-auto reduce_empty(const It&, const Initial& initial){
+typename std::iterator_traits<It>::value_type reduce_empty(const It&, const Initial& initial){
     using value_type = typename std::iterator_traits<It>::value_type;
     if constexpr (is_initial_v<Initial,value_type>){
         return static_cast<value_type>(initial);
@@ -41,7 +41,6 @@ auto reduce_empty(const It&, const Initial& initial){
         return Functor::template value<value_type>;
     }else{  //no initial, throw
         throw reduce_exception("cant reduce zero size dimension without initial value");
-        return value_type{};    //need same return type
     }
 }
 
