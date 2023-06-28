@@ -288,7 +288,7 @@ struct statistic
     }
 
     template<typename...Ts, typename Bins>
-    static auto histogram(const basic_tensor<Ts...>& t, const Bins& bins, bool density = false){
+    static auto histogram(const basic_tensor<Ts...>& t, const Bins& bins = 10, bool density = false){
         return histogram(t,bins,detail::no_value{},density,detail::no_value{});
     }
 private:
@@ -678,6 +678,11 @@ template<typename...Ts, typename Bins, typename Range, typename Weights>
 auto histogram(const basic_tensor<Ts...>& t, const Bins& bins, const Range& range, bool density, const Weights& weights){
     using config_type = typename basic_tensor<Ts...>::config_type;
     return statistic_selector_t<config_type>::histogram(t,bins,range,density,weights);
+}
+template<typename...Ts, typename Bins>
+auto histogram(const basic_tensor<Ts...>& t, const Bins& bins=10, bool density=false){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return statistic_selector_t<config_type>::histogram(t,bins,detail::no_value{},density,detail::no_value{});
 }
 
 #undef GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION

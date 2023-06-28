@@ -1321,6 +1321,43 @@ TEMPLATE_TEST_CASE("test_statistic_not_uniform_bins_histogram","test_statistic",
     apply_by_element(test,test_data);
 }
 
+TEMPLATE_TEST_CASE("test_statistic_histogram_bins_density_parameters_overload","test_statistic",
+    double,
+    int
+)
+{
+    using value_type = TestType;
+    using tensor_type = gtensor::tensor<value_type>;
+    using fp_type = gtensor::math::make_floating_point_t<value_type>;
+    using result_tensor_type = gtensor::tensor<fp_type>;
+    using gtensor::detail::no_value;
+    using gtensor::tensor_close;
+    using gtensor::histogram;
+    using helpers_for_testing::apply_by_element;
+
+    //0tensor,1bins,2density,3expected_bins,4expected_intervals
+    auto test_data = std::make_tuple(
+        std::make_tuple(tensor_type{3,1,4,2,6,5,6,1,0,-1,3,7,1},5,false,result_tensor_type{2,4,2,2,3},result_tensor_type{-1.0,0.6,2.2,3.8,5.4,7.0}),
+        std::make_tuple(tensor_type{3,1,4,2,6,5,6,1,0,-1,3,7,1},7,true,result_tensor_type{0.135,0.202,0.067,0.135,0.067,0.067,0.202},result_tensor_type{-1.0,0.143,1.286,2.429,3.571,4.714,5.857,7.0}),
+        std::make_tuple(tensor_type{3,1,4,2,6,5,6,1,0,-1,3,7,1},tensor_type{0,2,4,7},false,result_tensor_type{4,3,5},result_tensor_type{0,2,4,7}),
+        std::make_tuple(tensor_type{3,1,4,2,6,5,6,1,0,-1,3,7,1},tensor_type{-2,1,2,3,6,8},true,result_tensor_type{0.051,0.231,0.077,0.103,0.115},result_tensor_type{-2,1,2,3,6,8})
+
+    );
+
+    auto test = [](const auto& t){
+        auto ten = std::get<0>(t);
+        auto bins = std::get<1>(t);
+        auto density = std::get<2>(t);
+        auto expected_bins = std::get<3>(t);
+        auto expected_intervals = std::get<4>(t);
+
+        auto result = histogram(ten,bins,density);
+        REQUIRE(tensor_close(result.first,expected_bins,1E-2,1E-2));
+        REQUIRE(tensor_close(result.second,expected_intervals,1E-2,1E-2));
+    };
+    apply_by_element(test,test_data);
+}
+
 TEMPLATE_TEST_CASE("test_statistic_histogram_exception","test_statistic",
     double,
     int
