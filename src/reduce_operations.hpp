@@ -553,7 +553,7 @@ struct quantile_nanquantile
         if constexpr (gtensor::math::numeric_traits<value_type>::has_nan()){
             try{
                 std::copy_if(first,last,std::back_inserter(elements_),Predicate{});
-            }catch(reduce_exception){
+            }catch(const reduce_exception&){
                 return gtensor::math::numeric_traits<res_type>::nan();
             }
         }else{
