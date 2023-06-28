@@ -126,18 +126,20 @@ struct statistic
     //weights is container, moving window size is weights size, weights must not sum to zero
     //result axis size will be (n - window_size)/step + 1, where n is source axis size
     template<typename...Ts, typename DimT, typename Container, typename IdxT>
-    static auto moving_average(const basic_tensor<Ts...>& t, const DimT& axis, const Container& weights, const IdxT& step = 1){
+    static auto moving_average(const basic_tensor<Ts...>& t, const DimT& axis, const Container& weights, const IdxT& step){
+        using index_type = typename basic_tensor<Ts...>::index_type;
         using value_type = typename basic_tensor<Ts...>::value_type;
         using res_type = gtensor::math::make_floating_point_t<value_type>;
-        const IdxT window_size = weights.size();
-        return slide<res_type>(t,axis,statistic_reduce_operations::moving_average<value_type>{},window_size,step,weights,step);
+        const auto window_size = static_cast<index_type>(weights.size());
+        const auto window_step = static_cast<index_type>(step);
+        return slide<res_type>(t,axis,statistic_reduce_operations::moving_average<value_type>{},window_size,window_step,weights,window_step);
     }
 
     //moving mean along given axis, axis is scalar
     //window_size must be greater zero and less_equal than axis size
     //result axis size will be (n - window_size)/step + 1, where n is source axis size
     template<typename...Ts, typename DimT, typename IdxT>
-    static auto moving_mean(const basic_tensor<Ts...>& t, const DimT& axis, const IdxT& window_size, const IdxT& step = 1){
+    static auto moving_mean(const basic_tensor<Ts...>& t, const DimT& axis, const IdxT& window_size, const IdxT& step){
         using value_type = typename basic_tensor<Ts...>::value_type;
         using res_type = gtensor::math::make_floating_point_t<value_type>;
         return slide<res_type>(t,axis,statistic_reduce_operations::moving_mean{},window_size,step,window_size,step);
@@ -295,6 +297,10 @@ private:
 
     template<typename... Ts, typename Bins, typename Range, typename Weights>
     static void check_histogram_arguments(const basic_tensor<Ts...>& t, const Bins& bins, const Range& range, const Weights& weights){
+        (void)t;
+        (void)bins;
+        (void)range;
+        (void)weights;
         if constexpr (math::numeric_traits<Bins>::is_integral()){
             if (bins <= 0){
                 throw statistic_exception("bins must be positive when an integral");
@@ -358,48 +364,49 @@ private:
         const auto edges_number = static_cast<index_type>(edges.size());
         res_type res_bins({edges_number-1},res_value_type{0});
         auto a = res_bins.template traverse_order_adapter<order>();
-
-        auto res_bins_it = a.begin();
-        auto edges_it=edges.begin();
-        auto edges_last=edges.end();
-        auto edge_min = static_cast<res_value_type>(*edges_it);
-        for (++edges_it,--edges_last; edges_it!=edges_last; ++edges_it,++res_bins_it){
-            auto edge_max = static_cast<res_value_type>(*edges_it);
+        {
+            auto res_bins_it = a.begin();
+            auto edges_it=edges.begin();
+            auto edges_last=edges.end();
+            auto edge_min = static_cast<res_value_type>(*edges_it);
+            for (++edges_it,--edges_last; edges_it!=edges_last; ++edges_it,++res_bins_it){
+                auto edge_max = static_cast<res_value_type>(*edges_it);
+                for (;first!=last; ++first){
+                    if constexpr (has_weights){
+                        const auto& e = (*first).first;
+                        if (e>=edge_min && e<edge_max){
+                            *res_bins_it+=(*first).second;
+                        }else{
+                            break;
+                        }
+                    }else{
+                        const auto& e = *first;
+                        if (e>=edge_min && e<edge_max){
+                            *res_bins_it+=res_value_type{1};
+                        }else{
+                            break;
+                        }
+                    }
+                }
+                edge_min = edge_max;
+            }
+            //last bin, include upper edge
+            const auto edge_max = static_cast<res_value_type>(*edges_it);
             for (;first!=last; ++first){
                 if constexpr (has_weights){
                     const auto& e = (*first).first;
-                    if (e>=edge_min && e<edge_max){
+                    if (e>=edge_min && e<=edge_max){
                         *res_bins_it+=(*first).second;
                     }else{
                         break;
                     }
                 }else{
                     const auto& e = *first;
-                    if (e>=edge_min && e<edge_max){
+                    if (e>=edge_min && e<=edge_max){
                         *res_bins_it+=res_value_type{1};
                     }else{
                         break;
                     }
-                }
-            }
-            edge_min = edge_max;
-        }
-        //last bin, include upper edge
-        const auto edge_max = static_cast<res_value_type>(*edges_it);
-        for (;first!=last; ++first){
-            if constexpr (has_weights){
-                const auto& e = (*first).first;
-                if (e>=edge_min && e<=edge_max){
-                    *res_bins_it+=(*first).second;
-                }else{
-                    break;
-                }
-            }else{
-                const auto& e = *first;
-                if (e>=edge_min && e<=edge_max){
-                    *res_bins_it+=res_value_type{1};
-                }else{
-                    break;
                 }
             }
         }
@@ -407,9 +414,9 @@ private:
             auto edges_it=edges.begin();
             auto edge_min = static_cast<res_value_type>(*edges_it);
             ++edges_it;
-            for (auto it=a.begin(),last=a.end(); it!=last; ++it,++edges_it){
+            for (auto res_bins_it=a.begin(),res_bins_last=a.end(); res_bins_it!=res_bins_last; ++res_bins_it,++edges_it){
                 auto edge_max = static_cast<res_value_type>(*edges_it);
-                *it/=n*(edge_max-edge_min);
+                *res_bins_it/=n*(edge_max-edge_min);
                 edge_min = edge_max;
             }
         }
@@ -418,7 +425,7 @@ private:
 
     //first,last - elements range that are within histogram range argument, all elements range if histogram range argument is no_value
     template<typename ResultT, typename It, typename WeightsIt, typename Bins, typename T>
-    static auto make_uniform_histogram(It first, It last, WeightsIt wfirst, WeightsIt wlast, const Bins& bins, const T& min, const T& max, const T& rmin, const T& rmax, bool density){
+    static auto make_uniform_histogram(It first, It last, WeightsIt wfirst, WeightsIt, const Bins& bins, const T& min, const T& max, const T& rmin, const T& rmax, bool density){
 
         using res_type = ResultT;
         using order = typename res_type::order;
@@ -534,6 +541,8 @@ private:
                 return (max-min)/gtensor::math::sqrt(n);
             case histogram_algorithm::sturges:
                 return make_sturges();
+            default:
+                throw statistic_exception("invalid histogram_algorithm argument");
         };
     }
 
@@ -657,7 +666,7 @@ auto average(const basic_tensor<Ts...>& t, const Container& weights, bool keep_d
 //weights is container, moving window size is weights size, weights must not sum to zero
 //result axis size will be (n - window_size)/step + 1, where n is source axis size
 template<typename...Ts, typename DimT, typename Container, typename IdxT>
-auto moving_average(const basic_tensor<Ts...>& t, const DimT& axis, const Container& weights, const IdxT& step = 1){
+auto moving_average(const basic_tensor<Ts...>& t, const DimT& axis, const Container& weights, const IdxT& step){
     using config_type = typename basic_tensor<Ts...>::config_type;
     return statistic_selector_t<config_type>::moving_average(t,axis,weights,step);
 }
@@ -666,14 +675,18 @@ auto moving_average(const basic_tensor<Ts...>& t, const DimT& axis, const Contai
 //window_size must be greater zero and less_equal than axis size
 //result axis size will be (n - window_size)/step + 1, where n is source axis size
 template<typename...Ts, typename DimT, typename IdxT>
-auto moving_mean(const basic_tensor<Ts...>& t, const DimT& axis, const IdxT& window_size, const IdxT& step = 1){
+auto moving_mean(const basic_tensor<Ts...>& t, const DimT& axis, const IdxT& window_size, const IdxT& step){
     using config_type = typename basic_tensor<Ts...>::config_type;
     return statistic_selector_t<config_type>::moving_mean(t,axis,window_size,step);
 }
 
 //histogram
-//Bins can be integral type or container or histogram_algorithm enum
-//Range is pair like type
+//Bins can be integral type or histogram_algorithm enum or container with at least bidirectional iterator
+//when bins is of integral type it means equal width bins number, bins must be > 0
+//when bins is of histogram_algorithm type equal width bins number is calculated according to algorithm
+//when bins is container its elements mean bins edges and must increase monotonically
+//Range is pair like type, means numeric range [first,second], first must be less or equal than second
+//weights is tensor of same shape as t
 template<typename...Ts, typename Bins, typename Range, typename Weights>
 auto histogram(const basic_tensor<Ts...>& t, const Bins& bins, const Range& range, bool density, const Weights& weights){
     using config_type = typename basic_tensor<Ts...>::config_type;

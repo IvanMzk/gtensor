@@ -386,7 +386,6 @@ TEMPLATE_TEST_CASE("test_statistic_std_nanstd_normal_values","test_statistic",
 {
     using value_type = TestType;
     using tensor_type = gtensor::tensor<value_type>;
-    using gtensor::std;
     using gtensor::nanstd;
     using gtensor::tensor_close;
     using helpers_for_testing::apply_by_element;
@@ -394,8 +393,8 @@ TEMPLATE_TEST_CASE("test_statistic_std_nanstd_normal_values","test_statistic",
     using result_value_type = typename gtensor::math::numeric_traits<value_type>::floating_point_type;
     static constexpr result_value_type nan = gtensor::math::numeric_traits<result_value_type>::nan();
     using result_tensor_type = gtensor::tensor<result_value_type>;
-    REQUIRE(std::is_same_v<typename decltype(std(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>()))::value_type,result_value_type>);
-    REQUIRE(std::is_same_v<typename decltype(std(std::declval<tensor_type>(),std::declval<std::vector<int>>(),std::declval<bool>()))::value_type,result_value_type>);
+    REQUIRE(std::is_same_v<typename decltype(gtensor::std(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>()))::value_type,result_value_type>);
+    REQUIRE(std::is_same_v<typename decltype(gtensor::std(std::declval<tensor_type>(),std::declval<std::vector<int>>(),std::declval<bool>()))::value_type,result_value_type>);
     REQUIRE(std::is_same_v<typename decltype(nanstd(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>()))::value_type,result_value_type>);
     REQUIRE(std::is_same_v<typename decltype(nanstd(std::declval<tensor_type>(),std::declval<std::vector<int>>(),std::declval<bool>()))::value_type,result_value_type>);
 
@@ -439,7 +438,7 @@ TEMPLATE_TEST_CASE("test_statistic_std_nanstd_normal_values","test_statistic",
             auto axes = std::get<1>(t);
             auto keep_dims = std::get<2>(t);
             auto expected = std::get<3>(t);
-            auto result = std(ten,axes,keep_dims);
+            auto result = gtensor::std(ten,axes,keep_dims);
             REQUIRE(tensor_close(result,expected,1E-2,1E-2,true));
         };
         apply_by_element(test,test_data);
