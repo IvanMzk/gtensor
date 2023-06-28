@@ -342,7 +342,7 @@ TEST_CASE("test_tensor_math_floating_point_manipulation_functions_semantic","[te
     }
     SECTION("test_ldexp")
     {
-        auto result = gtensor::ldexp(tensor_type{-1.0,0.0,1.0,2.0}, tensor_type{-1.0,0.0,1.0,2.0});
+        auto result = gtensor::ldexp(tensor_type{-1.0,0.0,1.0,2.0}, tensor<int>{-1.0,0.0,1.0,2.0});
         auto expected = tensor_type{-0.5,0.0,2.0,8.0};
         REQUIRE(tensor_close(result,expected,1E-10,1E-10));
     }
@@ -400,28 +400,31 @@ TEST_CASE("test_tensor_math_classification_functions_semantic","[test_math]")
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
     using bool_tensor_type = gtensor::tensor<bool>;
+    static constexpr value_type nan = std::numeric_limits<value_type>::quiet_NaN();
+    static constexpr value_type pos_inf = std::numeric_limits<value_type>::infinity();
+    static constexpr value_type neg_inf = -std::numeric_limits<value_type>::infinity();
 
     SECTION("test_isfinite")
     {
-        auto result = gtensor::isfinite(tensor_type{-1.0/0.0,-1.0,0.0/0.0,std::numeric_limits<value_type>::min()/2.0,0.0,1.0,1.0/0.0});
+        auto result = gtensor::isfinite(tensor_type{neg_inf,-1.0,nan,std::numeric_limits<value_type>::min()/2.0,0.0,1.0,pos_inf});
         auto expected = bool_tensor_type{false,true,false,true,true,true,false};
         REQUIRE(result == expected);
     }
     SECTION("test_isinf")
     {
-        auto result = gtensor::isinf(tensor_type{-1.0/0.0,-1.0,0.0/0.0,std::numeric_limits<value_type>::min()/2.0,0.0,1.0,1.0/0.0});
+        auto result = gtensor::isinf(tensor_type{neg_inf,-1.0,nan,std::numeric_limits<value_type>::min()/2.0,0.0,1.0,pos_inf});
         auto expected = bool_tensor_type{true,false,false,false,false,false,true};
         REQUIRE(result == expected);
     }
     SECTION("test_isnan")
     {
-        auto result = gtensor::isnan(tensor_type{-1.0/0.0,-1.0,0.0/0.0,std::numeric_limits<value_type>::min()/2.0,0.0,1.0,1.0/0.0});
+        auto result = gtensor::isnan(tensor_type{neg_inf,-1.0,nan,std::numeric_limits<value_type>::min()/2.0,0.0,1.0,pos_inf});
         auto expected = bool_tensor_type{false,false,true,false,false,false,false};
         REQUIRE(result == expected);
     }
     SECTION("test_isnormal")
     {
-        auto result = gtensor::isnormal(tensor_type{-1.0/0.0,-1.0,0.0/0.0,std::numeric_limits<value_type>::min()/2.0,0.0,1.0,1.0/0.0});
+        auto result = gtensor::isnormal(tensor_type{neg_inf,-1.0,nan,std::numeric_limits<value_type>::min()/2.0,0.0,1.0,pos_inf});
         auto expected = bool_tensor_type{false,true,false,false,false,true,false};
         REQUIRE(result == expected);
     }

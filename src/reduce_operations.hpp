@@ -215,8 +215,8 @@ struct nancumulate
         using value_type = typename std::iterator_traits<It>::value_type;
         Operation operation{};
         if constexpr (gtensor::math::numeric_traits<value_type>::has_nan()){
-            const auto& e = *first;
-            auto res = gtensor::math::isnan(e) ? Operation::template value<value_type> : e;
+            const auto& e0 = *first;
+            auto res = gtensor::math::isnan(e0) ? Operation::template value<value_type> : e0;
             *dfirst = res;
             for(++dfirst,++first; dfirst!=dlast; ++dfirst,++first){
                 const auto& e = *first;
@@ -296,7 +296,7 @@ struct gradient
     //Spacing may be scalar (uniform) or container (not uniform)
     //if container, its size must equal to size along axis that is last-first
     template<typename It, typename DstIt, typename Spacing>
-    auto operator()(It first, It last, DstIt dfirst, DstIt dlast, const Spacing& spacing){
+    auto operator()(It first, It last, DstIt dfirst, DstIt, const Spacing& spacing){
         using value_type = typename std::iterator_traits<It>::value_type;
         using dst_value_type = typename std::iterator_traits<DstIt>::value_type;
         using res_type = gtensor::math::make_floating_point_t<value_type>;

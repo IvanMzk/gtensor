@@ -192,6 +192,7 @@ struct tensor_operators
     static auto isclose(T&& t, U&& u, Tol relative_tolerance, Tol absolute_tolerance, EqualNan equal_nan = EqualNan{}){
         using T_ = std::remove_cv_t<std::remove_reference_t<T>>;
         using U_ = std::remove_cv_t<std::remove_reference_t<U>>;
+        void(equal_nan);
         static_assert(detail::has_tensor_arg_v<T_,U_>,"at least one arg must be tensor");
         return n_operator(operations::math_isclose<Tol, EqualNan>{relative_tolerance, absolute_tolerance}, std::forward<T>(t), std::forward<U>(u));
     }

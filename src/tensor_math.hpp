@@ -192,7 +192,7 @@ struct tensor_math
     //n-th difference along given axis
     //axis is scalar, default is last axis
     template<typename...Ts, typename DimT>
-    static auto diff(const basic_tensor<Ts...>& t, std::size_t n = 1, const DimT& axis = -1){
+    static auto diff(const basic_tensor<Ts...>& t, std::size_t n, const DimT& axis){
         using index_type = typename basic_tensor<Ts...>::index_type;
         const index_type window_size = 2;
         const index_type window_step = 1;
@@ -205,7 +205,7 @@ struct tensor_math
     }
     //none recursive implementation of second differences, more efficient than diff with n=2
     template<typename...Ts, typename DimT>
-    static auto diff2(const basic_tensor<Ts...>& t, const DimT& axis = -1){
+    static auto diff2(const basic_tensor<Ts...>& t, const DimT& axis){
         using index_type = typename basic_tensor<Ts...>::index_type;
         const index_type window_size = 3;
         const index_type window_step = 1;
@@ -220,10 +220,17 @@ struct tensor_math
     static auto gradient(const basic_tensor<Ts...>& t, const DimT& axis, const Spacing& spacing){
         using index_type = typename basic_tensor<Ts...>::index_type;
         using value_type = typename basic_tensor<Ts...>::value_type;
-        using res_type = gtensor::math::make_floating_point_t<value_type>;
+        //using res_type = gtensor::math::make_floating_point_t<value_type>;
         const index_type window_size = 1;
         const index_type window_step = 1;
-        return slide<res_type>(t, axis, math_reduce_operations::gradient{}, window_size, window_step, spacing);
+        return gtensor::slide<double>(t, axis, math_reduce_operations::gradient{}, window_size, window_step, spacing);
+        //return slide<res_type>(t, axis, math_reduce_operations::gradient{}, window_size, window_step, spacing);
+        //return slide<value_type>(t, axis, math_reduce_operations::gradient{}, window_size, window_step, spacing);
+
+
+        // const index_type window_size = 3;
+        // const index_type window_step = 1;
+        // return slide<res_type>(t, axis, math_reduce_operations::diff_2{}, window_size, window_step);
     }
 
 };   //end of struct tensor_math
