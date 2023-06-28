@@ -25,14 +25,6 @@ template<typename P, typename T, typename U=void> constexpr bool is_pair_of_type
 template<typename P, typename T> constexpr bool is_pair_of_type_v<P,T,std::void_t<std::enable_if_t<is_pair_v<P>>>> =
     std::is_convertible_v<decltype(std::declval<P>().first),T> && std::is_convertible_v<decltype(std::declval<P>().second),T>;
 
-// template<typename P>
-// struct pair_first_type{
-//     template<typename Dummy, typename> struct selector_{using type = decltype(std::declval<P>().first);};
-//     template<typename Dummy> struct selector_<Dummy,std::false_type>{using type = P;};
-//     using type = selector_<void,std::bool_constant<is_pair_v<P>>>;
-// };
-// template<typename T> using pair_first_t = typename pair_first_type<T>::type;
-
 }
 
 enum class histogram_algorithm : std::size_t {automatic,fd,scott,rice,sturges,sqrt};

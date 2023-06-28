@@ -132,7 +132,7 @@ auto make_reduce_shape(const ShT& shape, const Container& axes, bool keep_dims){
 template<typename IdxT>
 auto check_slide_args(const IdxT& size, const IdxT& window_size, const IdxT& window_step){
     using index_type = IdxT;
-    if (window_size > size || window_size <= index_type{0}){
+    if (window_size > size || window_size < index_type{0}){
         throw reduce_exception("invalid sliding window size");
     }
     if (window_step < index_type{1}){

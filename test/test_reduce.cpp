@@ -157,7 +157,7 @@ TEST_CASE("test_check_slide_args","[test_reduce]")
     using gtensor::reduce_exception;
     using gtensor::detail::check_slide_args;
 
-
+    REQUIRE_NOTHROW(check_slide_args(shape_type{0},dim_type{0},index_type{0},index_type{1}));
     REQUIRE_NOTHROW(check_slide_args(shape_type{1},dim_type{0},index_type{1},index_type{1}));
     REQUIRE_NOTHROW(check_slide_args(shape_type{10},dim_type{0},index_type{1},index_type{1}));
     REQUIRE_NOTHROW(check_slide_args(shape_type{10},dim_type{0},index_type{2},index_type{1}));
@@ -179,8 +179,6 @@ TEST_CASE("test_check_slide_args","[test_reduce]")
     REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,4},dim_type{2},index_type{3},index_type{1}));
     REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,4},dim_type{2},index_type{4},index_type{1}));
 
-    //zero window_size
-    REQUIRE_THROWS_AS(check_slide_args(shape_type{0},dim_type{0},index_type{0},index_type{1}), reduce_exception);
     //window_size greater than axis size
     REQUIRE_THROWS_AS(check_slide_args(shape_type{0},dim_type{0},index_type{1},index_type{1}), reduce_exception);
     REQUIRE_THROWS_AS(check_slide_args(shape_type{0},dim_type{0},index_type{2},index_type{1}), reduce_exception);
@@ -663,6 +661,7 @@ TEST_CASE("test_slide","[test_reduce]")
 
     //0tensor,1axis,2functor,3window_size,4window_step,5expected
     auto test_data = std::make_tuple(
+        std::make_tuple(tensor_type{}, dim_type{0}, cumsum{}, index_type{0}, index_type{1}, tensor_type{}),
         std::make_tuple(tensor_type{1}, dim_type{0}, cumsum{}, index_type{1}, index_type{1}, tensor_type{1}),
         std::make_tuple(tensor_type{1,2,3,4,5}, dim_type{0}, cumsum{}, index_type{1}, index_type{1}, tensor_type{1,3,6,10,15}),
         std::make_tuple(tensor_type{1,2,3,4,5}, dim_type{0}, cumprod_reverse{}, index_type{1}, index_type{1}, tensor_type{120,120,60,20,5}),

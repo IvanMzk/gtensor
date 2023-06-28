@@ -13,6 +13,7 @@ class combiner;
 struct tensor_operators;
 struct tensor_math;
 struct statistic;
+struct sort_search;
 
 
 //storage implementation factory selector
@@ -104,6 +105,21 @@ public:
     using type = typename selector_<typename config_type::engine, void, Ts...>::type;
 };
 template<typename...Ts> using statistic_selector_t = typename statistic_selector<Ts...>::type;
+
+//tensor sort_search selector
+template<typename Config, typename...Ts>
+class sort_search_selector
+{
+    using config_type = Config;
+    template<typename...> struct selector_;
+    template<typename Dummy> struct selector_<config::engine_expression_template,Dummy>
+    {
+        using type = sort_search;
+    };
+public:
+    using type = typename selector_<typename config_type::engine, void, Ts...>::type;
+};
+template<typename...Ts> using sort_search_selector_t = typename sort_search_selector<Ts...>::type;
 
 //reducer selector
 template<typename Config, typename...Ts>

@@ -2,6 +2,7 @@
 #define REDUCE_OPERATIONS_HPP_
 #include <functional>
 #include <algorithm>
+#include <numeric>
 #include "common.hpp"
 #include "math.hpp"
 
@@ -747,6 +748,57 @@ struct moving_mean
 };
 
 }   //end of namespace statistic_reduce_operations
+
+//functors to use in sort,search reduce functions
+namespace sort_search_reduce_operations{
+
+//slide operation to make sorted copy
+//Comparator can be functor to compare elements or no_value
+struct sort
+{
+    template<typename It, typename DstIt, typename Comparator>
+    void operator()(It first, It last, DstIt dfirst, DstIt dlast, const Comparator& comparator){
+        std::copy(first,last,dfirst);
+        if constexpr (std::is_same_v<Comparator,detail::no_value>){
+            std::sort(dfirst,dlast);
+        }else{
+            std::sort(dfirst,dlast,comparator);
+        }
+    }
+};
+
+//slide operation to make indexes of elements of sorted tensor
+//Comparator can be functor to compare elements or no_value
+struct argsort
+{
+    template<typename It, typename DstIt, typename Comparator, typename Config>
+    void operator()(It first, It last, DstIt dfirst, DstIt dlast, const Comparator& comparator, Config){
+        using value_type = typename std::iterator_traits<It>::value_type;
+        using container_type = typename Config::template container<value_type>;
+        using container_size_type = typename container_type::size_type;
+        container_type elements(first,last);
+        std::iota(dfirst,dlast,0);
+        if constexpr (std::is_same_v<Comparator,detail::no_value>){
+            std::sort(
+                dfirst,
+                dlast,
+                [&elements](const auto& l, const auto& r){
+                    return elements[static_cast<const container_size_type&>(l)] < elements[static_cast<const container_size_type&>(r)];
+                }
+            );
+        }else{
+            std::sort(
+                dfirst,
+                dlast,
+                [&elements,comparator](const auto& l, const auto& r){
+                    return comparator(elements[static_cast<const container_size_type&>(l)],elements[static_cast<const container_size_type&>(r)]);
+                }
+            );
+        }
+    }
+};
+
+}
 
 }   //end of namespace gtensor
 #endif
