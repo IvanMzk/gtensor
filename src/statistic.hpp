@@ -9,6 +9,13 @@
 
 namespace gtensor{
 
+class statistic_exception : public std::runtime_error{
+public:
+    explicit statistic_exception(const char* what):
+        runtime_error(what)
+    {}
+};
+
 namespace detail{
 
 template<typename P, typename U=void> constexpr bool is_pair_v = false;
@@ -18,13 +25,13 @@ template<typename P, typename T, typename U=void> constexpr bool is_pair_of_type
 template<typename P, typename T> constexpr bool is_pair_of_type_v<P,T,std::void_t<std::enable_if_t<is_pair_v<P>>>> =
     std::is_convertible_v<decltype(std::declval<P>().first),T> && std::is_convertible_v<decltype(std::declval<P>().second),T>;
 
-template<typename P>
-struct pair_first_type{
-    template<typename Dummy, typename> struct selector_{using type = decltype(std::declval<P>().first);};
-    template<typename Dummy> struct selector_<Dummy,std::false_type>{using type = P;};
-    using type = selector_<void,std::bool_constant<is_pair_v<P>>>;
-};
-template<typename T> using pair_first_t = typename pair_first_type<T>::type;
+// template<typename P>
+// struct pair_first_type{
+//     template<typename Dummy, typename> struct selector_{using type = decltype(std::declval<P>().first);};
+//     template<typename Dummy> struct selector_<Dummy,std::false_type>{using type = P;};
+//     using type = selector_<void,std::bool_constant<is_pair_v<P>>>;
+// };
+// template<typename T> using pair_first_t = typename pair_first_type<T>::type;
 
 }
 
@@ -138,7 +145,10 @@ struct statistic
 
     //histogram
     //Bins can be integral type or histogram_algorithm enum or container with at least bidirectional iterator
-    //Range is pair like type
+    //when bins is of integral type it means equal width bins number, bins must be > 0
+    //when bins is of histogram_algorithm type equal width bins number is calculated according to algorithm
+    //when bins is container its elements mean bins edges and must increase monotonically
+    //Range is pair like type, means numeric range [first,second], first must be less or equal than second
     //weights is tensor of same shape as t
     template<typename...Ts, typename Bins, typename Range, typename Weights>
     static auto histogram(const basic_tensor<Ts...>& t, const Bins& bins, const Range& range, bool density, const Weights& weights){
@@ -154,7 +164,8 @@ struct statistic
         using container_pair_type = typename config_type::template container<std::pair<fp_type,fp_type>>;
         static constexpr bool has_weights = detail::is_tensor_of_type_v<Weights,fp_type>;
         static_assert(has_weights || std::is_same_v<Weights,detail::no_value>,"invalid weights argument");
-
+        static_assert(math::numeric_traits<Bins>::is_integral() || std::is_same_v<Bins,histogram_algorithm> || detail::is_container_of_type_v<Bins,fp_type>, "Bins must be integral or histogram_algorithm or container type");
+        static_assert(detail::is_pair_of_type_v<Range,fp_type> || std::is_same_v<Range,detail::no_value>,"invalid range argument");
 
         auto weights_begin = [&weights]{
             (void)weights;
@@ -173,10 +184,7 @@ struct statistic
             }
         };
 
-        //check_weights(weights);   //is has the same shape as t
-        //check_range(range);   //is range no_value or pair and first<=second
-        //check_bins(bins);     //is bins integral or container or enum
-
+        check_histogram_arguments(t,bins,range,weights);
         auto a = t.template traverse_order_adapter<order>();
         if constexpr (detail::is_container_of_type_v<Bins, value_type>){    //not uniform bin width, need copy and sort data, range doesnt matter
             const auto edges_number = static_cast<index_type>(bins.size());
@@ -232,6 +240,7 @@ struct statistic
                 if (t.empty()){
                     return make_uniform_histogram<res_type>(a.begin(), a.end(), weights_begin(), weights_end(), bins, min, max, rmin, rmax, density);
                 }
+                auto is_in_range = [rmin,rmax](const auto& e){return e>=rmin && e<=rmax;};
                 if constexpr (has_weights){
                     container_type elements_{};
                     container_type weights_{};
@@ -243,7 +252,7 @@ struct statistic
                     max = min;
                     for (auto last=a.end(); it!=last; ++it,++weights_it){
                         const auto& e = static_cast<const fp_type&>(*it);
-                        if (e>=rmin && e<=rmax){
+                        if (is_in_range(e)){
                             elements_.push_back(e);
                             weights_.push_back(static_cast<const fp_type&>(*weights_it));
                             if (e<min){
@@ -262,7 +271,7 @@ struct statistic
                     max = min;
                     for (auto last=a.end(); it!=last; ++it){
                         const auto& e = static_cast<const fp_type&>(*it);
-                        if (e>=rmin && e<=rmax){
+                        if (is_in_range(e)){
                             elements_.push_back(e);
                             if (e<min){
                                 min=e;
@@ -283,6 +292,44 @@ struct statistic
         return histogram(t,bins,detail::no_value{},density,detail::no_value{});
     }
 private:
+
+    template<typename... Ts, typename Bins, typename Range, typename Weights>
+    static void check_histogram_arguments(const basic_tensor<Ts...>& t, const Bins& bins, const Range& range, const Weights& weights){
+        if constexpr (math::numeric_traits<Bins>::is_integral()){
+            if (bins <= 0){
+                throw statistic_exception("bins must be positive when an integral");
+            }
+        }
+        if constexpr (detail::is_tensor_v<Bins>){
+            if (bins.dim() != 1){
+                throw statistic_exception("bins must be 1d when a tensor");
+            }
+        }
+        if constexpr (detail::is_pair_v<Range>){
+            if (range.first > range.second){
+                throw statistic_exception("second must be larger or equal than first in a range");
+            }
+        }
+        if constexpr (detail::is_tensor_v<Weights>){
+            if (t.shape() != weights.shape()){
+                throw statistic_exception("weights must have the same shape as t");
+            }
+        }
+        if constexpr (detail::is_container_v<Bins>){
+            if (bins.size() > 0){
+                auto it=bins.begin();
+                auto last=bins.end();
+                auto prev = *it;
+                for (++it; it!=last; ++it){
+                    const auto& next = *it;
+                    if (prev > next){
+                        throw statistic_exception("bins must increase monotonically when a tensor");
+                    }
+                    prev = next;
+                }
+            }
+        }
+    }
 
     //first,last - range of elements or element,weight pairs within specified edges
     //edges is container of bins edges, must have at least two edges
