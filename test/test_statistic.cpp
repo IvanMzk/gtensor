@@ -1030,8 +1030,8 @@ TEMPLATE_TEST_CASE("test_statistic_moving_average","test_statistic",
 
     //0tensor,1axis,2weights,3step,4expected
     auto test_data = std::make_tuple(
-        std::make_tuple(tensor_type{}.reshape(0,4,5),1,tensor_type{1,1},1,result_tensor_type{}.reshape(0,3,5)),
-        std::make_tuple(tensor_type{}.reshape(0,4,5),2,tensor_type{1,1,1},1,result_tensor_type{}.reshape(0,4,3)),
+        std::make_tuple(tensor_type{}.reshape(0,4,5),1,tensor_type{1,1},1,result_tensor_type{}.reshape(0,4,5)),
+        std::make_tuple(tensor_type{}.reshape(0,4,5),2,tensor_type{1,1,1},1,result_tensor_type{}.reshape(0,4,5)),
         std::make_tuple(tensor_type{5},0,tensor_type{2},1,result_tensor_type{5}),
         std::make_tuple(tensor_type{5},0,tensor_type{2},2,result_tensor_type{5}),
         std::make_tuple(tensor_type{5,6},0,tensor_type{2},1,result_tensor_type{5,6}),
@@ -1069,14 +1069,9 @@ TEMPLATE_TEST_CASE("test_statistic_moving_average_exception","test_statistic",
 
     //0tensor,1axis,2weights,3step
     auto test_data = std::make_tuple(
-        //zero window size
-        std::make_tuple(tensor_type{},0,tensor_type{},1),
-        std::make_tuple(tensor_type{}.reshape(0,4,5),0,tensor_type{},1),
-        std::make_tuple(tensor_type{1,2,3},0,tensor_type{},1),
         //zero size weights
-        std::make_tuple(tensor_type{1,2,3,4,5},0,tensor_type{1,-1,0},1),
+        std::make_tuple(tensor_type{1,2,3,4,5},0,tensor_type{},1),
         //weights size greater than axis size
-        std::make_tuple(tensor_type{},0,tensor_type{1},1),
         std::make_tuple(tensor_type{1,2,3,4,5},0,tensor_type{1,1,2,2,3,3},1),
         //zero step
         std::make_tuple(tensor_type{1,2,3,4,5},0,tensor_type{1,1,2},0)
@@ -1115,8 +1110,8 @@ TEMPLATE_TEST_CASE("test_statistic_moving_mean","test_statistic",
 
     //0tensor,1axis,2window_size,3step,4expected
     auto test_data = std::make_tuple(
-        std::make_tuple(tensor_type{}.reshape(0,4,5),1,2,1,result_tensor_type{}.reshape(0,3,5)),
-        std::make_tuple(tensor_type{}.reshape(0,4,5),2,3,1,result_tensor_type{}.reshape(0,4,3)),
+        std::make_tuple(tensor_type{}.reshape(0,4,5),1,2,1,result_tensor_type{}.reshape(0,4,5)),
+        std::make_tuple(tensor_type{}.reshape(0,4,5),2,3,1,result_tensor_type{}.reshape(0,4,5)),
         std::make_tuple(tensor_type{5},0,1,1,result_tensor_type{5}),
         std::make_tuple(tensor_type{5},0,1,2,result_tensor_type{5}),
         std::make_tuple(tensor_type{5,6},0,1,1,result_tensor_type{5,6}),
@@ -1154,11 +1149,8 @@ TEMPLATE_TEST_CASE("test_statistic_moving_mean_exception","test_statistic",
     //0tensor,1axis,2window_size,3step
     auto test_data = std::make_tuple(
         //zero window size
-        std::make_tuple(tensor_type{},0,0,1),
-        std::make_tuple(tensor_type{}.reshape(0,4,5),0,0,1),
         std::make_tuple(tensor_type{1,2,3},0,0,1),
         //window_size size greater than axis size
-        std::make_tuple(tensor_type{},0,1,1),
         std::make_tuple(tensor_type{1,2,3,4,5},0,6,1),
         //zero step
         std::make_tuple(tensor_type{1,2,3,4,5},0,3,0)

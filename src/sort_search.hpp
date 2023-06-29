@@ -19,7 +19,7 @@ struct sort_search
     template<typename...Ts, typename DimT, typename Comparator>
     static auto sort(const basic_tensor<Ts...>& t, const DimT& axis, const Comparator& comparator){
         using index_type = typename basic_tensor<Ts...>::index_type;
-        const index_type window_size = t.empty() ? 0 : 1;
+        const index_type window_size = 1;
         const index_type window_step = 1;
         return slide(t,axis,sort_search_reduce_operations::sort{}, window_size, window_step, comparator);
     }
@@ -29,7 +29,7 @@ struct sort_search
     static auto argsort(const basic_tensor<Ts...>& t, const DimT& axis, const Comparator& comparator){
         using config_type = typename basic_tensor<Ts...>::config_type;
         using index_type = typename basic_tensor<Ts...>::index_type;
-        const index_type window_size = t.empty() ? 0 : 1;
+        const index_type window_size = 1;
         const index_type window_step = 1;
         return slide<index_type>(t,axis,sort_search_reduce_operations::argsort{}, window_size, window_step, comparator, config_type{});
     }
