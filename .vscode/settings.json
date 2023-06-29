@@ -75,6 +75,8 @@
         "typeindex": "cpp",
         "*.rh": "cpp",
         "compare": "cpp",
-        "any": "cpp"
+        "any": "cpp",
+        "execution": "cpp",
+        "queue": "cpp"
     }
 }
