@@ -371,11 +371,12 @@ class reducer
                 const auto res_size = res.size();
                 if (res_size == index_type{1}){
                     const auto pdim = parent.dim();
-                    if (pdim == dim_type{1}){
+                    if (pdim == dim_type{1}){   //1d, can use native order
                         auto a = parent.template traverse_order_adapter<order>();
                         *res.begin() = reduce_f(a.begin(), a.end(), std::forward<Args>(args)...);
-                    }else{
-                        *res.begin() = reduce_f(parent.begin(), parent.end(), std::forward<Args>(args)...);
+                    }else{  //traverse like over flatten
+                        auto a = parent.template traverse_order_adapter<config::c_order>();
+                        *res.begin() = reduce_f(a.begin(), a.end(), std::forward<Args>(args)...);
                     }
                 }else{
                     using traverser_type = walker_forward_traverser<config_type, walker_type, predicate_type>;

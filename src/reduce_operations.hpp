@@ -717,6 +717,62 @@ struct argsort
     }
 };
 
+//reduce operation, return extremum index
+template<typename Comparator, typename ThrowNanResult = std::false_type>
+struct argextremum_nanargextremum
+{
+    template<typename It>
+    auto operator()(It first, It last){
+        using difference_type = typename std::iterator_traits<It>::difference_type;
+        if (first == last){
+            throw reduce_exception("cant reduce zero size dimension");
+        }
+        Comparator comparator{};
+        auto init = *first;
+        difference_type res{0};
+        difference_type i{1};
+        for(++first; first!=last; ++first,++i){
+            const auto& e = *first;
+            if (comparator(init,e)){
+                init = e;
+                res = i;
+            }
+        }
+        if constexpr (ThrowNanResult::value){
+            if (gtensor::math::isnan(init)){
+                throw reduce_exception("all nan slice");
+            }
+        }
+        return res;
+    }
+};
+
+template<typename Comparator>
+struct nan_propagate_comparator
+{
+    const Comparator comparator{};
+    template<typename R, typename E>
+    auto operator()(const R& r, const E& e){
+        return gtensor::math::isnan(r) ? false : gtensor::math::isnan(e) ? true : comparator(e,r);
+    }
+};
+
+template<typename Comparator>
+struct nan_ignore_comparator
+{
+    const Comparator comparator{};
+    template<typename R, typename E>
+    auto operator()(const R& r, const E& e){
+        return gtensor::math::isnan(e) ? false : gtensor::math::isnan(r) ? true : comparator(e,r);
+    }
+};
+
+using argmin = argextremum_nanargextremum<nan_propagate_comparator<std::less<void>>>;
+using argmax = argextremum_nanargextremum<nan_propagate_comparator<std::greater<void>>>;
+using nanargmin = argextremum_nanargextremum<nan_ignore_comparator<std::less<void>>,std::true_type>;
+using nanargmax = argextremum_nanargextremum<nan_ignore_comparator<std::greater<void>>,std::true_type>;
+
+
 }
 
 }   //end of namespace gtensor
