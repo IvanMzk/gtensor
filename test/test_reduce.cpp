@@ -157,43 +157,47 @@ TEST_CASE("test_check_slide_args","[test_reduce]")
     using gtensor::reduce_exception;
     using gtensor::detail::check_slide_args;
 
-    REQUIRE_NOTHROW(check_slide_args(shape_type{0},dim_type{0},index_type{0},index_type{1}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{1},dim_type{0},index_type{1},index_type{1}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{10},dim_type{0},index_type{1},index_type{1}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{10},dim_type{0},index_type{2},index_type{1}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{10},dim_type{0},index_type{5},index_type{1}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{10},dim_type{0},index_type{10},index_type{1}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{1,0},dim_type{0},index_type{1},index_type{1}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,0},dim_type{0},index_type{1},index_type{1}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,0},dim_type{0},index_type{2},index_type{1}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,0},dim_type{1},index_type{1},index_type{1}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,0},dim_type{1},index_type{2},index_type{1}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,0},dim_type{1},index_type{3},index_type{1}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,4},dim_type{0},index_type{1},index_type{1}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,4},dim_type{0},index_type{2},index_type{1}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,4},dim_type{1},index_type{1},index_type{1}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,4},dim_type{1},index_type{2},index_type{1}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,4},dim_type{1},index_type{3},index_type{1}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,4},dim_type{2},index_type{1},index_type{1}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,4},dim_type{2},index_type{2},index_type{1}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,4},dim_type{2},index_type{3},index_type{1}));
-    REQUIRE_NOTHROW(check_slide_args(shape_type{2,3,4},dim_type{2},index_type{4},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(index_type{0},shape_type{0},dim_type{0},index_type{0},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(index_type{1},shape_type{1},dim_type{0},index_type{1},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(index_type{10},shape_type{10},dim_type{0},index_type{1},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(index_type{10},shape_type{10},dim_type{0},index_type{2},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(index_type{10},shape_type{10},dim_type{0},index_type{5},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(index_type{10},shape_type{10},dim_type{0},index_type{10},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(index_type{0},shape_type{1,0},dim_type{0},index_type{1},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(index_type{0},shape_type{2,3,0},dim_type{0},index_type{1},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(index_type{0},shape_type{2,3,0},dim_type{0},index_type{2},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(index_type{0},shape_type{2,3,0},dim_type{1},index_type{1},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(index_type{0},shape_type{2,3,0},dim_type{1},index_type{2},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(index_type{0},shape_type{2,3,0},dim_type{1},index_type{3},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(index_type{24},shape_type{2,3,4},dim_type{0},index_type{1},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(index_type{24},shape_type{2,3,4},dim_type{0},index_type{2},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(index_type{24},shape_type{2,3,4},dim_type{1},index_type{1},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(index_type{24},shape_type{2,3,4},dim_type{1},index_type{2},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(index_type{24},shape_type{2,3,4},dim_type{1},index_type{3},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(index_type{24},shape_type{2,3,4},dim_type{2},index_type{1},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(index_type{24},shape_type{2,3,4},dim_type{2},index_type{2},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(index_type{24},shape_type{2,3,4},dim_type{2},index_type{3},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(index_type{24},shape_type{2,3,4},dim_type{2},index_type{4},index_type{1}));
+    //empty tensor, window_size and window_step doesnt matter
+    REQUIRE_NOTHROW(check_slide_args(index_type{0},shape_type{0},dim_type{0},index_type{0},index_type{0}));
+    REQUIRE_NOTHROW(check_slide_args(index_type{0},shape_type{0},dim_type{0},index_type{2},index_type{1}));
+    REQUIRE_NOTHROW(check_slide_args(index_type{0},shape_type{0,2,3},dim_type{1},index_type{0},index_type{0}));
+    REQUIRE_NOTHROW(check_slide_args(index_type{0},shape_type{0,2,3},dim_type{1},index_type{3},index_type{1}));
 
     //window_size greater than axis size
-    REQUIRE_THROWS_AS(check_slide_args(shape_type{0},dim_type{0},index_type{1},index_type{1}), reduce_exception);
-    REQUIRE_THROWS_AS(check_slide_args(shape_type{0},dim_type{0},index_type{2},index_type{1}), reduce_exception);
-    REQUIRE_THROWS_AS(check_slide_args(shape_type{},dim_type{0},index_type{1},index_type{1}), reduce_exception);
-    REQUIRE_THROWS_AS(check_slide_args(shape_type{10},dim_type{0},index_type{11},index_type{1}), reduce_exception);
-    REQUIRE_THROWS_AS(check_slide_args(shape_type{2,3,4},dim_type{0},index_type{3},index_type{1}), reduce_exception);
-    REQUIRE_THROWS_AS(check_slide_args(shape_type{2,3,4},dim_type{1},index_type{4},index_type{1}), reduce_exception);
-    REQUIRE_THROWS_AS(check_slide_args(shape_type{2,3,4},dim_type{2},index_type{5},index_type{1}), reduce_exception);
+    REQUIRE_THROWS_AS(check_slide_args(index_type{1},shape_type{},dim_type{0},index_type{1},index_type{1}), reduce_exception);
+    REQUIRE_THROWS_AS(check_slide_args(index_type{10},shape_type{10},dim_type{0},index_type{11},index_type{1}), reduce_exception);
+    REQUIRE_THROWS_AS(check_slide_args(index_type{24},shape_type{2,3,4},dim_type{0},index_type{3},index_type{1}), reduce_exception);
+    REQUIRE_THROWS_AS(check_slide_args(index_type{24},shape_type{2,3,4},dim_type{1},index_type{4},index_type{1}), reduce_exception);
+    REQUIRE_THROWS_AS(check_slide_args(index_type{24},shape_type{2,3,4},dim_type{2},index_type{5},index_type{1}), reduce_exception);
     //invalid axis
-    REQUIRE_THROWS_AS(check_slide_args(shape_type{0},dim_type{1},index_type{1},index_type{1}), reduce_exception);
-    REQUIRE_THROWS_AS(check_slide_args(shape_type{10},dim_type{1},index_type{1},index_type{1}), reduce_exception);
-    REQUIRE_THROWS_AS(check_slide_args(shape_type{2,3,4},dim_type{3},index_type{1},index_type{1}), reduce_exception);
+    REQUIRE_THROWS_AS(check_slide_args(index_type{0},shape_type{0},dim_type{1},index_type{1},index_type{1}), reduce_exception);
+    REQUIRE_THROWS_AS(check_slide_args(index_type{0},shape_type{0,2,3},dim_type{3},index_type{1},index_type{1}), reduce_exception);
+    REQUIRE_THROWS_AS(check_slide_args(index_type{10},shape_type{10},dim_type{1},index_type{1},index_type{1}), reduce_exception);
+    REQUIRE_THROWS_AS(check_slide_args(index_type{24},shape_type{2,3,4},dim_type{3},index_type{1},index_type{1}), reduce_exception);
     //zero window_step
-    REQUIRE_THROWS_AS(check_slide_args(shape_type{10},dim_type{0},index_type{3},index_type{0}), reduce_exception);
-    REQUIRE_THROWS_AS(check_slide_args(shape_type{2,3,4},dim_type{1},index_type{1},index_type{0}), reduce_exception);
+    REQUIRE_THROWS_AS(check_slide_args(index_type{10},shape_type{10},dim_type{0},index_type{3},index_type{0}), reduce_exception);
+    REQUIRE_THROWS_AS(check_slide_args(index_type{24},shape_type{2,3,4},dim_type{1},index_type{1},index_type{0}), reduce_exception);
 }
 
 TEST_CASE("test_make_slide_shape","[test_reduce]")
@@ -203,36 +207,37 @@ TEST_CASE("test_make_slide_shape","[test_reduce]")
     using index_type = config_type::index_type;
     using shape_type = config_type::shape_type;
     using gtensor::detail::make_slide_shape;
-    //0pshape,1axis,2window_size,3window_step,4expected
-    using test_type = std::tuple<shape_type,dim_type,index_type,index_type,shape_type>;
+    //0psize,1pshape,2axis,3window_size,4window_step,5expected
+    using test_type = std::tuple<index_type,shape_type,dim_type,index_type,index_type,shape_type>;
     auto test_data = GENERATE(
-        test_type{shape_type{0},dim_type{0},index_type{1},index_type{1},shape_type{0}},
-        test_type{shape_type{0},dim_type{0},index_type{2},index_type{1},shape_type{0}},
-        test_type{shape_type{0},dim_type{0},index_type{1},index_type{2},shape_type{0}},
-        test_type{shape_type{20,30,0},dim_type{0},index_type{5},index_type{2},shape_type{8,30,0}},
-        test_type{shape_type{20,30,0},dim_type{1},index_type{5},index_type{2},shape_type{20,13,0}},
-        test_type{shape_type{20,30,0},dim_type{2},index_type{5},index_type{2},shape_type{20,30,0}},
-        test_type{shape_type{1},dim_type{0},index_type{1},index_type{1},shape_type{1}},
-        test_type{shape_type{1},dim_type{0},index_type{1},index_type{2},shape_type{1}},
-        test_type{shape_type{10},dim_type{0},index_type{1},index_type{1},shape_type{10}},
-        test_type{shape_type{10},dim_type{0},index_type{1},index_type{2},shape_type{5}},
-        test_type{shape_type{10},dim_type{0},index_type{1},index_type{5},shape_type{2}},
-        test_type{shape_type{10},dim_type{0},index_type{2},index_type{1},shape_type{9}},
-        test_type{shape_type{10},dim_type{0},index_type{2},index_type{2},shape_type{5}},
-        test_type{shape_type{10},dim_type{0},index_type{2},index_type{5},shape_type{2}},
-        test_type{shape_type{10},dim_type{0},index_type{5},index_type{1},shape_type{6}},
-        test_type{shape_type{10},dim_type{0},index_type{5},index_type{2},shape_type{3}},
-        test_type{shape_type{10},dim_type{0},index_type{5},index_type{5},shape_type{2}},
-        test_type{shape_type{5,30,40},dim_type{0},index_type{3},index_type{2},shape_type{2,30,40}},
-        test_type{shape_type{5,30,40},dim_type{1},index_type{5},index_type{1},shape_type{5,26,40}},
-        test_type{shape_type{5,30,40},dim_type{2},index_type{10},index_type{3},shape_type{5,30,11}}
+        test_type{index_type{0},shape_type{0},dim_type{0},index_type{1},index_type{1},shape_type{0}},
+        test_type{index_type{0},shape_type{0},dim_type{0},index_type{2},index_type{1},shape_type{0}},
+        test_type{index_type{0},shape_type{0},dim_type{0},index_type{1},index_type{2},shape_type{0}},
+        test_type{index_type{0},shape_type{20,30,0},dim_type{0},index_type{5},index_type{2},shape_type{20,30,0}},
+        test_type{index_type{0},shape_type{20,30,0},dim_type{1},index_type{5},index_type{2},shape_type{20,30,0}},
+        test_type{index_type{0},shape_type{20,30,0},dim_type{2},index_type{5},index_type{2},shape_type{20,30,0}},
+        test_type{index_type{1},shape_type{1},dim_type{0},index_type{1},index_type{1},shape_type{1}},
+        test_type{index_type{1},shape_type{1},dim_type{0},index_type{1},index_type{2},shape_type{1}},
+        test_type{index_type{10},shape_type{10},dim_type{0},index_type{1},index_type{1},shape_type{10}},
+        test_type{index_type{10},shape_type{10},dim_type{0},index_type{1},index_type{2},shape_type{5}},
+        test_type{index_type{10},shape_type{10},dim_type{0},index_type{1},index_type{5},shape_type{2}},
+        test_type{index_type{10},shape_type{10},dim_type{0},index_type{2},index_type{1},shape_type{9}},
+        test_type{index_type{10},shape_type{10},dim_type{0},index_type{2},index_type{2},shape_type{5}},
+        test_type{index_type{10},shape_type{10},dim_type{0},index_type{2},index_type{5},shape_type{2}},
+        test_type{index_type{10},shape_type{10},dim_type{0},index_type{5},index_type{1},shape_type{6}},
+        test_type{index_type{10},shape_type{10},dim_type{0},index_type{5},index_type{2},shape_type{3}},
+        test_type{index_type{10},shape_type{10},dim_type{0},index_type{5},index_type{5},shape_type{2}},
+        test_type{index_type{6000},shape_type{5,30,40},dim_type{0},index_type{3},index_type{2},shape_type{2,30,40}},
+        test_type{index_type{6000},shape_type{5,30,40},dim_type{1},index_type{5},index_type{1},shape_type{5,26,40}},
+        test_type{index_type{6000},shape_type{5,30,40},dim_type{2},index_type{10},index_type{3},shape_type{5,30,11}}
     );
-    auto pshape = std::get<0>(test_data);
-    auto axis = std::get<1>(test_data);
-    auto window_size = std::get<2>(test_data);
-    auto window_step = std::get<3>(test_data);
-    auto expected = std::get<4>(test_data);
-    auto result = make_slide_shape(pshape,axis,window_size,window_step);
+    auto psize = std::get<0>(test_data);
+    auto pshape = std::get<1>(test_data);
+    auto axis = std::get<2>(test_data);
+    auto window_size = std::get<3>(test_data);
+    auto window_step = std::get<4>(test_data);
+    auto expected = std::get<5>(test_data);
+    auto result = make_slide_shape(psize,pshape,axis,window_size,window_step);
     REQUIRE(result == expected);
 }
 
@@ -662,6 +667,8 @@ TEST_CASE("test_slide","[test_reduce]")
     //0tensor,1axis,2functor,3window_size,4window_step,5expected
     auto test_data = std::make_tuple(
         std::make_tuple(tensor_type{}, dim_type{0}, cumsum{}, index_type{0}, index_type{1}, tensor_type{}),
+        std::make_tuple(tensor_type{}, dim_type{0}, cumsum{}, index_type{1}, index_type{1}, tensor_type{}),
+        std::make_tuple(tensor_type{}.reshape(0,2,3), dim_type{1}, cumsum{}, index_type{5}, index_type{1}, tensor_type{}.reshape(0,2,3)),
         std::make_tuple(tensor_type{1}, dim_type{0}, cumsum{}, index_type{1}, index_type{1}, tensor_type{1}),
         std::make_tuple(tensor_type{1,2,3,4,5}, dim_type{0}, cumsum{}, index_type{1}, index_type{1}, tensor_type{1,3,6,10,15}),
         std::make_tuple(tensor_type{1,2,3,4,5}, dim_type{0}, cumprod_reverse{}, index_type{1}, index_type{1}, tensor_type{120,120,60,20,5}),
@@ -773,8 +780,8 @@ TEST_CASE("test_slide_exception","[test_reduce]")
     //0tensor,1axis,2functor,3window_size,4window_step
     auto test_data = std::make_tuple(
         std::make_tuple(tensor_type(0), dim_type{0}, cumsum{}, index_type{1}, index_type{1}),
-        std::make_tuple(tensor_type{}, dim_type{0}, cumsum{}, index_type{1}, index_type{1}),
         std::make_tuple(tensor_type{}, dim_type{1}, cumsum{}, index_type{1}, index_type{1}),
+        std::make_tuple(tensor_type{}.reshape(0,2,3), dim_type{3}, cumsum{}, index_type{1}, index_type{1}),
         std::make_tuple(tensor_type{1}, dim_type{0}, cumsum{}, index_type{2}, index_type{1}),
         std::make_tuple(tensor_type{1,2,3,4,5}, dim_type{1}, cumsum{}, index_type{1}, index_type{1}),
         std::make_tuple(tensor_type{1,2,3,4,5}, dim_type{0}, cumsum{}, index_type{6}, index_type{1}),

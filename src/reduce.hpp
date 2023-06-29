@@ -130,37 +130,41 @@ auto make_reduce_shape(const ShT& shape, const Container& axes, bool keep_dims){
 }
 
 template<typename IdxT>
-auto check_slide_args(const IdxT& size, const IdxT& window_size, const IdxT& window_step){
+auto check_slide_args(const IdxT& axis_size, const IdxT& window_size, const IdxT& window_step){
     using index_type = IdxT;
-    if (window_size > size || window_size < index_type{0}){
-        throw reduce_exception("invalid sliding window size");
-    }
-    if (window_step < index_type{1}){
-        throw reduce_exception("invalid sliding window step");
+    if (axis_size!=0){
+        if (window_size > axis_size || window_size <= index_type{0}){
+            throw reduce_exception("invalid sliding window size");
+        }
+        if (window_step < index_type{1}){
+            throw reduce_exception("invalid sliding window step");
+        }
     }
 }
-template<typename ShT, typename DimT, typename IdxT>
-auto check_slide_args(const ShT& shape, const DimT& axis, const IdxT& window_size, const IdxT& window_step){
+template<typename IdxT, typename ShT, typename DimT>
+auto check_slide_args(const IdxT& size, const ShT& shape, const DimT& axis, const IdxT& window_size, const IdxT& window_step){
     using dim_type = DimT;
     using index_type = IdxT;
     const dim_type dim = detail::make_dim(shape);
     if (axis >= dim){
         throw reduce_exception("invalid slide axis");
     }
-    index_type axis_size = shape[axis];
-    check_slide_args(axis_size,window_size,window_step);
+    if (size!=0){
+        index_type axis_size = shape[axis];
+        check_slide_args(axis_size,window_size,window_step);
+    }
 }
 template<typename IdxT>
 auto make_slide_size(const IdxT& size, const IdxT& window_size, const IdxT& window_step){
     return (size - window_size)/window_step + IdxT{1};
 }
-template<typename ShT, typename DimT, typename IdxT>
-auto make_slide_shape(const ShT& shape, const DimT& axis, const IdxT& window_size, const IdxT& window_step){
+template<typename IdxT,typename ShT, typename DimT>
+auto make_slide_shape(const IdxT& size, const ShT& shape, const DimT& axis, const IdxT& window_size, const IdxT& window_step){
     using index_type = IdxT;
     using shape_type = ShT;
     shape_type res(shape);
-    const index_type axis_size = shape[axis];
-    if (axis_size != index_type{0}){
+    if (size!=index_type{0}){
+        const index_type axis_size = shape[axis];
         const index_type result_axis_size = make_slide_size(axis_size, window_size, window_step);
         res[axis] = result_axis_size;
     }
@@ -408,11 +412,12 @@ class reducer
         using res_config_type = gtensor::config::extend_config_t<config_type,res_value_type>;
 
         const auto& pshape = parent.shape();
+        const auto psize = parent.size();
         const dim_type axis = detail::make_axis(pshape,axis_);
         const index_type window_size = static_cast<index_type>(window_size_);
         const index_type window_step = static_cast<index_type>(window_step_);
-        detail::check_slide_args(pshape, axis, window_size, window_step);
-        auto res = tensor<res_value_type,order,res_config_type>{detail::make_slide_shape(pshape, axis, window_size, window_step)};
+        detail::check_slide_args(psize, pshape, axis, window_size, window_step);
+        auto res = tensor<res_value_type,order,res_config_type>{detail::make_slide_shape(psize, pshape, axis, window_size, window_step)};
         if (!res.empty()){
             const auto pdim = parent.dim();
             if (pdim == dim_type{1}){
