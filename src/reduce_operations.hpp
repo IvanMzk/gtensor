@@ -672,9 +672,9 @@ struct moving_mean
 namespace sort_search_reduce_operations{
 
 //slide operation to make sorted copy
-//Comparator can be functor to compare elements or no_value
 struct sort
 {
+    //Comparator can be binary predicate functor or no_value
     template<typename It, typename DstIt, typename Comparator>
     void operator()(It first, It last, DstIt dfirst, DstIt dlast, const Comparator& comparator){
         std::copy(first,last,dfirst);
@@ -687,9 +687,9 @@ struct sort
 };
 
 //slide operation to make indexes of elements of sorted tensor
-//Comparator can be functor to compare elements or no_value
 struct argsort
 {
+    //Comparator can be binary predicate functor or no_value
     template<typename It, typename DstIt, typename Comparator, typename Config>
     void operator()(It first, It last, DstIt dfirst, DstIt dlast, const Comparator& comparator, Config){
         using value_type = typename std::iterator_traits<It>::value_type;
@@ -716,6 +716,64 @@ struct argsort
         }
     }
 };
+
+template<typename It, typename Comparator>
+void nth_element_helper(It first, It nth, It last, const Comparator& comparator){
+    static constexpr bool has_comparator = !std::is_same_v<Comparator,detail::no_value>;
+    if constexpr (has_comparator){
+        std::nth_element(first,nth,last,comparator);
+    }else{
+        std::nth_element(first,nth,last);
+    }
+}
+
+template<typename T, typename Nth>
+void check_nth(const T& n, const Nth& nth){
+    if constexpr (detail::is_container_v<Nth>){
+        if (nth.size() == 0){
+            throw reduce_exception("empty nth container");
+        }
+    }else{
+        if (nth>=n || nth<0){
+            throw reduce_exception("nth out of bounds");
+        }
+    }
+}
+
+//slide operation to make partially sorted copy
+struct nth_element_partition
+{
+    //Comparator can be binary predicate functor or no_value
+    //Nth can be container or scalar
+    template<typename It, typename DstIt, typename Nth, typename Comparator, typename Config>
+    void operator()(It first, It last, DstIt dfirst, DstIt dlast, const Nth& nth, const Comparator& comparator, Config){
+        using difference_type = typename std::iterator_traits<It>::difference_type;
+        static constexpr bool is_nth_container = detail::is_container_of_type_v<Nth,difference_type>;
+        static_assert(is_nth_container || detail::is_static_castable_v<Nth,difference_type>,"invalid nth argument");
+        const auto n = last-first;
+        std::copy(first,last,dfirst);
+        if constexpr (is_nth_container){
+            using nth_container_type = typename Config::template container<difference_type>;
+            check_nth(n,nth);
+            nth_container_type nth_{};
+            detail::reserve(nth_,nth.size());
+            std::copy(nth.begin(),nth.end(),std::back_inserter(nth_));
+            std::sort(nth_.begin(),nth_.end());
+            auto prev = difference_type{-1};
+            for (auto nth_it = nth_.begin(),nth_last = nth_.end(); nth_it!=nth_last; ++nth_it){
+                const auto& next = static_cast<const difference_type&>(*nth_it);
+                check_nth(n,next);
+                nth_element_helper(dfirst+(prev+1),dfirst+next,dlast,comparator);
+                prev = next;
+            }
+        }else{  //nth scalar
+            const auto nth_ = static_cast<difference_type>(nth);
+            check_nth(n,nth_);
+            nth_element_helper(dfirst,dfirst+nth_,dlast,comparator);
+        }
+    }
+};
+
 
 //reduce operation, return extremum index
 template<typename Comparator, typename ThrowNanResult = std::false_type>

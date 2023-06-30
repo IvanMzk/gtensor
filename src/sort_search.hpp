@@ -7,14 +7,13 @@
 namespace gtensor
 {
 
-//tensor sort,search functions implementation
-
 #define GTENSOR_TENSOR_SORT_SEARCH_REDUCE_FUNCTION(NAME,F)\
 template<typename...Ts, typename Axes>\
 static auto NAME(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){\
     return reduce(t,axes,F{},keep_dims);\
 }
 
+//tensor sort,search functions implementation
 struct sort_search
 {
     //sort,search functions along given axis or axes
@@ -22,6 +21,7 @@ struct sort_search
     //empty container means apply function along all axes
 
     //return sorted copy of tensor, axis is scalar
+    //Comparator is binary predicate functor, like std::less<void> or std::greater<void>
     template<typename...Ts, typename DimT, typename Comparator>
     static auto sort(const basic_tensor<Ts...>& t, const DimT& axis, const Comparator& comparator){
         using index_type = typename basic_tensor<Ts...>::index_type;
@@ -31,6 +31,7 @@ struct sort_search
     }
 
     //return indexes that sort tensor along axis, axis is scalar
+    //Comparator is binary predicate functor, like std::less<void> or std::greater<void>
     template<typename...Ts, typename DimT, typename Comparator>
     static auto argsort(const basic_tensor<Ts...>& t, const DimT& axis, const Comparator& comparator){
         using config_type = typename basic_tensor<Ts...>::config_type;
@@ -38,6 +39,18 @@ struct sort_search
         const index_type window_size = 1;
         const index_type window_step = 1;
         return slide<index_type>(t,axis,sort_search_reduce_operations::argsort{}, window_size, window_step, comparator, config_type{});
+    }
+
+    //return partially sorted copy of tensor, axis is scalar
+    //Nth can be container or scalar
+    //Comparator is binary predicate functor, like std::less<void> or std::greater<void>
+    template<typename...Ts, typename Nth, typename DimT, typename Comparator>
+    static auto partition(const basic_tensor<Ts...>& t, const Nth& nth, const DimT& axis, const Comparator& comparator){
+        using config_type = typename basic_tensor<Ts...>::config_type;
+        using index_type = typename basic_tensor<Ts...>::index_type;
+        const index_type window_size = 1;
+        const index_type window_step = 1;
+        return slide(t,axis,sort_search_reduce_operations::nth_element_partition{}, window_size, window_step, nth, comparator, config_type{});
     }
 
 
@@ -63,6 +76,18 @@ static auto NAME(const basic_tensor<Ts...>& t, const DimT& axis){\
     return sort_search_selector_t<config_type>::F(t,axis,detail::no_value{});\
 }
 
+#define GTENSOR_TENSOR_PARTITION_ROUTINE(NAME,F)\
+template<typename...Ts, typename Nth, typename DimT, typename Comparator>\
+static auto NAME(const basic_tensor<Ts...>& t, const Nth& nth, const DimT& axis, const Comparator& comparator){\
+    using config_type = typename basic_tensor<Ts...>::config_type;\
+    return sort_search_selector_t<config_type>::F(t,nth,axis,comparator);\
+}\
+template<typename...Ts, typename Nth, typename DimT>\
+static auto NAME(const basic_tensor<Ts...>& t, const Nth& nth, const DimT& axis){\
+    using config_type = typename basic_tensor<Ts...>::config_type;\
+    return sort_search_selector_t<config_type>::F(t,nth,axis,detail::no_value{});\
+}
+
 #define GTENSOR_TENSOR_SORT_SEARCH_REDUCE_ROUTINE(NAME,F)\
 template<typename...Ts, typename Axes>\
 auto NAME(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){\
@@ -81,14 +106,20 @@ auto NAME(const basic_tensor<Ts...>& t, bool keep_dims = false){\
 }
 
 //return sorted copy of tensor, axis is scalar
-//Comparator is binary predicate to compare elements
+//Comparator is binary predicate functor, like std::less<void> or std::greater<void>
 //if Comparator not given operator< is used
 GTENSOR_TENSOR_SORT_ROUTINE(sort,sort);
 
 //return indexes that sort tensor along axis, axis is scalar
-//Comparator is binary predicate to compare elements
+//Comparator is binary predicate functor, like std::less<void> or std::greater<void>
 //if Comparator not given operator< is used
 GTENSOR_TENSOR_SORT_ROUTINE(argsort,argsort);
+
+//return partially sorted copy of tensor, axis is scalar
+//Nth can be container or scalar
+//Comparator is binary predicate functor, like std::less<void> or std::greater<void>
+//if Comparator not given operator< is used
+GTENSOR_TENSOR_PARTITION_ROUTINE(partition,partition);
 
 //index of min element along given axes, propagating nan
 //axes can be container or scalar

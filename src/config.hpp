@@ -26,8 +26,8 @@ struct default_config
     //using div_mode = mode_div_native;
 
     //specify default traverse order of iterators
-    //using order = c_order;
-    using order = f_order;
+    using order = c_order;
+    //using order = f_order;
 
     //data elements storage template
     //must provide at least storage(const difference_type& n) constructor, which constructs storage of size n
