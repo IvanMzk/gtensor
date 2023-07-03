@@ -53,6 +53,18 @@ struct sort_search
         return slide(t,axis,sort_search_reduce_operations::nth_element_partition{}, window_size, window_step, nth, comparator, config_type{});
     }
 
+    //return indexes that partially sort tensor along axis, axis is scalar
+    //Nth can be container or scalar
+    //Comparator is binary predicate functor, like std::less<void> or std::greater<void>
+    template<typename...Ts, typename Nth, typename DimT, typename Comparator>
+    static auto argpartition(const basic_tensor<Ts...>& t, const Nth& nth, const DimT& axis, const Comparator& comparator){
+        using config_type = typename basic_tensor<Ts...>::config_type;
+        using index_type = typename basic_tensor<Ts...>::index_type;
+        const index_type window_size = 1;
+        const index_type window_step = 1;
+        return slide<index_type>(t,axis,sort_search_reduce_operations::nth_element_argpartition{}, window_size, window_step, nth, comparator, config_type{});
+    }
+
 
     GTENSOR_TENSOR_SORT_SEARCH_REDUCE_FUNCTION(argmin,sort_search_reduce_operations::argmin);
     GTENSOR_TENSOR_SORT_SEARCH_REDUCE_FUNCTION(argmax,sort_search_reduce_operations::argmax);
@@ -117,9 +129,13 @@ GTENSOR_TENSOR_SORT_ROUTINE(argsort,argsort);
 
 //return partially sorted copy of tensor, axis is scalar
 //Nth can be container or scalar
-//Comparator is binary predicate functor, like std::less<void> or std::greater<void>
-//if Comparator not given operator< is used
+//Comparator is binary predicate functor, like std::less<void> or std::greater<void>, if Comparator not given operator< is used
 GTENSOR_TENSOR_PARTITION_ROUTINE(partition,partition);
+
+//return indexes that partially sort tensor along axis, axis is scalar
+//Nth can be container or scalar
+//Comparator is binary predicate functor, like std::less<void> or std::greater<void>, if Comparator not given operator< is used
+GTENSOR_TENSOR_PARTITION_ROUTINE(argpartition,argpartition);
 
 //index of min element along given axes, propagating nan
 //axes can be container or scalar

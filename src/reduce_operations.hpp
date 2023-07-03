@@ -718,7 +718,7 @@ struct argsort
 };
 
 template<typename It, typename Comparator>
-void nth_element_helper(It first, It nth, It last, const Comparator& comparator){
+void nth_element_partition_helper(It first, It nth, It last, const Comparator& comparator){
     static constexpr bool has_comparator = !std::is_same_v<Comparator,detail::no_value>;
     if constexpr (has_comparator){
         std::nth_element(first,nth,last,comparator);
@@ -755,21 +755,72 @@ struct nth_element_partition
         if constexpr (is_nth_container){
             using nth_container_type = typename Config::template container<difference_type>;
             check_nth(n,nth);
-            nth_container_type nth_{};
-            detail::reserve(nth_,nth.size());
-            std::copy(nth.begin(),nth.end(),std::back_inserter(nth_));
+            nth_container_type nth_{nth.begin(),nth.end()};
             std::sort(nth_.begin(),nth_.end());
             auto prev = difference_type{-1};
             for (auto nth_it = nth_.begin(),nth_last = nth_.end(); nth_it!=nth_last; ++nth_it){
                 const auto& next = static_cast<const difference_type&>(*nth_it);
                 check_nth(n,next);
-                nth_element_helper(dfirst+(prev+1),dfirst+next,dlast,comparator);
+                nth_element_partition_helper(dfirst+(prev+1),dfirst+next,dlast,comparator);
                 prev = next;
             }
         }else{  //nth scalar
             const auto nth_ = static_cast<difference_type>(nth);
             check_nth(n,nth_);
-            nth_element_helper(dfirst,dfirst+nth_,dlast,comparator);
+            nth_element_partition_helper(dfirst,dfirst+nth_,dlast,comparator);
+        }
+    }
+};
+
+template<typename It, typename Container, typename Comparator>
+void nth_element_argpartition_helper(It first, It nth, It last, const Container& elements, const Comparator& comparator){
+    using container_size_type = typename Container::size_type;
+    if constexpr (std::is_same_v<Comparator,detail::no_value>){
+        std::nth_element(first,nth,last,
+            [&elements](const auto& l, const auto& r){
+                return elements[static_cast<const container_size_type&>(l)] < elements[static_cast<const container_size_type&>(r)];
+            }
+        );
+    }else{
+        std::nth_element(first,nth,last,
+            [&elements,comparator](const auto& l, const auto& r){
+                return comparator(elements[static_cast<const container_size_type&>(l)],elements[static_cast<const container_size_type&>(r)]);
+            }
+        );
+    }
+}
+
+//slide operation to make partially sorted copy
+struct nth_element_argpartition
+{
+    //Comparator can be binary predicate functor or no_value
+    //Nth can be container or scalar
+    template<typename It, typename DstIt, typename Nth, typename Comparator, typename Config>
+    void operator()(It first, It last, DstIt dfirst, DstIt dlast, const Nth& nth, const Comparator& comparator, Config){
+        using difference_type = typename std::iterator_traits<It>::difference_type;
+        using value_type = typename std::iterator_traits<It>::value_type;
+        using elements_container_type = typename Config::template container<value_type>;
+        static constexpr bool is_nth_container = detail::is_container_of_type_v<Nth,difference_type>;
+        static_assert(is_nth_container || detail::is_static_castable_v<Nth,difference_type>,"invalid nth argument");
+        const auto n = last-first;
+        elements_container_type elements(first,last);
+        std::iota(dfirst,dlast,0);
+        if constexpr (is_nth_container){
+            using nth_container_type = typename Config::template container<difference_type>;
+            check_nth(n,nth);
+            nth_container_type nth_{nth.begin(),nth.end()};
+            std::sort(nth_.begin(),nth_.end());
+            auto prev = difference_type{-1};
+            for (auto nth_it = nth_.begin(),nth_last = nth_.end(); nth_it!=nth_last; ++nth_it){
+                const auto& next = static_cast<const difference_type&>(*nth_it);
+                check_nth(n,next);
+                nth_element_argpartition_helper(dfirst+(prev+1),dfirst+next,dlast,elements,comparator);
+                prev = next;
+            }
+        }else{  //nth scalar
+            const auto nth_ = static_cast<difference_type>(nth);
+            check_nth(n,nth_);
+            nth_element_argpartition_helper(dfirst,dfirst+nth_,dlast,elements,comparator);
         }
     }
 };
