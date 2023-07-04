@@ -73,6 +73,52 @@ struct sort_search
 
     GTENSOR_TENSOR_SORT_SEARCH_REDUCE_FUNCTION(count_nonzero,sort_search_reduce_operations::count_nonzero);
 
+    template<typename...Ts>
+    static auto nonzero(const basic_tensor<Ts...>& t){
+        using order = typename basic_tensor<Ts...>::order;
+        using config_type = typename basic_tensor<Ts...>::config_type;
+        using dim_type = typename basic_tensor<Ts...>::dim_type;
+        using index_type = typename basic_tensor<Ts...>::index_type;
+        using container_type = typename config_type::template container<index_type>;
+        using container_difference_type = typename container_type::difference_type;
+        using result_config_type = config::extend_config_t<config_type,index_type>;
+        using result_tensor_type = tensor<index_type,order,result_config_type>;
+        using result_container_type = typename config_type::template container<result_tensor_type>;
+        const auto dim = static_cast<container_difference_type>(t.dim());
+        if (t.empty()){
+            result_container_type res{};
+            detail::reserve(res,dim);
+            for (container_difference_type i=0; i!=dim; ++i){
+                res.emplace_back();
+            }
+            return res;
+        }else{
+            container_type indexes{};
+            if constexpr (detail::is_static_castable_v<dim_type,index_type>){
+                const auto n = t.size()*static_cast<index_type>(t.dim());
+                detail::reserve(indexes,n);
+            }
+            walker_forward_traverser<config_type,decltype(t.create_walker())> traverser{t.shape(),t.create_walker()};
+            do{
+                if (static_cast<bool>(*traverser.walker())){
+                    std::copy(traverser.index().begin(),traverser.index().end(),std::back_inserter(indexes));
+                }
+            }while(traverser.template next<config::c_order>());
+            const auto nonzero_n = static_cast<index_type>(indexes.size() / dim);
+            result_container_type res{};
+            detail::reserve(res,dim);
+            auto indexes_first = indexes.begin();
+            for (container_difference_type i=0; i!=dim; ++i,++indexes_first){
+                auto& e = res.emplace_back(std::initializer_list<index_type>{nonzero_n},0);
+                auto indexes_it = indexes_first;
+                for (auto it=e.begin(),last=e.end(); it!=last; ++it,indexes_it+=dim){
+                    *it = *indexes_it;
+                }
+            }
+            return res;
+        }
+    }
+
 };  //end of struct sort_search
 
 //tensor sort_search frontend
@@ -158,6 +204,12 @@ GTENSOR_TENSOR_SORT_SEARCH_REDUCE_ROUTINE(nanargmax,nanargmax);
 //count number of values for which static_cast<bool>(e) evaluates to true
 //axes can be container or scalar
 GTENSOR_TENSOR_SORT_SEARCH_REDUCE_ROUTINE(count_nonzero,count_nonzero);
+
+template<typename...Ts>
+auto nonzero(const basic_tensor<Ts...>& t){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return sort_search_selector_t<config_type>::nonzero(t);
+}
 
 }   //end of namespace gtensor
 #endif

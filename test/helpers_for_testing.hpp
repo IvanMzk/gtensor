@@ -67,6 +67,15 @@ auto type_to_str(){
     return ss.str();
 }
 
+template<typename It>
+auto range_to_str(It first, It last){
+    std::stringstream ss{};
+    for (;first!=last; ++first){
+        ss<<*first<<" ";
+    }
+    return ss.str();
+}
+
 }   //end of namespace helpers_for_testing
 
 #endif

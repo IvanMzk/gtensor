@@ -606,3 +606,77 @@ TEST_CASE("test_sort_search_count_nonzero_overload","[test_sort_search]")
     REQUIRE(count_nonzero(tensor_type{{2,1,-1,6,3},{8,2,1,0,5},{-1,7,0,4,2},{4,4,2,1,4},{3,1,6,4,3}},{0},true) == result_tensor_type{{5,5,4,4,5}});
 }
 
+//nonzero
+TEST_CASE("test_sort_search_nonzero","[test_sort_search]")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using order = tensor_type::order;
+    using config_type = tensor_type::config_type;
+    using index_type = tensor_type::index_type;
+    using result_config_type = gtensor::config::extend_config_t<config_type,index_type>;
+    using result_tensor_type = gtensor::tensor<index_type,order,result_config_type>;
+    using result_container_type = config_type::template container<result_tensor_type>;
+    using result_tensor_c_order_type = gtensor::tensor<index_type,gtensor::config::c_order,result_config_type>;
+    using result_container_c_order_type = config_type::template container<result_tensor_c_order_type>;
+
+    using gtensor::nonzero;
+    using helpers_for_testing::apply_by_element;
+
+    REQUIRE(std::is_same_v<decltype(nonzero(std::declval<tensor_type>())),result_container_type>);
+
+    //0tensor,1expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(tensor_type{},result_container_type{result_tensor_type{}}),
+        std::make_tuple(tensor_type{}.reshape(0,2,3),result_container_c_order_type{result_tensor_c_order_type{},result_tensor_c_order_type{},result_tensor_c_order_type{}}),
+        std::make_tuple(tensor_type{1},result_container_type{result_tensor_type{0}}),
+        std::make_tuple(tensor_type{0},result_container_type{result_tensor_type{}}),
+        std::make_tuple(tensor_type{0,0,0,0},result_container_type{result_tensor_type{}}),
+        std::make_tuple(tensor_type{1,3,0,0,1,4,6,-2,1,0},result_container_type{result_tensor_type{0,1,4,5,6,7,8}}),
+        std::make_tuple(
+            tensor_type{{2,1,-1,6,0},{8,2,1,0,5},{-1,7,0,4,2},{4,4,2,1,4},{0,0,6,0,3}},
+            result_container_type{result_tensor_type{0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,3,4,4},result_tensor_type{0,1,2,3,0,1,2,4,0,1,3,4,0,1,2,3,4,2,4}}
+        ),
+        std::make_tuple(
+            tensor_type{{{1,3,0},{2,2,2}},{{1,5,2},{0,0,1}},{{0,1,0},{1,0,1}}},
+            result_container_type{result_tensor_type{0,0,0,0,0,1,1,1,1,2,2,2},result_tensor_type{0,0,1,1,1,0,0,0,1,0,1,1},result_tensor_type{0,1,0,1,2,0,1,2,2,1,0,2}}
+        )
+    );
+    auto test = [](const auto& t){
+        auto ten = std::get<0>(t);
+        auto expected = std::get<1>(t);
+
+        auto result = nonzero(ten);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test,test_data);
+}
+
+TEST_CASE("test_sort_search_nonzero_index_map_view","[test_sort_search]")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::nonzero;
+    using helpers_for_testing::apply_by_element;
+
+    //0tensor,1expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(tensor_type{},tensor_type{}),
+        std::make_tuple(tensor_type{}.reshape(0,2,3),tensor_type{}),
+        std::make_tuple(tensor_type{1},tensor_type{1}),
+        std::make_tuple(tensor_type{0},tensor_type{}),
+        std::make_tuple(tensor_type{0,0,0,0},tensor_type{}),
+        std::make_tuple(tensor_type{1,3,0,0,1,4,6,-2,1,0},tensor_type{1,3,1,4,6,-2,1}),
+        std::make_tuple(tensor_type{{2,1,-1,6,0},{8,2,1,0,5},{-1,7,0,4,2},{4,4,2,1,4},{0,0,6,0,3}},tensor_type{2,1,-1,6,8,2,1,5,-1,7,4,2,4,4,2,1,4,6,3}),
+        std::make_tuple(tensor_type{{{1,3,0},{2,2,2}},{{1,5,2},{0,0,1}},{{0,1,0},{1,0,1}}},tensor_type{1,3,2,2,2,1,5,2,1,1,1,1})
+    );
+    auto test = [](const auto& t){
+        auto ten = std::get<0>(t);
+        auto expected = std::get<1>(t);
+
+        auto result = ten(nonzero(ten));
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test,test_data);
+}
+
