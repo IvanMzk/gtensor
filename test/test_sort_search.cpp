@@ -2,6 +2,7 @@
 #include <iomanip>
 #include "catch.hpp"
 #include "helpers_for_testing.hpp"
+#include "test_config.hpp"
 #include "tensor.hpp"
 #include "sort_search.hpp"
 
@@ -609,7 +610,7 @@ TEST_CASE("test_sort_search_count_nonzero_overload","[test_sort_search]")
 //nonzero
 TEST_CASE("test_sort_search_nonzero","[test_sort_search]")
 {
-    using value_type = double;
+    using value_type = int;
     using tensor_type = gtensor::tensor<value_type>;
     using order = tensor_type::order;
     using config_type = tensor_type::config_type;
@@ -640,6 +641,10 @@ TEST_CASE("test_sort_search_nonzero","[test_sort_search]")
         std::make_tuple(
             tensor_type{{{1,3,0},{2,2,2}},{{1,5,2},{0,0,1}},{{0,1,0},{1,0,1}}},
             result_container_type{result_tensor_type{0,0,0,0,0,1,1,1,1,2,2,2},result_tensor_type{0,0,1,1,1,0,0,0,1,0,1,1},result_tensor_type{0,1,0,1,2,0,1,2,2,1,0,2}}
+        ),
+        std::make_tuple(
+            tensor_type{{{0,0,0},{0,0,0}},{{0,0,0},{0,0,0}},{{0,0,0},{0,0,0}}},
+            result_container_type{result_tensor_type{},result_tensor_type{},result_tensor_type{}}
         )
     );
     auto test = [](const auto& t){
@@ -680,3 +685,56 @@ TEST_CASE("test_sort_search_nonzero_index_map_view","[test_sort_search]")
     apply_by_element(test,test_data);
 }
 
+//argwhere
+TEMPLATE_TEST_CASE("test_sort_search_argwhere","[test_sort_search]",
+    //0tensor layout, 1traverse order
+    (std::tuple<gtensor::config::c_order,gtensor::config::c_order>),
+    (std::tuple<gtensor::config::c_order,gtensor::config::f_order>),
+    (std::tuple<gtensor::config::f_order,gtensor::config::c_order>),
+    (std::tuple<gtensor::config::f_order,gtensor::config::f_order>)
+)
+{
+    using value_type = int;
+    using layout = typename std::tuple_element_t<0,TestType>;
+    using traverse_order = typename std::tuple_element_t<1,TestType>;
+    using config_type = gtensor::config::extend_config_t<test_config::config_order_selector_t<traverse_order>,value_type>;
+    using tensor_type = gtensor::tensor<value_type,layout,config_type>;
+    using index_type = typename tensor_type::index_type;
+    using result_config_type = gtensor::config::extend_config_t<config_type,index_type>;
+    using result_tensor_type = gtensor::tensor<index_type,layout,result_config_type>;
+
+    using gtensor::argwhere;
+    using helpers_for_testing::apply_by_element;
+
+    REQUIRE(std::is_same_v<decltype(argwhere(std::declval<tensor_type>())),result_tensor_type>);
+
+    //0tensor,1expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(tensor_type{},result_tensor_type{}.reshape(0,1)),
+        std::make_tuple(tensor_type{}.reshape(0,2,3),result_tensor_type{}.reshape(0,3)),
+        std::make_tuple(tensor_type{1},result_tensor_type{{0}}),
+        std::make_tuple(tensor_type{0},result_tensor_type{}.reshape(0,1)),
+        std::make_tuple(tensor_type{0,0,0,0},result_tensor_type{}.reshape(0,1)),
+        std::make_tuple(tensor_type{1,3,0,0,1,4,6,-2,1,0},result_tensor_type{{0},{1},{4},{5},{6},{7},{8}}),
+        std::make_tuple(
+            tensor_type{{2,1,-1,6,0},{8,2,1,0,5},{-1,7,0,4,2},{4,4,2,1,4},{0,0,6,0,3}},
+            result_tensor_type{{0,0},{0,1},{0,2},{0,3},{1,0},{1,1},{1,2},{1,4},{2,0},{2,1},{2,3},{2,4},{3,0},{3,1},{3,2},{3,3},{3,4},{4,2},{4,4}}
+        ),
+        std::make_tuple(
+            tensor_type{{{1,3,0},{2,2,2}},{{1,5,2},{0,0,1}},{{0,1,0},{1,0,1}}},
+            result_tensor_type{{0,0,0},{0,0,1},{0,1,0},{0,1,1},{0,1,2},{1,0,0},{1,0,1},{1,0,2},{1,1,2},{2,0,1},{2,1,0},{2,1,2}}
+        ),
+        std::make_tuple(
+            tensor_type{{{0,0,0},{0,0,0}},{{0,0,0},{0,0,0}},{{0,0,0},{0,0,0}}},
+            result_tensor_type{}.reshape(0,3)
+        )
+    );
+    auto test = [](const auto& t){
+        auto ten = std::get<0>(t);
+        auto expected = std::get<1>(t);
+
+        auto result = argwhere(ten);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test,test_data);
+}
