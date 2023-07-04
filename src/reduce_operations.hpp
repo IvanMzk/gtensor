@@ -881,6 +881,21 @@ using argmax = argextremum_nanargextremum<nan_propagate_comparator<std::greater<
 using nanargmin = argextremum_nanargextremum<nan_ignore_comparator<std::less<void>>,std::true_type>;
 using nanargmax = argextremum_nanargextremum<nan_ignore_comparator<std::greater<void>>,std::true_type>;
 
+struct count_nonzero
+{
+    template<typename It>
+    auto operator()(It first, It last){
+        using difference_type = typename std::iterator_traits<It>::difference_type;
+        auto counter = [](const auto& r, const auto& e){
+            if (static_cast<bool>(e)){
+                return r+1;
+            }else{
+                return r;
+            }
+        };
+        return std::accumulate(first,last,difference_type{0},counter);
+    }
+};
 
 }
 

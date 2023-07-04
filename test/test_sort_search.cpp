@@ -551,4 +551,58 @@ TEST_CASE("test_math_argmax_nanargmax_exception","test_math")
     REQUIRE_THROWS_AS(nanargmax(tensor_type{{nan,nan,nan},{nan,nan,nan}},1), reduce_exception);
 }
 
+//count_nonzero
+TEST_CASE("test_sort_search_count_nonzero","[test_sort_search]")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using dim_type = typename tensor_type::dim_type;
+    using index_type = typename tensor_type::index_type;
+    using result_tensor_type = gtensor::tensor<index_type>;
+    using gtensor::count_nonzero;
+    using helpers_for_testing::apply_by_element;
+
+    REQUIRE(std::is_same_v<typename decltype(count_nonzero(std::declval<tensor_type>(),std::declval<dim_type>(),std::declval<bool>()))::value_type,index_type>);
+
+    //0tensor,1axes,2keep_dims,3expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(tensor_type{},0,false,result_tensor_type(0)),
+        std::make_tuple(tensor_type{1},0,false,result_tensor_type(1)),
+        std::make_tuple(tensor_type{0},0,false,result_tensor_type(0)),
+        std::make_tuple(tensor_type{1,3,0,0,1,4,6,-2,1,0},0,false,result_tensor_type(7)),
+        std::make_tuple(tensor_type{{2,1,-1,6,3},{8,2,1,0,5},{-1,7,0,4,2},{4,4,2,1,4},{3,1,6,4,3}},0,false,result_tensor_type{5,5,4,4,5}),
+        std::make_tuple(tensor_type{{2,1,-1,6,3},{8,2,1,0,5},{-1,7,0,4,2},{4,4,2,1,4},{3,1,6,4,3}},1,false,result_tensor_type{5,4,4,5,5}),
+        std::make_tuple(tensor_type{{2,1,-1,6,3},{8,2,1,0,5},{-1,7,0,4,2},{4,4,2,1,4},{3,1,6,4,3}},std::vector<int>{0,1},false,result_tensor_type(23)),
+        std::make_tuple(tensor_type{1,3,0,0,1,4,6,-2,1,0},0,true,result_tensor_type{7}),
+        std::make_tuple(tensor_type{{2,1,-1,6,3},{8,2,1,0,5},{-1,7,0,4,2},{4,4,2,1,4},{3,1,6,4,3}},0,true,result_tensor_type{{5,5,4,4,5}}),
+        std::make_tuple(tensor_type{{2,1,-1,6,3},{8,2,1,0,5},{-1,7,0,4,2},{4,4,2,1,4},{3,1,6,4,3}},1,true,result_tensor_type{{5},{4},{4},{5},{5}}),
+        std::make_tuple(tensor_type{{2,1,-1,6,3},{8,2,1,0,5},{-1,7,0,4,2},{4,4,2,1,4},{3,1,6,4,3}},std::vector<int>{0,1},true,result_tensor_type{{23}})
+
+    );
+    auto test = [](const auto& t){
+        auto ten = std::get<0>(t);
+        auto axes = std::get<1>(t);
+        auto keep_dims = std::get<2>(t);
+        auto expected = std::get<3>(t);
+
+        auto result = count_nonzero(ten,axes,keep_dims);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test,test_data);
+}
+
+TEST_CASE("test_sort_search_count_nonzero_overload","[test_sort_search]")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using index_type = typename tensor_type::index_type;
+    using result_tensor_type = gtensor::tensor<index_type>;
+    using gtensor::count_nonzero;
+
+    REQUIRE(count_nonzero(tensor_type{1,3,0,0,1,4,6,-2,1,0}) == result_tensor_type(7));
+    REQUIRE(count_nonzero(tensor_type{{2,1,-1,6,3},{8,2,1,0,5},{-1,7,0,4,2},{4,4,2,1,4},{3,1,6,4,3}}) == result_tensor_type(23));
+    REQUIRE(count_nonzero(tensor_type{{2,1,-1,6,3},{8,2,1,0,5},{-1,7,0,4,2},{4,4,2,1,4},{3,1,6,4,3}},{1,0}) == result_tensor_type(23));
+    REQUIRE(count_nonzero(tensor_type{{2,1,-1,6,3},{8,2,1,0,5},{-1,7,0,4,2},{4,4,2,1,4},{3,1,6,4,3}},true) == result_tensor_type{{23}});
+    REQUIRE(count_nonzero(tensor_type{{2,1,-1,6,3},{8,2,1,0,5},{-1,7,0,4,2},{4,4,2,1,4},{3,1,6,4,3}},{0},true) == result_tensor_type{{5,5,4,4,5}});
+}
 

@@ -71,6 +71,8 @@ struct sort_search
     GTENSOR_TENSOR_SORT_SEARCH_REDUCE_FUNCTION(nanargmin,sort_search_reduce_operations::nanargmin);
     GTENSOR_TENSOR_SORT_SEARCH_REDUCE_FUNCTION(nanargmax,sort_search_reduce_operations::nanargmax);
 
+    GTENSOR_TENSOR_SORT_SEARCH_REDUCE_FUNCTION(count_nonzero,sort_search_reduce_operations::count_nonzero);
+
 };  //end of struct sort_search
 
 //tensor sort_search frontend
@@ -152,6 +154,10 @@ GTENSOR_TENSOR_SORT_SEARCH_REDUCE_ROUTINE(nanargmin,nanargmin);
 //index of max element along given axes, ignoring nan
 //axes can be container or scalar
 GTENSOR_TENSOR_SORT_SEARCH_REDUCE_ROUTINE(nanargmax,nanargmax);
+
+//count number of values for which static_cast<bool>(e) evaluates to true
+//axes can be container or scalar
+GTENSOR_TENSOR_SORT_SEARCH_REDUCE_ROUTINE(count_nonzero,count_nonzero);
 
 }   //end of namespace gtensor
 #endif
