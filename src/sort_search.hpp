@@ -171,27 +171,17 @@ struct sort_search
 //frontend uses compile-time dispatch to select implementation, see module_selector.hpp
 
 #define GTENSOR_TENSOR_SORT_ROUTINE(NAME,F)\
-template<typename...Ts, typename DimT, typename Comparator>\
-static auto NAME(const basic_tensor<Ts...>& t, const DimT& axis, const Comparator& comparator){\
+template<typename...Ts, typename DimT=int, typename Comparator=std::less<void>>\
+static auto NAME(const basic_tensor<Ts...>& t, const DimT& axis=-1, const Comparator& comparator=std::less<void>{}){\
     using config_type = typename basic_tensor<Ts...>::config_type;\
     return sort_search_selector_t<config_type>::F(t,axis,comparator);\
-}\
-template<typename...Ts, typename DimT>\
-static auto NAME(const basic_tensor<Ts...>& t, const DimT& axis){\
-    using config_type = typename basic_tensor<Ts...>::config_type;\
-    return sort_search_selector_t<config_type>::F(t,axis,detail::no_value{});\
 }
 
 #define GTENSOR_TENSOR_PARTITION_ROUTINE(NAME,F)\
-template<typename...Ts, typename Nth, typename DimT, typename Comparator>\
-static auto NAME(const basic_tensor<Ts...>& t, const Nth& nth, const DimT& axis, const Comparator& comparator){\
+template<typename...Ts, typename Nth, typename DimT=int, typename Comparator=std::less<void>>\
+static auto NAME(const basic_tensor<Ts...>& t, const Nth& nth, const DimT& axis=-1, const Comparator& comparator=std::less<void>{}){\
     using config_type = typename basic_tensor<Ts...>::config_type;\
     return sort_search_selector_t<config_type>::F(t,nth,axis,comparator);\
-}\
-template<typename...Ts, typename Nth, typename DimT>\
-static auto NAME(const basic_tensor<Ts...>& t, const Nth& nth, const DimT& axis){\
-    using config_type = typename basic_tensor<Ts...>::config_type;\
-    return sort_search_selector_t<config_type>::F(t,nth,axis,detail::no_value{});\
 }
 
 #define GTENSOR_TENSOR_SORT_SEARCH_REDUCE_ROUTINE(NAME,F)\
