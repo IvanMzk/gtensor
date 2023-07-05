@@ -707,7 +707,7 @@ TEMPLATE_TEST_CASE("test_slide_flatten","[test_reduce]",
     using test_reduce_::cumsum;
     using test_reduce_::diff_1;
     using test_reduce_::diff_2;
-    using gtensor::slide;
+    using gtensor::slide_flatten;
     using helpers_for_testing::apply_by_element;
 
     //0tensor,1functor,2window_size,3window_step,4expected
@@ -727,7 +727,7 @@ TEMPLATE_TEST_CASE("test_slide_flatten","[test_reduce]",
         auto window_size = std::get<2>(t);
         auto window_step = std::get<3>(t);
         auto expected = std::get<4>(t);
-        auto result = slide(tensor, functor, window_size, window_step);
+        auto result = slide_flatten(tensor, functor, window_size, window_step);
         REQUIRE(result == expected);
     };
     apply_by_element(test, test_data);
@@ -807,7 +807,7 @@ TEST_CASE("test_slide_flatten_exception","[test_reduce]")
     using index_type = typename tensor_type::index_type;
     using gtensor::reduce_exception;
     using test_reduce_::cumsum;
-    using gtensor::slide;
+    using gtensor::slide_flatten;
     using helpers_for_testing::apply_by_element;
 
     //0tensor,1functor,2window_size,3window_step
@@ -822,7 +822,7 @@ TEST_CASE("test_slide_flatten_exception","[test_reduce]")
         auto functor = std::get<1>(t);
         auto window_size = std::get<2>(t);
         auto window_step = std::get<3>(t);
-        REQUIRE_THROWS_AS(slide(tensor, functor, window_size, window_step), reduce_exception);
+        REQUIRE_THROWS_AS(slide_flatten(tensor, functor, window_size, window_step), reduce_exception);
     };
     apply_by_element(test, test_data);
 }
