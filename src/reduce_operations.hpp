@@ -121,6 +121,7 @@ struct nan_propagate_operation : Operation
 template<typename Operation>
 struct nan_ignoring_operation : Operation
 {
+    //r must never be nan = initial value must never be nan
     template<typename R, typename E>
     auto operator()(const R& r, const E& e){
         return gtensor::math::isnan(e) ? r : Operation::operator()(e,r);
@@ -301,12 +302,11 @@ struct ptp
 };
 
 template<typename T>
-auto reduce_empty(){
+T reduce_empty(){
     if constexpr (gtensor::math::numeric_traits<T>::has_nan()){
         return gtensor::math::numeric_traits<T>::nan();
     }else{
         throw reduce_exception("cant reduce zero size dimension without initial value");
-        return T{};    //need same return type
     }
 }
 
@@ -320,11 +320,8 @@ struct mean
             return reduce_empty<res_type>();
         }
         const auto n = static_cast<res_type>(last-first);
-        auto sum_ = static_cast<res_type>(*first);
-        for(++first; first!=last; ++first){
-            sum_ += static_cast<const res_type&>(*first);
-        }
-        return sum_ / n;
+        const auto init = static_cast<res_type>(*first);
+        return std::accumulate(++first,last,init,std::plus<void>{}) / n;
     }
 };
 
@@ -339,26 +336,22 @@ struct nanmean
             return reduce_empty<res_type>();
         }
         if constexpr (gtensor::math::numeric_traits<value_type>::has_nan() && gtensor::math::numeric_traits<res_type>::has_nan()){
-            //find first not nan
-            for(;first!=last; ++first){
-                if (!gtensor::math::isnan(static_cast<const res_type&>(*first))){
-                    break;
+            auto first_not_nan = std::find_if(first,last,[](const auto& e){return !gtensor::math::isnan(static_cast<const res_type&>(e));});
+            if (first_not_nan == last){ //all nans, return first nan
+                return *first;
+            }
+            const auto init = std::make_pair(static_cast<const res_type&>(*first_not_nan),difference_type{1});
+            auto res = std::accumulate(++first_not_nan,last,init,
+                [](const auto& r, const auto& e)
+                {
+                    if (gtensor::math::isnan(e)){
+                        return r;
+                    }else{
+                        return std::make_pair(r.first+e,r.second+1);
+                    }
                 }
-            }
-            if (first == last){ //all nans, return last nan
-                return --first,*first;
-            }
-            auto sum = static_cast<res_type>(*first);
-            difference_type counter{1};
-            for(++first; first!=last; ++first){
-                const auto& e = static_cast<const res_type&>(*first);
-                if (!gtensor::math::isnan(e)){
-                    sum+=e;
-                    ++counter;
-                }
-            }
-            const auto n = static_cast<res_type>(counter);
-            return sum / n;
+            );
+            return res.first / static_cast<res_type>(res.second);
         }else{
             return mean{}(first,last);
         }
@@ -375,14 +368,14 @@ struct var
             return reduce_empty<res_type>();
         }
         const auto n = static_cast<res_type>(last-first);
-        auto sum = static_cast<res_type>(*first);
-        auto sum_2 = sum*sum;
-        for(++first; first!=last; ++first){
-            const auto& e = static_cast<const res_type&>(*first);
-            sum+=e;
-            sum_2+=e*e;
-        }
-        return (n*sum_2 - sum*sum)/(n*n);
+        const auto& e0 = static_cast<const res_type&>(*first);
+        const auto init = std::make_pair(e0,e0*e0);
+        const auto res = std::accumulate(++first,last,init,
+            [](const auto& r, const auto& e){
+                return std::make_pair(r.first+e,r.second+e*e);
+            }
+        );
+        return (n*res.second - res.first*res.first)/(n*n);
     }
 };
 
@@ -397,28 +390,24 @@ struct nanvar
             return reduce_empty<res_type>();
         }
         if constexpr (gtensor::math::numeric_traits<value_type>::has_nan() && gtensor::math::numeric_traits<res_type>::has_nan()){
-            //find first not nan
-            for(;first!=last; ++first){
-                if (!gtensor::math::isnan(*first)){
-                    break;
+            auto first_not_nan = std::find_if(first,last,[](const auto& e){return !gtensor::math::isnan(static_cast<const res_type&>(e));});
+            if (first_not_nan == last){ //all nans, return first nan
+                return *first;
+            }
+            const auto& e0 = static_cast<const res_type&>(*first_not_nan);
+            const auto init = std::make_tuple(e0,e0*e0,difference_type{1});
+            auto res = std::accumulate(++first_not_nan,last,init,
+                [](const auto& r, const auto& e)
+                {
+                    if (gtensor::math::isnan(e)){
+                        return r;
+                    }else{
+                        return std::make_tuple(std::get<0>(r)+e,std::get<1>(r)+e*e,std::get<2>(r)+1);
+                    }
                 }
-            }
-            if (first == last){ //all nans, return last nan
-                return --first,*first;
-            }
-            auto sum = static_cast<res_type>(*first);
-            auto sum_2 = sum*sum;
-            difference_type counter{1};
-            for(++first; first!=last; ++first){
-                const auto& e = static_cast<const res_type&>(*first);
-                if (!gtensor::math::isnan(e)){
-                    sum+=e;
-                    sum_2+=e*e;
-                    ++counter;
-                }
-            }
-            const auto n = static_cast<res_type>(counter);
-            return (n*sum_2 - sum*sum)/(n*n);
+            );
+            const auto n = static_cast<res_type>(std::get<2>(res));
+            return (n*std::get<1>(res) - std::get<0>(res)*std::get<0>(res))/(n*n);
         }else{
             return var{}(first,last);
         }
