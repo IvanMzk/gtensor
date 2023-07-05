@@ -708,11 +708,10 @@ struct argsort
 
 template<typename It, typename Comparator>
 void nth_element_partition_helper(It first, It nth, It last, const Comparator& comparator){
-    static constexpr bool has_comparator = !std::is_same_v<Comparator,detail::no_value>;
-    if constexpr (has_comparator){
-        std::nth_element(first,nth,last,comparator);
-    }else{
+    if constexpr (std::is_same_v<Comparator,detail::no_value>){
         std::nth_element(first,nth,last);
+    }else{
+        std::nth_element(first,nth,last,comparator);
     }
 }
 

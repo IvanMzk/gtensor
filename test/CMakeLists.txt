@@ -13,6 +13,7 @@ endif()
 
 
 target_sources(Test PRIVATE
+    #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_sort_search.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_algorithm.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_expression_template.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_mapping_view.cpp
@@ -45,7 +46,7 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_SOURCE_DIR}/test_math_elementwise.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_math_along_axes.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_statistic.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/test.cpp
 )
