@@ -253,5 +253,9 @@ auto argwhere(const basic_tensor<Ts...>& t){
     return sort_search_selector_t<config_type>::argwhere(t);
 }
 
+#undef GTENSOR_TENSOR_SORT_SEARCH_REDUCE_FUNCTION
+#undef GTENSOR_TENSOR_SORT_ROUTINE
+#undef GTENSOR_TENSOR_PARTITION_ROUTINE
+#undef GTENSOR_TENSOR_SORT_SEARCH_REDUCE_ROUTINE
 }   //end of namespace gtensor
 #endif
