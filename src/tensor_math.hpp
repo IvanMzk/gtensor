@@ -417,13 +417,13 @@ GTENSOR_TENSOR_MATH_CUMULATE_ROUTINE(nancumprod,nancumprod);
 
 //n-th difference along given axis
 //axis is scalar, default is last axis
-template<typename...Ts, typename DimT>
+template<typename...Ts, typename DimT=int>
 auto diff(const basic_tensor<Ts...>& t, std::size_t n = 1, const DimT& axis = -1){
     using config_type = typename basic_tensor<Ts...>::config_type;
     return tensor_math_selector_t<config_type>::diff(t,n,axis);
 }
 //none recursive implementation of second differences, more efficient than diff with n=2
-template<typename...Ts, typename DimT>
+template<typename...Ts, typename DimT=int>
 auto diff2(const basic_tensor<Ts...>& t, const DimT& axis = -1){
     using config_type = typename basic_tensor<Ts...>::config_type;
     return tensor_math_selector_t<config_type>::diff2(t,axis);

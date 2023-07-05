@@ -1318,6 +1318,21 @@ TEST_CASE("test_math_diff2","test_math")
     apply_by_element(test,test_data);
 }
 
+TEST_CASE("test_math_diff_diff2_default_arguments","test_math")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::diff;
+    using gtensor::diff2;
+    using helpers_for_testing::apply_by_element;
+    //default last axis
+    REQUIRE(diff(tensor_type{{2,-1,0,2,3},{4,3,2,0,1},{-2,3,2,1,1},{4,0,1,1,3},{2,1,3,0,-1}},3) == tensor_type{{-3,-2},{-1,4},{6,1},{-6,3},{-8,7}});
+    //default n=1 and last axis
+    REQUIRE(diff(tensor_type{{2,-1,0,2,3},{4,3,2,0,1},{-2,3,2,1,1},{4,0,1,1,3},{2,1,3,0,-1}}) == tensor_type{{-3,1,2,1},{-1,-1,-2,1},{5,-1,-1,0},{-4,1,0,2},{-1,2,-3,-1}});
+    //default last axis
+    REQUIRE(diff2(tensor_type{{2,-1,0,2,3},{4,3,2,0,1},{-2,3,2,1,1},{4,0,1,1,3},{2,1,3,0,-1}}) == tensor_type{{4,1,-1},{0,-1,3},{-6,0,1},{5,-1,2},{3,-5,2}});
+}
+
 //gradient
 TEMPLATE_TEST_CASE("test_math_gradient","test_math",
     double,
