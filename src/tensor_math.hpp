@@ -44,7 +44,7 @@ static auto NAME(const basic_tensor<Ts...>& t){\
     using index_type = typename basic_tensor<Ts...>::index_type;\
     const index_type window_size = 1;\
     const index_type window_step = 1;\
-    return slide(t,F{}, window_size, window_step);\
+    return slide_flatten(t,F{}, window_size, window_step);\
 }
 
 struct tensor_math

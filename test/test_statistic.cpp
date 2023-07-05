@@ -1086,6 +1086,29 @@ TEMPLATE_TEST_CASE("test_statistic_moving_average_exception","test_statistic",
     apply_by_element(test,test_data);
 }
 
+TEST_CASE("test_statistic_moving_average_over_flatten_overload","test_statistic")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::tensor_close;
+    using gtensor::moving_average;
+    using helpers_for_testing::apply_by_element;
+
+    using result_value_type = typename gtensor::math::numeric_traits<value_type>::floating_point_type;
+    using result_tensor_type = gtensor::tensor<result_value_type>;
+
+    //like over flatten, step=1
+    REQUIRE(tensor_close(
+        moving_average(tensor_type{{3,1,0,-1,4},{1,2,5,2,3},{0,1,-2,5,7},{5,2,0,4,1}},tensor_type{1,2,3},1),
+        result_tensor_type{0.833,-0.333,1.667,1.667,2.0,3.333,3.0,3.0,1.333,1.0,-0.667,2.0,4.833,5.667,3.833,1.5,2.333,1.833},1E-2,1E-2)
+    );
+    //like over flatten, step=3
+    REQUIRE(tensor_close(
+        moving_average(tensor_type{{3,1,0,-1,4},{1,2,5,2,3},{0,1,-2,5,7},{5,2,0,4,1}},tensor_type{1,2,3},3),
+        result_tensor_type{0.833,1.667,3.0,1.0,4.833,1.5},1E-2,1E-2)
+    );
+}
+
 //moving mean
 TEMPLATE_TEST_CASE("test_statistic_moving_mean","test_statistic",
     double,
@@ -1163,6 +1186,27 @@ TEMPLATE_TEST_CASE("test_statistic_moving_mean_exception","test_statistic",
         REQUIRE_THROWS_AS(moving_mean(ten,axis,window_size,step), reduce_exception);
     };
     apply_by_element(test,test_data);
+}
+
+TEST_CASE("test_statistic_moving_mean_over_flatten_overload","test_statistic")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::tensor_close;
+    using gtensor::moving_mean;
+    using result_value_type = typename gtensor::math::numeric_traits<value_type>::floating_point_type;
+    using result_tensor_type = gtensor::tensor<result_value_type>;
+
+    //like over flatten, window_size=3,step=1
+    REQUIRE(tensor_close(
+        moving_mean(tensor_type{{3,1,0,-1,4},{1,2,5,2,3},{0,1,-2,5,7},{5,2,0,4,1}},3,1),
+        result_tensor_type{1.333,0.0,1.0,1.333,2.333,2.667,3.0,3.333,1.667,1.333,-0.333,1.333,3.333,5.667,4.667,2.333,2.0,1.667},1E-2,1E-2)
+    );
+    //like over flatten, window_size=3,step=3
+    REQUIRE(tensor_close(
+        moving_mean(tensor_type{{3,1,0,-1,4},{1,2,5,2,3},{0,1,-2,5,7},{5,2,0,4,1}},3,3),
+        result_tensor_type{1.333,1.333,3.0,1.333,3.333,2.333},1E-2,1E-2)
+    );
 }
 
 //histogram
