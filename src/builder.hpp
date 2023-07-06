@@ -3,40 +3,16 @@
 
 #include "common.hpp"
 #include "module_selector.hpp"
+#include "math.hpp"
 #include "tensor.hpp"
 
 namespace gtensor{
-
-namespace detail{
-
-template<typename IdxT>
-void check_eye_args(const IdxT& n,const IdxT& m, const IdxT& k){
-
-}
-
-}   //end of namespace detail
 
 //bulder module implementation
 
 struct builder
 {
-
-    // template<typename T, typename ShT, typename Order = config::c_order, typename Config = config::default_config>
-    // static auto empty(ShT&& shape, Order order = config::c_order{}, Config config = config::default_config{}){
-    //     return tensor<T,Order>(std::forward<ShT>(shape));
-    // }
-
-    // template<typename T, typename Config = config::default_config, typename Order = config::c_order, typename ShT>
-    // static auto empty(ShT&& shape, Order order = Order{}){
-    //     return tensor<T,Order,config::extend_config_t<Config,T>>(std::forward<ShT>(shape));
-    // }
-    // template<typename T, typename Order = config::c_order, typename Config = config::default_config, typename U>
-    // static auto empty(std::initializer_list<U> shape){
-    //     using tensor_type = tensor<T,Order,config::extend_config_t<Config,T>>;
-    //     using shape_type = typename tensor_type::shape_type;
-    //     return tensor<T,Order,config::extend_config_t<Config,T>>(shape_type(shape));
-    // }
-
+    //build from shape and value
     template<typename T, typename Order, typename Config, typename ShT>
     static auto empty(ShT&& shape){
         ASSERT_ORDER(Order);
@@ -143,6 +119,27 @@ struct builder
         return full_like(t,value_type{1});
     }
 
+    //build from numerical ranges
+    template<typename T, typename Order, typename Config, typename U>
+    static auto arange(const U& start, const U& stop, const U& step){
+        ASSERT_ORDER(Order);
+        static_assert(math::numeric_traits<U>::is_integral() || math::numeric_traits<U>::is_floating_point(),"arange arguments must be of numeric type");
+        using tensor_type = tensor<T,Order,config::extend_config_t<Config,T>>;
+        using value_type = typename tensor_type::value_type;
+        using index_type = typename tensor_type::index_type;
+        using shape_type = typename tensor_type::shape_type;
+        using integral_type = math::make_integral_t<U>;
+        using fp_type = math::make_floating_point_t<U>;
+        const auto n = static_cast<index_type>(static_cast<integral_type>(math::ceil((stop-start)/static_cast<fp_type>(step))));
+        tensor_type res(shape_type{n});
+        const auto& step_ = static_cast<const value_type&>(step);
+        auto start_ = static_cast<value_type>(start);
+        for (auto it=res.begin(),last=res.end(); it!=last; ++it,start_+=step_){
+            *it = start_;
+        }
+        return res;
+    }
+
 };  //end of struct builder
 
 //builder module frontend
@@ -229,6 +226,17 @@ auto ones_like(const basic_tensor<Ts...>& t){
     using config_type = typename basic_tensor<Ts...>::config_type;
     return builder_selector_t<config_type>::ones_like(t);
 }
+
+//make 1d tensor of evenly spaced values whithin a given interval
+template<typename T, typename Order = config::c_order, typename Config = config::default_config, typename U>
+auto arange(const U& start, const U& stop, const U& step){
+    return builder_selector_t<Config>::template arange<T,Order,Config>(start,stop,step);
+}
+template<typename T, typename Order = config::c_order, typename Config = config::default_config, typename U>
+auto arange(const U& stop){
+    return builder_selector_t<Config>::template arange<T,Order,Config>(U{0},stop,U{1});
+}
+
 
 }   //end of namespace gtensor
 #endif

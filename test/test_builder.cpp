@@ -276,3 +276,52 @@ TEMPLATE_TEST_CASE("test_builder_full_zeros_ones_like","[test_builder]",
     };
     apply_by_element(test,test_data);
 }
+
+TEST_CASE("test_builder_arange","[test_builder]")
+{
+    using value_type = double;
+    using gtensor::tensor;
+    using tensor_type = tensor<value_type>;
+    using gtensor::tensor_close;
+    using gtensor::arange;
+    using helpers_for_testing::apply_by_element;
+
+    //0start,1stop,2step,3expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(0,0,1,tensor_type{}),
+        std::make_tuple(0,10,1,tensor_type{0,1,2,3,4,5,6,7,8,9}),
+        std::make_tuple(0,10,2,tensor_type{0,2,4,6,8}),
+        std::make_tuple(0,10,3,tensor_type{0,3,6,9}),
+        std::make_tuple(2,10,2,tensor_type{2,4,6,8}),
+        std::make_tuple(2,10,3,tensor_type{2,5,8}),
+        std::make_tuple(2,11,2,tensor_type{2,4,6,8,10}),
+        std::make_tuple(3,10,1,tensor_type{3,4,5,6,7,8,9}),
+        std::make_tuple(3,10,2,tensor_type{3,5,7,9}),
+        std::make_tuple(3,10,3,tensor_type{3,6,9}),
+        std::make_tuple(3,11,2,tensor_type{3,5,7,9}),
+        std::make_tuple(1.0,5.0,1.3,tensor_type{1.0,2.3,3.6,4.9}),
+        std::make_tuple(0.0,1.0,0.08,tensor_type{0.0,0.08,0.16,0.24,0.32,0.4,0.48,0.56,0.64,0.72,0.8,0.88,0.96})
+    );
+    auto test = [](const auto& t){
+        auto start = std::get<0>(t);
+        auto stop = std::get<1>(t);
+        auto step = std::get<2>(t);
+        auto expected = std::get<3>(t);
+        auto result = arange<value_type>(start,stop,step);
+        REQUIRE(tensor_close(result,expected));
+    };
+    apply_by_element(test,test_data);
+}
+
+TEST_CASE("test_builder_arange_overload","[test_builder]")
+{
+    using gtensor::tensor;
+    using gtensor::arange;
+    using helpers_for_testing::apply_by_element;
+
+    REQUIRE(arange<int>(5) == tensor<int>{0,1,2,3,4});
+    REQUIRE(arange<double>(10) == tensor<double>{0,1,2,3,4,5,6,7,8,9});
+
+    REQUIRE(arange<int>(2.2,5.0,0.5) == tensor<int>{2,2,2,2,2,2});
+    REQUIRE(arange<double>(2.2,5.0,0.5) == tensor<double>{2.2,2.7,3.2,3.7,4.2,4.7});
+}
