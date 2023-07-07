@@ -382,3 +382,59 @@ TEST_CASE("test_builder_linspace","[test_builder]")
     apply_by_element(test,test_data);
 }
 
+TEST_CASE("test_builder_logspace","[test_builder]")
+{
+    using value_type = double;
+    using gtensor::tensor;
+    using tensor_type = tensor<value_type>;
+    using gtensor::tensor_close;
+    using gtensor::logspace;
+    using helpers_for_testing::apply_by_element;
+
+    //0start,1stop,2num,3end_point,4base,5axis,6expected
+    auto test_data = std::make_tuple(
+        //end_point true
+        //numeric interval
+        std::make_tuple(0,0,0,true,10,0,tensor_type{}),
+        std::make_tuple(0,1,5,true,10,0,tensor_type{1.0,1.778,3.162,5.623,10.0}),
+        std::make_tuple(3,8,11,true,2,0,tensor_type{8.0,11.314,16.0,22.627,32.0,45.255,64.0,90.51,128.0,181.019,256.0}),
+        //tensor interval
+        std::make_tuple(tensor_type{},tensor_type{},5,true,10,-1,tensor_type{}.reshape(0,5)),
+        std::make_tuple(tensor_type{},tensor_type{}.reshape(2,0),5,true,10,-1,tensor_type{}.reshape(2,0,5)),
+        std::make_tuple(tensor_type{{{0}},{{0}},{{0}}},tensor_type{}.reshape(2,0),5,true,10,1,tensor_type{}.reshape(3,5,2,0)),
+        std::make_tuple(0,tensor_type{1,2,3},5,true,10,-1,tensor_type{{1.0,1.778,3.162,5.623,10.0},{1.0,3.162,10.,31.623,100.0},{1.0,5.623,31.623,177.828,1000.0}}),
+        std::make_tuple(
+            tensor_type{1.1,2.2,3.3},
+            tensor_type{{4.4,5.5,6.6},{7.7,8.8,9.9}},
+            5,
+            true,
+            2,
+            -1,
+            tensor_type{{{2.144,3.797,6.727,11.917,21.112},{4.595,8.14,14.42,25.546,45.255},{9.849,17.448,30.91,54.758,97.006}},{{2.144,6.727,21.112,66.257,207.937},{4.595,14.42,45.255,142.025,445.722},{9.849,30.91,97.006,304.437,955.426}}}
+        ),
+        //end_point false
+        std::make_tuple(0,1,5,false,10,0,tensor_type{1.0,1.585,2.512,3.981,6.31}),
+        std::make_tuple(
+            tensor_type{1.1,2.2,3.3},
+            tensor_type{{4.4,5.5,6.6},{7.7,8.8,9.9}},
+            5,
+            false,
+            2,
+            -1,
+            tensor_type{{{2.144,3.387,5.352,8.456,13.361},{4.595,7.26,11.472,18.126,28.641},{9.849,15.562,24.59,38.854,61.393}},{{2.144,5.352,13.361,33.359,83.286},{4.595,11.472,28.641,71.506,178.527},{9.849,24.59,61.393,153.277,382.681}}}
+        )
+    );
+    auto test = [](const auto& t){
+        auto start = std::get<0>(t);
+        auto stop = std::get<1>(t);
+        auto num = std::get<2>(t);
+        auto end_point = std::get<3>(t);
+        auto base = std::get<4>(t);
+        auto axis = std::get<5>(t);
+        auto expected = std::get<6>(t);
+        auto result = logspace<value_type>(start,stop,num,end_point,base,axis);
+        REQUIRE(tensor_close(result,expected,1E-2,1E-2));
+    };
+    apply_by_element(test,test_data);
+}
+
