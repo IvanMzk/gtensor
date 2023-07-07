@@ -5,6 +5,8 @@
 #include "module_selector.hpp"
 #include "math.hpp"
 #include "tensor.hpp"
+#include "tensor_operators.hpp"
+#include "reduce.hpp"
 
 namespace gtensor{
 
@@ -140,6 +142,85 @@ struct builder
         return res;
     }
 
+    template<typename T, typename Order, typename Config, typename Start, typename Stop, typename U, typename DimT>
+    static auto linspace(const Start& start, const Stop& stop, const U& num, const DimT& axis){
+        auto generator = [](auto first, auto last, const auto& start, const auto& stop, const auto& num){
+            using num_type = std::remove_cv_t<std::remove_reference_t<decltype(num)>>;
+            using fp_type = math::make_floating_point_t<num_type>;
+            const auto intervals_n = static_cast<fp_type>(num-1);
+            const auto step = (stop-start)/intervals_n;
+            auto start_ = static_cast<fp_type>(start);
+            for(;first!=last; ++first,start_+=step){
+                *first = start_;
+            }
+        };
+        return make_space<T,Order,Config>(start,stop,num,axis,generator);
+    }
+
+private:
+
+    template<typename T, typename Order, typename Config, typename Start, typename Stop, typename U, typename DimT, typename Generator>
+    static auto make_space(const Start& start, const Stop& stop, const U& num, const DimT& axis_, Generator generator){
+        static constexpr bool is_start_numeric = math::numeric_traits<Start>::is_integral() || math::numeric_traits<Start>::is_floating_point();
+        static constexpr bool is_stop_numeric = math::numeric_traits<Stop>::is_integral() || math::numeric_traits<Stop>::is_floating_point();
+        static_assert(math::numeric_traits<U>::is_integral(),"num must be of integral type");
+        static_assert(is_start_numeric || detail::is_tensor_v<Start>,"Start must be of numeric or tensor type");
+        static_assert(is_stop_numeric || detail::is_tensor_v<Stop>,"Stop must be of numeric or tensor type");
+        using tensor_type = tensor<T,Order,config::extend_config_t<Config,T>>;
+        using config_type = typename tensor_type::config_type;
+        using dim_type = typename tensor_type::dim_type;
+        using index_type = typename tensor_type::index_type;
+        using shape_type = typename tensor_type::shape_type;
+        const auto n = static_cast<index_type>(num);
+        if constexpr (is_start_numeric && is_stop_numeric){
+            tensor_type res(shape_type{n});
+            generator(res.begin(),res.end(),start,stop,num);
+            return res;
+        }else{  //start or stop or both are tensors
+            auto intervals = n_operator(
+                [](const auto& start_element, const auto& stop_element){
+                    return std::make_pair(start_element,stop_element);
+                },
+                start,
+                stop
+            );
+            const auto res_dim = intervals.dim()+1;
+            const auto axis = detail::make_axis(res_dim, axis_);
+            tensor_type res(make_space_shape(intervals.shape(),n,axis));
+            if (!res.empty()){
+                using predicate_type = detail::reduce_traverse_predicate<config_type, dim_type>;
+                using res_traverser_type = walker_forward_traverser<config_type, decltype(res.create_walker()), predicate_type>;
+                predicate_type predicate{axis, true};
+                const auto& res_shape = res.shape();
+                res_traverser_type res_traverser{res_shape, res.create_walker(), predicate};
+                auto a = intervals.template traverse_order_adapter<Order>();
+                for (auto it=a.begin(),last=a.end(); it!=last; ++it,res_traverser.template next<Order>()){
+                    const auto& interval = *it;
+                    generator(
+                        detail::make_axis_iterator(res_traverser.walker(),axis,index_type{0}),
+                        detail::make_axis_iterator(res_traverser.walker(),axis,n),
+                        interval.first,
+                        interval.second,
+                        num
+                    );
+                }
+            }
+            return res;
+        }
+    }
+
+    template<typename ShT, typename IdxT, typename DimT>
+    static auto make_space_shape(const ShT& shape, const IdxT& num, const DimT& axis){
+        const auto dim = detail::make_dim(shape);
+        ShT res(dim+1);
+        std::copy(shape.begin(), shape.begin()+axis, res.begin());
+        std::copy(shape.begin()+axis, shape.end(), res.begin()+(axis+1));
+        res[axis] = num;
+        return res;
+    }
+
+
+
 };  //end of struct builder
 
 //builder module frontend
@@ -235,6 +316,12 @@ auto arange(const U& start, const U& stop, const U& step){
 template<typename T, typename Order = config::c_order, typename Config = config::default_config, typename U>
 auto arange(const U& stop){
     return builder_selector_t<Config>::template arange<T,Order,Config>(U{0},stop,U{1});
+}
+
+//make tensor of num evenly spaced samples, calculated over the interval start, stop
+template<typename T, typename Order = config::c_order, typename Config = config::default_config, typename Start, typename Stop, typename U, typename DimT>
+auto linspace(const Start& start, const Stop& stop, const U& num, const DimT& axis){
+    return builder_selector_t<Config>::template linspace<T,Order,Config>(start,stop,num,axis);
 }
 
 
