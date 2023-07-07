@@ -317,7 +317,6 @@ TEST_CASE("test_builder_arange_overload","[test_builder]")
 {
     using gtensor::tensor;
     using gtensor::arange;
-    using helpers_for_testing::apply_by_element;
 
     REQUIRE(arange<int>(5) == tensor<int>{0,1,2,3,4});
     REQUIRE(arange<double>(10) == tensor<double>{0,1,2,3,4,5,6,7,8,9});
@@ -326,8 +325,12 @@ TEST_CASE("test_builder_arange_overload","[test_builder]")
     REQUIRE(arange<double>(2.2,5.0,0.5) == tensor<double>{2.2,2.7,3.2,3.7,4.2,4.7});
 }
 
-TEST_CASE("test_builder_linspace","[test_builder]")
+TEMPLATE_TEST_CASE("test_builder_linspace","[test_builder]",
+    int,
+    double
+)
 {
+    using requested_value_type = TestType;
     using value_type = double;
     using gtensor::tensor;
     using tensor_type = tensor<value_type>;
@@ -376,14 +379,18 @@ TEST_CASE("test_builder_linspace","[test_builder]")
         auto end_point = std::get<3>(t);
         auto axis = std::get<4>(t);
         auto expected = std::get<5>(t);
-        auto result = linspace<value_type>(start,stop,num,end_point,axis);
+        auto result = linspace<requested_value_type>(start,stop,num,end_point,axis);
         REQUIRE(tensor_close(result,expected,1E-2,1E-2));
     };
     apply_by_element(test,test_data);
 }
 
-TEST_CASE("test_builder_logspace","[test_builder]")
+TEMPLATE_TEST_CASE("test_builder_logspace","[test_builder]",
+    int,
+    double
+)
 {
+    using requested_value_type = TestType;
     using value_type = double;
     using gtensor::tensor;
     using tensor_type = tensor<value_type>;
@@ -432,14 +439,18 @@ TEST_CASE("test_builder_logspace","[test_builder]")
         auto base = std::get<4>(t);
         auto axis = std::get<5>(t);
         auto expected = std::get<6>(t);
-        auto result = logspace<value_type>(start,stop,num,end_point,base,axis);
+        auto result = logspace<requested_value_type>(start,stop,num,end_point,base,axis);
         REQUIRE(tensor_close(result,expected,1E-2,1E-2));
     };
     apply_by_element(test,test_data);
 }
 
-TEST_CASE("test_builder_geomspace","[test_builder]")
+TEMPLATE_TEST_CASE("test_builder_geomspace","[test_builder]",
+    int,
+    double
+)
 {
+    using requested_value_type = TestType;
     using value_type = double;
     using gtensor::tensor;
     using tensor_type = tensor<value_type>;
@@ -485,11 +496,55 @@ TEST_CASE("test_builder_geomspace","[test_builder]")
         auto end_point = std::get<3>(t);
         auto axis = std::get<4>(t);
         auto expected = std::get<5>(t);
-        auto result = geomspace<value_type>(start,stop,num,end_point,axis);
-        std::cout<<std::endl<<result;
-        std::cout<<std::endl<<expected;
+        auto result = geomspace<requested_value_type>(start,stop,num,end_point,axis);
         REQUIRE(tensor_close(result,expected,1E-2,1E-2));
     };
     apply_by_element(test,test_data);
 }
 
+TEMPLATE_TEST_CASE("test_builder_space_default_args","[test_builder]",
+    int,
+    double
+)
+{
+    using requested_value_type = TestType;
+    using tensor_type = gtensor::tensor<double>;
+    using gtensor::tensor_close;
+    using gtensor::linspace;
+    using gtensor::logspace;
+    using gtensor::geomspace;
+
+    REQUIRE(
+        tensor_close(
+            linspace<requested_value_type>(0,1),
+            tensor_type{
+                0.0,0.02,0.041,0.061,0.082,0.102,0.122,0.143,0.163,0.184,0.204,0.224,0.24,0.265,0.286,0.306,0.327,0.347,0.367,0.388,0.408,0.429,0.449,0.469,0.49,
+                0.51,0.531,0.551,0.571,0.592,0.612,0.633,0.653,0.673,0.694,0.714,0.735,0.755,0.776,0.796,0.816,0.837,0.857,0.878,0.898,0.918,0.939,0.959,0.98,1.0
+            },
+            1E-2,
+            1E-2
+        )
+    );
+    REQUIRE(
+        tensor_close(
+            logspace<requested_value_type>(0,1),
+            tensor_type{
+                1.0,1.048,1.099,1.151,1.207,1.265,1.326,1.389,1.456,1.526,1.6,1.677,1.758,1.842,1.931,2.024,2.121,2.223,2.33,2.442,2.56,2.683,2.812,2.947,3.089,
+                3.237,3.393,3.556,3.728,3.907,4.095,4.292,4.498,4.715,4.942,5.179,5.429,5.69,5.964,6.251,6.551,6.866,7.197,7.543,7.906,8.286,8.685,9.103,9.541,10.0
+            },
+            1E-2,
+            1E-2
+        )
+    );
+    REQUIRE(
+        tensor_close(
+            geomspace<requested_value_type>(1,2),
+            tensor_type{
+                1.0,1.014,1.029,1.043,1.058,1.073,1.089,1.104,1.12,1.136,1.152,1.168,1.185,1.202,1.219,1.236,1.254,1.272,1.29,1.308,1.327,1.346,1.365,1.385,1.404,
+                1.424,1.445,1.465,1.486,1.507,1.529,1.55,1.573,1.595,1.618,1.641,1.664,1.688,1.712,1.736,1.761,1.786,1.811,1.837,1.863,1.89,1.917,1.944,1.972,2.0
+            },
+            1E-2,
+            1E-2
+        )
+    );
+}

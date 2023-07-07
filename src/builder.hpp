@@ -188,8 +188,6 @@ struct builder
         return make_space<T,Order,Config>(start,stop,num,axis,generator);
     }
 
-
-
 private:
 
     template<typename ShT, typename IdxT, typename DimT>
@@ -209,7 +207,8 @@ private:
         static_assert(math::numeric_traits<U>::is_integral(),"num must be of integral type");
         static_assert(is_start_numeric || detail::is_tensor_v<Start>,"Start must be of numeric or tensor type");
         static_assert(is_stop_numeric || detail::is_tensor_v<Stop>,"Stop must be of numeric or tensor type");
-        using tensor_type = tensor<T,Order,config::extend_config_t<Config,T>>;
+        using res_value_type = math::make_floating_point_t<T>;
+        using tensor_type = tensor<res_value_type,Order,config::extend_config_t<Config,T>>;
         using config_type = typename tensor_type::config_type;
         using dim_type = typename tensor_type::dim_type;
         using index_type = typename tensor_type::index_type;
@@ -349,18 +348,20 @@ auto arange(const U& stop){
 }
 
 //make tensor of num evenly spaced samples, calculated over the interval start, stop
-template<typename T, typename Order = config::c_order, typename Config = config::default_config, typename Start, typename Stop, typename U, typename DimT>
-auto linspace(const Start& start, const Stop& stop, const U& num, bool end_point, const DimT& axis){
+template<typename T, typename Order = config::c_order, typename Config = config::default_config, typename Start, typename Stop, typename U=int, typename DimT=int>
+auto linspace(const Start& start, const Stop& stop, const U& num=50, bool end_point=true, const DimT& axis=0){
     return builder_selector_t<Config>::template linspace<T,Order,Config>(start,stop,num,end_point,axis);
 }
 
-template<typename T, typename Order = config::c_order, typename Config = config::default_config, typename Start, typename Stop, typename U, typename Base, typename DimT>
-auto logspace(const Start& start, const Stop& stop, const U& num, bool end_point, const Base& base, const DimT& axis){
+//make tensor of numbers spaced evenly on a log scale
+template<typename T, typename Order = config::c_order, typename Config = config::default_config, typename Start, typename Stop, typename U=int, typename Base=double, typename DimT=int>
+auto logspace(const Start& start, const Stop& stop, const U& num=50, bool end_point=true, const Base& base=10.0, const DimT& axis=0){
     return builder_selector_t<Config>::template logspace<T,Order,Config>(start,stop,num,end_point,base,axis);
 }
 
-template<typename T, typename Order = config::c_order, typename Config = config::default_config, typename Start, typename Stop, typename U, typename DimT>
-auto geomspace(const Start& start, const Stop& stop, const U& num, bool end_point, const DimT& axis){
+//make tensor of numbers spaced evenly on a log scale with endpoints specified directly
+template<typename T, typename Order = config::c_order, typename Config = config::default_config, typename Start, typename Stop, typename U=int, typename DimT=int>
+auto geomspace(const Start& start, const Stop& stop, const U& num=50, bool end_point=true, const DimT& axis=0){
     return builder_selector_t<Config>::template geomspace<T,Order,Config>(start,stop,num,end_point,axis);
 }
 
