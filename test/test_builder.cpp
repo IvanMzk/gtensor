@@ -438,3 +438,58 @@ TEST_CASE("test_builder_logspace","[test_builder]")
     apply_by_element(test,test_data);
 }
 
+TEST_CASE("test_builder_geomspace","[test_builder]")
+{
+    using value_type = double;
+    using gtensor::tensor;
+    using tensor_type = tensor<value_type>;
+    using gtensor::tensor_close;
+    using gtensor::geomspace;
+    using helpers_for_testing::apply_by_element;
+
+    //0start,1stop,2num,3end_point,4axis,5expected
+    auto test_data = std::make_tuple(
+        //end_point true
+        //numeric interval
+        std::make_tuple(1,1,5,true,0,tensor_type{1,1,1,1,1}),
+        std::make_tuple(1,2,5,true,0,tensor_type{1.0,1.189,1.414,1.682,2.0}),
+        std::make_tuple(1.3,3.7,10,true,0,tensor_type{1.3,1.46,1.64,1.842,2.069,2.324,2.611,2.933,3.294,3.7}),
+        //tensor interval
+        std::make_tuple(tensor_type{},tensor_type{},5,true,-1,tensor_type{}.reshape(0,5)),
+        std::make_tuple(tensor_type{},tensor_type{}.reshape(2,0),5,true,-1,tensor_type{}.reshape(2,0,5)),
+        std::make_tuple(tensor_type{{{0}},{{0}},{{0}}},tensor_type{}.reshape(2,0),5,true,1,tensor_type{}.reshape(3,5,2,0)),
+        std::make_tuple(1,tensor_type{1,2,3},5,true,-1,tensor_type{{1.0,1.0,1.0,1.0,1.0},{1.0,1.189,1.414,1.682,2.0},{1.0,1.316,1.732,2.28,3.0}}),
+        std::make_tuple(
+            tensor_type{1.1,2.2,3.3},
+            tensor_type{{4.4,5.5,6.6},{7.7,8.8,9.9}},
+            5,
+            true,
+            -1,
+            tensor_type{{{1.1,1.556,2.2,3.111,4.4},{2.2,2.766,3.479,4.374,5.5},{3.3,3.924,4.667,5.55,6.6}},{{1.1,1.789,2.91,4.734,7.7},{2.2,3.111,4.4,6.223,8.8},{3.3,4.343,5.716,7.522,9.9}}}
+        ),
+        //end_point false
+        std::make_tuple(1.3,3.7,10,false,0,tensor_type{1.3,1.443,1.602,1.779,1.975,2.193,2.435,2.703,3.002,3.333}),
+        std::make_tuple(
+            tensor_type{1.1,2.2,3.3},
+            tensor_type{{4.4,5.5,6.6},{7.7,8.8,9.9}},
+            5,
+            false,
+            0,
+            tensor_type{{{1.1,2.2,3.3},{1.1,2.2,3.3}},{{1.451,2.642,3.791},{1.623,2.903,4.111}},{{1.915,3.174,4.354},{2.396,3.83,5.121}},{{2.527,3.812,5.002},{3.536,5.054,6.38}},{{3.335,4.579,5.746},{5.218,6.669,7.947}}}
+        )
+    );
+    auto test = [](const auto& t){
+        auto start = std::get<0>(t);
+        auto stop = std::get<1>(t);
+        auto num = std::get<2>(t);
+        auto end_point = std::get<3>(t);
+        auto axis = std::get<4>(t);
+        auto expected = std::get<5>(t);
+        auto result = geomspace<value_type>(start,stop,num,end_point,axis);
+        std::cout<<std::endl<<result;
+        std::cout<<std::endl<<expected;
+        REQUIRE(tensor_close(result,expected,1E-2,1E-2));
+    };
+    apply_by_element(test,test_data);
+}
+

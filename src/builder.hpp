@@ -173,6 +173,21 @@ struct builder
         return make_space<T,Order,Config>(start,stop,num,axis,generator);
     }
 
+    template<typename T, typename Order, typename Config, typename Start, typename Stop, typename U, typename DimT>
+    static auto geomspace(const Start& start, const Stop& stop, const U& num, bool end_point, const DimT& axis){
+        auto generator = [end_point](auto first, auto last, const auto& start, const auto& stop, const auto& num){
+            using num_type = std::remove_cv_t<std::remove_reference_t<decltype(num)>>;
+            using fp_type = math::make_floating_point_t<num_type>;
+            const auto intervals_n = end_point ?  static_cast<fp_type>(num-1) : static_cast<fp_type>(num);
+            const auto step = math::pow(static_cast<fp_type>(stop)/static_cast<fp_type>(start),1/intervals_n);
+            auto start_ = static_cast<fp_type>(start);
+            for(;first!=last; ++first,start_*=step){
+                *first = start_;
+            }
+        };
+        return make_space<T,Order,Config>(start,stop,num,axis,generator);
+    }
+
 
 
 private:
@@ -338,9 +353,15 @@ template<typename T, typename Order = config::c_order, typename Config = config:
 auto linspace(const Start& start, const Stop& stop, const U& num, bool end_point, const DimT& axis){
     return builder_selector_t<Config>::template linspace<T,Order,Config>(start,stop,num,end_point,axis);
 }
+
 template<typename T, typename Order = config::c_order, typename Config = config::default_config, typename Start, typename Stop, typename U, typename Base, typename DimT>
 auto logspace(const Start& start, const Stop& stop, const U& num, bool end_point, const Base& base, const DimT& axis){
     return builder_selector_t<Config>::template logspace<T,Order,Config>(start,stop,num,end_point,base,axis);
+}
+
+template<typename T, typename Order = config::c_order, typename Config = config::default_config, typename Start, typename Stop, typename U, typename DimT>
+auto geomspace(const Start& start, const Stop& stop, const U& num, bool end_point, const DimT& axis){
+    return builder_selector_t<Config>::template geomspace<T,Order,Config>(start,stop,num,end_point,axis);
 }
 
 
