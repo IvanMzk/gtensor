@@ -44,43 +44,15 @@ struct builder
     template<typename T, typename Order, typename Config, typename IdxT>
     static auto eye(const IdxT& n_, const IdxT& m_, const IdxT& k_){
         ASSERT_ORDER(Order);
-        using tensor_type = tensor<T,Order,config::extend_config_t<Config,T>>;
-        using index_type = typename tensor_type::index_type;
         auto res = zeros<T,Order,Config>(std::initializer_list<IdxT>{n_,m_});
         if (!res.empty()){
-            const auto n = static_cast<index_type>(n_);
-            const auto m = static_cast<index_type>(m_);
-            const auto k = static_cast<index_type>(k_);
-            if (k>-n && k<m){
-                const auto d = k>=0 ? std::min(n,m-k) : std::min(n+k,m);
-                auto it = res.template traverse_order_adapter<Order>().begin();
-                index_type step{0};
-                if constexpr (std::is_same_v<Order,config::c_order>){
-                    step = m+1;
-                    if (k>=0){
-                        it+=k;
-                    }else{
-                        it+=(-k)*m;
-                    }
-                }else{  //f_order
-                    step = n+1;
-                    if (k>=0){
-                        it+=(k)*n;
-                    }else{
-                        it+=-k;
-                    }
-                }
-                index_type i{1};
-                while(true){
-                    *it = T{1};
-                    if (i==d){
-                        break;
-                    }else{
-                        ++i;
-                        it+=step;
-                    }
-                }
-            }
+            traverse_diagonal<Order>(
+                res.template traverse_order_adapter<Order>().begin(),
+                [](auto& e){e=T{1};},
+                n_,
+                m_,
+                k_
+            );
         }
         return res;
     }
@@ -189,6 +161,43 @@ struct builder
     }
 
 private:
+
+    template<typename Order, typename It, typename UnaryOp, typename IdxT>
+    static void traverse_diagonal(It first, UnaryOp op, const IdxT& n_, const IdxT& m_, const IdxT& k_){
+        using difference_type = typename std::iterator_traits<It>::difference_type;
+        const auto n = static_cast<difference_type>(n_);
+        const auto m = static_cast<difference_type>(m_);
+        const auto k = static_cast<difference_type>(k_);
+        if (k>-n && k<m){
+            const auto d = k>=0 ? std::min(n,m-k) : std::min(n+k,m);
+            difference_type step{0};
+            if constexpr (std::is_same_v<Order,config::c_order>){
+                step = m+1;
+                if (k>=0){
+                    first+=k;
+                }else{
+                    first+=(-k)*m;
+                }
+            }else{  //f_order
+                step = n+1;
+                if (k>=0){
+                    first+=(k)*n;
+                }else{
+                    first+=-k;
+                }
+            }
+            difference_type i{1};
+            while(true){
+                op(*first);
+                if (i==d){
+                    break;
+                }else{
+                    ++i;
+                    first+=step;
+                }
+            }
+        }
+    }
 
     template<typename ShT, typename IdxT, typename DimT>
     static auto make_space_shape(const ShT& shape, const IdxT& num, const DimT& axis){
