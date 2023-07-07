@@ -335,35 +335,48 @@ TEST_CASE("test_builder_linspace","[test_builder]")
     using gtensor::linspace;
     using helpers_for_testing::apply_by_element;
 
-    //0start,1stop,2num,3axis,4expected
+    //0start,1stop,2num,3end_point,4axis,5expected
     auto test_data = std::make_tuple(
+        //end_point true
         //numeric interval
-        std::make_tuple(0,0,0,0,tensor_type{}),
-        std::make_tuple(0,1,5,0,tensor_type{0.0,0.25,0.5,0.75,1.0}),
-        std::make_tuple(3,8,11,0,tensor_type{3.0,3.5,4.0,4.5,5.0,5.5,6.0,6.5,7.0,7.5,8.0}),
-        std::make_tuple(2,4,10,0,tensor_type{2.0,2.222,2.444,2.667,2.889,3.111,3.333,3.556,3.778,4.0}),
-        std::make_tuple(1.3,3.7,10,0,tensor_type{1.3,1.567,1.833,2.1,2.367,2.633,2.9,3.167,3.433,3.7}),
+        std::make_tuple(0,0,0,true,0,tensor_type{}),
+        std::make_tuple(0,1,5,true,0,tensor_type{0.0,0.25,0.5,0.75,1.0}),
+        std::make_tuple(3,8,11,true,0,tensor_type{3.0,3.5,4.0,4.5,5.0,5.5,6.0,6.5,7.0,7.5,8.0}),
+        std::make_tuple(2,4,10,true,0,tensor_type{2.0,2.222,2.444,2.667,2.889,3.111,3.333,3.556,3.778,4.0}),
+        std::make_tuple(1.3,3.7,10,true,0,tensor_type{1.3,1.567,1.833,2.1,2.367,2.633,2.9,3.167,3.433,3.7}),
         //tensor interval
-        std::make_tuple(tensor_type{},tensor_type{},5,-1,tensor_type{}.reshape(0,5)),
-        std::make_tuple(tensor_type{},tensor_type{}.reshape(2,0),5,-1,tensor_type{}.reshape(2,0,5)),
-        std::make_tuple(tensor_type{{{0}},{{0}},{{0}}},tensor_type{}.reshape(2,0),5,1,tensor_type{}.reshape(3,5,2,0)),
-        std::make_tuple(0,tensor_type{1,2,3},5,-1,tensor_type{{0.0,0.25,0.5,0.75,1.0},{0.0,0.5,1.0,1.5,2.0},{0.0,0.75,1.5,2.25,3.0}}),
-        std::make_tuple(tensor_type{1,2,3},4,6,0,tensor_type{{1.0,2.0,3.0},{1.6,2.4,3.2},{2.2,2.8,3.4},{2.8,3.2,3.6},{3.4,3.6,3.8},{4.0,4.0,4.0}}),
+        std::make_tuple(tensor_type{},tensor_type{},5,true,-1,tensor_type{}.reshape(0,5)),
+        std::make_tuple(tensor_type{},tensor_type{}.reshape(2,0),5,true,-1,tensor_type{}.reshape(2,0,5)),
+        std::make_tuple(tensor_type{{{0}},{{0}},{{0}}},tensor_type{}.reshape(2,0),5,true,1,tensor_type{}.reshape(3,5,2,0)),
+        std::make_tuple(0,tensor_type{1,2,3},5,true,-1,tensor_type{{0.0,0.25,0.5,0.75,1.0},{0.0,0.5,1.0,1.5,2.0},{0.0,0.75,1.5,2.25,3.0}}),
+        std::make_tuple(tensor_type{1,2,3},4,6,true,0,tensor_type{{1.0,2.0,3.0},{1.6,2.4,3.2},{2.2,2.8,3.4},{2.8,3.2,3.6},{3.4,3.6,3.8},{4.0,4.0,4.0}}),
         std::make_tuple(
             tensor_type{1.1,2.2,3.3},
             tensor_type{{4.4,5.5,6.6},{7.7,8.8,9.9}},
             5,
+            true,
             -1,
             tensor_type{{{1.1,1.925,2.75,3.575,4.4},{2.2,3.025,3.85,4.675,5.5},{3.3,4.125,4.95,5.775,6.6}},{{1.1,2.75,4.4,6.05,7.7},{2.2,3.85,5.5,7.15,8.8},{3.3,4.95,6.6,8.25,9.9}}}
+        ),
+        //end_point false
+        std::make_tuple(1.3,3.7,10,false,0,tensor_type{1.3,1.54,1.78,2.02,2.26,2.5,2.74,2.98,3.22,3.46}),
+        std::make_tuple(
+            tensor_type{1.1,2.2,3.3},
+            tensor_type{{4.4,5.5,6.6},{7.7,8.8,9.9}},
+            5,
+            false,
+            -1,
+            tensor_type{{{1.1,1.76,2.42,3.08,3.74},{2.2,2.86,3.52,4.18,4.84},{3.3,3.96,4.62,5.28,5.94}},{{1.1,2.42,3.74,5.06,6.38},{2.2,3.52,4.84,6.16,7.48},{3.3,4.62,5.94,7.26,8.58}}}
         )
     );
     auto test = [](const auto& t){
         auto start = std::get<0>(t);
         auto stop = std::get<1>(t);
         auto num = std::get<2>(t);
-        auto axis = std::get<3>(t);
-        auto expected = std::get<4>(t);
-        auto result = linspace<value_type>(start,stop,num,axis);
+        auto end_point = std::get<3>(t);
+        auto axis = std::get<4>(t);
+        auto expected = std::get<5>(t);
+        auto result = linspace<value_type>(start,stop,num,end_point,axis);
         REQUIRE(tensor_close(result,expected,1E-2,1E-2));
     };
     apply_by_element(test,test_data);

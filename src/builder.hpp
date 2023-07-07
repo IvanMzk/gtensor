@@ -143,11 +143,11 @@ struct builder
     }
 
     template<typename T, typename Order, typename Config, typename Start, typename Stop, typename U, typename DimT>
-    static auto linspace(const Start& start, const Stop& stop, const U& num, const DimT& axis){
-        auto generator = [](auto first, auto last, const auto& start, const auto& stop, const auto& num){
+    static auto linspace(const Start& start, const Stop& stop, const U& num, bool end_point, const DimT& axis){
+        auto generator = [end_point](auto first, auto last, const auto& start, const auto& stop, const auto& num){
             using num_type = std::remove_cv_t<std::remove_reference_t<decltype(num)>>;
             using fp_type = math::make_floating_point_t<num_type>;
-            const auto intervals_n = static_cast<fp_type>(num-1);
+            const auto intervals_n = end_point ?  static_cast<fp_type>(num-1) : static_cast<fp_type>(num);
             const auto step = (stop-start)/intervals_n;
             auto start_ = static_cast<fp_type>(start);
             for(;first!=last; ++first,start_+=step){
@@ -157,7 +157,34 @@ struct builder
         return make_space<T,Order,Config>(start,stop,num,axis,generator);
     }
 
+    // template<typename T, typename Order, typename Config, typename Start, typename Stop, typename U, typename DimT>
+    // static auto logspace(const Start& start, const Stop& stop, const U& num, const DimT& axis){
+    //     auto generator = [](auto first, auto last, const auto& start, const auto& stop, const auto& num){
+    //         using num_type = std::remove_cv_t<std::remove_reference_t<decltype(num)>>;
+    //         using fp_type = math::make_floating_point_t<num_type>;
+    //         const auto intervals_n = static_cast<fp_type>(num-1);
+    //         const auto step = (stop-start)/intervals_n;
+    //         auto start_ = static_cast<fp_type>(start);
+    //         for(;first!=last; ++first,start_+=step){
+    //             *first = start_;
+    //         }
+    //     };
+    //     return make_space<T,Order,Config>(start,stop,num,axis,generator);
+    // }
+
+
+
 private:
+
+    template<typename ShT, typename IdxT, typename DimT>
+    static auto make_space_shape(const ShT& shape, const IdxT& num, const DimT& axis){
+        const auto dim = detail::make_dim(shape);
+        ShT res(dim+1);
+        std::copy(shape.begin(), shape.begin()+axis, res.begin());
+        std::copy(shape.begin()+axis, shape.end(), res.begin()+(axis+1));
+        res[axis] = num;
+        return res;
+    }
 
     template<typename T, typename Order, typename Config, typename Start, typename Stop, typename U, typename DimT, typename Generator>
     static auto make_space(const Start& start, const Stop& stop, const U& num, const DimT& axis_, Generator generator){
@@ -208,19 +235,6 @@ private:
             return res;
         }
     }
-
-    template<typename ShT, typename IdxT, typename DimT>
-    static auto make_space_shape(const ShT& shape, const IdxT& num, const DimT& axis){
-        const auto dim = detail::make_dim(shape);
-        ShT res(dim+1);
-        std::copy(shape.begin(), shape.begin()+axis, res.begin());
-        std::copy(shape.begin()+axis, shape.end(), res.begin()+(axis+1));
-        res[axis] = num;
-        return res;
-    }
-
-
-
 };  //end of struct builder
 
 //builder module frontend
@@ -320,8 +334,8 @@ auto arange(const U& stop){
 
 //make tensor of num evenly spaced samples, calculated over the interval start, stop
 template<typename T, typename Order = config::c_order, typename Config = config::default_config, typename Start, typename Stop, typename U, typename DimT>
-auto linspace(const Start& start, const Stop& stop, const U& num, const DimT& axis){
-    return builder_selector_t<Config>::template linspace<T,Order,Config>(start,stop,num,axis);
+auto linspace(const Start& start, const Stop& stop, const U& num, bool end_point, const DimT& axis){
+    return builder_selector_t<Config>::template linspace<T,Order,Config>(start,stop,num,end_point,axis);
 }
 
 
