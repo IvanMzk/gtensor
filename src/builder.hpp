@@ -10,6 +10,14 @@
 
 namespace gtensor{
 
+class builder_exception : public std::runtime_error
+{
+public:
+    explicit builder_exception(const char* what):
+        std::runtime_error(what)
+    {}
+};
+
 //bulder module implementation
 
 struct builder
@@ -150,6 +158,7 @@ struct builder
         auto generator = [end_point](auto first, auto last, const auto& start, const auto& stop, const auto& num){
             using num_type = std::remove_cv_t<std::remove_reference_t<decltype(num)>>;
             using fp_type = math::make_floating_point_t<num_type>;
+            check_geomspace_args(start,stop);
             const auto intervals_n = end_point ?  static_cast<fp_type>(num-1) : static_cast<fp_type>(num);
             const auto step = math::pow(static_cast<fp_type>(stop)/static_cast<fp_type>(start),1/intervals_n);
             auto start_ = static_cast<fp_type>(start);
@@ -160,7 +169,72 @@ struct builder
         return make_space<T,Order,Config>(start,stop,num,axis,generator);
     }
 
+    template<typename IdxT, typename...Ts>
+    static auto diag(const basic_tensor<Ts...>& t, const IdxT& k_){
+        using tensor_type = basic_tensor<Ts...>;
+        using order = typename tensor_type::order;
+        using value_type = typename tensor_type::value_type;
+        using config_type = typename tensor_type::config_type;
+        using index_type = typename tensor_type::index_type;
+        using shape_type = typename tensor_type::shape_type;
+        static_assert(math::numeric_traits<IdxT>::is_integral(),"k must be of integral type");
+        const auto& k = static_cast<const index_type&>(k_);
+        if (t.dim() == 1){
+            const auto d = t.size();
+            const auto n = k>=0 ? k+d : -k+d;
+            auto res = empty<value_type,order,config_type>(shape_type{n,n});
+            traverse_diagonal<order>(
+                res.template traverse_order_adapter<order>().begin(),
+                [it=t.template traverse_order_adapter<order>().begin()](auto& e)mutable{
+                    e = *it;
+                    ++it;
+                },
+                n,
+                n,
+                k
+            );
+            return res;
+        }else if (t.dim() == 2){    //return copy of kth diagonal
+            const auto& shape = t.shape();
+            const auto& n = shape[0];
+            const auto& m = shape[1];
+            const auto d = make_diagonal_size(n,m,k);
+            auto res = empty<value_type,order,config_type>(shape_type{d});
+            traverse_diagonal<order>(
+                t.template traverse_order_adapter<order>().begin(),
+                [it=res.template traverse_order_adapter<order>().begin()](auto& e)mutable{
+                    *it = e;
+                    ++it;
+                },
+                n,
+                m,
+                k
+            );
+            return res;
+        }else{
+            throw builder_exception("input must be 1d or 2d");
+        }
+    }
+
 private:
+
+    template<typename U>
+    static void check_make_space_args(const U& num){
+        if (num < U{0}){
+            throw builder_exception("number of samples, must be non-negative");
+        }
+    }
+    template<typename Start, typename Stop>
+    static void check_geomspace_args(const Start& start, const Stop& stop){
+        if (start == Start{0} || stop == Stop{0}){
+            throw builder_exception("geometric sequence cannot include zero");
+        }
+    }
+
+    template<typename IdxT>
+    static auto make_diagonal_size(const IdxT& n, const IdxT& m, const IdxT& k){
+        return n!=0 && m!=0 && k>-n && k<m ? (k>=0 ? std::min(n,m-k) : std::min(n+k,m)) : IdxT{0};
+    }
 
     template<typename Order, typename It, typename UnaryOp, typename IdxT>
     static void traverse_diagonal(It first, UnaryOp op, const IdxT& n_, const IdxT& m_, const IdxT& k_){
@@ -168,8 +242,8 @@ private:
         const auto n = static_cast<difference_type>(n_);
         const auto m = static_cast<difference_type>(m_);
         const auto k = static_cast<difference_type>(k_);
-        if (k>-n && k<m){
-            const auto d = k>=0 ? std::min(n,m-k) : std::min(n+k,m);
+        const auto d = make_diagonal_size(n,m,k);
+        if (d!=0){
             difference_type step{0};
             if constexpr (std::is_same_v<Order,config::c_order>){
                 step = m+1;
@@ -222,6 +296,7 @@ private:
         using dim_type = typename tensor_type::dim_type;
         using index_type = typename tensor_type::index_type;
         using shape_type = typename tensor_type::shape_type;
+        check_make_space_args(num);
         const auto n = static_cast<index_type>(num);
         if constexpr (is_start_numeric && is_stop_numeric){
             tensor_type res(shape_type{n});
@@ -374,6 +449,11 @@ auto geomspace(const Start& start, const Stop& stop, const U& num=50, bool end_p
     return builder_selector_t<Config>::template geomspace<T,Order,Config>(start,stop,num,end_point,axis);
 }
 
+template<typename IdxT=int, typename...Ts>
+auto diag(const basic_tensor<Ts...>& t, const IdxT& k=0){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return builder_selector_t<config_type>::diag(t,k);
+}
 
 }   //end of namespace gtensor
 #endif

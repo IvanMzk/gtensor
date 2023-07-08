@@ -351,6 +351,7 @@ TEMPLATE_TEST_CASE("test_builder_linspace","[test_builder]",
         std::make_tuple(tensor_type{},tensor_type{},5,true,-1,tensor_type{}.reshape(0,5)),
         std::make_tuple(tensor_type{},tensor_type{}.reshape(2,0),5,true,-1,tensor_type{}.reshape(2,0,5)),
         std::make_tuple(tensor_type{{{0}},{{0}},{{0}}},tensor_type{}.reshape(2,0),5,true,1,tensor_type{}.reshape(3,5,2,0)),
+        std::make_tuple(tensor_type{1.1,2.2,3.3},tensor_type{{4.4,5.5,6.6},{7.7,8.8,9.9}},0,true,-1,tensor_type{}.reshape(2,3,0)),
         std::make_tuple(0,tensor_type{1,2,3},5,true,-1,tensor_type{{0.0,0.25,0.5,0.75,1.0},{0.0,0.5,1.0,1.5,2.0},{0.0,0.75,1.5,2.25,3.0}}),
         std::make_tuple(tensor_type{1,2,3},4,6,true,0,tensor_type{{1.0,2.0,3.0},{1.6,2.4,3.2},{2.2,2.8,3.4},{2.8,3.2,3.6},{3.4,3.6,3.8},{4.0,4.0,4.0}}),
         std::make_tuple(
@@ -370,6 +371,17 @@ TEMPLATE_TEST_CASE("test_builder_linspace","[test_builder]",
             false,
             -1,
             tensor_type{{{1.1,1.76,2.42,3.08,3.74},{2.2,2.86,3.52,4.18,4.84},{3.3,3.96,4.62,5.28,5.94}},{{1.1,2.42,3.74,5.06,6.38},{2.2,3.52,4.84,6.16,7.48},{3.3,4.62,5.94,7.26,8.58}}}
+        ),
+        //reverse
+        std::make_tuple(3.7,1.3,10,true,0,tensor_type{3.7,3.433,3.167,2.9,2.633,2.367,2.1,1.833,1.567,1.3}),
+        std::make_tuple(3.7,1.3,10,false,0,tensor_type{3.7,3.46,3.22,2.98,2.74,2.5,2.26,2.02,1.78,1.54}),
+        std::make_tuple(
+            tensor_type{{4.4,5.5,6.6},{7.7,8.8,9.9}},
+            tensor_type{1.1,2.2,3.3},
+            5,
+            true,
+            -1,
+            tensor_type{{{4.4,3.575,2.75,1.925,1.1},{5.5,4.675,3.85,3.025,2.2},{6.6,5.775,4.95,4.125,3.3}},{{7.7,6.05,4.4,2.75,1.1},{8.8,7.15,5.5,3.85,2.2},{9.9,8.25,6.6,4.95,3.3}}}
         )
     );
     auto test = [](const auto& t){
@@ -409,6 +421,7 @@ TEMPLATE_TEST_CASE("test_builder_logspace","[test_builder]",
         std::make_tuple(tensor_type{},tensor_type{},5,true,10,-1,tensor_type{}.reshape(0,5)),
         std::make_tuple(tensor_type{},tensor_type{}.reshape(2,0),5,true,10,-1,tensor_type{}.reshape(2,0,5)),
         std::make_tuple(tensor_type{{{0}},{{0}},{{0}}},tensor_type{}.reshape(2,0),5,true,10,1,tensor_type{}.reshape(3,5,2,0)),
+        std::make_tuple(tensor_type{1.1,2.2,3.3},tensor_type{{4.4,5.5,6.6},{7.7,8.8,9.9}},0,true,10,-1,tensor_type{}.reshape(2,3,0)),
         std::make_tuple(0,tensor_type{1,2,3},5,true,10,-1,tensor_type{{1.0,1.778,3.162,5.623,10.0},{1.0,3.162,10.,31.623,100.0},{1.0,5.623,31.623,177.828,1000.0}}),
         std::make_tuple(
             tensor_type{1.1,2.2,3.3},
@@ -429,7 +442,10 @@ TEMPLATE_TEST_CASE("test_builder_logspace","[test_builder]",
             2,
             -1,
             tensor_type{{{2.144,3.387,5.352,8.456,13.361},{4.595,7.26,11.472,18.126,28.641},{9.849,15.562,24.59,38.854,61.393}},{{2.144,5.352,13.361,33.359,83.286},{4.595,11.472,28.641,71.506,178.527},{9.849,24.59,61.393,153.277,382.681}}}
-        )
+        ),
+        //reverse
+        std::make_tuple(3.7,1.3,10,true,10,0,tensor_type{5011.872,2712.273,1467.799,794.328,429.866,232.631,125.893,68.129,36.869,19.953}),
+        std::make_tuple(3.7,1.3,10,false,10,0,tensor_type{5011.872,2884.032,1659.587,954.993,549.541,316.228,181.97,104.713,60.256,34.674})
     );
     auto test = [](const auto& t){
         auto start = std::get<0>(t);
@@ -469,6 +485,7 @@ TEMPLATE_TEST_CASE("test_builder_geomspace","[test_builder]",
         std::make_tuple(tensor_type{},tensor_type{},5,true,-1,tensor_type{}.reshape(0,5)),
         std::make_tuple(tensor_type{},tensor_type{}.reshape(2,0),5,true,-1,tensor_type{}.reshape(2,0,5)),
         std::make_tuple(tensor_type{{{0}},{{0}},{{0}}},tensor_type{}.reshape(2,0),5,true,1,tensor_type{}.reshape(3,5,2,0)),
+        std::make_tuple(tensor_type{1.1,2.2,3.3},tensor_type{{4.4,5.5,6.6},{7.7,8.8,9.9}},0,true,-1,tensor_type{}.reshape(2,3,0)),
         std::make_tuple(1,tensor_type{1,2,3},5,true,-1,tensor_type{{1.0,1.0,1.0,1.0,1.0},{1.0,1.189,1.414,1.682,2.0},{1.0,1.316,1.732,2.28,3.0}}),
         std::make_tuple(
             tensor_type{1.1,2.2,3.3},
@@ -487,7 +504,10 @@ TEMPLATE_TEST_CASE("test_builder_geomspace","[test_builder]",
             false,
             0,
             tensor_type{{{1.1,2.2,3.3},{1.1,2.2,3.3}},{{1.451,2.642,3.791},{1.623,2.903,4.111}},{{1.915,3.174,4.354},{2.396,3.83,5.121}},{{2.527,3.812,5.002},{3.536,5.054,6.38}},{{3.335,4.579,5.746},{5.218,6.669,7.947}}}
-        )
+        ),
+        //reverse
+        std::make_tuple(3.7,1.3,10,true,0,tensor_type{3.7,3.294,2.933,2.611,2.324,2.069,1.842,1.64,1.46,1.3}),
+        std::make_tuple(3.7,1.3,10,false,0,tensor_type{3.7,3.333,3.002,2.703,2.435,2.193,1.975,1.779,1.602,1.443})
     );
     auto test = [](const auto& t){
         auto start = std::get<0>(t);
@@ -547,4 +567,118 @@ TEMPLATE_TEST_CASE("test_builder_space_default_args","[test_builder]",
             1E-2
         )
     );
+}
+
+TEST_CASE("test_builder_space_exception","[test_builder]")
+{
+    using value_type = double;
+    using gtensor::builder_exception;
+    using gtensor::linspace;
+    using gtensor::logspace;
+    using gtensor::geomspace;
+
+    REQUIRE_THROWS_AS(linspace<value_type>(0,1,-10), builder_exception);
+    REQUIRE_THROWS_AS(logspace<value_type>(0,1,-10), builder_exception);
+    REQUIRE_THROWS_AS(geomspace<value_type>(1,2,-10), builder_exception);
+    REQUIRE_THROWS_AS(geomspace<value_type>(0,1,10), builder_exception);
+    REQUIRE_THROWS_AS(geomspace<value_type>(1,0,10), builder_exception);
+}
+
+TEST_CASE("test_builder_diag","[test_builder]")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::diag;
+    using helpers_for_testing::apply_by_element;
+
+    //0tensor,1k,2expected
+    auto test_data = std::make_tuple(
+        //1d tensor is kth diagonal - result is 2d tensor with kth diagonal
+        std::make_tuple(tensor_type{},0,tensor_type{}.reshape(0,0)),
+        std::make_tuple(tensor_type{},1,tensor_type{{0}}),
+        std::make_tuple(tensor_type{},2,tensor_type{{0,0},{0,0}}),
+        std::make_tuple(tensor_type{},3,tensor_type{{0,0,0},{0,0,0},{0,0,0}}),
+        std::make_tuple(tensor_type{},-1,tensor_type{{0}}),
+        std::make_tuple(tensor_type{},-2,tensor_type{{0,0},{0,0}}),
+        std::make_tuple(tensor_type{},-3,tensor_type{{0,0,0},{0,0,0},{0,0,0}}),
+        std::make_tuple(tensor_type{1},0,tensor_type{{1}}),
+        std::make_tuple(tensor_type{1},1,tensor_type{{0,1},{0,0}}),
+        std::make_tuple(tensor_type{1},2,tensor_type{{0,0,1},{0,0,0},{0,0,0}}),
+        std::make_tuple(tensor_type{1},3,tensor_type{{0,0,0,1},{0,0,0,0},{0,0,0,0},{0,0,0,0}}),
+        std::make_tuple(tensor_type{1},-1,tensor_type{{0,0},{1,0}}),
+        std::make_tuple(tensor_type{1},-2,tensor_type{{0,0,0},{0,0,0},{1,0,0}}),
+        std::make_tuple(tensor_type{1},-3,tensor_type{{0,0,0,0},{0,0,0,0},{0,0,0,0},{1,0,0,0}}),
+        std::make_tuple(tensor_type{1,2,3,4},0,tensor_type{{1,0,0,0},{0,2,0,0},{0,0,3,0},{0,0,0,4}}),
+        std::make_tuple(tensor_type{1,2,3,4},1,tensor_type{{0,1,0,0,0},{0,0,2,0,0},{0,0,0,3,0},{0,0,0,0,4},{0,0,0,0,0}}),
+        std::make_tuple(tensor_type{1,2,3,4},2,tensor_type{{0,0,1,0,0,0},{0,0,0,2,0,0},{0,0,0,0,3,0},{0,0,0,0,0,4},{0,0,0,0,0,0},{0,0,0,0,0,0}}),
+        std::make_tuple(tensor_type{1,2,3,4},-1,tensor_type{{0,0,0,0,0},{1,0,0,0,0},{0,2,0,0,0},{0,0,3,0,0},{0,0,0,4,0}}),
+        std::make_tuple(tensor_type{1,2,3,4},-2,tensor_type{{0,0,0,0,0,0},{0,0,0,0,0,0},{1,0,0,0,0,0},{0,2,0,0,0,0},{0,0,3,0,0,0},{0,0,0,4,0,0}}),
+        //2d tensor - result is 1d tensor that is kth diagonal
+        std::make_tuple(tensor_type{}.reshape(0,0),0,tensor_type{}),
+        std::make_tuple(tensor_type{}.reshape(0,0),1,tensor_type{}),
+        std::make_tuple(tensor_type{}.reshape(0,0),2,tensor_type{}),
+        std::make_tuple(tensor_type{}.reshape(0,0),-1,tensor_type{}),
+        std::make_tuple(tensor_type{}.reshape(0,0),-2,tensor_type{}),
+        std::make_tuple(tensor_type{}.reshape(3,0),0,tensor_type{}),
+        std::make_tuple(tensor_type{}.reshape(0,3),0,tensor_type{}),
+        std::make_tuple(tensor_type{}.reshape(3,0),1,tensor_type{}),
+        std::make_tuple(tensor_type{}.reshape(0,3),1,tensor_type{}),
+        std::make_tuple(tensor_type{}.reshape(3,0),-1,tensor_type{}),
+        std::make_tuple(tensor_type{}.reshape(0,3),-1,tensor_type{}),
+        std::make_tuple(tensor_type{{1}},0,tensor_type{1}),
+        std::make_tuple(tensor_type{{1}},1,tensor_type{}),
+        std::make_tuple(tensor_type{{1}},-1,tensor_type{}),
+        std::make_tuple(tensor_type{{1,2,3}},0,tensor_type{1}),
+        std::make_tuple(tensor_type{{1,2,3}},1,tensor_type{2}),
+        std::make_tuple(tensor_type{{1,2,3}},2,tensor_type{3}),
+        std::make_tuple(tensor_type{{1,2,3}},3,tensor_type{}),
+        std::make_tuple(tensor_type{{1,2,3}},-1,tensor_type{}),
+        std::make_tuple(tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16}},0,tensor_type{1,6,11,16}),
+        std::make_tuple(tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16}},1,tensor_type{2,7,12}),
+        std::make_tuple(tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16}},2,tensor_type{3,8}),
+        std::make_tuple(tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16}},3,tensor_type{4}),
+        std::make_tuple(tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16}},4,tensor_type{}),
+        std::make_tuple(tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16}},-1,tensor_type{5,10,15}),
+        std::make_tuple(tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16}},-2,tensor_type{9,14}),
+        std::make_tuple(tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16}},-3,tensor_type{13}),
+        std::make_tuple(tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16}},-4,tensor_type{}),
+        std::make_tuple(tensor_type{{1,2,3,4,5},{6,7,8,9,10},{11,12,13,14,15}},0,tensor_type{1,7,13}),
+        std::make_tuple(tensor_type{{1,2,3,4,5},{6,7,8,9,10},{11,12,13,14,15}},1,tensor_type{2,8,14}),
+        std::make_tuple(tensor_type{{1,2,3,4,5},{6,7,8,9,10},{11,12,13,14,15}},2,tensor_type{3,9,15}),
+        std::make_tuple(tensor_type{{1,2,3,4,5},{6,7,8,9,10},{11,12,13,14,15}},3,tensor_type{4,10}),
+        std::make_tuple(tensor_type{{1,2,3,4,5},{6,7,8,9,10},{11,12,13,14,15}},4,tensor_type{5}),
+        std::make_tuple(tensor_type{{1,2,3,4,5},{6,7,8,9,10},{11,12,13,14,15}},5,tensor_type{}),
+        std::make_tuple(tensor_type{{1,2,3,4,5},{6,7,8,9,10},{11,12,13,14,15}},-1,tensor_type{6,12}),
+        std::make_tuple(tensor_type{{1,2,3,4,5},{6,7,8,9,10},{11,12,13,14,15}},-2,tensor_type{11}),
+        std::make_tuple(tensor_type{{1,2,3,4,5},{6,7,8,9,10},{11,12,13,14,15}},-3,tensor_type{}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9},{10,11,12},{13,14,15}},0,tensor_type{1,5,9}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9},{10,11,12},{13,14,15}},1,tensor_type{2,6}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9},{10,11,12},{13,14,15}},2,tensor_type{3}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9},{10,11,12},{13,14,15}},3,tensor_type{}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9},{10,11,12},{13,14,15}},-1,tensor_type{4,8,12}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9},{10,11,12},{13,14,15}},-2,tensor_type{7,11,15}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9},{10,11,12},{13,14,15}},-3,tensor_type{10,14}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9},{10,11,12},{13,14,15}},-4,tensor_type{13}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9},{10,11,12},{13,14,15}},-5,tensor_type{})
+    );
+    auto test = [](const auto& t){
+        auto ten = std::get<0>(t);
+        auto k = std::get<1>(t);
+        auto expected = std::get<2>(t);
+        auto result = diag(ten,k);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test,test_data);
+}
+
+TEST_CASE("test_builder_diag_exception","[test_builder]")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::builder_exception;
+    using gtensor::diag;
+
+    REQUIRE_THROWS_AS(diag(tensor_type(1)), builder_exception);
+    REQUIRE_THROWS_AS(diag(tensor_type{{{1}}}), builder_exception);
+    REQUIRE_THROWS_AS(diag(tensor_type{}.reshape(0,2,2)), builder_exception);
 }
