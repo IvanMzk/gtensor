@@ -449,6 +449,8 @@ auto geomspace(const Start& start, const Stop& stop, const U& num=50, bool end_p
     return builder_selector_t<Config>::template geomspace<T,Order,Config>(start,stop,num,end_point,axis);
 }
 
+//if t is 2d tensor return 1d tensor that is t's kth diagonal
+//if t is 1d tensor return 2d square tensor with t on its kth diagonal
 template<typename IdxT=int, typename...Ts>
 auto diag(const basic_tensor<Ts...>& t, const IdxT& k=0){
     using config_type = typename basic_tensor<Ts...>::config_type;
