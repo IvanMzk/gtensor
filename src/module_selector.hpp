@@ -15,6 +15,7 @@ struct tensor_math;
 struct statistic;
 struct sort_search;
 struct builder;
+struct random;
 
 
 //storage implementation factory selector
@@ -166,6 +167,21 @@ public:
     using type = typename selector_<typename config_type::engine, void, Ts...>::type;
 };
 template<typename...Ts> using builder_selector_t = typename builder_selector<Ts...>::type;
+
+//random selector
+template<typename Config, typename...Ts>
+class random_selector
+{
+    using config_type = Config;
+    template<typename...> struct selector_;
+    template<typename Dummy> struct selector_<config::engine_expression_template,Dummy>
+    {
+        using type = random;
+    };
+public:
+    using type = typename selector_<typename config_type::engine, void, Ts...>::type;
+};
+template<typename...Ts> using random_selector_t = typename random_selector<Ts...>::type;
 
 
 
