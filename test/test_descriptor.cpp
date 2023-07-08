@@ -409,12 +409,16 @@ TEST_CASE("test_make_shape_of_type","[test_descriptor]"){
     using shape_type = std::vector<int>;
     auto s = shape_type{1,2,3};
     auto l = std::list<int>{1,2,3};
+    REQUIRE(std::is_same_v<decltype(make_shape_of_type<shape_type>(std::declval<std::size_t>())), shape_type>);
+    REQUIRE(std::is_same_v<decltype(make_shape_of_type<shape_type>(std::declval<int>())), shape_type>);
     REQUIRE(std::is_same_v<decltype(make_shape_of_type<shape_type>(shape_type{1,2,3})), shape_type&&>);
     REQUIRE(std::is_same_v<decltype(make_shape_of_type<shape_type>(s)), shape_type&>);
     REQUIRE(std::is_same_v<decltype(make_shape_of_type<shape_type>(std::list{1,2,3})), shape_type>);
     REQUIRE(std::is_same_v<decltype(make_shape_of_type<shape_type>(l)), shape_type>);
     REQUIRE(std::is_same_v<decltype(make_shape_of_type<shape_type>({1,2,3})), shape_type>);
 
+    REQUIRE(make_shape_of_type<shape_type>(0) == shape_type{0});
+    REQUIRE(make_shape_of_type<shape_type>(std::size_t{10}) == shape_type{10});
     REQUIRE(make_shape_of_type<shape_type>(shape_type{1,2,3}) == shape_type{1,2,3});
     REQUIRE(make_shape_of_type<shape_type>(s) == shape_type{1,2,3});
     REQUIRE(make_shape_of_type<shape_type>(std::list{1,2,3}) == shape_type{1,2,3});

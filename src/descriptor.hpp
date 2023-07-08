@@ -207,7 +207,7 @@ auto shape_to_str(const ShT& shape){
     return ss.str();
 }
 
-template<typename T, typename ShT>
+template<typename T, typename ShT, std::enable_if_t<detail::is_container_v<std::remove_cv_t<std::remove_reference_t<ShT>>>,int> =0>
 auto make_shape_of_type(ShT&& shape) -> std::conditional_t<std::is_same_v<T,std::decay_t<ShT>>,ShT&&,T>{
     if constexpr (std::is_same_v<T,std::decay_t<ShT>>){
         return std::forward<ShT>(shape);
@@ -218,6 +218,11 @@ auto make_shape_of_type(ShT&& shape) -> std::conditional_t<std::is_same_v<T,std:
 template<typename T, typename IdxT>
 T make_shape_of_type(std::initializer_list<IdxT> shape){
     return T(shape.begin(),shape.end());
+}
+template<typename T, typename IdxT, std::enable_if_t<std::is_convertible_v<IdxT,typename T::value_type>,int> =0>
+T make_shape_of_type(const IdxT& size){
+    using index_type = typename T::value_type;
+    return T{static_cast<index_type>(size)};
 }
 
 //converts flat index to flat index given strides and converting strides
