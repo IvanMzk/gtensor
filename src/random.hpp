@@ -78,9 +78,10 @@ struct random
             return res;
         }
 
-        //make tensor of samples drawn from a binomial distribution.
+        //make tensor of samples drawn from a binomial distribution
+        //drawn sample represents number of successes in sequence of n experiments, each of which succeeds with probability p
         //n trials number, must be >=0
-        //p probability of success in range [0,1]
+        //p probability of success, in range [0,1]
         template<typename T=int, typename Order=config::c_order, typename U, typename V, typename Size>
         auto binomial(const U& n_, const V& p_, Size&& size){
             using tensor_type = tensor<T,Order,config::extend_config_t<Config,T>>;
@@ -90,6 +91,22 @@ struct random
             const auto n = static_cast<math::make_integral_t<U>>(n_);
             const auto p = static_cast<math::make_floating_point_t<V>>(p_);
             generate_distribution(res.begin(), res.end(), bit_generator_, std::binomial_distribution<T>(n,p));
+            return res;
+        }
+
+        //make tensor of samples drawn from a negative binomial distribution
+        //drawn sample represents number of failures in a sequence of experiments, each succeeds with probability p, before exactly k successes occur
+        //k successes number, must be >0
+        //p probability of success, in range (0,1]
+        template<typename T=int, typename Order=config::c_order, typename U, typename V, typename Size>
+        auto negative_binomial(const U& k_, const V& p_, Size&& size){
+            using tensor_type = tensor<T,Order,config::extend_config_t<Config,T>>;
+            using shape_type = typename tensor_type::shape_type;
+            static_assert(math::numeric_traits<T>::is_integral(),"T must be of integral type");
+            tensor_type res(detail::make_shape_of_type<shape_type>(std::forward<Size>(size)));
+            const auto k = static_cast<math::make_integral_t<U>>(k_);
+            const auto p = static_cast<math::make_floating_point_t<V>>(p_);
+            generate_distribution(res.begin(), res.end(), bit_generator_, std::negative_binomial_distribution<T>(k,p));
             return res;
         }
 
