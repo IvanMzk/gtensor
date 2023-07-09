@@ -53,14 +53,26 @@ struct random
 
         template<typename T=int, typename Order=config::c_order, typename U, typename Size>
         auto integers(const U& low_, const U& high_, Size&& size, bool end_point=false){
-            using value_type = math::make_integral_t<T>;
             using tensor_type = tensor<T,Order,config::extend_config_t<Config,T>>;
             using shape_type = typename tensor_type::shape_type;
+            static_assert(math::numeric_traits<T>::is_integral(),"T must be of integral type");
             static_assert(math::numeric_traits<U>::is_integral(),"low,high must be of integral type");
             tensor_type res(detail::make_shape_of_type<shape_type>(std::forward<Size>(size)));
-            const auto low = static_cast<value_type>(low_);
-            const auto high = end_point ? static_cast<value_type>(high_) : static_cast<value_type>(high_-1);
-            generate_distribution(res.begin(), res.end(), bit_generator_, std::uniform_int_distribution<value_type>{low,high});
+            const auto low = static_cast<T>(low_);
+            const auto high = end_point ? static_cast<T>(high_) : static_cast<T>(high_-1);
+            generate_distribution(res.begin(), res.end(), bit_generator_, std::uniform_int_distribution<T>{low,high});
+            return res;
+        }
+
+        template<typename T=double, typename Order=config::c_order, typename U, typename Size>
+        auto random(const U& low_, const U& high_, Size&& size){
+            using tensor_type = tensor<T,Order,config::extend_config_t<Config,T>>;
+            using shape_type = typename tensor_type::shape_type;
+            static_assert(math::numeric_traits<T>::is_floating_point(),"T must be of floating point type");
+            tensor_type res(detail::make_shape_of_type<shape_type>(std::forward<Size>(size)));
+            const auto low = static_cast<T>(low_);
+            const auto high = static_cast<T>(high_);
+            generate_distribution(res.begin(), res.end(), bit_generator_, std::uniform_real_distribution<T>{low,high});
             return res;
         }
 
