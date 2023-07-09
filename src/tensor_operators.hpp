@@ -140,10 +140,11 @@ struct tensor_operators
     }
 
     //return tensor's string representation
-    template<typename...Ts>
-    static auto str(const basic_tensor<Ts...>& t){
+    template<typename P, typename...Ts>
+    static auto str(const basic_tensor<Ts...>& t, const P& precision){
         using value_type = typename basic_tensor<Ts...>::value_type;
         std::stringstream ss{};
+        ss.precision(precision);
         if constexpr (detail::is_printable_v<value_type>){
             ss<<"{"<<detail::shape_to_str(t.shape())<<[&]{for(const auto& i:t){ss<<i<<" ";}; return "}";}();
         }else{
@@ -284,10 +285,10 @@ bool allclose(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, bool e
 }
 
 //return tensor's string representation
-template<typename...Ts>
-auto str(const basic_tensor<Ts...>& t){
+template<typename P=int, typename...Ts>
+auto str(const basic_tensor<Ts...>& t, const P& precision=3){
     using config_type = typename basic_tensor<Ts...>::config_type;
-    return gtensor::tensor_operators_selector_t<config_type>::str(t);
+    return gtensor::tensor_operators_selector_t<config_type>::str(t,precision);
 }
 
 template<typename...Ts>
