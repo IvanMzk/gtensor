@@ -134,6 +134,17 @@ struct random
             return make_distribution<T,Order,Config>(std::forward<Size>(size), bit_generator_, std::gamma_distribution<T>(shape,scale));
         }
 
+        //make tensor of samples drawn from a weibull distribution
+        //shape - weibull distribution parameter, sometimes designated "k"
+        //scale - weibull distribution parameter, sometimes designated "lambda"
+        template<typename T=double, typename Order=config::c_order, typename U, typename V, typename Size>
+        auto weibull(const U& shape_, const V& scale_, Size&& size){
+            static_assert(math::numeric_traits<T>::is_floating_point(),"T must be of floating point type");
+            const auto shape = static_cast<math::make_floating_point_t<U>>(shape_);
+            const auto scale = static_cast<math::make_floating_point_t<V>>(scale_);
+            return make_distribution<T,Order,Config>(std::forward<Size>(size), bit_generator_, std::weibull_distribution<T>(shape,scale));
+        }
+
     };
 
     template<typename BitGenerator, typename Config=config::default_config, typename...Seeds>
