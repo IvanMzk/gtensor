@@ -267,3 +267,52 @@ TEMPLATE_TEST_CASE("test_random_poisson","[test_random]",
     };
     apply_by_element(test,test_data);
 }
+
+TEMPLATE_TEST_CASE("test_random_exponential","[test_random]",
+    float,
+    double
+)
+{
+    using value_type = TestType;
+    using tensor_type = gtensor::tensor<value_type>;
+    using config_type = typename tensor_type::config_type;
+    using bit_generator_type = std::mt19937_64;
+    using gtensor::tensor_close;
+    using gtensor::make_rng;
+    using helpers_for_testing::apply_by_element;
+
+    REQUIRE(
+        std::is_same_v<
+            typename decltype(make_rng<bit_generator_type,config_type>().template exponential<value_type>(std::declval<double>(),std::declval<int>()))::value_type,
+            value_type
+        >
+    );
+    REQUIRE(
+        std::is_same_v<
+            typename decltype(make_rng<bit_generator_type,config_type>().template exponential<value_type>(std::declval<double>(),std::declval<std::vector<int>>()))::value_type,
+            value_type
+        >
+    );
+
+    //0seeds,1lambda,2size,3expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(std::make_tuple(1,2,3),0.1,20,tensor_type{1.05,2.72,1.32,2.8,1.84,0.133,0.607,0.716,11.4,74.1,4.22,4.3,4.23,3.6,4.67,13.3,3.23,7.23,0.101,12.5}),
+        std::make_tuple(std::make_tuple(1,2,3),0.5,20,tensor_type{0.209,0.545,0.264,0.561,0.369,0.0266,0.121,0.143,2.29,14.8,0.843,0.86,0.846,0.719,0.934,2.67,0.646,1.45,0.0201,2.49}),
+        std::make_tuple(std::make_tuple(1,2,3),1.0,20,tensor_type{0.105,0.272,0.132,0.28,0.184,0.0133,0.0607,0.0716,1.14,7.41,0.422,0.43,0.423,0.36,0.467,1.33,0.323,0.723,0.0101,1.25}),
+        std::make_tuple(std::make_tuple(3,2,1),1.0,std::vector<int>{4,5},tensor_type{{0.592,2.97,0.156,0.789,0.0971},{0.252,0.881,0.0274,0.466,1.06},{0.0893,0.605,0.543,0.685,1.84},{2.87,1.9,0.188,0.389,0.196}})
+    );
+    auto test = [](const auto& t){
+        auto seeds = std::get<0>(t);
+        auto lambda = std::get<1>(t);
+        auto size = std::get<2>(t);
+        auto expected = std::get<3>(t);
+
+        auto rng_maker = [](const auto&...seeds_){
+            return make_rng<bit_generator_type,config_type>(seeds_...);
+        };
+        auto rng = std::apply(rng_maker,seeds);
+        auto result = rng.template exponential<value_type>(lambda,size);
+        REQUIRE(tensor_close(result,expected,1E-2,1E-2));
+    };
+    apply_by_element(test,test_data);
+}

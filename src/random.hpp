@@ -124,6 +124,20 @@ struct random
             return res;
         }
 
+        //make tensor of samples drawn from a exponential distribution
+        //drawn sample represents the time/distance until the next random event if random events occur at constant rate lambda per unit of time/distance.
+        //lambda - rate of event occurrence
+        template<typename T=double, typename Order=config::c_order, typename V, typename Size>
+        auto exponential(const V& lambda_, Size&& size){
+            using tensor_type = tensor<T,Order,config::extend_config_t<Config,T>>;
+            using shape_type = typename tensor_type::shape_type;
+            static_assert(math::numeric_traits<T>::is_floating_point(),"T must be of floating point type");
+            tensor_type res(detail::make_shape_of_type<shape_type>(std::forward<Size>(size)));
+            const auto lambda = static_cast<math::make_floating_point_t<V>>(lambda_);
+            generate_distribution(res.begin(), res.end(), bit_generator_, std::exponential_distribution<T>(lambda));
+            return res;
+        }
+
     };
 
     template<typename BitGenerator, typename Config=config::default_config, typename...Seeds>
