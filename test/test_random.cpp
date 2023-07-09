@@ -316,3 +316,64 @@ TEMPLATE_TEST_CASE("test_random_exponential","[test_random]",
     };
     apply_by_element(test,test_data);
 }
+
+TEMPLATE_TEST_CASE("test_random_gamma","[test_random]",
+    float,
+    double
+)
+{
+    using value_type = TestType;
+    using tensor_type = gtensor::tensor<value_type>;
+    using config_type = typename tensor_type::config_type;
+    using bit_generator_type = std::mt19937_64;
+    using gtensor::tensor_close;
+    using gtensor::make_rng;
+    using helpers_for_testing::apply_by_element;
+
+    REQUIRE(
+        std::is_same_v<
+            typename decltype(make_rng<bit_generator_type,config_type>().template gamma<value_type>(std::declval<double>(),std::declval<double>(),std::declval<int>()))::value_type,
+            value_type
+        >
+    );
+    REQUIRE(
+        std::is_same_v<
+            typename decltype(make_rng<bit_generator_type,config_type>().template gamma<value_type>(std::declval<double>(),std::declval<double>(),std::declval<std::vector<int>>()))::value_type,
+            value_type
+        >
+    );
+
+    //0seeds,1shape,2scale,3size,4expected
+    auto test_data = std::make_tuple(
+        //shape 1
+        //rate 0.1
+        std::make_tuple(std::make_tuple(1,2,3),1,10,20,tensor_type{1.05,2.72,1.32,2.8,1.84,0.133,0.607,0.716,11.4,74.1,4.22,4.3,4.23,3.6,4.67,13.3,3.23,7.23,0.101,12.5}),
+        std::make_tuple(std::make_tuple(3,2,1),1,10,20,tensor_type{5.92,29.7,1.56,7.89,0.971,2.52,8.81,0.274,4.66,10.6,0.893,6.05,5.43,6.85,18.4,28.7,19.0,1.88,3.89,1.96}),
+        //rate 0.5
+        std::make_tuple(std::make_tuple(1,2,3),1,2,20,tensor_type{0.209,0.545,0.264,0.561,0.369,0.0266,0.121,0.143,2.29,14.8,0.843,0.86,0.846,0.719,0.934,2.67,0.646,1.45,0.0201,2.49}),
+        std::make_tuple(std::make_tuple(3,2,1),1,2,20,tensor_type{1.18,5.94,0.312,1.58,0.194,0.503,1.76,0.0549,0.932,2.12,0.179,1.21,1.09,1.37,3.67,5.73,3.8,0.377,0.777,0.392}),
+        //shape 2
+        //rate 0.1
+        std::make_tuple(std::make_tuple(1,2,3),2,10,20,tensor_type{2.47,2.52,3.99,1.91,28.9,15.5,29.5,13.3,12.1,4.77,7.74,6.96,5.21,17.8,5.82,38.9,5.59,14.2,19.8,34.0}),
+        //rate 0.5
+        std::make_tuple(std::make_tuple(1,2,3),2,2,20,tensor_type{0.495,0.504,0.797,0.382,5.79,3.11,5.89,2.66,2.42,0.955,1.55,1.39,1.04,3.57,1.16,7.79,1.12,2.84,3.96,6.8}),
+        //rate 1
+        std::make_tuple(std::make_tuple(1,2,3),2,1,std::vector<int>{4,5},tensor_type{{0.247,0.252,0.399,0.191,2.89},{1.55,2.95,1.33,1.21,0.477},{0.774,0.696,0.521,1.78,0.582},{3.89,0.559,1.42,1.98,3.4}})
+    );
+    auto test = [](const auto& t){
+        auto seeds = std::get<0>(t);
+        auto shape = std::get<1>(t);
+        auto scale = std::get<2>(t);
+        auto size = std::get<3>(t);
+        auto expected = std::get<4>(t);
+
+        auto rng_maker = [](const auto&...seeds_){
+            return make_rng<bit_generator_type,config_type>(seeds_...);
+        };
+        auto rng = std::apply(rng_maker,seeds);
+        auto result = rng.template gamma<value_type>(shape,scale,size);
+        REQUIRE(tensor_close(result,expected,1E-2,1E-2));
+    };
+    apply_by_element(test,test_data);
+}
+
