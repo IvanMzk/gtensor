@@ -104,3 +104,54 @@ TEMPLATE_TEST_CASE("test_random_random","[test_random]",
     };
     apply_by_element(test,test_data);
 }
+
+TEMPLATE_TEST_CASE("test_random_binomial","[test_random]",
+    int,
+    std::int64_t
+)
+{
+    using value_type = TestType;
+    using tensor_type = gtensor::tensor<value_type>;
+    using config_type = typename tensor_type::config_type;
+    using bit_generator_type = std::mt19937_64;
+    using gtensor::tensor_close;
+    using gtensor::make_rng;
+    using helpers_for_testing::apply_by_element;
+
+    REQUIRE(
+        std::is_same_v<
+            typename decltype(make_rng<bit_generator_type,config_type>().template binomial<value_type>(std::declval<int>(),std::declval<double>(),std::declval<int>()))::value_type,
+            value_type
+        >
+    );
+    REQUIRE(
+        std::is_same_v<
+            typename decltype(make_rng<bit_generator_type,config_type>().template binomial<value_type>(std::declval<int>(),std::declval<double>(),std::declval<std::vector<int>>()))::value_type,
+            value_type
+        >
+    );
+
+    //0seeds,1n,2p,3size,5expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(std::make_tuple(1,2,3),10,0,50,tensor_type{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}),
+        std::make_tuple(std::make_tuple(3,2,1),0,1,50,tensor_type{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}),
+        std::make_tuple(std::make_tuple(1,2,3),10,0.5,50,tensor_type{5,5,5,5,5,5,5,5,3,10,4,4,4,4,4,3,4,6,5,3,4,4,7,6,6,3,8,3,7,6,6,3,6,5,4,3,4,6,5,6,5,5,4,5,5,4,4,7,3,6}),
+        std::make_tuple(std::make_tuple(3,2,1),10,0.5,50,tensor_type{4,8,5,6,5,5,6,5,4,6,5,6,4,6,7,8,7,5,4,5,3,2,8,5,5,2,5,4,4,5,2,6,3,5,2,8,5,4,8,7,4,5,8,5,6,5,4,4,4,6}),
+        std::make_tuple(std::make_tuple(1,2,3),10,0.3,std::vector<int>{7,7},tensor_type{{3,3,3,3,3,3,3},{3,4,8,2,2,2,2},{2,1,2,4,3,1,2},{2,1,2,4,4,6,1},{5,4,4,1,4,3,2},{1,2,2,3,2,3,3},{2,3,3,2,2,5,4}})
+    );
+    auto test = [](const auto& t){
+        auto seeds = std::get<0>(t);
+        auto n = std::get<1>(t);
+        auto p = std::get<2>(t);
+        auto size = std::get<3>(t);
+        auto expected = std::get<4>(t);
+
+        auto rng_maker = [](const auto&...seeds_){
+            return make_rng<bit_generator_type,config_type>(seeds_...);
+        };
+        auto rng = std::apply(rng_maker,seeds);
+        auto result = rng.template binomial<value_type>(n,p,size);
+        REQUIRE(result==expected);
+    };
+    apply_by_element(test,test_data);
+}

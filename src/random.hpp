@@ -51,6 +51,7 @@ struct random
             bit_generator_{make_bit_generator(seeds)}
         {}
 
+        //make tensor of samples of integral type drawn from uniform distribution
         template<typename T=int, typename Order=config::c_order, typename U, typename Size>
         auto integers(const U& low_, const U& high_, Size&& size, bool end_point=false){
             using tensor_type = tensor<T,Order,config::extend_config_t<Config,T>>;
@@ -60,10 +61,11 @@ struct random
             tensor_type res(detail::make_shape_of_type<shape_type>(std::forward<Size>(size)));
             const auto low = static_cast<T>(low_);
             const auto high = end_point ? static_cast<T>(high_) : static_cast<T>(high_-1);
-            generate_distribution(res.begin(), res.end(), bit_generator_, std::uniform_int_distribution<T>{low,high});
+            generate_distribution(res.begin(), res.end(), bit_generator_, std::uniform_int_distribution<T>(low,high));
             return res;
         }
 
+        //make tensor of samples of floating point type drawn from uniform distribution
         template<typename T=double, typename Order=config::c_order, typename U, typename Size>
         auto random(const U& low_, const U& high_, Size&& size){
             using tensor_type = tensor<T,Order,config::extend_config_t<Config,T>>;
@@ -72,7 +74,22 @@ struct random
             tensor_type res(detail::make_shape_of_type<shape_type>(std::forward<Size>(size)));
             const auto low = static_cast<T>(low_);
             const auto high = static_cast<T>(high_);
-            generate_distribution(res.begin(), res.end(), bit_generator_, std::uniform_real_distribution<T>{low,high});
+            generate_distribution(res.begin(), res.end(), bit_generator_, std::uniform_real_distribution<T>(low,high));
+            return res;
+        }
+
+        //make tensor of samples drawn from a binomial distribution.
+        //n trials number, must be >=0
+        //p probability of success in range [0,1]
+        template<typename T=int, typename Order=config::c_order, typename U, typename V, typename Size>
+        auto binomial(const U& n_, const V& p_, Size&& size){
+            using tensor_type = tensor<T,Order,config::extend_config_t<Config,T>>;
+            using shape_type = typename tensor_type::shape_type;
+            static_assert(math::numeric_traits<T>::is_integral(),"T must be of integral type");
+            tensor_type res(detail::make_shape_of_type<shape_type>(std::forward<Size>(size)));
+            const auto n = static_cast<math::make_integral_t<U>>(n_);
+            const auto p = static_cast<math::make_floating_point_t<V>>(p_);
+            generate_distribution(res.begin(), res.end(), bit_generator_, std::binomial_distribution<T>(n,p));
             return res;
         }
 
