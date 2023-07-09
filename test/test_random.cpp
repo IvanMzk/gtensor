@@ -218,3 +218,52 @@ TEMPLATE_TEST_CASE("test_random_negative_binomial","[test_random]",
     };
     apply_by_element(test,test_data);
 }
+
+TEMPLATE_TEST_CASE("test_random_poisson","[test_random]",
+    int,
+    std::int64_t
+)
+{
+    using value_type = TestType;
+    using tensor_type = gtensor::tensor<value_type>;
+    using config_type = typename tensor_type::config_type;
+    using bit_generator_type = std::mt19937_64;
+    using gtensor::make_rng;
+    using helpers_for_testing::apply_by_element;
+
+    REQUIRE(
+        std::is_same_v<
+            typename decltype(make_rng<bit_generator_type,config_type>().template poisson<value_type>(std::declval<double>(),std::declval<int>()))::value_type,
+            value_type
+        >
+    );
+    REQUIRE(
+        std::is_same_v<
+            typename decltype(make_rng<bit_generator_type,config_type>().template poisson<value_type>(std::declval<double>(),std::declval<std::vector<int>>()))::value_type,
+            value_type
+        >
+    );
+
+    //0seeds,1mean,2size,3expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(std::make_tuple(1,2,3),1,50,tensor_type{0,0,0,0,0,0,0,0,2,0,0,0,1,0,1,1,1,1,4,2,0,1,1,0,1,0,1,0,1,2,0,1,2,1,0,2,3,1,0,3,0,1,1,0,0,0,1,1,2,1}),
+        std::make_tuple(std::make_tuple(1,2,3),1.5,50,tensor_type{0,1,1,0,0,0,3,1,2,1,2,3,4,2,2,1,1,0,1,0,1,3,2,2,1,4,3,0,3,0,1,2,0,0,1,3,0,1,3,1,2,2,4,2,0,4,3,2,3,0}),
+        std::make_tuple(std::make_tuple(1,2,3),2.0,50,tensor_type{0,1,1,0,0,0,3,1,2,1,2,5,4,1,3,1,0,1,0,3,1,4,1,0,6,2,3,0,1,2,0,0,1,4,1,4,2,2,5,3,4,4,2,3,3,0,1,2,4,1}),
+        std::make_tuple(std::make_tuple(3,2,1),2.0,50,tensor_type{2,1,1,0,2,2,3,1,3,0,1,1,2,1,2,3,0,1,1,1,2,1,3,2,2,3,2,3,4,3,2,3,2,1,3,1,2,3,3,2,2,3,1,1,2,2,2,2,2,0}),
+        std::make_tuple(std::make_tuple(1,2,3),2.0,std::vector<int>{7,7},tensor_type{{0,1,1,0,0,0,3},{1,2,1,2,5,4,1},{3,1,0,1,0,3,1},{4,1,0,6,2,3,0},{1,2,0,0,1,4,1},{4,2,2,5,3,4,4},{2,3,3,0,1,2,4}})
+    );
+    auto test = [](const auto& t){
+        auto seeds = std::get<0>(t);
+        auto mean = std::get<1>(t);
+        auto size = std::get<2>(t);
+        auto expected = std::get<3>(t);
+
+        auto rng_maker = [](const auto&...seeds_){
+            return make_rng<bit_generator_type,config_type>(seeds_...);
+        };
+        auto rng = std::apply(rng_maker,seeds);
+        auto result = rng.template poisson<value_type>(mean,size);
+        REQUIRE(result==expected);
+    };
+    apply_by_element(test,test_data);
+}

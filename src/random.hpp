@@ -110,6 +110,20 @@ struct random
             return res;
         }
 
+        //make tensor of samples drawn from a poisson distribution
+        //drawn sample represents number of occurrences of random event, if the expected, number of its occurrence under the same conditions (on the same time/space interval) is mean.
+        //mean expected number of events occurring in a fixed-time/space interval, must be > 0
+        template<typename T=int, typename Order=config::c_order, typename V, typename Size>
+        auto poisson(const V& mean_, Size&& size){
+            using tensor_type = tensor<T,Order,config::extend_config_t<Config,T>>;
+            using shape_type = typename tensor_type::shape_type;
+            static_assert(math::numeric_traits<T>::is_integral(),"T must be of integral type");
+            tensor_type res(detail::make_shape_of_type<shape_type>(std::forward<Size>(size)));
+            const auto mean = static_cast<math::make_floating_point_t<V>>(mean_);
+            generate_distribution(res.begin(), res.end(), bit_generator_, std::poisson_distribution<T>(mean));
+            return res;
+        }
+
     };
 
     template<typename BitGenerator, typename Config=config::default_config, typename...Seeds>
