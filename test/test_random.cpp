@@ -430,3 +430,302 @@ TEMPLATE_TEST_CASE("test_random_weibull","[test_random]",
     apply_by_element(test,test_data);
 }
 
+TEMPLATE_TEST_CASE("test_random_normal","[test_random]",
+    float,
+    double
+)
+{
+    using value_type = TestType;
+    using tensor_type = gtensor::tensor<value_type>;
+    using config_type = typename tensor_type::config_type;
+    using bit_generator_type = std::mt19937_64;
+    using gtensor::tensor_close;
+    using gtensor::make_rng;
+    using helpers_for_testing::apply_by_element;
+
+    REQUIRE(
+        std::is_same_v<
+            typename decltype(make_rng<bit_generator_type,config_type>().template normal<value_type>(std::declval<double>(),std::declval<double>(),std::declval<int>()))::value_type,
+            value_type
+        >
+    );
+    REQUIRE(
+        std::is_same_v<
+            typename decltype(make_rng<bit_generator_type,config_type>().template normal<value_type>(std::declval<double>(),std::declval<double>(),std::declval<std::vector<int>>()))::value_type,
+            value_type
+        >
+    );
+
+    //0seeds,1mean,2stdev,3size,4expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(std::make_tuple(1,2,3),0,1,20,tensor_type{-0.351,-0.229,-0.509,-0.345,-1.32,-1.27,-1.02,-1.3,-0.747,1.39,-1.79,0.118,-1.5,-1.12,1.32,-0.16,1.03,1.54,1.3,0.136}),
+        std::make_tuple(std::make_tuple(3,2,1),0,1,20,tensor_type{-0.0748,0.632,-1.14,0.147,-0.196,-0.133,0.0708,-0.391,-1.23,1.47,-0.846,-0.0939,-2.7,-0.144,0.296,-0.277,-0.536,-0.97,0.216,0.523}),
+        std::make_tuple(std::make_tuple(1,2,3),0,3,20,tensor_type{-1.05,-0.687,-1.53,-1.04,-3.95,-3.81,-3.07,-3.91,-2.24,4.17,-5.36,0.354,-4.5,-3.37,3.97,-0.481,3.09,4.63,3.91,0.407}),
+        std::make_tuple(std::make_tuple(1,2,3),5.1,1.5,std::vector<int>{4,5},tensor_type{{4.57,4.76,4.34,4.58,3.13},{3.2,3.57,3.14,3.98,7.19},{2.42,5.28,2.85,3.42,7.08},{4.86,6.65,7.41,7.06,5.3}})
+    );
+    auto test = [](const auto& t){
+        auto seeds = std::get<0>(t);
+        auto mean = std::get<1>(t);
+        auto stdev = std::get<2>(t);
+        auto size = std::get<3>(t);
+        auto expected = std::get<4>(t);
+
+        auto rng_maker = [](const auto&...seeds_){
+            return make_rng<bit_generator_type,config_type>(seeds_...);
+        };
+        auto rng = std::apply(rng_maker,seeds);
+        auto result = rng.template normal<value_type>(mean,stdev,size);
+        REQUIRE(tensor_close(result,expected,1E-2,1E-2));
+    };
+    apply_by_element(test,test_data);
+}
+
+TEMPLATE_TEST_CASE("test_random_lognormal","[test_random]",
+    float,
+    double
+)
+{
+    using value_type = TestType;
+    using tensor_type = gtensor::tensor<value_type>;
+    using config_type = typename tensor_type::config_type;
+    using bit_generator_type = std::mt19937_64;
+    using gtensor::tensor_close;
+    using gtensor::make_rng;
+    using helpers_for_testing::apply_by_element;
+
+    REQUIRE(
+        std::is_same_v<
+            typename decltype(make_rng<bit_generator_type,config_type>().template lognormal<value_type>(std::declval<double>(),std::declval<double>(),std::declval<int>()))::value_type,
+            value_type
+        >
+    );
+    REQUIRE(
+        std::is_same_v<
+            typename decltype(make_rng<bit_generator_type,config_type>().template lognormal<value_type>(std::declval<double>(),std::declval<double>(),std::declval<std::vector<int>>()))::value_type,
+            value_type
+        >
+    );
+
+    //0seeds,1mean,2stdev,3size,4expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(std::make_tuple(1,2,3),0,1,20,tensor_type{0.704,0.795,0.601,0.708,0.268,0.281,0.359,0.271,0.474,4.02,0.168,1.13,0.223,0.326,3.75,0.852,2.8,4.68,3.68,1.15}),
+        std::make_tuple(std::make_tuple(3,2,1),0,1,20,tensor_type{0.928,1.88,0.319,1.16,0.822,0.875,1.07,0.676,0.293,4.37,0.429,0.91,0.0675,0.866,1.34,0.758,0.585,0.379,1.24,1.69}),
+        std::make_tuple(std::make_tuple(1,2,3),0,3,20,tensor_type{0.349,0.503,0.217,0.355,0.0193,0.0222,0.0464,0.02,0.106,64.8,0.0047,1.42,0.0111,0.0345,52.8,0.618,22.0,102.0,50.0,1.5}),
+        std::make_tuple(std::make_tuple(1,2,3),1,1,std::vector<int>{4,5},tensor_type{{1.91,2.16,1.63,1.92,0.729},{0.764,0.977,0.737,1.29,10.9},{0.455,3.06,0.606,0.885,10.2},{2.32,7.62,12.7,10.0,3.11}})
+    );
+    auto test = [](const auto& t){
+        auto seeds = std::get<0>(t);
+        auto mean = std::get<1>(t);
+        auto stdev = std::get<2>(t);
+        auto size = std::get<3>(t);
+        auto expected = std::get<4>(t);
+
+        auto rng_maker = [](const auto&...seeds_){
+            return make_rng<bit_generator_type,config_type>(seeds_...);
+        };
+        auto rng = std::apply(rng_maker,seeds);
+        auto result = rng.template lognormal<value_type>(mean,stdev,size);
+        REQUIRE(tensor_close(result,expected,1E-2,1E-2));
+    };
+    apply_by_element(test,test_data);
+}
+
+TEMPLATE_TEST_CASE("test_random_chisquare","[test_random]",
+    float,
+    double
+)
+{
+    using value_type = TestType;
+    using tensor_type = gtensor::tensor<value_type>;
+    using config_type = typename tensor_type::config_type;
+    using bit_generator_type = std::mt19937_64;
+    using gtensor::tensor_close;
+    using gtensor::make_rng;
+    using helpers_for_testing::apply_by_element;
+
+    REQUIRE(
+        std::is_same_v<
+            typename decltype(make_rng<bit_generator_type,config_type>().template chisquare<value_type>(std::declval<double>(),std::declval<int>()))::value_type,
+            value_type
+        >
+    );
+    REQUIRE(
+        std::is_same_v<
+            typename decltype(make_rng<bit_generator_type,config_type>().template chisquare<value_type>(std::declval<double>(),std::declval<std::vector<int>>()))::value_type,
+            value_type
+        >
+    );
+
+    //0seeds,1df,2size,3expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(std::make_tuple(1,2,3),1,20,tensor_type{0.0197,0.0306,0.00694,1.05,0.237,0.238,0.278,0.152,0.000201,0.223,2.03,0.804,6.72,2.08,0.667,0.601,0.302,0.407,0.00598,0.053}),
+        std::make_tuple(std::make_tuple(3,2,1),1,20,tensor_type{0.399,0.0417,0.0171,0.277,0.0146,0.351,2.3,2.43,0.207,1.03,0.00556,0.0268,0.148,3.27,1.13,4.01,0.00809,5.21,0.225,0.314}),
+        std::make_tuple(std::make_tuple(1,2,3),2,20,tensor_type{0.209,0.545,0.264,0.561,0.369,0.0266,0.121,0.143,2.29,14.8,0.843,0.86,0.846,0.719,0.934,2.67,0.646,1.45,0.0201,2.49}),
+        std::make_tuple(std::make_tuple(1,2,3),3,std::vector<int>{4,5},tensor_type{{4.2,1.94,4.29,1.56,1.36},{0.618,0.486,2.32,0.294,5.89},{0.255,1.71,2.66,5.06,1.2},{0.699,0.135,2.02,0.873,5.6}})
+    );
+    auto test = [](const auto& t){
+        auto seeds = std::get<0>(t);
+        auto df = std::get<1>(t);
+        auto size = std::get<2>(t);
+        auto expected = std::get<3>(t);
+
+        auto rng_maker = [](const auto&...seeds_){
+            return make_rng<bit_generator_type,config_type>(seeds_...);
+        };
+        auto rng = std::apply(rng_maker,seeds);
+        auto result = rng.template chisquare<value_type>(df,size);
+        REQUIRE(tensor_close(result,expected,1E-2,1E-2));
+    };
+    apply_by_element(test,test_data);
+}
+
+
+TEMPLATE_TEST_CASE("test_random_cauchy","[test_random]",
+    float,
+    double
+)
+{
+    using value_type = TestType;
+    using tensor_type = gtensor::tensor<value_type>;
+    using config_type = typename tensor_type::config_type;
+    using bit_generator_type = std::mt19937_64;
+    using gtensor::tensor_close;
+    using gtensor::make_rng;
+    using helpers_for_testing::apply_by_element;
+
+    REQUIRE(
+        std::is_same_v<
+            typename decltype(make_rng<bit_generator_type,config_type>().template cauchy<value_type>(std::declval<double>(),std::declval<double>(),std::declval<int>()))::value_type,
+            value_type
+        >
+    );
+    REQUIRE(
+        std::is_same_v<
+            typename decltype(make_rng<bit_generator_type,config_type>().template cauchy<value_type>(std::declval<double>(),std::declval<double>(),std::declval<std::vector<int>>()))::value_type,
+            value_type
+        >
+    );
+
+    //0seeds,1location,2scale,3size,4expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(std::make_tuple(1,2,3),0,1,20,tensor_type{0.322,0.93,0.409,0.966,0.585,0.0416,0.187,0.221,-1.56,-0.00191,1.87,1.96,1.89,1.4,2.37,-1.09,1.18,-21.5,0.0315,-1.27}),
+        std::make_tuple(std::make_tuple(3,2,1),0,1,20,tensor_type{5.94,-0.163,0.487,-6.92,0.299,0.84,-3.63,0.0852,2.36,-1.92,0.275,6.87,3.85,73.6,-0.547,-0.181,-0.509,0.599,1.6,0.626}),
+        std::make_tuple(std::make_tuple(1,2,3),0,2.5,20,tensor_type{0.806,2.33,1.02,2.42,1.46,0.104,0.468,0.551,-3.9,-0.00477,4.68,4.89,4.71,3.49,5.93,-2.72,2.95,-53.8,0.0787,-3.18}),
+        std::make_tuple(std::make_tuple(1,2,3),2.5,1.5,std::vector<int>{4,5},tensor_type{{2.98,3.9,3.11,3.95,3.38},{2.56,2.78,2.83,0.159,2.5},{5.31,5.43,5.33,4.59,6.06},{0.865,4.27,-29.8,2.55,0.594}})
+    );
+    auto test = [](const auto& t){
+        auto seeds = std::get<0>(t);
+        auto location = std::get<1>(t);
+        auto scale = std::get<2>(t);
+        auto size = std::get<3>(t);
+        auto expected = std::get<4>(t);
+
+        auto rng_maker = [](const auto&...seeds_){
+            return make_rng<bit_generator_type,config_type>(seeds_...);
+        };
+        auto rng = std::apply(rng_maker,seeds);
+        auto result = rng.template cauchy<value_type>(location,scale,size);
+        REQUIRE(tensor_close(result,expected,1E-2,1E-2));
+    };
+    apply_by_element(test,test_data);
+}
+
+TEMPLATE_TEST_CASE("test_random_f","[test_random]",
+    float,
+    double
+)
+{
+    using value_type = TestType;
+    using tensor_type = gtensor::tensor<value_type>;
+    using config_type = typename tensor_type::config_type;
+    using bit_generator_type = std::mt19937_64;
+    using gtensor::tensor_close;
+    using gtensor::make_rng;
+    using helpers_for_testing::apply_by_element;
+
+    REQUIRE(
+        std::is_same_v<
+            typename decltype(make_rng<bit_generator_type,config_type>().template f<value_type>(std::declval<double>(),std::declval<double>(),std::declval<int>()))::value_type,
+            value_type
+        >
+    );
+    REQUIRE(
+        std::is_same_v<
+            typename decltype(make_rng<bit_generator_type,config_type>().template f<value_type>(std::declval<double>(),std::declval<double>(),std::declval<std::vector<int>>()))::value_type,
+            value_type
+        >
+    );
+
+    //0seeds,1dfnum,2dfden,3size,4expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(std::make_tuple(1,2,3),1,2,20,tensor_type{0.149,8.98,0.00607,0.679,0.861,2.56,2.11,0.727,2.46,4.62,0.504,0.0134,0.00169,2.71,0.00215,1.25,14.3,1.55,0.57,0.813}),
+        std::make_tuple(std::make_tuple(3,2,1),1,2,20,tensor_type{2.56,3.61,3.11,0.602,1.21,0.301,0.354,0.00392,0.0846,0.0747,0.449,0.195,0.0615,0.471,0.557,0.503,0.000117,6.7,1.98,0.426}),
+        std::make_tuple(std::make_tuple(1,2,3),2,1.5,20,tensor_type{0.513,0.436,3.39,0.965,0.253,0.245,0.856,0.721,0.628,0.703,1.05,1.42,0.042,1.62,0.00926,0.262,0.293,0.98,2.23,9.82}),
+        std::make_tuple(std::make_tuple(1,2,3),2,2,std::vector<int>{4,5},tensor_type{{0.384,0.471,13.8,0.848,0.154},{0.98,1.18,0.35,0.447,0.00809},{0.862,2.76,0.853,2.37,2.27},{0.652,2.82,0.391,0.911,0.0836}})
+    );
+    auto test = [](const auto& t){
+        auto seeds = std::get<0>(t);
+        auto dfnum = std::get<1>(t);
+        auto dfden = std::get<2>(t);
+        auto size = std::get<3>(t);
+        auto expected = std::get<4>(t);
+
+        auto rng_maker = [](const auto&...seeds_){
+            return make_rng<bit_generator_type,config_type>(seeds_...);
+        };
+        auto rng = std::apply(rng_maker,seeds);
+        auto result = rng.template f<value_type>(dfnum,dfden,size);
+        REQUIRE(tensor_close(result,expected,1E-2,1E-2));
+    };
+    apply_by_element(test,test_data);
+}
+
+TEMPLATE_TEST_CASE("test_random_t","[test_random]",
+    float,
+    double
+)
+{
+    using value_type = TestType;
+    using tensor_type = gtensor::tensor<value_type>;
+    using config_type = typename tensor_type::config_type;
+    using bit_generator_type = std::mt19937_64;
+    using gtensor::tensor_close;
+    using gtensor::make_rng;
+    using helpers_for_testing::apply_by_element;
+
+    REQUIRE(
+        std::is_same_v<
+            typename decltype(make_rng<bit_generator_type,config_type>().template t<value_type>(std::declval<double>(),std::declval<int>()))::value_type,
+            value_type
+        >
+    );
+    REQUIRE(
+        std::is_same_v<
+            typename decltype(make_rng<bit_generator_type,config_type>().template t<value_type>(std::declval<double>(),std::declval<std::vector<int>>()))::value_type,
+            value_type
+        >
+    );
+
+    //0seeds,1df,3size,4expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(std::make_tuple(1,2,3),1,20,tensor_type{-2.01,-2.75,-2.7,-2.41,-126.0,0.25,1.47,-0.0619,1.6,0.175,-1.22,19.5,-12.1,-2.62,61.1,0.748,1.32,-9.58,0.727,1.04}),
+        std::make_tuple(std::make_tuple(3,2,1),1,20,tensor_type{-0.367,4.83,0.134,-3.24,-1.78,-0.0925,-0.529,-13.0,-1.44,-0.187,0.218,-8.74,-0.551,-1.21,-41.6,0.716,-0.517,-0.368,-1.01,-0.127}),
+        std::make_tuple(std::make_tuple(1,2,3),2,20,tensor_type{-0.966,-0.432,-2.02,-2.12,-1.31,1.63,-1.15,-1.43,0.562,1.3,1.42,0.119,0.405,-1.42,-11.9,-1.24,-2.45,-1.92,-0.363,1.36}),
+        std::make_tuple(std::make_tuple(1,2,3),2.5,std::vector<int>{4,5},tensor_type{{-0.303,-0.313,2.06,0.237,-3.09},{11.9,-0.46,-0.0303,-1.07,-1.8},{1.95,0.999,-0.779,-3.55,0.973},{0.576,1.03,-0.466,0.483,-0.0886}})
+    );
+    auto test = [](const auto& t){
+        auto seeds = std::get<0>(t);
+        auto df = std::get<1>(t);
+        auto size = std::get<2>(t);
+        auto expected = std::get<3>(t);
+
+        auto rng_maker = [](const auto&...seeds_){
+            return make_rng<bit_generator_type,config_type>(seeds_...);
+        };
+        auto rng = std::apply(rng_maker,seeds);
+        auto result = rng.template t<value_type>(df,size);
+        REQUIRE(tensor_close(result,expected,1E-2,1E-2));
+    };
+    apply_by_element(test,test_data);
+}
+

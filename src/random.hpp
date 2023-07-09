@@ -145,6 +145,68 @@ struct random
             return make_distribution<T,Order,Config>(std::forward<Size>(size), bit_generator_, std::weibull_distribution<T>(shape,scale));
         }
 
+        //make tensor of samples drawn from a normal distribution
+        //mean - normal distribution parameter
+        //stdev - normal distribution parameter, must be >0
+        template<typename T=double, typename Order=config::c_order, typename U, typename V, typename Size>
+        auto normal(const U& mean_, const V& stdev_, Size&& size){
+            static_assert(math::numeric_traits<T>::is_floating_point(),"T must be of floating point type");
+            const auto mean = static_cast<math::make_floating_point_t<U>>(mean_);
+            const auto stdev = static_cast<math::make_floating_point_t<V>>(stdev_);
+            return make_distribution<T,Order,Config>(std::forward<Size>(size), bit_generator_, std::normal_distribution<T>(mean,stdev));
+        }
+
+        //make tensor of samples drawn from a lognormal distribution
+        //mean - lognormal distribution parameter
+        //stdev - lognormal distribution parameter, must be >0
+        template<typename T=double, typename Order=config::c_order, typename U, typename V, typename Size>
+        auto lognormal(const U& mean_, const V& stdev_, Size&& size){
+            static_assert(math::numeric_traits<T>::is_floating_point(),"T must be of floating point type");
+            const auto mean = static_cast<math::make_floating_point_t<U>>(mean_);
+            const auto stdev = static_cast<math::make_floating_point_t<V>>(stdev_);
+            return make_distribution<T,Order,Config>(std::forward<Size>(size), bit_generator_, std::lognormal_distribution<T>(mean,stdev));
+        }
+
+        //make tensor of samples drawn from a chisquare distribution
+        //df - chisquare distribution parameter - degrees of freeedom, must be >0
+        template<typename T=double, typename Order=config::c_order, typename U, typename Size>
+        auto chisquare(const U& df_, Size&& size){
+            static_assert(math::numeric_traits<T>::is_floating_point(),"T must be of floating point type");
+            const auto df = static_cast<math::make_floating_point_t<U>>(df_);
+            return make_distribution<T,Order,Config>(std::forward<Size>(size), bit_generator_, std::chi_squared_distribution<T>(df));
+        }
+
+        //make tensor of samples drawn from a cauchy distribution
+        //location - cauchy distribution parameter
+        //scale - cauchy distribution parameter, must be >0
+        template<typename T=double, typename Order=config::c_order, typename U, typename V, typename Size>
+        auto cauchy(const U& location_, const V& scale_, Size&& size){
+            static_assert(math::numeric_traits<T>::is_floating_point(),"T must be of floating point type");
+            const auto location = static_cast<math::make_floating_point_t<U>>(location_);
+            const auto scale = static_cast<math::make_floating_point_t<V>>(scale_);
+            return make_distribution<T,Order,Config>(std::forward<Size>(size), bit_generator_, std::cauchy_distribution<T>(location,scale));
+        }
+
+        //make tensor of samples drawn from a fisher distribution
+        //dfnum - fisher distribution parameter - degrees of freedom in numerator, must be >0
+        //dfden - fisher distribution parameter - Degrees of freedom in denominator, must be >0
+        template<typename T=double, typename Order=config::c_order, typename U, typename V, typename Size>
+        auto f(const U& dfnum_, const V& dfden_, Size&& size){
+            static_assert(math::numeric_traits<T>::is_floating_point(),"T must be of floating point type");
+            const auto dfnum = static_cast<math::make_floating_point_t<U>>(dfnum_);
+            const auto dfden = static_cast<math::make_floating_point_t<V>>(dfden_);
+            return make_distribution<T,Order,Config>(std::forward<Size>(size), bit_generator_, std::fisher_f_distribution<T>(dfnum,dfden));
+        }
+
+        //make tensor of samples drawn from a student distribution
+        //df - student distribution parameter - degrees of freeedom, must be >0
+        template<typename T=double, typename Order=config::c_order, typename U, typename Size>
+        auto t(const U& df_, Size&& size){
+            static_assert(math::numeric_traits<T>::is_floating_point(),"T must be of floating point type");
+            const auto df = static_cast<math::make_floating_point_t<U>>(df_);
+            return make_distribution<T,Order,Config>(std::forward<Size>(size), bit_generator_, std::student_t_distribution<T>(df));
+        }
+
     };
 
     template<typename BitGenerator, typename Config=config::default_config, typename...Seeds>
