@@ -38,26 +38,28 @@ struct random
 
         bit_generator_type bit_generator_{};
 
-        template<typename...Seeds>
-        bit_generator_type make_bit_generator(const Seeds&...seeds){
-            auto seq = std::seed_seq(std::initializer_list<int>{seeds...});
+        template<typename Container>
+        bit_generator_type make_bit_generator(const Container& seeds){
+            auto seq = std::seed_seq(seeds.begin(),seeds.end());
             return bit_generator_type(seq);
         }
-        template<typename U>
-        bit_generator_type make_bit_generator(std::initializer_list<U> seeds){
-            auto seq = std::seed_seq(seeds);
-            return bit_generator_type(seq);
-        }
+
     public:
         generator() = default;
 
-        template<typename...Seeds>
-        explicit generator(const Seeds&...seeds):
-            bit_generator_{make_bit_generator(seeds...)}
+        template<typename Container>
+        generator(const Container& seeds):
+            bit_generator_{make_bit_generator(seeds)}
         {}
+
         template<typename U>
         generator(std::initializer_list<U> seeds):
             bit_generator_{make_bit_generator(seeds)}
+        {}
+
+        template<typename...Seeds>
+        explicit generator(const Seeds&...seeds):
+            generator(std::initializer_list<int>{static_cast<int>(seeds)...})
         {}
 
         //make tensor of samples of integral type drawn from uniform distribution
@@ -218,30 +220,72 @@ struct random
             return make_distribution<T,Order,Config>(std::forward<Size>(size), bit_generator_, std::student_t_distribution<T>(df));
         }
 
-    };
+    };  //end of class generator
 
-    template<typename BitGenerator, typename Config=config::default_config, typename...Seeds>
-    static auto make_rng(const Seeds&...seeds){
-        return generator<Config, BitGenerator>(seeds...);
+    template<std::size_t...I>
+    static auto random_seeds_helper(std::index_sequence<I...>){
+        auto make_seed = [](auto){return std::random_device{}();};
+        return std::array<unsigned int, sizeof...(I)>{make_seed(I)...};
     }
 
+    //return std::array of N non-deterministic integer random numbers
+    template<std::size_t N=5>
+    static auto random_seeds(){
+        return random_seeds_helper(std::make_index_sequence<N>{});
+    }
+
+    //return random number generator object
+    //BitGenerator should satisfy UniformRandomBitGenerator and RandomNumberEngine named requirements
+    //tensors of random samples produced by generator object use Config as their config_type, value_type and layout can be specified using template arguments of generator methods
+    //seeds should be integral numbers to initialize BitGenerator state
+    template<typename BitGenerator, typename Config=config::default_config, typename...Seeds>
+    static auto rng(const Seeds&...seeds){
+        return generator<Config, BitGenerator>(seeds...);
+    }
+    //return random number generator object initialized with random seeds, new for each call
+    template<typename BitGenerator, typename Config=config::default_config>
+    static auto rng(){
+        return rng<BitGenerator,Config>(random_seeds());
+    }
+
+    //return random number generator object with default BitGenerator
     template<typename Config=config::default_config, typename...Seeds>
     static auto default_rng(const Seeds&...seeds){
-        return generator<Config, std::mt19937_64>(seeds...);
+        return rng<std::mt19937_64, Config>(seeds...);
+    }
+    //return random number generator object with default BitGenerator and random seeds, new for each call
+    template<typename Config=config::default_config>
+    static auto default_rng(){
+        return rng<std::mt19937_64, Config>();
     }
 
 };  //end of struct random
 
 //random module frontend
 
+//return random number generator object
+//BitGenerator should satisfy UniformRandomBitGenerator and RandomNumberEngine named requirements
+//tensors of random samples produced by generator object use Config as their config_type, value_type and layout can be specified using template arguments of generator methods
+//seeds should be integral numbers to initialize BitGenerator state
 template<typename BitGenerator, typename Config=config::default_config, typename...Seeds>
-auto make_rng(const Seeds&...seeds){
-    return random_selector_t<Config>::template make_rng<BitGenerator, Config>(seeds...);
+auto rng(const Seeds&...seeds){
+    return random_selector_t<Config>::template rng<BitGenerator, Config>(seeds...);
+}
+//return random number generator object initialized with random seeds, new for each call
+template<typename BitGenerator, typename Config=config::default_config>
+auto rng(){
+    return random_selector_t<Config>::template rng<BitGenerator, Config>();
 }
 
+//return random number generator object with default BitGenerator
 template<typename Config=config::default_config, typename...Seeds>
 auto default_rng(const Seeds&...seeds){
     return random_selector_t<Config>::template default_rng<Config>(seeds...);
+}
+//return random number generator object with default BitGenerator and random seeds, new for each call
+template<typename Config=config::default_config>
+auto default_rng(){
+    return random_selector_t<Config>::template default_rng<Config>();
 }
 
 

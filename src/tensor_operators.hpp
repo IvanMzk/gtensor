@@ -256,6 +256,10 @@ template<typename...Us, typename...Vs>
 bool operator==(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v){
     return tensor_equal(u,v);
 }
+template<typename...Us, typename...Vs>
+bool operator!=(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v){
+    return !(u==v);
+}
 
 //return true if two tensors have same shape and close elements within specified tolerance
 template<typename...Us, typename...Vs, typename Tol>

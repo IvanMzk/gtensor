@@ -14,18 +14,18 @@ TEMPLATE_TEST_CASE("test_random_integers","[test_random]",
     using tensor_type = gtensor::tensor<value_type>;
     using config_type = typename tensor_type::config_type;
     using bit_generator_type = std::mt19937_64;
-    using gtensor::make_rng;
+    using gtensor::rng;
     using helpers_for_testing::apply_by_element;
 
     REQUIRE(
         std::is_same_v<
-            typename decltype(make_rng<bit_generator_type,config_type>().template integers<value_type>(std::declval<int>(),std::declval<int>(),std::declval<int>(),std::declval<bool>()))::value_type,
+            typename decltype(rng<bit_generator_type,config_type>().template integers<value_type>(std::declval<int>(),std::declval<int>(),std::declval<int>(),std::declval<bool>()))::value_type,
             value_type
         >
     );
     REQUIRE(
         std::is_same_v<
-            typename decltype(make_rng<bit_generator_type,config_type>().template integers<value_type>(std::declval<int>(),std::declval<int>(),std::declval<std::vector<int>>(),std::declval<bool>()))::value_type,
+            typename decltype(rng<bit_generator_type,config_type>().template integers<value_type>(std::declval<int>(),std::declval<int>(),std::declval<std::vector<int>>(),std::declval<bool>()))::value_type,
             value_type
         >
     );
@@ -46,7 +46,7 @@ TEMPLATE_TEST_CASE("test_random_integers","[test_random]",
         auto expected = std::get<5>(t);
 
         auto rng_maker = [](const auto&...seeds_){
-            return make_rng<bit_generator_type,config_type>(seeds_...);
+            return rng<bit_generator_type,config_type>(seeds_...);
         };
         auto rng = std::apply(rng_maker,seeds);
         auto result = rng.template integers<value_type>(low,high,size,end_point);
@@ -65,18 +65,18 @@ TEMPLATE_TEST_CASE("test_random_uniform","[test_random]",
     using config_type = typename tensor_type::config_type;
     using bit_generator_type = std::mt19937_64;
     using gtensor::tensor_close;
-    using gtensor::make_rng;
+    using gtensor::rng;
     using helpers_for_testing::apply_by_element;
 
     REQUIRE(
         std::is_same_v<
-            typename decltype(make_rng<bit_generator_type,config_type>().template uniform<value_type>(std::declval<double>(),std::declval<double>(),std::declval<int>()))::value_type,
+            typename decltype(rng<bit_generator_type,config_type>().template uniform<value_type>(std::declval<double>(),std::declval<double>(),std::declval<int>()))::value_type,
             value_type
         >
     );
     REQUIRE(
         std::is_same_v<
-            typename decltype(make_rng<bit_generator_type,config_type>().template uniform<value_type>(std::declval<double>(),std::declval<double>(),std::declval<std::vector<int>>()))::value_type,
+            typename decltype(rng<bit_generator_type,config_type>().template uniform<value_type>(std::declval<double>(),std::declval<double>(),std::declval<std::vector<int>>()))::value_type,
             value_type
         >
     );
@@ -96,7 +96,7 @@ TEMPLATE_TEST_CASE("test_random_uniform","[test_random]",
         auto expected = std::get<4>(t);
 
         auto rng_maker = [](const auto&...seeds_){
-            return make_rng<bit_generator_type,config_type>(seeds_...);
+            return rng<bit_generator_type,config_type>(seeds_...);
         };
         auto rng = std::apply(rng_maker,seeds);
         auto result = rng.template uniform<value_type>(low,high,size);
@@ -115,18 +115,18 @@ TEMPLATE_TEST_CASE("test_random_random","[test_random]",
     using config_type = typename tensor_type::config_type;
     using bit_generator_type = std::mt19937_64;
     using gtensor::tensor_close;
-    using gtensor::make_rng;
+    using gtensor::rng;
     using helpers_for_testing::apply_by_element;
 
     REQUIRE(
         std::is_same_v<
-            typename decltype(make_rng<bit_generator_type,config_type>().template random<value_type>(std::declval<int>()))::value_type,
+            typename decltype(rng<bit_generator_type,config_type>().template random<value_type>(std::declval<int>()))::value_type,
             value_type
         >
     );
     REQUIRE(
         std::is_same_v<
-            typename decltype(make_rng<bit_generator_type,config_type>().template random<value_type>(std::declval<std::vector<int>>()))::value_type,
+            typename decltype(rng<bit_generator_type,config_type>().template random<value_type>(std::declval<std::vector<int>>()))::value_type,
             value_type
         >
     );
@@ -143,7 +143,7 @@ TEMPLATE_TEST_CASE("test_random_random","[test_random]",
         auto expected = std::get<2>(t);
 
         auto rng_maker = [](const auto&...seeds_){
-            return make_rng<bit_generator_type,config_type>(seeds_...);
+            return rng<bit_generator_type,config_type>(seeds_...);
         };
         auto rng = std::apply(rng_maker,seeds);
         auto result = rng.template random<value_type>(size);
@@ -161,18 +161,18 @@ TEMPLATE_TEST_CASE("test_random_binomial","[test_random]",
     using tensor_type = gtensor::tensor<value_type>;
     using config_type = typename tensor_type::config_type;
     using bit_generator_type = std::mt19937_64;
-    using gtensor::make_rng;
+    using gtensor::rng;
     using helpers_for_testing::apply_by_element;
 
     REQUIRE(
         std::is_same_v<
-            typename decltype(make_rng<bit_generator_type,config_type>().template binomial<value_type>(std::declval<int>(),std::declval<double>(),std::declval<int>()))::value_type,
+            typename decltype(rng<bit_generator_type,config_type>().template binomial<value_type>(std::declval<int>(),std::declval<double>(),std::declval<int>()))::value_type,
             value_type
         >
     );
     REQUIRE(
         std::is_same_v<
-            typename decltype(make_rng<bit_generator_type,config_type>().template binomial<value_type>(std::declval<int>(),std::declval<double>(),std::declval<std::vector<int>>()))::value_type,
+            typename decltype(rng<bit_generator_type,config_type>().template binomial<value_type>(std::declval<int>(),std::declval<double>(),std::declval<std::vector<int>>()))::value_type,
             value_type
         >
     );
@@ -196,7 +196,7 @@ TEMPLATE_TEST_CASE("test_random_binomial","[test_random]",
         auto expected = std::get<4>(t);
 
         auto rng_maker = [](const auto&...seeds_){
-            return make_rng<bit_generator_type,config_type>(seeds_...);
+            return rng<bit_generator_type,config_type>(seeds_...);
         };
         auto rng = std::apply(rng_maker,seeds);
         auto result = rng.template binomial<value_type>(n,p,size);
@@ -214,18 +214,18 @@ TEMPLATE_TEST_CASE("test_random_negative_binomial","[test_random]",
     using tensor_type = gtensor::tensor<value_type>;
     using config_type = typename tensor_type::config_type;
     using bit_generator_type = std::mt19937_64;
-    using gtensor::make_rng;
+    using gtensor::rng;
     using helpers_for_testing::apply_by_element;
 
     REQUIRE(
         std::is_same_v<
-            typename decltype(make_rng<bit_generator_type,config_type>().template negative_binomial<value_type>(std::declval<int>(),std::declval<double>(),std::declval<int>()))::value_type,
+            typename decltype(rng<bit_generator_type,config_type>().template negative_binomial<value_type>(std::declval<int>(),std::declval<double>(),std::declval<int>()))::value_type,
             value_type
         >
     );
     REQUIRE(
         std::is_same_v<
-            typename decltype(make_rng<bit_generator_type,config_type>().template negative_binomial<value_type>(std::declval<int>(),std::declval<double>(),std::declval<std::vector<int>>()))::value_type,
+            typename decltype(rng<bit_generator_type,config_type>().template negative_binomial<value_type>(std::declval<int>(),std::declval<double>(),std::declval<std::vector<int>>()))::value_type,
             value_type
         >
     );
@@ -257,7 +257,7 @@ TEMPLATE_TEST_CASE("test_random_negative_binomial","[test_random]",
         auto expected = std::get<4>(t);
 
         auto rng_maker = [](const auto&...seeds_){
-            return make_rng<bit_generator_type,config_type>(seeds_...);
+            return rng<bit_generator_type,config_type>(seeds_...);
         };
         auto rng = std::apply(rng_maker,seeds);
         auto result = rng.template negative_binomial<value_type>(k,p,size);
@@ -275,18 +275,18 @@ TEMPLATE_TEST_CASE("test_random_poisson","[test_random]",
     using tensor_type = gtensor::tensor<value_type>;
     using config_type = typename tensor_type::config_type;
     using bit_generator_type = std::mt19937_64;
-    using gtensor::make_rng;
+    using gtensor::rng;
     using helpers_for_testing::apply_by_element;
 
     REQUIRE(
         std::is_same_v<
-            typename decltype(make_rng<bit_generator_type,config_type>().template poisson<value_type>(std::declval<double>(),std::declval<int>()))::value_type,
+            typename decltype(rng<bit_generator_type,config_type>().template poisson<value_type>(std::declval<double>(),std::declval<int>()))::value_type,
             value_type
         >
     );
     REQUIRE(
         std::is_same_v<
-            typename decltype(make_rng<bit_generator_type,config_type>().template poisson<value_type>(std::declval<double>(),std::declval<std::vector<int>>()))::value_type,
+            typename decltype(rng<bit_generator_type,config_type>().template poisson<value_type>(std::declval<double>(),std::declval<std::vector<int>>()))::value_type,
             value_type
         >
     );
@@ -306,7 +306,7 @@ TEMPLATE_TEST_CASE("test_random_poisson","[test_random]",
         auto expected = std::get<3>(t);
 
         auto rng_maker = [](const auto&...seeds_){
-            return make_rng<bit_generator_type,config_type>(seeds_...);
+            return rng<bit_generator_type,config_type>(seeds_...);
         };
         auto rng = std::apply(rng_maker,seeds);
         auto result = rng.template poisson<value_type>(mean,size);
@@ -325,18 +325,18 @@ TEMPLATE_TEST_CASE("test_random_exponential","[test_random]",
     using config_type = typename tensor_type::config_type;
     using bit_generator_type = std::mt19937_64;
     using gtensor::tensor_close;
-    using gtensor::make_rng;
+    using gtensor::rng;
     using helpers_for_testing::apply_by_element;
 
     REQUIRE(
         std::is_same_v<
-            typename decltype(make_rng<bit_generator_type,config_type>().template exponential<value_type>(std::declval<double>(),std::declval<int>()))::value_type,
+            typename decltype(rng<bit_generator_type,config_type>().template exponential<value_type>(std::declval<double>(),std::declval<int>()))::value_type,
             value_type
         >
     );
     REQUIRE(
         std::is_same_v<
-            typename decltype(make_rng<bit_generator_type,config_type>().template exponential<value_type>(std::declval<double>(),std::declval<std::vector<int>>()))::value_type,
+            typename decltype(rng<bit_generator_type,config_type>().template exponential<value_type>(std::declval<double>(),std::declval<std::vector<int>>()))::value_type,
             value_type
         >
     );
@@ -355,7 +355,7 @@ TEMPLATE_TEST_CASE("test_random_exponential","[test_random]",
         auto expected = std::get<3>(t);
 
         auto rng_maker = [](const auto&...seeds_){
-            return make_rng<bit_generator_type,config_type>(seeds_...);
+            return rng<bit_generator_type,config_type>(seeds_...);
         };
         auto rng = std::apply(rng_maker,seeds);
         auto result = rng.template exponential<value_type>(lambda,size);
@@ -374,18 +374,18 @@ TEMPLATE_TEST_CASE("test_random_gamma","[test_random]",
     using config_type = typename tensor_type::config_type;
     using bit_generator_type = std::mt19937_64;
     using gtensor::tensor_close;
-    using gtensor::make_rng;
+    using gtensor::rng;
     using helpers_for_testing::apply_by_element;
 
     REQUIRE(
         std::is_same_v<
-            typename decltype(make_rng<bit_generator_type,config_type>().template gamma<value_type>(std::declval<double>(),std::declval<double>(),std::declval<int>()))::value_type,
+            typename decltype(rng<bit_generator_type,config_type>().template gamma<value_type>(std::declval<double>(),std::declval<double>(),std::declval<int>()))::value_type,
             value_type
         >
     );
     REQUIRE(
         std::is_same_v<
-            typename decltype(make_rng<bit_generator_type,config_type>().template gamma<value_type>(std::declval<double>(),std::declval<double>(),std::declval<std::vector<int>>()))::value_type,
+            typename decltype(rng<bit_generator_type,config_type>().template gamma<value_type>(std::declval<double>(),std::declval<double>(),std::declval<std::vector<int>>()))::value_type,
             value_type
         >
     );
@@ -415,7 +415,7 @@ TEMPLATE_TEST_CASE("test_random_gamma","[test_random]",
         auto expected = std::get<4>(t);
 
         auto rng_maker = [](const auto&...seeds_){
-            return make_rng<bit_generator_type,config_type>(seeds_...);
+            return rng<bit_generator_type,config_type>(seeds_...);
         };
         auto rng = std::apply(rng_maker,seeds);
         auto result = rng.template gamma<value_type>(shape,scale,size);
@@ -434,18 +434,18 @@ TEMPLATE_TEST_CASE("test_random_weibull","[test_random]",
     using config_type = typename tensor_type::config_type;
     using bit_generator_type = std::mt19937_64;
     using gtensor::tensor_close;
-    using gtensor::make_rng;
+    using gtensor::rng;
     using helpers_for_testing::apply_by_element;
 
     REQUIRE(
         std::is_same_v<
-            typename decltype(make_rng<bit_generator_type,config_type>().template weibull<value_type>(std::declval<double>(),std::declval<double>(),std::declval<int>()))::value_type,
+            typename decltype(rng<bit_generator_type,config_type>().template weibull<value_type>(std::declval<double>(),std::declval<double>(),std::declval<int>()))::value_type,
             value_type
         >
     );
     REQUIRE(
         std::is_same_v<
-            typename decltype(make_rng<bit_generator_type,config_type>().template weibull<value_type>(std::declval<double>(),std::declval<double>(),std::declval<std::vector<int>>()))::value_type,
+            typename decltype(rng<bit_generator_type,config_type>().template weibull<value_type>(std::declval<double>(),std::declval<double>(),std::declval<std::vector<int>>()))::value_type,
             value_type
         >
     );
@@ -468,7 +468,7 @@ TEMPLATE_TEST_CASE("test_random_weibull","[test_random]",
         auto expected = std::get<4>(t);
 
         auto rng_maker = [](const auto&...seeds_){
-            return make_rng<bit_generator_type,config_type>(seeds_...);
+            return rng<bit_generator_type,config_type>(seeds_...);
         };
         auto rng = std::apply(rng_maker,seeds);
         auto result = rng.template weibull<value_type>(shape,scale,size);
@@ -487,18 +487,18 @@ TEMPLATE_TEST_CASE("test_random_normal","[test_random]",
     using config_type = typename tensor_type::config_type;
     using bit_generator_type = std::mt19937_64;
     using gtensor::tensor_close;
-    using gtensor::make_rng;
+    using gtensor::rng;
     using helpers_for_testing::apply_by_element;
 
     REQUIRE(
         std::is_same_v<
-            typename decltype(make_rng<bit_generator_type,config_type>().template normal<value_type>(std::declval<double>(),std::declval<double>(),std::declval<int>()))::value_type,
+            typename decltype(rng<bit_generator_type,config_type>().template normal<value_type>(std::declval<double>(),std::declval<double>(),std::declval<int>()))::value_type,
             value_type
         >
     );
     REQUIRE(
         std::is_same_v<
-            typename decltype(make_rng<bit_generator_type,config_type>().template normal<value_type>(std::declval<double>(),std::declval<double>(),std::declval<std::vector<int>>()))::value_type,
+            typename decltype(rng<bit_generator_type,config_type>().template normal<value_type>(std::declval<double>(),std::declval<double>(),std::declval<std::vector<int>>()))::value_type,
             value_type
         >
     );
@@ -518,7 +518,7 @@ TEMPLATE_TEST_CASE("test_random_normal","[test_random]",
         auto expected = std::get<4>(t);
 
         auto rng_maker = [](const auto&...seeds_){
-            return make_rng<bit_generator_type,config_type>(seeds_...);
+            return rng<bit_generator_type,config_type>(seeds_...);
         };
         auto rng = std::apply(rng_maker,seeds);
         auto result = rng.template normal<value_type>(mean,stdev,size);
@@ -537,18 +537,18 @@ TEMPLATE_TEST_CASE("test_random_lognormal","[test_random]",
     using config_type = typename tensor_type::config_type;
     using bit_generator_type = std::mt19937_64;
     using gtensor::tensor_close;
-    using gtensor::make_rng;
+    using gtensor::rng;
     using helpers_for_testing::apply_by_element;
 
     REQUIRE(
         std::is_same_v<
-            typename decltype(make_rng<bit_generator_type,config_type>().template lognormal<value_type>(std::declval<double>(),std::declval<double>(),std::declval<int>()))::value_type,
+            typename decltype(rng<bit_generator_type,config_type>().template lognormal<value_type>(std::declval<double>(),std::declval<double>(),std::declval<int>()))::value_type,
             value_type
         >
     );
     REQUIRE(
         std::is_same_v<
-            typename decltype(make_rng<bit_generator_type,config_type>().template lognormal<value_type>(std::declval<double>(),std::declval<double>(),std::declval<std::vector<int>>()))::value_type,
+            typename decltype(rng<bit_generator_type,config_type>().template lognormal<value_type>(std::declval<double>(),std::declval<double>(),std::declval<std::vector<int>>()))::value_type,
             value_type
         >
     );
@@ -568,7 +568,7 @@ TEMPLATE_TEST_CASE("test_random_lognormal","[test_random]",
         auto expected = std::get<4>(t);
 
         auto rng_maker = [](const auto&...seeds_){
-            return make_rng<bit_generator_type,config_type>(seeds_...);
+            return rng<bit_generator_type,config_type>(seeds_...);
         };
         auto rng = std::apply(rng_maker,seeds);
         auto result = rng.template lognormal<value_type>(mean,stdev,size);
@@ -587,18 +587,18 @@ TEMPLATE_TEST_CASE("test_random_chisquare","[test_random]",
     using config_type = typename tensor_type::config_type;
     using bit_generator_type = std::mt19937_64;
     using gtensor::tensor_close;
-    using gtensor::make_rng;
+    using gtensor::rng;
     using helpers_for_testing::apply_by_element;
 
     REQUIRE(
         std::is_same_v<
-            typename decltype(make_rng<bit_generator_type,config_type>().template chisquare<value_type>(std::declval<double>(),std::declval<int>()))::value_type,
+            typename decltype(rng<bit_generator_type,config_type>().template chisquare<value_type>(std::declval<double>(),std::declval<int>()))::value_type,
             value_type
         >
     );
     REQUIRE(
         std::is_same_v<
-            typename decltype(make_rng<bit_generator_type,config_type>().template chisquare<value_type>(std::declval<double>(),std::declval<std::vector<int>>()))::value_type,
+            typename decltype(rng<bit_generator_type,config_type>().template chisquare<value_type>(std::declval<double>(),std::declval<std::vector<int>>()))::value_type,
             value_type
         >
     );
@@ -617,7 +617,7 @@ TEMPLATE_TEST_CASE("test_random_chisquare","[test_random]",
         auto expected = std::get<3>(t);
 
         auto rng_maker = [](const auto&...seeds_){
-            return make_rng<bit_generator_type,config_type>(seeds_...);
+            return rng<bit_generator_type,config_type>(seeds_...);
         };
         auto rng = std::apply(rng_maker,seeds);
         auto result = rng.template chisquare<value_type>(df,size);
@@ -625,7 +625,6 @@ TEMPLATE_TEST_CASE("test_random_chisquare","[test_random]",
     };
     apply_by_element(test,test_data);
 }
-
 
 TEMPLATE_TEST_CASE("test_random_cauchy","[test_random]",
     float,
@@ -637,18 +636,18 @@ TEMPLATE_TEST_CASE("test_random_cauchy","[test_random]",
     using config_type = typename tensor_type::config_type;
     using bit_generator_type = std::mt19937_64;
     using gtensor::tensor_close;
-    using gtensor::make_rng;
+    using gtensor::rng;
     using helpers_for_testing::apply_by_element;
 
     REQUIRE(
         std::is_same_v<
-            typename decltype(make_rng<bit_generator_type,config_type>().template cauchy<value_type>(std::declval<double>(),std::declval<double>(),std::declval<int>()))::value_type,
+            typename decltype(rng<bit_generator_type,config_type>().template cauchy<value_type>(std::declval<double>(),std::declval<double>(),std::declval<int>()))::value_type,
             value_type
         >
     );
     REQUIRE(
         std::is_same_v<
-            typename decltype(make_rng<bit_generator_type,config_type>().template cauchy<value_type>(std::declval<double>(),std::declval<double>(),std::declval<std::vector<int>>()))::value_type,
+            typename decltype(rng<bit_generator_type,config_type>().template cauchy<value_type>(std::declval<double>(),std::declval<double>(),std::declval<std::vector<int>>()))::value_type,
             value_type
         >
     );
@@ -668,7 +667,7 @@ TEMPLATE_TEST_CASE("test_random_cauchy","[test_random]",
         auto expected = std::get<4>(t);
 
         auto rng_maker = [](const auto&...seeds_){
-            return make_rng<bit_generator_type,config_type>(seeds_...);
+            return rng<bit_generator_type,config_type>(seeds_...);
         };
         auto rng = std::apply(rng_maker,seeds);
         auto result = rng.template cauchy<value_type>(location,scale,size);
@@ -687,18 +686,18 @@ TEMPLATE_TEST_CASE("test_random_f","[test_random]",
     using config_type = typename tensor_type::config_type;
     using bit_generator_type = std::mt19937_64;
     using gtensor::tensor_close;
-    using gtensor::make_rng;
+    using gtensor::rng;
     using helpers_for_testing::apply_by_element;
 
     REQUIRE(
         std::is_same_v<
-            typename decltype(make_rng<bit_generator_type,config_type>().template f<value_type>(std::declval<double>(),std::declval<double>(),std::declval<int>()))::value_type,
+            typename decltype(rng<bit_generator_type,config_type>().template f<value_type>(std::declval<double>(),std::declval<double>(),std::declval<int>()))::value_type,
             value_type
         >
     );
     REQUIRE(
         std::is_same_v<
-            typename decltype(make_rng<bit_generator_type,config_type>().template f<value_type>(std::declval<double>(),std::declval<double>(),std::declval<std::vector<int>>()))::value_type,
+            typename decltype(rng<bit_generator_type,config_type>().template f<value_type>(std::declval<double>(),std::declval<double>(),std::declval<std::vector<int>>()))::value_type,
             value_type
         >
     );
@@ -718,7 +717,7 @@ TEMPLATE_TEST_CASE("test_random_f","[test_random]",
         auto expected = std::get<4>(t);
 
         auto rng_maker = [](const auto&...seeds_){
-            return make_rng<bit_generator_type,config_type>(seeds_...);
+            return rng<bit_generator_type,config_type>(seeds_...);
         };
         auto rng = std::apply(rng_maker,seeds);
         auto result = rng.template f<value_type>(dfnum,dfden,size);
@@ -737,18 +736,18 @@ TEMPLATE_TEST_CASE("test_random_t","[test_random]",
     using config_type = typename tensor_type::config_type;
     using bit_generator_type = std::mt19937_64;
     using gtensor::tensor_close;
-    using gtensor::make_rng;
+    using gtensor::rng;
     using helpers_for_testing::apply_by_element;
 
     REQUIRE(
         std::is_same_v<
-            typename decltype(make_rng<bit_generator_type,config_type>().template t<value_type>(std::declval<double>(),std::declval<int>()))::value_type,
+            typename decltype(rng<bit_generator_type,config_type>().template t<value_type>(std::declval<double>(),std::declval<int>()))::value_type,
             value_type
         >
     );
     REQUIRE(
         std::is_same_v<
-            typename decltype(make_rng<bit_generator_type,config_type>().template t<value_type>(std::declval<double>(),std::declval<std::vector<int>>()))::value_type,
+            typename decltype(rng<bit_generator_type,config_type>().template t<value_type>(std::declval<double>(),std::declval<std::vector<int>>()))::value_type,
             value_type
         >
     );
@@ -767,12 +766,39 @@ TEMPLATE_TEST_CASE("test_random_t","[test_random]",
         auto expected = std::get<3>(t);
 
         auto rng_maker = [](const auto&...seeds_){
-            return make_rng<bit_generator_type,config_type>(seeds_...);
+            return rng<bit_generator_type,config_type>(seeds_...);
         };
         auto rng = std::apply(rng_maker,seeds);
         auto result = rng.template t<value_type>(df,size);
         REQUIRE(tensor_close(result,expected,1E-2,1E-2));
     };
     apply_by_element(test,test_data);
+}
+
+TEST_CASE("test_random_rng_default_rng","[test_random]")
+{
+    using gtensor::rng;
+    using gtensor::default_rng;
+
+    //reproducible results using the same seeds
+    REQUIRE(rng<std::mt19937_64>(1,2,3).integers(0,5,50) == rng<std::mt19937_64>(1,2,3).integers(0,5,50));
+    REQUIRE(rng<std::mt19937_64>(3,2,1).normal(0,1,50) == rng<std::mt19937_64>(3,2,1).normal(0,1,50));
+    //another engine
+    REQUIRE(rng<std::mt19937>(4,5,6).integers(0,5,50) == rng<std::mt19937>(4,5,6).integers(0,5,50));
+    REQUIRE(rng<std::mt19937>(6,5,4).normal(0,1,50) == rng<std::mt19937>(6,5,4).normal(0,1,50));
+
+    REQUIRE(rng<std::minstd_rand>(1,2,3).integers(0,5,50) == rng<std::minstd_rand>(1,2,3).integers(0,5,50));
+    REQUIRE(rng<std::minstd_rand>(1,2,3).normal(0,1,50) == rng<std::minstd_rand>(1,2,3).normal(0,1,50));
+
+    //default engine
+    REQUIRE(default_rng(1,2,3).integers(0,5,50) == default_rng(1,2,3).integers(0,5,50));
+    REQUIRE(default_rng(3,2,1).normal(0,1,50) == default_rng(3,2,1).normal(0,1,50));
+
+    //random seeds
+    REQUIRE(rng<std::mt19937_64>().integers(0,5,50) != rng<std::mt19937_64>().integers(0,5,50));
+    REQUIRE(rng<std::mt19937_64>().normal(0,1,50) != rng<std::mt19937_64>().normal(0,1,50));
+
+    REQUIRE(default_rng().integers(0,5,50) != default_rng().integers(0,5,50));
+    REQUIRE(default_rng().normal(0,1,50) != default_rng().normal(0,1,50));
 }
 
