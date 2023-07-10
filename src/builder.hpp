@@ -112,7 +112,8 @@ struct builder
         using shape_type = typename tensor_type::shape_type;
         using integral_type = math::make_integral_t<U>;
         using fp_type = math::make_floating_point_t<U>;
-        const auto n = static_cast<index_type>(static_cast<integral_type>(math::ceil((stop-start)/static_cast<fp_type>(step))));
+        auto n = static_cast<index_type>(static_cast<integral_type>(math::ceil((stop-start)/static_cast<fp_type>(step))));
+        n = n > 0 ? n : index_type{0};
         tensor_type res(shape_type{n});
         const auto& step_ = static_cast<const value_type&>(step);
         auto start_ = static_cast<value_type>(start);

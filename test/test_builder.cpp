@@ -288,7 +288,10 @@ TEST_CASE("test_builder_arange","[test_builder]")
 
     //0start,1stop,2step,3expected
     auto test_data = std::make_tuple(
+        std::make_tuple(0,-1,1,tensor_type{}),
         std::make_tuple(0,0,1,tensor_type{}),
+        std::make_tuple(0,1,1,tensor_type{0}),
+        std::make_tuple(0,-10,-1,tensor_type{0,-1,-2,-3,-4,-5,-6,-7,-8,-9}),
         std::make_tuple(0,10,1,tensor_type{0,1,2,3,4,5,6,7,8,9}),
         std::make_tuple(0,10,2,tensor_type{0,2,4,6,8}),
         std::make_tuple(0,10,3,tensor_type{0,3,6,9}),
