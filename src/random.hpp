@@ -2,7 +2,9 @@
 #define RANDOM_HPP_
 
 #include <random>
+#include <algorithm>
 #include "tensor.hpp"
+#include "reduce.hpp"
 
 namespace gtensor{
 
@@ -224,6 +226,58 @@ struct random
             const auto df = static_cast<math::make_floating_point_t<U>>(df_);
             return make_distribution<T,Order,Config>(std::forward<Size>(size), bit_generator_, std::student_t_distribution<T>(df));
         }
+
+        //shuffling and permutation methods
+
+        //do shuffle in-place, the order of sub-arrays is changed but their contents remains the same
+        template<typename DimT=int, typename...Ts>
+        void shuffle(basic_tensor<Ts...>& t, const DimT& axis_=0){
+            using tensor_type = basic_tensor<Ts...>;
+            using order = typename tensor_type::order;
+            using config_type = typename tensor_type::config_type;
+            using dim_type = typename tensor_type::dim_type;
+            using index_type = typename tensor_type::index_type;
+            using integral_type = long long int;
+            using distribution_type = std::uniform_int_distribution<integral_type>;
+            using distribution_param_type = distribution_type::param_type;
+            const auto dim = t.dim();
+            const auto size = t.size();
+            const auto axis = detail::make_axis(dim,axis_);
+            distribution_type distribution{};
+            auto a = t.template traverse_order_adapter<order>();
+            if (dim == 1){
+                auto indexer = a.create_indexer();
+                for (auto i=size-1; i>0; --i)
+                {
+                    using std::swap;
+                    const auto j = distribution(bit_generator_, distribution_param_type(0, static_cast<const integral_type&>(i)));
+                    swap(indexer[i], indexer[static_cast<const index_type&>(j)]);
+                }
+            }else{
+                const auto& shape = t.shape();
+                const auto axis_size = shape[axis];
+                const auto chunk_size = size / axis_size;
+                auto w1 = t.create_walker();
+                auto w2 = t.create_walker();
+                using walker_type = decltype(t.create_walker());
+                using predicate_type = detail::reduce_traverse_predicate<config_type, dim_type>;
+                using iterator_type = walker_iterator<config_type,walker_type,order,predicate_type>;
+                predicate_type predicate{axis, true};
+                for (auto i=axis_size-1; i>0; --i){
+                    const auto j = distribution(bit_generator_, distribution_param_type(0, static_cast<const integral_type&>(i)));
+                    w1.reset_back();
+                    w2.reset_back();
+                    w1.walk(axis,i);
+                    w2.walk(axis,static_cast<const index_type&>(j));
+                    std::swap_ranges(
+                        iterator_type{w1,t.shape(),t.descriptor().strides_div(),index_type{0},predicate},
+                        iterator_type{w1,t.shape(),t.descriptor().strides_div(),chunk_size,predicate},
+                        iterator_type{w2,t.shape(),t.descriptor().strides_div(),index_type{0},predicate}
+                    );
+                }
+            }
+        }
+
 
     };  //end of class generator
 

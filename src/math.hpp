@@ -53,9 +53,9 @@ struct default_numeric_traits<T,std::true_type>
 template<typename T> struct numeric_traits : default_numeric_traits<T,typename std::is_arithmetic<T>::type>
 {
     //default types for numeric_traits of arithmetic types
-    //may be changed in specialization when other class(set) of data types is used
+    //may be changed in specialization when other hierarchy of data types is used
     using floating_point_type = double;
-    using integral_type = std::int64_t;
+    using integral_type = long long int;
 };
 
 //floating point type corresponding to T
