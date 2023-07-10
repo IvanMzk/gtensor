@@ -10,7 +10,6 @@ namespace gtensor{
 
 struct random
 {
-
     template<typename It, typename BitGenerator, typename Distribution>
     static void generate_distribution(It first, It last, BitGenerator& bit_generator, Distribution distribution){
         std::generate(
@@ -59,8 +58,14 @@ struct random
 
         template<typename...Seeds>
         explicit generator(const Seeds&...seeds):
-            generator(std::initializer_list<int>{static_cast<int>(seeds)...})
+            generator(std::initializer_list<unsigned int>{static_cast<unsigned int>(seeds)...})
         {}
+
+        //distribution generation methods
+        //common description:
+        //method return tensor of random samples
+        //method has size parameter which can be scalar or container which specifies tensor's shape
+        //method can be parameterized with value_type, and layout (template parameters)
 
         //make tensor of samples of integral type drawn from uniform distribution
         //samples drawn from ranga [low, high) if end_point false
