@@ -61,6 +61,8 @@ struct random
         {}
 
         //make tensor of samples of integral type drawn from uniform distribution
+        //samples drawn from ranga [low, high) if end_point false
+        //samples drawn from ranga [low, high] if end_point true
         template<typename T=int, typename Order=config::c_order, typename U, typename Size>
         auto integers(const U& low_, const U& high_, Size&& size, bool end_point=false){
             static_assert(math::numeric_traits<T>::is_integral(),"T must be of integral type");
@@ -71,12 +73,21 @@ struct random
         }
 
         //make tensor of samples of floating point type drawn from uniform distribution
+        //samples drawn from range [low,high)
         template<typename T=double, typename Order=config::c_order, typename U, typename Size>
-        auto random(const U& low_, const U& high_, Size&& size){
+        auto uniform(const U& low_, const U& high_, Size&& size){
             static_assert(math::numeric_traits<T>::is_floating_point(),"T must be of floating point type");
             const auto low = static_cast<T>(low_);
             const auto high = static_cast<T>(high_);
             return make_distribution<T,Order,Config>(std::forward<Size>(size), bit_generator_, std::uniform_real_distribution<T>(low,high));
+        }
+
+        //make tensor of samples of floating point type drawn from uniform distribution
+        //samples drawn from range [0,1)
+        template<typename T=double, typename Order=config::c_order, typename Size>
+        auto random(Size&& size){
+            static_assert(math::numeric_traits<T>::is_floating_point(),"T must be of floating point type");
+            return uniform<T>(0.0,1.0,std::forward<Size>(size));
         }
 
         //make tensor of samples drawn from a binomial distribution
