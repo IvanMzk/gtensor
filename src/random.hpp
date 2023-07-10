@@ -5,6 +5,7 @@
 #include <algorithm>
 #include "tensor.hpp"
 #include "reduce.hpp"
+#include "builder.hpp"
 
 namespace gtensor{
 
@@ -278,6 +279,21 @@ struct random
             }
         }
 
+        template<typename T, typename DimT=int>
+        auto permutation(const T& t, const DimT& axis=0){
+            static constexpr bool is_t_tensor = detail::is_tensor_v<T>;
+            static_assert(is_t_tensor || math::numeric_traits<T>::is_integral(),"t must be of tensor or integral type");
+            if constexpr (is_t_tensor){
+                using order = typename T::order;
+                auto res = t.copy(order{});
+                shuffle(res,axis);
+                return res;
+            }else{  //t integral
+                auto res = arange<T>(t);
+                shuffle(res,axis);
+                return res;
+            }
+        }
 
     };  //end of class generator
 
