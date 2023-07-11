@@ -131,11 +131,20 @@ public:
         swap(other);
     }
     //makes tensor in specified layout by copying shape and elements from this
+    //this element's traverse order the same as specified layout
     template<typename Order = config::c_order>
     auto copy(Order order = Order{})const{
         (void)(order);
         auto a = traverse_order_adapter<Order>();
         return tensor<value_type,Order,config_type>(shape(),a.begin(),a.end());
+    }
+    //makes 1d tensor in specified layout by copying elements from this
+    //this element's traverse order the same as specified layout
+    template<typename Order = config::c_order>
+    auto flatten(Order order = Order{})const{
+        (void)(order);
+        auto a = traverse_order_adapter<Order>();
+        return tensor<value_type,Order,config_type>({size()},a.begin(),a.end());
     }
     //check is this and other are tensors and have the same implementation
     template<typename Other>
