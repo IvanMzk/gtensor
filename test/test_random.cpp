@@ -948,11 +948,26 @@ TEST_CASE("test_random_permuted","[test_random]")
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
     using bit_generator_type = std::mt19937_64;
+    using gtensor::detail::no_value;
     using gtensor::rng;
     using helpers_for_testing::apply_by_element;
 
     //0seeds,1tensor,2axis,3expected
     auto test_data = std::make_tuple(
+        //axis no_value
+        std::make_tuple(std::make_tuple(1,2,3),tensor_type{},no_value{},tensor_type{}),
+        std::make_tuple(std::make_tuple(3,2,1),tensor_type{},no_value{},tensor_type{}),
+        std::make_tuple(std::make_tuple(1,2,3),tensor_type{}.reshape(0,2,3),no_value{},tensor_type{}),
+        std::make_tuple(std::make_tuple(3,2,1),tensor_type{}.reshape(0,2,3),no_value{},tensor_type{}),
+        std::make_tuple(std::make_tuple(1,2,3),tensor_type{3},no_value{},tensor_type{3}),
+        std::make_tuple(std::make_tuple(3,2,1),tensor_type{3},no_value{},tensor_type{3}),
+        std::make_tuple(std::make_tuple(1,2,3),tensor_type{{{3}}},no_value{},tensor_type{3}),
+        std::make_tuple(std::make_tuple(3,2,1),tensor_type{{{3}}},no_value{},tensor_type{3}),
+        std::make_tuple(std::make_tuple(1,2,3),tensor_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15},no_value{},tensor_type{10,14,5,11,6,8,9,1,13,2,12,15,4,7,3}),
+        std::make_tuple(std::make_tuple(3,2,1),tensor_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15},no_value{},tensor_type{11,1,4,8,3,14,13,5,2,10,7,9,12,15,6}),
+        std::make_tuple(std::make_tuple(1,2,3),tensor_type{{1,2,3,4,5},{6,7,8,9,10},{11,12,13,14,15}},no_value{},tensor_type{10,14,5,11,6,8,9,1,13,2,12,15,4,7,3}),
+        std::make_tuple(std::make_tuple(3,2,1),tensor_type{{1,2,3,4,5},{6,7,8,9,10},{11,12,13,14,15}},no_value{},tensor_type{11,1,4,8,3,14,13,5,2,10,7,9,12,15,6}),
+        //axis integral
         std::make_tuple(std::make_tuple(1,2,3),tensor_type{},0,tensor_type{}),
         std::make_tuple(std::make_tuple(3,2,1),tensor_type{},0,tensor_type{}),
         std::make_tuple(std::make_tuple(1,2,3),tensor_type{}.reshape(0,2,3),0,tensor_type{}.reshape(0,2,3)),

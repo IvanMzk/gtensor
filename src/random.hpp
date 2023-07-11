@@ -13,6 +13,8 @@ namespace gtensor{
 
 struct random
 {
+private:
+
     template<typename It, typename BitGenerator, typename Distribution>
     static void generate_distribution(It first, It last, BitGenerator& bit_generator, Distribution distribution){
         std::generate(
@@ -79,6 +81,10 @@ struct random
         explicit generator(const Seeds&...seeds):
             generator(std::initializer_list<unsigned int>{static_cast<unsigned int>(seeds)...})
         {}
+
+        auto bit_generator()const{
+            return bit_generator_;
+        }
 
         //distribution generation methods
         //common description:
@@ -291,6 +297,8 @@ struct random
             }
         }
 
+        //if t is of tensor type return shuffled copy
+        //if t is of integral type return shuffled arange(t)
         template<typename T, typename DimT=int>
         auto permutation(const T& t, const DimT& axis=0){
             static constexpr bool is_t_tensor = detail::is_tensor_v<T>;
@@ -307,20 +315,28 @@ struct random
             }
         }
 
-        template<typename DimT, typename...Ts>
-        auto permuted(const basic_tensor<Ts...>& t, const DimT& axis_){
+        //return copy, permuted along given axis
+        //if no axis specified flatten tensor is shuffled
+        template<typename DimT=detail::no_value, typename...Ts>
+        auto permuted(const basic_tensor<Ts...>& t, const DimT& axis_=DimT{}){
             using tensor_type = basic_tensor<Ts...>;
             using order = typename tensor_type::order;
-            const auto axis = detail::make_axis(t.dim(),axis_);
-            auto res = t.copy(order{});
-            transform(
-                res,
-                axis,
-                [this](auto first, auto last){
-                    shuffle_range(first,last,bit_generator_);
-                }
-            );
-            return res;
+            if constexpr (!std::is_same_v<DimT,detail::no_value>){
+                const auto axis = detail::make_axis(t.dim(),axis_);
+                auto res = t.copy(order{});
+                transform(
+                    res,
+                    axis,
+                    [this](auto first, auto last){
+                        shuffle_range(first,last,bit_generator_);
+                    }
+                );
+                return res;
+            }else{  //shuffle flatten
+                auto res = t.flatten();
+                shuffle_range(res.begin(),res.end(),bit_generator_);
+                return res;
+            }
         }
 
     };  //end of class generator
@@ -337,6 +353,7 @@ struct random
         return random_seeds_helper(std::make_index_sequence<N>{});
     }
 
+public:
     //return random number generator object
     //BitGenerator should satisfy UniformRandomBitGenerator and RandomNumberEngine named requirements
     //tensors of random samples produced by generator object use Config as their config_type, value_type and layout can be specified using template arguments of generator methods
