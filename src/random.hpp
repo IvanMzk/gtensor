@@ -33,6 +33,22 @@ struct random
         return res;
     }
 
+    template<typename It, typename BitGenerator>
+    static auto shuffle_range(It first, It last, BitGenerator&& bit_generator){
+        using integral_type = long long int;
+        using difference_type = typename std::iterator_traits<It>::difference_type;
+        using distribution_type = std::uniform_int_distribution<integral_type>;
+        using distribution_param_type = distribution_type::param_type;
+        const auto n = last-first;
+        distribution_type distribution{};
+        for (auto i=n-1; i>0; --i)
+        {
+            using std::swap;
+            const auto j = distribution(bit_generator, distribution_param_type(0, static_cast<const integral_type&>(i)));
+            swap(first[i], first[static_cast<const difference_type&>(j)]);
+        }
+    }
+
     template<typename Config, typename BitGenerator>
     class generator
     {
@@ -247,14 +263,8 @@ struct random
             distribution_type distribution{};
             auto a = t.template traverse_order_adapter<order>();
             if (dim == 1){
-                auto indexer = a.create_indexer();
-                for (auto i=size-1; i>0; --i)
-                {
-                    using std::swap;
-                    const auto j = distribution(bit_generator_, distribution_param_type(0, static_cast<const integral_type&>(i)));
-                    swap(indexer[i], indexer[static_cast<const index_type&>(j)]);
-                }
-            }else{
+                shuffle_range(a.begin(),a.end(),bit_generator_);
+            }else if(t.size()>1){
                 const auto& shape = t.shape();
                 const auto axis_size = shape[axis];
                 const auto chunk_size = size / axis_size;
@@ -266,15 +276,17 @@ struct random
                 predicate_type predicate{axis, true};
                 for (auto i=axis_size-1; i>0; --i){
                     const auto j = distribution(bit_generator_, distribution_param_type(0, static_cast<const integral_type&>(i)));
-                    w1.reset_back();
-                    w2.reset_back();
-                    w1.walk(axis,i);
-                    w2.walk(axis,static_cast<const index_type&>(j));
-                    std::swap_ranges(
-                        iterator_type{w1,t.shape(),t.descriptor().strides_div(),index_type{0},predicate},
-                        iterator_type{w1,t.shape(),t.descriptor().strides_div(),chunk_size,predicate},
-                        iterator_type{w2,t.shape(),t.descriptor().strides_div(),index_type{0},predicate}
-                    );
+                    if (i!=j){
+                        w1.reset_back();
+                        w2.reset_back();
+                        w1.walk(axis,i);
+                        w2.walk(axis,static_cast<const index_type&>(j));
+                        std::swap_ranges(
+                            iterator_type{w1,t.shape(),t.descriptor().strides_div(),index_type{0},predicate},
+                            iterator_type{w1,t.shape(),t.descriptor().strides_div(),chunk_size,predicate},
+                            iterator_type{w2,t.shape(),t.descriptor().strides_div(),index_type{0},predicate}
+                        );
+                    }
                 }
             }
         }
@@ -293,6 +305,22 @@ struct random
                 shuffle(res,axis);
                 return res;
             }
+        }
+
+        template<typename DimT, typename...Ts>
+        auto permuted(const basic_tensor<Ts...>& t, const DimT& axis_){
+            using tensor_type = basic_tensor<Ts...>;
+            using order = typename tensor_type::order;
+            const auto axis = detail::make_axis(t.dim(),axis_);
+            auto res = t.copy(order{});
+            transform(
+                res,
+                axis,
+                [this](auto first, auto last){
+                    shuffle_range(first,last,bit_generator_);
+                }
+            );
+            return res;
         }
 
     };  //end of class generator

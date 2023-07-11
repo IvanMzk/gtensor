@@ -495,7 +495,8 @@ class reducer
         detail::check_transform_args(pshape, axis);
         const auto pdim = parent.dim();
         if (pdim == dim_type{1}){
-            transform_f(parent.begin(), parent.end(), std::forward<Args>(args)...);
+            auto a = parent.template traverse_order_adapter<order>();
+            transform_f(a.begin(), a.end(), std::forward<Args>(args)...);
         }else{
             using predicate_type = detail::reduce_traverse_predicate<config_type, dim_type>;
             using traverser_type = walker_forward_traverser<config_type, decltype(parent.create_walker()), predicate_type>;
