@@ -9,6 +9,116 @@
 
 namespace gtensor{
 
+namespace detail{
+
+
+auto check_choice_args(){
+
+}
+
+template<typename ShT, typename Size, typename DimT>
+auto make_choice_shape(const ShT& shape, const Size& size, const DimT& axis){
+    using shape_type = ShT;
+    using dim_type = typename shape_type::difference_type;
+    using index_type = typename shape_type::value_type;
+    static constexpr bool is_size_integral = math::numeric_traits<Size>::is_integral();
+    static_assert(is_size_integral || detail::is_container_of_type_v<Size,index_type>,"Size must be integral or container of integral");
+    if constexpr (is_size_integral){
+        shape_type res{shape};
+        res[axis] = static_cast<index_type>(size);
+        return res;
+    }else{
+        const auto size_dim = static_cast<dim_type>(size.size());
+        const auto res_dim = detail::make_dim(shape) + size_dim - dim_type{1};
+        shape_type res(res_dim);
+        std::copy(shape.begin(),shape.begin()+axis,res.begin());
+        std::copy(size.begin(),size.end(),res.begin()+axis);
+        std::copy(shape.begin()+(axis+1),shape.end(),res.begin()+(axis+size_dim));
+        return res;
+    }
+}
+
+template<typename ShT, typename IdxShT, typename DimT>
+auto make_take_shape(const ShT& shape, const IdxShT& indexes_shape, const DimT& axis){
+    using shape_type = ShT;
+    using dim_type = typename shape_type::difference_type;
+
+    const auto dim = detail::make_dim(shape);
+    const auto indexes_dim = static_cast<dim_type>(indexes_shape.size());
+    const auto res_dim = dim==0 ? indexes_dim : dim - dim_type{1} + indexes_dim;
+    shape_type res(res_dim);
+    std::copy(shape.begin(),shape.begin()+axis,res.begin());
+    std::copy(indexes_shape.begin(),indexes_shape.end(),res.begin()+axis);
+    std::copy(shape.begin()+(axis+dim_type{1}),shape.end(),res.begin()+(axis+indexes_dim));
+    return res;
+}
+
+template<typename DimT=gtensor::detail::no_value, typename...Ts, typename...Us>
+auto take(const basic_tensor<Ts...>& t, const basic_tensor<Us...>& indexes, const DimT& axis_=DimT{}){
+    using tensor_type = basic_tensor<Ts...>;
+    using order = typename tensor_type::order;
+    using config_type = typename tensor_type::config_type;
+    using dim_type = typename tensor_type::dim_type;
+    using index_type = typename tensor_type::index_type;
+    using input_predicate_type = detail::reduce_traverse_predicate<config_type, dim_type>;
+    using input_walker_type = decltype(t.create_walker());
+    using input_iterator_type = walker_iterator<config_type,input_walker_type,order,input_predicate_type>;
+    //1d input case, axis no_value case - treat input as 1d
+    //static constexpr bool axis_no_value = std::is_same_v<DimT,gtensor::detail::no_value>;
+    //check args: axis vs t.dim , non empty take from empty input
+    auto a_indexes = indexes.template traverse_order_adapter<order>();
+    if (t.dim()==1 || t.dim()==0){
+        auto res = empty_like(t,indexes.shape());
+        if (!res.empty()){
+            const auto size = t.size();
+            auto a_res = res.template traverse_order_adapter<order>();
+            auto indexer = t.template traverse_order_adapter<order>().create_indexer();
+            auto indexes_it = a_indexes.begin();
+            for (auto res_it=a_res.begin(),res_last=a_res.end(); res_it!=res_last; ++res_it,++indexes_it){
+                const auto& idx = static_cast<const index_type&>(*indexes_it);
+                if (idx < size){
+                    *res_it = indexer[idx];
+                }else{
+                    //throw
+                }
+            }
+        }
+        return res;
+    }else{
+        const auto axis = detail::make_axis(t.dim(),axis_);
+        auto res = empty_like(t,make_take_shape(t.shape(),indexes.shape(),axis));
+        if (!res.empty()){
+            using axes_type = typename config_type::template container<dim_type>;
+            using res_predicate_type = detail::reduce_traverse_predicate<config_type, axes_type>;
+            using res_walker_type = decltype(res.create_walker());
+            using res_traverser_type = walker_forward_traverser<config_type,res_walker_type,res_predicate_type>;
+            using res_iterator_type = walker_iterator<config_type,res_walker_type,order,res_predicate_type>;
+            const auto indexes_dim = indexes.dim();
+            const auto& input_shape = t.shape();
+            const auto chunk_size = t.size() / input_shape[axis];
+            input_predicate_type input_predicate{axis,true};    //inverse, to traverse all but axis
+            axes_type res_axes(indexes_dim);
+            std::iota(res_axes.begin(),res_axes.end(),axis);
+            const auto& res_shape = res.shape();
+            res_traverser_type res_traverser{res_shape,res.create_walker(),res_predicate_type{res_axes,false}};    //to traverse indexes axes
+            auto input_walker = t.create_walker();
+            for (auto indexes_it=a_indexes.begin(),indexes_last=a_indexes.end(); indexes_it!=indexes_last; ++indexes_it,res_traverser.template next<order>()){
+                const auto& idx = static_cast<const index_type&>(*indexes_it);
+                input_walker.walk(axis,idx);
+                std::copy(
+                    input_iterator_type{input_walker,input_shape,t.descriptor().strides_div(),0,input_predicate},
+                    input_iterator_type{input_walker,input_shape,t.descriptor().strides_div(),chunk_size,input_predicate},
+                    res_iterator_type{res_traverser.walker(),res_shape,res.descriptor().strides_div(),0,res_predicate_type{res_axes,true}}
+                );
+                input_walker.walk(axis,-idx);
+            }
+        }
+        return res;
+    }
+}
+
+}   //end of namespace detail
+
 //random module implementation
 
 struct random
@@ -16,7 +126,7 @@ struct random
 private:
 
     template<typename It, typename BitGenerator, typename Distribution>
-    static void generate_distribution(It first, It last, BitGenerator& bit_generator, Distribution distribution){
+    static void generate_distribution(It first, It last, BitGenerator&& bit_generator, Distribution distribution){
         std::generate(
             first,
             last,
@@ -27,7 +137,7 @@ private:
     }
 
     template<typename T, typename Order, typename Config, typename Size, typename BitGenerator, typename Distribution>
-    static auto make_distribution(Size&& size, BitGenerator& bit_generator, Distribution distribution){
+    static auto make_distribution(Size&& size, BitGenerator&& bit_generator, Distribution distribution){
         using tensor_type = tensor<T,Order,config::extend_config_t<Config,T>>;
         using shape_type = typename tensor_type::shape_type;
         tensor_type res(detail::make_shape_of_type<shape_type>(std::forward<Size>(size)));
@@ -67,8 +177,13 @@ private:
     public:
         generator() = default;
 
+        template<typename BitGenerator_, std::enable_if_t<!std::is_same_v<BitGenerator_,generator>,int> =0>
+        explicit generator(BitGenerator_&& bit_generator__):
+            bit_generator_{std::forward<BitGenerator_>(bit_generator__)}
+        {}
+
         template<typename Container>
-        generator(const Container& seeds):
+        explicit generator(const Container& seeds):
             bit_generator_{make_bit_generator(seeds)}
         {}
 
@@ -337,6 +452,19 @@ private:
                 shuffle_range(res.begin(),res.end(),bit_generator_);
                 return res;
             }
+        }
+
+        //return random sample taken from given tensor
+        template<typename DimT, typename...Ts, typename Size>
+        auto choice(const basic_tensor<Ts...>& t, const Size& size, bool replace=true, const DimT& axis_=0, bool shuffle=true){
+            // using tensor_type = basic_tensor<Ts...>;
+            // using order = typename tensor_type::order;
+            // using value_type = typename tensor_type::value_type;
+            // const auto dim = t.dim();
+            // const auto axis = detail::make_axis(dim,axis_);
+            // auto res = empty_like(t,detail::make_choice_shape(t.shape(),size,axis));
+
+            // return res;
         }
 
     };  //end of class generator
