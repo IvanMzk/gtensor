@@ -293,7 +293,8 @@ class reduce_traverse_predicate
     }
 
 public:
-    reduce_traverse_predicate(const axes_type& axes__, bool inverse__):
+    template<typename Axes_, std::enable_if_t<std::is_lvalue_reference_v<Axes_>,int> =0>
+    reduce_traverse_predicate(Axes_&& axes__, bool inverse__):
         axes_{&axes__},
         inverse_{inverse__}
     {}
