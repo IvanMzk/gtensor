@@ -1,4 +1,5 @@
 #include <vector>
+#include <array>
 #include "catch.hpp"
 #include "builder.hpp"
 #include "helpers_for_testing.hpp"
@@ -219,13 +220,21 @@ TEMPLATE_TEST_CASE("test_builder_empty_like","[test_builder]",
     using shape_type = typename tensor_type::shape_type;
     using gtensor::empty_like;
 
+    REQUIRE(std::is_same_v<decltype(empty_like(std::declval<tensor_type>(),std::declval<std::vector<int>>())),tensor_type>);
     REQUIRE(std::is_same_v<decltype(empty_like(std::declval<tensor_type>())),tensor_type>);
 
+    //no shape argument
     REQUIRE(empty_like(tensor_type(2)).shape() == shape_type{});
     REQUIRE(empty_like(tensor_type{}).shape() == shape_type{0});
     REQUIRE(empty_like(tensor_type{1,2,3,4}).shape() == shape_type{4});
     REQUIRE(empty_like(tensor_type{{1,2},{3,4},{5,6}}).shape() == shape_type{3,2});
     REQUIRE(empty_like(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}).shape() == shape_type{2,2,2});
+    //shape argument
+    REQUIRE(empty_like(tensor_type(2),std::vector<int>{}).shape() == shape_type{});
+    REQUIRE(empty_like(tensor_type(2),std::array<int,2>{3,4}).shape() == shape_type{3,4});
+    REQUIRE(empty_like(tensor_type{{1,2,3},{4,5,6}},shape_type{}).shape() == shape_type{});
+    REQUIRE(empty_like(tensor_type{{1,2,3},{4,5,6}},std::array<int,2>{3,4}).shape() == shape_type{3,4});
+    REQUIRE(empty_like(tensor_type{{1,2,3},{4,5,6}},std::array<int,3>{0,3,4}).shape() == shape_type{0,3,4});
 }
 
 TEMPLATE_TEST_CASE("test_builder_full_zeros_ones_like","[test_builder]",
@@ -243,31 +252,59 @@ TEMPLATE_TEST_CASE("test_builder_full_zeros_ones_like","[test_builder]",
     using extended_config_type = gtensor::config::extend_config_t<config_type,value_type>;
     using gtensor::tensor;
     using tensor_type = tensor<value_type,layout,extended_config_type>;
+    using shape_type = typename tensor_type::shape_type;
     using gtensor::full_like;
     using gtensor::zeros_like;
     using gtensor::ones_like;
     using helpers_for_testing::apply_by_element;
 
+    //no shape argument
     REQUIRE(std::is_same_v<decltype(full_like(std::declval<tensor_type>(),std::declval<value_type>())),tensor_type>);
     REQUIRE(std::is_same_v<decltype(zeros_like(std::declval<tensor_type>())),tensor_type>);
     REQUIRE(std::is_same_v<decltype(ones_like(std::declval<tensor_type>())),tensor_type>);
+    //shape argument
+    REQUIRE(std::is_same_v<decltype(full_like(std::declval<tensor_type>(),std::declval<value_type>(),std::declval<std::vector<int>>())),tensor_type>);
+    REQUIRE(std::is_same_v<decltype(zeros_like(std::declval<tensor_type>(),std::declval<std::vector<int>>())),tensor_type>);
+    REQUIRE(std::is_same_v<decltype(ones_like(std::declval<tensor_type>(),std::declval<std::vector<int>>())),tensor_type>);
+
     //result,1expected
     auto test_data = std::make_tuple(
-        //full
+        //full_like
+        //no shape argument
         std::make_tuple(full_like(tensor_type(2),1),tensor_type(1)),
         std::make_tuple(full_like(tensor_type{},1),tensor_type{}),
         std::make_tuple(full_like(tensor_type{1,2,3,4,5},2),tensor_type{2,2,2,2,2}),
         std::make_tuple(full_like(tensor_type{{1,2,3},{4,5,6}},3),tensor_type{{3,3,3},{3,3,3}}),
-        //zeros
+        //shape argument
+        std::make_tuple(full_like(tensor_type(2),1,shape_type{}),tensor_type(1)),
+        std::make_tuple(full_like(tensor_type(2),1,shape_type{3,4}),tensor_type{{1,1,1,1},{1,1,1,1},{1,1,1,1}}),
+        std::make_tuple(full_like(tensor_type(2),1,shape_type{0,3,4}),tensor_type{}.reshape(0,3,4)),
+        std::make_tuple(full_like(tensor_type{},2,shape_type{3,4}),tensor_type{{2,2,2,2},{2,2,2,2},{2,2,2,2}}),
+        std::make_tuple(full_like(tensor_type{{1,2,3},{4,5,6}},3,shape_type{3,4}),tensor_type{{3,3,3,3},{3,3,3,3},{3,3,3,3}}),
+        //zeros_like
+        //no shape argument
         std::make_tuple(zeros_like(tensor_type(2)),tensor_type(0)),
         std::make_tuple(zeros_like(tensor_type{}),tensor_type{}),
         std::make_tuple(zeros_like(tensor_type{1,2,3,4,5}),tensor_type{0,0,0,0,0}),
         std::make_tuple(zeros_like(tensor_type{{1,2,3},{4,5,6}}),tensor_type{{0,0,0},{0,0,0}}),
-        //ones
+        //shape argument
+        std::make_tuple(zeros_like(tensor_type(2),shape_type{}),tensor_type(0)),
+        std::make_tuple(zeros_like(tensor_type(2),shape_type{3,4}),tensor_type{{0,0,0,0},{0,0,0,0},{0,0,0,0}}),
+        std::make_tuple(zeros_like(tensor_type(2),shape_type{0,3,4}),tensor_type{}.reshape(0,3,4)),
+        std::make_tuple(zeros_like(tensor_type{},shape_type{3,4}),tensor_type{{0,0,0,0},{0,0,0,0},{0,0,0,0}}),
+        std::make_tuple(zeros_like(tensor_type{{1,2,3},{4,5,6}},shape_type{3,4}),tensor_type{{0,0,0,0},{0,0,0,0},{0,0,0,0}}),
+        //ones_like
+        //no shape argument
         std::make_tuple(ones_like(tensor_type(2)),tensor_type(1)),
         std::make_tuple(ones_like(tensor_type{}),tensor_type{}),
         std::make_tuple(ones_like(tensor_type{1,2,3,4,5}),tensor_type{1,1,1,1,1}),
-        std::make_tuple(ones_like(tensor_type{{1,2,3},{4,5,6}}),tensor_type{{1,1,1},{1,1,1}})
+        std::make_tuple(ones_like(tensor_type{{1,2,3},{4,5,6}}),tensor_type{{1,1,1},{1,1,1}}),
+        //shape argument
+        std::make_tuple(ones_like(tensor_type(2),shape_type{}),tensor_type(1)),
+        std::make_tuple(ones_like(tensor_type(2),shape_type{3,4}),tensor_type{{1,1,1,1},{1,1,1,1},{1,1,1,1}}),
+        std::make_tuple(ones_like(tensor_type(2),shape_type{0,3,4}),tensor_type{}.reshape(0,3,4)),
+        std::make_tuple(ones_like(tensor_type{},shape_type{3,4}),tensor_type{{1,1,1,1},{1,1,1,1},{1,1,1,1}}),
+        std::make_tuple(ones_like(tensor_type{{1,2,3},{4,5,6}},shape_type{3,4}),tensor_type{{1,1,1,1},{1,1,1,1},{1,1,1,1}})
     );
     auto test = [](const auto& t){
         auto result = std::get<0>(t);

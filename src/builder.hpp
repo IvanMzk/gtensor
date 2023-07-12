@@ -71,34 +71,52 @@ struct builder
         return eye<T,Order,Config>(n,n,IdxT{0});
     }
 
-    template<typename...Ts>
-    static auto empty_like(const basic_tensor<Ts...>& t){
+    template<typename ShT = detail::no_value, typename...Ts>
+    static auto empty_like(const basic_tensor<Ts...>& t, ShT&& shape=ShT{}){
+        using tensor_type = basic_tensor<Ts...>;
+        using order = typename tensor_type::order;
+        using config_type = typename tensor_type::config_type;
+        using value_type = typename tensor_type::value_type;
+        using shape_type = typename tensor_type::shape_type;
+        using index_type = typename tensor_type::index_type;
+        using ShT_ = std::remove_cv_t<std::remove_reference_t<ShT>>;
+        static constexpr bool is_shape = detail::is_container_of_type_v<ShT_,index_type>;
+        static_assert(is_shape || std::is_same_v<ShT_,detail::no_value>,"shape must be no_value or container");
+        if constexpr (is_shape){
+            return empty<value_type,order,config_type>(detail::make_shape_of_type<shape_type>(std::forward<ShT>(shape)));
+        }else{
+            return empty<value_type,order,config_type>(t.shape());
+        }
+    }
+
+    template<typename U, typename ShT=detail::no_value, typename...Ts>
+    static auto full_like(const basic_tensor<Ts...>& t, const U& v, ShT&& shape=ShT{}){
         using tensor_type = basic_tensor<Ts...>;
         using value_type = typename tensor_type::value_type;
         using order = typename tensor_type::order;
         using config_type = typename tensor_type::config_type;
-        return empty<value_type,order,config_type>(t.shape());
+        using shape_type = typename tensor_type::shape_type;
+        using index_type = typename tensor_type::index_type;
+        using ShT_ = std::remove_cv_t<std::remove_reference_t<ShT>>;
+        static constexpr bool is_shape = detail::is_container_of_type_v<ShT_,index_type>;
+        static_assert(is_shape || std::is_same_v<ShT_,detail::no_value>,"shape must be no_value or container");
+        if constexpr (is_shape){
+            return full<value_type,order,config_type>(detail::make_shape_of_type<shape_type>(std::forward<ShT>(shape)),v);
+        }else{
+            return full<value_type,order,config_type>(t.shape(),v);
+        }
     }
 
-    template<typename U, typename...Ts>
-    static auto full_like(const basic_tensor<Ts...>& t, const U& v){
-        using tensor_type = basic_tensor<Ts...>;
-        using value_type = typename tensor_type::value_type;
-        using order = typename tensor_type::order;
-        using config_type = typename tensor_type::config_type;
-        return full<value_type,order,config_type>(t.shape(),v);
-    }
-
-    template<typename...Ts>
-    static auto zeros_like(const basic_tensor<Ts...>& t){
+    template<typename ShT=detail::no_value, typename...Ts>
+    static auto zeros_like(const basic_tensor<Ts...>& t, ShT&& shape=ShT{}){
         using value_type = typename basic_tensor<Ts...>::value_type;
-        return full_like(t,value_type{0});
+        return full_like(t,value_type{0},shape);
     }
 
-    template<typename...Ts>
-    static auto ones_like(const basic_tensor<Ts...>& t){
+    template<typename ShT=detail::no_value, typename...Ts>
+    static auto ones_like(const basic_tensor<Ts...>& t, ShT&& shape=ShT{}){
         using value_type = typename basic_tensor<Ts...>::value_type;
-        return full_like(t,value_type{1});
+        return full_like(t,value_type{1},shape);
     }
 
     //build from numerical ranges
@@ -393,22 +411,40 @@ auto eye(const IdxT& n, const IdxT& m, const IdxT& k=0){
     return builder_selector_t<Config>::template eye<T,Order,Config>(n,m,k);
 }
 
-//make tensor of the same shape,layout,value_type,config_type as t
+//make tensor of the same layout,value_type,config_type as t
 //elements initialization depends on underlaying storage implementation
+//if no shape specified result has input tensor's shape
+template<typename ShT, typename...Ts>
+auto empty_like(const basic_tensor<Ts...>& t, ShT&& shape){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return builder_selector_t<config_type>::empty_like(t,std::forward<ShT>(shape));
+}
 template<typename...Ts>
 auto empty_like(const basic_tensor<Ts...>& t){
     using config_type = typename basic_tensor<Ts...>::config_type;
     return builder_selector_t<config_type>::empty_like(t);
 }
 
-//make tensor of the same shape,layout,value_type,config_type as t, initialized with v
+//make tensor of the same layout,value_type,config_type as t, initialized with v
+//if no shape specified result has input tensor's shape
+template<typename U, typename ShT, typename...Ts>
+auto full_like(const basic_tensor<Ts...>& t, const U& v, ShT&& shape){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return builder_selector_t<config_type>::full_like(t,v,std::forward<ShT>(shape));
+}
 template<typename U, typename...Ts>
 auto full_like(const basic_tensor<Ts...>& t, const U& v){
     using config_type = typename basic_tensor<Ts...>::config_type;
     return builder_selector_t<config_type>::full_like(t,v);
 }
 
-//make tensor of the same shape,layout,value_type,config_type as t, initialized with zeros
+//make tensor of the same layout,value_type,config_type as t, initialized with zeros
+//if no shape specified result has input tensor's shape
+template<typename ShT, typename...Ts>
+auto zeros_like(const basic_tensor<Ts...>& t, ShT&& shape){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return builder_selector_t<config_type>::zeros_like(t,std::forward<ShT>(shape));
+}
 template<typename...Ts>
 auto zeros_like(const basic_tensor<Ts...>& t){
     using config_type = typename basic_tensor<Ts...>::config_type;
@@ -416,6 +452,12 @@ auto zeros_like(const basic_tensor<Ts...>& t){
 }
 
 //make tensor of the same shape,layout,value_type,config_type as t, initialized with ones
+//if no shape specified result has input tensor's shape
+template<typename ShT, typename...Ts>
+auto ones_like(const basic_tensor<Ts...>& t, ShT&& shape){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return builder_selector_t<config_type>::ones_like(t,std::forward<ShT>(shape));
+}
 template<typename...Ts>
 auto ones_like(const basic_tensor<Ts...>& t){
     using config_type = typename basic_tensor<Ts...>::config_type;
