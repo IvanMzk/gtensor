@@ -16,6 +16,7 @@ struct statistic;
 struct sort_search;
 struct builder;
 struct random;
+struct indexing;
 
 
 //storage implementation factory selector
@@ -182,6 +183,21 @@ public:
     using type = typename selector_<typename config_type::engine, void, Ts...>::type;
 };
 template<typename...Ts> using random_selector_t = typename random_selector<Ts...>::type;
+
+//indexing selector
+template<typename Config, typename...Ts>
+class indexing_selector
+{
+    using config_type = Config;
+    template<typename...> struct selector_;
+    template<typename Dummy> struct selector_<config::engine_expression_template,Dummy>
+    {
+        using type = indexing;
+    };
+public:
+    using type = typename selector_<typename config_type::engine, void, Ts...>::type;
+};
+template<typename...Ts> using indexing_selector_t = typename indexing_selector<Ts...>::type;
 
 
 
