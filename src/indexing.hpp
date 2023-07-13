@@ -7,7 +7,34 @@
 
 namespace gtensor{
 
+class indexing_exception : public std::runtime_error
+{
+public:
+    explicit indexing_exception(const char* what):
+        std::runtime_error(what)
+    {}
+};
+
 namespace detail{
+
+template<typename IdxT, typename DimT, typename Axis>
+void check_take_args(const IdxT& input_size, const DimT& input_dim, const IdxT& indexes_size, const Axis& axis_){
+    if constexpr (!std::is_same_v<Axis,no_value>){
+        auto axis = make_axis(input_dim,axis_);
+        if (input_dim==0){
+            if (axis != 0){
+                throw indexing_exception("axis out of bounds");
+            }
+        }else{
+            if (axis >= input_dim){
+                throw indexing_exception("axis out of bounds");
+            }
+        }
+    }
+    if (input_size==0 && indexes_size!=0){
+        throw indexing_exception("cannot do a non-empty take from an empty input");
+    }
+}
 
 template<typename ShT, typename IdxShT, typename DimT>
 auto make_take_shape(const ShT& shape, const IdxShT& indexes_shape, const DimT& axis){
@@ -30,8 +57,36 @@ auto make_take_shape(const ShT& shape, const IdxShT& indexes_shape, const DimT& 
 
 struct indexing{
 
-template<typename DimT=gtensor::detail::no_value, typename...Ts, typename...Us>
-static auto take(const basic_tensor<Ts...>& t, const basic_tensor<Us...>& indexes, const DimT& axis_=DimT{}){
+private:
+
+template<typename FlattenOrder, typename...Ts, typename...Us>
+static auto take_flatten(const basic_tensor<Ts...>& t, const basic_tensor<Us...>& indexes){
+    using tensor_type = basic_tensor<Ts...>;
+    using order = typename tensor_type::order;
+    using index_type = typename tensor_type::index_type;
+    auto res = empty_like(t,indexes.shape());
+    if (!res.empty()){
+        const auto size = t.size();
+        auto indexer = t.template traverse_order_adapter<FlattenOrder>().create_indexer();
+        auto indexes_it = indexes.template traverse_order_adapter<order>().begin();
+        auto a_res = res.template traverse_order_adapter<order>();
+        for (auto res_it=a_res.begin(),res_last=a_res.end(); res_it!=res_last; ++res_it,++indexes_it){
+            const auto& idx = static_cast<const index_type&>(*indexes_it);
+            if (idx < size){
+                *res_it = indexer[idx];
+            }else{
+                throw indexing_exception("indexes is out of bounds");
+            }
+        }
+    }
+    return res;
+}
+
+public:
+
+//take elements of tensor along axis
+template<typename Axis=gtensor::detail::no_value, typename...Ts, typename...Us>
+static auto take(const basic_tensor<Ts...>& t, const basic_tensor<Us...>& indexes, const Axis& axis_=Axis{}){
     using tensor_type = basic_tensor<Ts...>;
     using order = typename tensor_type::order;
     using config_type = typename tensor_type::config_type;
@@ -40,27 +95,14 @@ static auto take(const basic_tensor<Ts...>& t, const basic_tensor<Us...>& indexe
     using input_predicate_type = detail::reduce_traverse_predicate<config_type, dim_type>;
     using input_walker_type = decltype(t.create_walker());
     using input_iterator_type = walker_iterator<config_type,input_walker_type,order,input_predicate_type>;
-    //1d input case, axis no_value case - treat input as 1d
-    //static constexpr bool axis_no_value = std::is_same_v<DimT,gtensor::detail::no_value>;
     //check args: axis vs t.dim , non empty take from empty input
+    detail::check_take_args(t.size(),t.dim(),indexes.size(),axis_);
     auto a_indexes = indexes.template traverse_order_adapter<order>();
     if (t.dim()==1 || t.dim()==0){
-        auto res = empty_like(t,indexes.shape());
-        if (!res.empty()){
-            const auto size = t.size();
-            auto a_res = res.template traverse_order_adapter<order>();
-            auto indexer = t.template traverse_order_adapter<order>().create_indexer();
-            auto indexes_it = a_indexes.begin();
-            for (auto res_it=a_res.begin(),res_last=a_res.end(); res_it!=res_last; ++res_it,++indexes_it){
-                const auto& idx = static_cast<const index_type&>(*indexes_it);
-                if (idx < size){
-                    *res_it = indexer[idx];
-                }else{
-                    //throw
-                }
-            }
-        }
-        return res;
+        return take_flatten<order>(t,indexes);
+    }
+    if constexpr (std::is_same_v<Axis,gtensor::detail::no_value>){
+        return take_flatten<config::c_order>(t,indexes);
     }else{
         const auto axis = detail::make_axis(t.dim(),axis_);
         auto res = empty_like(t,detail::make_take_shape(t.shape(),indexes.shape(),axis));
@@ -72,7 +114,8 @@ static auto take(const basic_tensor<Ts...>& t, const basic_tensor<Us...>& indexe
             using res_iterator_type = walker_iterator<config_type,res_walker_type,order,res_predicate_type>;
             const auto indexes_dim = indexes.dim();
             const auto& input_shape = t.shape();
-            const auto chunk_size = t.size() / input_shape[axis];
+            const auto axis_size = input_shape[axis];
+            const auto chunk_size = t.size() / axis_size;
             input_predicate_type input_predicate{axis,true};    //inverse, to traverse all but axis
             axes_type res_axes(indexes_dim);
             std::iota(res_axes.begin(),res_axes.end(),axis);
@@ -81,13 +124,17 @@ static auto take(const basic_tensor<Ts...>& t, const basic_tensor<Us...>& indexe
             auto input_walker = t.create_walker();
             for (auto indexes_it=a_indexes.begin(),indexes_last=a_indexes.end(); indexes_it!=indexes_last; ++indexes_it,res_traverser.template next<order>()){
                 const auto& idx = static_cast<const index_type&>(*indexes_it);
-                input_walker.walk(axis,idx);
-                std::copy(
-                    input_iterator_type{input_walker,input_shape,t.descriptor().strides_div(),0,input_predicate},
-                    input_iterator_type{input_walker,input_shape,t.descriptor().strides_div(),chunk_size,input_predicate},
-                    res_iterator_type{res_traverser.walker(),res_shape,res.descriptor().strides_div(),0,res_predicate_type{res_axes,true}}
-                );
-                input_walker.walk(axis,-idx);
+                if (idx < axis_size){
+                    input_walker.walk(axis,idx);
+                    std::copy(
+                        input_iterator_type{input_walker,input_shape,t.descriptor().strides_div(),0,input_predicate},
+                        input_iterator_type{input_walker,input_shape,t.descriptor().strides_div(),chunk_size,input_predicate},
+                        res_iterator_type{res_traverser.walker(),res_shape,res.descriptor().strides_div(),0,res_predicate_type{res_axes,true}}
+                    );
+                    input_walker.walk(axis,-idx);
+                }else{
+                    throw indexing_exception("indexes is out of bounds");
+                }
             }
         }
         return res;
@@ -98,10 +145,17 @@ static auto take(const basic_tensor<Ts...>& t, const basic_tensor<Us...>& indexe
 
 //indexing module frontend
 
+//take elements of tensor along axis
 template<typename DimT, typename...Ts, typename...Us>
 auto take(const basic_tensor<Ts...>& t, const basic_tensor<Us...>& indexes, const DimT& axis){
     using config_type = typename basic_tensor<Ts...>::config_type;
     return indexing_selector_t<config_type>::take(t,indexes,axis);
+}
+//take like over flatten
+template<typename...Ts, typename...Us>
+auto take(const basic_tensor<Ts...>& t, const basic_tensor<Us...>& indexes){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return indexing_selector_t<config_type>::take(t,indexes);
 }
 
 }   //end of namespace gtensor

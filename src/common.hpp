@@ -18,8 +18,6 @@ public:
     {}
 };
 
-
-
 namespace detail{
 
 //tag to indicate argument of deducible type has no value
