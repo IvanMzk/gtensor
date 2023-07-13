@@ -198,6 +198,76 @@ GTENSOR_ITERATOR_OPERATOR_LESS(walker_iterator);
 GTENSOR_ITERATOR_OPERATOR_GREATER_EQUAL(walker_iterator);
 GTENSOR_ITERATOR_OPERATOR_LESS_EQUAL(walker_iterator);
 
+//random access iterator, use walker data accessor
+//iterate along specified axis
+template<typename Config, typename Walker>
+class axis_iterator
+{
+protected:
+    using walker_type = Walker;
+    using index_type = typename Config::index_type;
+    using dim_type = typename Config::dim_type;
+    using result_type = decltype(*std::declval<walker_type>());
+public:
+    using iterator_category = std::random_access_iterator_tag;
+    using difference_type = index_type;
+    using value_type = typename detail::iterator_internals_selector<result_type>::value_type;
+    using pointer = typename detail::iterator_internals_selector<result_type>::pointer;
+    using reference = typename detail::iterator_internals_selector<result_type>::reference;
+    using const_reference = typename detail::iterator_internals_selector<result_type>::const_reference;
+
+    //assuming usual stoarge subscript operator semantic i.e. subscript index in range [0,size()-1]:
+    //begin should be constructed with zero flat_index_ argument, end with size() flat_index_argument
+    template<typename Walker_>
+    axis_iterator(Walker_&& walker_, const dim_type& reduce_axis_, const difference_type& flat_index_):
+        walker{std::forward<Walker_>(walker_)},
+        reduce_axis{reduce_axis_},
+        flat_index{flat_index_}
+    {
+        if (flat_index_ > 0){
+            walker.walk(reduce_axis_, flat_index_ - difference_type{1});
+            walker.step(reduce_axis_);
+        }
+    }
+    axis_iterator& operator+=(difference_type n){
+        advance(n);
+        return *this;
+    }
+    axis_iterator& operator++(){
+        walker.step(reduce_axis);
+        ++flat_index;
+        return *this;
+    }
+    axis_iterator& operator--(){
+        walker.step_back(reduce_axis);
+        --flat_index;
+        return *this;
+    }
+    result_type operator[](difference_type n)const{return *(*this+n);}
+    result_type operator*() const{return *walker;}
+    inline difference_type friend operator-(const axis_iterator& lhs, const axis_iterator& rhs){return lhs.flat_index - rhs.flat_index;}
+private:
+    void advance(difference_type n){
+        walker.walk(reduce_axis, n);
+        flat_index+=n;
+    }
+    walker_type walker;
+    dim_type reduce_axis;
+    difference_type flat_index;
+};
+
+GTENSOR_ITERATOR_OPERATOR_ASSIGN_MINUS(axis_iterator);
+GTENSOR_ITERATOR_OPERATOR_PLUS(axis_iterator);
+GTENSOR_ITERATOR_OPERATOR_MINUS(axis_iterator);
+GTENSOR_ITERATOR_OPERATOR_POSTFIX_INC(axis_iterator);
+GTENSOR_ITERATOR_OPERATOR_POSTFIX_DEC(axis_iterator);
+GTENSOR_ITERATOR_OPERATOR_EQUAL(axis_iterator);
+GTENSOR_ITERATOR_OPERATOR_NOT_EQUAL(axis_iterator);
+GTENSOR_ITERATOR_OPERATOR_GREATER(axis_iterator);
+GTENSOR_ITERATOR_OPERATOR_LESS(axis_iterator);
+GTENSOR_ITERATOR_OPERATOR_GREATER_EQUAL(axis_iterator);
+GTENSOR_ITERATOR_OPERATOR_LESS_EQUAL(axis_iterator);
+
 //random access broadcast iterator
 template<typename Config, typename Walker, typename Order>
 class broadcast_iterator:
