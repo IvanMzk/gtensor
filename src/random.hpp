@@ -6,6 +6,8 @@
 #include "tensor.hpp"
 #include "reduce.hpp"
 #include "builder.hpp"
+#include "indexing.hpp"
+
 
 namespace gtensor{
 
@@ -294,7 +296,6 @@ private:
             using tensor_type = basic_tensor<Ts...>;
             using order = typename tensor_type::order;
             using config_type = typename tensor_type::config_type;
-            using dim_type = typename tensor_type::dim_type;
             using index_type = typename tensor_type::index_type;
             using integral_type = long long int;
             using distribution_type = std::uniform_int_distribution<integral_type>;
@@ -312,10 +313,8 @@ private:
                 const auto chunk_size = size / axis_size;
                 auto w1 = t.create_walker();
                 auto w2 = t.create_walker();
-                using walker_type = decltype(t.create_walker());
-                using predicate_type = detail::reduce_traverse_predicate<config_type, dim_type>;
-                using iterator_type = walker_iterator<config_type,walker_type,order,predicate_type>;
-                predicate_type predicate{axis, true};
+                auto predicate = detail::make_traverse_predicate(axis,std::true_type{});    //inverse, traverse all but axis
+                auto strides = detail::make_strides_div_predicate<config_type>(shape,predicate,order{});
                 for (auto i=axis_size-1; i>0; --i){
                     const auto j = distribution(bit_generator_, distribution_param_type(0, static_cast<const integral_type&>(i)));
                     if (i!=j){
@@ -324,9 +323,9 @@ private:
                         w1.walk(axis,i);
                         w2.walk(axis,static_cast<const index_type&>(j));
                         std::swap_ranges(
-                            iterator_type{w1,t.shape(),t.descriptor().strides_div(),index_type{0},predicate},
-                            iterator_type{w1,t.shape(),t.descriptor().strides_div(),chunk_size,predicate},
-                            iterator_type{w2,t.shape(),t.descriptor().strides_div(),index_type{0},predicate}
+                            detail::make_axes_iterator<order>(shape,strides,w1,0,predicate),
+                            detail::make_axes_iterator<order>(shape,strides,w1,chunk_size,predicate),
+                            detail::make_axes_iterator<order>(shape,strides,w2,0,predicate)
                         );
                     }
                 }
