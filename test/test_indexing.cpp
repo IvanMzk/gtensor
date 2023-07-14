@@ -5,6 +5,68 @@
 #include "indexing.hpp"
 #include "helpers_for_testing.hpp"
 
+TEST_CASE("test_indexing_traverse_predicate","[test_indexing]")
+{
+    using gtensor::detail::make_traverse_predicate;
+    using gtensor::detail::traverse_predicate;
+    using helpers_for_testing::apply_by_element;
+
+    //0axes,1inverse,2axis,3expected
+    auto test_data = std::make_tuple(
+        //no inverse
+        //axes scalar
+        std::make_tuple(0,std::false_type{},0,true),
+        std::make_tuple(0,std::false_type{},1,false),
+        std::make_tuple(0,std::false_type{},2,false),
+        std::make_tuple(2,std::false_type{},0,false),
+        std::make_tuple(2,std::false_type{},1,false),
+        std::make_tuple(2,std::false_type{},2,true),
+        //axes container
+        std::make_tuple(std::vector<std::size_t>{},std::false_type{},0,false),
+        std::make_tuple(std::vector<std::size_t>{},std::false_type{},1,false),
+        std::make_tuple(std::vector<std::size_t>{},std::false_type{},2,false),
+        std::make_tuple(std::vector<std::size_t>{1},std::false_type{},0,false),
+        std::make_tuple(std::vector<std::size_t>{1},std::false_type{},1,true),
+        std::make_tuple(std::vector<std::size_t>{1},std::false_type{},2,false),
+        std::make_tuple(std::vector<std::size_t>{1,3},std::false_type{},0,false),
+        std::make_tuple(std::vector<std::size_t>{1,3},std::false_type{},1,true),
+        std::make_tuple(std::vector<std::size_t>{1,3},std::false_type{},2,false),
+        std::make_tuple(std::vector<std::size_t>{1,3},std::false_type{},3,true),
+        std::make_tuple(std::vector<std::size_t>{1,3},std::false_type{},4,false),
+        //inverse
+        //axes scalar
+        std::make_tuple(0,std::true_type{},0,false),
+        std::make_tuple(0,std::true_type{},1,true),
+        std::make_tuple(0,std::true_type{},2,true),
+        std::make_tuple(2,std::true_type{},0,true),
+        std::make_tuple(2,std::true_type{},1,true),
+        std::make_tuple(2,std::true_type{},2,false),
+        //axes container
+        std::make_tuple(std::vector<std::size_t>{},std::true_type{},0,true),
+        std::make_tuple(std::vector<std::size_t>{},std::true_type{},1,true),
+        std::make_tuple(std::vector<std::size_t>{},std::true_type{},2,true),
+        std::make_tuple(std::vector<std::size_t>{1},std::true_type{},0,true),
+        std::make_tuple(std::vector<std::size_t>{1},std::true_type{},1,false),
+        std::make_tuple(std::vector<std::size_t>{1},std::true_type{},2,true),
+        std::make_tuple(std::vector<std::size_t>{1,3},std::true_type{},0,true),
+        std::make_tuple(std::vector<std::size_t>{1,3},std::true_type{},1,false),
+        std::make_tuple(std::vector<std::size_t>{1,3},std::true_type{},2,true),
+        std::make_tuple(std::vector<std::size_t>{1,3},std::true_type{},3,false),
+        std::make_tuple(std::vector<std::size_t>{1,3},std::true_type{},4,true)
+    );
+    auto test = [](const auto& t){
+        auto axes = std::get<0>(t);
+        auto inverse = std::get<1>(t);
+        auto axis = std::get<2>(t);
+        auto expected = std::get<3>(t);
+        auto predicate = make_traverse_predicate(axes,inverse);
+
+        auto result = predicate(axis);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test,test_data);
+}
+
 TEST_CASE("test_indexing_make_take_shape","[test_indexing]")
 {
     using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;

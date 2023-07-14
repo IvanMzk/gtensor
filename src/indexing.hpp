@@ -2,6 +2,8 @@
 #define INDEXING_HPP_
 
 #include "module_selector.hpp"
+#include "data_accessor.hpp"
+#include "iterator.hpp"
 #include "tensor.hpp"
 #include "builder.hpp"
 
@@ -50,6 +52,175 @@ auto make_take_shape(const ShT& shape, const IdxShT& indexes_shape, const DimT& 
     std::copy(shape.begin()+(axis+dim_type{1}),shape.end(),res.begin()+(axis+indexes_dim));
     return res;
 }
+
+
+//Axes should be integral or container of integrals
+//Inverse should be like std::bool_constant
+template<typename Axes, typename Inverse>
+class traverse_predicate
+{
+    template<typename Dummy, typename B>
+    struct axis_type_selector{
+        using type = typename Axes::value_type;
+    };
+    template<typename Dummy>
+    struct axis_type_selector<Dummy,std::false_type>{
+        using type = Axes;
+    };
+    static constexpr bool is_axes_container = detail::is_container_v<Axes>;
+    using axis_type = typename axis_type_selector<void,std::bool_constant<is_axes_container>>::type;
+    static_assert(math::numeric_traits<axis_type>::is_integral(),"Axes must be container of integrals or integral");
+
+    const Axes* axes_;
+
+    template<typename U>
+    bool is_in_axes(const U& u_)const{
+        const auto& u = static_cast<const axis_type&>(u_);
+        if constexpr (is_axes_container){
+            if (axes_->size()==0){
+                return false;
+            }else{
+                const auto last = axes_->end();
+                return std::find_if(axes_->begin(),last,[u](const auto& e){return e == u;}) != last;
+            }
+        }else{
+            return u == *axes_;
+        }
+    }
+
+    bool apply_inverse(bool b)const{
+        if constexpr (Inverse::value){  //inverse of b
+            return !b;
+        }else{
+            return b;
+        }
+
+    }
+
+public:
+
+    template<typename Axes_> struct enable_ : std::conjunction<
+        std::is_lvalue_reference<Axes_>,
+        std::negation<std::is_same<std::remove_cv_t<std::remove_reference_t<Axes_>>, traverse_predicate>>
+    >{};
+
+    template<typename Axes_, std::enable_if_t<enable_<Axes_>::value,int> =0>
+    explicit traverse_predicate(Axes_&& axes__):
+        axes_{&axes__}
+    {}
+
+    template<typename U>
+    bool operator()(const U& u)const{
+        static_assert(math::numeric_traits<U>::is_integral(),"axis must be of integral type");
+        return apply_inverse(is_in_axes(u));
+    }
+};
+
+template<typename Inverse=std::false_type, typename Axes>
+auto make_traverse_predicate(Axes&& axes, Inverse inverse=Inverse{}){
+    (void)inverse;
+    using Axes_ = std::remove_cv_t<std::remove_reference_t<Axes>>;
+    return traverse_predicate<Axes_,Inverse>{std::forward<Axes>(axes)};
+}
+
+// template<typename Config, typename Axes>
+// class traverse_predicate
+// {
+//     using config_type = Config;
+//     using axes_type = Axes;
+//     using dim_type = typename config_type::dim_type;
+//     static_assert(detail::is_container_of_type_v<axes_type,dim_type> || std::is_convertible_v<axes_type,dim_type>);
+
+//     const axes_type* axes_;
+//     bool inverse_;
+
+//     bool is_in_axes(const dim_type& d)const{
+//         if constexpr (detail::is_container_of_type_v<axes_type,dim_type>){
+//             if (axes_->size()==0){
+//                 return false;
+//             }else{
+//                 const auto last = axes_->end();
+//                 return std::find_if(axes_->begin(),last,[&d](const auto& dir){return d == static_cast<dim_type>(dir);}) != last;
+//             }
+//         }else{
+//             return d == static_cast<dim_type>(*axes_);
+//         }
+//     }
+
+//     bool apply_inverse(bool b)const{
+//         return inverse_ != b;
+//     }
+
+// public:
+//     template<typename Axes_, std::enable_if_t<std::is_lvalue_reference_v<Axes_>,int> =0>
+//     traverse_predicate(Axes_&& axes__, bool inverse__):
+//         axes_{&axes__},
+//         inverse_{inverse__}
+//     {}
+
+//     bool operator()(const dim_type& d)const{
+//         return apply_inverse(is_in_axes(d));
+//     }
+// };
+
+// //make iterator to traverse along specified axes
+// //Order can be c_order or f_order
+// //Walker argument must be created using t.create_walker() but may be not in its initial state e.g.: iterate over disjoint subsets of axes
+// //Axes can be scalar or container
+// //if axes_inverse is true traverse along axes that is not in axes argument
+// //pos should be zero for begin and size along axes (or its inverse) for end
+// template<typename Order, typename Walker, typename Tensor, typename Axes, typename IdxT>
+// auto make_walker_axes_iterator(Walker&& walker, Tensor& t, Axes&& axes, const IdxT& pos, bool axes_inverse=false){
+//     using config_type = typename Tensor::config_type;
+//     using dim_type = typename Tensor::dim_type;
+//     using Axes_ = std::remove_cv_t<std::remove_reference_t<Axes>>;
+//     using Walker_ = std::remove_cv_t<std::remove_reference_t<Walker>>;
+//     static constexpr bool is_axes_container = detail::is_container_of_type_v<Axes_,dim_type>;
+//     static_assert(is_axes_container || std::is_convertible_v<Axes_,dim_type>);
+//     if constexpr (is_axes_container){
+//         using predicate_type = traverse_predicate<config_type,Axes_>;
+//         using iterator_type = walker_iterator<config_type,Walker_,Order,predicate_type>;
+//         //return iterator_type{std::forward<Walker>(walker), t.shape(), detail::make_strides_div_predicate(), pos, predicate}
+//     }else{
+
+//     }
+// }
+// //the same as above but use t.create_walker() for walker argument
+// template<typename Order, typename Tensor, typename Axes, typename IdxT>
+// auto make_walker_axes_iterator(Tensor& t, Axes&& axes, const IdxT& pos, bool axes_inverse=false){
+//     return make_walker_axes_iterator(t,std::forward<Axes>(axes),pos,axes_inverse);
+// }
+
+// template<typename Walker, typename DimT, typename IdxT>
+// auto make_axis_iterator(Walker&& walker, const DimT& axis, const IdxT& pos){
+//     using config_type = typename Walker::config_type;
+//     using iterator_type = axis_iterator<config_type,Walker>;
+//     return iterator_type{walker,axis,pos};
+// }
+
+//strides should be created using make_strides_div_predicate routine
+//shape,strides,axes must have lifetime longer then iterator
+//axes can be scalar or container
+//if inverse_axes is true traverse along axes that is not in axes argument
+//pos should be zero for begin and size along axes (or its inverse) for end
+// template<typename Order, typename ShT, typename StT, typename Walker, typename IdxT, typename Predicate>
+// auto make_axes_iterator(ShT&& shape, StT&& strides, Walker&& walker, const IdxT& pos, const Predicate& predicate){
+//     using config_type = typename Walker::config_type;
+//     using dim_type = typename config_type::dim_type;
+//     using Walker_ = std::remove_cv_t<std::remove_reference_t<Walker>>;
+//     static_assert(std::is_lvalue_reference_v<ShT> && std::is_lvalue_reference_v<StT>,"shape and strides must outlive iterator");
+//     static constexpr bool is_axes_container = detail::is_container_of_type_v<Axes_,dim_type>;
+//     static_assert(is_axes_container || std::is_convertible_v<Axes_,dim_type>,"axes must be container or scalar");
+
+//     if constexpr (is_axes_container){
+//         using predicate_type = traverse_predicate<config_type,Axes_>;
+//         using iterator_type = walker_iterator<config_type,Walker_,Order,predicate_type>;
+//         return iterator_type{std::forward<Walker>(walker), shape, strides, pos, predicate_type{axes,inverse_axes}};
+//     }else{
+//         return make_axis_iterator(walker, axes, pos);
+//     }
+// }
+
 
 }
 
