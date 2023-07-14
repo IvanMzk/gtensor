@@ -53,7 +53,6 @@ auto make_take_shape(const ShT& shape, const IdxShT& indexes_shape, const DimT& 
     return res;
 }
 
-
 //Axes should be integral or container of integrals
 //Inverse should be like std::bool_constant
 template<typename Axes, typename Inverse>
@@ -109,6 +108,8 @@ public:
         axes_{&axes__}
     {}
 
+    const Axes& axes()const{return *axes_;}
+
     template<typename U>
     bool operator()(const U& u)const{
         static_assert(math::numeric_traits<U>::is_integral(),"axis must be of integral type");
@@ -122,6 +123,54 @@ auto make_traverse_predicate(Axes&& axes, Inverse inverse=Inverse{}){
     using Axes_ = std::remove_cv_t<std::remove_reference_t<Axes>>;
     return traverse_predicate<Axes_,Inverse>{std::forward<Axes>(axes)};
 }
+
+template<typename ShT, typename Walker, typename Axes, typename Inverse>
+auto make_forward_traverser(ShT&& shape, Walker&& walker, const traverse_predicate<Axes,Inverse>& predicate){
+    using Walker_ = std::remove_cv_t<std::remove_reference_t<Walker>>;
+    using config_type = typename Walker_::config_type;
+    static_assert(std::is_lvalue_reference_v<ShT>,"shape must outlive traverser");
+    using traverser_type = walker_forward_traverser<config_type, Walker_, traverse_predicate<Axes,Inverse>>;
+    return traverser_type{shape,std::forward<Walker>(walker),predicate};
+}
+
+template<typename Walker, typename DimT, typename IdxT>
+auto make_axis_iterator(Walker&& walker, const DimT& axis, const IdxT& pos){
+    using Walker_ = std::remove_cv_t<std::remove_reference_t<Walker>>;
+    using config_type = typename Walker_::config_type;
+    using iterator_type = axis_iterator<config_type,Walker_>;
+    return iterator_type{std::forward<Walker>(walker),axis,pos};
+}
+
+template<typename Order, typename ShT, typename StT, typename Walker, typename IdxT, typename Axes, typename Inverse>
+auto make_axes_iterator(ShT&& shape, StT&& strides, Walker&& walker, const IdxT& pos, const traverse_predicate<Axes,Inverse>& predicate){
+    using Walker_ = std::remove_cv_t<std::remove_reference_t<Walker>>;
+    using config_type = typename Walker_::config_type;
+    static_assert(std::is_lvalue_reference_v<ShT> && std::is_lvalue_reference_v<StT>,"shape and strides must outlive iterator");
+
+    if constexpr (detail::is_container_v<Axes> || Inverse::value){
+        using iterator_type = walker_iterator<config_type,Walker_,Order,traverse_predicate<Axes,Inverse>>;
+        return iterator_type{std::forward<Walker>(walker), shape, strides, pos, predicate};
+    }else{  //can use axis_iterator
+        return make_axis_iterator(std::forward<Walker>(walker),predicate.axes(),pos);
+    }
+}
+
+
+// template<typename Config, typename ShT, typename Predicate, typename Order>
+// auto make_strides_div_predicate(const ShT& shape, const Predicate& predicate, Order order){
+//     using dim_type = typename ShT::difference_type;
+//     const dim_type dim = detail::make_dim(shape);
+//     ShT tmp{};
+//     tmp.reserve(dim);
+//     for (dim_type i{0}; i!=dim; ++i){
+//         if (predicate(i)){
+//             tmp.push_back(shape[i]);
+//         }
+//     }
+//     return detail::make_strides_div<Config>(tmp, order);
+// }
+
+
 
 // template<typename Config, typename Axes>
 // class traverse_predicate
@@ -263,12 +312,9 @@ static auto take(const basic_tensor<Ts...>& t, const basic_tensor<Us...>& indexe
     using config_type = typename tensor_type::config_type;
     using dim_type = typename tensor_type::dim_type;
     using index_type = typename tensor_type::index_type;
-    using input_predicate_type = detail::reduce_traverse_predicate<config_type, dim_type>;
-    using input_walker_type = decltype(t.create_walker());
-    using input_iterator_type = walker_iterator<config_type,input_walker_type,order,input_predicate_type>;
-    //check args: axis vs t.dim , non empty take from empty input
+    using axes_type = typename config_type::template container<dim_type>;
+
     detail::check_take_args(t.size(),t.dim(),indexes.size(),axis_);
-    auto a_indexes = indexes.template traverse_order_adapter<order>();
     if (t.dim()==1 || t.dim()==0){
         return take_flatten<order>(t,indexes);
     }
@@ -278,29 +324,29 @@ static auto take(const basic_tensor<Ts...>& t, const basic_tensor<Us...>& indexe
         const auto axis = detail::make_axis(t.dim(),axis_);
         auto res = empty_like(t,detail::make_take_shape(t.shape(),indexes.shape(),axis));
         if (!res.empty()){
-            using axes_type = typename config_type::template container<dim_type>;
-            using res_predicate_type = detail::reduce_traverse_predicate<config_type, axes_type>;
-            using res_walker_type = decltype(res.create_walker());
-            using res_traverser_type = walker_forward_traverser<config_type,res_walker_type,res_predicate_type>;
-            using res_iterator_type = walker_iterator<config_type,res_walker_type,order,res_predicate_type>;
-            const auto indexes_dim = indexes.dim();
             const auto& input_shape = t.shape();
             const auto axis_size = input_shape[axis];
             const auto chunk_size = t.size() / axis_size;
-            input_predicate_type input_predicate{axis,true};    //inverse, to traverse all but axis
+            auto input_predicate = detail::make_traverse_predicate(axis,std::true_type{});  //inverse, traverse all but axis
+            auto input_strides = detail::make_strides_div_predicate<config_type>(input_shape,input_predicate,order{});
+            auto input_walker = t.create_walker();
+
+            const auto indexes_dim = indexes.dim();
             axes_type res_axes(indexes_dim);
             std::iota(res_axes.begin(),res_axes.end(),axis);
             const auto& res_shape = res.shape();
-            res_traverser_type res_traverser{res_shape,res.create_walker(),res_predicate_type{res_axes,false}};    //to traverse indexes axes
-            auto input_walker = t.create_walker();
+            auto res_predicate = detail::make_traverse_predicate(res_axes,std::true_type{});    //inverse, traverse all but res_axes
+            auto res_strides = detail::make_strides_div_predicate<config_type>(res_shape,res_predicate,order{});
+            auto res_traverser = detail::make_forward_traverser(res_shape,res.create_walker(),detail::make_traverse_predicate(res_axes,std::false_type{}));
+            auto a_indexes = indexes.template traverse_order_adapter<order>();
             for (auto indexes_it=a_indexes.begin(),indexes_last=a_indexes.end(); indexes_it!=indexes_last; ++indexes_it,res_traverser.template next<order>()){
                 const auto& idx = static_cast<const index_type&>(*indexes_it);
                 if (idx < axis_size){
                     input_walker.walk(axis,idx);
                     std::copy(
-                        input_iterator_type{input_walker,input_shape,t.descriptor().strides_div(),0,input_predicate},
-                        input_iterator_type{input_walker,input_shape,t.descriptor().strides_div(),chunk_size,input_predicate},
-                        res_iterator_type{res_traverser.walker(),res_shape,res.descriptor().strides_div(),0,res_predicate_type{res_axes,true}}
+                        detail::make_axes_iterator<order>(input_shape,input_strides,input_walker,0,input_predicate),
+                        detail::make_axes_iterator<order>(input_shape,input_strides,input_walker,chunk_size,input_predicate),
+                        detail::make_axes_iterator<order>(res_shape,res_strides,res_traverser.walker(),0,res_predicate)
                     );
                     input_walker.walk(axis,-idx);
                 }else{
@@ -311,6 +357,64 @@ static auto take(const basic_tensor<Ts...>& t, const basic_tensor<Us...>& indexe
         return res;
     }
 }
+
+
+// //take elements of tensor along axis
+// template<typename Axis=gtensor::detail::no_value, typename...Ts, typename...Us>
+// static auto take(const basic_tensor<Ts...>& t, const basic_tensor<Us...>& indexes, const Axis& axis_=Axis{}){
+//     using tensor_type = basic_tensor<Ts...>;
+//     using order = typename tensor_type::order;
+//     using config_type = typename tensor_type::config_type;
+//     using dim_type = typename tensor_type::dim_type;
+//     using index_type = typename tensor_type::index_type;
+//     using input_predicate_type = detail::reduce_traverse_predicate<config_type, dim_type>;
+//     using input_walker_type = decltype(t.create_walker());
+//     using input_iterator_type = walker_iterator<config_type,input_walker_type,order,input_predicate_type>;
+//     //check args: axis vs t.dim , non empty take from empty input
+//     detail::check_take_args(t.size(),t.dim(),indexes.size(),axis_);
+//     auto a_indexes = indexes.template traverse_order_adapter<order>();
+//     if (t.dim()==1 || t.dim()==0){
+//         return take_flatten<order>(t,indexes);
+//     }
+//     if constexpr (std::is_same_v<Axis,gtensor::detail::no_value>){
+//         return take_flatten<config::c_order>(t,indexes);
+//     }else{
+//         const auto axis = detail::make_axis(t.dim(),axis_);
+//         auto res = empty_like(t,detail::make_take_shape(t.shape(),indexes.shape(),axis));
+//         if (!res.empty()){
+//             using axes_type = typename config_type::template container<dim_type>;
+//             using res_predicate_type = detail::reduce_traverse_predicate<config_type, axes_type>;
+//             using res_walker_type = decltype(res.create_walker());
+//             using res_traverser_type = walker_forward_traverser<config_type,res_walker_type,res_predicate_type>;
+//             using res_iterator_type = walker_iterator<config_type,res_walker_type,order,res_predicate_type>;
+//             const auto indexes_dim = indexes.dim();
+//             const auto& input_shape = t.shape();
+//             const auto axis_size = input_shape[axis];
+//             const auto chunk_size = t.size() / axis_size;
+//             input_predicate_type input_predicate{axis,true};    //inverse, to traverse all but axis
+//             axes_type res_axes(indexes_dim);
+//             std::iota(res_axes.begin(),res_axes.end(),axis);
+//             const auto& res_shape = res.shape();
+//             res_traverser_type res_traverser{res_shape,res.create_walker(),res_predicate_type{res_axes,false}};    //to traverse indexes axes
+//             auto input_walker = t.create_walker();
+//             for (auto indexes_it=a_indexes.begin(),indexes_last=a_indexes.end(); indexes_it!=indexes_last; ++indexes_it,res_traverser.template next<order>()){
+//                 const auto& idx = static_cast<const index_type&>(*indexes_it);
+//                 if (idx < axis_size){
+//                     input_walker.walk(axis,idx);
+//                     std::copy(
+//                         input_iterator_type{input_walker,input_shape,t.descriptor().strides_div(),0,input_predicate},
+//                         input_iterator_type{input_walker,input_shape,t.descriptor().strides_div(),chunk_size,input_predicate},
+//                         res_iterator_type{res_traverser.walker(),res_shape,res.descriptor().strides_div(),0,res_predicate_type{res_axes,true}}
+//                     );
+//                     input_walker.walk(axis,-idx);
+//                 }else{
+//                     throw indexing_exception("indexes is out of bounds");
+//                 }
+//             }
+//         }
+//         return res;
+//     }
+// }
 
 };
 
