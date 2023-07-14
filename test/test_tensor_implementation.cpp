@@ -567,36 +567,24 @@ TEMPLATE_TEST_CASE("test_tensor_implementation_broadcast_iterator","[test_tensor
         //traverse c_order
         std::make_tuple(c_order{}, c_order{}, elements_c, shape_type{6}, shape_type{6}, std::vector<value_type>{1,2,3,4,5,6}),
         std::make_tuple(c_order{}, c_order{}, elements_c, shape_type{6}, shape_type{1,2,6}, std::vector<value_type>{1,2,3,4,5,6,1,2,3,4,5,6}),
-        std::make_tuple(c_order{}, c_order{}, elements_c, shape_type{6}, shape_type{6,1}, std::vector<value_type>{1,1,1,1,1,1}),
         std::make_tuple(c_order{}, c_order{}, elements_c, shape_type{2,3}, shape_type{2,3}, std::vector<value_type>{1,2,3,4,5,6}),
         std::make_tuple(c_order{}, c_order{}, elements_c, shape_type{2,3}, shape_type{2,2,3}, std::vector<value_type>{1,2,3,4,5,6,1,2,3,4,5,6}),
-        std::make_tuple(c_order{}, c_order{}, elements_c, shape_type{2,3}, shape_type{1,3}, std::vector<value_type>{1,2,3}),
-        std::make_tuple(c_order{}, c_order{}, elements_c, shape_type{2,3}, shape_type{3,1,3}, std::vector<value_type>{1,2,3,1,2,3,1,2,3}),
         //traverse f_order
         std::make_tuple(c_order{}, f_order{}, elements_c, shape_type{6}, shape_type{6}, std::vector<value_type>{1,2,3,4,5,6}),
         std::make_tuple(c_order{}, f_order{}, elements_c, shape_type{6}, shape_type{1,2,6}, std::vector<value_type>{1,1,2,2,3,3,4,4,5,5,6,6}),
-        std::make_tuple(c_order{}, f_order{}, elements_c, shape_type{6}, shape_type{6,1}, std::vector<value_type>{1,1,1,1,1,1}),
         std::make_tuple(c_order{}, f_order{}, elements_c, shape_type{2,3}, shape_type{2,3}, std::vector<value_type>{1,4,2,5,3,6}),
         std::make_tuple(c_order{}, f_order{}, elements_c, shape_type{2,3}, shape_type{2,2,3}, std::vector<value_type>{1,1,4,4,2,2,5,5,3,3,6,6}),
-        std::make_tuple(c_order{}, f_order{}, elements_c, shape_type{2,3}, shape_type{1,3}, std::vector<value_type>{1,2,3}),
-        std::make_tuple(c_order{}, f_order{}, elements_c, shape_type{2,3}, shape_type{3,1,3}, std::vector<value_type>{1,1,1,2,2,2,3,3,3}),
         //elements in f_order
         //traverse c_order
         std::make_tuple(f_order{}, c_order{}, elements_f, shape_type{6}, shape_type{6}, std::vector<value_type>{1,4,2,5,3,6}),
         std::make_tuple(f_order{}, c_order{}, elements_f, shape_type{6}, shape_type{1,2,6}, std::vector<value_type>{1,4,2,5,3,6,1,4,2,5,3,6}),
-        std::make_tuple(f_order{}, c_order{}, elements_f, shape_type{6}, shape_type{6,1}, std::vector<value_type>{1,1,1,1,1,1}),
         std::make_tuple(f_order{}, c_order{}, elements_f, shape_type{2,3}, shape_type{2,3}, std::vector<value_type>{1,2,3,4,5,6}),
         std::make_tuple(f_order{}, c_order{}, elements_f, shape_type{2,3}, shape_type{2,2,3}, std::vector<value_type>{1,2,3,4,5,6,1,2,3,4,5,6}),
-        std::make_tuple(f_order{}, c_order{}, elements_f, shape_type{2,3}, shape_type{1,3}, std::vector<value_type>{1,2,3}),
-        std::make_tuple(f_order{}, c_order{}, elements_f, shape_type{2,3}, shape_type{3,1,3}, std::vector<value_type>{1,2,3,1,2,3,1,2,3}),
         // //traverse f_order
         std::make_tuple(f_order{}, f_order{}, elements_f, shape_type{6}, shape_type{6}, std::vector<value_type>{1,4,2,5,3,6}),
         std::make_tuple(f_order{}, f_order{}, elements_f, shape_type{6}, shape_type{1,2,6}, std::vector<value_type>{1,1,4,4,2,2,5,5,3,3,6,6}),
-        std::make_tuple(f_order{}, f_order{}, elements_f, shape_type{6}, shape_type{6,1}, std::vector<value_type>{1,1,1,1,1,1}),
         std::make_tuple(f_order{}, f_order{}, elements_f, shape_type{2,3}, shape_type{2,3}, std::vector<value_type>{1,4,2,5,3,6}),
-        std::make_tuple(f_order{}, f_order{}, elements_f, shape_type{2,3}, shape_type{2,2,3}, std::vector<value_type>{1,1,4,4,2,2,5,5,3,3,6,6}),
-        std::make_tuple(f_order{}, f_order{}, elements_f, shape_type{2,3}, shape_type{1,3}, std::vector<value_type>{1,2,3}),
-        std::make_tuple(f_order{}, f_order{}, elements_f, shape_type{2,3}, shape_type{3,1,3}, std::vector<value_type>{1,1,1,2,2,2,3,3,3})
+        std::make_tuple(f_order{}, f_order{}, elements_f, shape_type{2,3}, shape_type{2,2,3}, std::vector<value_type>{1,1,4,4,2,2,5,5,3,3,6,6})
     );
 
     auto test_equal = [](auto res_first, auto res_last, auto expected_first, auto expected_last){

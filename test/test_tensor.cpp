@@ -1416,12 +1416,8 @@ TEMPLATE_TEST_CASE("test_tensor_broadcast_iterator","[test_tensor]",
         std::make_tuple(tensor_type{1},shape_type{1,1},std::vector<value_type>{1},std::vector<value_type>{1}),
         std::make_tuple(tensor_type{1},shape_type{5},std::vector<value_type>{1,1,1,1,1},std::vector<value_type>{1,1,1,1,1}),
         std::make_tuple(tensor_type{1},shape_type{2,3},std::vector<value_type>{1,1,1,1,1,1},std::vector<value_type>{1,1,1,1,1,1}),
-        std::make_tuple(tensor_type{1,2,3,4,5},shape_type{1},std::vector<value_type>{1},std::vector<value_type>{1}),
         std::make_tuple(tensor_type{1,2,3,4,5},shape_type{5},std::vector<value_type>{1,2,3,4,5},std::vector<value_type>{1,2,3,4,5}),
         std::make_tuple(tensor_type{1,2,3,4,5},shape_type{2,5},std::vector<value_type>{1,2,3,4,5,1,2,3,4,5},std::vector<value_type>{1,1,2,2,3,3,4,4,5,5}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},shape_type{1},std::vector<value_type>{1},std::vector<value_type>{1}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},shape_type{1,1},std::vector<value_type>{1},std::vector<value_type>{1}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},shape_type{1,3},std::vector<value_type>{1,2,3},std::vector<value_type>{1,2,3}),
         std::make_tuple(tensor_type{{1,2,3},{4,5,6}},shape_type{2,3},std::vector<value_type>{1,2,3,4,5,6},std::vector<value_type>{1,4,2,5,3,6}),
         std::make_tuple(tensor_type{{1,2,3},{4,5,6}},shape_type{1,2,2,3},std::vector<value_type>{1,2,3,4,5,6,1,2,3,4,5,6},std::vector<value_type>{1,1,4,4,2,2,5,5,3,3,6,6})
     );

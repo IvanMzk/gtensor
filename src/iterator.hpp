@@ -291,6 +291,14 @@ public:
     using typename walker_iterator_base::const_reference;
     using walker_iterator_base::operator*;
     using walker_iterator_base::operator[];
+    broadcast_iterator& operator++(){
+        ++static_cast<walker_iterator_base&>(*this);
+        return *this;
+    }
+    broadcast_iterator& operator--(){
+        --static_cast<walker_iterator_base&>(*this);
+        return *this;
+    }
     broadcast_iterator& operator+=(difference_type n){
         static_cast<walker_iterator_base&>(*this)+=n;
         return *this;
@@ -309,8 +317,6 @@ public:
 GTENSOR_ITERATOR_OPERATOR_ASSIGN_MINUS(broadcast_iterator);
 GTENSOR_ITERATOR_OPERATOR_PLUS(broadcast_iterator);
 GTENSOR_ITERATOR_OPERATOR_MINUS(broadcast_iterator);
-GTENSOR_ITERATOR_OPERATOR_PREFIX_INC(broadcast_iterator);
-GTENSOR_ITERATOR_OPERATOR_PREFIX_DEC(broadcast_iterator);
 GTENSOR_ITERATOR_OPERATOR_POSTFIX_INC(broadcast_iterator);
 GTENSOR_ITERATOR_OPERATOR_POSTFIX_DEC(broadcast_iterator);
 GTENSOR_ITERATOR_OPERATOR_EQUAL(broadcast_iterator);
@@ -350,8 +356,17 @@ public:
     {
         ++(*this);
     }
-    auto& operator+=(difference_type n){
-        iterator_base::operator+=(-n);
+
+    reverse_iterator_generic& operator++(){
+        --static_cast<iterator_base&>(*this);
+        return *this;
+    }
+    reverse_iterator_generic& operator--(){
+        ++static_cast<iterator_base&>(*this);
+        return *this;
+    }
+    reverse_iterator_generic& operator+=(difference_type n){
+        static_cast<iterator_base&>(*this)+=-n;
         return *this;
     }
     result_type operator[](difference_type n)const{return *(*this+n);}
@@ -363,8 +378,6 @@ public:
 GTENSOR_ITERATOR_OPERATOR_ASSIGN_MINUS(reverse_iterator_generic);
 GTENSOR_ITERATOR_OPERATOR_PLUS(reverse_iterator_generic);
 GTENSOR_ITERATOR_OPERATOR_MINUS(reverse_iterator_generic);
-GTENSOR_ITERATOR_OPERATOR_PREFIX_INC(reverse_iterator_generic);
-GTENSOR_ITERATOR_OPERATOR_PREFIX_DEC(reverse_iterator_generic);
 GTENSOR_ITERATOR_OPERATOR_POSTFIX_INC(reverse_iterator_generic);
 GTENSOR_ITERATOR_OPERATOR_POSTFIX_DEC(reverse_iterator_generic);
 GTENSOR_ITERATOR_OPERATOR_EQUAL(reverse_iterator_generic);
