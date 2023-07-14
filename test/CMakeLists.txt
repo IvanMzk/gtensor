@@ -41,7 +41,7 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_operators.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor.cpp
 #
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_indexing.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_indexing.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_reduce.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_combine.cpp
 #
@@ -50,7 +50,7 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_SOURCE_DIR}/test_statistic.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search.cpp
 #
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_builder.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_builder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_random.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/test.cpp

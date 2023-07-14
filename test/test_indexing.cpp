@@ -1,6 +1,5 @@
 #include <tuple>
 #include <vector>
-#include <iomanip>
 #include "catch.hpp"
 #include "indexing.hpp"
 #include "helpers_for_testing.hpp"

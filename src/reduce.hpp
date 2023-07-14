@@ -6,6 +6,7 @@
 #include "iterator.hpp"
 #include "tensor.hpp"
 
+
 namespace gtensor{
 
 class reduce_exception : public std::runtime_error{

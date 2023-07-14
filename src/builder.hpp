@@ -6,7 +6,7 @@
 #include "math.hpp"
 #include "tensor.hpp"
 #include "tensor_operators.hpp"
-#include "reduce.hpp"
+#include "indexing.hpp"
 
 namespace gtensor{
 
@@ -311,8 +311,6 @@ private:
         static_assert(is_stop_numeric || detail::is_tensor_v<Stop>,"Stop must be of numeric or tensor type");
         using res_value_type = math::make_floating_point_t<T>;
         using tensor_type = tensor<res_value_type,Order,config::extend_config_t<Config,T>>;
-        using config_type = typename tensor_type::config_type;
-        using dim_type = typename tensor_type::dim_type;
         using index_type = typename tensor_type::index_type;
         using shape_type = typename tensor_type::shape_type;
         check_make_space_args(num);
@@ -333,11 +331,9 @@ private:
             const auto axis = detail::make_axis(res_dim, axis_);
             tensor_type res(make_space_shape(intervals.shape(),n,axis));
             if (!res.empty()){
-                using predicate_type = detail::reduce_traverse_predicate<config_type, dim_type>;
-                using res_traverser_type = walker_forward_traverser<config_type, decltype(res.create_walker()), predicate_type>;
-                predicate_type predicate{axis, true};
+                auto predicate = detail::make_traverse_predicate(axis,std::true_type{});    //inverse, traverse all but axis
                 const auto& res_shape = res.shape();
-                res_traverser_type res_traverser{res_shape, res.create_walker(), predicate};
+                auto res_traverser = detail::make_forward_traverser(res_shape,res.create_walker(),predicate);
                 auto a = intervals.template traverse_order_adapter<Order>();
                 for (auto it=a.begin(),last=a.end(); it!=last; ++it,res_traverser.template next<Order>()){
                     const auto& interval = *it;
