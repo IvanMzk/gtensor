@@ -4,6 +4,7 @@
 #include "module_selector.hpp"
 #include "common.hpp"
 #include "iterator.hpp"
+#include "indexing.hpp"
 
 namespace gtensor{
 
@@ -20,12 +21,8 @@ template<typename Container, typename DimT, typename Axes>
 auto make_axes(const DimT& dim, const Axes& axes_){
     using dim_type = DimT;
     if constexpr (detail::is_container_of_type_v<Axes,dim_type>){
-        using container_size_type = typename Container::size_type;
-        using axes_size_type = typename Axes::size_type;
         Container res{};
-        if constexpr (std::is_convertible_v<axes_size_type, container_size_type>){
-            res.reserve(static_cast<container_size_type>(axes_.size()));
-        }
+        detail::reserve(res,axes_.size());
         for (auto it=axes_.begin(), last=axes_.end(); it!=last; ++it){
             res.push_back(make_axis(dim,*it));
         }
@@ -171,12 +168,11 @@ auto make_slide_shape(const IdxT& size, const ShT& shape, const DimT& axis, cons
 }
 
 template<typename ShT>
-auto make_slide_axis_size(const ShT& shape, const typename ShT::difference_type& axis){
+auto make_axis_size(const ShT& shape, const typename ShT::difference_type& axis){
     return shape[axis];
 }
-
 template<typename ShT, typename Axes>
-auto make_reduce_axes_size(const ShT& shape, const typename ShT::value_type& size, const Axes& axes){
+auto make_axes_size(const ShT& shape, const typename ShT::value_type& size, const Axes& axes){
     using dim_type = typename ShT::difference_type;
     using index_type = typename ShT::value_type;
     if constexpr (detail::is_container_of_type_v<Axes,dim_type>){
@@ -190,70 +186,7 @@ auto make_reduce_axes_size(const ShT& shape, const typename ShT::value_type& siz
             return axes_size;
         }
     }else{
-        return make_slide_axis_size(shape,axes);
-    }
-}
-
-template<typename Config, typename Axes>
-class reduce_traverse_predicate
-{
-    using config_type = Config;
-    using axes_type = Axes;
-    using index_type = typename config_type::index_type;
-    using dim_type = typename config_type::dim_type;
-    static_assert(detail::is_container_of_type_v<axes_type,dim_type> || std::is_convertible_v<axes_type,dim_type>);
-
-    const axes_type* axes_;
-    bool inverse_;
-
-    bool is_in_axes(const dim_type& d)const{
-        if constexpr (detail::is_container_of_type_v<axes_type,dim_type>){
-            if (axes_->size()==0){
-                return true;
-            }else{
-                const auto last = axes_->end();
-                return std::find_if(axes_->begin(),last,[&d](const auto& dir){return d == static_cast<dim_type>(dir);}) != last;
-            }
-        }else{
-            return d == static_cast<dim_type>(*axes_);
-        }
-    }
-
-    bool apply_inverse(bool b)const{
-        return inverse_ != b;
-    }
-
-public:
-    template<typename Axes_, std::enable_if_t<std::is_lvalue_reference_v<Axes_>,int> =0>
-    reduce_traverse_predicate(Axes_&& axes__, bool inverse__):
-        axes_{&axes__},
-        inverse_{inverse__}
-    {}
-
-    bool operator()(const dim_type& d)const{
-        return apply_inverse(is_in_axes(d));
-    }
-};
-
-template<typename Walker, typename DimT, typename IdxT>
-auto make_axis_iterator(const Walker& walker, const DimT& axis, const IdxT& pos){
-    using config_type = typename Walker::config_type;
-    using iterator_type = axis_iterator<config_type,Walker>;
-    return iterator_type{walker,axis,pos};
-}
-
-template<typename ShT, typename Strides, typename Walker, typename Axes, typename Predicate, typename IdxT>
-auto make_axes_iterator(const ShT& shape, const Strides& strides, const Walker& walker, const Axes& axes, const Predicate& predicate, const IdxT& pos){
-    using config_type = typename Walker::config_type;
-    using traverse_order = typename config_type::order;
-    using dim_type = typename config_type::dim_type;
-    using predicate_type = std::remove_cv_t<std::remove_reference_t<Predicate>>;
-    using iterator_type = walker_iterator<config_type,Walker,traverse_order,predicate_type>;
-
-    if constexpr (detail::is_container_of_type_v<Axes,dim_type>){
-        return iterator_type{walker, shape, strides, pos, predicate};
-    }else{
-        return make_axis_iterator(walker, axes, pos);
+        return make_axis_size(shape,axes);
     }
 }
 
@@ -273,16 +206,15 @@ class reducer
         using strides_div_type = detail::strides_div_t<config_type>;
         using axes_container_type = typename config_type::template container<dim_type>;
         using axes_type = decltype(detail::make_axes<axes_container_type>(std::declval<dim_type>(),axes_));
-        using predicate_type = detail::reduce_traverse_predicate<config_type, axes_type>;
+        using predicate_type = decltype(detail::make_traverse_predicate(std::declval<axes_type&>(),std::false_type{}));
         using walker_type = decltype(parent.create_walker());
         using iterator_type = decltype(
-            detail::make_axes_iterator(
-                std::declval<shape_type>(),
-                std::declval<strides_div_type>(),
+            detail::make_axes_iterator<traverse_order>(
+                std::declval<shape_type&>(),
+                std::declval<strides_div_type&>(),
                 std::declval<walker_type>(),
-                std::declval<axes_type>(),
-                std::declval<predicate_type>(),
-                std::declval<index_type>()
+                std::declval<index_type>(),
+                std::declval<predicate_type>()
             )
         );
         using result_type = decltype(reduce_f(std::declval<iterator_type>(),std::declval<iterator_type>(),std::declval<Args>()...));
@@ -310,18 +242,16 @@ class reducer
                         *res.begin() = reduce_f(a.begin(), a.end(), std::forward<Args>(args)...);
                     }
                 }else{
-                    using traverser_type = walker_forward_traverser<config_type, walker_type, predicate_type>;
-                    const predicate_type predicate{axes, true};
-                    const predicate_type inverse_predicate{axes, false};
-                    traverser_type traverser{pshape,parent.create_walker(),predicate};
-                    const auto axes_size = detail::make_reduce_axes_size(pshape,parent.size(),axes);
-                    const auto strides = detail::make_strides_div_predicate<config_type>(pshape,inverse_predicate,traverse_order{});
+                    const auto axes_size = detail::make_axes_size(pshape,parent.size(),axes);
+                    auto predicate = detail::make_traverse_predicate(axes,std::false_type{});
+                    const auto strides = detail::make_strides_div_predicate<config_type>(pshape,predicate,traverse_order{});
+                    auto traverser = detail::make_forward_traverser(pshape,parent.create_walker(),detail::make_traverse_predicate(axes,std::true_type{}));  //traverse all bit axes
                     auto a = res.template traverse_order_adapter<order>();
                     auto res_it = a.begin();
                     do{
                         *res_it = reduce_f(
-                            detail::make_axes_iterator(pshape,strides,traverser.walker(),axes,inverse_predicate,index_type{0}),
-                            detail::make_axes_iterator(pshape,strides,traverser.walker(),axes,inverse_predicate,axes_size),
+                            detail::make_axes_iterator<traverse_order>(pshape,strides,traverser.walker(),0,predicate),
+                            detail::make_axes_iterator<traverse_order>(pshape,strides,traverser.walker(),axes_size,predicate),
                             std::forward<Args>(args)...
                         );
                         ++res_it;
@@ -357,15 +287,12 @@ class reducer
                 auto res_a = res.template traverse_order_adapter<order>();
                 slide_f(parent_a.begin(), parent_a.end(), res_a.begin(), res_a.end(), std::forward<Args>(args)...);
             }else{
-                using predicate_type = detail::reduce_traverse_predicate<config_type, dim_type>;
-                using parent_traverser_type = walker_forward_traverser<config_type, decltype(parent.create_walker()), predicate_type>;
-                using res_traverser_type = walker_forward_traverser<config_type, decltype(res.create_walker()), predicate_type>;
-                predicate_type predicate{axis, true};
                 const auto& res_shape = res.shape();
-                parent_traverser_type parent_traverser{pshape, parent.create_walker(), predicate};
-                res_traverser_type res_traverser{res_shape, res.create_walker(), predicate};
-                const auto parent_axis_size = detail::make_slide_axis_size(pshape,axis);
-                const auto res_axis_size = detail::make_slide_axis_size(res_shape,axis);
+                const auto parent_axis_size = detail::make_axis_size(pshape,axis);
+                const auto res_axis_size = detail::make_axis_size(res_shape,axis);
+                auto predicate = detail::make_traverse_predicate(axis,std::true_type{});    //inverse, to traverse all but axis
+                auto parent_traverser = detail::make_forward_traverser(pshape,parent.create_walker(),predicate);
+                auto res_traverser = detail::make_forward_traverser(res_shape,res.create_walker(),predicate);
                 do{
                     //0first,1last,2dst_first,3dst_last,4args
                     slide_f(
@@ -429,11 +356,8 @@ class reducer
             auto a = parent.template traverse_order_adapter<order>();
             transform_f(a.begin(), a.end(), std::forward<Args>(args)...);
         }else{
-            using predicate_type = detail::reduce_traverse_predicate<config_type, dim_type>;
-            using traverser_type = walker_forward_traverser<config_type, decltype(parent.create_walker()), predicate_type>;
-            predicate_type predicate{axis, true};
-            traverser_type traverser{pshape, parent.create_walker(), predicate};
-            const auto parent_axis_size = detail::make_slide_axis_size(pshape,axis);
+            const auto parent_axis_size = detail::make_axis_size(pshape,axis);
+            auto traverser = detail::make_forward_traverser(pshape,parent.create_walker(),detail::make_traverse_predicate(axis,std::true_type{}));
             do{
                 //0first,1last,2args
                 transform_f(
