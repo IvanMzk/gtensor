@@ -1,8 +1,8 @@
 #ifndef SORT_SEARCH_HPP_
 #define SORT_SEARCH_HPP_
 
-#include "reduce_operations.hpp"
 #include "reduce.hpp"
+#include "reduce_operations.hpp"
 
 namespace gtensor
 {

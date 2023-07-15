@@ -4,8 +4,6 @@
 #include "module_selector.hpp"
 #include "common.hpp"
 #include "iterator.hpp"
-#include "tensor.hpp"
-
 
 namespace gtensor{
 
@@ -290,7 +288,6 @@ class reducer
         using result_type = decltype(reduce_f(std::declval<iterator_type>(),std::declval<iterator_type>(),std::declval<Args>()...));
         using res_value_type = std::remove_cv_t<std::remove_reference_t<result_type>>;
         using res_config_type = config::extend_config_t<config_type,res_value_type>;
-
 
         auto axes = detail::make_axes<axes_container_type>(parent.dim(),axes_);
         const auto& pshape = parent.shape();

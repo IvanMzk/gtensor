@@ -1,7 +1,8 @@
 #ifndef EXPRESSION_TEMPLATE_OPERATORS_HPP_
 #define EXPRESSION_TEMPLATE_OPERATORS_HPP_
 
-#include "tensor.hpp"
+#include "common.hpp"
+#include "tensor_implementation.hpp"
 #include "expression_template_core.hpp"
 
 namespace gtensor{

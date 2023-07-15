@@ -4,8 +4,8 @@
 #include <functional>
 #include <algorithm>
 #include "math.hpp"
-#include "reduce_operations.hpp"
 #include "reduce.hpp"
+#include "reduce_operations.hpp"
 
 namespace gtensor{
 

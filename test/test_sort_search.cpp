@@ -3,8 +3,8 @@
 #include "catch.hpp"
 #include "helpers_for_testing.hpp"
 #include "test_config.hpp"
-#include "tensor.hpp"
 #include "sort_search.hpp"
+#include "tensor.hpp"
 
 //sort
 TEST_CASE("test_sort_search_sort","[test_sort_search]")

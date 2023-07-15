@@ -2,6 +2,8 @@
 #include <vector>
 #include "catch.hpp"
 #include "indexing.hpp"
+#include "builder.hpp"
+#include "tensor.hpp"
 #include "helpers_for_testing.hpp"
 
 TEST_CASE("test_indexing_traverse_predicate","[test_indexing]")

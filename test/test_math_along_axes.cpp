@@ -2,8 +2,8 @@
 #include <iomanip>
 #include "catch.hpp"
 #include "helpers_for_testing.hpp"
-#include "tensor.hpp"
 #include "tensor_math.hpp"
+#include "tensor.hpp"
 
 //test math functions along axes
 //all

@@ -2,6 +2,7 @@
 #include <array>
 #include "catch.hpp"
 #include "builder.hpp"
+#include "tensor.hpp"
 #include "helpers_for_testing.hpp"
 #include "test_config.hpp"
 

@@ -1,11 +1,9 @@
 #ifndef BUILDER_HPP_
 #define BUILDER_HPP_
 
-#include "common.hpp"
 #include "module_selector.hpp"
+#include "common.hpp"
 #include "math.hpp"
-#include "tensor.hpp"
-#include "tensor_operators.hpp"
 #include "indexing.hpp"
 
 namespace gtensor{

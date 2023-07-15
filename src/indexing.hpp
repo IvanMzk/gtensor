@@ -2,10 +2,9 @@
 #define INDEXING_HPP_
 
 #include "module_selector.hpp"
+#include "math.hpp"
 #include "data_accessor.hpp"
 #include "iterator.hpp"
-#include "tensor.hpp"
-#include "builder.hpp"
 
 namespace gtensor{
 
@@ -283,8 +282,10 @@ template<typename FlattenOrder, typename...Ts, typename...Us>
 static auto take_flatten(const basic_tensor<Ts...>& t, const basic_tensor<Us...>& indexes){
     using tensor_type = basic_tensor<Ts...>;
     using order = typename tensor_type::order;
+    using value_type = typename tensor_type::value_type;
+    using config_type = typename tensor_type::config_type;
     using index_type = typename tensor_type::index_type;
-    auto res = empty_like(t,indexes.shape());
+    tensor<value_type, order, config_type> res(indexes.shape());
     if (!res.empty()){
         const auto size = t.size();
         auto indexer = t.template traverse_order_adapter<FlattenOrder>().create_indexer();
@@ -309,6 +310,7 @@ template<typename Axis=gtensor::detail::no_value, typename...Ts, typename...Us>
 static auto take(const basic_tensor<Ts...>& t, const basic_tensor<Us...>& indexes, const Axis& axis_=Axis{}){
     using tensor_type = basic_tensor<Ts...>;
     using order = typename tensor_type::order;
+    using value_type = typename tensor_type::value_type;
     using config_type = typename tensor_type::config_type;
     using dim_type = typename tensor_type::dim_type;
     using index_type = typename tensor_type::index_type;
@@ -322,7 +324,7 @@ static auto take(const basic_tensor<Ts...>& t, const basic_tensor<Us...>& indexe
         return take_flatten<config::c_order>(t,indexes);
     }else{
         const auto axis = detail::make_axis(t.dim(),axis_);
-        auto res = empty_like(t,detail::make_take_shape(t.shape(),indexes.shape(),axis));
+        tensor<value_type, order, config_type> res(detail::make_take_shape(t.shape(),indexes.shape(),axis));
         if (!res.empty()){
             const auto& input_shape = t.shape();
             const auto axis_size = input_shape[axis];

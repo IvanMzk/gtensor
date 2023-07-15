@@ -3,6 +3,7 @@
 #include <iomanip>
 #include "catch.hpp"
 #include "random.hpp"
+#include "tensor.hpp"
 #include "helpers_for_testing.hpp"
 
 TEMPLATE_TEST_CASE("test_random_integers","[test_random]",

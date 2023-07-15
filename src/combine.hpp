@@ -4,10 +4,9 @@
 #include <type_traits>
 #include <stdexcept>
 #include <algorithm>
+#include "module_selector.hpp"
 #include "common.hpp"
 #include "init_list_helper.hpp"
-#include "module_selector.hpp"
-#include "tensor.hpp"
 
 namespace gtensor{
 

@@ -2,10 +2,9 @@
 #define TENSOR_MATH_HPP_
 #include <functional>
 #include <algorithm>
-#include "module_selector.hpp"
 #include "tensor_operators.hpp"
-#include "reduce_operations.hpp"
 #include "reduce.hpp"
+#include "reduce_operations.hpp"
 
 
 namespace gtensor{

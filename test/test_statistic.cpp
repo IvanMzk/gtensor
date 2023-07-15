@@ -2,8 +2,8 @@
 #include <iomanip>
 #include "catch.hpp"
 #include "helpers_for_testing.hpp"
-#include "tensor.hpp"
 #include "statistic.hpp"
+#include "tensor.hpp"
 
 //ptp
 TEMPLATE_TEST_CASE("test_statistic_ptp","test_statistic",

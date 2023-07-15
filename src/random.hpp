@@ -3,7 +3,7 @@
 
 #include <random>
 #include <algorithm>
-#include "tensor.hpp"
+#include "module_selector.hpp"
 #include "builder.hpp"
 #include "indexing.hpp"
 
