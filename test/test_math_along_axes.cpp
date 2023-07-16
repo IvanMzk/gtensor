@@ -23,7 +23,6 @@ TEST_CASE("test_math_all","test_math")
         //keep_dim false
         std::make_tuple(tensor_type{},0,false,bool_tensor_type(true)),
         std::make_tuple(tensor_type{},std::vector<int>{0},false,bool_tensor_type(true)),
-        std::make_tuple(tensor_type{},std::vector<int>{},false,bool_tensor_type(true)),
         std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0,2},false,bool_tensor_type{true,true}),
         std::make_tuple(tensor_type{5},0,false,bool_tensor_type(true)),
         std::make_tuple(tensor_type{0},0,false,bool_tensor_type(false)),
@@ -34,11 +33,11 @@ TEST_CASE("test_math_all","test_math")
         std::make_tuple(tensor_type{{{1,5,0},{2,0,-1}},{{7,0,9},{1,11,3}}},2,false,bool_tensor_type{{false,false},{false,true}}),
         std::make_tuple(tensor_type{{{1,5,0},{2,0,-1}},{{7,0,9},{1,11,3}}},std::vector<int>{0,1},false,bool_tensor_type{true,false,false}),
         std::make_tuple(tensor_type{{{1,5,0},{2,0,-1}},{{7,0,9},{1,11,3}}},std::vector<int>{2,1},false,bool_tensor_type{false,false}),
-        std::make_tuple(tensor_type{{{1,5,0},{2,0,-1}},{{7,0,9},{1,11,3}}},std::vector<int>{},false,bool_tensor_type(false)),
+        std::make_tuple(tensor_type{},std::vector<int>{},false,bool_tensor_type{}),
+        std::make_tuple(tensor_type{{{1,5,0},{2,0,-1}},{{7,0,9},{1,11,3}}},std::vector<int>{},false,bool_tensor_type{{{true,true,false},{true,false,true}},{{true,false,true},{true,true,true}}}),
         //keep_dim true
         std::make_tuple(tensor_type{},0,true,bool_tensor_type{true}),
         std::make_tuple(tensor_type{},std::vector<int>{0},true,bool_tensor_type{true}),
-        std::make_tuple(tensor_type{},std::vector<int>{},true,bool_tensor_type{true}),
         std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0,2},true,bool_tensor_type{{{true},{true}}}),
         std::make_tuple(tensor_type{5},0,true,bool_tensor_type{true}),
         std::make_tuple(tensor_type{0},0,true,bool_tensor_type{false}),
@@ -49,7 +48,8 @@ TEST_CASE("test_math_all","test_math")
         std::make_tuple(tensor_type{{{1,5,0},{2,0,-1}},{{7,0,9},{1,11,3}}},2,true,bool_tensor_type{{{false},{false}},{{false},{true}}}),
         std::make_tuple(tensor_type{{{1,5,0},{2,0,-1}},{{7,0,9},{1,11,3}}},std::vector<int>{0,1},true,bool_tensor_type{{{true,false,false}}}),
         std::make_tuple(tensor_type{{{1,5,0},{2,0,-1}},{{7,0,9},{1,11,3}}},std::vector<int>{2,1},true,bool_tensor_type{{{false}},{{false}}}),
-        std::make_tuple(tensor_type{{{1,5,0},{2,0,-1}},{{7,0,9},{1,11,3}}},std::vector<int>{},true,bool_tensor_type{{{false}}})
+        std::make_tuple(tensor_type{},std::vector<int>{},true,bool_tensor_type{}),
+        std::make_tuple(tensor_type{{{1,5,0},{2,0,-1}},{{7,0,9},{1,11,3}}},std::vector<int>{},true,bool_tensor_type{{{true,true,false},{true,false,true}},{{true,false,true},{true,true,true}}})
     );
     auto test = [](const auto& t){
         auto ten = std::get<0>(t);
@@ -101,7 +101,8 @@ TEST_CASE("test_math_all_nan_values","test_math")
         //keep_dim false
         std::make_tuple(tensor_type{nan,nan,nan},0,false,bool_tensor_type(true)),
         std::make_tuple(tensor_type{nan,0.0,nan},0,false,bool_tensor_type(false)),
-        std::make_tuple(tensor_type{nan,pos_inf,nan,neg_inf},0,false,bool_tensor_type(true))
+        std::make_tuple(tensor_type{nan,pos_inf,nan,neg_inf},0,false,bool_tensor_type(true)),
+        std::make_tuple(tensor_type{nan,pos_inf,0.0,nan,neg_inf},std::vector<int>{},false,bool_tensor_type{true,true,false,true,true})
     );
     auto test = [](const auto& t){
         auto ten = std::get<0>(t);
@@ -131,7 +132,6 @@ TEST_CASE("test_math_any","test_math")
         //keep_dim false
         std::make_tuple(tensor_type{},0,false,bool_tensor_type(false)),
         std::make_tuple(tensor_type{},std::vector<int>{0},false,bool_tensor_type(false)),
-        std::make_tuple(tensor_type{},std::vector<int>{},false,bool_tensor_type(false)),
         std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0,2},false,bool_tensor_type{false,false}),
         std::make_tuple(tensor_type{5},0,false,bool_tensor_type(true)),
         std::make_tuple(tensor_type{0},0,false,bool_tensor_type(false)),
@@ -143,11 +143,11 @@ TEST_CASE("test_math_any","test_math")
         std::make_tuple(tensor_type{{{1,0,0},{2,0,-1}},{{0,0,9},{0,0,3}}},2,false,bool_tensor_type{{true,true},{true,true}}),
         std::make_tuple(tensor_type{{{1,0,0},{2,0,-1}},{{0,0,9},{0,0,3}}},std::vector<int>{0,1},false,bool_tensor_type{true,false,true}),
         std::make_tuple(tensor_type{{{1,0,0},{2,0,-1}},{{0,0,9},{0,0,3}}},std::vector<int>{2,1},false,bool_tensor_type{true,true}),
-        std::make_tuple(tensor_type{{{1,0,0},{2,0,-1}},{{0,0,9},{0,0,3}}},std::vector<int>{},false,bool_tensor_type(true)),
+        std::make_tuple(tensor_type{},std::vector<int>{},false,bool_tensor_type{}),
+        std::make_tuple(tensor_type{{{1,0,0},{2,0,-1}},{{0,0,9},{0,0,3}}},std::vector<int>{},false,bool_tensor_type{{{true,false,false},{true,false,true}},{{false,false,true},{false,false,true}}}),
         //keep_dim true
         std::make_tuple(tensor_type{},0,true,bool_tensor_type{false}),
         std::make_tuple(tensor_type{},std::vector<int>{0},true,bool_tensor_type{false}),
-        std::make_tuple(tensor_type{},std::vector<int>{},true,bool_tensor_type{false}),
         std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0,2},true,bool_tensor_type{{{false},{false}}}),
         std::make_tuple(tensor_type{5},0,true,bool_tensor_type{true}),
         std::make_tuple(tensor_type{0},0,true,bool_tensor_type{false}),
@@ -159,7 +159,8 @@ TEST_CASE("test_math_any","test_math")
         std::make_tuple(tensor_type{{{1,0,0},{2,0,-1}},{{0,0,9},{0,0,3}}},2,true,bool_tensor_type{{{true},{true}},{{true},{true}}}),
         std::make_tuple(tensor_type{{{1,0,0},{2,0,-1}},{{0,0,9},{0,0,3}}},std::vector<int>{0,1},true,bool_tensor_type{{{true,false,true}}}),
         std::make_tuple(tensor_type{{{1,0,0},{2,0,-1}},{{0,0,9},{0,0,3}}},std::vector<int>{2,1},true,bool_tensor_type{{{true}},{{true}}}),
-        std::make_tuple(tensor_type{{{1,0,0},{2,0,-1}},{{0,0,9},{0,0,3}}},std::vector<int>{},true,bool_tensor_type{{{true}}})
+        std::make_tuple(tensor_type{},std::vector<int>{},true,bool_tensor_type{}),
+        std::make_tuple(tensor_type{{{1,0,0},{2,0,-1}},{{0,0,9},{0,0,3}}},std::vector<int>{},true,bool_tensor_type{{{true,false,false},{true,false,true}},{{false,false,true},{false,false,true}}})
     );
     auto test = [](const auto& t){
         auto ten = std::get<0>(t);
@@ -207,7 +208,8 @@ TEST_CASE("test_math_any_nan_values","test_math")
         std::make_tuple(tensor_type{0.0,0.0,nan},0,false,bool_tensor_type(true)),
         std::make_tuple(tensor_type{0.0,0.0,pos_inf},0,false,bool_tensor_type(true)),
         std::make_tuple(tensor_type{0.0,0.0,neg_inf},0,false,bool_tensor_type(true)),
-        std::make_tuple(tensor_type{nan,pos_inf,nan,neg_inf},0,false,bool_tensor_type(true))
+        std::make_tuple(tensor_type{nan,pos_inf,nan,neg_inf},0,false,bool_tensor_type(true)),
+        std::make_tuple(tensor_type{nan,pos_inf,0.0,nan,neg_inf},std::vector<int>{},false,bool_tensor_type{true,true,false,true,true})
     );
     auto test = [](const auto& t){
         auto ten = std::get<0>(t);
@@ -248,33 +250,33 @@ TEMPLATE_TEST_CASE("test_math_amin_nanmin","test_math",
         //keep_dim false
         std::make_tuple(tensor_type{},0,false,value_type{100},tensor_type(value_type{100})),
         std::make_tuple(tensor_type{},std::vector<int>{0},false,value_type{100},tensor_type(value_type{100})),
-        std::make_tuple(tensor_type{},std::vector<int>{},false,value_type{100},tensor_type(value_type{100})),
         std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0,2},false,value_type{100},tensor_type{value_type{100},value_type{100}}),
         std::make_tuple(tensor_type{5},0,false,value_type{100},tensor_type(5)),
         std::make_tuple(tensor_type{5,2,1,-1,4,4},0,false,value_type{100},tensor_type(-1)),
         std::make_tuple(tensor_type{5,2,1,-1,4,4},std::vector<int>{0},false,value_type{100},tensor_type(-1)),
-        std::make_tuple(tensor_type{5,2,1,-1,4,4},std::vector<int>{},false,value_type{100},tensor_type(-1)),
         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},0,false,value_type{100},tensor_type{{1,4,3},{1,0,-1}}),
         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},1,false,value_type{100},tensor_type{{1,0,-1},{1,4,2}}),
         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},2,false,value_type{100},tensor_type{{1,-1},{4,1}}),
         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{0,1},false,value_type{100},tensor_type{1,0,-1}),
         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{2,1},false,value_type{100},tensor_type{-1,1}),
-        std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{},false,value_type{100},tensor_type(-1)),
+        std::make_tuple(tensor_type{},std::vector<int>{},false,value_type{100},tensor_type{}),
+        std::make_tuple(tensor_type{5,2,1,-1,4,4},std::vector<int>{},false,value_type{2},tensor_type{2,2,1,-1,2,2}),
+        std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{},false,value_type{2},tensor_type{{{1,2,2},{2,0,-1}},{{2,2,2},{1,2,2}}}),
         //keep_dim true
         std::make_tuple(tensor_type{},0,true,value_type{100},tensor_type{value_type{100}}),
         std::make_tuple(tensor_type{},std::vector<int>{0},true,value_type{100},tensor_type{value_type{100}}),
-        std::make_tuple(tensor_type{},std::vector<int>{},true,value_type{100},tensor_type{value_type{100}}),
         std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0,2},true,value_type{100},tensor_type{{{value_type{100}},{value_type{100}}}}),
         std::make_tuple(tensor_type{5},0,true,value_type{100},tensor_type{5}),
         std::make_tuple(tensor_type{5,2,1,-1,4,4},0,true,value_type{100},tensor_type{-1}),
         std::make_tuple(tensor_type{5,2,1,-1,4,4},std::vector<int>{0},true,value_type{100},tensor_type{-1}),
-        std::make_tuple(tensor_type{5,2,1,-1,4,4},std::vector<int>{},true,value_type{100},tensor_type{-1}),
         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},0,true,value_type{100},tensor_type{{{1,4,3},{1,0,-1}}}),
         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},1,true,value_type{100},tensor_type{{{1,0,-1}},{{1,4,2}}}),
         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},2,true,value_type{100},tensor_type{{{1},{-1}},{{4},{1}}}),
         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{0,1},true,value_type{100},tensor_type{{{1,0,-1}}}),
         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{2,1},true,value_type{100},tensor_type{{{-1}},{{1}}}),
-        std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{},true,value_type{100},tensor_type{{{-1}}}),
+        std::make_tuple(tensor_type{},std::vector<int>{},true,value_type{100},tensor_type{}),
+        std::make_tuple(tensor_type{5,2,1,-1,4,4},std::vector<int>{},true,value_type{2},tensor_type{2,2,1,-1,2,2}),
+        std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{},true,value_type{2},tensor_type{{{1,2,2},{2,0,-1}},{{2,2,2},{1,2,2}}}),
         //initial is min
         std::make_tuple(tensor_type{5,2,1,-1,4,4},0,false,value_type{-2},tensor_type(-2)),
         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},2,false,value_type{1},tensor_type{{1,-1},{1,1}})
@@ -405,6 +407,7 @@ TEST_CASE("test_math_amin_nanmin_nan_values","test_math")
         std::make_tuple(amin(tensor_type{{nan,nan,nan,4.0,0.0,3.0},{2.0,0.0,nan,-1.0,1.0,1.0}},1), tensor_type{nan,nan}),
         std::make_tuple(amin(tensor_type{{4.0,-1.0,3.0,nan},{nan,0.1,5.0,1.0}},0), tensor_type{nan,-1.0,3.0,nan}),
         std::make_tuple(amin(tensor_type{{4.0,-1.0,3.0,nan},{2.0,0.1,5.0,1.0}},1), tensor_type{nan,0.1}),
+        std::make_tuple(amin(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf},std::vector<int>{}), tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf}),
         //nanmin
         std::make_tuple(nanmin(tensor_type{1.0,0.5,2.0,pos_inf,3.0}), tensor_type(0.5)),
         std::make_tuple(nanmin(tensor_type{1.0,0.5,2.0,neg_inf,3.0}), tensor_type(neg_inf)),
@@ -412,7 +415,8 @@ TEST_CASE("test_math_amin_nanmin_nan_values","test_math")
         std::make_tuple(nanmin(tensor_type{{nan,nan,nan},{nan,nan,nan}}), tensor_type(nan)),
         std::make_tuple(nanmin(tensor_type{{nan,nan,nan},{nan,1.1,nan},{0.1,2.0,nan}}), tensor_type(0.1)),
         std::make_tuple(nanmin(tensor_type{{nan,nan,nan},{nan,1.1,nan},{0.1,2.0,nan}},0), tensor_type{0.1,1.1,nan}),
-        std::make_tuple(nanmin(tensor_type{{nan,nan,nan},{nan,1.1,nan},{0.1,2.0,nan}},1), tensor_type{nan,1.1,0.1})
+        std::make_tuple(nanmin(tensor_type{{nan,nan,nan},{nan,1.1,nan},{0.1,2.0,nan}},1), tensor_type{nan,1.1,0.1}),
+        std::make_tuple(nanmin(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf},std::vector<int>{}), tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf})
     );
     auto test = [](const auto& t){
         auto result = std::get<0>(t);
@@ -450,33 +454,33 @@ TEMPLATE_TEST_CASE("test_math_amax_nanmax","test_math",
         //keep_dim false
         std::make_tuple(tensor_type{},0,false,value_type{-100},tensor_type(value_type{-100})),
         std::make_tuple(tensor_type{},std::vector<int>{0},false,value_type{-100},tensor_type(value_type{-100})),
-        std::make_tuple(tensor_type{},std::vector<int>{},false,value_type{-100},tensor_type(value_type{-100})),
         std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0,2},false,value_type{-100},tensor_type{value_type{-100},value_type{-100}}),
         std::make_tuple(tensor_type{5},0,false,value_type{-100},tensor_type(5)),
         std::make_tuple(tensor_type{5,2,1,-1,4,4},0,false,value_type{-100},tensor_type(5)),
         std::make_tuple(tensor_type{5,2,1,-1,4,4},std::vector<int>{0},false,value_type{-100},tensor_type(5)),
-        std::make_tuple(tensor_type{5,2,1,-1,4,4},std::vector<int>{},false,value_type{-100},tensor_type(5)),
         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},0,false,value_type{-100},tensor_type{{7,5,9},{2,11,2}}),
         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},1,false,value_type{-100},tensor_type{{2,5,3},{7,11,9}}),
         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},2,false,value_type{-100},tensor_type{{5,2},{9,11}}),
         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{0,1},false,value_type{-100},tensor_type{7,11,9}),
         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{2,1},false,value_type{-100},tensor_type{5,11}),
-        std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{},false,value_type{-100},tensor_type(11)),
+        std::make_tuple(tensor_type{},std::vector<int>{},false,value_type{-100},tensor_type{}),
+        std::make_tuple(tensor_type{5,2,1,-1,4,4},std::vector<int>{},false,value_type{2},tensor_type{5,2,2,2,4,4}),
+        std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{},false,value_type{2},tensor_type{{{2,5,3},{2,2,2}},{{7,4,9},{2,11,2}}}),
         //keep_dim true
         std::make_tuple(tensor_type{},0,true,value_type{-100},tensor_type{value_type{-100}}),
         std::make_tuple(tensor_type{},std::vector<int>{0},true,value_type{-100},tensor_type{value_type{-100}}),
-        std::make_tuple(tensor_type{},std::vector<int>{},true,value_type{-100},tensor_type{value_type{-100}}),
         std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0,2},true,value_type{-100},tensor_type{{{value_type{-100}},{value_type{-100}}}}),
         std::make_tuple(tensor_type{5},0,true,value_type{-100},tensor_type{5}),
         std::make_tuple(tensor_type{5,2,1,-1,4,4},0,true,value_type{-100},tensor_type{5}),
         std::make_tuple(tensor_type{5,2,1,-1,4,4},std::vector<int>{0},true,value_type{-100},tensor_type{5}),
-        std::make_tuple(tensor_type{5,2,1,-1,4,4},std::vector<int>{},true,value_type{-100},tensor_type{5}),
         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},0,true,value_type{-100},tensor_type{{{7,5,9},{2,11,2}}}),
         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},1,true,value_type{-100},tensor_type{{{2,5,3}},{{7,11,9}}}),
         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},2,true,value_type{-100},tensor_type{{{5},{2}},{{9},{11}}}),
         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{0,1},true,value_type{-100},tensor_type{{{7,11,9}}}),
         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{2,1},true,value_type{-100},tensor_type{{{5}},{{11}}}),
-        std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{},true,value_type{-100},tensor_type{{{11}}}),
+        std::make_tuple(tensor_type{},std::vector<int>{},true,value_type{-100},tensor_type{}),
+        std::make_tuple(tensor_type{5,2,1,-1,4,4},std::vector<int>{},true,value_type{2},tensor_type{5,2,2,2,4,4}),
+        std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},std::vector<int>{},true,value_type{2},tensor_type{{{2,5,3},{2,2,2}},{{7,4,9},{2,11,2}}}),
         //initial is max
         std::make_tuple(tensor_type{5,2,1,-1,4,4},0,false,value_type{6},tensor_type(6)),
         std::make_tuple(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},2,false,value_type{3},tensor_type{{5,3},{9,11}})
@@ -607,6 +611,7 @@ TEST_CASE("test_math_amax_nanmax_nan_values","test_math")
         std::make_tuple(amax(tensor_type{{nan,nan,nan,4.0,0.0,3.0},{2.0,0.0,nan,-1.0,1.0,1.0}},1), tensor_type{nan,nan}),
         std::make_tuple(amax(tensor_type{{4.0,-1.0,3.0,nan},{nan,0.1,5.0,1.0}},0), tensor_type{nan,0.1,5.0,nan}),
         std::make_tuple(amax(tensor_type{{4.0,-1.0,3.0,nan},{2.0,0.1,5.0,1.0}},1), tensor_type{nan,5.0}),
+        std::make_tuple(amax(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf},std::vector<int>{}), tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf}),
         //nanmax
         std::make_tuple(nanmax(tensor_type{1.0,0.5,2.0,pos_inf,3.0}), tensor_type(pos_inf)),
         std::make_tuple(nanmax(tensor_type{1.0,0.5,2.0,neg_inf,3.0}), tensor_type(3.0)),
@@ -614,7 +619,8 @@ TEST_CASE("test_math_amax_nanmax_nan_values","test_math")
         std::make_tuple(nanmax(tensor_type{{nan,nan,nan},{nan,nan,nan}}), tensor_type(nan)),
         std::make_tuple(nanmax(tensor_type{{nan,nan,nan},{nan,1.1,nan},{0.1,2.0,nan}}), tensor_type(2.0)),
         std::make_tuple(nanmax(tensor_type{{nan,nan,nan},{nan,1.1,nan},{0.1,2.0,nan}},0), tensor_type{0.1,2.0,nan}),
-        std::make_tuple(nanmax(tensor_type{{nan,nan,nan},{nan,1.1,nan},{0.1,2.0,nan}},1), tensor_type{nan,1.1,2.0})
+        std::make_tuple(nanmax(tensor_type{{nan,nan,nan},{nan,1.1,nan},{0.1,2.0,nan}},1), tensor_type{nan,1.1,2.0}),
+        std::make_tuple(nanmax(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf},std::vector<int>{}), tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf})
     );
     auto test = [](const auto& t){
         auto result = std::get<0>(t);
@@ -648,33 +654,33 @@ TEMPLATE_TEST_CASE("test_math_sum_nansum","test_math",
         //keep_dim false
         std::make_tuple(tensor_type{},0,false,value_type{0},tensor_type(value_type{0})),
         std::make_tuple(tensor_type{},std::vector<int>{0},false,value_type{0},tensor_type(value_type{0})),
-        std::make_tuple(tensor_type{},std::vector<int>{},false,value_type{0},tensor_type(value_type{0})),
         std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0,2},false,value_type{0},tensor_type{value_type{0},value_type{0}}),
         std::make_tuple(tensor_type{5},0,false,value_type{0},tensor_type(5)),
         std::make_tuple(tensor_type{1,2,3,4,5},0,false,value_type{0},tensor_type(15)),
         std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{0},false,value_type{0},tensor_type(15)),
-        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{},false,value_type{0},tensor_type(15)),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},0,false,value_type{0},tensor_type{{8,10,12},{14,16,18}}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},1,false,value_type{0},tensor_type{{5,7,9},{17,19,21}}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},2,false,value_type{0},tensor_type{{6,15},{24,33}}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{0,1},false,value_type{0},tensor_type{22,26,30}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{2,1},false,value_type{0},tensor_type{21,57}),
-        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{},false,value_type{0},tensor_type(78)),
+        std::make_tuple(tensor_type{},std::vector<int>{},false,value_type{0},tensor_type{}),
+        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{},false,value_type{0},tensor_type{1,2,3,4,5}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{},false,value_type{0},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}}),
         //keep_dim true
         std::make_tuple(tensor_type{},0,true,value_type{0},tensor_type{value_type{0}}),
         std::make_tuple(tensor_type{},std::vector<int>{0},true,value_type{0},tensor_type{value_type{0}}),
-        std::make_tuple(tensor_type{},std::vector<int>{},true,value_type{0},tensor_type{value_type{0}}),
         std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0,2},true,value_type{0},tensor_type{{{value_type{0}},{value_type{0}}}}),
         std::make_tuple(tensor_type{5},0,true,value_type{0},tensor_type{5}),
         std::make_tuple(tensor_type{1,2,3,4,5},0,true,value_type{0},tensor_type{15}),
         std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{0},true,value_type{0},tensor_type{15}),
-        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{},true,value_type{0},tensor_type{15}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},0,true,value_type{0},tensor_type{{{8,10,12},{14,16,18}}}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},1,true,value_type{0},tensor_type{{{5,7,9}},{{17,19,21}}}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},2,true,value_type{0},tensor_type{{{6},{15}},{{24},{33}}}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{0,1},true,value_type{0},tensor_type{{{22,26,30}}}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{2,1},true,value_type{0},tensor_type{{{21}},{{57}}}),
-        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{},true,value_type{0},tensor_type{{{78}}}),
+        std::make_tuple(tensor_type{},std::vector<int>{},true,value_type{0},tensor_type{}),
+        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{},true,value_type{0},tensor_type{1,2,3,4,5}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{},true,value_type{0},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}}),
         //non zero initial
         std::make_tuple(tensor_type{},0,false,value_type{-1},tensor_type(-1)),
         std::make_tuple(tensor_type{}.reshape(0,2,3),0,false,value_type{-1},tensor_type{{-1,-1,-1},{-1,-1,-1}}),
@@ -772,6 +778,7 @@ TEST_CASE("test_math_sum_nansum_nan_values","test_math")
         std::make_tuple(sum(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}}), tensor_type(nan)),
         std::make_tuple(sum(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}},0), tensor_type{nan,nan,nan,10.0}),
         std::make_tuple(sum(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}},1), tensor_type{nan,nan,nan,nan}),
+        std::make_tuple(sum(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf},std::vector<int>{}), tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf}),
         //nansum
         std::make_tuple(nansum(tensor_type{1.0,nan,2.0,4.0,3.0,pos_inf}), tensor_type(pos_inf)),
         std::make_tuple(nansum(tensor_type{1.0,nan,2.0,neg_inf,3.0,4.0}), tensor_type(neg_inf)),
@@ -782,7 +789,8 @@ TEST_CASE("test_math_sum_nansum_nan_values","test_math")
         std::make_tuple(nansum(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}},1), tensor_type{0.0,0.0,0.0}),
         std::make_tuple(nansum(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}}), tensor_type(16.5)),
         std::make_tuple(nansum(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}},0), tensor_type{1.0,5.5,0.0,10.0}),
-        std::make_tuple(nansum(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}},1), tensor_type{1.0,3.5,5.5,6.5})
+        std::make_tuple(nansum(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}},1), tensor_type{1.0,3.5,5.5,6.5}),
+        std::make_tuple(nansum(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf},std::vector<int>{}), tensor_type{1.0,0.0,2.0,neg_inf,3.0,pos_inf})
     );
     auto test = [](const auto& t){
         auto result = std::get<0>(t);
@@ -816,33 +824,33 @@ TEMPLATE_TEST_CASE("test_math_prod_nanprod","test_math",
         //keep_dim false
         std::make_tuple(tensor_type{},0,false,value_type{1},tensor_type(value_type{1})),
         std::make_tuple(tensor_type{},std::vector<int>{0},false,value_type{1},tensor_type(value_type{1})),
-        std::make_tuple(tensor_type{},std::vector<int>{},false,value_type{1},tensor_type(value_type{1})),
         std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0,2},false,value_type{1},tensor_type{value_type{1},value_type{1}}),
         std::make_tuple(tensor_type{5},0,false,value_type{1},tensor_type(5)),
         std::make_tuple(tensor_type{1,2,3,4,5},0,false,value_type{1},tensor_type(120)),
         std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{0},false,value_type{1},tensor_type(120)),
-        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{},false,value_type{1},tensor_type(120)),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},0,false,value_type{1},tensor_type{{7,16,27},{40,55,72}}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},1,false,value_type{1},tensor_type{{4,10,18},{70,88,108}}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},2,false,value_type{1},tensor_type{{6,120},{504,1320}}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{0,1},false,value_type{1},tensor_type{280,880,1944}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{2,1},false,value_type{1},tensor_type{720,665280}),
-        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{},false,value_type{1},tensor_type(479001600)),
+        std::make_tuple(tensor_type{},std::vector<int>{},false,value_type{1},tensor_type{}),
+        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{},false,value_type{1},tensor_type{1,2,3,4,5}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{},false,value_type{1},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}}),
         //keep_dim true
         std::make_tuple(tensor_type{},0,true,value_type{1},tensor_type{value_type{1}}),
         std::make_tuple(tensor_type{},std::vector<int>{0},true,value_type{1},tensor_type{value_type{1}}),
-        std::make_tuple(tensor_type{},std::vector<int>{},true,value_type{1},tensor_type{value_type{1}}),
         std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0,2},true,value_type{1},tensor_type{{{value_type{1}},{value_type{1}}}}),
         std::make_tuple(tensor_type{5},0,true,value_type{1},tensor_type{5}),
         std::make_tuple(tensor_type{1,2,3,4,5},0,true,value_type{1},tensor_type{120}),
         std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{0},true,value_type{1},tensor_type{120}),
-        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{},true,value_type{1},tensor_type{120}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},0,true,value_type{1},tensor_type{{{7,16,27},{40,55,72}}}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},1,true,value_type{1},tensor_type{{{4,10,18}},{{70,88,108}}}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},2,true,value_type{1},tensor_type{{{6},{120}},{{504},{1320}}}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{0,1},true,value_type{1},tensor_type{{{280,880,1944}}}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{2,1},true,value_type{1},tensor_type{{{720}},{{665280}}}),
-        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{},true,value_type{1},tensor_type{{{479001600}}}),
+        std::make_tuple(tensor_type{},std::vector<int>{},true,value_type{1},tensor_type{}),
+        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{},true,value_type{1},tensor_type{1,2,3,4,5}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{},true,value_type{1},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}}),
         //not one initial
         std::make_tuple(tensor_type{},0,false,value_type{-2},tensor_type(-2)),
         std::make_tuple(tensor_type{}.reshape(0,2,3),0,false,value_type{-2},tensor_type{{-2,-2,-2},{-2,-2,-2}}),
@@ -941,6 +949,7 @@ TEST_CASE("test_math_prod_nanprod_nan_values","test_math")
         std::make_tuple(prod(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}}), tensor_type(nan)),
         std::make_tuple(prod(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}},0), tensor_type{nan,nan,nan,24.0}),
         std::make_tuple(prod(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}},1), tensor_type{nan,nan,nan,nan}),
+        std::make_tuple(prod(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf},std::vector<int>{}), tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf}),
         //nanprod
         std::make_tuple(nanprod(tensor_type{1.0,nan,2.0,4.0,3.0,pos_inf}), tensor_type(pos_inf)),
         std::make_tuple(nanprod(tensor_type{1.0,nan,2.0,neg_inf,3.0,4.0}), tensor_type(neg_inf)),
@@ -952,7 +961,8 @@ TEST_CASE("test_math_prod_nanprod_nan_values","test_math")
         std::make_tuple(nanprod(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}},1), tensor_type{1.0,1.0,1.0}),
         std::make_tuple(nanprod(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}}), tensor_type(36.0)),
         std::make_tuple(nanprod(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}},0), tensor_type{0.25,6.0,1.0,24.0}),
-        std::make_tuple(nanprod(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}},1), tensor_type{1.0,3.0,3.0,4.0})
+        std::make_tuple(nanprod(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}},1), tensor_type{1.0,3.0,3.0,4.0}),
+        std::make_tuple(nanprod(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf},std::vector<int>{}), tensor_type{1.0,1.0,2.0,neg_inf,3.0,pos_inf})
     );
     auto test = [](const auto& t){
         auto result = std::get<0>(t);

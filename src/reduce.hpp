@@ -121,41 +121,6 @@ auto make_reduce_shape(const ShT& shape, const Container& axes, bool keep_dims){
 
 
 }
-// template<typename ShT, typename Container, std::enable_if_t<detail::is_container_of_type_v<Container, typename ShT::difference_type>,int> =0>
-// auto make_reduce_shape(const ShT& shape, const Container& axes, bool keep_dims){
-//     using shape_type = ShT;
-//     using dim_type = typename ShT::difference_type;
-//     using index_type = typename ShT::value_type;
-//     using axes_value_type = typename Container::value_type;
-//     const dim_type dim = detail::make_dim(shape);
-//     const dim_type axes_number = static_cast<dim_type>(axes.size());
-//     if (keep_dims){
-//         if (axes_number == dim_type{0}){  //all axes
-//             return shape_type(dim, index_type{1});
-//         }else{
-//             shape_type res(shape);
-//             for (auto it=axes.begin(), last=axes.end(); it!=last; ++it){
-//                 res[*it] = index_type{1};
-//             }
-//             return res;
-//         }
-//     }else{
-//         if (axes_number == dim_type{0}){  //all axes
-//             return shape_type{};
-//         }else{
-//             shape_type res{};
-//             res.reserve(dim - axes_number);
-//             auto axes_first = axes.begin();
-//             auto axes_last = axes.end();
-//             for(dim_type d{0}; d!=dim; ++d){
-//                 if (std::find(axes_first, axes_last, static_cast<axes_value_type>(d)) == axes_last){
-//                     res.push_back(shape[d]);
-//                 }
-//             }
-//             return res;
-//         }
-//     }
-// }
 template<typename ShT>
 auto make_reduce_shape(const ShT& shape, bool keep_dims){
     using shape_type = ShT;
