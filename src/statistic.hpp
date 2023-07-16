@@ -147,7 +147,15 @@ struct statistic
     template<typename...Ts, typename Axes, typename Container>
     static auto average(const basic_tensor<Ts...>& t, const Axes& axes, const Container& weights, bool keep_dims=false){
         using value_type = typename basic_tensor<Ts...>::value_type;
-        return reduce(t,axes,statistic_reduce_operations::average<value_type>{},keep_dims,weights);
+        if constexpr (std::is_same_v<Axes,detail::no_value>){
+            return reduce_flatten(t,statistic_reduce_operations::average<value_type>{},keep_dims,weights);
+        }else{
+            return reduce(t,axes,statistic_reduce_operations::average<value_type>{},keep_dims,weights);
+        }
+    }
+    template<typename...Ts, typename Container>
+    static auto average(const basic_tensor<Ts...>& t, const Container& weights, bool keep_dims=false){
+        return average(t,detail::no_value{},weights,keep_dims);
     }
 
     //moving average along given axis, axis is scalar
@@ -704,7 +712,7 @@ auto average(const basic_tensor<Ts...>& t, std::initializer_list<DimT> axes, con
 template<typename...Ts, typename Container, std::enable_if_t<detail::is_container_v<Container>,int> =0>
 auto average(const basic_tensor<Ts...>& t, const Container& weights, bool keep_dims=false){
     using config_type = typename basic_tensor<Ts...>::config_type;
-    return statistic_selector_t<config_type>::average(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},weights,keep_dims);
+    return statistic_selector_t<config_type>::average(t,weights,keep_dims);
 }
 
 //moving average along given axis, axis is scalar

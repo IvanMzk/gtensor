@@ -23,15 +23,17 @@ TEMPLATE_TEST_CASE("test_statistic_ptp","test_statistic",
         std::make_tuple(tensor_type{5,6},0,false,tensor_type(1)),
         std::make_tuple(tensor_type{1,2,3,4,5},0,false,tensor_type(4)),
         std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{0},false,tensor_type(4)),
-        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{},false,tensor_type(4)),
         std::make_tuple(tensor_type{{{5,2,8},{4,1,0}},{{3,7,7},{2,3,9}}},0,false,tensor_type{{2,5,1},{2,2,9}}),
         std::make_tuple(tensor_type{{{5,2,8},{4,1,0}},{{3,7,7},{2,3,9}}},1,false,tensor_type{{1,1,8},{1,4,2}}),
         std::make_tuple(tensor_type{{{5,2,8},{4,1,0}},{{3,7,7},{2,3,9}}},2,false,tensor_type{{6,4},{4,7}}),
         std::make_tuple(tensor_type{{{5,2,8},{4,1,0}},{{3,7,7},{2,3,9}}},std::vector<int>{0,2},false,tensor_type{6,9}),
-        std::make_tuple(tensor_type{{{5,2,8},{4,1,0}},{{3,7,7},{2,3,9}}},std::vector<int>{},false,tensor_type(9)),
+        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{},false,tensor_type{0,0,0,0,0}),
+        std::make_tuple(tensor_type{{{5,2,8},{4,1,0}},{{3,7,7},{2,3,9}}},std::vector<int>{},false,tensor_type{{{0,0,0},{0,0,0}},{{0,0,0},{0,0,0}}}),
         //keep_dim true
         std::make_tuple(tensor_type{{{5,2,8},{4,1,0}},{{3,7,7},{2,3,9}}},0,true,tensor_type{{{2,5,1},{2,2,9}}}),
-        std::make_tuple(tensor_type{{{5,2,8},{4,1,0}},{{3,7,7},{2,3,9}}},std::vector<int>{},true,tensor_type{{{9}}})
+        std::make_tuple(tensor_type{{{5,2,8},{4,1,0}},{{3,7,7},{2,3,9}}},std::vector<int>{2,1,0},true,tensor_type{{{9}}}),
+        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{},true,tensor_type{0,0,0,0,0}),
+        std::make_tuple(tensor_type{{{5,2,8},{4,1,0}},{{3,7,7},{2,3,9}}},std::vector<int>{},true,tensor_type{{{0,0,0},{0,0,0}},{{0,0,0},{0,0,0}}})
     );
 
     auto test = [](const auto& t){
@@ -81,33 +83,33 @@ TEMPLATE_TEST_CASE("test_statistic_mean_nanmean_normal_values","test_statistic",
         //keep_dim false
         std::make_tuple(tensor_type{},0,false,result_tensor_type(nan)),
         std::make_tuple(tensor_type{},std::vector<int>{0},false,result_tensor_type(nan)),
-        std::make_tuple(tensor_type{},std::vector<int>{},false,result_tensor_type(nan)),
         std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0,2},false,result_tensor_type{nan,nan}),
         std::make_tuple(tensor_type{5},0,false,result_tensor_type(5)),
         std::make_tuple(tensor_type{1,2,3,4,5},0,false,result_tensor_type(3)),
         std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{0},false,result_tensor_type(3)),
-        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{},false,result_tensor_type(3)),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},0,false,result_tensor_type{{4,5,6},{7,8,9}}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},1,false,result_tensor_type{{2.5,3.5,4.5},{8.5,9.5,10.5}}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},2,false,result_tensor_type{{2,5},{8,11}}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{0,1},false,result_tensor_type{5.5,6.5,7.5}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{2,1},false,result_tensor_type{3.5,9.5}),
-        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{},false,result_tensor_type(6.5)),
+        std::make_tuple(tensor_type{},std::vector<int>{},false,result_tensor_type{}),
+        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{},false,result_tensor_type{1,2,3,4,5}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{},false,result_tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}}),
         //keep_dim true
         std::make_tuple(tensor_type{},0,true,result_tensor_type{nan}),
         std::make_tuple(tensor_type{},std::vector<int>{0},true,result_tensor_type{nan}),
-        std::make_tuple(tensor_type{},std::vector<int>{},true,result_tensor_type{nan}),
         std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0,2},true,result_tensor_type{{{nan},{nan}}}),
         std::make_tuple(tensor_type{5},0,true,result_tensor_type{5}),
         std::make_tuple(tensor_type{1,2,3,4,5},0,true,result_tensor_type{3}),
         std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{0},true,result_tensor_type{3}),
-        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{},true,result_tensor_type{3}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},0,true,result_tensor_type{{{4,5,6},{7,8,9}}}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},1,true,result_tensor_type{{{2.5,3.5,4.5}},{{8.5,9.5,10.5}}}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},2,true,result_tensor_type{{{2},{5}},{{8},{11}}}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{0,1},true,result_tensor_type{{{5.5,6.5,7.5}}}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{2,1},true,result_tensor_type{{{3.5}},{{9.5}}}),
-        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{},true,result_tensor_type{{{6.5}}})
+        std::make_tuple(tensor_type{},std::vector<int>{},true,result_tensor_type{}),
+        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{},true,result_tensor_type{1,2,3,4,5}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{},true,result_tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}})
     );
     SECTION("test_mean")
     {
@@ -195,6 +197,7 @@ TEST_CASE("test_statistic_mean_nanmean_nan_values","test_statistic")
         std::make_tuple(mean(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}}), tensor_type(nan)),
         std::make_tuple(mean(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}},0), tensor_type{nan,nan,nan,2.5}),
         std::make_tuple(mean(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}},1), tensor_type{nan,nan,nan,nan}),
+        std::make_tuple(mean(tensor_type{1.0,nan,-2.0,neg_inf,3.0,pos_inf},std::vector<int>{}), tensor_type{1.0,nan,-2.0,neg_inf,3.0,pos_inf}),
         //nanmean
         std::make_tuple(nanmean(tensor_type{1.0,nan,2.0,4.0,3.0,pos_inf}), tensor_type(pos_inf)),
         std::make_tuple(nanmean(tensor_type{1.0,nan,2.0,neg_inf,3.0,4.0}), tensor_type(neg_inf)),
@@ -205,7 +208,8 @@ TEST_CASE("test_statistic_mean_nanmean_nan_values","test_statistic")
         std::make_tuple(nanmean(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}},1), tensor_type{nan,nan,nan}),
         std::make_tuple(nanmean(tensor_type{{nan,nan,nan,2.5},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}}), tensor_type(2.0)),
         std::make_tuple(nanmean(tensor_type{{nan,nan,nan,2.5},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.5,nan,4.5}},0), tensor_type{0.5,2.0,nan,3.0}),
-        std::make_tuple(nanmean(tensor_type{{nan,nan,nan,2.5},{nan,1.5,nan,2.0},{0.5,2.0,nan,5.0},{0.5,2.0,nan,2.0}},1), tensor_type{2.5,1.75,2.5,1.5})
+        std::make_tuple(nanmean(tensor_type{{nan,nan,nan,2.5},{nan,1.5,nan,2.0},{0.5,2.0,nan,5.0},{0.5,2.0,nan,2.0}},1), tensor_type{2.5,1.75,2.5,1.5}),
+        std::make_tuple(nanmean(tensor_type{1.0,nan,-2.0,neg_inf,3.0,pos_inf},std::vector<int>{}), tensor_type{1.0,nan,-2.0,neg_inf,3.0,pos_inf})
     );
     auto test = [](const auto& t){
         auto result = std::get<0>(t);
@@ -241,33 +245,33 @@ TEMPLATE_TEST_CASE("test_statistic_var_nanvar_normal_values","test_statistic",
         //keep_dim false
         std::make_tuple(tensor_type{},0,false,result_tensor_type(nan)),
         std::make_tuple(tensor_type{},std::vector<int>{0},false,result_tensor_type(nan)),
-        std::make_tuple(tensor_type{},std::vector<int>{},false,result_tensor_type(nan)),
         std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0,2},false,result_tensor_type{nan,nan}),
         std::make_tuple(tensor_type{5},0,false,result_tensor_type(0)),
         std::make_tuple(tensor_type{1,2,3,4,5},0,false,result_tensor_type(2)),
         std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{0},false,result_tensor_type(2)),
-        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{},false,result_tensor_type(2)),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},0,false,result_tensor_type{{9,9,9},{9,9,9}}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},1,false,result_tensor_type{{2.25,2.25,2.25},{2.25,2.25,2.25}}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},2,false,result_tensor_type{{0.666,0.666},{0.666,0.666}}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{0,1},false,result_tensor_type{11.25,11.25,11.25}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{2,1},false,result_tensor_type{2.916,2.916}),
-        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{},false,result_tensor_type(11.916)),
+        std::make_tuple(tensor_type{},std::vector<int>{},false,result_tensor_type{}),
+        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{},false,result_tensor_type{0,0,0,0,0}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{},false,result_tensor_type{{{0,0,0},{0,0,0}},{{0,0,0},{0,0,0}}}),
         // //keep_dim true
         std::make_tuple(tensor_type{},0,true,result_tensor_type{nan}),
         std::make_tuple(tensor_type{},std::vector<int>{0},true,result_tensor_type{nan}),
-        std::make_tuple(tensor_type{},std::vector<int>{},true,result_tensor_type{nan}),
         std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0,2},true,result_tensor_type{{{nan},{nan}}}),
         std::make_tuple(tensor_type{5},0,true,result_tensor_type{0}),
         std::make_tuple(tensor_type{1,2,3,4,5},0,true,result_tensor_type{2}),
         std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{0},true,result_tensor_type{2}),
-        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{},true,result_tensor_type{2}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},0,true,result_tensor_type{{{9,9,9},{9,9,9}}}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},1,true,result_tensor_type{{{2.25,2.25,2.25}},{{2.25,2.25,2.25}}}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},2,true,result_tensor_type{{{0.666},{0.666}},{{0.666},{0.666}}}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{0,1},true,result_tensor_type{{{11.25,11.25,11.25}}}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{2,1},true,result_tensor_type{{{2.916}},{{2.916}}}),
-        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{},true,result_tensor_type{{{11.916}}})
+        std::make_tuple(tensor_type{},std::vector<int>{},true,result_tensor_type{}),
+        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{},true,result_tensor_type{0,0,0,0,0}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{},true,result_tensor_type{{{0,0,0},{0,0,0}},{{0,0,0},{0,0,0}}})
     );
     SECTION("test_var")
     {
@@ -357,6 +361,7 @@ TEST_CASE("test_statistic_var_nanvar_nan_values","test_statistic")
         std::make_tuple(var(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}}), tensor_type(nan)),
         std::make_tuple(var(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}},0), tensor_type{nan,nan,nan,1.25}),
         std::make_tuple(var(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}},1), tensor_type{nan,nan,nan,nan}),
+        std::make_tuple(var(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf},std::vector<int>{}), tensor_type{0.0,nan,0.0,nan,0.0,nan}),
         //nanvar
         std::make_tuple(nanvar(tensor_type{1.0,0.5,nan,4.0,3.0,2.0}), tensor_type(1.64)),
         std::make_tuple(nanvar(tensor_type{1.0,nan,2.0,4.0,3.0,pos_inf}), tensor_type(nan)),
@@ -368,7 +373,8 @@ TEST_CASE("test_statistic_var_nanvar_nan_values","test_statistic")
         std::make_tuple(nanvar(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}},1), tensor_type{nan,nan,nan}),
         std::make_tuple(nanvar(tensor_type{{nan,nan,nan,2.5},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}}), tensor_type(1.111)),
         std::make_tuple(nanvar(tensor_type{{nan,nan,nan,2.5},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.5,nan,4.5}},0), tensor_type{0.0,0.166,nan,0.875}),
-        std::make_tuple(nanvar(tensor_type{{nan,nan,nan,2.5},{nan,1.5,nan,2.0},{0.5,2.0,nan,5.0},{0.5,2.0,nan,2.0}},1), tensor_type{0.0,0.0625,3.5,0.5})
+        std::make_tuple(nanvar(tensor_type{{nan,nan,nan,2.5},{nan,1.5,nan,2.0},{0.5,2.0,nan,5.0},{0.5,2.0,nan,2.0}},1), tensor_type{0.0,0.0625,3.5,0.5}),
+        std::make_tuple(nanvar(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf},std::vector<int>{}), tensor_type{0.0,nan,0.0,nan,0.0,nan})
     );
     auto test = [](const auto& t){
         auto result = std::get<0>(t);
@@ -403,33 +409,33 @@ TEMPLATE_TEST_CASE("test_statistic_std_nanstd_normal_values","test_statistic",
         //keep_dim false
         std::make_tuple(tensor_type{},0,false,result_tensor_type(nan)),
         std::make_tuple(tensor_type{},std::vector<int>{0},false,result_tensor_type(nan)),
-        std::make_tuple(tensor_type{},std::vector<int>{},false,result_tensor_type(nan)),
         std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0,2},false,result_tensor_type{nan,nan}),
         std::make_tuple(tensor_type{5},0,false,result_tensor_type(0)),
         std::make_tuple(tensor_type{1,2,3,4,5},0,false,result_tensor_type(1.414)),
         std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{0},false,result_tensor_type(1.414)),
-        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{},false,result_tensor_type(1.414)),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},0,false,result_tensor_type{{3,3,3},{3,3,3}}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},1,false,result_tensor_type{{1.5,1.5,1.5},{1.5,1.5,1.5}}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},2,false,result_tensor_type{{0.816,0.816},{0.816,0.816}}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{0,1},false,result_tensor_type{3.354,3.354,3.354}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{2,1},false,result_tensor_type{1.707,1.707}),
-        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{},false,result_tensor_type(3.452)),
+        std::make_tuple(tensor_type{},std::vector<int>{},false,result_tensor_type{}),
+        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{},false,result_tensor_type{0,0,0,0,0}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{},false,result_tensor_type{{{0,0,0},{0,0,0}},{{0,0,0},{0,0,0}}}),
         // //keep_dim true
         std::make_tuple(tensor_type{},0,true,result_tensor_type{nan}),
         std::make_tuple(tensor_type{},std::vector<int>{0},true,result_tensor_type{nan}),
-        std::make_tuple(tensor_type{},std::vector<int>{},true,result_tensor_type{nan}),
         std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0,2},true,result_tensor_type{{{nan},{nan}}}),
         std::make_tuple(tensor_type{5},0,true,result_tensor_type{0}),
         std::make_tuple(tensor_type{1,2,3,4,5},0,true,result_tensor_type{1.414}),
         std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{0},true,result_tensor_type{1.414}),
-        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{},true,result_tensor_type{1.414}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},0,true,result_tensor_type{{{3,3,3},{3,3,3}}}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},1,true,result_tensor_type{{{1.5,1.5,1.5}},{{1.5,1.5,1.5}}}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},2,true,result_tensor_type{{{0.816},{0.816}},{{0.816},{0.816}}}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{0,1},true,result_tensor_type{{{3.354,3.354,3.354}}}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{2,1},true,result_tensor_type{{{1.707}},{{1.707}}}),
-        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{},true,result_tensor_type{{{3.452}}})
+        std::make_tuple(tensor_type{},std::vector<int>{},true,result_tensor_type{}),
+        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{},true,result_tensor_type{0,0,0,0,0}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{},true,result_tensor_type{{{0,0,0},{0,0,0}},{{0,0,0},{0,0,0}}})
     );
     SECTION("test_std")
     {
@@ -519,6 +525,7 @@ TEST_CASE("test_statistic_std_nanstd_nan_values","test_statistic")
         std::make_tuple(std(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}}), tensor_type(nan)),
         std::make_tuple(std(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}},0), tensor_type{nan,nan,nan,1.118}),
         std::make_tuple(std(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}},1), tensor_type{nan,nan,nan,nan}),
+        std::make_tuple(std(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf},std::vector<int>{}), tensor_type{0.0,nan,0.0,nan,0.0,nan}),
         //nanstd
         std::make_tuple(nanstd(tensor_type{1.0,0.5,nan,4.0,3.0,2.0}), tensor_type(1.28)),
         std::make_tuple(nanstd(tensor_type{1.0,nan,2.0,4.0,3.0,pos_inf}), tensor_type(nan)),
@@ -530,7 +537,8 @@ TEST_CASE("test_statistic_std_nanstd_nan_values","test_statistic")
         std::make_tuple(nanstd(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}},1), tensor_type{nan,nan,nan}),
         std::make_tuple(nanstd(tensor_type{{nan,nan,nan,2.5},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}}), tensor_type(1.054)),
         std::make_tuple(nanstd(tensor_type{{nan,nan,nan,2.5},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.5,nan,4.5}},0), tensor_type{0.0,0.408,nan,0.935}),
-        std::make_tuple(nanstd(tensor_type{{nan,nan,nan,2.5},{nan,1.5,nan,2.0},{0.5,2.0,nan,5.0},{0.5,2.0,nan,2.0}},1), tensor_type{0.0,0.25,1.87,0.707})
+        std::make_tuple(nanstd(tensor_type{{nan,nan,nan,2.5},{nan,1.5,nan,2.0},{0.5,2.0,nan,5.0},{0.5,2.0,nan,2.0}},1), tensor_type{0.0,0.25,1.87,0.707}),
+        std::make_tuple(nanstd(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf},std::vector<int>{}), tensor_type{0.0,nan,0.0,nan,0.0,nan})
     );
     auto test = [](const auto& t){
         auto result = std::get<0>(t);
@@ -566,7 +574,6 @@ TEMPLATE_TEST_CASE("test_statistic_median_nanmedian_normal_values","test_statist
         //keep_dim false
         std::make_tuple(tensor_type{},0,false,result_tensor_type(nan)),
         std::make_tuple(tensor_type{},std::vector<int>{0},false,result_tensor_type(nan)),
-        std::make_tuple(tensor_type{},std::vector<int>{},false,result_tensor_type(nan)),
         std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0,2},false,result_tensor_type{nan,nan}),
         std::make_tuple(tensor_type{5},0,false,result_tensor_type(5)),
         std::make_tuple(tensor_type{5,6},0,false,result_tensor_type(5.5)),
@@ -575,10 +582,12 @@ TEMPLATE_TEST_CASE("test_statistic_median_nanmedian_normal_values","test_statist
         std::make_tuple(tensor_type{{1,1,0,2,5,-1},{-2,3,1,6,0,4},{3,2,2,7,1,-2},{1,0,-2,4,3,2},{5,3,1,5,7,1}},0,false,result_tensor_type{1,2,1,5,3,1}),
         std::make_tuple(tensor_type{{1,1,0,2,5,-1},{-2,3,1,6,0,4},{3,2,2,7,1,-2},{1,0,-2,4,3,2},{5,3,1,5,7,1}},1,false,result_tensor_type{1.0,2.0,2.0,1.5,4.0}),
         std::make_tuple(tensor_type{{1,1,0,2,5,-1},{-2,3,1,6,0,4},{3,2,2,7,1,-2},{1,0,-2,4,3,2},{5,3,1,5,7,1}},std::vector<int>{1,0},false,result_tensor_type(2.0)),
+        std::make_tuple(tensor_type{},std::vector<int>{},false,result_tensor_type{}),
+        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{},false,result_tensor_type{1,2,3,4,5}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::vector<int>{},false,result_tensor_type{{1,2,3},{4,5,6}}),
         //keep_dim true
         std::make_tuple(tensor_type{},0,true,result_tensor_type{nan}),
         std::make_tuple(tensor_type{},std::vector<int>{0},true,result_tensor_type{nan}),
-        std::make_tuple(tensor_type{},std::vector<int>{},true,result_tensor_type{nan}),
         std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0,2},true,result_tensor_type{{{nan},{nan}}}),
         std::make_tuple(tensor_type{5},0,true,result_tensor_type{5}),
         std::make_tuple(tensor_type{5,6},0,true,result_tensor_type{5.5}),
@@ -586,7 +595,10 @@ TEMPLATE_TEST_CASE("test_statistic_median_nanmedian_normal_values","test_statist
         std::make_tuple(tensor_type{1,3,3,5,2,6,0,2,-1,1,4,5},0,true,result_tensor_type{2.5}),
         std::make_tuple(tensor_type{{1,1,0,2,5,-1},{-2,3,1,6,0,4},{3,2,2,7,1,-2},{1,0,-2,4,3,2},{5,3,1,5,7,1}},0,true,result_tensor_type{{1,2,1,5,3,1}}),
         std::make_tuple(tensor_type{{1,1,0,2,5,-1},{-2,3,1,6,0,4},{3,2,2,7,1,-2},{1,0,-2,4,3,2},{5,3,1,5,7,1}},1,true,result_tensor_type{{1.0},{2.0},{2.0},{1.5},{4.0}}),
-        std::make_tuple(tensor_type{{1,1,0,2,5,-1},{-2,3,1,6,0,4},{3,2,2,7,1,-2},{1,0,-2,4,3,2},{5,3,1,5,7,1}},std::vector<int>{1,0},true,result_tensor_type{{2.0}})
+        std::make_tuple(tensor_type{{1,1,0,2,5,-1},{-2,3,1,6,0,4},{3,2,2,7,1,-2},{1,0,-2,4,3,2},{5,3,1,5,7,1}},std::vector<int>{1,0},true,result_tensor_type{{2.0}}),
+        std::make_tuple(tensor_type{},std::vector<int>{},true,result_tensor_type{}),
+        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{},true,result_tensor_type{1,2,3,4,5}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::vector<int>{},true,result_tensor_type{{1,2,3},{4,5,6}})
     );
     SECTION("test_median")
     {
@@ -665,6 +677,7 @@ TEST_CASE("test_statistic_median_nanmedian_nan_values","test_statistic")
         std::make_tuple(median(tensor_type{{1.0,nan,nan,2.0},{nan,nan,nan,-3.0},{nan,nan,nan,3.0},{nan,nan,nan,8.0},{2.0,1.0,0.0,4.0}}), tensor_type(nan)),
         std::make_tuple(median(tensor_type{{1.0,nan,nan,2.0},{nan,nan,nan,-3.0},{nan,nan,nan,3.0},{nan,nan,nan,8.0},{2.0,1.0,0.0,4.0}},0), tensor_type{nan,nan,nan,3.0}),
         std::make_tuple(median(tensor_type{{1.0,nan,nan,2.0},{nan,nan,nan,-3.0},{nan,nan,nan,3.0},{nan,nan,nan,8.0},{2.0,1.0,0.0,4.0}},1), tensor_type{nan,nan,nan,nan,1.5}),
+        std::make_tuple(median(tensor_type{1.0,nan,-2.0,neg_inf,3.0,pos_inf},std::vector<int>{}), tensor_type{1.0,nan,-2.0,neg_inf,3.0,pos_inf}),
         //nanmedian
         std::make_tuple(nanmedian(tensor_type{1.0,0.5,nan,4.0,3.0,2.0}), tensor_type(2.0)),
         std::make_tuple(nanmedian(tensor_type{1.0,0.5,2.0,4.0,3.0,pos_inf}), tensor_type(2.5)),
@@ -674,7 +687,8 @@ TEST_CASE("test_statistic_median_nanmedian_nan_values","test_statistic")
         std::make_tuple(nanmedian(tensor_type{{nan,nan,nan,nan},{nan,nan,nan,nan},{nan,nan,nan,nan},{nan,nan,nan,nan},{nan,nan,nan,nan}}), tensor_type(nan)),
         std::make_tuple(nanmedian(tensor_type{{1.0,nan,nan,2.0},{nan,nan,nan,-3.0},{nan,nan,nan,3.0},{nan,nan,nan,8.0},{2.0,1.0,0.0,4.0}}), tensor_type(2.0)),
         std::make_tuple(nanmedian(tensor_type{{1.0,nan,nan,2.0},{nan,nan,nan,-3.0},{nan,nan,nan,3.0},{nan,nan,nan,8.0},{2.0,1.0,0.0,4.0}},0), tensor_type{1.5,1.0,0.0,3.0}),
-        std::make_tuple(nanmedian(tensor_type{{1.0,nan,nan,2.0},{nan,nan,nan,-3.0},{nan,nan,nan,3.0},{nan,nan,nan,8.0},{2.0,1.0,0.0,4.0}},1), tensor_type{1.5,-3.0,3.0,8.0,1.5})
+        std::make_tuple(nanmedian(tensor_type{{1.0,nan,nan,2.0},{nan,nan,nan,-3.0},{nan,nan,nan,3.0},{nan,nan,nan,8.0},{2.0,1.0,0.0,4.0}},1), tensor_type{1.5,-3.0,3.0,8.0,1.5}),
+        std::make_tuple(nanmedian(tensor_type{1.0,nan,-2.0,neg_inf,3.0,pos_inf},std::vector<int>{}), tensor_type{1.0,nan,-2.0,neg_inf,3.0,pos_inf})
     );
     auto test = [](const auto& t){
         auto result = std::get<0>(t);
@@ -710,7 +724,6 @@ TEMPLATE_TEST_CASE("test_statistic_quantile_nanquantile_normal_values","test_sta
         //keep_dim false
         std::make_tuple(tensor_type{},0,result_value_type{0.5},false,result_tensor_type(nan)),
         std::make_tuple(tensor_type{},std::vector<int>{0},result_value_type{0.5},false,result_tensor_type(nan)),
-        std::make_tuple(tensor_type{},std::vector<int>{},result_value_type{0.5},false,result_tensor_type(nan)),
         std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0,2},result_value_type{0.5},false,result_tensor_type{nan,nan}),
         std::make_tuple(tensor_type{5},0,result_value_type{0.5},false,result_tensor_type(5)),
         std::make_tuple(tensor_type{5},0,result_value_type{0.0},false,result_tensor_type(5)),
@@ -735,10 +748,16 @@ TEMPLATE_TEST_CASE("test_statistic_quantile_nanquantile_normal_values","test_sta
         std::make_tuple(tensor_type{{1,1,0,2,5,-1},{-2,3,1,6,0,4},{3,2,2,7,1,-2},{1,0,-2,4,3,2},{5,3,1,5,7,1}},0,result_value_type{0.3},false,result_tensor_type{1.0,1.2,0.2,4.2,1.4,-0.6}),
         std::make_tuple(tensor_type{{1,1,0,2,5,-1},{-2,3,1,6,0,4},{3,2,2,7,1,-2},{1,0,-2,4,3,2},{5,3,1,5,7,1}},1,result_value_type{0.3},false,result_tensor_type{0.5,0.5,1.5,0.5,2.0}),
         std::make_tuple(tensor_type{{1,1,0,2,5,-1},{-2,3,1,6,0,4},{3,2,2,7,1,-2},{1,0,-2,4,3,2},{5,3,1,5,7,1}},std::vector<int>{1,0},result_value_type{0.3},false,result_tensor_type(1.0)),
+        std::make_tuple(tensor_type{},std::vector<int>{},result_value_type{0.5},false,result_tensor_type{}),
+        std::make_tuple(tensor_type{1,2,3,4,5,6},std::vector<int>{},result_value_type{0.3},false,result_tensor_type{1,2,3,4,5,6}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::vector<int>{},result_value_type{0.3},false,result_tensor_type{{1,2,3},{4,5,6}}),
         // //keep_dim true
         std::make_tuple(tensor_type{{1,1,0,2,5,-1},{-2,3,1,6,0,4},{3,2,2,7,1,-2},{1,0,-2,4,3,2},{5,3,1,5,7,1}},0,result_value_type{0.3},true,result_tensor_type{{1.0,1.2,0.2,4.2,1.4,-0.6}}),
         std::make_tuple(tensor_type{{1,1,0,2,5,-1},{-2,3,1,6,0,4},{3,2,2,7,1,-2},{1,0,-2,4,3,2},{5,3,1,5,7,1}},1,result_value_type{0.3},true,result_tensor_type{{0.5},{0.5},{1.5},{0.5},{2.0}}),
-        std::make_tuple(tensor_type{{1,1,0,2,5,-1},{-2,3,1,6,0,4},{3,2,2,7,1,-2},{1,0,-2,4,3,2},{5,3,1,5,7,1}},std::vector<int>{1,0},result_value_type{0.3},true,result_tensor_type{{1.0}})
+        std::make_tuple(tensor_type{{1,1,0,2,5,-1},{-2,3,1,6,0,4},{3,2,2,7,1,-2},{1,0,-2,4,3,2},{5,3,1,5,7,1}},std::vector<int>{1,0},result_value_type{0.3},true,result_tensor_type{{1.0}}),
+        std::make_tuple(tensor_type{},std::vector<int>{},result_value_type{0.5},true,result_tensor_type{}),
+        std::make_tuple(tensor_type{1,2,3,4,5,6},std::vector<int>{},result_value_type{0.3},true,result_tensor_type{1,2,3,4,5,6}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::vector<int>{},result_value_type{0.3},true,result_tensor_type{{1,2,3},{4,5,6}})
 
     );
     SECTION("test_quantile")
@@ -845,6 +864,7 @@ TEST_CASE("test_statistic_quantile_nanquantile_nan_values","test_statistic")
         std::make_tuple(quantile(tensor_type{{1.0,nan,nan,2.0},{nan,nan,nan,-3.0},{nan,nan,nan,3.0},{nan,nan,nan,8.0},{2.0,1.0,0.0,4.0}}, value_type{0.5}), tensor_type(nan)),
         std::make_tuple(quantile(tensor_type{{1.0,nan,nan,2.0},{nan,nan,nan,-3.0},{nan,nan,nan,3.0},{nan,nan,nan,8.0},{2.0,1.0,0.0,4.0}},0, value_type{0.5}), tensor_type{nan,nan,nan,3.0}),
         std::make_tuple(quantile(tensor_type{{1.0,nan,nan,2.0},{nan,nan,nan,-3.0},{nan,nan,nan,3.0},{nan,nan,nan,8.0},{2.0,1.0,0.0,4.0}},1, value_type{0.5}), tensor_type{nan,nan,nan,nan,1.5}),
+        std::make_tuple(quantile(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf}, std::vector<int>{}, value_type{0.3}), tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf}),
         //nanquantile
         std::make_tuple(nanquantile(tensor_type{1.0,0.5,nan,4.0,3.0,2.0}, value_type{0.5}), tensor_type(2.0)),
         std::make_tuple(nanquantile(tensor_type{1.0,0.5,2.0,4.0,3.0,pos_inf}, value_type{0.5}), tensor_type(2.5)),
@@ -854,7 +874,8 @@ TEST_CASE("test_statistic_quantile_nanquantile_nan_values","test_statistic")
         std::make_tuple(nanquantile(tensor_type{{nan,nan,nan,nan},{nan,nan,nan,nan},{nan,nan,nan,nan},{nan,nan,nan,nan},{nan,nan,nan,nan}}, value_type{0.5}), tensor_type(nan)),
         std::make_tuple(nanquantile(tensor_type{{1.0,nan,nan,2.0},{nan,nan,nan,-3.0},{nan,nan,nan,3.0},{nan,nan,nan,8.0},{2.0,1.0,0.0,4.0}}, value_type{0.5}), tensor_type(2.0)),
         std::make_tuple(nanquantile(tensor_type{{1.0,nan,nan,2.0},{nan,nan,nan,-3.0},{nan,nan,nan,3.0},{nan,nan,nan,8.0},{2.0,1.0,0.0,4.0}},0, value_type{0.5}), tensor_type{1.5,1.0,0.0,3.0}),
-        std::make_tuple(nanquantile(tensor_type{{1.0,nan,nan,2.0},{nan,nan,nan,-3.0},{nan,nan,nan,3.0},{nan,nan,nan,8.0},{2.0,1.0,0.0,4.0}},1, value_type{0.5}), tensor_type{1.5,-3.0,3.0,8.0,1.5})
+        std::make_tuple(nanquantile(tensor_type{{1.0,nan,nan,2.0},{nan,nan,nan,-3.0},{nan,nan,nan,3.0},{nan,nan,nan,8.0},{2.0,1.0,0.0,4.0}},1, value_type{0.5}), tensor_type{1.5,-3.0,3.0,8.0,1.5}),
+        std::make_tuple(nanquantile(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf}, std::vector<int>{}, value_type{0.3}), tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf})
     );
     auto test = [](const auto& t){
         auto result = std::get<0>(t);
@@ -902,6 +923,8 @@ TEMPLATE_TEST_CASE("test_statistic_average","test_statistic",
             tensor_type{1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1},
             result_tensor_type(2.15)
         ),
+        std::make_tuple(tensor_type{1,2,3,4,5,6},std::vector<int>{},false,std::vector<value_type>{3},result_tensor_type{1,2,3,4,5,6}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::vector<int>{},false,std::vector<value_type>{3},result_tensor_type{{1,2,3},{4,5,6}}),
         //keep_dim true
         std::make_tuple(tensor_type{6},dim_type{0},true,std::vector<value_type>{2},result_tensor_type{6.0}),
         std::make_tuple(tensor_type{1,2,3,4,5,6},dim_type{0},true,std::vector<value_type>{6,5,4,3,2,1},result_tensor_type{2.666}),
@@ -913,7 +936,9 @@ TEMPLATE_TEST_CASE("test_statistic_average","test_statistic",
             true,
             tensor_type{1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1},
             result_tensor_type{{2.15}}
-        )
+        ),
+        std::make_tuple(tensor_type{1,2,3,4,5,6},std::vector<int>{},true,std::vector<value_type>{3},result_tensor_type{1,2,3,4,5,6}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::vector<int>{},true,std::vector<value_type>{3},result_tensor_type{{1,2,3},{4,5,6}})
     );
     auto test = [](const auto& t){
         auto ten = std::get<0>(t);

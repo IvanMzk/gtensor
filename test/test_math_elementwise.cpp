@@ -73,6 +73,12 @@ TEST_CASE("test_tensor_math_basic_functions_semantic","[test_math]")
         auto expected = tensor_type{{1.0,-2.3,-7.8},{9.8,17.5,-25.4}};
         REQUIRE(tensor_close(result,expected));
     }
+    SECTION("test_fmin")
+    {
+        auto result = gtensor::fmin(tensor_type{{0.0,1.1,-2.2},{4.4,-5.5,-6.6}}, tensor_type{2.0,-3.0,4.0});
+        auto expected = tensor_type{{0.0,-3.0,-2.2},{2.0,-5.5,-6.6}};
+        REQUIRE(result == expected);
+    }
     SECTION("test_fmax")
     {
         auto result = gtensor::fmax(tensor_type{{0.0,1.1,-2.2},{4.4,-5.5,-6.6}}, tensor_type{2.0,-3.0,4.0});
