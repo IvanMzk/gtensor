@@ -22,12 +22,20 @@ static auto NAME(Args&&...args){\
 template<typename...Ts, typename Axes>\
 static auto NAME(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){\
     return reduce(t,axes,F{},keep_dims);\
+}\
+template<typename...Ts>\
+static auto NAME(const basic_tensor<Ts...>& t, bool keep_dims = false){\
+    return reduce_flatten(t,F{},keep_dims);\
 }
 
 #define GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(NAME,F)\
 template<typename...Ts, typename Axes, typename Initial = gtensor::detail::no_value>\
 static auto NAME(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false, const Initial& initial = Initial{}){\
     return reduce(t,axes,F{},keep_dims,initial);\
+}\
+template<typename...Ts, typename Initial = gtensor::detail::no_value>\
+static auto NAME(const basic_tensor<Ts...>& t, bool keep_dims = false, const Initial& initial = Initial{}){\
+    return reduce_flatten(t,F{},keep_dims,initial);\
 }
 
 #define GTENSOR_TENSOR_MATH_CUMULATE_FUNCTION(NAME,F)\
@@ -323,7 +331,7 @@ auto NAME(const basic_tensor<Ts...>& t, std::initializer_list<DimT> axes, bool k
 template<typename...Ts>\
 auto NAME(const basic_tensor<Ts...>& t, bool keep_dims = false){\
     using config_type = typename basic_tensor<Ts...>::config_type;\
-    return tensor_math_selector_t<config_type>::F(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},keep_dims);\
+    return tensor_math_selector_t<config_type>::F(t,keep_dims);\
 }
 
 #define GTENSOR_TENSOR_MATH_REDUCE_INITIAL_ROUTINE(NAME,F)\
@@ -340,7 +348,7 @@ auto NAME(const basic_tensor<Ts...>& t, std::initializer_list<DimT> axes, bool k
 template<typename...Ts, typename Initial = gtensor::detail::no_value>\
 auto NAME(const basic_tensor<Ts...>& t, bool keep_dims = false, const Initial& initial = Initial{}){\
     using config_type = typename basic_tensor<Ts...>::config_type;\
-    return tensor_math_selector_t<config_type>::F(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},keep_dims,initial);\
+    return tensor_math_selector_t<config_type>::F(t,keep_dims,initial);\
 }
 
 #define GTENSOR_TENSOR_MATH_CUMULATE_ROUTINE(NAME,F)\
