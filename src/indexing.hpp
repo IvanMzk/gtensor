@@ -72,18 +72,6 @@ template<typename Axes> using axis_type_t = typename axis_type<Axes>::type;
 template<typename Axes, typename Inverse>
 class traverse_predicate
 {
-    // template<typename Dummy, typename B>
-    // struct axis_type_selector{
-    //     using type = typename Axes::value_type;
-    // };
-    // template<typename Dummy>
-    // struct axis_type_selector<Dummy,std::false_type>{
-    //     using type = Axes;
-    // };
-    // static constexpr bool is_axes_container = detail::is_container_v<Axes>;
-    // using axis_type = typename axis_type_selector<void,std::bool_constant<is_axes_container>>::type;
-    // static_assert(math::numeric_traits<axis_type>::is_integral(),"Axes must be container of integrals or integral");
-
     using axis_type = axis_type_t<Axes>;
     static_assert(math::numeric_traits<axis_type>::is_integral(),"Axes must be container of integrals or integral");
 

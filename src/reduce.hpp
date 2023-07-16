@@ -20,8 +20,7 @@ namespace detail{
 
 template<typename Container, typename DimT, typename Axes>
 auto make_axes(const DimT& dim, const Axes& axes_){
-    using dim_type = DimT;
-    if constexpr (detail::is_container_of_type_v<Axes,dim_type>){
+    if constexpr (detail::is_container_v<Axes>){
         Container res{};
         detail::reserve(res,axes_.size());
         for (auto it=axes_.begin(), last=axes_.end(); it!=last; ++it){
@@ -98,19 +97,13 @@ auto make_reduce_shape(const ShT& shape, const Container& axes, bool keep_dims){
     using axes_value_type = typename Container::value_type;
     const dim_type dim = detail::make_dim(shape);
     const dim_type axes_number = static_cast<dim_type>(axes.size());
-    if (keep_dims){
-        if (axes_number == dim_type{0}){  //all axes
-            return shape_type(dim, index_type{1});
-        }else{
-            shape_type res(shape);
-            for (auto it=axes.begin(), last=axes.end(); it!=last; ++it){
-                res[*it] = index_type{1};
-            }
-            return res;
-        }
+    if (axes_number == dim_type{0}){
+        return shape;
     }else{
-        if (axes_number == dim_type{0}){  //all axes
-            return shape_type{};
+        if (keep_dims){
+            shape_type res(shape);
+            std::for_each(axes.begin(),axes.end(),[&res](const auto& a)mutable{res[a]=index_type{1};});
+            return res;
         }else{
             shape_type res{};
             res.reserve(dim - axes_number);
@@ -124,7 +117,45 @@ auto make_reduce_shape(const ShT& shape, const Container& axes, bool keep_dims){
             return res;
         }
     }
+
+
+
 }
+// template<typename ShT, typename Container, std::enable_if_t<detail::is_container_of_type_v<Container, typename ShT::difference_type>,int> =0>
+// auto make_reduce_shape(const ShT& shape, const Container& axes, bool keep_dims){
+//     using shape_type = ShT;
+//     using dim_type = typename ShT::difference_type;
+//     using index_type = typename ShT::value_type;
+//     using axes_value_type = typename Container::value_type;
+//     const dim_type dim = detail::make_dim(shape);
+//     const dim_type axes_number = static_cast<dim_type>(axes.size());
+//     if (keep_dims){
+//         if (axes_number == dim_type{0}){  //all axes
+//             return shape_type(dim, index_type{1});
+//         }else{
+//             shape_type res(shape);
+//             for (auto it=axes.begin(), last=axes.end(); it!=last; ++it){
+//                 res[*it] = index_type{1};
+//             }
+//             return res;
+//         }
+//     }else{
+//         if (axes_number == dim_type{0}){  //all axes
+//             return shape_type{};
+//         }else{
+//             shape_type res{};
+//             res.reserve(dim - axes_number);
+//             auto axes_first = axes.begin();
+//             auto axes_last = axes.end();
+//             for(dim_type d{0}; d!=dim; ++d){
+//                 if (std::find(axes_first, axes_last, static_cast<axes_value_type>(d)) == axes_last){
+//                     res.push_back(shape[d]);
+//                 }
+//             }
+//             return res;
+//         }
+//     }
+// }
 template<typename ShT>
 auto make_reduce_shape(const ShT& shape, bool keep_dims){
     using shape_type = ShT;
@@ -185,18 +216,9 @@ auto make_axis_size(const ShT& shape, const typename ShT::difference_type& axis)
 }
 template<typename ShT, typename Axes>
 auto make_axes_size(const ShT& shape, const typename ShT::value_type& size, const Axes& axes){
-    using dim_type = typename ShT::difference_type;
     using index_type = typename ShT::value_type;
-    if constexpr (detail::is_container_of_type_v<Axes,dim_type>){
-        if (axes.size()==0){
-            return size;
-        }else{
-            index_type axes_size{1};
-            for (auto it=axes.begin(), last=axes.end(); it!=last; ++it){
-                axes_size*=shape[static_cast<dim_type>(*it)];
-            }
-            return axes_size;
-        }
+    if constexpr (detail::is_container_v<Axes>){
+        return std::accumulate(axes.begin(),axes.end(),index_type{1},[&shape](const auto& r, const auto& a){return r*shape[a];});
     }else{
         return make_axis_size(shape,axes);
     }
@@ -436,8 +458,7 @@ public:
     }
 };
 
-//make tensor reduction along axis or axes
-//axes is scalar or container, if axes is empty container reduce like over flatten (all axes)
+//make tensor reduction along axes, axes can be scalar or container,
 //F is reduce functor with parameters: iterators range of data to be reduced, optional parameters; must return scalar - reduction result
 //F call operator must be defined like this: template<typename It,typename...Args> Ret operator()(It first, It last, Args...){...}, Args is optional parameters
 //result tensor has value_type that is return type of F
