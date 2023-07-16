@@ -11,6 +11,10 @@ namespace gtensor
 template<typename...Ts, typename Axes>\
 static auto NAME(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){\
     return reduce(t,axes,F{},keep_dims);\
+}\
+template<typename...Ts>\
+static auto NAME(const basic_tensor<Ts...>& t, bool keep_dims = false){\
+    return reduce_flatten(t,F{},keep_dims);\
 }
 
 //tensor sort,search functions implementation
@@ -198,7 +202,7 @@ auto NAME(const basic_tensor<Ts...>& t, std::initializer_list<DimT> axes, bool k
 template<typename...Ts>\
 auto NAME(const basic_tensor<Ts...>& t, bool keep_dims = false){\
     using config_type = typename basic_tensor<Ts...>::config_type;\
-    return sort_search_selector_t<config_type>::F(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},keep_dims);\
+    return sort_search_selector_t<config_type>::F(t,keep_dims);\
 }
 
 //return sorted copy of tensor, axis is scalar
