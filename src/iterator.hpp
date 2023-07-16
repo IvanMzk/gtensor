@@ -175,7 +175,7 @@ public:
         return *this;
     }
     result_type operator[](difference_type n)const{return *(*this+n);}
-    result_type operator*() const{return *traverser.walker();}
+    result_type operator*() const{return *traverser;}
     inline difference_type friend operator-(const walker_iterator& lhs, const walker_iterator& rhs){return lhs.flat_index - rhs.flat_index;}
 private:
     void advance(difference_type n){

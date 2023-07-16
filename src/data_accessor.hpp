@@ -174,7 +174,7 @@ public:
         iterator_{std::forward<Iterator_>(iterator__)}
     {}
     template<typename U>
-    decltype(std::declval<iterator_type>().operator*()) operator[](const U& i)const{
+    decltype(auto) operator[](const U& i)const{
         static_assert(std::is_convertible_v<U,difference_type>);
         iterator_type tmp = iterator_;
         detail::advance(tmp, i);
@@ -258,13 +258,13 @@ public:
     void reset(const dim_type& direction){index_walker.reset(direction);}
     void reset_back(const dim_type& direction){index_walker.reset_back(direction);}
     void reset_back(){index_walker.reset_back();}
-    decltype(std::declval<indexer_type&>()[std::declval<index_type&>()]) operator*()const{return indexer[index_walker.cursor()];}
+    decltype(auto) operator*()const{return indexer[index_walker.cursor()];}
 private:
     walker_common<config_type, index_type> index_walker;
     indexer_type indexer;
 };
 
-//default traverse predicate
+//default traverse predicate to traverse over all axes
 struct TraverseAllPredicate{};
 
 //walker_traverser implement algorithms to iterate walker using given shape
@@ -303,6 +303,7 @@ public:
     const auto& index()const{return index_;}
     const auto& walker()const{return walker_;}
     auto& walker(){return walker_;}
+    decltype(auto) operator*()const{return *walker_;}
     template<typename Order>
     bool next(){
         ASSERT_ORDER(Order);
