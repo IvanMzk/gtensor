@@ -124,6 +124,17 @@ auto make_reduce_shape(const ShT& shape, const Container& axes, bool keep_dims){
         }
     }
 }
+template<typename ShT>
+auto make_reduce_shape(const ShT& shape, bool keep_dims){
+    using shape_type = ShT;
+    const auto dim = detail::make_dim(shape);
+    if (keep_dims){
+        return shape_type(dim,1);
+    }else{
+        return shape_type{};
+    }
+}
+
 
 template<typename IdxT>
 auto check_slide_args(const IdxT& axis_size, const IdxT& window_size, const IdxT& window_step){
@@ -262,6 +273,25 @@ class reducer
         return res;
     }
 
+    template<typename F, typename...Ts, typename...Args>
+    static auto reduce_flatten_(const basic_tensor<Ts...>& t, F reduce_f, bool keep_dims, Args&&...args){
+        using tensor_type = basic_tensor<Ts...>;
+        using order = typename tensor_type::order;
+        using config_type = typename tensor_type::config_type;
+        using result_type = decltype(reduce_f(t.begin(),t.end(),std::declval<Args>()...));
+        using res_value_type = std::remove_cv_t<std::remove_reference_t<result_type>>;
+        using res_config_type = config::extend_config_t<config_type,res_value_type>;
+        using res_type = tensor<res_value_type,order,res_config_type>;
+        //assuming iterator traverse order doesn't change result type, may not compile otherwise
+        if (t.dim() == 1){   //1d, can use native order
+            auto a = t.template traverse_order_adapter<order>();
+            return  res_type(detail::make_reduce_shape(t.shape(),keep_dims), reduce_f(a.begin(), a.end(), std::forward<Args>(args)...));
+        }else{  //traverse like over flatten
+            auto a = t.template traverse_order_adapter<config::c_order>();
+            return  res_type(detail::make_reduce_shape(t.shape(),keep_dims), reduce_f(a.begin(), a.end(), std::forward<Args>(args)...));
+        }
+    }
+
     template<typename ResultT, typename...Ts, typename DimT, typename F, typename IdxT, typename...Args>
     static auto slide_(const basic_tensor<Ts...>& parent, const DimT& axis_, F slide_f, const IdxT& window_size_, const IdxT& window_step_, Args&&...args)
     {
@@ -382,6 +412,11 @@ public:
         return reduce_(t,axes,f,keep_dims,std::forward<Args>(args)...);
     }
 
+    template<typename F, typename...Ts, typename...Args>
+    static auto reduce_flatten(const basic_tensor<Ts...>& t, F f, bool keep_dims, Args&&...args){
+        return reduce_flatten_(t,f,keep_dims,std::forward<Args>(args)...);
+    }
+
     template<typename ResultT, typename...Ts, typename DimT, typename F, typename IdxT, typename...Args>
     static auto slide(const basic_tensor<Ts...>& t, const DimT& axis, F f, const IdxT& window_size, const IdxT& window_step, Args&&...args){
         return slide_<ResultT>(t,axis,f,window_size,window_step,std::forward<Args>(args)...);
@@ -408,6 +443,12 @@ auto reduce(const basic_tensor<Ts...>& t, const Axes& axes, F f, bool keep_dims,
     using config_type = typename basic_tensor<Ts...>::config_type;
     return reducer_selector_t<config_type>::reduce(t, axes, f, keep_dims, std::forward<Args>(args)...);
 }
+//reduce like over flatten
+template<typename F, typename...Ts, typename...Args>
+auto reduce_flatten(const basic_tensor<Ts...>& t, F f, bool keep_dims, Args&&...args){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return reducer_selector_t<config_type>::reduce_flatten(t, f, keep_dims, std::forward<Args>(args)...);
+}
 
 //make tensor that is result of applying F to sliding window over axis, axis is scalar
 //F is slide functor that takes iterators range of data to be slided, dst iterators range, optional parameters
@@ -420,7 +461,7 @@ auto slide(const basic_tensor<Ts...>& t, const DimT& axis, F f, const IdxT& wind
     using value_type = typename basic_tensor<Ts...>::value_type;
     return reducer_selector_t<config_type>::template slide<value_type>(t, axis, f, window_size, window_step,std::forward<Args>(args)...);
 }
-//slide like over flatten in c_order
+//slide like over flatten
 template<typename F, typename...Ts, typename IdxT, typename...Args>
 auto slide_flatten(const basic_tensor<Ts...>& t, F f, const IdxT& window_size, const IdxT& window_step, Args&&...args){
     using config_type = typename basic_tensor<Ts...>::config_type;
