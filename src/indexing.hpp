@@ -52,21 +52,39 @@ auto make_take_shape(const ShT& shape, const IdxShT& indexes_shape, const DimT& 
     return res;
 }
 
+template<typename Axes>
+struct axis_type
+{
+    template<typename Dummy, typename B>
+    struct selector_{
+        using type = typename Axes::value_type;
+    };
+    template<typename Dummy>
+    struct selector_<Dummy,std::false_type>{
+        using type = Axes;
+    };
+    using type = typename selector_<void,std::bool_constant<detail::is_container_v<Axes>>>::type;
+};
+template<typename Axes> using axis_type_t = typename axis_type<Axes>::type;
+
 //Axes should be integral or container of integrals
 //Inverse should be like std::bool_constant
 template<typename Axes, typename Inverse>
 class traverse_predicate
 {
-    template<typename Dummy, typename B>
-    struct axis_type_selector{
-        using type = typename Axes::value_type;
-    };
-    template<typename Dummy>
-    struct axis_type_selector<Dummy,std::false_type>{
-        using type = Axes;
-    };
-    static constexpr bool is_axes_container = detail::is_container_v<Axes>;
-    using axis_type = typename axis_type_selector<void,std::bool_constant<is_axes_container>>::type;
+    // template<typename Dummy, typename B>
+    // struct axis_type_selector{
+    //     using type = typename Axes::value_type;
+    // };
+    // template<typename Dummy>
+    // struct axis_type_selector<Dummy,std::false_type>{
+    //     using type = Axes;
+    // };
+    // static constexpr bool is_axes_container = detail::is_container_v<Axes>;
+    // using axis_type = typename axis_type_selector<void,std::bool_constant<is_axes_container>>::type;
+    // static_assert(math::numeric_traits<axis_type>::is_integral(),"Axes must be container of integrals or integral");
+
+    using axis_type = axis_type_t<Axes>;
     static_assert(math::numeric_traits<axis_type>::is_integral(),"Axes must be container of integrals or integral");
 
     const Axes* axes_;
@@ -74,7 +92,7 @@ class traverse_predicate
     template<typename U>
     bool is_in_axes(const U& u_)const{
         const auto& u = static_cast<const axis_type&>(u_);
-        if constexpr (is_axes_container){
+        if constexpr (detail::is_container_v<Axes>){
             if (axes_->size()==0){
                 return false;
             }else{

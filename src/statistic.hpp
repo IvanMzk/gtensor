@@ -35,6 +35,10 @@ enum class histogram_algorithm : std::size_t {automatic,fd,scott,rice,sturges,sq
 template<typename...Ts, typename Axes>\
 static auto NAME(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){\
     return reduce(t,axes,F{},keep_dims);\
+}\
+template<typename...Ts>\
+static auto NAME(const basic_tensor<Ts...>& t, bool keep_dims = false){\
+    return reduce_flatten(t,F{},keep_dims);\
 }
 
 struct statistic
@@ -61,11 +65,21 @@ struct statistic
 
     //quantile of elements along given axes
     //axes may be scalar or container
-    //q must be in range [0,1]
+    //q must be of floating point type in range [0,1]
     template<typename...Ts, typename Axes, typename Q>
     static auto quantile(const basic_tensor<Ts...>& t, const Axes& axes, const Q& q, bool keep_dims = false){
         using config_type = typename basic_tensor<Ts...>::config_type;
-        return reduce(t,axes,statistic_reduce_operations::quantile{},keep_dims,q,config_type{});
+        static_assert(math::numeric_traits<Q>::is_floating_point(),"q must be of floating point type");
+        if constexpr (std::is_same_v<Axes,detail::no_value>){
+            return reduce_flatten(t,statistic_reduce_operations::quantile{},keep_dims,q,config_type{});
+        }else{
+            return reduce(t,axes,statistic_reduce_operations::quantile{},keep_dims,q,config_type{});
+        }
+    }
+    //like over flatten
+    template<typename...Ts, typename Q>
+    static auto quantile(const basic_tensor<Ts...>& t, const Q& q, bool keep_dims = false){
+        return quantile(t,detail::no_value{},q,keep_dims);
     }
 
     //median of elements along given axes
@@ -74,6 +88,12 @@ struct statistic
     static auto median(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
         using value_type = typename basic_tensor<Ts...>::value_type;
         return quantile(t,axes,gtensor::math::make_floating_point_t<value_type>{0.5},keep_dims);
+    }
+    //like over flatten
+    template<typename...Ts>
+    static auto median(const basic_tensor<Ts...>& t, bool keep_dims = false){
+        using value_type = typename basic_tensor<Ts...>::value_type;
+        return quantile(t,gtensor::math::make_floating_point_t<value_type>{0.5},keep_dims);
     }
 
     //nan versions
@@ -94,7 +114,17 @@ struct statistic
     template<typename...Ts, typename Axes, typename Q>
     static auto nanquantile(const basic_tensor<Ts...>& t, const Axes& axes, const Q& q, bool keep_dims = false){
         using config_type = typename basic_tensor<Ts...>::config_type;
-        return reduce(t,axes,statistic_reduce_operations::nanquantile{},keep_dims,q,config_type{});
+        static_assert(math::numeric_traits<Q>::is_floating_point(),"q must be of floating point type");
+        if constexpr (std::is_same_v<Axes,detail::no_value>){
+            return reduce_flatten(t,statistic_reduce_operations::nanquantile{},keep_dims,q,config_type{});
+        }else{
+            return reduce(t,axes,statistic_reduce_operations::nanquantile{},keep_dims,q,config_type{});
+        }
+    }
+    //like over flatten, ignoring nan
+    template<typename...Ts, typename Q>
+    static auto nanquantile(const basic_tensor<Ts...>& t, const Q& q, bool keep_dims = false){
+        return nanquantile(t,detail::no_value{},q,keep_dims);
     }
 
     //median of elements along given axes, ignoring nan
@@ -103,6 +133,12 @@ struct statistic
     static auto nanmedian(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
         using value_type = typename basic_tensor<Ts...>::value_type;
         return nanquantile(t,axes,gtensor::math::make_floating_point_t<value_type>{0.5},keep_dims);
+    }
+    //like over flatten, ignoring nan
+    template<typename...Ts>
+    static auto nanmedian(const basic_tensor<Ts...>& t, bool keep_dims = false){
+        using value_type = typename basic_tensor<Ts...>::value_type;
+        return nanquantile(t,gtensor::math::make_floating_point_t<value_type>{0.5},keep_dims);
     }
 
     //average along given axes
@@ -574,7 +610,7 @@ auto NAME(const basic_tensor<Ts...>& t, std::initializer_list<DimT> axes, bool k
 template<typename...Ts>\
 auto NAME(const basic_tensor<Ts...>& t, bool keep_dims = false){\
     using config_type = typename basic_tensor<Ts...>::config_type;\
-    return statistic_selector_t<config_type>::F(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},keep_dims);\
+    return statistic_selector_t<config_type>::F(t,keep_dims);\
 }
 
 //peak-to-peak of elements along given axes
@@ -599,7 +635,7 @@ GTENSOR_TENSOR_STATISTIC_REDUCE_ROUTINE(median,median);
 
 //quantile of elements along given axes
 //axes may be scalar or container
-//q must be in range [0,1]
+//q must be of floatin point type in range [0,1]
 template<typename...Ts, typename Axes, typename Q>
 auto quantile(const basic_tensor<Ts...>& t, const Axes& axes, const Q& q, bool keep_dims = false){
     using config_type = typename basic_tensor<Ts...>::config_type;
@@ -613,7 +649,7 @@ auto quantile(const basic_tensor<Ts...>& t, std::initializer_list<DimT> axes, co
 template<typename...Ts, typename Q>
 auto quantile(const basic_tensor<Ts...>& t, const Q& q, bool keep_dims = false){
     using config_type = typename basic_tensor<Ts...>::config_type;
-    return statistic_selector_t<config_type>::quantile(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},q,keep_dims);
+    return statistic_selector_t<config_type>::quantile(t,q,keep_dims);
 }
 
 //nan versions
@@ -648,7 +684,7 @@ auto nanquantile(const basic_tensor<Ts...>& t, std::initializer_list<DimT> axes,
 template<typename...Ts, typename Q>
 auto nanquantile(const basic_tensor<Ts...>& t, const Q& q, bool keep_dims = false){
     using config_type = typename basic_tensor<Ts...>::config_type;
-    return statistic_selector_t<config_type>::nanquantile(t,std::initializer_list<typename basic_tensor<Ts...>::dim_type>{},q,keep_dims);
+    return statistic_selector_t<config_type>::nanquantile(t,q,keep_dims);
 }
 
 //average along given axes

@@ -3,6 +3,7 @@
 
 #include "module_selector.hpp"
 #include "common.hpp"
+#include "math.hpp"
 #include "iterator.hpp"
 #include "indexing.hpp"
 
@@ -231,6 +232,8 @@ class reducer
         using result_type = decltype(reduce_f(std::declval<iterator_type>(),std::declval<iterator_type>(),std::declval<Args>()...));
         using res_value_type = std::remove_cv_t<std::remove_reference_t<result_type>>;
         using res_config_type = config::extend_config_t<config_type,res_value_type>;
+        using axis_type = detail::axis_type_t<Axes>;
+        static_assert(math::numeric_traits<axis_type>::is_integral() && !std::is_same_v<bool,axis_type>,"Axes must be container of integrals or integral");
 
         auto axes = detail::make_axes<axes_container_type>(parent.dim(),axes_);
         const auto& pshape = parent.shape();

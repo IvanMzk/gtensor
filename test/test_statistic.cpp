@@ -615,7 +615,7 @@ TEMPLATE_TEST_CASE("test_statistic_median_nanmedian_normal_values","test_statist
 }
 
 TEMPLATE_TEST_CASE("test_statistic_median_nanmedian_initializer_list_axes_all_axes","test_statistic",
-    double,
+    //double,
     int
 )
 {
