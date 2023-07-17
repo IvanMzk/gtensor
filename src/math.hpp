@@ -162,8 +162,13 @@ template<typename T, typename U> bool islessequal(T t, U u){return std::islesseq
 template<typename T, typename U> bool islessgreater(T t, U u){return std::islessgreater(t,u);}
 template<typename T, typename U, typename Tol>
 bool isclose(T t, U u, const Tol relative_tolerance, const Tol absolute_tolerance){
-    if (t==u){return true;} //exact
-    return math::abs(t-u) < absolute_tolerance + relative_tolerance*(math::abs(t)+math::abs(u));
+    return t==u ? true : math::abs(t-u) < absolute_tolerance + relative_tolerance*(math::abs(t)+math::abs(u));
+}
+template<typename T, typename U>
+bool isclose(T t, U u){
+    using common_type = std::common_type_t<T,U>;
+    static constexpr common_type tol = numeric_traits<common_type>::epsilon();
+    return isclose(t,u,tol,tol);
 }
 template<typename T, typename U, typename Tol>
 bool isclose_nan_equal(T t, U u, const Tol relative_tolerance, const Tol absolute_tolerance){
@@ -179,6 +184,12 @@ bool isclose_nan_equal(T t, U u, const Tol relative_tolerance, const Tol absolut
     }else{
         return isclose(t,u,relative_tolerance,absolute_tolerance);
     }
+}
+template<typename T, typename U>
+bool isclose_nan_equal(T t, U u){
+    using common_type = std::common_type_t<T,U>;
+    static constexpr common_type tol = numeric_traits<common_type>::epsilon();
+    return isclose_nan_equal(t,u,tol,tol);
 }
 template<typename T, typename U>
 bool isequal_nan_equal(T t, U u){
