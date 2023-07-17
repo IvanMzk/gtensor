@@ -4,8 +4,8 @@
 #include <random>
 #include <algorithm>
 #include "module_selector.hpp"
-#include "builder.hpp"
 #include "indexing.hpp"
+#include "builder.hpp"
 
 
 namespace gtensor{
@@ -374,16 +374,58 @@ private:
         }
 
         //return random sample taken from given tensor
-        template<typename DimT, typename...Ts, typename Size>
-        auto choice(const basic_tensor<Ts...>& t, const Size& size, bool replace=true, const DimT& axis_=0, bool shuffle=true){
-            // using tensor_type = basic_tensor<Ts...>;
-            // using order = typename tensor_type::order;
-            // using value_type = typename tensor_type::value_type;
-            // const auto dim = t.dim();
-            // const auto axis = detail::make_axis(dim,axis_);
-            // auto res = empty_like(t,detail::make_choice_shape(t.shape(),size,axis));
-
-            // return res;
+        template<typename DimT, typename...Ts, typename Size, typename Probabilities=detail::no_value>
+        auto choice(const basic_tensor<Ts...>& t, Size&& size, bool replace=true, const Probabilities& p=Probabilities{}, const DimT& axis_=0, bool shuffle=true){
+            using tensor_type = basic_tensor<Ts...>;
+            using order = typename tensor_type::order;
+            using config_type = typename tensor_type::config_type;
+            using index_type = typename tensor_type::index_type;
+            using shape_type = typename tensor_type::shape_type;
+            using integral_type = long long int;
+            using floating_point_type = double;
+            using container_type = typename config_type::template container<floating_point_type>;
+            using index_tensor_type = tensor<index_type,order,config_type>;
+            static constexpr bool is_p = detail::is_container_v<Probabilities>;
+            static_assert(is_p || std::is_same_v<Probabilities,detail::no_value>,"p must be container or no_value");
+            //check args: axis<t.dim(), if is_p: p.size()==t.size()
+            const auto axis = detail::make_axis(t.dim(),axis_);
+            //std::discrete_distribution
+            if (replace){
+                if constexpr (is_p){
+                    container_type cdf{};
+                    detail::reserve(cdf,p.size());
+                    auto p_it = p.begin();
+                    const auto p_last = p.end();
+                    auto cum_p = static_cast<const floating_point_type&>(*p_it);
+                    cdf.push_back(cum_p);
+                    while(++p_it!=p_last){
+                        cum_p+=static_cast<const floating_point_type&>(*p_it);
+                        cdf.push_back(cum_p);
+                    }
+                    if (!math::isclose(cum_p,floating_point_type{1.0})){  //normalize
+                        const auto normalizer = 1/cum_p;
+                        std::for_each(cdf.begin(),cdf.end(),[normalizer](auto& e){e*=normalizer;});
+                    }
+                    index_tensor_type indexes(detail::make_shape_of_type<shape_type>(std::forward<Size>(size)));
+                    const auto cdf_first = cdf.begin();
+                    const auto cdf_last = cdf.end();
+                    std::uniform_real_distribution<floating_point_type> distribution{0,1};
+                    std::generate(
+                        indexes.begin(),
+                        indexes.end(),
+                        [this,cdf_first,cdf_last,&distribution](){
+                            auto pos = std::lower_bound(cdf_first,cdf_last,distribution(bit_generator_));
+                            return static_cast<const index_type&>(pos - cdf_first);
+                        }
+                    );
+                    return take(t,indexes,axis);
+                }else{
+                    const auto axis_size = t.shape()[axis];
+                    return take(t,integers<integral_type>(integral_type{0},static_cast<const integral_type&>(axis_size),std::forward<Size>(size)),axis);
+                }
+            }else{
+                return take(t,index_tensor_type{},axis);
+            }
         }
 
     };  //end of class generator
