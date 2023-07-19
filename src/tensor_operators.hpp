@@ -27,6 +27,34 @@ inline basic_tensor<Ts...>& as_basic_tensor(basic_tensor<Ts...>& t){
     return t;
 }
 
+template<typename Stream, typename...Ts>
+void str_helper(const basic_tensor<Ts...>& t, std::string separator, Stream& stream){
+    using index_type = typename basic_tensor<Ts...>::index_type;
+    if (t.dim()>1){
+        auto axis_size = t.shape()[0];
+        if (axis_size > 0){
+            index_type i=0;
+            for (--axis_size; i!=axis_size; ++i){
+                stream<<"{";
+                str_helper(t(i).copy(),separator,stream);
+                stream<<"}"<<separator;
+            }
+            stream<<"{";
+            str_helper(t(i).copy(),separator,stream);
+            stream<<"}";
+        }
+    }else{
+        if (t.size()>0){
+            auto it = t.begin();
+            auto last = t.end();
+            for (--last; it!=last; ++it){
+                stream<<*it<<separator;
+            }
+            stream<<*it;
+        }
+    }
+}
+
 }   //end of namespace detail
 
 //generalized elementwise broadcast n-arity operator
@@ -139,17 +167,15 @@ struct tensor_operators
         return allclose(u,v,e,e,equal_nan);
     }
 
-    //return tensor's string representation
+    //return string representation of tensor
     template<typename P, typename...Ts>
     static auto str(const basic_tensor<Ts...>& t, const P& precision){
-        using value_type = typename basic_tensor<Ts...>::value_type;
         std::stringstream ss{};
         ss.precision(precision);
-        if constexpr (detail::is_printable_v<value_type>){
-            ss<<"{"<<detail::shape_to_str(t.shape())<<[&]{for(const auto& i:t){ss<<i<<" ";}; return "}";}();
-        }else{
-            ss<<"{"<<detail::shape_to_str(t.shape())<<"...}";
-        }
+        std::string separator{","};
+        ss<<"{";
+        detail::str_helper(t,separator,ss);
+        ss<<"}";
         return ss.str();
     }
 
