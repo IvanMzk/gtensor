@@ -173,9 +173,9 @@ struct tensor_operators
         std::stringstream ss{};
         ss.precision(precision);
         std::string separator{","};
-        ss<<"{";
+        ss<<"["<<detail::shape_to_str(t.shape())<<"{";
         detail::str_helper(t,separator,ss);
-        ss<<"}";
+        ss<<"}]";
         return ss.str();
     }
 

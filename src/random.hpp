@@ -3,7 +3,9 @@
 
 #include <random>
 #include <algorithm>
+#include <numeric>
 #include "module_selector.hpp"
+#include "math.hpp"
 #include "indexing.hpp"
 #include "builder.hpp"
 
@@ -63,7 +65,8 @@ private:
         using tensor_type = tensor<T,Order,config::extend_config_t<Config,T>>;
         using shape_type = typename tensor_type::shape_type;
         tensor_type res(detail::make_shape_of_type<shape_type>(std::forward<Size>(size)));
-        generate_distribution(res.begin(), res.end(), bit_generator, distribution);
+        auto a = res.template traverse_order_adapter<Order>();
+        generate_distribution(a.begin(), a.end(), bit_generator, distribution);
         return res;
     }
 
@@ -80,6 +83,23 @@ private:
             using std::swap;
             const auto j = distribution(bit_generator, distribution_param_type(0, static_cast<const integral_type&>(i)));
             swap(first[i], first[static_cast<const difference_type&>(j)]);
+        }
+    }
+
+    template<typename It, typename PIt>
+    static void generate_cdf(It cdf_first, const It cdf_last, PIt p_first){
+        if (cdf_first!=cdf_last){
+            auto cdf_it = cdf_first;
+            auto cum = *p_first;
+            *cdf_it = cum;
+            for (++cdf_it,++p_first; cdf_it!=cdf_last; ++cdf_it,++p_first){
+                cum+=*p_first;
+                *cdf_it=cum;
+            }
+            if (!math::isclose(cum,1.0)){  //normalize
+                const auto normalizer = 1/cum;
+                std::for_each(cdf_first,cdf_last,[normalizer](auto& e){e*=normalizer;});
+            }
         }
     }
 
@@ -384,48 +404,94 @@ private:
             using integral_type = long long int;
             using floating_point_type = double;
             using container_type = typename config_type::template container<floating_point_type>;
+            using map_type = typename config_type::template container<bool>;
+            using container_difference_type = typename container_type::difference_type;
+            using map_difference_type = typename map_type::difference_type;
             using index_tensor_type = tensor<index_type,order,config_type>;
             static constexpr bool is_p = detail::is_container_v<Probabilities>;
             static_assert(is_p || std::is_same_v<Probabilities,detail::no_value>,"p must be container or no_value");
-            //check args: axis<t.dim(), if is_p: p.size()==t.size()
+            //check args:
+                //axis<t.dim(),
+                //if is_p: p.size() must equal axis_size,
+                //if t.size()==0 and size of size > 0 (a cannot be empty unless no samples are taken)
+                //if !replace size of size must be <= axis_size,
+                //if !replace and there are zero probabilities that is cant select size elements (due to zero probs)
+
             const auto axis = detail::make_axis(t.dim(),axis_);
-            //std::discrete_distribution
-            if (replace){
-                if constexpr (is_p){
-                    container_type cdf{};
-                    detail::reserve(cdf,p.size());
-                    auto p_it = p.begin();
-                    const auto p_last = p.end();
-                    auto cum_p = static_cast<const floating_point_type&>(*p_it);
-                    cdf.push_back(cum_p);
-                    while(++p_it!=p_last){
-                        cum_p+=static_cast<const floating_point_type&>(*p_it);
-                        cdf.push_back(cum_p);
-                    }
-                    if (!math::isclose(cum_p,floating_point_type{1.0})){  //normalize
-                        const auto normalizer = 1/cum_p;
-                        std::for_each(cdf.begin(),cdf.end(),[normalizer](auto& e){e*=normalizer;});
-                    }
-                    index_tensor_type indexes(detail::make_shape_of_type<shape_type>(std::forward<Size>(size)));
-                    const auto cdf_first = cdf.begin();
-                    const auto cdf_last = cdf.end();
-                    std::uniform_real_distribution<floating_point_type> distribution{0,1};
+            const auto axis_size = t.shape()[axis];
+            index_tensor_type indexes(detail::make_shape_of_type<shape_type>(std::forward<Size>(size)));
+            const auto indexes_size = indexes.size();
+            auto a_indexes = indexes.template traverse_order_adapter<order>();
+
+            if constexpr (is_p){
+                container_type cdf(static_cast<const container_difference_type&>(p.size()));
+                const auto cdf_first = cdf.begin();
+                const auto cdf_last = cdf.end();
+                std::uniform_real_distribution<floating_point_type> distribution{0,1};
+                if (replace){
+                    generate_cdf(cdf_first,cdf_last,p.begin());
                     std::generate(
-                        indexes.begin(),
-                        indexes.end(),
+                        a_indexes.begin(),
+                        a_indexes.end(),
                         [this,cdf_first,cdf_last,&distribution](){
                             auto pos = std::lower_bound(cdf_first,cdf_last,distribution(bit_generator_));
                             return static_cast<const index_type&>(pos - cdf_first);
                         }
                     );
-                    return take(t,indexes,axis);
-                }else{
-                    const auto axis_size = t.shape()[axis];
-                    return take(t,integers<integral_type>(integral_type{0},static_cast<const integral_type&>(axis_size),std::forward<Size>(size)),axis);
+                }else{  //without replacement, probability
+                    map_type map(static_cast<const map_difference_type&>(indexes_size),false);
+                    container_type prob(p.begin(),p.end());
+                    auto indexes_it = a_indexes.begin();
+                    const auto indexes_last = a_indexes.end();
+                    while (indexes_it!=indexes_last){
+                        generate_cdf(cdf_first,cdf_last,prob.begin());
+                        //heuristic, gives twice more trys to left indexes to be selected, tradeof with generate_cdf more times
+                        for (auto n = 2*(indexes_last-indexes_it); n!=0; --n){
+                            const auto j = std::lower_bound(cdf_first,cdf_last,distribution(bit_generator_)) - cdf_first;
+                            if (!map[j]){
+                                *indexes_it=static_cast<const index_type&>(j);
+                                ++indexes_it;
+                                map[j] = true;
+                                prob[j] = 0;
+                                if (indexes_it==indexes_last){
+                                    break;
+                                }
+                            }
+                        }
+                    }
                 }
             }else{
-                return take(t,index_tensor_type{},axis);
+                if (replace){
+                    generate_distribution(
+                        a_indexes.begin(),
+                        a_indexes.end(),
+                        bit_generator_,
+                        std::uniform_int_distribution{integral_type{0},static_cast<const integral_type&>(axis_size-1)}
+                    );
+                }else{  //without replacement, no probability
+                    using distribution_type = std::uniform_int_distribution<integral_type>;
+                    using distribution_param_type = distribution_type::param_type;
+                    map_type map(indexes_size,false);
+                    distribution_type distribution{};
+                    auto indexes_it = a_indexes.begin();
+                    //floyd's algorithm
+                    for (auto i=axis_size-indexes_size; i!=axis_size; ++i,++indexes_it){
+                        const auto j = distribution(bit_generator_, distribution_param_type(0, static_cast<const integral_type&>(i)));
+                        const auto& j_ = static_cast<const map_difference_type&>(j);
+                        if (map[j_]){
+                            *indexes_it = i;
+                            map[static_cast<const map_difference_type&>(i)] = true;
+                        }else{
+                            *indexes_it = j;
+                            map[j_] = true;
+                        }
+                    }
+                    if (shuffle){
+                       shuffle_range(a_indexes.begin(),a_indexes.end(),bit_generator_);
+                    }
+                }
             }
+            return take(t,indexes,axis);
         }
 
     };  //end of class generator
