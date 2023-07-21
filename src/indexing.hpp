@@ -52,6 +52,29 @@ auto make_take_shape(const ShT& shape, const IdxShT& indexes_shape, const DimT& 
     return res;
 }
 
+template<typename DimT, typename Axis>
+void check_take_along_axis_args(const DimT& input_dim_, const DimT& indexes_dim, const Axis& axis_){
+    static constexpr bool is_axis = !std::is_same_v<Axis,no_value>;
+    const auto input_dim = is_axis ? input_dim_ : DimT{1};
+    if (input_dim!=indexes_dim){
+        throw indexing_exception("t and indexes must have the same number of dimensions");
+    }
+    if constexpr (is_axis){
+        auto axis = make_axis(input_dim,axis_);
+        if (axis >= input_dim){
+            throw indexing_exception("axis out of bounds");
+        }
+    }
+}
+
+template<typename ShT, typename IdxShT, typename DimT>
+auto make_take_along_axis_shape(const ShT& shape, const IdxShT& indexes_shape, const DimT& axis){
+    using shape_type = ShT;
+    shape_type tmp(shape);
+    tmp[axis] = indexes_shape[axis];
+    return detail::make_broadcast_shape<shape_type>(tmp,indexes_shape);
+}
+
 template<typename Axes>
 struct axis_type
 {
@@ -220,7 +243,7 @@ static auto take(const basic_tensor<Ts...>& t, const basic_tensor<Us...>& indexe
         return take_flatten<config::c_order>(t,indexes);
     }else{
         const auto axis = detail::make_axis(t.dim(),axis_);
-        tensor<value_type, order, config_type> res(detail::make_take_shape(t.shape(),indexes.shape(),axis));
+        tensor<value_type,order,config_type> res(detail::make_take_shape(t.shape(),indexes.shape(),axis));
         if (!res.empty()){
             const auto& input_shape = t.shape();
             const auto axis_size = input_shape[axis];
@@ -256,6 +279,52 @@ static auto take(const basic_tensor<Ts...>& t, const basic_tensor<Us...>& indexe
     }
 }
 
+template<typename Axis, typename...Ts, typename...Us>
+static auto take_along_axis(const basic_tensor<Ts...>& t, const basic_tensor<Us...>& indexes, const Axis& axis_){
+    using tensor_type = basic_tensor<Ts...>;
+    using order = typename tensor_type::order;
+    using value_type = typename tensor_type::value_type;
+    using config_type = typename tensor_type::config_type;
+    using index_type = typename tensor_type::index_type;
+
+    detail::check_take_along_axis_args(t.dim(),indexes.dim(),axis_);
+    if constexpr (std::is_same_v<Axis,gtensor::detail::no_value>){
+        //return take_flatten<config::c_order>(t,indexes);
+    }else{
+        const auto axis = detail::make_axis(t.dim(),axis_);
+        const auto& input_shape = t.shape();
+        const auto shape = detail::make_take_along_axis_shape(input_shape,indexes.shape(),axis);
+        const auto input_axis_size = input_shape[axis];
+        const auto indexes_axis_size = indexes.shape()[axis];
+        tensor<value_type,order,config_type> res(shape);
+        if (!res.empty()){
+            const auto predicate = detail::make_traverse_predicate(axis,std::true_type{});  //inverse, traverse all but axis
+            auto input_traverser = detail::make_forward_traverser(shape,t.create_walker(),predicate);
+            auto indexes_traverser = detail::make_forward_traverser(shape,indexes.create_walker(),predicate);
+            auto res_traverser = detail::make_forward_traverser(shape,res.create_walker(),predicate);
+            do{
+                auto indexes_it = detail::make_axis_iterator(indexes_traverser.walker(),axis,0);
+                auto indexes_last = detail::make_axis_iterator(indexes_traverser.walker(),axis,indexes_axis_size);
+                auto res_it = detail::make_axis_iterator(res_traverser.walker(),axis,0);
+                auto input_walker = input_traverser.walker();
+                for (;indexes_it!=indexes_last; ++indexes_it,++res_it){
+                    const auto& idx = static_cast<const index_type&>(*indexes_it);
+                    if (idx < input_axis_size){
+                        input_walker.walk(axis,idx);
+                        *res_it = *input_walker;
+                        input_walker.walk(axis,-idx);
+                    }else{
+                        throw indexing_exception("indexes is out of bounds");
+                    }
+                }
+                input_traverser.template next<order>();
+                indexes_traverser.template next<order>();
+            }while(res_traverser.template next<order>());
+        }
+        return res;
+    }
+}
+
 };
 
 //indexing module frontend
@@ -273,5 +342,10 @@ auto take(const basic_tensor<Ts...>& t, const basic_tensor<Us...>& indexes){
     return indexing_selector_t<config_type>::take(t,indexes);
 }
 
+template<typename DimT, typename...Ts, typename...Us>
+auto take_along_axis(const basic_tensor<Ts...>& t, const basic_tensor<Us...>& indexes, const DimT& axis){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return indexing_selector_t<config_type>::take_along_axis(t,indexes,axis);
+}
 }   //end of namespace gtensor
 #endif
