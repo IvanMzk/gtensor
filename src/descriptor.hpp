@@ -189,9 +189,15 @@ inline auto make_size(const ShT& shape, const ShT& strides){
 }
 
 template<typename IdxT, typename ShT>
-inline auto make_size(const ShT& shape){
+inline IdxT make_size(const ShT& shape){
     using index_type = IdxT;
-    return std::accumulate(shape.begin(),shape.end(),index_type(1),std::multiplies<index_type>{});
+    static constexpr bool is_shape = detail::is_container_of_type_v<ShT,index_type>;
+    static_assert(is_shape || std::is_convertible_v<ShT,index_type>);
+    if constexpr (is_shape){
+        return std::accumulate(shape.begin(),shape.end(),index_type(1),std::multiplies<index_type>{});
+    }else{
+        return shape;
+    }
 }
 
 template<typename ShT>

@@ -12,33 +12,45 @@
 
 namespace gtensor{
 
+class random_exception : public std::runtime_error{
+public:
+    explicit random_exception(const char* what):
+        runtime_error(what)
+    {}
+};
+
 namespace detail{
 
-
-auto check_choice_args(){
-
-}
-
-template<typename ShT, typename Size, typename DimT>
-auto make_choice_shape(const ShT& shape, const Size& size, const DimT& axis){
-    using shape_type = ShT;
-    using dim_type = typename shape_type::difference_type;
-    using index_type = typename shape_type::value_type;
-    static constexpr bool is_size_integral = math::numeric_traits<Size>::is_integral();
-    static_assert(is_size_integral || detail::is_container_of_type_v<Size,index_type>,"Size must be integral or container of integral");
-    if constexpr (is_size_integral){
-        shape_type res{shape};
-        res[axis] = static_cast<index_type>(size);
-        return res;
-    }else{
-        const auto size_dim = static_cast<dim_type>(size.size());
-        const auto res_dim = detail::make_dim(shape) + size_dim - dim_type{1};
-        shape_type res(res_dim);
-        std::copy(shape.begin(),shape.begin()+axis,res.begin());
-        std::copy(size.begin(),size.end(),res.begin()+axis);
-        std::copy(shape.begin()+(axis+1),shape.end(),res.begin()+(axis+size_dim));
-        return res;
+template<typename ShT, typename IdxT, typename Size, typename Probabilities, typename DimT>
+auto check_choice_args(const ShT& input_shape, const IdxT& input_size, const Size& size, bool replace, const Probabilities& p, const DimT& axis){
+    const auto input_dim = detail::make_dim(input_shape);
+    const auto axis_size = input_shape[axis];
+    const auto size_size = detail::make_size<IdxT>(size);
+    if (axis>=input_dim){
+        throw random_exception("axis out of bounds");
     }
+    if (input_size==0 && size_size!=0){
+        throw random_exception("t cannot be empty unless no samples are taken");
+    }
+    if (!replace){
+        if (size_size>axis_size){
+            throw random_exception("cannot take a larger sample than population without remplacement");
+        }
+    }
+    if constexpr (detail::is_container_v<Probabilities>){
+        const auto p_size = p.size();
+        if (axis_size!=static_cast<const IdxT&>(p_size)){
+            throw random_exception("p must be the same size as size along axis");
+        }
+        if (!replace){
+            const auto p_zeros = std::count(p.begin(),p.end(),0);
+            const auto samplable_axis_size = p_size - p_zeros;
+            if (size_size>samplable_axis_size){
+                throw random_exception("cannot take a larger sample than population with non-zero probabilities, without remplacement");
+            }
+        }
+    }
+
 }
 
 }   //end of namespace detail
@@ -88,18 +100,24 @@ private:
 
     template<typename It, typename PIt>
     static void generate_cdf(It cdf_first, const It cdf_last, PIt p_first){
-        if (cdf_first!=cdf_last){
-            auto cdf_it = cdf_first;
-            auto cum = *p_first;
-            *cdf_it = cum;
-            for (++cdf_it,++p_first; cdf_it!=cdf_last; ++cdf_it,++p_first){
-                cum+=*p_first;
-                *cdf_it=cum;
+        using value_type = typename std::iterator_traits<It>::value_type;
+        static_assert(math::numeric_traits<value_type>::is_floating_point(),"cdf must be of floating point type");
+        auto cdf_it = cdf_first;
+        value_type cum = 0;
+        for (;cdf_it!=cdf_last; ++cdf_it,++p_first){
+            const auto& p = static_cast<const value_type&>(*p_first);
+            if (p<0){
+                throw random_exception("probabilities can't be negative");
             }
-            if (!math::isclose(cum,1.0)){  //normalize
-                const auto normalizer = 1/cum;
-                std::for_each(cdf_first,cdf_last,[normalizer](auto& e){e*=normalizer;});
-            }
+            cum+=p;
+            *cdf_it=cum;
+        }
+        if (cum == 0){
+            throw random_exception("probabilities sums to zero");
+        }
+        if (!math::isclose(cum,1.0)){  //normalize
+            const auto normalizer = 1/cum;
+            std::for_each(cdf_first,cdf_last,[normalizer](auto& e){e*=normalizer;});
         }
     }
 
@@ -410,14 +428,9 @@ private:
             using index_tensor_type = tensor<index_type,order,config_type>;
             static constexpr bool is_p = detail::is_container_v<Probabilities>;
             static_assert(is_p || std::is_same_v<Probabilities,detail::no_value>,"p must be container or no_value");
-            //check args:
-                //axis<t.dim(),
-                //if is_p: p.size() must equal axis_size,
-                //if t.size()==0 and size of size > 0 (a cannot be empty unless no samples are taken)
-                //if !replace size of size must be <= axis_size,
-                //if !replace and there are zero probabilities that is cant select size elements (due to zero probs)
 
             const auto axis = detail::make_axis(t.dim(),axis_);
+            detail::check_choice_args(t.shape(),t.size(),size,replace,p,axis);
             const auto axis_size = t.shape()[axis];
             index_tensor_type indexes(detail::make_shape_of_type<shape_type>(std::forward<Size>(size)));
             const auto indexes_size = indexes.size();

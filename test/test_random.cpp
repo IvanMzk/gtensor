@@ -1021,6 +1021,7 @@
 TEST_CASE("test_random_choice","[test_random]")
 {
     using value_type = double;
+    using gtensor::tensor;
     using tensor_type = gtensor::tensor<value_type>;
     using bit_generator_type = std::mt19937_64;
     using gtensor::detail::no_value;
@@ -1051,9 +1052,9 @@ TEST_CASE("test_random_choice","[test_random]")
         std::make_tuple(std::make_tuple(1,2,3,4,5),tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},5,true,no_value{},2,true,tensor_type{{{2,1,3,3,3},{5,4,6,6,6}},{{8,7,9,9,9},{11,10,12,12,12}}}),
         std::make_tuple(std::make_tuple(1,2,3,4,5),tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<int>{3,2},true,no_value{},1,true,tensor_type{{{{4,5,6},{1,2,3}},{{1,2,3},{4,5,6}},{{4,5,6},{1,2,3}}},{{{10,11,12},{7,8,9}},{{7,8,9},{10,11,12}},{{10,11,12},{7,8,9}}}}),
         //probabilities
-        std::make_tuple(std::make_tuple(2,3,4),tensor_type{1,2,3,4,5,6,7,8,9,10},30,true,std::vector<double>{0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1},0,true,tensor_type{9,4,3,6,4,6,1,7,7,8,8,8,5,6,4,4,10,7,8,2,3,7,5,5,8,2,10,2,2,7}),
-        std::make_tuple(std::make_tuple(2,3,4),tensor_type{1,2,3,4,5,6,7,8,9,10},30,true,std::vector<double>{1,1,1,1,1,1,1,1,1,1},0,true,tensor_type{9,4,3,6,4,6,1,7,7,8,8,8,5,6,4,4,10,7,8,2,3,7,5,5,8,2,10,2,2,7}),
-        std::make_tuple(std::make_tuple(2,3,4),tensor_type{1,2,3,4,5,6,7,8,9,10},30,true,std::vector<double>{10,1,1,1,1,1,1,1,1,10},0,true,tensor_type{10,1,1,7,1,8,1,10,9,10,10,10,3,8,1,1,10,9,10,1,1,10,3,3,10,1,10,1,1,10}),
+        std::make_tuple(std::make_tuple(2,3,4),tensor_type{1,2,3,4,5,6,7,8,9,10},30,true,tensor<double>{0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1},0,true,tensor_type{9,4,3,6,4,6,1,7,7,8,8,8,5,6,4,4,10,7,8,2,3,7,5,5,8,2,10,2,2,7}),
+        std::make_tuple(std::make_tuple(2,3,4),tensor_type{1,2,3,4,5,6,7,8,9,10},30,true,tensor<double>{1,1,1,1,1,1,1,1,1,1},0,true,tensor_type{9,4,3,6,4,6,1,7,7,8,8,8,5,6,4,4,10,7,8,2,3,7,5,5,8,2,10,2,2,7}),
+        std::make_tuple(std::make_tuple(2,3,4),tensor_type{1,2,3,4,5,6,7,8,9,10},30,true,tensor<double>{10,1,1,1,1,1,1,1,1,10},0,true,tensor_type{10,1,1,7,1,8,1,10,9,10,10,10,3,8,1,1,10,9,10,1,1,10,3,3,10,1,10,1,1,10}),
         std::make_tuple(std::make_tuple(2,3,4),tensor_type{1,2,3,4,5},30,true,std::vector<double>{0.0,0.5,0.5,0.0,0.0},0,true,tensor_type{3,2,2,3,2,3,2,3,3,3,3,3,2,3,2,2,3,3,3,2,2,3,2,2,3,2,3,2,2,3}),
         std::make_tuple(std::make_tuple(2,3,4),tensor_type{1,2,3,4,5},30,true,std::vector<double>{0.3,0.05,0.3,0.05,0.3},0,true,tensor_type{5,3,1,3,2,3,1,3,3,5,5,5,3,3,2,2,5,3,5,1,1,4,3,3,5,1,5,1,1,4}),
         std::make_tuple(std::make_tuple(2,3,4),tensor_type{{1,2,3},{4,5,6},{7,8,9}},std::vector<int>{2,10},true,std::vector<double>{0.1,0.8,0.1},0,true,
@@ -1224,5 +1225,39 @@ TEST_CASE("test_random_choice","[test_random]")
         REQUIRE(result == expected);
     };
     apply_by_element(test,test_data);
+}
+
+TEST_CASE("test_random_choice_exception","[test_random]")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::detail::no_value;
+    using gtensor::default_rng;
+    using gtensor::random_exception;
+
+    //axis<t.dim()
+    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},10,true,no_value{},1),random_exception);
+    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},10,true,no_value{},2),random_exception);
+    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}}},10,true,no_value{},3),random_exception);
+    //if is_p: p.size() must equal axis_size,
+    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},10,true,tensor_type{},0),random_exception);
+    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},10,true,tensor_type{1,1,1},0),random_exception);
+    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},10,true,std::vector<double>{1,1,1,1,1,1},0),random_exception);
+    //if is_p: p must not sum to zero
+    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},10,true,std::vector<double>{0,0,0,0,0},0),random_exception);
+    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},4,false,std::vector<double>{0,0,0,0,0},0),random_exception);
+    //if is_p: p elements must not be negative
+    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},10,true,std::vector<double>{1,2,-1,3,5},0),random_exception);
+    //if t.size()==0 and size of size > 0 (a cannot be empty unless no samples are taken)
+    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{},1,true,no_value{},0),random_exception);
+    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{}.reshape(2,3,0),std::vector<int>(3,3),true,no_value{},0),random_exception);
+    //if !replace size of size must be <= axis_size,
+    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},6,false,std::vector<double>{1,1,1,1,1},0),random_exception);
+    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}}},4,false,no_value{},0),random_exception);
+    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}}},3,false,no_value{},1),random_exception);
+    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}}},3,false,no_value{},2),random_exception);
+    //if !replace and there are zero probabilities that is cant select size elements (due to zero probs)
+    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},5,false,std::vector<double>{1,1,0,1,1},0),random_exception);
+    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},4,false,std::vector<double>{1,1,0,1,0},0),random_exception);
 }
 
