@@ -21,6 +21,14 @@ public:
 
 namespace detail{
 
+template<typename ShT, typename DimT>
+auto check_shuffle_args(const ShT& input_shape, const DimT& axis){
+    const auto input_dim = detail::make_dim(input_shape);
+    if (axis>=input_dim){
+        throw random_exception("axis out of bounds");
+    }
+}
+
 template<typename ShT, typename IdxT, typename Size, typename Probabilities, typename DimT>
 auto check_choice_args(const ShT& input_shape, const IdxT& input_size, const Size& size, bool replace, const Probabilities& p, const DimT& axis){
     const auto input_dim = detail::make_dim(input_shape);
@@ -340,6 +348,7 @@ private:
             const auto dim = t.dim();
             const auto size = t.size();
             const auto axis = detail::make_axis(dim,axis_);
+            detail::check_shuffle_args(t.shape(),axis);
             distribution_type distribution{};
             auto a = t.template traverse_order_adapter<order>();
             if (dim == 1){
@@ -382,7 +391,7 @@ private:
                 return res;
             }else{  //t integral
                 auto res = arange<T>(t);
-                shuffle(res,axis);
+                shuffle(res);
                 return res;
             }
         }
@@ -411,9 +420,23 @@ private:
             }
         }
 
-        //return random sample taken from given tensor
+        //if t is of tensor type return random sample taken from given tensor
+        //if t is of integral type return random sample taken from arange(t)
+        //size can be scalar or container
+        template<typename T, typename Size, typename DimT, typename Probabilities=detail::no_value>
+        auto choice(const T& t, Size&& size, bool replace=true, const Probabilities& p=Probabilities{}, const DimT& axis=0, bool shuffle=true){
+            static constexpr bool is_t_tensor = detail::is_tensor_v<T>;
+            static_assert(is_t_tensor || math::numeric_traits<T>::is_integral(),"t must be of tensor or integral type");
+            if constexpr (is_t_tensor){
+                return choice_(t,size,replace,p,axis,shuffle);
+            }else{  //t integral
+                return choice_(arange<T>(t),size,replace,p,0,shuffle);
+            }
+        }
+
+    private:
         template<typename DimT, typename...Ts, typename Size, typename Probabilities=detail::no_value>
-        auto choice(const basic_tensor<Ts...>& t, Size&& size, bool replace=true, const Probabilities& p=Probabilities{}, const DimT& axis_=0, bool shuffle=true){
+        auto choice_(const basic_tensor<Ts...>& t, Size&& size, bool replace=true, const Probabilities& p=Probabilities{}, const DimT& axis_=0, bool shuffle=true){
             using tensor_type = basic_tensor<Ts...>;
             using order = typename tensor_type::order;
             using config_type = typename tensor_type::config_type;
@@ -433,9 +456,11 @@ private:
             detail::check_choice_args(t.shape(),t.size(),size,replace,p,axis);
             const auto axis_size = t.shape()[axis];
             index_tensor_type indexes(detail::make_shape_of_type<shape_type>(std::forward<Size>(size)));
+            if (indexes.empty()){
+                return take(t,indexes,axis);
+            }
             const auto indexes_size = indexes.size();
             auto a_indexes = indexes.template traverse_order_adapter<order>();
-
             if constexpr (is_p){
                 container_type cdf(static_cast<const container_difference_type&>(p.size()));
                 const auto cdf_first = cdf.begin();

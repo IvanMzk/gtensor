@@ -803,226 +803,270 @@
 //     REQUIRE(default_rng().normal(0,1,50) != default_rng().normal(0,1,50));
 // }
 
-// TEST_CASE("test_random_shuffle","[test_random]")
-// {
-//     using value_type = double;
-//     using tensor_type = gtensor::tensor<value_type>;
-//     using bit_generator_type = std::mt19937_64;
-//     using gtensor::rng;
-//     using helpers_for_testing::apply_by_element;
+TEST_CASE("test_random_shuffle","[test_random]")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using bit_generator_type = std::mt19937_64;
+    using gtensor::rng;
+    using helpers_for_testing::apply_by_element;
 
-//     //0seeds,1tensor,2axis,3expected
-//     auto test_data = std::make_tuple(
-//         std::make_tuple(std::make_tuple(1,2,3),tensor_type{},0,tensor_type{}),
-//         std::make_tuple(std::make_tuple(3,2,1),tensor_type{},0,tensor_type{}),
-//         std::make_tuple(std::make_tuple(1,2,3),tensor_type{}.reshape(0,2,3),0,tensor_type{}.reshape(0,2,3)),
-//         std::make_tuple(std::make_tuple(3,2,1),tensor_type{}.reshape(0,2,3),0,tensor_type{}.reshape(0,2,3)),
-//         std::make_tuple(std::make_tuple(1,2,3),tensor_type{3},0,tensor_type{3}),
-//         std::make_tuple(std::make_tuple(3,2,1),tensor_type{3},0,tensor_type{3}),
-//         std::make_tuple(std::make_tuple(1,2,3),tensor_type{{{3}}},0,tensor_type{{{3}}}),
-//         std::make_tuple(std::make_tuple(3,2,1),tensor_type{{{3}}},0,tensor_type{{{3}}}),
-//         std::make_tuple(std::make_tuple(1,2,3),tensor_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15},0,tensor_type{10,14,5,11,6,8,9,1,13,2,12,15,4,7,3}),
-//         std::make_tuple(std::make_tuple(3,2,1),tensor_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15},0,tensor_type{11,1,4,8,3,14,13,5,2,10,7,9,12,15,6}),
-//         std::make_tuple(std::make_tuple(4,5,6),tensor_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15},0,tensor_type{8,1,12,15,9,10,7,3,13,14,4,6,2,11,5}),
-//         std::make_tuple(std::make_tuple(1,2,3),tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16},{17,18,19,20}},0,tensor_type{{1,2,3,4},{5,6,7,8},{13,14,15,16},{17,18,19,20},{9,10,11,12}}),
-//         std::make_tuple(std::make_tuple(3,2,1),tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16},{17,18,19,20}},0,tensor_type{{17,18,19,20},{5,6,7,8},{9,10,11,12},{1,2,3,4},{13,14,15,16}}),
-//         std::make_tuple(std::make_tuple(1,3,2),tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16},{17,18,19,20}},0,tensor_type{{17,18,19,20},{1,2,3,4},{13,14,15,16},{5,6,7,8},{9,10,11,12}}),
-//         std::make_tuple(std::make_tuple(1,2,3),tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16},{17,18,19,20}},1,tensor_type{{2,1,4,3},{6,5,8,7},{10,9,12,11},{14,13,16,15},{18,17,20,19}}),
-//         std::make_tuple(std::make_tuple(3,2,1),tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16},{17,18,19,20}},1,tensor_type{{1,3,4,2},{5,7,8,6},{9,11,12,10},{13,15,16,14},{17,19,20,18}}),
-//         std::make_tuple(std::make_tuple(1,3,2),tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16},{17,18,19,20}},1,tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16},{17,18,19,20}}),
-//         std::make_tuple(
-//             std::make_tuple(1,2,3),
-//             tensor_type{{{1,2,3},{4,5,6},{7,8,9},{10,11,12}},{{13,14,15},{16,17,18},{19,20,21},{22,23,24}},{{25,26,27},{28,29,30},{31,32,33},{34,35,36}}},
-//             0,
-//             tensor_type{{{13,14,15},{16,17,18},{19,20,21},{22,23,24}},{{1,2,3},{4,5,6},{7,8,9},{10,11,12}},{{25,26,27},{28,29,30},{31,32,33},{34,35,36}}}
-//         ),
-//         std::make_tuple(
-//             std::make_tuple(2,3,4),
-//             tensor_type{{{1,2,3},{4,5,6},{7,8,9},{10,11,12}},{{13,14,15},{16,17,18},{19,20,21},{22,23,24}},{{25,26,27},{28,29,30},{31,32,33},{34,35,36}}},
-//             0,
-//             tensor_type{{{13,14,15},{16,17,18},{19,20,21},{22,23,24}},{{25,26,27},{28,29,30},{31,32,33},{34,35,36}},{{1,2,3},{4,5,6},{7,8,9},{10,11,12}}}
-//         ),
-//         std::make_tuple(
-//             std::make_tuple(1,2,3),
-//             tensor_type{{{1,2,3},{4,5,6},{7,8,9},{10,11,12}},{{13,14,15},{16,17,18},{19,20,21},{22,23,24}},{{25,26,27},{28,29,30},{31,32,33},{34,35,36}}},
-//             1,
-//             tensor_type{{{4,5,6},{1,2,3},{10,11,12},{7,8,9}},{{16,17,18},{13,14,15},{22,23,24},{19,20,21}},{{28,29,30},{25,26,27},{34,35,36},{31,32,33}}}
-//         ),
-//         std::make_tuple(
-//             std::make_tuple(2,3,4),
-//             tensor_type{{{1,2,3},{4,5,6},{7,8,9},{10,11,12}},{{13,14,15},{16,17,18},{19,20,21},{22,23,24}},{{25,26,27},{28,29,30},{31,32,33},{34,35,36}}},
-//             1,
-//             tensor_type{{{7,8,9},{4,5,6},{10,11,12},{1,2,3}},{{19,20,21},{16,17,18},{22,23,24},{13,14,15}},{{31,32,33},{28,29,30},{34,35,36},{25,26,27}}}
-//         ),
-//         std::make_tuple(
-//             std::make_tuple(9,8,7),
-//             tensor_type{{{1,2,3},{4,5,6},{7,8,9},{10,11,12}},{{13,14,15},{16,17,18},{19,20,21},{22,23,24}},{{25,26,27},{28,29,30},{31,32,33},{34,35,36}}},
-//             2,
-//             tensor_type{{{2,3,1},{5,6,4},{8,9,7},{11,12,10}},{{14,15,13},{17,18,16},{20,21,19},{23,24,22}},{{26,27,25},{29,30,28},{32,33,31},{35,36,34}}}
-//         ),
-//         std::make_tuple(
-//             std::make_tuple(7,8,9),
-//             tensor_type{{{1,2,3},{4,5,6},{7,8,9},{10,11,12}},{{13,14,15},{16,17,18},{19,20,21},{22,23,24}},{{25,26,27},{28,29,30},{31,32,33},{34,35,36}}},
-//             2,
-//             tensor_type{{{3,2,1},{6,5,4},{9,8,7},{12,11,10}},{{15,14,13},{18,17,16},{21,20,19},{24,23,22}},{{27,26,25},{30,29,28},{33,32,31},{36,35,34}}}
-//         )
-//     );
-//     auto test = [](const auto& t){
-//         auto seeds = std::get<0>(t);
-//         auto ten = std::get<1>(t);
-//         auto axis = std::get<2>(t);
-//         auto expected = std::get<3>(t);
+    //0seeds,1tensor,2axis,3expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(std::make_tuple(1,2,3),tensor_type{},0,tensor_type{}),
+        std::make_tuple(std::make_tuple(3,2,1),tensor_type{},0,tensor_type{}),
+        std::make_tuple(std::make_tuple(1,2,3),tensor_type{}.reshape(0,2,3),0,tensor_type{}.reshape(0,2,3)),
+        std::make_tuple(std::make_tuple(3,2,1),tensor_type{}.reshape(0,2,3),0,tensor_type{}.reshape(0,2,3)),
+        std::make_tuple(std::make_tuple(1,2,3),tensor_type{3},0,tensor_type{3}),
+        std::make_tuple(std::make_tuple(3,2,1),tensor_type{3},0,tensor_type{3}),
+        std::make_tuple(std::make_tuple(1,2,3),tensor_type{{{3}}},0,tensor_type{{{3}}}),
+        std::make_tuple(std::make_tuple(3,2,1),tensor_type{{{3}}},0,tensor_type{{{3}}}),
+        std::make_tuple(std::make_tuple(1,2,3),tensor_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15},0,tensor_type{10,14,5,11,6,8,9,1,13,2,12,15,4,7,3}),
+        std::make_tuple(std::make_tuple(3,2,1),tensor_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15},0,tensor_type{11,1,4,8,3,14,13,5,2,10,7,9,12,15,6}),
+        std::make_tuple(std::make_tuple(4,5,6),tensor_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15},0,tensor_type{8,1,12,15,9,10,7,3,13,14,4,6,2,11,5}),
+        std::make_tuple(std::make_tuple(1,2,3),tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16},{17,18,19,20}},0,tensor_type{{1,2,3,4},{5,6,7,8},{13,14,15,16},{17,18,19,20},{9,10,11,12}}),
+        std::make_tuple(std::make_tuple(3,2,1),tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16},{17,18,19,20}},0,tensor_type{{17,18,19,20},{5,6,7,8},{9,10,11,12},{1,2,3,4},{13,14,15,16}}),
+        std::make_tuple(std::make_tuple(1,3,2),tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16},{17,18,19,20}},0,tensor_type{{17,18,19,20},{1,2,3,4},{13,14,15,16},{5,6,7,8},{9,10,11,12}}),
+        std::make_tuple(std::make_tuple(1,2,3),tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16},{17,18,19,20}},1,tensor_type{{2,1,4,3},{6,5,8,7},{10,9,12,11},{14,13,16,15},{18,17,20,19}}),
+        std::make_tuple(std::make_tuple(3,2,1),tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16},{17,18,19,20}},1,tensor_type{{1,3,4,2},{5,7,8,6},{9,11,12,10},{13,15,16,14},{17,19,20,18}}),
+        std::make_tuple(std::make_tuple(1,3,2),tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16},{17,18,19,20}},1,tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16},{17,18,19,20}}),
+        std::make_tuple(
+            std::make_tuple(1,2,3),
+            tensor_type{{{1,2,3},{4,5,6},{7,8,9},{10,11,12}},{{13,14,15},{16,17,18},{19,20,21},{22,23,24}},{{25,26,27},{28,29,30},{31,32,33},{34,35,36}}},
+            0,
+            tensor_type{{{13,14,15},{16,17,18},{19,20,21},{22,23,24}},{{1,2,3},{4,5,6},{7,8,9},{10,11,12}},{{25,26,27},{28,29,30},{31,32,33},{34,35,36}}}
+        ),
+        std::make_tuple(
+            std::make_tuple(2,3,4),
+            tensor_type{{{1,2,3},{4,5,6},{7,8,9},{10,11,12}},{{13,14,15},{16,17,18},{19,20,21},{22,23,24}},{{25,26,27},{28,29,30},{31,32,33},{34,35,36}}},
+            0,
+            tensor_type{{{13,14,15},{16,17,18},{19,20,21},{22,23,24}},{{25,26,27},{28,29,30},{31,32,33},{34,35,36}},{{1,2,3},{4,5,6},{7,8,9},{10,11,12}}}
+        ),
+        std::make_tuple(
+            std::make_tuple(1,2,3),
+            tensor_type{{{1,2,3},{4,5,6},{7,8,9},{10,11,12}},{{13,14,15},{16,17,18},{19,20,21},{22,23,24}},{{25,26,27},{28,29,30},{31,32,33},{34,35,36}}},
+            1,
+            tensor_type{{{4,5,6},{1,2,3},{10,11,12},{7,8,9}},{{16,17,18},{13,14,15},{22,23,24},{19,20,21}},{{28,29,30},{25,26,27},{34,35,36},{31,32,33}}}
+        ),
+        std::make_tuple(
+            std::make_tuple(2,3,4),
+            tensor_type{{{1,2,3},{4,5,6},{7,8,9},{10,11,12}},{{13,14,15},{16,17,18},{19,20,21},{22,23,24}},{{25,26,27},{28,29,30},{31,32,33},{34,35,36}}},
+            1,
+            tensor_type{{{7,8,9},{4,5,6},{10,11,12},{1,2,3}},{{19,20,21},{16,17,18},{22,23,24},{13,14,15}},{{31,32,33},{28,29,30},{34,35,36},{25,26,27}}}
+        ),
+        std::make_tuple(
+            std::make_tuple(9,8,7),
+            tensor_type{{{1,2,3},{4,5,6},{7,8,9},{10,11,12}},{{13,14,15},{16,17,18},{19,20,21},{22,23,24}},{{25,26,27},{28,29,30},{31,32,33},{34,35,36}}},
+            2,
+            tensor_type{{{2,3,1},{5,6,4},{8,9,7},{11,12,10}},{{14,15,13},{17,18,16},{20,21,19},{23,24,22}},{{26,27,25},{29,30,28},{32,33,31},{35,36,34}}}
+        ),
+        std::make_tuple(
+            std::make_tuple(7,8,9),
+            tensor_type{{{1,2,3},{4,5,6},{7,8,9},{10,11,12}},{{13,14,15},{16,17,18},{19,20,21},{22,23,24}},{{25,26,27},{28,29,30},{31,32,33},{34,35,36}}},
+            2,
+            tensor_type{{{3,2,1},{6,5,4},{9,8,7},{12,11,10}},{{15,14,13},{18,17,16},{21,20,19},{24,23,22}},{{27,26,25},{30,29,28},{33,32,31},{36,35,34}}}
+        )
+    );
+    auto test = [](const auto& t){
+        auto seeds = std::get<0>(t);
+        auto ten = std::get<1>(t);
+        auto axis = std::get<2>(t);
+        auto expected = std::get<3>(t);
 
-//         auto rng_maker = [](const auto&...seeds_){
-//             return rng<bit_generator_type>(seeds_...);
-//         };
-//         auto rng = std::apply(rng_maker,seeds);
-//         rng.shuffle(ten,axis);
-//         REQUIRE(ten == expected);
-//     };
-//     apply_by_element(test,test_data);
-// }
+        auto rng_maker = [](const auto&...seeds_){
+            return rng<bit_generator_type>(seeds_...);
+        };
+        auto rng = std::apply(rng_maker,seeds);
+        rng.shuffle(ten,axis);
+        REQUIRE(ten == expected);
+    };
+    apply_by_element(test,test_data);
+}
 
-// TEST_CASE("test_random_permutation","[test_random]")
-// {
-//     using value_type = double;
-//     using tensor_type = gtensor::tensor<value_type>;
-//     using bit_generator_type = std::mt19937_64;
-//     using gtensor::rng;
-//     using helpers_for_testing::apply_by_element;
+TEST_CASE("test_random_shuffle_exception","[test_random]")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::default_rng;
+    using gtensor::random_exception;
 
-//     //0seeds,1tensor_or_int,2axis,3expected
-//     auto test_data = std::make_tuple(
-//         //integral
-//         std::make_tuple(std::make_tuple(1,2,3),0,0,tensor_type{}),
-//         std::make_tuple(std::make_tuple(1,2,3),1,0,tensor_type{0}),
-//         std::make_tuple(std::make_tuple(1,2,3),10,0,tensor_type{4,8,0,1,7,9,3,5,6,2}),
-//         std::make_tuple(std::make_tuple(2,3,4),15,0,tensor_type{9,3,10,2,1,4,0,12,6,7,11,13,5,14,8}),
-//         //tensor
-//         std::make_tuple(std::make_tuple(1,2,3),tensor_type{},0,tensor_type{}),
-//         std::make_tuple(std::make_tuple(3,2,1),tensor_type{},0,tensor_type{}),
-//         std::make_tuple(std::make_tuple(1,2,3),tensor_type{3},0,tensor_type{3}),
-//         std::make_tuple(std::make_tuple(3,2,1),tensor_type{3},0,tensor_type{3}),
-//         std::make_tuple(std::make_tuple(1,2,3),tensor_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15},0,tensor_type{10,14,5,11,6,8,9,1,13,2,12,15,4,7,3}),
-//         std::make_tuple(std::make_tuple(3,2,1),tensor_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15},0,tensor_type{11,1,4,8,3,14,13,5,2,10,7,9,12,15,6}),
-//         std::make_tuple(std::make_tuple(1,2,3),tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16},{17,18,19,20}},0,tensor_type{{1,2,3,4},{5,6,7,8},{13,14,15,16},{17,18,19,20},{9,10,11,12}}),
-//         std::make_tuple(std::make_tuple(3,2,1),tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16},{17,18,19,20}},0,tensor_type{{17,18,19,20},{5,6,7,8},{9,10,11,12},{1,2,3,4},{13,14,15,16}}),
-//         std::make_tuple(std::make_tuple(1,2,3),tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16},{17,18,19,20}},1,tensor_type{{2,1,4,3},{6,5,8,7},{10,9,12,11},{14,13,16,15},{18,17,20,19}}),
-//         std::make_tuple(std::make_tuple(3,2,1),tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16},{17,18,19,20}},1,tensor_type{{1,3,4,2},{5,7,8,6},{9,11,12,10},{13,15,16,14},{17,19,20,18}}),
-//         std::make_tuple(
-//             std::make_tuple(1,2,3),
-//             tensor_type{{{1,2,3},{4,5,6},{7,8,9},{10,11,12}},{{13,14,15},{16,17,18},{19,20,21},{22,23,24}},{{25,26,27},{28,29,30},{31,32,33},{34,35,36}}},
-//             0,
-//             tensor_type{{{13,14,15},{16,17,18},{19,20,21},{22,23,24}},{{1,2,3},{4,5,6},{7,8,9},{10,11,12}},{{25,26,27},{28,29,30},{31,32,33},{34,35,36}}}
-//         ),
-//         std::make_tuple(
-//             std::make_tuple(1,2,3),
-//             tensor_type{{{1,2,3},{4,5,6},{7,8,9},{10,11,12}},{{13,14,15},{16,17,18},{19,20,21},{22,23,24}},{{25,26,27},{28,29,30},{31,32,33},{34,35,36}}},
-//             1,
-//             tensor_type{{{4,5,6},{1,2,3},{10,11,12},{7,8,9}},{{16,17,18},{13,14,15},{22,23,24},{19,20,21}},{{28,29,30},{25,26,27},{34,35,36},{31,32,33}}}
-//         ),
-//         std::make_tuple(
-//             std::make_tuple(9,8,7),
-//             tensor_type{{{1,2,3},{4,5,6},{7,8,9},{10,11,12}},{{13,14,15},{16,17,18},{19,20,21},{22,23,24}},{{25,26,27},{28,29,30},{31,32,33},{34,35,36}}},
-//             2,
-//             tensor_type{{{2,3,1},{5,6,4},{8,9,7},{11,12,10}},{{14,15,13},{17,18,16},{20,21,19},{23,24,22}},{{26,27,25},{29,30,28},{32,33,31},{35,36,34}}}
-//         )
-//     );
-//     auto test = [](const auto& t){
-//         auto seeds = std::get<0>(t);
-//         auto ten_or_int = std::get<1>(t);
-//         auto axis = std::get<2>(t);
-//         auto expected = std::get<3>(t);
+    tensor_type t0(1);
+    REQUIRE_THROWS_AS(default_rng().shuffle(t0,0),random_exception);
+    tensor_type t1{1,2,3,4,5};
+    REQUIRE_THROWS_AS(default_rng().shuffle(t1,1),random_exception);
+    tensor_type t2{{1,2,3},{4,5,6}};
+    REQUIRE_THROWS_AS(default_rng().shuffle(t2,2),random_exception);
+}
 
-//         auto rng_maker = [](const auto&...seeds_){
-//             return rng<bit_generator_type>(seeds_...);
-//         };
-//         auto rng = std::apply(rng_maker,seeds);
-//         auto result = rng.permutation(ten_or_int,axis);
-//         REQUIRE(result == expected);
-//     };
-//     apply_by_element(test,test_data);
-// }
+TEST_CASE("test_random_permutation","[test_random]")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using bit_generator_type = std::mt19937_64;
+    using gtensor::rng;
+    using helpers_for_testing::apply_by_element;
 
-// TEST_CASE("test_random_permuted","[test_random]")
-// {
-//     using value_type = double;
-//     using tensor_type = gtensor::tensor<value_type>;
-//     using bit_generator_type = std::mt19937_64;
-//     using gtensor::detail::no_value;
-//     using gtensor::rng;
-//     using helpers_for_testing::apply_by_element;
+    //0seeds,1tensor_or_int,2axis,3expected
+    auto test_data = std::make_tuple(
+        //integral
+        std::make_tuple(std::make_tuple(1,2,3),0,0,tensor_type{}),
+        std::make_tuple(std::make_tuple(1,2,3),1,0,tensor_type{0}),
+        std::make_tuple(std::make_tuple(1,2,3),10,0,tensor_type{4,8,0,1,7,9,3,5,6,2}),
+        std::make_tuple(std::make_tuple(2,3,4),15,0,tensor_type{9,3,10,2,1,4,0,12,6,7,11,13,5,14,8}),
+        std::make_tuple(std::make_tuple(2,3,4),15,1,tensor_type{9,3,10,2,1,4,0,12,6,7,11,13,5,14,8}),
+        std::make_tuple(std::make_tuple(2,3,4),15,5,tensor_type{9,3,10,2,1,4,0,12,6,7,11,13,5,14,8}),
+        //tensor
+        std::make_tuple(std::make_tuple(1,2,3),tensor_type{},0,tensor_type{}),
+        std::make_tuple(std::make_tuple(3,2,1),tensor_type{},0,tensor_type{}),
+        //std::make_tuple(std::make_tuple(1,2,3),tensor_type(2),0,tensor_type(2)),
+        std::make_tuple(std::make_tuple(1,2,3),tensor_type{3},0,tensor_type{3}),
+        std::make_tuple(std::make_tuple(3,2,1),tensor_type{3},0,tensor_type{3}),
+        std::make_tuple(std::make_tuple(1,2,3),tensor_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15},0,tensor_type{10,14,5,11,6,8,9,1,13,2,12,15,4,7,3}),
+        std::make_tuple(std::make_tuple(3,2,1),tensor_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15},0,tensor_type{11,1,4,8,3,14,13,5,2,10,7,9,12,15,6}),
+        std::make_tuple(std::make_tuple(1,2,3),tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16},{17,18,19,20}},0,tensor_type{{1,2,3,4},{5,6,7,8},{13,14,15,16},{17,18,19,20},{9,10,11,12}}),
+        std::make_tuple(std::make_tuple(3,2,1),tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16},{17,18,19,20}},0,tensor_type{{17,18,19,20},{5,6,7,8},{9,10,11,12},{1,2,3,4},{13,14,15,16}}),
+        std::make_tuple(std::make_tuple(1,2,3),tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16},{17,18,19,20}},1,tensor_type{{2,1,4,3},{6,5,8,7},{10,9,12,11},{14,13,16,15},{18,17,20,19}}),
+        std::make_tuple(std::make_tuple(3,2,1),tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16},{17,18,19,20}},1,tensor_type{{1,3,4,2},{5,7,8,6},{9,11,12,10},{13,15,16,14},{17,19,20,18}}),
+        std::make_tuple(
+            std::make_tuple(1,2,3),
+            tensor_type{{{1,2,3},{4,5,6},{7,8,9},{10,11,12}},{{13,14,15},{16,17,18},{19,20,21},{22,23,24}},{{25,26,27},{28,29,30},{31,32,33},{34,35,36}}},
+            0,
+            tensor_type{{{13,14,15},{16,17,18},{19,20,21},{22,23,24}},{{1,2,3},{4,5,6},{7,8,9},{10,11,12}},{{25,26,27},{28,29,30},{31,32,33},{34,35,36}}}
+        ),
+        std::make_tuple(
+            std::make_tuple(1,2,3),
+            tensor_type{{{1,2,3},{4,5,6},{7,8,9},{10,11,12}},{{13,14,15},{16,17,18},{19,20,21},{22,23,24}},{{25,26,27},{28,29,30},{31,32,33},{34,35,36}}},
+            1,
+            tensor_type{{{4,5,6},{1,2,3},{10,11,12},{7,8,9}},{{16,17,18},{13,14,15},{22,23,24},{19,20,21}},{{28,29,30},{25,26,27},{34,35,36},{31,32,33}}}
+        ),
+        std::make_tuple(
+            std::make_tuple(9,8,7),
+            tensor_type{{{1,2,3},{4,5,6},{7,8,9},{10,11,12}},{{13,14,15},{16,17,18},{19,20,21},{22,23,24}},{{25,26,27},{28,29,30},{31,32,33},{34,35,36}}},
+            2,
+            tensor_type{{{2,3,1},{5,6,4},{8,9,7},{11,12,10}},{{14,15,13},{17,18,16},{20,21,19},{23,24,22}},{{26,27,25},{29,30,28},{32,33,31},{35,36,34}}}
+        )
+    );
+    auto test = [](const auto& t){
+        auto seeds = std::get<0>(t);
+        auto ten_or_int = std::get<1>(t);
+        auto axis = std::get<2>(t);
+        auto expected = std::get<3>(t);
 
-//     //0seeds,1tensor,2axis,3expected
-//     auto test_data = std::make_tuple(
-//         //axis no_value
-//         std::make_tuple(std::make_tuple(1,2,3),tensor_type{},no_value{},tensor_type{}),
-//         std::make_tuple(std::make_tuple(3,2,1),tensor_type{},no_value{},tensor_type{}),
-//         std::make_tuple(std::make_tuple(1,2,3),tensor_type{}.reshape(0,2,3),no_value{},tensor_type{}),
-//         std::make_tuple(std::make_tuple(3,2,1),tensor_type{}.reshape(0,2,3),no_value{},tensor_type{}),
-//         std::make_tuple(std::make_tuple(1,2,3),tensor_type{3},no_value{},tensor_type{3}),
-//         std::make_tuple(std::make_tuple(3,2,1),tensor_type{3},no_value{},tensor_type{3}),
-//         std::make_tuple(std::make_tuple(1,2,3),tensor_type{{{3}}},no_value{},tensor_type{3}),
-//         std::make_tuple(std::make_tuple(3,2,1),tensor_type{{{3}}},no_value{},tensor_type{3}),
-//         std::make_tuple(std::make_tuple(1,2,3),tensor_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15},no_value{},tensor_type{10,14,5,11,6,8,9,1,13,2,12,15,4,7,3}),
-//         std::make_tuple(std::make_tuple(3,2,1),tensor_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15},no_value{},tensor_type{11,1,4,8,3,14,13,5,2,10,7,9,12,15,6}),
-//         std::make_tuple(std::make_tuple(1,2,3),tensor_type{{1,2,3,4,5},{6,7,8,9,10},{11,12,13,14,15}},no_value{},tensor_type{10,14,5,11,6,8,9,1,13,2,12,15,4,7,3}),
-//         std::make_tuple(std::make_tuple(3,2,1),tensor_type{{1,2,3,4,5},{6,7,8,9,10},{11,12,13,14,15}},no_value{},tensor_type{11,1,4,8,3,14,13,5,2,10,7,9,12,15,6}),
-//         //axis integral
-//         std::make_tuple(std::make_tuple(1,2,3),tensor_type{},0,tensor_type{}),
-//         std::make_tuple(std::make_tuple(3,2,1),tensor_type{},0,tensor_type{}),
-//         std::make_tuple(std::make_tuple(1,2,3),tensor_type{}.reshape(0,2,3),0,tensor_type{}.reshape(0,2,3)),
-//         std::make_tuple(std::make_tuple(3,2,1),tensor_type{}.reshape(0,2,3),0,tensor_type{}.reshape(0,2,3)),
-//         std::make_tuple(std::make_tuple(1,2,3),tensor_type{3},0,tensor_type{3}),
-//         std::make_tuple(std::make_tuple(3,2,1),tensor_type{3},0,tensor_type{3}),
-//         std::make_tuple(std::make_tuple(1,2,3),tensor_type{{{3}}},0,tensor_type{{{3}}}),
-//         std::make_tuple(std::make_tuple(3,2,1),tensor_type{{{3}}},0,tensor_type{{{3}}}),
-//         std::make_tuple(std::make_tuple(1,2,3),tensor_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15},0,tensor_type{10,14,5,11,6,8,9,1,13,2,12,15,4,7,3}),
-//         std::make_tuple(std::make_tuple(3,2,1),tensor_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15},0,tensor_type{11,1,4,8,3,14,13,5,2,10,7,9,12,15,6}),
-//         std::make_tuple(std::make_tuple(1,2,3),tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16},{17,18,19,20}},0,tensor_type{{1,2,7,8},{5,6,19,16},{13,18,11,20},{17,10,3,12},{9,14,15,4}}),
-//         std::make_tuple(std::make_tuple(3,2,1),tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16},{17,18,19,20}},0,tensor_type{{17,14,7,8},{5,10,3,16},{9,18,15,4},{1,2,19,12},{13,6,11,20}}),
-//         std::make_tuple(std::make_tuple(1,2,3),tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16},{17,18,19,20}},1,tensor_type{{2,1,4,3},{8,5,7,6},{11,12,9,10},{14,16,13,15},{18,20,17,19}}),
-//         std::make_tuple(std::make_tuple(3,2,1),tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16},{17,18,19,20}},1,tensor_type{{1,3,4,2},{8,6,7,5},{11,12,9,10},{16,13,15,14},{18,20,17,19}}),
-//         std::make_tuple(
-//             std::make_tuple(1,2,3),
-//             tensor_type{{{1,2,3},{4,5,6},{7,8,9},{10,11,12}},{{13,14,15},{16,17,18},{19,20,21},{22,23,24}},{{25,26,27},{28,29,30},{31,32,33},{34,35,36}}},
-//             0,
-//             tensor_type{{{13,26,3},{4,17,30},{19,20,9},{10,23,24}},{{1,14,15},{16,5,18},{7,32,33},{34,35,12}},{{25,2,27},{28,29,6},{31,8,21},{22,11,36}}}
-//         ),
-//         std::make_tuple(
-//             std::make_tuple(1,2,3),
-//             tensor_type{{{1,2,3},{4,5,6},{7,8,9},{10,11,12}},{{13,14,15},{16,17,18},{19,20,21},{22,23,24}},{{25,26,27},{28,29,30},{31,32,33},{34,35,36}}},
-//             1,
-//             tensor_type{{{4,5,3},{1,11,9},{10,2,6},{7,8,12}},{{22,17,18},{13,23,15},{19,14,24},{16,20,21}},{{31,35,27},{34,26,33},{25,29,36},{28,32,30}}}
-//         ),
-//         std::make_tuple(
-//             std::make_tuple(9,8,7),
-//             tensor_type{{{1,2,3},{4,5,6},{7,8,9},{10,11,12}},{{13,14,15},{16,17,18},{19,20,21},{22,23,24}},{{25,26,27},{28,29,30},{31,32,33},{34,35,36}}},
-//             2,
-//             tensor_type{{{2,3,1},{5,6,4},{7,8,9},{11,10,12}},{{13,14,15},{16,17,18},{21,20,19},{23,24,22}},{{27,26,25},{29,28,30},{32,33,31},{34,36,35}}}
-//         )
-//     );
-//     auto test = [](const auto& t){
-//         auto seeds = std::get<0>(t);
-//         auto ten = std::get<1>(t);
-//         auto axis = std::get<2>(t);
-//         auto expected = std::get<3>(t);
+        auto rng_maker = [](const auto&...seeds_){
+            return rng<bit_generator_type>(seeds_...);
+        };
+        auto rng = std::apply(rng_maker,seeds);
+        auto result = rng.permutation(ten_or_int,axis);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test,test_data);
+}
 
-//         auto rng_maker = [](const auto&...seeds_){
-//             return rng<bit_generator_type>(seeds_...);
-//         };
-//         auto rng = std::apply(rng_maker,seeds);
-//         auto result = rng.permuted(ten,axis);
-//         REQUIRE(result == expected);
-//     };
-//     apply_by_element(test,test_data);
-// }
+TEST_CASE("test_random_permutation_exception","[test_random]")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::default_rng;
+    using gtensor::random_exception;
+
+    REQUIRE_THROWS_AS(default_rng().permutation(tensor_type(1),0),random_exception);
+    REQUIRE_THROWS_AS(default_rng().permutation(tensor_type{1,2,3,4,5},1),random_exception);
+    REQUIRE_THROWS_AS(default_rng().permutation(tensor_type{{1,2,3},{4,5,6}},2),random_exception);
+}
+
+TEST_CASE("test_random_permuted","[test_random]")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using bit_generator_type = std::mt19937_64;
+    using gtensor::detail::no_value;
+    using gtensor::rng;
+    using helpers_for_testing::apply_by_element;
+
+    //0seeds,1tensor,2axis,3expected
+    auto test_data = std::make_tuple(
+        //axis no_value
+        std::make_tuple(std::make_tuple(1,2,3),tensor_type{},no_value{},tensor_type{}),
+        std::make_tuple(std::make_tuple(3,2,1),tensor_type{},no_value{},tensor_type{}),
+        std::make_tuple(std::make_tuple(1,2,3),tensor_type{}.reshape(0,2,3),no_value{},tensor_type{}),
+        std::make_tuple(std::make_tuple(3,2,1),tensor_type{}.reshape(0,2,3),no_value{},tensor_type{}),
+        std::make_tuple(std::make_tuple(1,2,3),tensor_type{3},no_value{},tensor_type{3}),
+        std::make_tuple(std::make_tuple(3,2,1),tensor_type{3},no_value{},tensor_type{3}),
+        std::make_tuple(std::make_tuple(1,2,3),tensor_type{{{3}}},no_value{},tensor_type{3}),
+        std::make_tuple(std::make_tuple(3,2,1),tensor_type{{{3}}},no_value{},tensor_type{3}),
+        std::make_tuple(std::make_tuple(1,2,3),tensor_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15},no_value{},tensor_type{10,14,5,11,6,8,9,1,13,2,12,15,4,7,3}),
+        std::make_tuple(std::make_tuple(3,2,1),tensor_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15},no_value{},tensor_type{11,1,4,8,3,14,13,5,2,10,7,9,12,15,6}),
+        std::make_tuple(std::make_tuple(1,2,3),tensor_type{{1,2,3,4,5},{6,7,8,9,10},{11,12,13,14,15}},no_value{},tensor_type{10,14,5,11,6,8,9,1,13,2,12,15,4,7,3}),
+        std::make_tuple(std::make_tuple(3,2,1),tensor_type{{1,2,3,4,5},{6,7,8,9,10},{11,12,13,14,15}},no_value{},tensor_type{11,1,4,8,3,14,13,5,2,10,7,9,12,15,6}),
+        //axis integral
+        std::make_tuple(std::make_tuple(1,2,3),tensor_type{},0,tensor_type{}),
+        std::make_tuple(std::make_tuple(3,2,1),tensor_type{},0,tensor_type{}),
+        std::make_tuple(std::make_tuple(1,2,3),tensor_type{}.reshape(0,2,3),0,tensor_type{}.reshape(0,2,3)),
+        std::make_tuple(std::make_tuple(3,2,1),tensor_type{}.reshape(0,2,3),0,tensor_type{}.reshape(0,2,3)),
+        std::make_tuple(std::make_tuple(1,2,3),tensor_type{3},0,tensor_type{3}),
+        std::make_tuple(std::make_tuple(3,2,1),tensor_type{3},0,tensor_type{3}),
+        std::make_tuple(std::make_tuple(1,2,3),tensor_type{{{3}}},0,tensor_type{{{3}}}),
+        std::make_tuple(std::make_tuple(3,2,1),tensor_type{{{3}}},0,tensor_type{{{3}}}),
+        std::make_tuple(std::make_tuple(1,2,3),tensor_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15},0,tensor_type{10,14,5,11,6,8,9,1,13,2,12,15,4,7,3}),
+        std::make_tuple(std::make_tuple(3,2,1),tensor_type{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15},0,tensor_type{11,1,4,8,3,14,13,5,2,10,7,9,12,15,6}),
+        std::make_tuple(std::make_tuple(1,2,3),tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16},{17,18,19,20}},0,tensor_type{{1,2,7,8},{5,6,19,16},{13,18,11,20},{17,10,3,12},{9,14,15,4}}),
+        std::make_tuple(std::make_tuple(3,2,1),tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16},{17,18,19,20}},0,tensor_type{{17,14,7,8},{5,10,3,16},{9,18,15,4},{1,2,19,12},{13,6,11,20}}),
+        std::make_tuple(std::make_tuple(1,2,3),tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16},{17,18,19,20}},1,tensor_type{{2,1,4,3},{8,5,7,6},{11,12,9,10},{14,16,13,15},{18,20,17,19}}),
+        std::make_tuple(std::make_tuple(3,2,1),tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12},{13,14,15,16},{17,18,19,20}},1,tensor_type{{1,3,4,2},{8,6,7,5},{11,12,9,10},{16,13,15,14},{18,20,17,19}}),
+        std::make_tuple(
+            std::make_tuple(1,2,3),
+            tensor_type{{{1,2,3},{4,5,6},{7,8,9},{10,11,12}},{{13,14,15},{16,17,18},{19,20,21},{22,23,24}},{{25,26,27},{28,29,30},{31,32,33},{34,35,36}}},
+            0,
+            tensor_type{{{13,26,3},{4,17,30},{19,20,9},{10,23,24}},{{1,14,15},{16,5,18},{7,32,33},{34,35,12}},{{25,2,27},{28,29,6},{31,8,21},{22,11,36}}}
+        ),
+        std::make_tuple(
+            std::make_tuple(1,2,3),
+            tensor_type{{{1,2,3},{4,5,6},{7,8,9},{10,11,12}},{{13,14,15},{16,17,18},{19,20,21},{22,23,24}},{{25,26,27},{28,29,30},{31,32,33},{34,35,36}}},
+            1,
+            tensor_type{{{4,5,3},{1,11,9},{10,2,6},{7,8,12}},{{22,17,18},{13,23,15},{19,14,24},{16,20,21}},{{31,35,27},{34,26,33},{25,29,36},{28,32,30}}}
+        ),
+        std::make_tuple(
+            std::make_tuple(9,8,7),
+            tensor_type{{{1,2,3},{4,5,6},{7,8,9},{10,11,12}},{{13,14,15},{16,17,18},{19,20,21},{22,23,24}},{{25,26,27},{28,29,30},{31,32,33},{34,35,36}}},
+            2,
+            tensor_type{{{2,3,1},{5,6,4},{7,8,9},{11,10,12}},{{13,14,15},{16,17,18},{21,20,19},{23,24,22}},{{27,26,25},{29,28,30},{32,33,31},{34,36,35}}}
+        )
+    );
+    auto test = [](const auto& t){
+        auto seeds = std::get<0>(t);
+        auto ten = std::get<1>(t);
+        auto axis = std::get<2>(t);
+        auto expected = std::get<3>(t);
+
+        auto rng_maker = [](const auto&...seeds_){
+            return rng<bit_generator_type>(seeds_...);
+        };
+        auto rng = std::apply(rng_maker,seeds);
+        auto result = rng.permuted(ten,axis);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test,test_data);
+}
+
+TEST_CASE("test_random_permuted_exception","[test_random]")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::default_rng;
+    using gtensor::reduce_exception;
+
+    REQUIRE_THROWS_AS(default_rng().permuted(tensor_type(1),0),reduce_exception);
+    REQUIRE_THROWS_AS(default_rng().permuted(tensor_type{1,2,3,4,5},1),reduce_exception);
+    REQUIRE_THROWS_AS(default_rng().permuted(tensor_type{{1,2,3},{4,5,6}},2),reduce_exception);
+}
 
 TEST_CASE("test_random_choice","[test_random]")
 {
     using value_type = double;
     using gtensor::tensor;
-    using tensor_type = gtensor::tensor<value_type>;
+    //random generator uses tensor's layout order to traverse tensor when generate random values
+    //here test cases generates in f_order
+    using tensor_type = gtensor::tensor<value_type,gtensor::config::f_order>;
     using bit_generator_type = std::mt19937_64;
     using gtensor::detail::no_value;
     using gtensor::rng;
@@ -1030,6 +1074,13 @@ TEST_CASE("test_random_choice","[test_random]")
 
     //0seeds,1tensor,2size,3replace,4p,5axis,6shuffle,7expected
     auto test_data = std::make_tuple(
+        //integral argument
+        std::make_tuple(std::make_tuple(1,2,3),0,0,true,no_value{},0,false,tensor_type{}),
+        std::make_tuple(std::make_tuple(1,2,3),20,0,true,no_value{},0,false,tensor_type{}),
+        std::make_tuple(std::make_tuple(1,2,3),20,20,true,no_value{},0,false,tensor_type{18,6,13,19,18,18,1,3,3,16,0,2,4,16,14,5,0,7,15,17}),
+        std::make_tuple(std::make_tuple(1,2,3),20,10,true,no_value{},0,false,tensor_type{18,6,13,19,18,18,1,3,3,16}),
+        std::make_tuple(std::make_tuple(1,2,3),20,20,false,no_value{},0,true,tensor_type{1,0,6,18,11,3,19,4,12,5,2,10,9,16,13,8,14,17,15,7}),
+        std::make_tuple(std::make_tuple(1,2,3),20,10,false,no_value{},0,true,tensor_type{18,0,6,13,17,1,16,2,14,3}),
         //replace true
         //no probabilities
         std::make_tuple(std::make_tuple(1,2,3),tensor_type{},0,true,no_value{},0,true,tensor_type{}),
@@ -1240,6 +1291,9 @@ TEST_CASE("test_random_choice_exception","[test_random]")
     REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},10,true,no_value{},2),random_exception);
     REQUIRE_THROWS_AS(default_rng().choice(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}}},10,true,no_value{},3),random_exception);
     //if is_p: p.size() must equal axis_size,
+    REQUIRE_THROWS_AS(default_rng().choice(5,10,true,tensor_type{},0),random_exception);
+    REQUIRE_THROWS_AS(default_rng().choice(5,10,true,tensor_type{1,1,1,1,1,1},0),random_exception);
+    REQUIRE_THROWS_AS(default_rng().choice(5,10,true,tensor_type{1,1,1},0),random_exception);
     REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},10,true,tensor_type{},0),random_exception);
     REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},10,true,tensor_type{1,1,1},0),random_exception);
     REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},10,true,std::vector<double>{1,1,1,1,1,1},0),random_exception);
@@ -1249,9 +1303,11 @@ TEST_CASE("test_random_choice_exception","[test_random]")
     //if is_p: p elements must not be negative
     REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},10,true,std::vector<double>{1,2,-1,3,5},0),random_exception);
     //if t.size()==0 and size of size > 0 (a cannot be empty unless no samples are taken)
+    REQUIRE_THROWS_AS(default_rng().choice(0,1,true,no_value{},0),random_exception);
     REQUIRE_THROWS_AS(default_rng().choice(tensor_type{},1,true,no_value{},0),random_exception);
     REQUIRE_THROWS_AS(default_rng().choice(tensor_type{}.reshape(2,3,0),std::vector<int>(3,3),true,no_value{},0),random_exception);
     //if !replace size of size must be <= axis_size,
+    REQUIRE_THROWS_AS(default_rng().choice(5,6,false,std::vector<double>{1,1,1,1,1},0),random_exception);
     REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},6,false,std::vector<double>{1,1,1,1,1},0),random_exception);
     REQUIRE_THROWS_AS(default_rng().choice(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}}},4,false,no_value{},0),random_exception);
     REQUIRE_THROWS_AS(default_rng().choice(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}}},3,false,no_value{},1),random_exception);
