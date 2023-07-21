@@ -194,7 +194,6 @@ auto make_axes_iterator(ShT&& shape, StT&& strides, Walker&& walker, const IdxT&
 //indexing module implementation
 
 struct indexing{
-
 private:
 
 template<typename FlattenOrder, typename...Ts, typename...Us>
@@ -204,7 +203,7 @@ static auto take_flatten(const basic_tensor<Ts...>& t, const basic_tensor<Us...>
     using value_type = typename tensor_type::value_type;
     using config_type = typename tensor_type::config_type;
     using index_type = typename tensor_type::index_type;
-    tensor<value_type, order, config_type> res(indexes.shape());
+    tensor<value_type,order,config_type> res(indexes.shape());
     if (!res.empty()){
         const auto size = t.size();
         auto indexer = t.template traverse_order_adapter<FlattenOrder>().create_indexer();
@@ -223,7 +222,6 @@ static auto take_flatten(const basic_tensor<Ts...>& t, const basic_tensor<Us...>
 }
 
 public:
-
 //take elements of tensor along axis
 template<typename Axis=gtensor::detail::no_value, typename...Ts, typename...Us>
 static auto take(const basic_tensor<Ts...>& t, const basic_tensor<Us...>& indexes, const Axis& axis_=Axis{}){
@@ -279,8 +277,8 @@ static auto take(const basic_tensor<Ts...>& t, const basic_tensor<Us...>& indexe
     }
 }
 
-template<typename Axis, typename...Ts, typename...Us>
-static auto take_along_axis(const basic_tensor<Ts...>& t, const basic_tensor<Us...>& indexes, const Axis& axis_){
+template<typename Axis=gtensor::detail::no_value, typename...Ts, typename...Us>
+static auto take_along_axis(const basic_tensor<Ts...>& t, const basic_tensor<Us...>& indexes, const Axis& axis_=Axis{}){
     using tensor_type = basic_tensor<Ts...>;
     using order = typename tensor_type::order;
     using value_type = typename tensor_type::value_type;
@@ -288,8 +286,11 @@ static auto take_along_axis(const basic_tensor<Ts...>& t, const basic_tensor<Us.
     using index_type = typename tensor_type::index_type;
 
     detail::check_take_along_axis_args(t.dim(),indexes.dim(),axis_);
+    if (t.dim()==1 || t.dim()==0){
+        return take_flatten<order>(t,indexes);
+    }
     if constexpr (std::is_same_v<Axis,gtensor::detail::no_value>){
-        //return take_flatten<config::c_order>(t,indexes);
+        return take_flatten<config::c_order>(t,indexes);
     }else{
         const auto axis = detail::make_axis(t.dim(),axis_);
         const auto& input_shape = t.shape();
@@ -342,10 +343,18 @@ auto take(const basic_tensor<Ts...>& t, const basic_tensor<Us...>& indexes){
     return indexing_selector_t<config_type>::take(t,indexes);
 }
 
+//take values from the input array by matching 1d index and data slices
 template<typename DimT, typename...Ts, typename...Us>
 auto take_along_axis(const basic_tensor<Ts...>& t, const basic_tensor<Us...>& indexes, const DimT& axis){
     using config_type = typename basic_tensor<Ts...>::config_type;
     return indexing_selector_t<config_type>::take_along_axis(t,indexes,axis);
 }
+//take_along_axis like over flatten
+template<typename...Ts, typename...Us>
+auto take_along_axis(const basic_tensor<Ts...>& t, const basic_tensor<Us...>& indexes){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return indexing_selector_t<config_type>::take_along_axis(t,indexes);
+}
+
 }   //end of namespace gtensor
 #endif
