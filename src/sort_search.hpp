@@ -1,6 +1,7 @@
 #ifndef SORT_SEARCH_HPP_
 #define SORT_SEARCH_HPP_
 
+#include "indexing.hpp"
 #include "reduce.hpp"
 #include "reduce_operations.hpp"
 
@@ -169,6 +170,109 @@ struct sort_search
         }
     }
 
+    template<typename FlattenOrder, typename...Ts>
+    static auto unique_flatten(const basic_tensor<Ts...>& t){
+        using tensor_type = basic_tensor<Ts...>;
+        using order = typename tensor_type::order;
+        using value_type = typename tensor_type::value_type;
+        using config_type = typename tensor_type::config_type;
+        using shape_type = typename tensor_type::shape_type;
+        using container_type = typename config_type::template container<value_type>;
+        auto a = t.template traverse_order_adapter<FlattenOrder>();
+        container_type tmp(a.begin(),a.end());
+        std::sort(tmp.begin(),tmp.end());
+        const auto unique_last = std::unique(tmp.begin(),tmp.end());
+        const auto n_unique = unique_last - tmp.begin();
+        tensor<value_type,order,config_type> res(detail::make_shape_of_type<shape_type>(n_unique),tmp.begin(),unique_last);
+        return res;
+    }
+
+    template<typename...Ts, typename Axis=detail::no_value>
+    static auto unique(const basic_tensor<Ts...>& t, const Axis& axis_=Axis{}){
+        using tensor_type = basic_tensor<Ts...>;
+        using order = typename tensor_type::order;
+        using value_type = typename tensor_type::value_type;
+        using config_type = typename tensor_type::config_type;
+        using index_type = typename tensor_type::index_type;
+        using shape_type = typename tensor_type::shape_type;
+        if (t.dim() == 0 || t.dim() == 1){
+            return unique_flatten<order>(t);
+        }
+        if constexpr (std::is_same_v<Axis,detail::no_value>){
+            return unique_flatten<config::c_order>(t);
+        }else{
+            const auto& shape = t.shape();
+            const auto axis = detail::make_axis(shape,axis_);
+            const auto axis_size = shape[axis];
+            const auto chunk_size = t.size()/axis_size;
+            const auto predicate = detail::make_traverse_predicate(axis,std::true_type{});  //inverse, traverse all but axis
+            const auto strides = detail::make_strides_div_predicate<config_type>(shape,predicate,config::c_order{});
+            auto traverser = detail::make_forward_traverser(t.shape(),t.create_walker(),detail::make_traverse_predicate(axis)); //traverse along axis
+            using walker_type = std::remove_cv_t<std::remove_reference_t<decltype(traverser.walker())>>;
+            auto make_iterator = [&shape,&strides,&predicate,&chunk_size](const auto& w, const auto& pos){
+                return pos == 0 ?
+                    detail::make_axes_iterator<config::c_order>(shape,strides,w,0,predicate):
+                    detail::make_axes_iterator<config::c_order>(shape,strides,w,chunk_size,predicate);
+            };
+            struct range{
+                using make_iterator_type = decltype(make_iterator);
+                walker_type walker_;
+                const make_iterator_type* make_iterator_;
+                range(const walker_type& walker__, const make_iterator_type& make_iterator__):
+                    walker_{walker__},
+                    make_iterator_{&make_iterator__}
+                {}
+                auto begin()const{return (*make_iterator_)(walker_,0);}
+                auto end()const{return (*make_iterator_)(walker_,1);}
+                bool operator<(const range& other)const{
+                    return std::lexicographical_compare(
+                        begin(),
+                        end(),
+                        other.begin(),
+                        other.end()
+                    );
+                }
+                bool operator==(const range& other)const{
+                    return std::equal(
+                        begin(),
+                        end(),
+                        other.begin()
+                    );
+                }
+            };
+            // auto range_to_str = [](auto range){
+            //     std::stringstream ss{};
+            //     for (auto i : range){
+            //         ss<<i<<" ";
+            //     }
+            //     return ss.str();
+            // };
+            using container_type = typename config_type::template container<range>;
+            container_type chunks{};
+            do{
+                chunks.emplace_back(traverser.walker(),make_iterator);
+            }while(traverser.template next<order>());
+            std::sort(chunks.begin(),chunks.end());
+            const auto unique_last = std::unique(chunks.begin(),chunks.end());
+            const auto n_unique = unique_last - chunks.begin();
+            shape_type res_shape_{shape};
+            res_shape_[axis] = static_cast<const index_type&>(n_unique);
+            tensor<value_type,order,config_type> res(std::move(res_shape_));
+            const auto& res_shape = res.shape();
+            const auto res_strides = detail::make_strides_div_predicate<config_type>(res_shape,predicate,config::c_order{});
+            auto res_traverser = detail::make_forward_traverser(res_shape,res.create_walker(),detail::make_traverse_predicate(axis)); //traverse along axis
+            for (auto chunks_it=chunks.begin(); chunks_it!=unique_last; ++chunks_it,res_traverser.template next<order>()){
+                const auto& chunk = *chunks_it;
+                std::copy(
+                    chunk.begin(),
+                    chunk.end(),
+                    detail::make_axes_iterator<config::c_order>(res_shape,res_strides,res_traverser.walker(),0,predicate)
+                );
+            }
+            return res;
+        }
+    }
+
 };  //end of struct sort_search
 
 //tensor sort_search frontend
@@ -256,6 +360,14 @@ auto argwhere(const basic_tensor<Ts...>& t){
     using config_type = typename basic_tensor<Ts...>::config_type;
     return sort_search_selector_t<config_type>::argwhere(t);
 }
+
+//returns the sorted unique elements of a tensor
+template<typename...Ts, typename Axis=detail::no_value>
+auto unique(const basic_tensor<Ts...>& t, const Axis& axis=Axis{}){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return sort_search_selector_t<config_type>::unique(t,axis);
+}
+
 
 #undef GTENSOR_TENSOR_SORT_SEARCH_REDUCE_FUNCTION
 #undef GTENSOR_TENSOR_SORT_ROUTINE
