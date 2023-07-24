@@ -1,11 +1,11 @@
 #include "catch.hpp"
+#include "manipulation.hpp"
 #include "tensor.hpp"
-#include "combine.hpp"
 #include "helpers_for_testing.hpp"
 #include "test_config.hpp"
 
 //test helpers
-TEST_CASE("test_check_stack_args_nothrow","[test_combine]")
+TEST_CASE("test_check_stack_args_nothrow","[test_manipulation]")
 {
     using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using dim_type = typename config_type::dim_type;
@@ -63,7 +63,7 @@ TEST_CASE("test_check_stack_args_nothrow","[test_combine]")
     }
 }
 
-TEST_CASE("test_check_stack_args_exception","[test_combine]")
+TEST_CASE("test_check_stack_args_exception","[test_manipulation]")
 {
     using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using dim_type = typename config_type::dim_type;
@@ -114,7 +114,7 @@ TEST_CASE("test_check_stack_args_exception","[test_combine]")
     }
 }
 
-TEST_CASE("test_check_concatenate_args_nothrow","[test_combine]")
+TEST_CASE("test_check_concatenate_args_nothrow","[test_manipulation]")
 {
     using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using dim_type = typename config_type::dim_type;
@@ -175,7 +175,7 @@ TEST_CASE("test_check_concatenate_args_nothrow","[test_combine]")
     }
 }
 
-TEST_CASE("test_check_concatenate_args_exception","[test_combine]")
+TEST_CASE("test_check_concatenate_args_exception","[test_manipulation]")
 {
     using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using dim_type = typename config_type::dim_type;
@@ -229,7 +229,7 @@ TEST_CASE("test_check_concatenate_args_exception","[test_combine]")
     }
 }
 
-TEST_CASE("test_make_stack_shape","[test_combine]")
+TEST_CASE("test_make_stack_shape","[test_manipulation]")
 {
     using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using dim_type = typename config_type::dim_type;
@@ -259,7 +259,7 @@ TEST_CASE("test_make_stack_shape","[test_combine]")
     REQUIRE(result == expected);
 }
 
-TEST_CASE("test_make_concatenate_shape","[test_combine]")
+TEST_CASE("test_make_concatenate_shape","[test_manipulation]")
 {
     using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using dim_type = typename config_type::dim_type;
@@ -327,7 +327,7 @@ TEST_CASE("test_make_concatenate_shape","[test_combine]")
     }
 }
 
-TEST_CASE("test_nested_tuple_depth", "[test_combine]"){
+TEST_CASE("test_nested_tuple_depth", "[test_manipulation]"){
     using gtensor::detail::nested_tuple_depth_v;
     REQUIRE(nested_tuple_depth_v<std::tuple<int>> == 1);
     REQUIRE(nested_tuple_depth_v<std::tuple<int,int>> == 1);
@@ -337,7 +337,7 @@ TEST_CASE("test_nested_tuple_depth", "[test_combine]"){
     REQUIRE(nested_tuple_depth_v<std::tuple<std::tuple<std::tuple<int>, std::tuple<int>>,std::tuple<std::tuple<int>>,std::tuple<std::tuple<int>>>> == 3);
 }
 
-TEST_CASE("test_is_tensor_nested_tuple", "[test_combine]"){
+TEST_CASE("test_is_tensor_nested_tuple", "[test_manipulation]"){
     using tensor_int_type = gtensor::tensor<int>;
     using tensor_double_type = gtensor::tensor<double>;
     using gtensor::detail::is_tensor_nested_tuple_v;
@@ -367,7 +367,7 @@ TEST_CASE("test_is_tensor_nested_tuple", "[test_combine]"){
     );
 }
 
-TEST_CASE("test_widen_shape", "[test_combine]"){
+TEST_CASE("test_widen_shape", "[test_manipulation]"){
     using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using shape_type = config_type::shape_type;
     using dim_type = config_type::dim_type;
@@ -390,8 +390,8 @@ TEST_CASE("test_widen_shape", "[test_combine]"){
     REQUIRE(result == expected);
 }
 
-//test interface
-TEMPLATE_TEST_CASE("test_stack_nothrow","[test_combine]",
+//test module routines
+TEMPLATE_TEST_CASE("test_stack_nothrow","[test_manipulation]",
     gtensor::config::c_order,
     gtensor::config::f_order
 )
@@ -476,7 +476,7 @@ TEMPLATE_TEST_CASE("test_stack_nothrow","[test_combine]",
     }
 }
 
-TEST_CASE("test_stack_exception","[test_combine]")
+TEST_CASE("test_stack_exception","[test_manipulation]")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
@@ -523,7 +523,7 @@ TEST_CASE("test_stack_exception","[test_combine]")
     }
 }
 
-TEST_CASE("test_stack_common_type","[test_combine]")
+TEST_CASE("test_stack_common_type","[test_manipulation]")
 {
     using tensor_int32_type = gtensor::tensor<int>;
     using tensor_int64_type = gtensor::tensor<std::int64_t>;
@@ -551,7 +551,7 @@ TEST_CASE("test_stack_common_type","[test_combine]")
     apply_by_element(test, test_data);
 }
 
-TEST_CASE("test_stack_common_order","[test_combine]")
+TEST_CASE("test_stack_common_order","[test_manipulation]")
 {
 
     using value_type = int;
@@ -609,7 +609,7 @@ TEST_CASE("test_stack_common_order","[test_combine]")
     apply_by_element(test, test_data);
 }
 
-TEMPLATE_TEST_CASE("test_concatenate","[test_combine]",
+TEMPLATE_TEST_CASE("test_concatenate","[test_manipulation]",
     gtensor::config::c_order,
     gtensor::config::f_order
 )
@@ -731,7 +731,7 @@ TEMPLATE_TEST_CASE("test_concatenate","[test_combine]",
     }
 }
 
-TEST_CASE("test_concatenate_exception","[test_combine]")
+TEST_CASE("test_concatenate_exception","[test_manipulation]")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
@@ -782,7 +782,7 @@ TEST_CASE("test_concatenate_exception","[test_combine]")
     }
 }
 
-TEST_CASE("test_concatenate_common_type","[test_combine]")
+TEST_CASE("test_concatenate_common_type","[test_manipulation]")
 {
     using tensor_int32_type = gtensor::tensor<int>;
     using tensor_int64_type = gtensor::tensor<std::int64_t>;
@@ -810,7 +810,7 @@ TEST_CASE("test_concatenate_common_type","[test_combine]")
     apply_by_element(test, test_data);
 }
 
-TEST_CASE("test_concatenate_common_order","[test_combine]")
+TEST_CASE("test_concatenate_common_order","[test_manipulation]")
 {
     using value_type = int;
     using gtensor::config::c_order;
@@ -853,7 +853,7 @@ TEST_CASE("test_concatenate_common_order","[test_combine]")
     apply_by_element(test, test_data);
 }
 
-TEMPLATE_TEST_CASE("test_vstack","[test_combine]",
+TEMPLATE_TEST_CASE("test_vstack","[test_manipulation]",
     gtensor::config::c_order,
     gtensor::config::f_order
 )
@@ -915,7 +915,7 @@ TEMPLATE_TEST_CASE("test_vstack","[test_combine]",
     }
 }
 
-TEST_CASE("test_vstack_exception","[test_combine]")
+TEST_CASE("test_vstack_exception","[test_manipulation]")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
@@ -953,7 +953,7 @@ TEST_CASE("test_vstack_exception","[test_combine]")
     }
 }
 
-TEMPLATE_TEST_CASE("test_hstack","[test_combine]",
+TEMPLATE_TEST_CASE("test_hstack","[test_manipulation]",
     gtensor::config::c_order,
     gtensor::config::f_order
 )
@@ -998,7 +998,7 @@ TEMPLATE_TEST_CASE("test_hstack","[test_combine]",
     }
 }
 
-TEST_CASE("test_hstack_exception","[test_combine]")
+TEST_CASE("test_hstack_exception","[test_manipulation]")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
@@ -1035,7 +1035,7 @@ TEST_CASE("test_hstack_exception","[test_combine]")
     }
 }
 
-TEMPLATE_TEST_CASE("test_block_tuple","[test_combine]",
+TEMPLATE_TEST_CASE("test_block_tuple","[test_manipulation]",
     gtensor::config::c_order,
     gtensor::config::f_order
 )
@@ -1120,7 +1120,7 @@ TEMPLATE_TEST_CASE("test_block_tuple","[test_combine]",
     apply_by_element(test, test_data);
 }
 
-TEST_CASE("test_block_tuple_exception","[test_combine]")
+TEST_CASE("test_block_tuple_exception","[test_manipulation]")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
@@ -1145,7 +1145,7 @@ TEST_CASE("test_block_tuple_exception","[test_combine]")
     apply_by_element(test, test_data);
 }
 
-TEMPLATE_TEST_CASE("test_block_init_list","[test_combine]",
+TEMPLATE_TEST_CASE("test_block_init_list","[test_manipulation]",
     gtensor::config::c_order,
     gtensor::config::f_order
 )
@@ -1211,7 +1211,7 @@ TEMPLATE_TEST_CASE("test_block_init_list","[test_combine]",
     apply_by_element(test, test_data);
 }
 
-TEST_CASE("test_block_exception","[test_combine]")
+TEST_CASE("test_block_exception","[test_manipulation]")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
@@ -1232,7 +1232,7 @@ TEST_CASE("test_block_exception","[test_combine]")
     REQUIRE_THROWS_AS(block(nested_init_list3<tensor_type>{{{tensor_type{},tensor_type{}},{tensor_type{}}}, {{tensor_type{}}}}), combine_exception);
 }
 
-TEMPLATE_TEST_CASE("test_split_split_points","[test_combine]",
+TEMPLATE_TEST_CASE("test_split_split_points","[test_manipulation]",
     gtensor::config::c_order,
     gtensor::config::f_order
 )
@@ -1340,7 +1340,7 @@ TEMPLATE_TEST_CASE("test_split_split_points","[test_combine]",
     apply_by_element(test, test_data);
 }
 
-TEMPLATE_TEST_CASE("test_split_equal_parts","[test_combine]",
+TEMPLATE_TEST_CASE("test_split_equal_parts","[test_manipulation]",
     gtensor::config::c_order,
     gtensor::config::f_order
 )
@@ -1435,7 +1435,7 @@ TEMPLATE_TEST_CASE("test_split_equal_parts","[test_combine]",
     apply_by_element(test, test_data);
 }
 
-TEST_CASE("test_split_exception","[test_combine]")
+TEST_CASE("test_split_exception","[test_manipulation]")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
@@ -1465,7 +1465,7 @@ TEST_CASE("test_split_exception","[test_combine]")
     apply_by_element(test, test_data);
 }
 
-TEMPLATE_TEST_CASE("test_vsplit","[test_combine]",
+TEMPLATE_TEST_CASE("test_vsplit","[test_manipulation]",
     gtensor::config::c_order,
     gtensor::config::f_order
 )
@@ -1537,7 +1537,7 @@ TEMPLATE_TEST_CASE("test_vsplit","[test_combine]",
     }
 }
 
-TEMPLATE_TEST_CASE("test_hsplit","[test_combine]",
+TEMPLATE_TEST_CASE("test_hsplit","[test_manipulation]",
     gtensor::config::c_order,
     gtensor::config::f_order
 )
@@ -1608,7 +1608,7 @@ TEMPLATE_TEST_CASE("test_hsplit","[test_combine]",
     }
 }
 
-TEST_CASE("test_hsplit_hstack","[test_combine]")
+TEST_CASE("test_hsplit_hstack","[test_manipulation]")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
@@ -1673,7 +1673,7 @@ TEST_CASE("test_hsplit_hstack","[test_combine]")
     }
 }
 
-TEST_CASE("test_vsplit_vstack","[test_combine]")
+TEST_CASE("test_vsplit_vstack","[test_manipulation]")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
@@ -1741,7 +1741,7 @@ TEST_CASE("test_vsplit_vstack","[test_combine]")
 }
 
 //tensor of tensors variadic arg should be treated by combine routines as basic_tensor not as container of tensors
-TEST_CASE("test_tensor_of_tensors_variadic_arg","[test_combine]")
+TEST_CASE("test_tensor_of_tensors_variadic_arg","[test_manipulation]")
 {
     using gtensor::tensor;
     using value_type = tensor<double>;

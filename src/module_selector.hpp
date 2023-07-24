@@ -9,7 +9,7 @@ template<typename Config, typename T, typename Layout> class tensor_factory;
 class view_factory;
 template<typename F> class expression_template_operator;
 class reducer;
-class combiner;
+class manipulation;
 struct tensor_operators;
 struct tensor_math;
 struct statistic;
@@ -139,20 +139,20 @@ public:
 };
 template<typename...Ts> using reducer_selector_t = typename reducer_selector<Ts...>::type;
 
-//combiner selector
+//manipulation selector
 template<typename Config, typename...Ts>
-class combiner_selector
+class manipulation_selector
 {
     using config_type = Config;
     template<typename...> struct selector_;
     template<typename Dummy> struct selector_<config::engine_expression_template,Dummy>
     {
-        using type = combiner;
+        using type = manipulation;
     };
 public:
     using type = typename selector_<typename config_type::engine, void, Ts...>::type;
 };
-template<typename...Ts> using combiner_selector_t = typename combiner_selector<Ts...>::type;
+template<typename...Ts> using manipulation_selector_t = typename manipulation_selector<Ts...>::type;
 
 //builder selector
 template<typename Config, typename...Ts>
