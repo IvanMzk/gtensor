@@ -39,6 +39,18 @@ void check_unique_args(const DimT& dim, const Axis& axis_){
     }
 }
 
+template<typename DimT, typename Sorter>
+void check_searchsorted_args(const DimT& dim, const Sorter& sorter){
+    if (dim!=1){
+        throw indexing_exception("t must be 1d");
+    }
+    if constexpr (detail::is_tensor_v<Sorter>){
+        if (sorter.dim()!=1){
+            throw indexing_exception("sorter must be 1d");
+        }
+    }
+}
+
 }
 
 
@@ -323,6 +335,52 @@ struct sort_search
         }
     }
 
+    //t must be 1d tensor
+    //v may be tensor or scalar
+    //side should be like std::false_type for left side (lower bound)
+    //side should be like std::true_type for right side (upper bound)
+    //sorter may be 1d tensor of indexes to sort t or no_value, if no_value t is considered sorted in ascending order
+    template<typename...Ts, typename V, typename Side=std::false_type, typename Sorter=detail::no_value>
+    static auto searchsorted(const basic_tensor<Ts...>& t, const V& v, Side side=Side{}, const Sorter& sorter=Sorter{}){
+        using tensor_type = basic_tensor<Ts...>;
+        using order = typename tensor_type::order;
+        using value_type = typename tensor_type::value_type;
+        using config_type = typename tensor_type::config_type;
+        using index_type = typename tensor_type::index_type;
+        static constexpr bool is_v_tensor = detail::is_tensor_of_type_v<V,value_type>;
+        static_assert(is_v_tensor || std::is_convertible_v<V,value_type>,"v must be tensor or scalar");
+        static_assert(std::is_same_v<Sorter,detail::no_value> || detail::is_tensor_of_type_v<Sorter,index_type>,"sorter must be tensor or no_value");
+
+        detail::check_searchsorted_args(t.dim(),sorter);
+        auto make_sorted = [&t,&sorter](){
+            (void)sorter;
+            if constexpr (std::is_same_v<Sorter,detail::no_value>){
+                return t;
+            }else{
+                return t(sorter);
+            }
+        };
+
+        auto find_index = [side](auto first, auto last, const auto& val){
+            if constexpr (side.value){
+                return std::upper_bound(first,last,val) - first;
+            }else{
+                return std::lower_bound(first,last,val) - first;
+            }
+        };
+        auto sorted = make_sorted();
+        auto a = sorted.template traverse_order_adapter<order>();
+        if constexpr (detail::is_tensor_v<V>){
+            using res_type = tensor<index_type,order,config_type>;
+            res_type res(v.shape());
+            auto a_v = v.template traverse_order_adapter<order>();
+            std::transform(a_v.begin(),a_v.end(),res.template traverse_order_adapter<order>().begin(),[&a,&find_index](const auto& val){return find_index(a.begin(),a.end(),val);});
+            return res;
+        }else{
+            return find_index(a.begin(),a.end(),v);
+        }
+    }
+
 private:
 
     template<typename FlattenOrder, typename...Ts, typename ReturnIndex, typename ReturnInverse, typename ReturnCounts>
@@ -538,10 +596,27 @@ auto argwhere(const basic_tensor<Ts...>& t){
     return sort_search_selector_t<config_type>::argwhere(t);
 }
 
+//returns the sorted unique elements of a tensor.
+//There are three optional outputs in addition to the unique elements:
+//the indices of the input tensor that give the unique values
+//the indices of the unique tensor that reconstruct the input tensor
+//the number of times each unique value comes up in the input tensor
 template<typename...Ts, typename ReturnIndex=std::false_type, typename ReturnInverse=std::false_type, typename ReturnCounts=std::false_type, typename Axis=detail::no_value>
 auto unique(const basic_tensor<Ts...>& t, ReturnIndex return_index=ReturnIndex{}, ReturnInverse return_inverse=ReturnInverse{}, ReturnCounts return_counts=ReturnCounts{}, const Axis& axis=Axis{}){
     using config_type = typename basic_tensor<Ts...>::config_type;
     return sort_search_selector_t<config_type>::unique(t,return_index,return_inverse,return_counts,axis);
+}
+
+//find the indices into a sorted tensor t such that, if the corresponding elements in v were inserted before the indices, the order of t would be preserved.
+//t must be 1d tensor
+//v may be tensor or scalar
+//side should be like std::false_type for left side (lower bound)
+//side should be like std::true_type for right side (upper bound)
+//sorter may be 1d tensor of indexes to sort t or no_value, if no_value t is considered sorted in ascending order
+template<typename...Ts, typename V, typename Side=std::false_type, typename Sorter=detail::no_value>
+auto searchsorted(const basic_tensor<Ts...>& t, const V& v, Side side=Side{}, const Sorter& sorter=Sorter{}){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return sort_search_selector_t<config_type>::searchsorted(t,v,side,sorter);
 }
 
 #undef GTENSOR_TENSOR_SORT_SEARCH_REDUCE_FUNCTION

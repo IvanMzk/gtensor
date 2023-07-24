@@ -1163,3 +1163,65 @@ TEST_CASE("test_sort_search_unique_exception","[test_sort_search]")
     REQUIRE_THROWS_AS(unique(tensor_type{1,2,3,4,5},std::false_type{},std::false_type{},std::false_type{},1),indexing_exception);
     REQUIRE_THROWS_AS(unique(tensor_type{{1,2,3},{4,5,6}},std::false_type{},std::false_type{},std::false_type{},2),indexing_exception);
 }
+
+//sortsearch
+TEMPLATE_TEST_CASE("test_sort_search_searchsorted","[test_sort_search]",
+    gtensor::config::c_order,
+    gtensor::config::f_order
+)
+{
+    using value_type = double;
+    using gtensor::tensor;
+    using tensor_type = gtensor::tensor<value_type>;
+    using value_tensor_type = gtensor::tensor<value_type,TestType>;
+    using gtensor::detail::no_value;
+    using gtensor::argsort;
+    using gtensor::searchsorted;
+    using helpers_for_testing::apply_by_element;
+
+    //0tensor,1v,2side,3sorter,4expected
+    auto test_data = std::make_tuple(
+        //scalar
+        //no sorter
+        std::make_tuple(tensor_type{1,2,3,4,5},3,std::false_type{},no_value{},2),
+        std::make_tuple(tensor_type{1,2,3,4,5},3,std::true_type{},no_value{},3),
+        std::make_tuple(tensor_type{2,3,1,5,4},4,std::false_type{},argsort(tensor_type{2,3,1,5,4}),3),
+        std::make_tuple(tensor_type{2,3,1,5,4},4,std::true_type{},argsort(tensor_type{2,3,1,5,4}),4),
+        //tensor
+        //no sorter
+        std::make_tuple(tensor_type{1,2,3,4,5},value_tensor_type{2,3,1,5,4,2,1,1,3,2,5,4},std::false_type{},no_value{},tensor<int>{1,2,0,4,3,1,0,0,2,1,4,3}),
+        std::make_tuple(tensor_type{1,2,3,4,5},value_tensor_type{2,3,1,5,4,2,1,1,3,2,5,4},std::true_type{},no_value{},tensor<int>{2,3,1,5,4,2,1,1,3,2,5,4}),
+        std::make_tuple(tensor_type{1,2,3,4,5},value_tensor_type{{5,4,3,5},{2,2,5,2},{3,1,5,4},{5,5,2,2}},std::false_type{},no_value{},tensor<int>{{4,3,2,4},{1,1,4,1},{2,0,4,3},{4,4,1,1}}),
+        std::make_tuple(tensor_type{1,2,3,4,5},value_tensor_type{{5,4,3,5},{2,2,5,2},{3,1,5,4},{5,5,2,2}},std::true_type{},no_value{},tensor<int>{{5,4,3,5},{2,2,5,2},{3,1,5,4},{5,5,2,2}}),
+        //sorter
+        std::make_tuple(tensor_type{4,3,3,5,2,3,1,2,3,2},value_tensor_type{2,3,1,5,4,2,1,1,3,2,5,4},std::false_type{},argsort(tensor_type{4,3,3,5,2,3,1,2,3,2}),tensor<int>{1,4,0,9,8,1,0,0,4,1,9,8}),
+        std::make_tuple(tensor_type{4,3,3,5,2,3,1,2,3,2},value_tensor_type{2,3,1,5,4,2,1,1,3,2,5,4},std::true_type{},argsort(tensor_type{4,3,3,5,2,3,1,2,3,2}),tensor<int>{4,8,1,10,9,4,1,1,8,4,10,9})
+    );
+
+    auto test = [](const auto& t){
+        auto ten = std::get<0>(t);
+        auto v = std::get<1>(t);
+        auto side = std::get<2>(t);
+        auto sorter = std::get<3>(t);
+        auto expected = std::get<4>(t);
+
+        auto result = searchsorted(ten,v,side,sorter);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test,test_data);
+}
+
+TEST_CASE("test_sort_search_searchsorted_exception","[test_sort_search]")
+{
+    using value_type = double;
+    using gtensor::tensor;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::detail::no_value;
+    using gtensor::indexing_exception;
+    using gtensor::searchsorted;
+
+    REQUIRE_THROWS_AS(searchsorted(tensor_type(2),2),indexing_exception);
+    REQUIRE_THROWS_AS(searchsorted(tensor_type{{1,2,3},{4,5,6}},2),indexing_exception);
+    REQUIRE_THROWS_AS(searchsorted(tensor_type{{1,2,3},{4,5,6}},tensor_type{2,3,1}),indexing_exception);
+    REQUIRE_THROWS_AS(searchsorted(tensor_type{1,2,3,4,5,6},tensor_type{2,3,1},std::false_type{},tensor<int>{{0,1,2},{3,4,5}}),indexing_exception);
+}
