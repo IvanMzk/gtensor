@@ -30,27 +30,32 @@ inline basic_tensor<Ts...>& as_basic_tensor(basic_tensor<Ts...>& t){
 template<typename Stream, typename...Ts>
 void str_helper(const basic_tensor<Ts...>& t, std::string separator, Stream& stream){
     using index_type = typename basic_tensor<Ts...>::index_type;
-    if (t.dim()>1){
-        auto axis_size = t.shape()[0];
-        if (axis_size > 0){
-            index_type i=0;
-            for (--axis_size; i!=axis_size; ++i){
+    using value_type = typename basic_tensor<Ts...>::value_type;
+    if (t.size()>0){
+        if (t.dim()>1){
+            auto axis_size = t.shape()[0];
+            if (axis_size > 0){
+                index_type i=0;
+                for (--axis_size; i!=axis_size; ++i){
+                    stream<<"{";
+                    str_helper(t(i).copy(),separator,stream);
+                    stream<<"}"<<separator;
+                }
                 stream<<"{";
                 str_helper(t(i).copy(),separator,stream);
-                stream<<"}"<<separator;
+                stream<<"}";
             }
-            stream<<"{";
-            str_helper(t(i).copy(),separator,stream);
-            stream<<"}";
-        }
-    }else{
-        if (t.size()>0){
-            auto it = t.begin();
-            auto last = t.end();
-            for (--last; it!=last; ++it){
-                stream<<*it<<separator;
+        }else{
+            if constexpr (is_printable_v<value_type>){
+                auto it = t.begin();
+                auto last = t.end();
+                for (--last; it!=last; ++it){
+                    stream<<*it<<separator;
+                }
+                stream<<*it;
+            }else{
+                stream<<"...";
             }
-            stream<<*it;
         }
     }
 }

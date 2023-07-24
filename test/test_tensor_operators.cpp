@@ -260,6 +260,31 @@ TEST_CASE("test_gtensor_operator_rvalue_operand","[test_tensor_operators]")
     }
 }
 
+//str
+TEMPLATE_TEST_CASE("test_tensor_operators_str","[test_tensor_operators]",
+    gtensor::config::c_order,
+    gtensor::config::f_order
+)
+{
+    using value_type = double;
+    using gtensor::tensor;
+    using tensor_type = gtensor::tensor<value_type,TestType>;
+    using gtensor::str;
+    REQUIRE(str(tensor_type(2))==std::string("[(){2}]"));
+    REQUIRE(str(tensor_type(1.234567),2)==std::string("[(){1.2}]"));
+    REQUIRE(str(tensor_type(1.23451),5)==std::string("[(){1.2345}]"));
+    REQUIRE(str(tensor_type{})==std::string("[(0){}]"));
+    REQUIRE(str(tensor_type{}.reshape(0,2,0,3,0))==std::string("[(0,2,0,3,0){}]"));
+    REQUIRE(str(tensor_type{1})==std::string("[(1){1}]"));
+    REQUIRE(str(tensor_type{1,2,3,4,5})==std::string("[(5){1,2,3,4,5}]"));
+    REQUIRE(str(tensor_type{{1,2,3},{4,5,6}})==std::string("[(2,3){{1,2,3},{4,5,6}}]"));
+    REQUIRE(str(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}})==std::string("[(2,2,3){{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}}]"));
+    //unprintable value_type
+    REQUIRE(str(tensor<std::pair<int,int>>{std::make_pair(0,0),std::make_pair(1,1),std::make_pair(2,1)})==std::string("[(3){...}]"));
+    REQUIRE(str(tensor<std::pair<int,int>>{{std::make_pair(0,0),std::make_pair(1,1),std::make_pair(2,1)}})==std::string("[(1,3){{...}}]"));
+    REQUIRE(str(tensor<std::pair<int,int>>{{std::make_pair(0,0)},{std::make_pair(1,1)},{std::make_pair(2,1)}})==std::string("[(3,1){{...},{...},{...}}]"));
+}
+
 //test assign operators
 TEST_CASE("test_gtensor_assign_operator","[test_tensor_operators]")
 {

@@ -209,7 +209,8 @@ inline auto make_size(const ShT& shape){
 template<typename ShT>
 auto shape_to_str(const ShT& shape){
     std::stringstream ss{};
-    ss<<"("<<[&](){for(const auto& i : shape){ss<<i<<",";} return ")";}();
+    const char* sep = "";
+    ss<<"("<<[&](){for(const auto& i : shape){ss<<sep<<i; if(sep[0] == '\0'){sep=",";}} return ")";}();
     return ss.str();
 }
 
