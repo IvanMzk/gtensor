@@ -3,6 +3,7 @@
 
 #include "module_selector.hpp"
 #include "common.hpp"
+#include "exception.hpp"
 #include "slice.hpp"
 #include "descriptor.hpp"
 #include "tensor_factory.hpp"
@@ -10,9 +11,9 @@
 
 namespace gtensor{
 
-class subscript_exception : public std::runtime_error{
-    public: subscript_exception(const char* what):runtime_error(what){}
-};
+// class subscript_exception : public std::runtime_error{
+//     public: subscript_exception(const char* what):runtime_error(what){}
+// };
 
 namespace detail{
 //slice view helpers
@@ -105,7 +106,7 @@ inline void check_slice_view_args(const ShT& pshape, const Container& subs){
     const dim_type pdim = detail::make_dim(pshape);
     const dim_type subs_number = subs.size();
     if (subs_number > pdim){
-        throw subscript_exception("invalid subscripts number");
+        throw index_error("invalid subscripts number");
     }
     auto pshape_it = pshape.begin();
     for (auto subs_it = subs.begin(); subs_it!=subs.end(); ++subs_it,++pshape_it){
@@ -114,7 +115,7 @@ inline void check_slice_view_args(const ShT& pshape, const Container& subs){
             const auto& pshape_element = *pshape_it;
             const auto& start = make_slice_start(pshape_element, subs_);
             if (start<index_type{0} || start>=pshape_element){
-                throw subscript_exception("invalid subscripts");
+                throw index_error("invalid subscripts");
             }
         }
     }
@@ -176,7 +177,7 @@ inline void check_transpose_args(const DimT& dim, const Container& subs){
     if (!std::empty(subs)){
         const dim_type subs_number = subs.size();
         if (dim!=subs_number){
-            throw subscript_exception("transpose must have no or dim subscripts");
+            throw value_error("transpose must have no or dim subscripts");
         }
         auto subs_end = subs.end();
         auto subs_it = subs.begin();
@@ -184,14 +185,14 @@ inline void check_transpose_args(const DimT& dim, const Container& subs){
         while(subs_it!=subs_end){
             const auto& sub = *subs_it;
             if (sub < sub_type{0}){
-                throw subscript_exception("invalid transpose argument");
+                throw value_error("invalid transpose argument");
             }
             if (static_cast<const dim_type&>(sub) >= dim){
-                throw subscript_exception("invalid transpose argument");
+                throw value_error("invalid transpose argument");
             }
             ++subs_it;
             if (std::find(subs_it, subs_end, sub) != subs_end){
-                throw subscript_exception("invalid transpose argument");
+                throw value_error("invalid transpose argument");
             }
         }
     }
@@ -204,7 +205,7 @@ inline void check_transpose_args_variadic(const Subs&...subs){
             return sub < sub_type{0} ? true : false;
         };
         if ((is_less_zero(subs)||...)){
-            throw subscript_exception("invalid transpose argument");
+            throw value_error("invalid transpose argument");
         }
     }
 }
@@ -237,14 +238,14 @@ inline void check_subdim_args(const ShT& pshape, const Container& subs){
     const dim_type& subs_number = subs.size();
     const dim_type& pdim = detail::make_dim(pshape);
     if (subs_number > pdim){
-        throw subscript_exception("subscripts number exceeds dim");
+        throw index_error("subscripts number exceeds dim");
     }
     auto pshape_it = pshape.begin();
     for (auto subs_it = subs.begin(), subs_end = subs.end(); subs_it != subs_end; ++subs_it, ++pshape_it){
         const index_type& pshape_element = *pshape_it;
         const index_type& sub = make_subdim_index(pshape_element ,*subs_it);
         if (sub < index_type{0} || sub >= *pshape_it){
-            throw subscript_exception("invalid subdim subscript");
+            throw index_error("invalid subdim subscript");
         }
     }
 }
@@ -287,7 +288,7 @@ inline auto check_reshape_args(const IdxT& psize, const Container& subs){
             const index_type& sub = *it;
             if (sub < index_type{0}){
                 if (new_direction){
-                    throw subscript_exception("reshape arguments can only specify one unknown dimension");
+                    throw value_error("reshape arguments can only specify one unknown dimension");
                 }
                 new_direction = true;
             }else{
@@ -296,10 +297,10 @@ inline auto check_reshape_args(const IdxT& psize, const Container& subs){
         }
         if (new_direction){
             if (vsize == index_type{0} || psize % vsize != index_type{0}){
-                throw subscript_exception("invalid reshape arguments");
+                throw value_error("invalid reshape arguments");
             }
         }else if (psize != vsize){
-            throw subscript_exception("invalid reshape arguments");
+            throw value_error("invalid reshape arguments");
         }
     }
 }
@@ -319,17 +320,17 @@ inline void check_index_mapping_view_subs_variadic(const ShT& pshape, const ShTs
     const dim_type pdim = detail::make_dim(pshape);
     const dim_type subs_number = sizeof...(ShTs);
     if (pdim == dim_type{0}){
-        throw subscript_exception("can't subscript 0-dim tensor");
+        throw index_error("can't subscript 0-dim tensor");
     }
     //check subs number not exceed parent dim
     if (subs_number > pdim){
-        throw subscript_exception("invalid subscripts number");
+        throw index_error("invalid subscripts number");
     }
     //check zero size parent direction not subscripted with not empty subs
     auto pshape_it = pshape.begin();
     bool exception_flag = false;
     if((((exception_flag=exception_flag||(*pshape_it == index_type{0} && detail::make_size(subs_shapes) != index_type{0})),++pshape_it,exception_flag)||...)){
-        throw subscript_exception("invalid index tensor subscript");
+        throw index_error("invalid index tensor subscript");
     }
 }
 
@@ -340,18 +341,18 @@ inline void check_index_mapping_view_subs_container(const ShT& pshape, const Con
     const dim_type pdim = detail::make_dim(pshape);
     const dim_type subs_number = shapes.size();
     if (pdim == dim_type{0}){
-        throw subscript_exception("can't subscript 0-dim tensor");
+        throw index_error("can't subscript 0-dim tensor");
     }
     //check subs number not exceed parent dim
     if (subs_number > pdim){
-        throw subscript_exception("invalid subscripts number");
+        throw index_error("invalid subscripts number");
     }
     //check zero size parent direction not subscripted with not empty subs
     auto pshape_it = pshape.begin();
     for (auto shapes_it = shapes.begin(), shapes_last = shapes.end(); shapes_it!=shapes_last; ++shapes_it,++pshape_it){
         const auto& shape = unwrap_shape(*shapes_it);
         if (*pshape_it == index_type{0} && detail::make_size(shape) != index_type{0}){
-            throw subscript_exception("invalid index tensor subscript");
+            throw index_error("invalid index tensor subscript");
 
         }
     }
@@ -375,7 +376,7 @@ inline auto check_index(const IdxT& idx, const IdxT& shape_element){
     if (idx < shape_element){
         return idx;
     }else{
-        throw subscript_exception("invalid index tensor subscript");
+        throw index_error("invalid index tensor subscript");
     }
 }
 
@@ -500,15 +501,15 @@ auto check_bool_mapping_view_subs(const ShT& pshape, const ShT& subs_shape){
     const dim_type pdim = detail::make_dim(pshape);
     const dim_type subs_dim = detail::make_dim(subs_shape);
     if (pdim == dim_type{0}){
-        throw subscript_exception("can't subscript 0-dim tensor");
+        throw index_error("can't subscript 0-dim tensor");
     }
     if (subs_dim > pdim){
-        throw subscript_exception("invalid bool tensor subscript");
+        throw index_error("invalid bool tensor subscript");
     }
     auto pshape_it = pshape.begin();
     for (auto subs_shape_it = subs_shape.begin(), subs_shape_last = subs_shape.end(); subs_shape_it!=subs_shape_last; ++subs_shape_it, ++pshape_it){
         if (*subs_shape_it > *pshape_it){
-            throw subscript_exception("invalid bool tensor subscript");
+            throw index_error("invalid bool tensor subscript");
         }
     }
 }

@@ -383,7 +383,7 @@ TEST_CASE("test_check_slice_view_args","[test_view_factory]"){
     using index_type = config_type::index_type;
     using slice_type = gtensor::slice<index_type>;
     using rtag_type = typename slice_type::reduce_tag_type;
-    using gtensor::subscript_exception;
+    using gtensor::index_error;
     using gtensor::detail::check_slice_view_args;
     using helpers_for_testing::apply_by_element;
 
@@ -415,7 +415,7 @@ TEST_CASE("test_check_slice_view_args","[test_view_factory]"){
         auto test = [](const auto& t){
             auto pshape = std::get<0>(t);
             auto subs = std::get<1>(t);
-            REQUIRE_THROWS_AS(check_slice_view_args(pshape,subs),subscript_exception);
+            REQUIRE_THROWS_AS(check_slice_view_args(pshape,subs),index_error);
         };
         apply_by_element(test, test_data);
     }
@@ -483,7 +483,7 @@ TEST_CASE("test_check_subdim_args","[test_check_subdim_subs]"){
     using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using shape_type = config_type::shape_type;
     using index_type = config_type::index_type;
-    using gtensor::subscript_exception;
+    using gtensor::index_error;
     using gtensor::detail::check_subdim_args;
     using helpers_for_testing::apply_by_element;
     SECTION("test_check_subdim_args_nothrow")
@@ -579,7 +579,7 @@ TEST_CASE("test_check_subdim_args","[test_check_subdim_subs]"){
                 return container_type{subs_...};
             };
             auto subs_container = std::apply(make_container, subs);
-            REQUIRE_THROWS_AS(check_subdim_args(pshape,subs_container), subscript_exception);
+            REQUIRE_THROWS_AS(check_subdim_args(pshape,subs_container), index_error);
         };
         apply_by_element(test, test_data);
     }
@@ -635,7 +635,7 @@ TEST_CASE("test_check_reshape_args","[test_view_factory]"){
     using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using shape_type = config_type::shape_type;
     using index_type = config_type::index_type;
-    using gtensor::subscript_exception;
+    using gtensor::value_error;
     using gtensor::detail::check_reshape_args;
     using helpers_for_testing::apply_by_element;
 
@@ -693,7 +693,7 @@ TEST_CASE("test_check_reshape_args","[test_view_factory]"){
         auto test = [](const auto& t){
             auto psize = std::get<0>(t);
             auto subs = std::get<1>(t);
-            REQUIRE_THROWS_AS(check_reshape_args(psize,subs), subscript_exception);
+            REQUIRE_THROWS_AS(check_reshape_args(psize,subs), value_error);
         };
         apply_by_element(test,test_data);
     }
@@ -729,8 +729,7 @@ TEST_CASE("test_make_transpose_view_shape","[test_view_factory]"){
 TEST_CASE("test_check_transpose_args","[test_view_factory]"){
     using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using dim_type = config_type::dim_type;
-    using gtensor::subscript_exception;
-    using gtensor::subscript_exception;
+    using gtensor::value_error;
     using gtensor::detail::check_transpose_args;
     using gtensor::detail::check_transpose_args_variadic;
     using helpers_for_testing::apply_by_element;
@@ -772,7 +771,7 @@ TEST_CASE("test_check_transpose_args","[test_view_factory]"){
         auto test = [](const auto& t){
             auto pdim = std::get<0>(t);
             auto subs = std::get<1>(t);
-            REQUIRE_THROWS_AS(check_transpose_args(pdim,subs), subscript_exception);
+            REQUIRE_THROWS_AS(check_transpose_args(pdim,subs), value_error);
         };
         apply_by_element(test, test_data);
     }
@@ -782,10 +781,10 @@ TEST_CASE("test_check_transpose_args","[test_view_factory]"){
         REQUIRE_NOTHROW(check_transpose_args_variadic(0,0));
         REQUIRE_NOTHROW(check_transpose_args_variadic(0,1));
         REQUIRE_NOTHROW(check_transpose_args_variadic(1,2,3));
-        REQUIRE_THROWS_AS(check_transpose_args_variadic(-1), subscript_exception);
-        REQUIRE_THROWS_AS(check_transpose_args_variadic(0,-1), subscript_exception);
-        REQUIRE_THROWS_AS(check_transpose_args_variadic(2,-1,3), subscript_exception);
-        REQUIRE_THROWS_AS(check_transpose_args_variadic(-2,-1,3), subscript_exception);
+        REQUIRE_THROWS_AS(check_transpose_args_variadic(-1), value_error);
+        REQUIRE_THROWS_AS(check_transpose_args_variadic(0,-1), value_error);
+        REQUIRE_THROWS_AS(check_transpose_args_variadic(2,-1,3), value_error);
+        REQUIRE_THROWS_AS(check_transpose_args_variadic(-2,-1,3), value_error);
     }
 }
 
@@ -794,7 +793,6 @@ TEST_CASE("test_check_index_mapping_view_subs_nothrow","[test_view_factory]")
 {
     using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using shape_type = typename config_type::shape_type;
-    using gtensor::subscript_exception;
     using gtensor::detail::check_index_mapping_view_subs_variadic;
     using gtensor::detail::check_index_mapping_view_subs_container;
     using helpers_for_testing::apply_by_element;
@@ -854,7 +852,7 @@ TEST_CASE("test_check_index_mapping_view_subs_exception","[test_view_factory]")
 {
     using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using shape_type = typename config_type::shape_type;
-    using gtensor::subscript_exception;
+    using gtensor::index_error;
     using gtensor::detail::check_index_mapping_view_subs_variadic;
     using gtensor::detail::check_index_mapping_view_subs_container;
     using helpers_for_testing::apply_by_element;
@@ -889,7 +887,7 @@ TEST_CASE("test_check_index_mapping_view_subs_exception","[test_view_factory]")
             auto apply_subs_shapes = [&pshape](const auto&...subs_shapes_){
                 check_index_mapping_view_subs_variadic(pshape, subs_shapes_...);
             };
-            REQUIRE_THROWS_AS(std::apply(apply_subs_shapes, subs_shapes), subscript_exception);
+            REQUIRE_THROWS_AS(std::apply(apply_subs_shapes, subs_shapes), index_error);
         };
         apply_by_element(test, test_data);
     }
@@ -903,7 +901,7 @@ TEST_CASE("test_check_index_mapping_view_subs_exception","[test_view_factory]")
                 auto shapes = container_type{subs_shapes_...};
                 check_index_mapping_view_subs_container(pshape, shapes);
             };
-            REQUIRE_THROWS_AS(std::apply(apply_subs_shapes, subs_shapes), subscript_exception);
+            REQUIRE_THROWS_AS(std::apply(apply_subs_shapes, subs_shapes), index_error);
         };
         apply_by_element(test, test_data);
     }
@@ -914,7 +912,6 @@ TEST_CASE("test_make_index_mapping_view_shape","[test_view_factory]")
     using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using dim_type = typename config_type::dim_type;
     using shape_type = typename config_type::shape_type;
-    using gtensor::subscript_exception;
     using gtensor::detail::make_index_mapping_view_shape;
     using gtensor::detail::make_broadcast_shape;
     using helpers_for_testing::apply_by_element;
@@ -1070,7 +1067,7 @@ TEMPLATE_TEST_CASE("test_fill_index_map_exception","[test_view_factory]",
     using gtensor::config::c_order;
     using gtensor::config::f_order;
     using gtensor::walker_forward_traverser;
-    using gtensor::subscript_exception;
+    using gtensor::index_error;
     using gtensor::detail::fill_index_map;
     using gtensor::detail::make_index_mapping_view_shape;
     using gtensor::detail::make_broadcast_shape;
@@ -1133,7 +1130,7 @@ TEMPLATE_TEST_CASE("test_fill_index_map_exception","[test_view_factory]",
                 walker_forward_traverser<config_type, decltype(subs.create_walker())>{subs_shape, subs.create_walker()}...
             );
         };
-        REQUIRE_THROWS_AS(std::apply(elements_filler, subs), subscript_exception);
+        REQUIRE_THROWS_AS(std::apply(elements_filler, subs), index_error);
     };
     apply_by_element(test, test_data);
 }
@@ -1142,7 +1139,7 @@ TEST_CASE("test_check_bool_mapping_view_subs","[test_view_factory]")
 {
     using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using shape_type = typename config_type::shape_type;
-    using gtensor::subscript_exception;
+    using gtensor::index_error;
     using gtensor::detail::check_bool_mapping_view_subs;
     //0pshape,1subs_shape
     using test_type = std::tuple<shape_type,shape_type>;
@@ -1190,7 +1187,7 @@ TEST_CASE("test_check_bool_mapping_view_subs","[test_view_factory]")
         );
         auto pshape = std::get<0>(test_data);
         auto subs_shape = std::get<1>(test_data);
-        REQUIRE_THROWS_AS(check_bool_mapping_view_subs(pshape,subs_shape), subscript_exception);
+        REQUIRE_THROWS_AS(check_bool_mapping_view_subs(pshape,subs_shape), index_error);
     }
 }
 
@@ -1347,7 +1344,7 @@ TEMPLATE_TEST_CASE("test_create_reshape_view_exception","[test_view_factory]",
     using tensor_type = gtensor::tensor<value_type>;
     using config_type = typename tensor_type::config_type;
     using view_factory_type = gtensor::view_factory_selector_t<config_type>;
-    using gtensor::subscript_exception;
+    using gtensor::value_error;
     using helpers_for_testing::apply_by_element;
 
     //0parent,1subs
@@ -1378,7 +1375,7 @@ TEMPLATE_TEST_CASE("test_create_reshape_view_exception","[test_view_factory]",
             auto apply_subs = [&parent](const auto&...subs_){
                 return view_factory_type::template create_reshape_view<order>(parent, subs_...);
             };
-            REQUIRE_THROWS_AS(std::apply(apply_subs, subs), subscript_exception);
+            REQUIRE_THROWS_AS(std::apply(apply_subs, subs), value_error);
         };
         apply_by_element(test,test_data);
     }
@@ -1392,7 +1389,7 @@ TEMPLATE_TEST_CASE("test_create_reshape_view_exception","[test_view_factory]",
                 return container_type{subs_...};
             };
             auto container = std::apply(make_container, subs);
-            REQUIRE_THROWS_AS(view_factory_type::template create_reshape_view<order>(parent, container), subscript_exception);
+            REQUIRE_THROWS_AS(view_factory_type::template create_reshape_view<order>(parent, container), value_error);
         };
         apply_by_element(test,test_data);
     }
@@ -1472,7 +1469,7 @@ TEMPLATE_TEST_CASE("test_create_transpose_view_exception","[test_view_factory]",
     using view_factory_type = gtensor::view_factory_selector_t<config_type>;
     using gtensor::basic_tensor;
     using helpers_for_testing::apply_by_element;
-    using gtensor::subscript_exception;
+    using gtensor::value_error;
     //0parent,1subs
     auto test_data = std::make_tuple(
         std::make_tuple(tensor_type(2),std::make_tuple(0)),
@@ -1494,7 +1491,7 @@ TEMPLATE_TEST_CASE("test_create_transpose_view_exception","[test_view_factory]",
             auto apply_subs = [&parent](const auto&...subs_){
                 return basic_tensor{view_factory_type::create_transpose_view(parent, subs_...)};
             };
-            REQUIRE_THROWS_AS(std::apply(apply_subs, subs), subscript_exception);
+            REQUIRE_THROWS_AS(std::apply(apply_subs, subs), value_error);
         };
         apply_by_element(test,test_data);
     }
@@ -1508,7 +1505,7 @@ TEMPLATE_TEST_CASE("test_create_transpose_view_exception","[test_view_factory]",
                 return container_type{subs_...};
             };
             auto container = std::apply(make_container, subs);
-            REQUIRE_THROWS_AS(view_factory_type::create_transpose_view(parent, container), subscript_exception);
+            REQUIRE_THROWS_AS(view_factory_type::create_transpose_view(parent, container), value_error);
         };
         apply_by_element(test,test_data);
     }
@@ -1850,7 +1847,7 @@ TEMPLATE_TEST_CASE("test_create_slice_exception","[test_view_factory]",
     using rtag_type = typename slice_type::reduce_tag_type;
     using view_factory_type = gtensor::view_factory_selector_t<config_type>;
     using gtensor::basic_tensor;
-    using gtensor::subscript_exception;
+    using gtensor::index_error;
     using helpers_for_testing::apply_by_element;
     //0parent,1subs
     auto test_data = std::make_tuple(
@@ -1874,7 +1871,7 @@ TEMPLATE_TEST_CASE("test_create_slice_exception","[test_view_factory]",
             auto apply_subs = [&parent](const auto&...subs_){
                 return basic_tensor{view_factory_type::create_slice_view(parent, subs_...)};
             };
-            REQUIRE_THROWS_AS(std::apply(apply_subs, subs), subscript_exception);
+            REQUIRE_THROWS_AS(std::apply(apply_subs, subs), index_error);
         };
         apply_by_element(test, test_data);
     }
@@ -1888,7 +1885,7 @@ TEMPLATE_TEST_CASE("test_create_slice_exception","[test_view_factory]",
                 return container_type{subs_...};
             };
             auto container = std::apply(make_container, subs);
-            REQUIRE_THROWS_AS(view_factory_type::create_slice_view(parent, container), subscript_exception);
+            REQUIRE_THROWS_AS(view_factory_type::create_slice_view(parent, container), index_error);
         };
         apply_by_element(test, test_data);
     }
@@ -1906,7 +1903,7 @@ TEMPLATE_TEST_CASE("test_create_slice_exception_mixed_subs_exception","[test_vie
     using slice_type = typename tensor_type::slice_type;
     using view_factory_type = gtensor::view_factory_selector_t<config_type>;
     using gtensor::basic_tensor;
-    using gtensor::subscript_exception;
+    using gtensor::index_error;
     using helpers_for_testing::apply_by_element;
     //0parent,1subs
     auto test_data = std::make_tuple(
@@ -1929,7 +1926,7 @@ TEMPLATE_TEST_CASE("test_create_slice_exception_mixed_subs_exception","[test_vie
         auto apply_subs = [&parent](const auto&...subs_){
             return basic_tensor{view_factory_type::create_slice_view(parent, subs_...)};
         };
-        REQUIRE_THROWS_AS(std::apply(apply_subs, subs), subscript_exception);
+        REQUIRE_THROWS_AS(std::apply(apply_subs, subs), index_error);
     };
     apply_by_element(test, test_data);
 }
@@ -2033,29 +2030,29 @@ TEMPLATE_TEST_CASE("test_create_index_mapping_view_exception","[test_view_factor
     using config_type = typename tensor_type::config_type;
     using view_factory_type = gtensor::view_factory_selector_t<config_type>;
     using gtensor::basic_tensor;
-    using gtensor::subscript_exception;
-    using gtensor::broadcast_exception;
+    using gtensor::index_error;
+    using gtensor::value_error;
     using helpers_for_testing::apply_by_element;
     //0parent,1subs,2exception
     auto test_data = std::make_tuple(
         //0-dim tensor
-        std::make_tuple(tensor_type(2),std::make_tuple(index_tensor_type{}),subscript_exception{""}),
+        std::make_tuple(tensor_type(2),std::make_tuple(index_tensor_type{}),index_error{""}),
         //exception, parent zero size direction and non zero size subs
-        std::make_tuple(tensor_type{},std::make_tuple(index_tensor_type(0)),subscript_exception{""}),
-        std::make_tuple(tensor_type{},std::make_tuple(index_tensor_type{0}),subscript_exception{""}),
-        std::make_tuple(tensor_type{},std::make_tuple(index_tensor_type{1}),subscript_exception{""}),
-        std::make_tuple(tensor_type{}.reshape(2,3,0),std::make_tuple(index_tensor_type{1},index_tensor_type{2},index_tensor_type{0}),subscript_exception{""}),
+        std::make_tuple(tensor_type{},std::make_tuple(index_tensor_type(0)),index_error{""}),
+        std::make_tuple(tensor_type{},std::make_tuple(index_tensor_type{0}),index_error{""}),
+        std::make_tuple(tensor_type{},std::make_tuple(index_tensor_type{1}),index_error{""}),
+        std::make_tuple(tensor_type{}.reshape(2,3,0),std::make_tuple(index_tensor_type{1},index_tensor_type{2},index_tensor_type{0}),index_error{""}),
         //exception, subs number more than parent dim
-        std::make_tuple(tensor_type{},std::make_tuple(index_tensor_type{},index_tensor_type{}),subscript_exception{""}),
-        std::make_tuple(tensor_type{1},std::make_tuple(index_tensor_type{0},index_tensor_type{0,0,0}),subscript_exception{""}),
-        std::make_tuple(tensor_type{1},std::make_tuple(index_tensor_type{0,1},index_tensor_type{0,1}),subscript_exception{""}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::make_tuple(index_tensor_type{0,1},index_tensor_type{1,1},index_tensor_type{}),subscript_exception{""}),
+        std::make_tuple(tensor_type{},std::make_tuple(index_tensor_type{},index_tensor_type{}),index_error{""}),
+        std::make_tuple(tensor_type{1},std::make_tuple(index_tensor_type{0},index_tensor_type{0,0,0}),index_error{""}),
+        std::make_tuple(tensor_type{1},std::make_tuple(index_tensor_type{0,1},index_tensor_type{0,1}),index_error{""}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::make_tuple(index_tensor_type{0,1},index_tensor_type{1,1},index_tensor_type{}),index_error{""}),
         //exception, subs shapes not broadcast
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::make_tuple(index_tensor_type{0,0},index_tensor_type{0,0,0}),broadcast_exception{""}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::make_tuple(index_tensor_type{0,0},index_tensor_type{0,0,0}),value_error{""}),
         //exception, subs out of bounds
-        std::make_tuple(tensor_type{1},std::make_tuple(index_tensor_type{0,4,0}),subscript_exception{""}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::make_tuple(index_tensor_type{3}),subscript_exception{""}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::make_tuple(index_tensor_type{0},index_tensor_type{1,2,3}),subscript_exception{""})
+        std::make_tuple(tensor_type{1},std::make_tuple(index_tensor_type{0,4,0}),index_error{""}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::make_tuple(index_tensor_type{3}),index_error{""}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::make_tuple(index_tensor_type{0},index_tensor_type{1,2,3}),index_error{""})
     );
     SECTION("test_variadic")
     {
@@ -2167,7 +2164,7 @@ TEMPLATE_TEST_CASE("test_create_bool_mapping_view_exception","[test_view_factory
     using config_type = typename tensor_type::config_type;
     using view_factory_type = gtensor::view_factory_selector_t<config_type>;
     using gtensor::basic_tensor;
-    using gtensor::subscript_exception;
+    using gtensor::index_error;
     using helpers_for_testing::apply_by_element;
     //0parent,1subs
     auto test_data = std::make_tuple(
@@ -2190,7 +2187,7 @@ TEMPLATE_TEST_CASE("test_create_bool_mapping_view_exception","[test_view_factory
     auto test = [](const auto& t){
         auto parent = std::get<0>(t);
         auto subs = std::get<1>(t);
-        REQUIRE_THROWS_AS(view_factory_type::create_bool_mapping_view(parent, subs), subscript_exception);
+        REQUIRE_THROWS_AS(view_factory_type::create_bool_mapping_view(parent, subs), index_error);
     };
     apply_by_element(test,test_data);
 }
