@@ -9,7 +9,7 @@ TEST_CASE("test_check_reduce_args","[test_reduce]")
     using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using dim_type = config_type::dim_type;
     using shape_type = config_type::shape_type;
-    using gtensor::reduce_exception;
+    using gtensor::axis_error;
     using gtensor::detail::check_reduce_args;
 
     //single reduce axis
@@ -25,10 +25,10 @@ TEST_CASE("test_check_reduce_args","[test_reduce]")
     REQUIRE_NOTHROW(check_reduce_args(shape_type{2,3,4},dim_type{1}));
     REQUIRE_NOTHROW(check_reduce_args(shape_type{2,3,4},dim_type{2}));
 
-    REQUIRE_THROWS_AS(check_reduce_args(shape_type{},dim_type{0}), reduce_exception);
-    REQUIRE_THROWS_AS(check_reduce_args(shape_type{0},dim_type{1}), reduce_exception);
-    REQUIRE_THROWS_AS(check_reduce_args(shape_type{1,0},dim_type{2}), reduce_exception);
-    REQUIRE_THROWS_AS(check_reduce_args(shape_type{2,3,4},dim_type{3}), reduce_exception);
+    REQUIRE_THROWS_AS(check_reduce_args(shape_type{},dim_type{0}), axis_error);
+    REQUIRE_THROWS_AS(check_reduce_args(shape_type{0},dim_type{1}), axis_error);
+    REQUIRE_THROWS_AS(check_reduce_args(shape_type{1,0},dim_type{2}), axis_error);
+    REQUIRE_THROWS_AS(check_reduce_args(shape_type{2,3,4},dim_type{3}), axis_error);
 
     //container of axes
     REQUIRE_NOTHROW(check_reduce_args(shape_type{},std::vector<int>{}));
@@ -52,19 +52,19 @@ TEST_CASE("test_check_reduce_args","[test_reduce]")
     REQUIRE_NOTHROW(check_reduce_args(shape_type{2,3,4},std::vector<int>{1,2,0}));
     REQUIRE_NOTHROW(check_reduce_args(shape_type{2,3,4},std::vector<int>{0,1,2}));
 
-    REQUIRE_THROWS_AS(check_reduce_args(shape_type{},std::vector<int>{0}), reduce_exception);
-    REQUIRE_THROWS_AS(check_reduce_args(shape_type{},std::vector<int>{0,0}), reduce_exception);
-    REQUIRE_THROWS_AS(check_reduce_args(shape_type{},std::vector<int>{1}), reduce_exception);
-    REQUIRE_THROWS_AS(check_reduce_args(shape_type{},std::vector<int>{1,0}), reduce_exception);
-    REQUIRE_THROWS_AS(check_reduce_args(shape_type{0},std::vector<int>{1}), reduce_exception);
-    REQUIRE_THROWS_AS(check_reduce_args(shape_type{0},std::vector<int>{0,0}), reduce_exception);
-    REQUIRE_THROWS_AS(check_reduce_args(shape_type{10},std::vector<int>{1}), reduce_exception);
-    REQUIRE_THROWS_AS(check_reduce_args(shape_type{10},std::vector<int>{0,1}), reduce_exception);
-    REQUIRE_THROWS_AS(check_reduce_args(shape_type{2,3,4},std::vector<int>{3}), reduce_exception);
-    REQUIRE_THROWS_AS(check_reduce_args(shape_type{2,3,4},std::vector<int>{0,0}), reduce_exception);
-    REQUIRE_THROWS_AS(check_reduce_args(shape_type{2,3,4},std::vector<int>{0,1,0}), reduce_exception);
-    REQUIRE_THROWS_AS(check_reduce_args(shape_type{2,3,4},std::vector<int>{1,2,0,1}), reduce_exception);
-    REQUIRE_THROWS_AS(check_reduce_args(shape_type{2,3,4},std::vector<int>{1,2,3}), reduce_exception);
+    REQUIRE_THROWS_AS(check_reduce_args(shape_type{},std::vector<int>{0}), axis_error);
+    REQUIRE_THROWS_AS(check_reduce_args(shape_type{},std::vector<int>{0,0}), axis_error);
+    REQUIRE_THROWS_AS(check_reduce_args(shape_type{},std::vector<int>{1}), axis_error);
+    REQUIRE_THROWS_AS(check_reduce_args(shape_type{},std::vector<int>{1,0}), axis_error);
+    REQUIRE_THROWS_AS(check_reduce_args(shape_type{0},std::vector<int>{1}), axis_error);
+    REQUIRE_THROWS_AS(check_reduce_args(shape_type{0},std::vector<int>{0,0}), axis_error);
+    REQUIRE_THROWS_AS(check_reduce_args(shape_type{10},std::vector<int>{1}), axis_error);
+    REQUIRE_THROWS_AS(check_reduce_args(shape_type{10},std::vector<int>{0,1}), axis_error);
+    REQUIRE_THROWS_AS(check_reduce_args(shape_type{2,3,4},std::vector<int>{3}), axis_error);
+    REQUIRE_THROWS_AS(check_reduce_args(shape_type{2,3,4},std::vector<int>{0,0}), axis_error);
+    REQUIRE_THROWS_AS(check_reduce_args(shape_type{2,3,4},std::vector<int>{0,1,0}), axis_error);
+    REQUIRE_THROWS_AS(check_reduce_args(shape_type{2,3,4},std::vector<int>{1,2,0,1}), axis_error);
+    REQUIRE_THROWS_AS(check_reduce_args(shape_type{2,3,4},std::vector<int>{1,2,3}), axis_error);
 }
 
 TEST_CASE("test_make_reduce_shape","[test_reduce]")
@@ -154,7 +154,8 @@ TEST_CASE("test_check_slide_args","[test_reduce]")
     using dim_type = config_type::dim_type;
     using index_type = config_type::index_type;
     using shape_type = config_type::shape_type;
-    using gtensor::reduce_exception;
+    using gtensor::axis_error;
+    using gtensor::value_error;
     using gtensor::detail::check_slide_args;
 
     REQUIRE_NOTHROW(check_slide_args(index_type{0},shape_type{0},dim_type{0},index_type{0},index_type{1}));
@@ -184,20 +185,20 @@ TEST_CASE("test_check_slide_args","[test_reduce]")
     REQUIRE_NOTHROW(check_slide_args(index_type{0},shape_type{0,2,3},dim_type{1},index_type{0},index_type{0}));
     REQUIRE_NOTHROW(check_slide_args(index_type{0},shape_type{0,2,3},dim_type{1},index_type{3},index_type{1}));
 
-    //window_size greater than axis size
-    REQUIRE_THROWS_AS(check_slide_args(index_type{1},shape_type{},dim_type{0},index_type{1},index_type{1}), reduce_exception);
-    REQUIRE_THROWS_AS(check_slide_args(index_type{10},shape_type{10},dim_type{0},index_type{11},index_type{1}), reduce_exception);
-    REQUIRE_THROWS_AS(check_slide_args(index_type{24},shape_type{2,3,4},dim_type{0},index_type{3},index_type{1}), reduce_exception);
-    REQUIRE_THROWS_AS(check_slide_args(index_type{24},shape_type{2,3,4},dim_type{1},index_type{4},index_type{1}), reduce_exception);
-    REQUIRE_THROWS_AS(check_slide_args(index_type{24},shape_type{2,3,4},dim_type{2},index_type{5},index_type{1}), reduce_exception);
     //invalid axis
-    REQUIRE_THROWS_AS(check_slide_args(index_type{0},shape_type{0},dim_type{1},index_type{1},index_type{1}), reduce_exception);
-    REQUIRE_THROWS_AS(check_slide_args(index_type{0},shape_type{0,2,3},dim_type{3},index_type{1},index_type{1}), reduce_exception);
-    REQUIRE_THROWS_AS(check_slide_args(index_type{10},shape_type{10},dim_type{1},index_type{1},index_type{1}), reduce_exception);
-    REQUIRE_THROWS_AS(check_slide_args(index_type{24},shape_type{2,3,4},dim_type{3},index_type{1},index_type{1}), reduce_exception);
+    REQUIRE_THROWS_AS(check_slide_args(index_type{0},shape_type{0},dim_type{1},index_type{1},index_type{1}), axis_error);
+    REQUIRE_THROWS_AS(check_slide_args(index_type{0},shape_type{0,2,3},dim_type{3},index_type{1},index_type{1}), axis_error);
+    REQUIRE_THROWS_AS(check_slide_args(index_type{10},shape_type{10},dim_type{1},index_type{1},index_type{1}), axis_error);
+    REQUIRE_THROWS_AS(check_slide_args(index_type{24},shape_type{2,3,4},dim_type{3},index_type{1},index_type{1}), axis_error);
+    //window_size greater than axis size
+    REQUIRE_THROWS_AS(check_slide_args(index_type{1},shape_type{},dim_type{0},index_type{1},index_type{1}), value_error);
+    REQUIRE_THROWS_AS(check_slide_args(index_type{10},shape_type{10},dim_type{0},index_type{11},index_type{1}), value_error);
+    REQUIRE_THROWS_AS(check_slide_args(index_type{24},shape_type{2,3,4},dim_type{0},index_type{3},index_type{1}), value_error);
+    REQUIRE_THROWS_AS(check_slide_args(index_type{24},shape_type{2,3,4},dim_type{1},index_type{4},index_type{1}), value_error);
+    REQUIRE_THROWS_AS(check_slide_args(index_type{24},shape_type{2,3,4},dim_type{2},index_type{5},index_type{1}), value_error);
     //zero window_step
-    REQUIRE_THROWS_AS(check_slide_args(index_type{10},shape_type{10},dim_type{0},index_type{3},index_type{0}), reduce_exception);
-    REQUIRE_THROWS_AS(check_slide_args(index_type{24},shape_type{2,3,4},dim_type{1},index_type{1},index_type{0}), reduce_exception);
+    REQUIRE_THROWS_AS(check_slide_args(index_type{10},shape_type{10},dim_type{0},index_type{3},index_type{0}), value_error);
+    REQUIRE_THROWS_AS(check_slide_args(index_type{24},shape_type{2,3,4},dim_type{1},index_type{1},index_type{0}), value_error);
 }
 
 TEST_CASE("test_make_slide_shape","[test_reduce]")
@@ -247,7 +248,7 @@ struct max
 {
     template<typename It>
     auto operator()(It first, It last){
-        if (first==last){throw gtensor::reduce_exception{"empty range"};}
+        if (first==last){throw gtensor::value_error{"empty range"};}
         const auto& init = *first;
         return std::accumulate(++first,last,init, [](const auto& u, const auto& v){return std::max(u,v);});
     }
@@ -256,7 +257,7 @@ struct min
 {
     template<typename It>
     auto operator()(It first, It last){
-        if (first==last){throw gtensor::reduce_exception{"empty range"};}
+        if (first==last){throw gtensor::value_error{"empty range"};}
         const auto& init = *first;
         return std::accumulate(++first,last,init, [](const auto& u, const auto& v){return std::min(u,v);});
     }
@@ -639,7 +640,7 @@ TEST_CASE("test_reduce_ecxeption","[test_reduce]")
     using tensor_type = tensor<value_type>;
     using dim_type = typename tensor_type::dim_type;
     using test_reduce_::sum;
-    using gtensor::reduce_exception;
+    using gtensor::axis_error;
     using gtensor::reduce;
     using helpers_for_testing::apply_by_element;
 
@@ -675,7 +676,7 @@ TEST_CASE("test_reduce_ecxeption","[test_reduce]")
         auto axes = std::get<1>(t);
         auto functor = std::get<2>(t);
         auto keep_dim = std::get<3>(t);
-        REQUIRE_THROWS_AS(reduce(tensor, axes, functor, keep_dim), reduce_exception);
+        REQUIRE_THROWS_AS(reduce(tensor, axes, functor, keep_dim), axis_error);
     };
     apply_by_element(test, test_data);
 }
@@ -852,7 +853,7 @@ TEST_CASE("test_slide_exception","[test_reduce]")
     using tensor_type = gtensor::tensor<value_type>;
     using dim_type = typename tensor_type::dim_type;
     using index_type = typename tensor_type::index_type;
-    using gtensor::reduce_exception;
+    using gtensor::value_error;
     using test_reduce_::cumsum;
     using gtensor::slide;
     using helpers_for_testing::apply_by_element;
@@ -875,7 +876,7 @@ TEST_CASE("test_slide_exception","[test_reduce]")
         auto functor = std::get<2>(t);
         auto window_size = std::get<3>(t);
         auto window_step = std::get<4>(t);
-        REQUIRE_THROWS_AS(slide(tensor, axis, functor, window_size, window_step), reduce_exception);
+        REQUIRE_THROWS_AS(slide(tensor, axis, functor, window_size, window_step), value_error);
     };
     apply_by_element(test, test_data);
 }
@@ -885,7 +886,7 @@ TEST_CASE("test_slide_flatten_exception","[test_reduce]")
     using value_type = int;
     using tensor_type = gtensor::tensor<value_type>;
     using index_type = typename tensor_type::index_type;
-    using gtensor::reduce_exception;
+    using gtensor::value_error;
     using test_reduce_::cumsum;
     using gtensor::slide_flatten;
     using helpers_for_testing::apply_by_element;
@@ -902,7 +903,7 @@ TEST_CASE("test_slide_flatten_exception","[test_reduce]")
         auto functor = std::get<1>(t);
         auto window_size = std::get<2>(t);
         auto window_step = std::get<3>(t);
-        REQUIRE_THROWS_AS(slide_flatten(tensor, functor, window_size, window_step), reduce_exception);
+        REQUIRE_THROWS_AS(slide_flatten(tensor, functor, window_size, window_step), value_error);
     };
     apply_by_element(test, test_data);
 }

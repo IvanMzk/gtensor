@@ -3,18 +3,19 @@
 
 #include "module_selector.hpp"
 #include "common.hpp"
+#include "exception.hpp"
 #include "math.hpp"
 #include "iterator.hpp"
 #include "indexing.hpp"
 
 namespace gtensor{
 
-class reduce_exception : public std::runtime_error{
-public:
-    explicit reduce_exception(const char* what):
-        runtime_error(what)
-    {}
-};
+// class reduce_exception : public std::runtime_error{
+// public:
+//     explicit reduce_exception(const char* what):
+//         runtime_error(what)
+//     {}
+// };
 
 namespace detail{
 
@@ -37,7 +38,7 @@ auto check_reduce_args(const ShT& shape, const typename ShT::difference_type& ax
     using dim_type = typename ShT::difference_type;
     const dim_type dim = detail::make_dim(shape);
     if (axis >= dim){
-        throw reduce_exception("invalid reduce axis: axis is out of bounds");
+        throw axis_error("invalid reduce axis: axis is out of bounds");
     }
 }
 template<typename ShT, typename Container, std::enable_if_t<detail::is_container_of_type_v<Container, typename ShT::difference_type>,int> =0>
@@ -46,18 +47,18 @@ auto check_reduce_args(const ShT& shape, const Container& axes){
     const dim_type dim = detail::make_dim(shape);
     const dim_type axes_number = static_cast<dim_type>(axes.size());
     if (axes_number > dim){
-        throw reduce_exception("invalid reduce axes: too many axes");
+        throw axis_error("invalid reduce axes: too many axes");
     }
     auto it=axes.begin();
     auto last=axes.end();
     while(it!=last){
         const dim_type& axis = static_cast<dim_type>(*it);
         if (axis >= dim || axis < dim_type{0}){
-            throw reduce_exception("invalid reduce axes: axis is out of bounds");
+            throw axis_error("invalid reduce axes: axis is out of bounds");
         }
         ++it;
         if (std::find(it, last, axis) != last){
-            throw reduce_exception("invalid reduce axes: duplicates in axes");
+            throw axis_error("invalid reduce axes: duplicates in axes");
         }
     }
 }
@@ -67,7 +68,7 @@ auto check_transform_args(const ShT& shape, const typename ShT::difference_type&
     using dim_type = typename ShT::difference_type;
     const dim_type dim = detail::make_dim(shape);
     if (axis >= dim){
-        throw reduce_exception("invalid transform axis: axis is out of bounds");
+        throw axis_error("invalid transform axis: axis is out of bounds");
     }
 }
 
@@ -138,10 +139,10 @@ auto check_slide_args(const IdxT& axis_size, const IdxT& window_size, const IdxT
     using index_type = IdxT;
     if (axis_size!=0){
         if (window_size > axis_size || window_size <= index_type{0}){
-            throw reduce_exception("invalid sliding window size");
+            throw value_error("invalid sliding window size");
         }
         if (window_step < index_type{1}){
-            throw reduce_exception("invalid sliding window step");
+            throw value_error("invalid sliding window step");
         }
     }
 }
@@ -151,7 +152,7 @@ auto check_slide_args(const IdxT& size, const ShT& shape, const DimT& axis, cons
     using index_type = IdxT;
     const dim_type dim = detail::make_dim(shape);
     if (axis >= dim){
-        throw reduce_exception("invalid slide axis");
+        throw axis_error("invalid slide axis");
     }
     if (size!=0){
         index_type axis_size = shape[axis];

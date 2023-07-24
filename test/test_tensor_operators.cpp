@@ -563,16 +563,16 @@ TEST_CASE("test_gtensor_assign_operator_compound_assign_operator_exception","[te
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
     using gtensor::assign;
-    using gtensor::broadcast_exception;
+    using gtensor::value_error;
     tensor_type lhs{1,2,3};
     tensor_type rhs{4,5};
     SECTION("assign_operator_exception")
     {
-        REQUIRE_THROWS_AS(assign(lhs,rhs), broadcast_exception);
+        REQUIRE_THROWS_AS(assign(lhs,rhs), value_error);
     }
     SECTION("compound_assign_operator_rvalue_operand")
     {
-        REQUIRE_THROWS_AS((lhs+=rhs), broadcast_exception);
+        REQUIRE_THROWS_AS((lhs+=rhs), value_error);
     }
 }
 
