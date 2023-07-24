@@ -2,12 +2,9 @@
 #define SLICE_HPP_
 #include <array>
 #include "config.hpp"
+#include "exception.hpp"
 
 namespace gtensor{
-
-class slice_exception : public std::runtime_error{
-    public: slice_exception(const char* what):runtime_error(what){}
-};
 
 struct Nop{};
 struct Rtag{};
@@ -91,14 +88,14 @@ template<typename T, typename N, typename R>
 inline void check_slice_item_list(std::initializer_list<slice_item<T,N,R>> l){
     const auto size = l.size();
     if (size > 3){
-        throw slice_exception("max slice_item list size is 3");
+        throw value_error("max slice_item list size is 3");
     }
     auto it = l.begin();
     auto end = l.end();
     for (;it!=end; ++it){
         if ((*it).is_reduce()){
             if (size != 2 || std::distance(it,end) != 1 || (*l.begin()).is_nop()){
-                throw slice_exception("invalid slice_item list");
+                throw value_error("invalid slice_item list");
             }
             break;
         }

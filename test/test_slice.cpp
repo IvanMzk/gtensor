@@ -211,15 +211,15 @@ TEST_CASE("test_slice","[test_slice]"){
     }
     SECTION("test_slice_init_list_constructor_exception")
     {
-        using gtensor::slice_exception;
+        using gtensor::value_error;
         using slice_item_type = slice_type::slice_item_type;
-        REQUIRE_THROWS_AS(slice_type(std::initializer_list<slice_item_type>{1,1,1,1}),slice_exception);
-        REQUIRE_THROWS_AS(slice_type(std::initializer_list<slice_item_type>{rtag_type{}}),slice_exception);
-        REQUIRE_THROWS_AS(slice_type(std::initializer_list<slice_item_type>{rtag_type{},1}),slice_exception);
-        REQUIRE_THROWS_AS(slice_type(std::initializer_list<slice_item_type>{rtag_type{},1,1}),slice_exception);
-        REQUIRE_THROWS_AS(slice_type(std::initializer_list<slice_item_type>{nop_type{},rtag_type{}}),slice_exception);
-        REQUIRE_THROWS_AS(slice_type(std::initializer_list<slice_item_type>{1,rtag_type{},1}),slice_exception);
-        REQUIRE_THROWS_AS(slice_type(std::initializer_list<slice_item_type>{1,1,rtag_type{}}),slice_exception);
-        REQUIRE_THROWS_AS(slice_type(std::initializer_list<slice_item_type>{1,1,1,rtag_type{}}),slice_exception);
+        REQUIRE_THROWS_AS(slice_type(std::initializer_list<slice_item_type>{1,1,1,1}),value_error);
+        REQUIRE_THROWS_AS(slice_type(std::initializer_list<slice_item_type>{rtag_type{}}),value_error);
+        REQUIRE_THROWS_AS(slice_type(std::initializer_list<slice_item_type>{rtag_type{},1}),value_error);
+        REQUIRE_THROWS_AS(slice_type(std::initializer_list<slice_item_type>{rtag_type{},1,1}),value_error);
+        REQUIRE_THROWS_AS(slice_type(std::initializer_list<slice_item_type>{nop_type{},rtag_type{}}),value_error);
+        REQUIRE_THROWS_AS(slice_type(std::initializer_list<slice_item_type>{1,rtag_type{},1}),value_error);
+        REQUIRE_THROWS_AS(slice_type(std::initializer_list<slice_item_type>{1,1,rtag_type{}}),value_error);
+        REQUIRE_THROWS_AS(slice_type(std::initializer_list<slice_item_type>{1,1,1,rtag_type{}}),value_error);
     }
 }

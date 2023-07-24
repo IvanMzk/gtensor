@@ -6,15 +6,9 @@
 #include <sstream>
 #include "common.hpp"
 #include "libdivide_helper.hpp"
+#include "exception.hpp"
 
 namespace gtensor{
-
-class broadcast_exception : public std::runtime_error{
-public:
-    explicit broadcast_exception(const char* what):
-        runtime_error(what)
-    {}
-};
 
 namespace detail{
 
@@ -58,7 +52,7 @@ inline void make_broadcast_shape_helper(ShT& res, const T& shape){
             *res_it = s;
         }
         else if (s!=index_type(1) && s!=r){
-            throw broadcast_exception("shapes are not broadcastable");
+            throw value_error("shapes are not broadcastable");
         }
     }
 }

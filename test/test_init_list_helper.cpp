@@ -51,16 +51,16 @@ TEMPLATE_TEST_CASE("test_list_parser_exception","[test_init_list_helper]",std::v
     using gtensor::detail::nested_init_list1;
     using gtensor::detail::nested_init_list2;
     using gtensor::detail::nested_init_list3;
-    using gtensor::tensor_init_list_exception;
+    using gtensor::value_error;
     using gtensor::detail::list_parse;
 
-    REQUIRE_THROWS_AS((list_parse<value_type, container_type>(nested_init_list2<int>{{1},{},{}})), tensor_init_list_exception);
-    REQUIRE_THROWS_AS((list_parse<value_type, container_type>(nested_init_list2<int>{{},{1},{}})), tensor_init_list_exception);
-    REQUIRE_THROWS_AS((list_parse<value_type, container_type>(nested_init_list2<int>{{},{},{1}})), tensor_init_list_exception);
-    REQUIRE_THROWS_AS((list_parse<value_type, container_type>(nested_init_list2<int>{{1,2,3},{3,4},{5,6}})), tensor_init_list_exception);
-    REQUIRE_THROWS_AS((list_parse<value_type, container_type>(nested_init_list3<int>{{{1},{2}},{{3},{4}},{{},{}}})), tensor_init_list_exception);
-    REQUIRE_THROWS_AS((list_parse<value_type, container_type>(nested_init_list3<int>{{{1},{2}},{{3},{4},{0}},{{5},{6}}})), tensor_init_list_exception);
-    REQUIRE_THROWS_AS((list_parse<value_type, container_type>(nested_init_list3<int>{{{1,2},{2}},{{3},{4}},{{5},{6}}})), tensor_init_list_exception);
+    REQUIRE_THROWS_AS((list_parse<value_type, container_type>(nested_init_list2<int>{{1},{},{}})), value_error);
+    REQUIRE_THROWS_AS((list_parse<value_type, container_type>(nested_init_list2<int>{{},{1},{}})), value_error);
+    REQUIRE_THROWS_AS((list_parse<value_type, container_type>(nested_init_list2<int>{{},{},{1}})), value_error);
+    REQUIRE_THROWS_AS((list_parse<value_type, container_type>(nested_init_list2<int>{{1,2,3},{3,4},{5,6}})), value_error);
+    REQUIRE_THROWS_AS((list_parse<value_type, container_type>(nested_init_list3<int>{{{1},{2}},{{3},{4}},{{},{}}})), value_error);
+    REQUIRE_THROWS_AS((list_parse<value_type, container_type>(nested_init_list3<int>{{{1},{2}},{{3},{4},{0}},{{5},{6}}})), value_error);
+    REQUIRE_THROWS_AS((list_parse<value_type, container_type>(nested_init_list3<int>{{{1,2},{2}},{{3},{4}},{{5},{6}}})), value_error);
 }
 
 TEST_CASE("test_copy_from_list","[test_init_list_helper]")

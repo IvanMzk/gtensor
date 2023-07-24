@@ -8,15 +8,11 @@
 #include <numeric>
 #include <functional>
 #include "common.hpp"
+#include "exception.hpp"
 
 namespace gtensor{
 
-class tensor_init_list_exception : public std::runtime_error{
-    public: tensor_init_list_exception(const char* what):runtime_error(what){}
-};
-
 namespace detail{
-
 
 //make type of nested init list
 //T type of list elements
@@ -29,18 +25,6 @@ template<typename T>
 struct nested_initializer_list_type<T, 0>{
     using type = T;
 };
-
-// template<typename T> using nested_init_list1_t = std::initializer_list<T>;
-// template<typename T> using nested_init_list2_t = std::initializer_list<nested_init_list1_t<T>>;
-// template<typename T> using nested_init_list3_t = std::initializer_list<nested_init_list2_t<T>>;
-// template<typename T> using nested_init_list4_t = std::initializer_list<nested_init_list3_t<T>>;
-// template<typename T> using nested_init_list5_t = std::initializer_list<nested_init_list4_t<T>>;
-
-// template<typename T> using nested_init_list1_type = std::initializer_list<T>;
-// template<typename T> using nested_init_list2_type = std::initializer_list<std::initializer_list<T>>;
-// template<typename T> using nested_init_list3_type = std::initializer_list<std::initializer_list<std::initializer_list<T>>>;
-// template<typename T> using nested_init_list4_type = std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<T>>>>;
-// template<typename T> using nested_init_list5_type = std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<T>>>>>;
 
 template<typename T> using nested_init_list1 = std::initializer_list<T>;
 template<typename T> using nested_init_list2 = std::initializer_list<std::initializer_list<T>>;
@@ -101,7 +85,7 @@ inline auto list_parse_(std::initializer_list<T> list, ShT& shape_){
     dim_type shape_size = shape_.size();
     if (shape_size == dim_type(Dims_number)){
         if ( shape_[dim_type(Dim)] != index_type(list.size())){
-            throw tensor_init_list_exception("invalid initializer list: sizes of same dimensions not equal");
+            throw value_error("invalid initializer list: sizes of same dimensions not equal");
         }
     }
     else{

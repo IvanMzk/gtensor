@@ -81,7 +81,7 @@ TEMPLATE_TEST_CASE("test_make_broadcast_shape","[test_descriptor]", std::vector<
 TEMPLATE_TEST_CASE("test_make_broadcast_shape_exception","[test_descriptor]", std::vector<std::int64_t>)
 {
     using shape_type = TestType;
-    using gtensor::broadcast_exception;
+    using gtensor::value_error;
     using gtensor::detail::make_broadcast_shape;
     using gtensor::detail::make_broadcast_shape_container;
     using helpers_for_testing::apply_by_element;
@@ -109,7 +109,7 @@ TEMPLATE_TEST_CASE("test_make_broadcast_shape_exception","[test_descriptor]", st
             auto apply_shapes = [](const auto&...shapes_){
                 return make_broadcast_shape<shape_type>(shapes_...);
             };
-            REQUIRE_THROWS_AS(std::apply(apply_shapes, shapes), broadcast_exception);
+            REQUIRE_THROWS_AS(std::apply(apply_shapes, shapes), value_error);
         };
         apply_by_element(test, test_data);
     }
@@ -121,7 +121,7 @@ TEMPLATE_TEST_CASE("test_make_broadcast_shape_exception","[test_descriptor]", st
                 auto shapes_container = container_type{shapes_...};
                 return make_broadcast_shape_container<shape_type>(shapes_container);
             };
-            REQUIRE_THROWS_AS(std::apply(apply_shapes, shapes), broadcast_exception);
+            REQUIRE_THROWS_AS(std::apply(apply_shapes, shapes), value_error);
         };
         apply_by_element(test, test_data);
     }

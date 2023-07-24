@@ -834,10 +834,10 @@ TEST_CASE("test_tensor_assignment_corner_cases","[test_tensor]")
 TEST_CASE("test_tensor_assignment_exception","[test_tensor]")
 {
     using tensor_type = gtensor::tensor<int>;
-    using gtensor::broadcast_exception;
+    using gtensor::value_error;
     auto lhs = tensor_type{{1,2,3},{4,5,6}}(1);
     tensor_type rhs{1,2};
-    REQUIRE_THROWS_AS(lhs = rhs, broadcast_exception);
+    REQUIRE_THROWS_AS(lhs = rhs, value_error);
 }
 
 //test broadcast assign
