@@ -613,16 +613,16 @@ TEMPLATE_TEST_CASE("test_builder_space_default_args","[test_builder]",
 TEST_CASE("test_builder_space_exception","[test_builder]")
 {
     using value_type = double;
-    using gtensor::builder_exception;
+    using gtensor::value_error;
     using gtensor::linspace;
     using gtensor::logspace;
     using gtensor::geomspace;
 
-    REQUIRE_THROWS_AS(linspace<value_type>(0,1,-10), builder_exception);
-    REQUIRE_THROWS_AS(logspace<value_type>(0,1,-10), builder_exception);
-    REQUIRE_THROWS_AS(geomspace<value_type>(1,2,-10), builder_exception);
-    REQUIRE_THROWS_AS(geomspace<value_type>(0,1,10), builder_exception);
-    REQUIRE_THROWS_AS(geomspace<value_type>(1,0,10), builder_exception);
+    REQUIRE_THROWS_AS(linspace<value_type>(0,1,-10), value_error);
+    REQUIRE_THROWS_AS(logspace<value_type>(0,1,-10), value_error);
+    REQUIRE_THROWS_AS(geomspace<value_type>(1,2,-10), value_error);
+    REQUIRE_THROWS_AS(geomspace<value_type>(0,1,10), value_error);
+    REQUIRE_THROWS_AS(geomspace<value_type>(1,0,10), value_error);
 }
 
 TEST_CASE("test_builder_diag","[test_builder]")
@@ -716,10 +716,10 @@ TEST_CASE("test_builder_diag_exception","[test_builder]")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
-    using gtensor::builder_exception;
+    using gtensor::value_error;
     using gtensor::diag;
 
-    REQUIRE_THROWS_AS(diag(tensor_type(1)), builder_exception);
-    REQUIRE_THROWS_AS(diag(tensor_type{{{1}}}), builder_exception);
-    REQUIRE_THROWS_AS(diag(tensor_type{}.reshape(0,2,2)), builder_exception);
+    REQUIRE_THROWS_AS(diag(tensor_type(1)), value_error);
+    REQUIRE_THROWS_AS(diag(tensor_type{{{1}}}), value_error);
+    REQUIRE_THROWS_AS(diag(tensor_type{}.reshape(0,2,2)), value_error);
 }

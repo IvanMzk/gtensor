@@ -9,13 +9,6 @@
 
 namespace gtensor{
 
-class statistic_exception : public std::runtime_error{
-public:
-    explicit statistic_exception(const char* what):
-        runtime_error(what)
-    {}
-};
-
 namespace detail{
 
 template<typename P, typename U=void> constexpr bool is_pair_v = false;
@@ -356,22 +349,22 @@ private:
         (void)weights;
         if constexpr (math::numeric_traits<Bins>::is_integral()){
             if (bins <= 0){
-                throw statistic_exception("bins must be positive when an integral");
+                throw value_error("bins must be positive when an integral");
             }
         }
         if constexpr (detail::is_tensor_v<Bins>){
             if (bins.dim() != 1){
-                throw statistic_exception("bins must be 1d when a tensor");
+                throw value_error("bins must be 1d when a tensor");
             }
         }
         if constexpr (detail::is_pair_v<Range>){
             if (range.first > range.second){
-                throw statistic_exception("second must be larger or equal than first in a range");
+                throw value_error("second must be larger or equal than first in a range");
             }
         }
         if constexpr (detail::is_tensor_v<Weights>){
             if (t.shape() != weights.shape()){
-                throw statistic_exception("weights must have the same shape as t");
+                throw value_error("weights must have the same shape as t");
             }
         }
         if constexpr (detail::is_container_v<Bins>){
@@ -382,7 +375,7 @@ private:
                 for (++it; it!=last; ++it){
                     const auto& next = *it;
                     if (prev > next){
-                        throw statistic_exception("bins must increase monotonically when a tensor");
+                        throw value_error("bins must increase monotonically when a tensor");
                     }
                     prev = next;
                 }
@@ -595,7 +588,7 @@ private:
             case histogram_algorithm::sturges:
                 return make_sturges();
             default:
-                throw statistic_exception("invalid histogram_algorithm argument");
+                throw value_error("invalid histogram_algorithm argument");
         };
     }
 

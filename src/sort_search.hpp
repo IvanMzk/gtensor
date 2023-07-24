@@ -29,11 +29,11 @@ void check_unique_args(const DimT& dim, const Axis& axis_){
         auto axis = make_axis(dim,axis_);
         if (dim==0){
             if (axis != 0){
-                throw indexing_exception("axis out of bounds");
+                throw axis_error("axis out of bounds");
             }
         }else{
             if (axis >= dim){
-                throw indexing_exception("axis out of bounds");
+                throw axis_error("axis out of bounds");
             }
         }
     }
@@ -42,11 +42,11 @@ void check_unique_args(const DimT& dim, const Axis& axis_){
 template<typename DimT, typename Sorter>
 void check_searchsorted_args(const DimT& dim, const Sorter& sorter){
     if (dim!=1){
-        throw indexing_exception("t must be 1d");
+        throw value_error("t must be 1d");
     }
     if constexpr (detail::is_tensor_v<Sorter>){
         if (sorter.dim()!=1){
-            throw indexing_exception("sorter must be 1d");
+            throw value_error("sorter must be 1d");
         }
     }
 }

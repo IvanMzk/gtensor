@@ -371,17 +371,17 @@ TEMPLATE_TEST_CASE("test_math_amin_nanmin_exception","test_math",
 {
     using value_type = TestType;
     using tensor_type = gtensor::tensor<value_type>;
-    using gtensor::reduce_exception;
+    using gtensor::value_error;
     using gtensor::amin;
     using gtensor::nanmin;
 
     //amin
-    REQUIRE_THROWS_AS(amin(tensor_type{}),reduce_exception);
-    REQUIRE_THROWS_AS(amin(tensor_type{}.reshape(0,2,3),{0,1}),reduce_exception);
+    REQUIRE_THROWS_AS(amin(tensor_type{}),value_error);
+    REQUIRE_THROWS_AS(amin(tensor_type{}.reshape(0,2,3),{0,1}),value_error);
     REQUIRE_NOTHROW(amin(tensor_type{}.reshape(0,2,3),{1,2}));
     //nanmin
-    REQUIRE_THROWS_AS(nanmin(tensor_type{}),reduce_exception);
-    REQUIRE_THROWS_AS(nanmin(tensor_type{}.reshape(0,2,3),{0,1}),reduce_exception);
+    REQUIRE_THROWS_AS(nanmin(tensor_type{}),value_error);
+    REQUIRE_THROWS_AS(nanmin(tensor_type{}.reshape(0,2,3),{0,1}),value_error);
     REQUIRE_NOTHROW(nanmin(tensor_type{}.reshape(0,2,3),{1,2}));
 }
 
@@ -575,17 +575,17 @@ TEMPLATE_TEST_CASE("test_math_amax_nanmax_exception","test_math",
 {
     using value_type = TestType;
     using tensor_type = gtensor::tensor<value_type>;
-    using gtensor::reduce_exception;
+    using gtensor::value_error;
     using gtensor::amax;
     using gtensor::nanmax;
 
     //amax
-    REQUIRE_THROWS_AS(amax(tensor_type{}),reduce_exception);
-    REQUIRE_THROWS_AS(amax(tensor_type{}.reshape(0,2,3),{0,1}),reduce_exception);
+    REQUIRE_THROWS_AS(amax(tensor_type{}),value_error);
+    REQUIRE_THROWS_AS(amax(tensor_type{}.reshape(0,2,3),{0,1}),value_error);
     REQUIRE_NOTHROW(amax(tensor_type{}.reshape(0,2,3),{1,2}));
     //nanmax
-    REQUIRE_THROWS_AS(nanmax(tensor_type{}),reduce_exception);
-    REQUIRE_THROWS_AS(nanmax(tensor_type{}.reshape(0,2,3),{0,1}),reduce_exception);
+    REQUIRE_THROWS_AS(nanmax(tensor_type{}),value_error);
+    REQUIRE_THROWS_AS(nanmax(tensor_type{}.reshape(0,2,3),{0,1}),value_error);
     REQUIRE_NOTHROW(nanmax(tensor_type{}.reshape(0,2,3),{1,2}));
 }
 
@@ -1415,12 +1415,12 @@ TEST_CASE("test_math_gradient_exception","test_math")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
-    using gtensor::reduce_exception;
+    using gtensor::value_error;
     using gtensor::gradient;
     //too few points
-    REQUIRE_THROWS_AS(gradient(tensor_type{1},0), reduce_exception);
+    REQUIRE_THROWS_AS(gradient(tensor_type{1},0), value_error);
     //coordinates not match size along axis
-    REQUIRE_THROWS_AS(gradient(tensor_type{1,2,3,4,5},0,std::vector<double>{1,2}), reduce_exception);
-    REQUIRE_THROWS_AS(gradient(tensor_type{1,2,3,4,5},0,std::vector<double>{1,2,3,4,5,6}), reduce_exception);
+    REQUIRE_THROWS_AS(gradient(tensor_type{1,2,3,4,5},0,std::vector<double>{1,2}), value_error);
+    REQUIRE_THROWS_AS(gradient(tensor_type{1,2,3,4,5},0,std::vector<double>{1,2,3,4,5,6}), value_error);
 }
 

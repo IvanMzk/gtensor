@@ -8,14 +8,6 @@
 
 namespace gtensor{
 
-class builder_exception : public std::runtime_error
-{
-public:
-    explicit builder_exception(const char* what):
-        std::runtime_error(what)
-    {}
-};
-
 //bulder module implementation
 
 struct builder
@@ -229,7 +221,7 @@ struct builder
             );
             return res;
         }else{
-            throw builder_exception("input must be 1d or 2d");
+            throw value_error("input must be 1d or 2d");
         }
     }
 
@@ -238,13 +230,13 @@ private:
     template<typename U>
     static void check_make_space_args(const U& num){
         if (num < U{0}){
-            throw builder_exception("number of samples, must be non-negative");
+            throw value_error("number of samples, must be non-negative");
         }
     }
     template<typename Start, typename Stop>
     static void check_geomspace_args(const Start& start, const Stop& stop){
         if (start == Start{0} || stop == Stop{0}){
-            throw builder_exception("geometric sequence cannot include zero");
+            throw value_error("geometric sequence cannot include zero");
         }
     }
 

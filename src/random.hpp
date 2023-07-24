@@ -12,20 +12,13 @@
 
 namespace gtensor{
 
-class random_exception : public std::runtime_error{
-public:
-    explicit random_exception(const char* what):
-        runtime_error(what)
-    {}
-};
-
 namespace detail{
 
 template<typename ShT, typename DimT>
 auto check_shuffle_args(const ShT& input_shape, const DimT& axis){
     const auto input_dim = detail::make_dim(input_shape);
     if (axis>=input_dim){
-        throw random_exception("axis out of bounds");
+        throw axis_error("axis out of bounds");
     }
 }
 
@@ -35,26 +28,26 @@ auto check_choice_args(const ShT& input_shape, const IdxT& input_size, const Siz
     const auto axis_size = input_shape[axis];
     const auto size_size = detail::make_size<IdxT>(size);
     if (axis>=input_dim){
-        throw random_exception("axis out of bounds");
+        throw axis_error("axis out of bounds");
     }
     if (input_size==0 && size_size!=0){
-        throw random_exception("t cannot be empty unless no samples are taken");
+        throw value_error("t cannot be empty unless no samples are taken");
     }
     if (!replace){
         if (size_size>axis_size){
-            throw random_exception("cannot take a larger sample than population without remplacement");
+            throw value_error("cannot take a larger sample than population without remplacement");
         }
     }
     if constexpr (detail::is_container_v<Probabilities>){
         const auto p_size = p.size();
         if (axis_size!=static_cast<const IdxT&>(p_size)){
-            throw random_exception("p must be the same size as size along axis");
+            throw value_error("p must be the same size as size along axis");
         }
         if (!replace){
             const auto p_zeros = std::count(p.begin(),p.end(),0);
             const auto samplable_axis_size = p_size - p_zeros;
             if (size_size>samplable_axis_size){
-                throw random_exception("cannot take a larger sample than population with non-zero probabilities, without remplacement");
+                throw value_error("cannot take a larger sample than population with non-zero probabilities, without remplacement");
             }
         }
     }
@@ -115,13 +108,13 @@ private:
         for (;cdf_it!=cdf_last; ++cdf_it,++p_first){
             const auto& p = static_cast<const value_type&>(*p_first);
             if (p<0){
-                throw random_exception("probabilities can't be negative");
+                throw value_error("probabilities can't be negative");
             }
             cum+=p;
             *cdf_it=cum;
         }
         if (cum == 0){
-            throw random_exception("probabilities sums to zero");
+            throw value_error("probabilities sums to zero");
         }
         if (!math::isclose(cum,1.0)){  //normalize
             const auto normalizer = 1/cum;

@@ -888,14 +888,14 @@ TEST_CASE("test_random_shuffle_exception","[test_random]")
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
     using gtensor::default_rng;
-    using gtensor::random_exception;
+    using gtensor::value_error;
 
     tensor_type t0(1);
-    REQUIRE_THROWS_AS(default_rng().shuffle(t0,0),random_exception);
+    REQUIRE_THROWS_AS(default_rng().shuffle(t0,0),value_error);
     tensor_type t1{1,2,3,4,5};
-    REQUIRE_THROWS_AS(default_rng().shuffle(t1,1),random_exception);
+    REQUIRE_THROWS_AS(default_rng().shuffle(t1,1),value_error);
     tensor_type t2{{1,2,3},{4,5,6}};
-    REQUIRE_THROWS_AS(default_rng().shuffle(t2,2),random_exception);
+    REQUIRE_THROWS_AS(default_rng().shuffle(t2,2),value_error);
 }
 
 TEST_CASE("test_random_permutation","[test_random]")
@@ -967,11 +967,11 @@ TEST_CASE("test_random_permutation_exception","[test_random]")
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
     using gtensor::default_rng;
-    using gtensor::random_exception;
+    using gtensor::value_error;
 
-    REQUIRE_THROWS_AS(default_rng().permutation(tensor_type(1),0),random_exception);
-    REQUIRE_THROWS_AS(default_rng().permutation(tensor_type{1,2,3,4,5},1),random_exception);
-    REQUIRE_THROWS_AS(default_rng().permutation(tensor_type{{1,2,3},{4,5,6}},2),random_exception);
+    REQUIRE_THROWS_AS(default_rng().permutation(tensor_type(1),0),value_error);
+    REQUIRE_THROWS_AS(default_rng().permutation(tensor_type{1,2,3,4,5},1),value_error);
+    REQUIRE_THROWS_AS(default_rng().permutation(tensor_type{{1,2,3},{4,5,6}},2),value_error);
 }
 
 TEST_CASE("test_random_permuted","[test_random]")
@@ -1053,11 +1053,11 @@ TEST_CASE("test_random_permuted_exception","[test_random]")
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
     using gtensor::default_rng;
-    using gtensor::reduce_exception;
+    using gtensor::value_error;
 
-    REQUIRE_THROWS_AS(default_rng().permuted(tensor_type(1),0),reduce_exception);
-    REQUIRE_THROWS_AS(default_rng().permuted(tensor_type{1,2,3,4,5},1),reduce_exception);
-    REQUIRE_THROWS_AS(default_rng().permuted(tensor_type{{1,2,3},{4,5,6}},2),reduce_exception);
+    REQUIRE_THROWS_AS(default_rng().permuted(tensor_type(1),0),value_error);
+    REQUIRE_THROWS_AS(default_rng().permuted(tensor_type{1,2,3,4,5},1),value_error);
+    REQUIRE_THROWS_AS(default_rng().permuted(tensor_type{{1,2,3},{4,5,6}},2),value_error);
 }
 
 TEST_CASE("test_random_choice","[test_random]")
@@ -1284,36 +1284,36 @@ TEST_CASE("test_random_choice_exception","[test_random]")
     using tensor_type = gtensor::tensor<value_type>;
     using gtensor::detail::no_value;
     using gtensor::default_rng;
-    using gtensor::random_exception;
+    using gtensor::value_error;
 
     //axis<t.dim()
-    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},10,true,no_value{},1),random_exception);
-    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},10,true,no_value{},2),random_exception);
-    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}}},10,true,no_value{},3),random_exception);
+    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},10,true,no_value{},1),value_error);
+    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},10,true,no_value{},2),value_error);
+    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}}},10,true,no_value{},3),value_error);
     //if is_p: p.size() must equal axis_size,
-    REQUIRE_THROWS_AS(default_rng().choice(5,10,true,tensor_type{},0),random_exception);
-    REQUIRE_THROWS_AS(default_rng().choice(5,10,true,tensor_type{1,1,1,1,1,1},0),random_exception);
-    REQUIRE_THROWS_AS(default_rng().choice(5,10,true,tensor_type{1,1,1},0),random_exception);
-    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},10,true,tensor_type{},0),random_exception);
-    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},10,true,tensor_type{1,1,1},0),random_exception);
-    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},10,true,std::vector<double>{1,1,1,1,1,1},0),random_exception);
+    REQUIRE_THROWS_AS(default_rng().choice(5,10,true,tensor_type{},0),value_error);
+    REQUIRE_THROWS_AS(default_rng().choice(5,10,true,tensor_type{1,1,1,1,1,1},0),value_error);
+    REQUIRE_THROWS_AS(default_rng().choice(5,10,true,tensor_type{1,1,1},0),value_error);
+    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},10,true,tensor_type{},0),value_error);
+    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},10,true,tensor_type{1,1,1},0),value_error);
+    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},10,true,std::vector<double>{1,1,1,1,1,1},0),value_error);
     //if is_p: p must not sum to zero
-    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},10,true,std::vector<double>{0,0,0,0,0},0),random_exception);
-    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},4,false,std::vector<double>{0,0,0,0,0},0),random_exception);
+    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},10,true,std::vector<double>{0,0,0,0,0},0),value_error);
+    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},4,false,std::vector<double>{0,0,0,0,0},0),value_error);
     //if is_p: p elements must not be negative
-    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},10,true,std::vector<double>{1,2,-1,3,5},0),random_exception);
+    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},10,true,std::vector<double>{1,2,-1,3,5},0),value_error);
     //if t.size()==0 and size of size > 0 (a cannot be empty unless no samples are taken)
-    REQUIRE_THROWS_AS(default_rng().choice(0,1,true,no_value{},0),random_exception);
-    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{},1,true,no_value{},0),random_exception);
-    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{}.reshape(2,3,0),std::vector<int>(3,3),true,no_value{},0),random_exception);
+    REQUIRE_THROWS_AS(default_rng().choice(0,1,true,no_value{},0),value_error);
+    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{},1,true,no_value{},0),value_error);
+    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{}.reshape(2,3,0),std::vector<int>(3,3),true,no_value{},0),value_error);
     //if !replace size of size must be <= axis_size,
-    REQUIRE_THROWS_AS(default_rng().choice(5,6,false,std::vector<double>{1,1,1,1,1},0),random_exception);
-    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},6,false,std::vector<double>{1,1,1,1,1},0),random_exception);
-    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}}},4,false,no_value{},0),random_exception);
-    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}}},3,false,no_value{},1),random_exception);
-    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}}},3,false,no_value{},2),random_exception);
+    REQUIRE_THROWS_AS(default_rng().choice(5,6,false,std::vector<double>{1,1,1,1,1},0),value_error);
+    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},6,false,std::vector<double>{1,1,1,1,1},0),value_error);
+    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}}},4,false,no_value{},0),value_error);
+    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}}},3,false,no_value{},1),value_error);
+    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}}},3,false,no_value{},2),value_error);
     //if !replace and there are zero probabilities that is cant select size elements (due to zero probs)
-    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},5,false,std::vector<double>{1,1,0,1,1},0),random_exception);
-    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},4,false,std::vector<double>{1,1,0,1,0},0),random_exception);
+    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},5,false,std::vector<double>{1,1,0,1,1},0),value_error);
+    REQUIRE_THROWS_AS(default_rng().choice(tensor_type{1,2,3,4,5},4,false,std::vector<double>{1,1,0,1,0},0),value_error);
 }
 

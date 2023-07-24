@@ -51,10 +51,10 @@ TEST_CASE("test_statistic_ptp_exception","test_math")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
-    using gtensor::reduce_exception;
+    using gtensor::value_error;
     using gtensor::ptp;
     //zero size axis
-    REQUIRE_THROWS_AS(ptp(tensor_type{},0), reduce_exception);
+    REQUIRE_THROWS_AS(ptp(tensor_type{},0), value_error);
 }
 
 //mean,nanmean
@@ -833,12 +833,12 @@ TEMPLATE_TEST_CASE("test_statistic_quantile_nanquantile_exception","test_statist
 {
     using value_type = TestType;
     using tensor_type = gtensor::tensor<value_type>;
-    using gtensor::reduce_exception;
+    using gtensor::value_error;
     using gtensor::quantile;
     using gtensor::nanquantile;
 
-    REQUIRE_THROWS_AS(quantile(tensor_type{1,2,3,4,5},1.1), reduce_exception);
-    REQUIRE_THROWS_AS(nanquantile(tensor_type{1,2,3,4,5},1.1), reduce_exception);
+    REQUIRE_THROWS_AS(quantile(tensor_type{1,2,3,4,5},1.1), value_error);
+    REQUIRE_THROWS_AS(nanquantile(tensor_type{1,2,3,4,5},1.1), value_error);
 }
 
 TEST_CASE("test_statistic_quantile_nanquantile_nan_values","test_statistic")
@@ -1005,7 +1005,7 @@ TEMPLATE_TEST_CASE("test_statistic_average_exception","test_statistic",
     using value_type = TestType;
     using tensor_type = gtensor::tensor<value_type>;
     using gtensor::average;
-    using gtensor::reduce_exception;
+    using gtensor::value_error;
     using helpers_for_testing::apply_by_element;
 
     //0tensor,1axes,2keep_dims,3weights
@@ -1026,7 +1026,7 @@ TEMPLATE_TEST_CASE("test_statistic_average_exception","test_statistic",
         auto axes = std::get<1>(t);
         auto keep_dims = std::get<2>(t);
         auto weights = std::get<3>(t);
-        REQUIRE_THROWS_AS(average(ten,axes,weights,keep_dims), reduce_exception);
+        REQUIRE_THROWS_AS(average(ten,axes,weights,keep_dims), value_error);
     };
     apply_by_element(test,test_data);
 }
@@ -1089,7 +1089,7 @@ TEMPLATE_TEST_CASE("test_statistic_moving_average_exception","test_statistic",
     using value_type = TestType;
     using tensor_type = gtensor::tensor<value_type>;
     using gtensor::moving_average;
-    using gtensor::reduce_exception;
+    using gtensor::value_error;
     using helpers_for_testing::apply_by_element;
 
     //0tensor,1axis,2weights,3step
@@ -1106,7 +1106,7 @@ TEMPLATE_TEST_CASE("test_statistic_moving_average_exception","test_statistic",
         auto axis = std::get<1>(t);
         auto weights = std::get<2>(t);
         auto step = std::get<3>(t);
-        REQUIRE_THROWS_AS(moving_average(ten,axis,weights,step), reduce_exception);
+        REQUIRE_THROWS_AS(moving_average(ten,axis,weights,step), value_error);
     };
     apply_by_element(test,test_data);
 }
@@ -1191,7 +1191,7 @@ TEMPLATE_TEST_CASE("test_statistic_moving_mean_exception","test_statistic",
     using value_type = TestType;
     using tensor_type = gtensor::tensor<value_type>;
     using gtensor::moving_mean;
-    using gtensor::reduce_exception;
+    using gtensor::value_error;
     using helpers_for_testing::apply_by_element;
 
     //0tensor,1axis,2window_size,3step
@@ -1208,7 +1208,7 @@ TEMPLATE_TEST_CASE("test_statistic_moving_mean_exception","test_statistic",
         auto axis = std::get<1>(t);
         auto window_size = std::get<2>(t);
         auto step = std::get<3>(t);
-        REQUIRE_THROWS_AS(moving_mean(ten,axis,window_size,step), reduce_exception);
+        REQUIRE_THROWS_AS(moving_mean(ten,axis,window_size,step), value_error);
     };
     apply_by_element(test,test_data);
 }
@@ -1426,7 +1426,7 @@ TEMPLATE_TEST_CASE("test_statistic_histogram_exception","test_statistic",
     using value_type = TestType;
     using tensor_type = gtensor::tensor<value_type>;
     using gtensor::detail::no_value;
-    using gtensor::statistic_exception;
+    using gtensor::value_error;
     using gtensor::histogram;
     using helpers_for_testing::apply_by_element;
 
@@ -1452,7 +1452,7 @@ TEMPLATE_TEST_CASE("test_statistic_histogram_exception","test_statistic",
         auto range = std::get<2>(t);
         auto density = std::get<3>(t);
         auto weights = std::get<4>(t);
-        REQUIRE_THROWS_AS(histogram(ten,bins,range,density,weights), statistic_exception);
+        REQUIRE_THROWS_AS(histogram(ten,bins,range,density,weights), value_error);
     };
     apply_by_element(test,test_data);
 }
