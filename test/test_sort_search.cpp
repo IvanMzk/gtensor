@@ -1151,3 +1151,15 @@ TEMPLATE_TEST_CASE("test_sort_search_unique_no_axis","[test_sort_search]",
         std::make_tuple(tensor_type{1,2,3,4,5},tensor<int>{0,8,1,2,5},tensor<int>{0,2,3,2,0,4,0,4,1,1,2,3,2,2,0,4,0,2,1,0,0,3,4,3,3,0,3,0,2,3},tensor<int>{9,3,7,7,4})
     );
 }
+
+TEST_CASE("test_sort_search_unique_exception","[test_sort_search]")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::indexing_exception;
+    using gtensor::unique;
+
+    REQUIRE_THROWS_AS(unique(tensor_type(1),std::false_type{},std::false_type{},std::false_type{},1),indexing_exception);
+    REQUIRE_THROWS_AS(unique(tensor_type{1,2,3,4,5},std::false_type{},std::false_type{},std::false_type{},1),indexing_exception);
+    REQUIRE_THROWS_AS(unique(tensor_type{{1,2,3},{4,5,6}},std::false_type{},std::false_type{},std::false_type{},2),indexing_exception);
+}

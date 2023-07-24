@@ -23,6 +23,22 @@ auto make_tuple_or_add(Tuple&& t, V&& v){
     }
 }
 
+template<typename DimT, typename Axis>
+void check_unique_args(const DimT& dim, const Axis& axis_){
+    if constexpr (!std::is_same_v<Axis,no_value>){
+        auto axis = make_axis(dim,axis_);
+        if (dim==0){
+            if (axis != 0){
+                throw indexing_exception("axis out of bounds");
+            }
+        }else{
+            if (axis >= dim){
+                throw indexing_exception("axis out of bounds");
+            }
+        }
+    }
+}
+
 }
 
 
@@ -196,6 +212,7 @@ struct sort_search
         using config_type = typename tensor_type::config_type;
         using index_type = typename tensor_type::index_type;
         using shape_type = typename tensor_type::shape_type;
+        detail::check_unique_args(t.dim(),axis_);
         if (t.dim() == 0 || t.dim() == 1){
             return unique_flatten<order>(t,return_index,return_inverse,return_counts);
         }
