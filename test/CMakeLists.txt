@@ -39,14 +39,11 @@ target_sources(Test PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/test_view_factory.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_expression_template_engine.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_operators.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_tensor.cpp
 #
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_indexing.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_indexing.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_reduce.cpp
-
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_combine.cpp
-
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_manipulation.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_manipulation.cpp
 #
     #${CMAKE_CURRENT_SOURCE_DIR}/test_math_elementwise.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_math_along_axes.cpp

@@ -288,19 +288,21 @@ TEMPLATE_TEST_CASE("test_indexing_take_exception","[test_indexing]",
     using tensor_type = gtensor::tensor<value_type,input_order>;
     using index_tensor_type = gtensor::tensor<int,indexes_order>;
     using gtensor::take;
-    using gtensor::indexing_exception;
+    using gtensor::value_error;
+    using gtensor::axis_error;
+    using gtensor::index_error;
     using helpers_for_testing::apply_by_element;
 
     //take from empty
-    REQUIRE_THROWS_AS(take(tensor_type{},index_tensor_type{0,0,0},0),indexing_exception);
+    REQUIRE_THROWS_AS(take(tensor_type{},index_tensor_type{0,0,0},0),value_error);
     //axis out of bounds
-    REQUIRE_THROWS_AS(take(tensor_type{},index_tensor_type{},1),indexing_exception);
-    REQUIRE_THROWS_AS(take(tensor_type{{1,2,3},{4,5,6}},index_tensor_type{},2),indexing_exception);
-    REQUIRE_THROWS_AS(take(tensor_type{{1,2,3},{4,5,6}},index_tensor_type{0,0,0},2),indexing_exception);
+    REQUIRE_THROWS_AS(take(tensor_type{},index_tensor_type{},1),axis_error);
+    REQUIRE_THROWS_AS(take(tensor_type{{1,2,3},{4,5,6}},index_tensor_type{},2),axis_error);
+    REQUIRE_THROWS_AS(take(tensor_type{{1,2,3},{4,5,6}},index_tensor_type{0,0,0},2),axis_error);
     //indexes out of bounds
-    REQUIRE_THROWS_AS(take(tensor_type{{1,2,3},{4,5,6}},index_tensor_type{0,1,2},0),indexing_exception);
-    REQUIRE_THROWS_AS(take(tensor_type{{1,2,3},{4,5,6}},index_tensor_type{0,1,2,3},1),indexing_exception);
-    REQUIRE_THROWS_AS(take(tensor_type{{1,2,3},{4,5,6}},index_tensor_type{0,6,2,3}),indexing_exception);
+    REQUIRE_THROWS_AS(take(tensor_type{{1,2,3},{4,5,6}},index_tensor_type{0,1,2},0),index_error);
+    REQUIRE_THROWS_AS(take(tensor_type{{1,2,3},{4,5,6}},index_tensor_type{0,1,2,3},1),index_error);
+    REQUIRE_THROWS_AS(take(tensor_type{{1,2,3},{4,5,6}},index_tensor_type{0,6,2,3}),index_error);
 }
 
 TEMPLATE_TEST_CASE("test_indexing_take_along_axis","[test_indexing]",
@@ -447,23 +449,25 @@ TEMPLATE_TEST_CASE("test_indexing_take_along_axis_exception","[test_indexing]",
     using tensor_type = gtensor::tensor<value_type,input_order>;
     using index_tensor_type = gtensor::tensor<int,indexes_order>;
     using gtensor::take_along_axis;
-    using gtensor::indexing_exception;
+    using gtensor::value_error;
+    using gtensor::axis_error;
+    using gtensor::index_error;
     using helpers_for_testing::apply_by_element;
 
     //dims not the same
-    REQUIRE_THROWS_AS(take_along_axis(tensor_type(1),index_tensor_type(0),0),indexing_exception);
-    REQUIRE_THROWS_AS(take_along_axis(tensor_type(1),index_tensor_type{0},0),indexing_exception);
-    REQUIRE_THROWS_AS(take_along_axis(tensor_type{1,2,3},index_tensor_type{{0}},0),indexing_exception);
-    REQUIRE_THROWS_AS(take_along_axis(tensor_type{{1,2,3}},index_tensor_type{0},0),indexing_exception);
-    REQUIRE_THROWS_AS(take_along_axis(tensor_type{{1,2,3}},index_tensor_type{0},1),indexing_exception);
-    //axis out of bounds
-    REQUIRE_THROWS_AS(take_along_axis(tensor_type{},index_tensor_type{},1),indexing_exception);
-    REQUIRE_THROWS_AS(take_along_axis(tensor_type{1,2,3,4,5},index_tensor_type{0,1,0,1},1),indexing_exception);
-    REQUIRE_THROWS_AS(take_along_axis(tensor_type{{1,2,3},{4,5,6}},index_tensor_type{{0,0,0}},2),indexing_exception);
-    //indexes out of bounds
-    REQUIRE_THROWS_AS(take_along_axis(tensor_type{{1,2,3},{4,5,6}},index_tensor_type{{0,1,0},{1,0,2},{0,1,1}},0),indexing_exception);
-    REQUIRE_THROWS_AS(take_along_axis(tensor_type{{1,2,3},{4,5,6}},index_tensor_type{{0,1,3,2}},1),indexing_exception);
-    REQUIRE_THROWS_AS(take_along_axis(tensor_type{{1,2,3},{4,5,6}},index_tensor_type{0,6,2,3}),indexing_exception);
+    REQUIRE_THROWS_AS(take_along_axis(tensor_type(1),index_tensor_type(0),0),value_error);
+    REQUIRE_THROWS_AS(take_along_axis(tensor_type(1),index_tensor_type{0},0),value_error);
+    REQUIRE_THROWS_AS(take_along_axis(tensor_type{1,2,3},index_tensor_type{{0}},0),value_error);
+    REQUIRE_THROWS_AS(take_along_axis(tensor_type{{1,2,3}},index_tensor_type{0},0),value_error);
+    REQUIRE_THROWS_AS(take_along_axis(tensor_type{{1,2,3}},index_tensor_type{0},1),value_error);
     //take_along_axis from empty
-    REQUIRE_THROWS_AS(take_along_axis(tensor_type{},index_tensor_type{0,0,0},0),indexing_exception);
+    REQUIRE_THROWS_AS(take_along_axis(tensor_type{},index_tensor_type{0,0,0},0),value_error);
+    //axis out of bounds
+    REQUIRE_THROWS_AS(take_along_axis(tensor_type{},index_tensor_type{},1),axis_error);
+    REQUIRE_THROWS_AS(take_along_axis(tensor_type{1,2,3,4,5},index_tensor_type{0,1,0,1},1),axis_error);
+    REQUIRE_THROWS_AS(take_along_axis(tensor_type{{1,2,3},{4,5,6}},index_tensor_type{{0,0,0}},2),axis_error);
+    //indexes out of bounds
+    REQUIRE_THROWS_AS(take_along_axis(tensor_type{{1,2,3},{4,5,6}},index_tensor_type{{0,1,0},{1,0,2},{0,1,1}},0),index_error);
+    REQUIRE_THROWS_AS(take_along_axis(tensor_type{{1,2,3},{4,5,6}},index_tensor_type{{0,1,3,2}},1),index_error);
+    REQUIRE_THROWS_AS(take_along_axis(tensor_type{{1,2,3},{4,5,6}},index_tensor_type{0,6,2,3}),index_error);
 }

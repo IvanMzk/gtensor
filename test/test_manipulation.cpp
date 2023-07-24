@@ -10,7 +10,6 @@ TEST_CASE("test_check_stack_args_nothrow","[test_manipulation]")
     using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using dim_type = typename config_type::dim_type;
     using shape_type = typename config_type::shape_type;
-    using gtensor::combine_exception;
     using gtensor::detail::check_stack_variadic_args;
     using gtensor::detail::check_stack_container_args;
     using helpers_for_testing::apply_by_element;
@@ -68,7 +67,7 @@ TEST_CASE("test_check_stack_args_exception","[test_manipulation]")
     using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using dim_type = typename config_type::dim_type;
     using shape_type = typename config_type::shape_type;
-    using gtensor::combine_exception;
+    using gtensor::value_error;
     using gtensor::detail::check_stack_container_args;
     using gtensor::detail::check_stack_variadic_args;
     using helpers_for_testing::apply_by_element;
@@ -94,7 +93,7 @@ TEST_CASE("test_check_stack_args_exception","[test_manipulation]")
             auto apply_shapes = [&axis](const auto&...shapes_){
                 check_stack_variadic_args(axis, shapes_...);
             };
-            REQUIRE_THROWS_AS(std::apply(apply_shapes, shapes), combine_exception);
+            REQUIRE_THROWS_AS(std::apply(apply_shapes, shapes), value_error);
         };
         apply_by_element(test, test_data);
     }
@@ -108,7 +107,7 @@ TEST_CASE("test_check_stack_args_exception","[test_manipulation]")
                 return container_type{shapes_...};
             };
             auto container = std::apply(make_shapes_container, shapes);
-            REQUIRE_THROWS_AS(check_stack_container_args(axis,container), combine_exception);
+            REQUIRE_THROWS_AS(check_stack_container_args(axis,container), value_error);
         };
         apply_by_element(test, test_data);
     }
@@ -119,7 +118,6 @@ TEST_CASE("test_check_concatenate_args_nothrow","[test_manipulation]")
     using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using dim_type = typename config_type::dim_type;
     using shape_type = typename config_type::shape_type;
-    using gtensor::combine_exception;
     using gtensor::detail::check_concatenate_variadic_args;
     using gtensor::detail::check_concatenate_container_args;
     using helpers_for_testing::apply_by_element;
@@ -180,7 +178,7 @@ TEST_CASE("test_check_concatenate_args_exception","[test_manipulation]")
     using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,int>;
     using dim_type = typename config_type::dim_type;
     using shape_type = typename config_type::shape_type;
-    using gtensor::combine_exception;
+    using gtensor::value_error;
     using gtensor::detail::check_concatenate_variadic_args;
     using gtensor::detail::check_concatenate_container_args;
     using helpers_for_testing::apply_by_element;
@@ -209,7 +207,7 @@ TEST_CASE("test_check_concatenate_args_exception","[test_manipulation]")
         auto test = [](const auto& t){
             auto axis = std::get<0>(t);
             auto shapes = std::get<1>(t);
-            REQUIRE_THROWS_AS(check_concatenate_variadic_args(axis, shapes), combine_exception);
+            REQUIRE_THROWS_AS(check_concatenate_variadic_args(axis, shapes), value_error);
         };
         apply_by_element(test, test_data);
     }
@@ -223,7 +221,7 @@ TEST_CASE("test_check_concatenate_args_exception","[test_manipulation]")
                 return container_type{shapes_...};
             };
             auto container = std::apply(make_shapes_container, shapes);
-            REQUIRE_THROWS_AS(check_concatenate_container_args(axis,container), combine_exception);
+            REQUIRE_THROWS_AS(check_concatenate_container_args(axis,container), value_error);
         };
         apply_by_element(test, test_data);
     }
@@ -481,7 +479,7 @@ TEST_CASE("test_stack_exception","[test_manipulation]")
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
     using dim_type = typename tensor_type::dim_type;
-    using gtensor::combine_exception;
+    using gtensor::value_error;
     using helpers_for_testing::apply_by_element;
     using gtensor::stack;
     //0axis,1tensors
@@ -506,7 +504,7 @@ TEST_CASE("test_stack_exception","[test_manipulation]")
             auto apply_tensors = [&axis](const auto&...tensors_){
                 return stack(axis, tensors_...);
             };
-            REQUIRE_THROWS_AS(std::apply(apply_tensors, tensors), combine_exception);
+            REQUIRE_THROWS_AS(std::apply(apply_tensors, tensors), value_error);
         };
         apply_by_element(test, test_data);
     }
@@ -517,7 +515,7 @@ TEST_CASE("test_stack_exception","[test_manipulation]")
             auto axis = std::get<0>(t);
             auto tensors = std::get<1>(t);
             auto container = std::apply([](const auto&...ts){return container_type{ts.copy()...};}, tensors);
-            REQUIRE_THROWS_AS(stack(axis, container), combine_exception);
+            REQUIRE_THROWS_AS(stack(axis, container), value_error);
         };
         apply_by_element(test_concatenate_container, test_data);
     }
@@ -737,7 +735,7 @@ TEST_CASE("test_concatenate_exception","[test_manipulation]")
     using tensor_type = gtensor::tensor<value_type>;
     using dim_type = typename tensor_type::dim_type;
     using shape_type = typename tensor_type::shape_type;
-    using gtensor::combine_exception;
+    using gtensor::value_error;
     using helpers_for_testing::apply_by_element;
     using gtensor::concatenate;
     //0axis,1tensors
@@ -765,7 +763,7 @@ TEST_CASE("test_concatenate_exception","[test_manipulation]")
             auto apply_tensors = [&axis](const auto&...tensors_){
                 return concatenate(axis, tensors_...);
             };
-            REQUIRE_THROWS_AS(std::apply(apply_tensors, tensors), combine_exception);
+            REQUIRE_THROWS_AS(std::apply(apply_tensors, tensors), value_error);
         };
         apply_by_element(test_concatenate_variadic, test_data);
     }
@@ -776,7 +774,7 @@ TEST_CASE("test_concatenate_exception","[test_manipulation]")
             auto axis = std::get<0>(t);
             auto tensors = std::get<1>(t);
             auto container = std::apply([](const auto&...ts){return container_type{ts.copy()...};}, tensors);
-            REQUIRE_THROWS_AS(concatenate(axis, container), combine_exception);
+            REQUIRE_THROWS_AS(concatenate(axis, container), value_error);
         };
         apply_by_element(test_concatenate_container, test_data);
     }
@@ -920,7 +918,7 @@ TEST_CASE("test_vstack_exception","[test_manipulation]")
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
     using helpers_for_testing::apply_by_element;
-    using gtensor::combine_exception;
+    using gtensor::value_error;
     using gtensor::vstack;
     //0tensors
     auto test_data = std::make_tuple(
@@ -937,7 +935,7 @@ TEST_CASE("test_vstack_exception","[test_manipulation]")
             auto apply_tensors = [](const auto&...tensors_){
                 return vstack(tensors_...);
             };
-            REQUIRE_THROWS_AS(std::apply(apply_tensors, tensors), combine_exception);
+            REQUIRE_THROWS_AS(std::apply(apply_tensors, tensors), value_error);
         };
         apply_by_element(test, test_data);
     }
@@ -947,7 +945,7 @@ TEST_CASE("test_vstack_exception","[test_manipulation]")
         auto test = [](const auto& t){
             auto tensors = std::get<0>(t);
             auto container = std::apply([](const auto&...ts){return container_type{ts.copy()...};}, tensors);
-            REQUIRE_THROWS_AS(vstack(container), combine_exception);
+            REQUIRE_THROWS_AS(vstack(container), value_error);
         };
         apply_by_element(test, test_data);
     }
@@ -1003,7 +1001,7 @@ TEST_CASE("test_hstack_exception","[test_manipulation]")
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
     using helpers_for_testing::apply_by_element;
-    using gtensor::combine_exception;
+    using gtensor::value_error;
     using gtensor::hstack;
     //0tensors
     auto test_data = std::make_tuple(
@@ -1019,7 +1017,7 @@ TEST_CASE("test_hstack_exception","[test_manipulation]")
             auto apply_tensors = [](const auto&...tensors_){
                 return hstack(tensors_...);
             };
-            REQUIRE_THROWS_AS(std::apply(apply_tensors, tensors), combine_exception);
+            REQUIRE_THROWS_AS(std::apply(apply_tensors, tensors), value_error);
         };
         apply_by_element(test, test_data);
     }
@@ -1029,7 +1027,7 @@ TEST_CASE("test_hstack_exception","[test_manipulation]")
         auto test = [](const auto& t){
             auto tensors = std::get<0>(t);
             auto container = std::apply([](const auto&...ts){return container_type{ts.copy()...};}, tensors);
-            REQUIRE_THROWS_AS(hstack(container), combine_exception);
+            REQUIRE_THROWS_AS(hstack(container), value_error);
         };
         apply_by_element(test, test_data);
     }
@@ -1170,7 +1168,7 @@ TEST_CASE("test_block_tuple_exception","[test_manipulation]")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
-    using gtensor::combine_exception;
+    using gtensor::value_error;
     using gtensor::block;
     using helpers_for_testing::apply_by_element;
     //blocks
@@ -1186,7 +1184,7 @@ TEST_CASE("test_block_tuple_exception","[test_manipulation]")
         std::make_tuple(std::make_tuple(std::make_tuple(tensor_type{},tensor_type{}),std::make_tuple(tensor_type{})), std::make_tuple(std::make_tuple(tensor_type{})))
     );
     auto test = [](const auto& blocks){
-        REQUIRE_THROWS_AS(block(blocks),combine_exception);
+        REQUIRE_THROWS_AS(block(blocks),value_error);
     };
     apply_by_element(test, test_data);
 }
@@ -1261,21 +1259,21 @@ TEST_CASE("test_block_exception","[test_manipulation]")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
-    using gtensor::combine_exception;
+    using gtensor::value_error;
     using gtensor::detail::nested_init_list1;
     using gtensor::detail::nested_init_list2;
     using gtensor::detail::nested_init_list3;
     using gtensor::block;
     using helpers_for_testing::apply_by_element;
-    REQUIRE_THROWS_AS(block(nested_init_list1<tensor_type>{tensor_type{1,2},tensor_type{{3,4},{5,6}}}), combine_exception);
-    REQUIRE_THROWS_AS(block(nested_init_list1<tensor_type>{tensor_type{{1},{2},{3}},tensor_type{{3,4},{5,6}}}), combine_exception);
-    REQUIRE_THROWS_AS(block(nested_init_list1<tensor_type>{tensor_type{{3,4},{5,6}}, tensor_type{}}), combine_exception);
-    REQUIRE_THROWS_AS(block(nested_init_list1<tensor_type>{tensor_type{},tensor_type{{3,4},{5,6}}}), combine_exception);
-    REQUIRE_THROWS_AS(block(nested_init_list1<tensor_type>{tensor_type{{{1}},{{2}}}, tensor_type{{{3}},{{4}},{{5}}} }), combine_exception);
-    REQUIRE_THROWS_AS(block(nested_init_list2<tensor_type>{{tensor_type{},tensor_type{1,2,3}},{tensor_type{}}}), combine_exception);
-    REQUIRE_THROWS_AS(block(nested_init_list2<tensor_type>{{tensor_type{1,2}},{tensor_type{}}}), combine_exception);
-    REQUIRE_THROWS_AS(block(nested_init_list2<tensor_type>{{tensor_type{1,2}},{tensor_type{3,4,5}}}), combine_exception);
-    REQUIRE_THROWS_AS(block(nested_init_list3<tensor_type>{{{tensor_type{},tensor_type{}},{tensor_type{}}}, {{tensor_type{}}}}), combine_exception);
+    REQUIRE_THROWS_AS(block(nested_init_list1<tensor_type>{tensor_type{1,2},tensor_type{{3,4},{5,6}}}), value_error);
+    REQUIRE_THROWS_AS(block(nested_init_list1<tensor_type>{tensor_type{{1},{2},{3}},tensor_type{{3,4},{5,6}}}), value_error);
+    REQUIRE_THROWS_AS(block(nested_init_list1<tensor_type>{tensor_type{{3,4},{5,6}}, tensor_type{}}), value_error);
+    REQUIRE_THROWS_AS(block(nested_init_list1<tensor_type>{tensor_type{},tensor_type{{3,4},{5,6}}}), value_error);
+    REQUIRE_THROWS_AS(block(nested_init_list1<tensor_type>{tensor_type{{{1}},{{2}}}, tensor_type{{{3}},{{4}},{{5}}} }), value_error);
+    REQUIRE_THROWS_AS(block(nested_init_list2<tensor_type>{{tensor_type{},tensor_type{1,2,3}},{tensor_type{}}}), value_error);
+    REQUIRE_THROWS_AS(block(nested_init_list2<tensor_type>{{tensor_type{1,2}},{tensor_type{}}}), value_error);
+    REQUIRE_THROWS_AS(block(nested_init_list2<tensor_type>{{tensor_type{1,2}},{tensor_type{3,4,5}}}), value_error);
+    REQUIRE_THROWS_AS(block(nested_init_list3<tensor_type>{{{tensor_type{},tensor_type{}},{tensor_type{}}}, {{tensor_type{}}}}), value_error);
 }
 
 TEMPLATE_TEST_CASE("test_split_split_points","[test_manipulation]",
@@ -1485,7 +1483,7 @@ TEST_CASE("test_split_exception","[test_manipulation]")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
-    using gtensor::combine_exception;
+    using gtensor::value_error;
     using gtensor::split;
     using helpers_for_testing::apply_by_element;
 
@@ -1506,7 +1504,7 @@ TEST_CASE("test_split_exception","[test_manipulation]")
         auto ten = std::get<0>(t);
         auto split_arg = std::get<1>(t);
         auto axis = std::get<2>(t);
-        REQUIRE_THROWS_AS(split(ten,split_arg,axis), combine_exception);
+        REQUIRE_THROWS_AS(split(ten,split_arg,axis), value_error);
     };
     apply_by_element(test, test_data);
 }
@@ -1567,7 +1565,7 @@ TEMPLATE_TEST_CASE("test_vsplit","[test_manipulation]",
     }
     SECTION("test_vsplit_exception")
     {
-        using gtensor::combine_exception;
+        using gtensor::value_error;
         //0tensor,1split_arg
         auto test_data = std::make_tuple(
             std::make_tuple(tensor_type{1,2,3},std::vector<int>{1}),
@@ -1577,7 +1575,7 @@ TEMPLATE_TEST_CASE("test_vsplit","[test_manipulation]",
         auto test = [](const auto& t){
             auto ten = std::get<0>(t);
             auto split_arg = std::get<1>(t);
-            REQUIRE_THROWS_AS(vsplit(ten, split_arg), combine_exception);
+            REQUIRE_THROWS_AS(vsplit(ten, split_arg), value_error);
         };
         apply_by_element(test, test_data);
     }
@@ -1638,7 +1636,7 @@ TEMPLATE_TEST_CASE("test_hsplit","[test_manipulation]",
     }
     SECTION("test_hsplit_exception")
     {
-        using gtensor::combine_exception;
+        using gtensor::value_error;
         //0tensor,1split_arg
         auto test_data = std::make_tuple(
             std::make_tuple(tensor_type{1},2),
@@ -1648,7 +1646,7 @@ TEMPLATE_TEST_CASE("test_hsplit","[test_manipulation]",
         auto test = [](const auto& t){
             auto ten = std::get<0>(t);
             auto split_arg = std::get<1>(t);
-            REQUIRE_THROWS_AS(hsplit(ten, split_arg), combine_exception);
+            REQUIRE_THROWS_AS(hsplit(ten, split_arg), value_error);
         };
         apply_by_element(test, test_data);
     }

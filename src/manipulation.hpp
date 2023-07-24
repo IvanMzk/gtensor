@@ -6,16 +6,10 @@
 #include <algorithm>
 #include "module_selector.hpp"
 #include "common.hpp"
+#include "exception.hpp"
 #include "init_list_helper.hpp"
 
 namespace gtensor{
-
-class combine_exception : public std::runtime_error{
-public:
-    explicit combine_exception(const char* what):
-        runtime_error(what)
-    {}
-};
 
 namespace detail{
 
@@ -54,11 +48,11 @@ void check_stack_variadic_args(const DimT& axis_, const ShT& shape, const ShTs&.
     auto dim = detail::make_dim(shape);
     auto axis = detail::make_axis(shape,axis_);
     if (axis > dim){
-        throw combine_exception{"bad stack axis"};
+        throw axis_error{"bad stack axis"};
     }
     if constexpr (sizeof...(ShTs) > 0){
         if (!((shape==shapes)&&...)){
-            throw combine_exception{"tensors to stack must have equal shapes"};
+            throw value_error{"tensors to stack must have equal shapes"};
         }
     }
 }
@@ -67,19 +61,19 @@ template<typename DimT, typename Container>
 void check_stack_container_args(const DimT& axis_, const Container& shapes){
     using dim_type = DimT;
     if (std::empty(shapes)){
-        throw combine_exception("stack empty container");
+        throw value_error("stack empty container");
     }
     auto it = shapes.begin();
     const auto& first_shape = unwrap_shape(*it);
     const auto axis = make_axis(first_shape, axis_);
     dim_type first_dim = make_dim(first_shape);
     if (axis > first_dim){
-        throw combine_exception{"bad stack axis"};
+        throw axis_error{"bad stack axis"};
     }
     for(++it; it!=shapes.end(); ++it){
         const auto& shape = unwrap_shape(*it);
         if (first_shape != shape){
-            throw combine_exception{"tensors to stack must have equal shapes"};
+            throw value_error{"tensors to stack must have equal shapes"};
         }
     }
 }
@@ -90,16 +84,16 @@ void check_concatenate_variadic_args(const DimT& axis_, const ShT& shape, const 
     dim_type dim = make_dim(shape);
     dim_type axis = make_axis(shape, axis_);
     if (axis >= dim){
-        throw combine_exception{"bad concatenate axis"};
+        throw axis_error{"bad concatenate axis"};
     }
     if constexpr (sizeof...(ShTs) > 0){
         if (!((dim==static_cast<dim_type>(shapes.size()))&&...)){
-            throw combine_exception{"tensors to concatenate must have equal dimentions number"};
+            throw value_error{"tensors to concatenate must have equal dimentions number"};
         }
         for (dim_type d{0}; d!=dim; ++d){
             if (!((shape[d]==shapes[d])&&...)){
                 if (d!=axis){
-                    throw combine_exception{"tensors to concatenate must have equal shapes"};
+                    throw value_error{"tensors to concatenate must have equal shapes"};
                 }
             }
         }
@@ -115,24 +109,24 @@ template<typename DimT, typename Container>
 void check_concatenate_container_args(const DimT& axis_, const Container& shapes){
     using dim_type = DimT;
     if (shapes.empty()){
-        throw combine_exception{"nothing to concatenate"};
+        throw value_error{"nothing to concatenate"};
     }
     auto it = shapes.begin();
     const auto& first_shape = unwrap_shape(*it);
     const dim_type axis = make_axis(first_shape, axis_);
     const dim_type first_dim = make_dim(first_shape);
     if (axis >= first_dim){
-        throw combine_exception{"bad concatenate axis"};
+        throw axis_error{"bad concatenate axis"};
     }
     for(++it; it!=shapes.end(); ++it){
         const auto& shape = unwrap_shape(*it);
         if (first_dim!=make_dim(shape)){
-            throw combine_exception("tensors to concatenate must have equal dimensions number");
+            throw value_error("tensors to concatenate must have equal dimensions number");
         }
         for (dim_type d{0}; d!=first_dim; ++d){
             if (first_shape[d]!=shape[d]){
                 if (d!=axis){
-                    throw combine_exception{"tensors to concatenate must have equal shapes"};
+                    throw value_error{"tensors to concatenate must have equal shapes"};
                 }
             }
         }
@@ -143,7 +137,7 @@ template<typename DimT, typename...Ts>
 void check_split_by_points_args(const basic_tensor<Ts...>& t, const DimT& axis_){
     const auto axis = make_axis(t.dim(),axis_);
     if (axis >= t.dim()){
-        throw combine_exception("invalid split axis");
+        throw axis_error("invalid split axis");
     }
 }
 
@@ -153,10 +147,10 @@ void check_split_by_equal_parts_args(const basic_tensor<Ts...>& t, const DimT& a
     const auto axis = make_axis(t.dim(), axis_);
     const auto parts_number = static_cast<index_type>(parts_number_);
     if (axis >= t.dim()){
-        throw combine_exception("invalid split axis");
+        throw axis_error("invalid split axis");
     }
     if (parts_number == index_type{0} || t.shape()[axis] % parts_number != index_type{0}){
-        throw combine_exception("can't split in equal parts");
+        throw value_error("can't split in equal parts");
     }
 }
 
@@ -164,7 +158,7 @@ template<typename...Ts>
 void check_vsplit_args(const basic_tensor<Ts...>& t){
     using dim_type = typename basic_tensor<Ts...>::dim_type;
     if (t.dim() < dim_type{2}){
-        throw combine_exception("vsplit works only for 2 or more dimensions");
+        throw value_error("vsplit works only for 2 or more dimensions");
     }
 }
 

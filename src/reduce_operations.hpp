@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <numeric>
 #include "common.hpp"
+#include "exception.hpp"
 #include "math.hpp"
 
 namespace gtensor{
@@ -41,7 +42,7 @@ typename std::iterator_traits<It>::value_type reduce_empty(const Initial& initia
     }else if constexpr(has_initial_v<Functor,value_type>){
         return Functor::template value<value_type>();
     }else{  //no initial, throw
-        throw reduce_exception("cant reduce zero size dimension without initial value");
+        throw value_error("cant reduce zero size dimension without initial value");
     }
 }
 
@@ -188,7 +189,7 @@ template<typename T, typename U>
 void check_spacing_size(const T& n, const U& n_spacing){
     auto test = [](const auto& n_, const auto& n_spacing_){
         if (n_!=n_spacing_){
-            throw reduce_exception("length of spacing not compatible with specified axes");
+            throw value_error("length of spacing not compatible with specified axes");
         }
     };
     if constexpr (detail::is_static_castable_v<U,T>){
@@ -223,7 +224,7 @@ struct gradient
         static_assert(std::is_same_v<dst_value_type,res_type>,"invalid DstIt value_type");
         const auto n = last-first;
         if (n<2){
-            throw reduce_exception("gradient requires at least 2 points");
+            throw value_error("gradient requires at least 2 points");
         }
         if constexpr (detail::is_container_of_type_v<Spacing,res_type>){    //spacing is coordinates, not uniform
             check_spacing_size(n,spacing.size());
@@ -275,7 +276,7 @@ struct min_max
     template<typename It>
     auto operator()(It first, It last){
         if (first==last){
-            throw reduce_exception("cant reduce zero size dimension");
+            throw value_error("cant reduce zero size dimension");
         }
         auto min = *first;
         auto max = min;
@@ -306,7 +307,7 @@ T reduce_empty(){
     if constexpr (gtensor::math::numeric_traits<T>::has_nan()){
         return gtensor::math::numeric_traits<T>::nan();
     }else{
-        throw reduce_exception("cant reduce zero size dimension without initial value");
+        throw value_error("cant reduce zero size dimension without initial value");
     }
 }
 
@@ -433,12 +434,12 @@ struct nanstdev
 template<typename Q>
 void check_quantile(const Q& q){
     if (q>Q{1} || q<Q{0}){
-        throw reduce_exception("quntile must be in range [0,1]");
+        throw value_error("quntile must be in range [0,1]");
     }
 }
 
 //Predicate is use in copy_if that copy elements to temporary storage
-//quantile: Predicate must throw reduce_exception on nan element, true otherwise
+//quantile: Predicate must throw value_error on nan element, true otherwise
 //nanquantile: Predicate must return false on nan element, true otherwise
 template<typename Predicate>
 struct quantile_nanquantile
@@ -462,7 +463,7 @@ struct quantile_nanquantile
         if constexpr (gtensor::math::numeric_traits<value_type>::has_nan()){
             try{
                 std::copy_if(first,last,std::back_inserter(elements_),Predicate{});
-            }catch(const reduce_exception&){
+            }catch(const value_error&){
                 return gtensor::math::numeric_traits<res_type>::nan();
             }
         }else{
@@ -494,7 +495,7 @@ struct quantile_predicate
     template<typename T>
     bool operator()(const T& t){
         if (gtensor::math::isnan(t)){
-            throw reduce_exception("");
+            throw value_error("");
         }
         return true;
     }
@@ -534,7 +535,7 @@ template<typename T, typename U>
 void check_weights_size(const T& n, const U& n_weights){
     auto test = [](const auto& n_, const auto& n_weights_){
         if (n_!=n_weights_){
-            throw reduce_exception("length of weights not compatible with specified axes");
+            throw value_error("length of weights not compatible with specified axes");
         }
     };
     if constexpr (detail::is_static_castable_v<U,T>){
@@ -549,7 +550,7 @@ void check_weights_size(const T& n, const U& n_weights){
 template<typename T>
 void check_weights_sum(const T& sum){
     if (sum == T{0}){
-        throw reduce_exception("weights sum to zero");
+        throw value_error("weights sum to zero");
     }
 }
 
@@ -719,11 +720,11 @@ template<typename T, typename Nth>
 void check_nth(const T& n, const Nth& nth){
     if constexpr (detail::is_container_v<Nth>){
         if (nth.size() == 0){
-            throw reduce_exception("empty nth container");
+            throw value_error("empty nth container");
         }
     }else{
         if (nth>=n || nth<0){
-            throw reduce_exception("nth out of bounds");
+            throw value_error("nth out of bounds");
         }
     }
 }
@@ -822,7 +823,7 @@ struct argextremum_nanargextremum
     auto operator()(It first, It last){
         using difference_type = typename std::iterator_traits<It>::difference_type;
         if (first == last){
-            throw reduce_exception("cant reduce zero size dimension");
+            throw value_error("cant reduce zero size dimension");
         }
         Comparator comparator{};
         auto init = *first;
@@ -837,7 +838,7 @@ struct argextremum_nanargextremum
         }
         if constexpr (ThrowNanResult::value){
             if (gtensor::math::isnan(init)){
-                throw reduce_exception("all nan slice");
+                throw value_error("all nan slice");
             }
         }
         return res;

@@ -10,13 +10,6 @@
 
 namespace gtensor{
 
-// class reduce_exception : public std::runtime_error{
-// public:
-//     explicit reduce_exception(const char* what):
-//         runtime_error(what)
-//     {}
-// };
-
 namespace detail{
 
 template<typename Container, typename DimT, typename Axes>

@@ -2,6 +2,7 @@
 #define INDEXING_HPP_
 
 #include "module_selector.hpp"
+#include "exception.hpp"
 #include "math.hpp"
 #include "data_accessor.hpp"
 #include "iterator.hpp"
@@ -24,16 +25,16 @@ void check_take_args(const IdxT& input_size, const DimT& input_dim, const IdxT& 
         auto axis = make_axis(input_dim,axis_);
         if (input_dim==0){
             if (axis != 0){
-                throw indexing_exception("axis out of bounds");
+                throw axis_error("axis out of bounds");
             }
         }else{
             if (axis >= input_dim){
-                throw indexing_exception("axis out of bounds");
+                throw axis_error("axis out of bounds");
             }
         }
     }
     if (input_size==0 && indexes_size!=0){
-        throw indexing_exception("cannot do a non-empty take from an empty input");
+        throw value_error("cannot do a non-empty take from an empty input");
     }
 }
 
@@ -57,12 +58,12 @@ void check_take_along_axis_args(const DimT& input_dim_, const DimT& indexes_dim,
     static constexpr bool is_axis = !std::is_same_v<Axis,no_value>;
     const auto input_dim = is_axis ? input_dim_ : DimT{1};
     if (input_dim!=indexes_dim){
-        throw indexing_exception("t and indexes must have the same number of dimensions");
+        throw value_error("t and indexes must have the same number of dimensions");
     }
     if constexpr (is_axis){
         auto axis = make_axis(input_dim,axis_);
         if (axis >= input_dim){
-            throw indexing_exception("axis out of bounds");
+            throw axis_error("axis out of bounds");
         }
     }
 }
@@ -214,7 +215,7 @@ static auto take_flatten(const basic_tensor<Ts...>& t, const basic_tensor<Us...>
             if (idx < size){
                 *res_it = indexer[idx];
             }else{
-                throw indexing_exception("indexes is out of bounds");
+                throw index_error("indexes is out of bounds");
             }
         }
     }
@@ -269,7 +270,7 @@ static auto take(const basic_tensor<Ts...>& t, const basic_tensor<Us...>& indexe
                     );
                     input_walker.walk(axis,-idx);
                 }else{
-                    throw indexing_exception("indexes is out of bounds");
+                    throw index_error("indexes is out of bounds");
                 }
             }
         }
@@ -315,7 +316,7 @@ static auto take_along_axis(const basic_tensor<Ts...>& t, const basic_tensor<Us.
                         *res_it = *input_walker;
                         input_walker.walk(axis,-idx);
                     }else{
-                        throw indexing_exception("indexes is out of bounds");
+                        throw index_error("indexes is out of bounds");
                     }
                 }
                 input_traverser.template next<order>();

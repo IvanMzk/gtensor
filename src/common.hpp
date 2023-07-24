@@ -2,21 +2,13 @@
 #define COMMON_HPP_
 
 #include <type_traits>
-#include <exception>
+#include "exception.hpp"
 #include "config.hpp"
 
 namespace gtensor{
 
 template<typename Impl> class basic_tensor;
 template<typename T, typename Layout, typename Config> class tensor;
-
-class dim_exception : public std::runtime_error
-{
-public:
-    explicit dim_exception(const char* what):
-        std::runtime_error(what)
-    {}
-};
 
 namespace detail{
 
@@ -185,7 +177,7 @@ inline DimT make_axis_helper(const DimT& dim, const Axis& axis){
     if (axis_ < dim_type{0}){
         const dim_type res = dim + axis_;
         if (res < dim_type{0}){
-            throw gtensor::dim_exception("invalid negative axis");
+            throw gtensor::axis_error("invalid negative axis");
         }
         return res;
     }else{
