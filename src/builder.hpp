@@ -147,11 +147,10 @@ struct builder
         return make_space<T,Order,Config>(start,stop,num,axis,generator);
     }
 
-    template<typename T, typename Order, typename Config, typename Start, typename Stop, typename U, typename Base, typename DimT>
-    static auto logspace(const Start& start, const Stop& stop, const U& num, bool end_point, const Base& base, const DimT& axis){
+    template<typename T, typename Order, typename Config, typename Start, typename Stop, typename Num, typename Base, typename DimT>
+    static auto logspace(const Start& start, const Stop& stop, const Num& num, bool end_point, const Base& base, const DimT& axis){
         auto generator = [end_point,base](auto first, auto last, const auto& start, const auto& stop, const auto& num){
-            using num_type = std::remove_cv_t<std::remove_reference_t<decltype(num)>>;
-            using fp_type = math::make_floating_point_t<num_type>;
+            using fp_type = typename std::iterator_traits<decltype(first)>::value_type;
             const auto intervals_n = end_point ?  static_cast<fp_type>(num-1) : static_cast<fp_type>(num);
             const auto step = (stop-start)/intervals_n;
             auto start_ = static_cast<fp_type>(start);
@@ -163,11 +162,10 @@ struct builder
         return make_space<T,Order,Config>(start,stop,num,axis,generator);
     }
 
-    template<typename T, typename Order, typename Config, typename Start, typename Stop, typename U, typename DimT>
-    static auto geomspace(const Start& start, const Stop& stop, const U& num, bool end_point, const DimT& axis){
+    template<typename T, typename Order, typename Config, typename Start, typename Stop, typename Num, typename DimT>
+    static auto geomspace(const Start& start, const Stop& stop, const Num& num, bool end_point, const DimT& axis){
         auto generator = [end_point](auto first, auto last, const auto& start, const auto& stop, const auto& num){
-            using num_type = std::remove_cv_t<std::remove_reference_t<decltype(num)>>;
-            using fp_type = math::make_floating_point_t<num_type>;
+            using fp_type = typename std::iterator_traits<decltype(first)>::value_type;
             check_geomspace_args(start,stop);
             const auto intervals_n = end_point ?  static_cast<fp_type>(num-1) : static_cast<fp_type>(num);
             const auto step = math::pow(static_cast<fp_type>(stop)/static_cast<fp_type>(start),1/intervals_n);
@@ -465,7 +463,7 @@ auto arange(const Stop& stop){
 }
 
 //make tensor of num evenly spaced samples, calculated over the interval start, stop
-//start, stop may be scalar or tensor
+//start, stop may be scalar or tensor, if either is tensor samples will be along axis
 //result's value_type, layout and config may be specified by explicit specialization of T,Order,Config template's parameters
 //T is not specialized explicitly result value_type is infered from Start,Stop,Num types
 template<typename T=detail::no_value, typename Order = config::c_order, typename Config = config::default_config, typename Start, typename Stop, typename Num=int, typename DimT=int>
@@ -474,14 +472,14 @@ auto linspace(const Start& start, const Stop& stop, const Num& num=50, bool end_
 }
 
 //make tensor of numbers spaced evenly on a log scale
-template<typename T, typename Order = config::c_order, typename Config = config::default_config, typename Start, typename Stop, typename U=int, typename Base=double, typename DimT=int>
-auto logspace(const Start& start, const Stop& stop, const U& num=50, bool end_point=true, const Base& base=10.0, const DimT& axis=0){
+template<typename T=detail::no_value, typename Order = config::c_order, typename Config = config::default_config, typename Start, typename Stop, typename Num=int, typename Base=double, typename DimT=int>
+auto logspace(const Start& start, const Stop& stop, const Num& num=50, bool end_point=true, const Base& base=10.0, const DimT& axis=0){
     return builder_selector_t<Config>::template logspace<T,Order,Config>(start,stop,num,end_point,base,axis);
 }
 
 //make tensor of numbers spaced evenly on a log scale with endpoints specified directly
-template<typename T, typename Order = config::c_order, typename Config = config::default_config, typename Start, typename Stop, typename U=int, typename DimT=int>
-auto geomspace(const Start& start, const Stop& stop, const U& num=50, bool end_point=true, const DimT& axis=0){
+template<typename T=detail::no_value, typename Order = config::c_order, typename Config = config::default_config, typename Start, typename Stop, typename Num=int, typename DimT=int>
+auto geomspace(const Start& start, const Stop& stop, const Num& num=50, bool end_point=true, const DimT& axis=0){
     return builder_selector_t<Config>::template geomspace<T,Order,Config>(start,stop,num,end_point,axis);
 }
 

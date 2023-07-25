@@ -551,6 +551,32 @@ TEMPLATE_TEST_CASE("test_builder_logspace","[test_builder]",
     apply_by_element(test,test_data);
 }
 
+TEST_CASE("test_builder_logspace_common_value_type","[test_builder]")
+{
+    using gtensor::config::c_order;
+    using gtensor::tensor;
+    using gtensor::logspace;
+    using gtensor::tensor_close;
+
+    //common value type
+    REQUIRE(tensor_close(logspace(0,1),tensor<double>{1.0,1.048,1.099,1.151,1.207,1.265,1.326,1.389,1.456,1.526,1.6,1.677,1.758,1.842,1.931,2.024,2.121,2.223,2.33,2.442,2.56,2.683,
+        2.812,2.947,3.089,3.237,3.393,3.556,3.728,3.907,4.095,4.292,4.498,4.715,4.942,5.179,5.429,5.69,5.964,6.251,6.551,6.866,7.197,7.543,7.906,8.286,8.685,9.103,9.541,10.0},1E-2,1E-2));
+    REQUIRE(tensor_close(logspace(0,1,10),tensor<double>{1.0,1.292,1.668,2.154,2.783,3.594,4.642,5.995,7.743,10.0},1E-2,1E-2));
+    REQUIRE(tensor_close(logspace(tensor<float>{0.1,0.2,0.3},0.5,10),tensor<float>{{1.259,1.585,1.995},{1.395,1.711,2.1},{1.545,1.848,2.21},{1.711,1.995,2.326},{1.896,2.154,2.448},{2.1,2.326,2.577},{2.326,2.512,2.712},{2.577,2.712,2.855},{2.855,2.929,3.005},{3.162,3.162,3.162}},1E-2,1E-2));
+    REQUIRE(tensor_close(logspace(tensor<double>{0.1,0.2,0.3},tensor<float>{0.4,0.5,0.6},10),tensor<double>{{1.259,1.585,1.995},{1.359,1.711,2.154},{1.468,1.848,2.326},{1.585,1.995,2.512},{1.711,2.154,2.712},{1.848,2.326,2.929},{1.995,2.512,3.162},{2.154,2.712,3.415},{2.326,2.929,3.687},{2.512,3.162,3.981}},1E-2,1E-2));
+
+    REQUIRE(std::is_same_v<decltype(logspace(std::declval<int>(),std::declval<int>(),std::declval<int>())),tensor<double,c_order>>);
+    REQUIRE(std::is_same_v<decltype(logspace(std::declval<int>(),std::declval<long long int>(),std::declval<int>())),tensor<double,c_order>>);
+    REQUIRE(std::is_same_v<decltype(logspace(std::declval<float>(),std::declval<float>(),std::declval<int>())),tensor<float,c_order>>);
+    REQUIRE(std::is_same_v<decltype(logspace(std::declval<float>(),std::declval<double>(),std::declval<int>())),tensor<double,c_order>>);
+    REQUIRE(std::is_same_v<decltype(logspace(std::declval<tensor<int>>(),std::declval<tensor<int>>(),std::declval<int>())),tensor<double,c_order>>);
+    REQUIRE(std::is_same_v<decltype(logspace(std::declval<tensor<int>>(),std::declval<tensor<float>>(),std::declval<int>())),tensor<float,c_order>>);
+    REQUIRE(std::is_same_v<decltype(logspace(std::declval<tensor<double>>(),std::declval<tensor<float>>(),std::declval<int>())),tensor<double,c_order>>);
+    REQUIRE(std::is_same_v<decltype(logspace(std::declval<tensor<int>>(),std::declval<float>(),std::declval<int>())),tensor<float,c_order>>);
+    REQUIRE(std::is_same_v<decltype(logspace(std::declval<int>(),std::declval<tensor<double>>(),std::declval<int>())),tensor<double,c_order>>);
+}
+
+
 TEMPLATE_TEST_CASE("test_builder_geomspace","[test_builder]",
     int,
     double
