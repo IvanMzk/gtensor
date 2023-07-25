@@ -11,8 +11,6 @@ enum class div_modes : std::size_t {native, libdivide};
 enum class engines : std::size_t {expression_template};
 enum class orders : std::size_t {c,f};
 
-//template<typename T, T M> struct tag{static constexpr T value = M;};
-
 using mode_div_native = std::integral_constant<div_modes, div_modes::native>;
 using mode_div_libdivide = std::integral_constant<div_modes, div_modes::libdivide>;
 using engine_expression_template = std::integral_constant<engines, engines::expression_template>;

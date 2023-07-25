@@ -224,7 +224,7 @@ class reducer
             if (parent.empty()){    //zero size axis is reduced
                 auto a = parent.template traverse_order_adapter<order>();
                 const auto e = reduce_f(a.begin(), a.end(), std::forward<Args>(args)...);
-                detail::fill(res.begin(), res.end(), e);
+                std::fill(res.begin(), res.end(), e);
             }else{
                 const auto res_size = res.size();
                 if (res_size == index_type{1}){

@@ -137,7 +137,7 @@ inline void copy_from_list_(std::initializer_list<T> list, DstIt& dst_it, DiffT&
 //custom mapper implementation
 template<typename T, typename DstIt, typename Mapper, typename DiffT>
 inline void copy_from_list_(const T& v, DstIt dst_it, Mapper& mapper, DiffT& src_pos){
-    detail::advance(dst_it, mapper(src_pos));
+    std::advance(dst_it, mapper(src_pos));
     copy_element_(v,dst_it);
     ++dst_it;
     ++src_pos;

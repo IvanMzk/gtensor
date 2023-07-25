@@ -177,7 +177,7 @@ public:
     decltype(auto) operator[](const U& i)const{
         static_assert(std::is_convertible_v<U,difference_type>);
         iterator_type tmp = iterator_;
-        detail::advance(tmp, i);
+        std::advance(tmp, i);
         return *tmp;
     }
 };

@@ -115,50 +115,6 @@ template<typename, typename...Ts> struct tensor_common_value_type{using type = v
 template<typename...Ts> struct tensor_common_value_type<std::void_t<std::common_type_t<tensor_value_type_t<Ts>...>>,Ts...>{using type = std::common_type_t<tensor_value_type_t<Ts>...>;};
 template<typename...Ts> using tensor_common_value_type_t = typename tensor_common_value_type<void,Ts...>::type;
 
-//standart library may require difference_type to be convertible to integral
-template<typename It, typename T>
-inline void fill(It first, It last, const T& v){
-    using difference_type = typename std::iterator_traits<It>::difference_type;
-    if constexpr (std::is_integral_v<difference_type>){
-        std::fill(first,last,v);
-    }else{
-        for(;first!=last; ++first){
-            *first = v;
-        }
-    }
-}
-
-template<typename It, typename T>
-inline void advance(It& it, T n){
-    using iterator_type = std::remove_cv_t<It>;
-    using difference_type = typename std::iterator_traits<iterator_type>::difference_type;
-    if constexpr (std::is_integral_v<difference_type>){
-        std::advance(it,n);
-    }else{
-        using it_cat = typename std::iterator_traits<iterator_type>::iterator_category;
-        if constexpr (std::is_convertible_v<it_cat,std::random_access_iterator_tag>){
-            it+=n;
-        }else{
-            const difference_type zero_{0};
-            if (n>=zero_){
-                for (;n!=zero_;--n){
-                    ++it;
-                }
-            }else{
-                for (;n!=zero_;++n){
-                    --it;
-                }
-            }
-        }
-    }
-}
-template<typename It>
-inline It next(It it, typename std::iterator_traits<It>::difference_type n = 1)
-{
-    detail::advance(it, n);
-    return it;
-}
-
 //reserve space in arbitrary container, if possible
 template<typename Container, typename T>
 bool reserve(Container& container, const T& n){

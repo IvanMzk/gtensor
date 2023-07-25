@@ -127,7 +127,7 @@ private:
         descriptor_(std::forward<ShT>(shape)),
         elements_(descriptor_.size())
     {
-        detail::fill(begin_(),end_(),v);
+        std::fill(begin_(),end_(),v);
     }
     //from range constructors
     //try to construct directly from range and move
