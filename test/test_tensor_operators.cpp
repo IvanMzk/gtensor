@@ -664,7 +664,7 @@ TEST_CASE("test_tensor_equal_routine","test_tensor_operators")
     apply_by_element(test,test_data);
 }
 
-TEST_CASE("test_tensor_equal_routine_different_config_traverse_order","[test_math]")
+TEST_CASE("test_tensor_equal_routine_different_config_traverse_order","[test_tensor_operators]")
 {
     using value_type = double;
     using gtensor::config::c_order;
@@ -679,7 +679,7 @@ TEST_CASE("test_tensor_equal_routine_different_config_traverse_order","[test_mat
 }
 
 //test tensor fuzzy equality
-TEST_CASE("test_tensor_close","test_math")
+TEST_CASE("test_tensor_close","test_tensor_operators")
 {
     using value_type = double;
     using gtensor::tensor;
@@ -780,7 +780,7 @@ TEST_CASE("test_tensor_close","test_math")
     apply_by_element(test,test_data);
 }
 
-TEST_CASE("test_tensor_close_default_precision","test_math")
+TEST_CASE("test_tensor_close_default_precision","test_tensor_operators")
 {
     using value_type = double;
     using gtensor::tensor;
@@ -820,7 +820,7 @@ TEST_CASE("test_tensor_close_default_precision","test_math")
     apply_by_element(test,test_data);
 }
 
-TEST_CASE("test_tensor_close_different_config_traverse_order","[test_math]")
+TEST_CASE("test_tensor_close_different_config_traverse_order","[test_tensor_operators]")
 {
     using value_type = double;
     using gtensor::config::c_order;
@@ -834,7 +834,7 @@ TEST_CASE("test_tensor_close_different_config_traverse_order","[test_math]")
     REQUIRE(tensor_close(tensor<value_type,c_order,f_config_type>{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},tensor<value_type,c_order,c_config_type>{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}}));
 }
 
-TEST_CASE("test_allclose","test_math")
+TEST_CASE("test_allclose","test_tensor_operators")
 {
     using value_type = double;
     using gtensor::tensor;
@@ -938,7 +938,7 @@ TEST_CASE("test_allclose","test_math")
     apply_by_element(test,test_data);
 }
 
-TEST_CASE("test_allclose_default_precision","test_math")
+TEST_CASE("test_allclose_default_precision","test_tensor_operators")
 {
     using value_type = double;
     using gtensor::tensor;
@@ -979,7 +979,7 @@ TEST_CASE("test_allclose_default_precision","test_math")
 }
 
 //test tensor fuzzy elementwise equality
-TEST_CASE("test_isclose","test_math")
+TEST_CASE("test_isclose","test_tensor_operators")
 {
     using value_type = double;
     using gtensor::tensor;
@@ -1053,7 +1053,7 @@ TEST_CASE("test_isclose","test_math")
     apply_by_element(test,test_data);
 }
 
-TEST_CASE("test_isclose_default_precision","test_math")
+TEST_CASE("test_isclose_default_precision","test_tensor_operators")
 {
     using value_type = double;
     using gtensor::tensor;
@@ -1101,7 +1101,7 @@ TEST_CASE("test_isclose_default_precision","test_math")
     apply_by_element(test,test_data);
 }
 
-TEST_CASE("test_allclose_different_config_traverse_order","[test_math]")
+TEST_CASE("test_allclose_different_config_traverse_order","[test_tensor_operators]")
 {
     using value_type = double;
     using gtensor::config::c_order;

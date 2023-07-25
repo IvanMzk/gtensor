@@ -328,6 +328,10 @@ public:
         (void)order;
         return create_view_(view_factory_type::template create_reshape_view<Order>(*this, subs));
     }
+    template<typename Order = config::c_order>
+    auto ravel(Order order=Order{})const{
+        return reshape({-1},order);
+    }
     //mapping view
     template<typename...Subs> struct enable_index_mapping_view_variadic_ : std::conjunction<
         std::bool_constant<(sizeof...(Subs)>0)>,

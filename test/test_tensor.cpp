@@ -1741,3 +1741,35 @@ TEST_CASE("test_tensor_slide","[test_tensor]")
     apply_by_element(test,test_data);
 }
 
+TEST_CASE("test_tensor_ravel","[test_tensor]")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::config::c_order;
+    using gtensor::config::f_order;
+    using helpers_for_testing::apply_by_element;
+
+    //0tensor,1order,2expected
+    auto test_data = std::make_tuple(
+        //c_order
+        std::make_tuple(tensor_type(2),c_order{},tensor_type{2}),
+        std::make_tuple(tensor_type{},c_order{},tensor_type{}),
+        std::make_tuple(tensor_type{}.reshape(0,2,3),c_order{},tensor_type{}),
+        std::make_tuple(tensor_type{1,2,3,4,5},c_order{},tensor_type{1,2,3,4,5}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},c_order{},tensor_type{1,2,3,4,5,6,7,8,9,10,11,12}),
+        //f_order
+        std::make_tuple(tensor_type(2),f_order{},tensor_type{2}),
+        std::make_tuple(tensor_type{},f_order{},tensor_type{}),
+        std::make_tuple(tensor_type{}.reshape(0,2,3),f_order{},tensor_type{}),
+        std::make_tuple(tensor_type{1,2,3,4,5},f_order{},tensor_type{1,2,3,4,5}),
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},f_order{},tensor_type{1,7,4,10,2,8,5,11,3,9,6,12})
+    );
+    auto test = [](const auto& t){
+        auto ten = std::get<0>(t);
+        auto order = std::get<1>(t);
+        auto expected = std::get<2>(t);
+        auto result = ten.ravel(order);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test,test_data);
+}
