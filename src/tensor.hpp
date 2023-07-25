@@ -178,6 +178,7 @@ public:
         return static_cast<bool>(impl_) ? impl().empty() : true;
     }
     //data interface
+    //trverse order of iterator and indexer is config_type::order
     auto begin(){
         return impl().template begin<traverse_order>();
     }
@@ -215,6 +216,7 @@ public:
     auto create_walker(){
         return impl().create_walker();
     }
+    //return data interface adapter with specified traverse order
     template<typename TraverseOrder>
     auto traverse_order_adapter(){
         return detail::traverse_order_adapter<impl_type,TraverseOrder>{impl()};
@@ -262,6 +264,9 @@ public:
         return detail::traverse_order_adapter<const impl_type,TraverseOrder>{impl()};
     }
     //reduce_slide_transform
+    //reduce along axes, axes may be container or scalar
+    //f should be like [](auto first, auto last){...}, where first,last is range along axes
+    //f should return scalar - first,last reduction result - that determines result's value_type
     template<typename Axes, typename F>
     auto reduce(const Axes& axes, F f, bool keep_dims=false)const{
         return gtensor::reduce(*this, axes, f, keep_dims);
@@ -270,10 +275,27 @@ public:
     auto reduce(std::initializer_list<dim_type> axes, F f, bool keep_dims=false)const{
         return gtensor::reduce(*this, axes, f, keep_dims);
     }
+    //reduce like over flatten
     template<typename F>
-    auto slide(const dim_type& axis, F f, const index_type& window_size, const index_type& window_step)const{
-        return gtensor::slide(*this, axis, f, window_size, window_step);
+    auto reduce(F f, bool keep_dims=false)const{
+        return gtensor::reduce_flatten(*this, f, keep_dims);
     }
+    //slide along given axis, axis is scalar
+    //as if sliding window of width window_size moves along axis with step window_step and each window reduction result is stored to destination range
+    //f should be like [](auto first, auto last, auto dfirst, auto dlast){...} where first,last is range along axis, dfirst,dlast range along corresponding result axis
+    //dlast-dfirst equals to (axis_size - window_size)/window_step + 1
+    //result's value_type may be specified by explicit specialization of R
+    template<typename R=value_type, typename F>
+    auto slide(const dim_type& axis, F f, const index_type& window_size, const index_type& window_step)const{
+        return gtensor::slide<R>(*this, axis, f, window_size, window_step);
+    }
+    //slide like over flatten
+    template<typename R=value_type, typename F>
+    auto slide(F f, const index_type& window_size, const index_type& window_step)const{
+        return gtensor::slide_flatten<R>(*this, f, window_size, window_step);
+    }
+    //inplace tensor transform
+    //f should be like [](auto first, auto last){...}, where first,last is range along axes
     template<typename F>
     void transform(const dim_type& axis, F f){
         gtensor::transform(*this, axis, f);

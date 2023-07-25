@@ -1686,7 +1686,7 @@ TEST_CASE("test_tensor_reduce","[test_tensor]")
     apply_by_element(test,test_data);
 }
 
-TEST_CASE("test_tensor_reduce_initializer_list_axes","[test_tensor]")
+TEST_CASE("test_tensor_reduce_overload","[test_tensor]")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
@@ -1695,9 +1695,15 @@ TEST_CASE("test_tensor_reduce_initializer_list_axes","[test_tensor]")
         const auto& init = *first;
         return std::accumulate(++first,last,init,std::plus{});
     };
+    //axes initializer_list
+    REQUIRE(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reduce({0},sum,true) == tensor_type{{{6,8},{10,12}}});
+    REQUIRE(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reduce({0},sum,false) == tensor_type{{6,8},{10,12}});
     REQUIRE(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reduce({0},sum) == tensor_type{{6,8},{10,12}});
     REQUIRE(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reduce({0,1},sum) == tensor_type{16,20});
     REQUIRE(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reduce({0,2},sum) == tensor_type{14,22});
+    //like over flatten
+    REQUIRE(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reduce(sum,false) == tensor_type(36));
+    REQUIRE(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reduce(sum) == tensor_type(36));
 }
 
 TEST_CASE("test_tensor_slide","[test_tensor]")
@@ -1707,7 +1713,7 @@ TEST_CASE("test_tensor_slide","[test_tensor]")
     using dim_type = typename tensor_type::dim_type;
     using index_type = typename tensor_type::index_type;
     using helpers_for_testing::apply_by_element;
-    //auto cumsum = [](auto first, auto last, auto dfirst, auto dlast, auto win_size, auto win_step){
+
     auto cumsum = [](auto first, auto, auto dfirst, auto dlast){
         auto cumsum_ = *first;
         *dfirst = cumsum_;
@@ -1716,27 +1722,74 @@ TEST_CASE("test_tensor_slide","[test_tensor]")
             *dfirst = cumsum_;
         }
     };
-    //auto diff_1 = [](auto first, auto last, auto dfirst, auto dlast, auto win_size, auto win_step){
+
     auto diff_1 = [](auto first, auto, auto dfirst, auto dlast){
         for(;dfirst!=dlast;++dfirst){
             auto prev = *first;
             *dfirst = *++first - prev;
         }
     };
-    //0tensor,1direction,2operation,3window_size,4window_step,5expected
+    //0tensor,1axis,2operation,3window_size,4window_step,5expected
     auto test_data = std::make_tuple(
         std::make_tuple(tensor_type{1,2,3,4,5},dim_type{0},cumsum,index_type{1},index_type{1},tensor_type{1,3,6,10,15}),
-        std::make_tuple(tensor_type{1,2,0,4,3,2,5},dim_type{0},diff_1,index_type{2},index_type{1},tensor_type{1,-2,4,-1,-1,3})
+        std::make_tuple(tensor_type{1,2,0,4,3,2,5},dim_type{0},diff_1,index_type{2},index_type{1},tensor_type{1,-2,4,-1,-1,3}),
+        std::make_tuple(tensor_type{{1,2,0,4},{2,1,0,0},{3,1,2,5},{2,1,2,1}},dim_type{0},diff_1,index_type{2},index_type{1},tensor_type{{1,-1,0,-4},{1,0,2,5},{-1,0,0,-4}}),
+        std::make_tuple(tensor_type{{1,2,0,4},{2,1,0,0},{3,1,2,5},{2,1,2,1}},dim_type{1},diff_1,index_type{2},index_type{1},tensor_type{{1,-2,4},{-1,-1,0},{-2,1,3},{-1,1,-1}})
+
     );
     auto test = [](const auto& t){
         auto ten = std::get<0>(t);
-        auto direction = std::get<1>(t);
+        auto axis = std::get<1>(t);
         auto operation = std::get<2>(t);
         auto window_size = std::get<3>(t);
         auto window_step = std::get<4>(t);
         auto expected = std::get<5>(t);
-        auto result = ten.slide(direction,operation,window_size,window_step);
+        auto result = ten.slide(axis,operation,window_size,window_step);
         REQUIRE(result == expected);
+    };
+    apply_by_element(test,test_data);
+}
+
+TEST_CASE("test_tensor_slide_overload","[test_tensor]")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using helpers_for_testing::apply_by_element;
+
+    auto diff_1 = [](auto first, auto, auto dfirst, auto dlast){
+        for(;dfirst!=dlast;++dfirst){
+            auto prev = *first;
+            *dfirst = *++first - prev;
+        }
+    };
+    //like over flatten
+    REQUIRE(tensor_type{2,3,1,0,2,4,2,1,6,3}.slide(diff_1,2,1) == tensor_type{1,-2,-1,2,2,-2,-1,5,-3});
+    REQUIRE(tensor_type{{1,2,0,4},{2,1,0,0},{3,1,2,5},{2,1,2,1}}.slide(diff_1,2,1) == tensor_type{1,-2,4,-2,-1,-1,0,3,-2,1,3,-3,-1,1,-1});
+}
+
+TEST_CASE("test_tensor_transform","[test_tensor]")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using helpers_for_testing::apply_by_element;
+
+    auto sort = [](auto first, auto last){
+        std::sort(first,last);
+    };
+
+    //0tensor,1axis,2operation,3expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(tensor_type{1,2,0,4,3,2,5},0,sort,tensor_type{0,1,2,2,3,4,5}),
+        std::make_tuple(tensor_type{{1,2,0,4},{2,1,0,0},{3,1,2,5},{2,1,2,1}},0,sort,tensor_type{{1,1,0,0},{2,1,0,1},{2,1,2,4},{3,2,2,5}}),
+        std::make_tuple(tensor_type{{1,2,0,4},{2,1,0,0},{3,1,2,5},{2,1,2,1}},1,sort,tensor_type{{0,1,2,4},{0,0,1,2},{1,2,3,5},{1,1,2,2}})
+    );
+    auto test = [](const auto& t){
+        auto ten = std::get<0>(t);
+        auto axis = std::get<1>(t);
+        auto operation = std::get<2>(t);
+        auto expected = std::get<3>(t);
+        ten.transform(axis,operation);
+        REQUIRE(ten == expected);
     };
     apply_by_element(test,test_data);
 }
