@@ -134,6 +134,7 @@ public:
     //this element's traverse order the same as specified layout
     template<typename Order = config::c_order>
     auto copy(Order order = Order{})const{
+        ASSERT_ORDER(Order);
         (void)(order);
         auto a = traverse_order_adapter<Order>();
         return tensor<value_type,Order,config_type>(shape(),a.begin(),a.end());
@@ -142,6 +143,7 @@ public:
     //this element's traverse order the same as specified layout
     template<typename Order = config::c_order>
     auto flatten(Order order = Order{})const{
+        ASSERT_ORDER(Order);
         (void)(order);
         auto a = traverse_order_adapter<Order>();
         return tensor<value_type,Order,config_type>({size()},a.begin(),a.end());
@@ -316,11 +318,13 @@ public:
     }
     template<typename Container, typename Order = config::c_order, std::enable_if_t<detail::is_container_of_type_v<Container,index_type>,int> = 0 >
     auto reshape(const Container& subs, Order order = Order{})const{
+        ASSERT_ORDER(Order);
         (void)order;
         return create_view_(view_factory_type::template create_reshape_view<Order>(*this, subs));
     }
     template<typename Order = config::c_order>
     auto reshape(std::initializer_list<index_type> subs, Order order = Order{})const{
+        ASSERT_ORDER(Order);
         (void)order;
         return create_view_(view_factory_type::template create_reshape_view<Order>(*this, subs));
     }

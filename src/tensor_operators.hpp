@@ -105,14 +105,17 @@ struct tensor_operators
     //if equal_nan is true nans compared as equal
     template<typename...Us, typename...Vs>
     static bool tensor_equal(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, bool equal_nan = false){
+        using common_order = detail::common_order_t<typename basic_tensor<Us...>::config_type, typename basic_tensor<Us...>::order, typename basic_tensor<Vs...>::order>;
         if (u.is_same(v)){
             return true;
         }else{
             const bool equal_shapes = u.shape() == v.shape();
+            auto a_u = u.template traverse_order_adapter<common_order>();
+            auto a_v = v.template traverse_order_adapter<common_order>();
             if (equal_nan){
-                return equal_shapes && std::equal(u.begin(), u.end(), v.begin(), gtensor::operations::math_isequal<std::true_type>{});
+                return equal_shapes && std::equal(a_u.begin(), a_u.end(), a_v.begin(), gtensor::operations::math_isequal<std::true_type>{});
             }else{
-                return equal_shapes && std::equal(u.begin(), u.end(), v.begin(), gtensor::operations::math_isequal<std::false_type>{});
+                return equal_shapes && std::equal(a_u.begin(), a_u.end(), a_v.begin(), gtensor::operations::math_isequal<std::false_type>{});
             }
         }
     }
@@ -120,14 +123,17 @@ struct tensor_operators
     //return true if two tensors have same shape and close elements within specified tolerance
     template<typename...Us, typename...Vs, typename Tol>
     static bool tensor_close(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, Tol relative_tolerance, Tol absolute_tolerance, bool equal_nan = false){
+        using common_order = detail::common_order_t<typename basic_tensor<Us...>::config_type, typename basic_tensor<Us...>::order, typename basic_tensor<Vs...>::order>;
         if (u.is_same(v)){
             return true;
         }else{
             const bool equal_shapes = u.shape() == v.shape();
+            auto a_u = u.template traverse_order_adapter<common_order>();
+            auto a_v = v.template traverse_order_adapter<common_order>();
             if (equal_nan){
-                return equal_shapes && std::equal(u.begin(), u.end(), v.begin(), operations::math_isclose<Tol,std::true_type>{relative_tolerance,absolute_tolerance});
+                return equal_shapes && std::equal(a_u.begin(), a_u.end(), a_v.begin(), operations::math_isclose<Tol,std::true_type>{relative_tolerance,absolute_tolerance});
             }else{
-                return equal_shapes && std::equal(u.begin(), u.end(), v.begin(), operations::math_isclose<Tol,std::false_type>{relative_tolerance,absolute_tolerance});
+                return equal_shapes && std::equal(a_u.begin(), a_u.end(), a_v.begin(), operations::math_isclose<Tol,std::false_type>{relative_tolerance,absolute_tolerance});
             }
         }
     }
@@ -143,15 +149,18 @@ struct tensor_operators
     //shapes may not be equal, but must broadcast
     template<typename...Us, typename...Vs, typename Tol>
     static bool allclose(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, Tol relative_tolerance, Tol absolute_tolerance, bool equal_nan = false){
+        using common_order = detail::common_order_t<typename basic_tensor<Us...>::config_type, typename basic_tensor<Us...>::order, typename basic_tensor<Vs...>::order>;
         using shape_type = typename basic_tensor<Us...>::shape_type;
         if (u.is_same(v)){
             return true;
         }else{
             auto common_shape = detail::make_broadcast_shape<shape_type>(u.shape(),v.shape());
+            auto a_u = u.template traverse_order_adapter<common_order>();
+            auto a_v = v.template traverse_order_adapter<common_order>();
             if (equal_nan){
-                return std::equal(u.begin(common_shape), u.end(common_shape), v.begin(common_shape), operations::math_isclose<Tol,std::true_type>{relative_tolerance,absolute_tolerance});
+                return std::equal(a_u.begin(common_shape), a_u.end(common_shape), a_v.begin(common_shape), operations::math_isclose<Tol,std::true_type>{relative_tolerance,absolute_tolerance});
             }else{
-                return std::equal(u.begin(common_shape), u.end(common_shape), v.begin(common_shape), operations::math_isclose<Tol,std::false_type>{relative_tolerance,absolute_tolerance});
+                return std::equal(a_u.begin(common_shape), a_u.end(common_shape), a_v.begin(common_shape), operations::math_isclose<Tol,std::false_type>{relative_tolerance,absolute_tolerance});
             }
         }
     }

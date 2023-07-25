@@ -2,6 +2,7 @@
 #include <iomanip>
 #include "catch.hpp"
 #include "helpers_for_testing.hpp"
+#include "test_config.hpp"
 #include "tensor.hpp"
 
 namespace test_tensor_operators_{
@@ -663,6 +664,20 @@ TEST_CASE("test_tensor_equal_routine","test_tensor_operators")
     apply_by_element(test,test_data);
 }
 
+TEST_CASE("test_tensor_equal_routine_different_config_traverse_order","[test_math]")
+{
+    using value_type = double;
+    using gtensor::config::c_order;
+    using gtensor::config::f_order;
+    using gtensor::tensor;
+    using gtensor::tensor_equal;
+    using c_config_type = gtensor::config::extend_config_t<test_config::config_order_selector_t<c_order>,value_type>;
+    using f_config_type = gtensor::config::extend_config_t<test_config::config_order_selector_t<f_order>,value_type>;
+
+    REQUIRE(tensor_equal(tensor<value_type,c_order,c_config_type>{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},tensor<value_type,c_order,f_config_type>{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}}));
+    REQUIRE(tensor_equal(tensor<value_type,c_order,f_config_type>{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},tensor<value_type,c_order,c_config_type>{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}}));
+}
+
 //test tensor fuzzy equality
 TEST_CASE("test_tensor_close","test_math")
 {
@@ -803,6 +818,20 @@ TEST_CASE("test_tensor_close_default_precision","test_math")
         REQUIRE(result == expected);
     };
     apply_by_element(test,test_data);
+}
+
+TEST_CASE("test_tensor_close_different_config_traverse_order","[test_math]")
+{
+    using value_type = double;
+    using gtensor::config::c_order;
+    using gtensor::config::f_order;
+    using gtensor::tensor;
+    using gtensor::tensor_close;
+    using c_config_type = gtensor::config::extend_config_t<test_config::config_order_selector_t<c_order>,value_type>;
+    using f_config_type = gtensor::config::extend_config_t<test_config::config_order_selector_t<f_order>,value_type>;
+
+    REQUIRE(tensor_close(tensor<value_type,c_order,c_config_type>{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},tensor<value_type,c_order,f_config_type>{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}}));
+    REQUIRE(tensor_close(tensor<value_type,c_order,f_config_type>{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},tensor<value_type,c_order,c_config_type>{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}}));
 }
 
 TEST_CASE("test_allclose","test_math")
@@ -1070,6 +1099,22 @@ TEST_CASE("test_isclose_default_precision","test_math")
         REQUIRE(result == expected);
     };
     apply_by_element(test,test_data);
+}
+
+TEST_CASE("test_allclose_different_config_traverse_order","[test_math]")
+{
+    using value_type = double;
+    using gtensor::config::c_order;
+    using gtensor::config::f_order;
+    using gtensor::tensor;
+    using gtensor::allclose;
+    using c_config_type = gtensor::config::extend_config_t<test_config::config_order_selector_t<c_order>,value_type>;
+    using f_config_type = gtensor::config::extend_config_t<test_config::config_order_selector_t<f_order>,value_type>;
+
+    REQUIRE(allclose(tensor<value_type,c_order,c_config_type>{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},tensor<value_type,c_order,f_config_type>{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}}));
+    REQUIRE(allclose(tensor<value_type,c_order,f_config_type>{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},tensor<value_type,c_order,c_config_type>{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}}));
+    REQUIRE(allclose(tensor<value_type,c_order,c_config_type>{{{1,2,3},{4,5,6}},{{1,2,3},{4,5,6}}},tensor<value_type,c_order,f_config_type>{{1,2,3},{4,5,6}}));
+    REQUIRE(allclose(tensor<value_type,c_order,f_config_type>{{{1,2,3},{4,5,6}},{{1,2,3},{4,5,6}}},tensor<value_type,c_order,c_config_type>{{1,2,3},{4,5,6}}));
 }
 
 //test cast
