@@ -1835,7 +1835,7 @@ TEST_CASE("test_tensor_math","[test_tensor]")
 
     //all
     REQUIRE(tensor_type(2).all() == tensor<bool>(true));
-    REQUIRE(tensor_type(0).all() == tensor<bool>(false));
+    REQUIRE(tensor_type(0).all(true) == tensor<bool>(false));
     REQUIRE(tensor_type{1,2,3,4,5}.all() == tensor<bool>(true));
     REQUIRE(tensor_type{1,0,3,0,5}.all() == tensor<bool>(false));
     REQUIRE(tensor_type{{{3,1,2,3},{1,2,3,2}},{{1,2,3,4},{1,2,3,4}}}.all() == tensor<bool>(true));
@@ -1849,7 +1849,7 @@ TEST_CASE("test_tensor_math","[test_tensor]")
 
     //any
     REQUIRE(tensor_type(2).any() == tensor<bool>(true));
-    REQUIRE(tensor_type(0).any() == tensor<bool>(false));
+    REQUIRE(tensor_type(0).any(true) == tensor<bool>(false));
     REQUIRE(tensor_type{1,2,3,4,5}.any() == tensor<bool>(true));
     REQUIRE(tensor_type{0,0,0,0,0}.any() == tensor<bool>(false));
     REQUIRE(tensor_type{{{3,1,2,3},{1,2,3,2}},{{1,2,3,4},{1,2,3,4}}}.any() == tensor<bool>(true));
@@ -1860,5 +1860,41 @@ TEST_CASE("test_tensor_math","[test_tensor]")
     REQUIRE(tensor_type{{{0,1,2,0},{0,0,0,0}},{{1,2,3,0},{1,2,3,0}}}.any({1,-1},true) == tensor<bool>{{{true}},{{true}}});
     REQUIRE(tensor_type{{{0,1,2,0},{0,0,0,0}},{{1,2,3,0},{1,2,3,0}}}.any(std::vector<int>{0,1}) == tensor<bool>{true,true,true,false});
     REQUIRE(tensor_type{{{0,1,2,0},{0,0,0,0}},{{1,2,3,0},{1,2,3,0}}}.any(std::vector<int>{1,-1},true) == tensor<bool>{{{true}},{{true}}});
+
+    //max
+    REQUIRE(tensor_type(2).max() == tensor_type(2));
+    REQUIRE(tensor_type(2).max(true) == tensor_type(2));
+    REQUIRE(tensor_type(2).max(true,10) == tensor_type(10));
+    REQUIRE(tensor_type(2).max(true,-10) == tensor_type(2));
+    REQUIRE(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.max() == tensor_type(4));
+    REQUIRE(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.max(true) == tensor_type{{{4}}});
+    REQUIRE(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.max(true,10) == tensor_type{{{10}}});
+    REQUIRE(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.max(true,-10) == tensor_type{{{4}}});
+    REQUIRE(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.max(2) == tensor_type{{3,4},{3,3}});
+    REQUIRE(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.max(0,true) == tensor_type{{{-2,3,3,3},{4,3,3,2}}});
+    REQUIRE(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.max(0,true,1) == tensor_type{{{1,3,3,3},{4,3,3,2}}});
+    REQUIRE(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.max({1,-1}) == tensor_type{4,3});
+    REQUIRE(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.max({0,1},true) == tensor_type{{{4,3,3,3}}});
+    REQUIRE(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.max({0,1},true,0) == tensor_type{{{4,3,3,3}}});
+    REQUIRE(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.max(std::vector<int>{0,1},true) == tensor_type{{{4,3,3,3}}});
+    REQUIRE(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.max(std::vector<int>{0,1},true,0) == tensor_type{{{4,3,3,3}}});
+
+    //min
+    REQUIRE(tensor_type(2).min() == tensor_type(2));
+    REQUIRE(tensor_type(2).min(true) == tensor_type(2));
+    REQUIRE(tensor_type(2).min(true,10) == tensor_type(2));
+    REQUIRE(tensor_type(2).min(true,-10) == tensor_type(-10));
+    REQUIRE(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.min() == tensor_type(-3));
+    REQUIRE(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.min(true) == tensor_type{{{-3}}});
+    REQUIRE(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.min(true,10) == tensor_type{{{-3}}});
+    REQUIRE(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.min(true,-10) == tensor_type{{{-10}}});
+    REQUIRE(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.min(2) == tensor_type{{-3,0},{-2,-2}});
+    REQUIRE(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.min(0,true) == tensor_type{{{-3,3,1,-2},{0,3,-2,0}}});
+    REQUIRE(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.min(0,true,1) == tensor_type{{{-3,1,1,-2},{0,1,-2,0}}});
+    REQUIRE(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.min({1,-1}) == tensor_type{-3,-2});
+    REQUIRE(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.min({0,1},true) == tensor_type{{{-3,3,-2,-2}}});
+    REQUIRE(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.min({0,1},true,0) == tensor_type{{{-3,0,-2,-2}}});
+    REQUIRE(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.min(std::vector<int>{0,1},true) == tensor_type{{{-3,3,-2,-2}}});
+    REQUIRE(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.min(std::vector<int>{0,1},true,0) == tensor_type{{{-3,0,-2,-2}}});
 
 }
