@@ -133,11 +133,10 @@ struct builder
         return res;
     }
 
-    template<typename T, typename Order, typename Config, typename Start, typename Stop, typename U, typename DimT>
-    static auto linspace(const Start& start, const Stop& stop, const U& num, bool end_point, const DimT& axis){
+    template<typename T, typename Order, typename Config, typename Start, typename Stop, typename Num, typename DimT>
+    static auto linspace(const Start& start, const Stop& stop, const Num& num, bool end_point, const DimT& axis){
         auto generator = [end_point](auto first, auto last, const auto& start, const auto& stop, const auto& num){
-            using num_type = std::remove_cv_t<std::remove_reference_t<decltype(num)>>;
-            using fp_type = math::make_floating_point_t<num_type>;
+            using fp_type = typename std::iterator_traits<decltype(first)>::value_type;
             const auto intervals_n = end_point ?  static_cast<fp_type>(num-1) : static_cast<fp_type>(num);
             const auto step = (stop-start)/intervals_n;
             auto start_ = static_cast<fp_type>(start);
@@ -294,14 +293,15 @@ private:
         return res;
     }
 
-    template<typename T, typename Order, typename Config, typename Start, typename Stop, typename U, typename DimT, typename Generator>
-    static auto make_space(const Start& start, const Stop& stop, const U& num, const DimT& axis_, Generator generator){
+    template<typename T, typename Order, typename Config, typename Start, typename Stop, typename Num, typename DimT, typename Generator>
+    static auto make_space(const Start& start, const Stop& stop, const Num& num, const DimT& axis_, Generator generator){
         static constexpr bool is_start_numeric = math::numeric_traits<Start>::is_integral() || math::numeric_traits<Start>::is_floating_point();
         static constexpr bool is_stop_numeric = math::numeric_traits<Stop>::is_integral() || math::numeric_traits<Stop>::is_floating_point();
-        static_assert(math::numeric_traits<U>::is_integral(),"num must be of integral type");
+        static_assert(math::numeric_traits<Num>::is_integral(),"num must be of integral type");
         static_assert(is_start_numeric || detail::is_tensor_v<Start>,"Start must be of numeric or tensor type");
         static_assert(is_stop_numeric || detail::is_tensor_v<Stop>,"Stop must be of numeric or tensor type");
-        using res_value_type = math::make_floating_point_t<T>;
+        using common_value_type = detail::tensor_common_value_type_t<Start,Stop,Num>;
+        using res_value_type = std::conditional_t<std::is_same_v<T,detail::no_value>,math::make_floating_point_t<common_value_type>,math::make_floating_point_t<T>>;
         using tensor_type = tensor<res_value_type,Order,config::extend_config_t<Config,T>>;
         using index_type = typename tensor_type::index_type;
         using shape_type = typename tensor_type::shape_type;
@@ -453,7 +453,8 @@ auto ones_like(const basic_tensor<Ts...>& t){
 }
 
 //make 1d tensor of evenly spaced values whithin a given interval
-//result value_type, layout and config may be specified by explicit template arguments
+//result's value_type, layout and config may be specified by explicit specialization of T,Order,Config template's parameters
+//T is not specialized explicitly result value_type is infered from Start,Stop,Step types
 template<typename T=detail::no_value, typename Order = config::c_order, typename Config = config::default_config, typename Start, typename Stop, typename Step=int>
 auto arange(const Start& start, const Stop& stop, const Step& step=Step{1}){
     return builder_selector_t<Config>::template arange<T,Order,Config>(start,stop,step);
@@ -464,8 +465,11 @@ auto arange(const Stop& stop){
 }
 
 //make tensor of num evenly spaced samples, calculated over the interval start, stop
-template<typename T, typename Order = config::c_order, typename Config = config::default_config, typename Start, typename Stop, typename U=int, typename DimT=int>
-auto linspace(const Start& start, const Stop& stop, const U& num=50, bool end_point=true, const DimT& axis=0){
+//start, stop may be scalar or tensor
+//result's value_type, layout and config may be specified by explicit specialization of T,Order,Config template's parameters
+//T is not specialized explicitly result value_type is infered from Start,Stop,Num types
+template<typename T=detail::no_value, typename Order = config::c_order, typename Config = config::default_config, typename Start, typename Stop, typename Num=int, typename DimT=int>
+auto linspace(const Start& start, const Stop& stop, const Num& num=50, bool end_point=true, const DimT& axis=0){
     return builder_selector_t<Config>::template linspace<T,Order,Config>(start,stop,num,end_point,axis);
 }
 

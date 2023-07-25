@@ -10,15 +10,6 @@ namespace gtensor{
 namespace detail{
 
 template<typename Other, typename T> inline constexpr bool lhs_other_v = std::is_convertible_v<Other,T>||std::is_convertible_v<T,Other>;
-
-template<typename T, typename B> struct tensor_value_type{using type = T;};
-template<typename T> struct tensor_value_type<T,std::true_type>{using type = typename T::value_type;};
-template<typename T> using tensor_value_type_t = typename tensor_value_type<T, std::bool_constant<is_tensor_v<T>>>::type;
-//from pack of tensors and scalars make common value_type or void if no common value_type
-template<typename, typename...Ts> struct tensor_common_value_type{using type = void;};
-template<typename...Ts> struct tensor_common_value_type<std::void_t<std::common_type_t<tensor_value_type_t<Ts>...>>,Ts...>{using type = std::common_type_t<tensor_value_type_t<Ts>...>;};
-template<typename...Ts> using tensor_common_value_type_t = typename tensor_common_value_type<void,Ts...>::type;
-
 template<typename T, typename U=void> static constexpr bool is_printable_v = false;
 template<typename T> static constexpr bool is_printable_v<T,std::void_t<decltype(std::cout<<std::declval<T>())>> = true;
 

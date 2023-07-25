@@ -107,6 +107,14 @@ struct common_order<Config,Order,Orders...>{
 };
 template<typename Config, typename...Orders> using common_order_t = typename common_order<Config,Orders...>::type;
 
+//from pack of tensors and scalars make common value_type or void if no common value_type
+template<typename T, typename B> struct tensor_value_type{using type = T;};
+template<typename T> struct tensor_value_type<T,std::true_type>{using type = typename T::value_type;};
+template<typename T> using tensor_value_type_t = typename tensor_value_type<T, std::bool_constant<is_tensor_v<T>>>::type;
+template<typename, typename...Ts> struct tensor_common_value_type{using type = void;};
+template<typename...Ts> struct tensor_common_value_type<std::void_t<std::common_type_t<tensor_value_type_t<Ts>...>>,Ts...>{using type = std::common_type_t<tensor_value_type_t<Ts>...>;};
+template<typename...Ts> using tensor_common_value_type_t = typename tensor_common_value_type<void,Ts...>::type;
+
 //standart library may require difference_type to be convertible to integral
 template<typename It, typename T>
 inline void fill(It first, It last, const T& v){
