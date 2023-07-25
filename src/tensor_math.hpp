@@ -315,7 +315,6 @@ GTENSOR_TENSOR_MATH_ROUTINE(lcm,lcm);
 
 //tensor math routines along given axis or axes
 //axes may be scalar or container if multiple axes permitted
-//empty container means along all axes
 
 #define GTENSOR_TENSOR_MATH_REDUCE_ROUTINE(NAME,F)\
 template<typename...Ts, typename Axes>\

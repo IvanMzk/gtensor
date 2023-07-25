@@ -9,14 +9,6 @@
 
 namespace gtensor{
 
-class indexing_exception : public std::runtime_error
-{
-public:
-    explicit indexing_exception(const char* what):
-        std::runtime_error(what)
-    {}
-};
-
 namespace detail{
 
 template<typename IdxT, typename DimT, typename Axis>

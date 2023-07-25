@@ -2,11 +2,57 @@
 #define TENSOR_HPP_
 
 #include "module_selector.hpp"
-#include "tensor_factory.hpp"
-#include "tensor_operators.hpp"
 #include "slice.hpp"
+#include "tensor_factory.hpp"
 #include "view_factory.hpp"
+#include "tensor_operators.hpp"
 #include "reduce.hpp"
+#include "tensor_math.hpp"
+#include "statistic.hpp"
+#include "sort_search.hpp"
+
+#define GTENSOR_TENSOR_REDUCE_METHOD(NAME,F)\
+template<typename Axes>\
+auto NAME(const Axes& axes, bool keep_dims = false)const{\
+    return gtensor::F(*this,axes,keep_dims);\
+}\
+template<typename DimT>\
+auto NAME(std::initializer_list<DimT> axes, bool keep_dims = false)const{\
+    return gtensor::F(*this,axes,keep_dims);\
+}\
+auto NAME(bool keep_dims = false)const{\
+    return gtensor::F(*this,keep_dims);\
+}
+
+#define GTENSOR_TENSOR_REDUCE_INITIAL_METHOD(NAME,F)\
+template<typename Axes, typename Initial = gtensor::detail::no_value>\
+auto NAME(const Axes& axes, bool keep_dims = false, const Initial& initial = Initial{})const{\
+    return gtensor::F(*this,axes,keep_dims,initial);\
+}\
+template<typename DimT, typename Initial = gtensor::detail::no_value>\
+auto NAME(std::initializer_list<DimT> axes, bool keep_dims = false, const Initial& initial = Initial{})const{\
+    return gtensor::F(*this,axes,keep_dims,initial);\
+}\
+template<typename Initial = gtensor::detail::no_value>\
+auto NAME(bool keep_dims = false, const Initial& initial = Initial{})const{\
+    return gtensor::F(*this,keep_dims,initial);\
+}
+
+#define GTENSOR_TENSOR_CUMULATE_METHOD(NAME,F)\
+template<typename DimT>\
+auto NAME(const DimT& axis)const{\
+    return gtensor::F(*this,axis);\
+}\
+auto NAME()const{\
+    return gtensor::F(*this);\
+}
+
+#define GTENSOR_TENSOR_SORT_METHOD(NAME,F)\
+template<typename DimT=int, typename Comparator=std::less<void>>\
+auto NAME(const DimT& axis=-1, const Comparator& comparator=std::less<void>{})const{\
+    return gtensor::F(*this,axis,comparator);\
+}
+
 
 namespace gtensor{
 template<typename T, typename Layout, typename Config> class tensor;
@@ -300,6 +346,40 @@ public:
     void transform(const dim_type& axis, F f){
         gtensor::transform(*this, axis, f);
     }
+
+    //math
+    GTENSOR_TENSOR_REDUCE_METHOD(all,all);
+    GTENSOR_TENSOR_REDUCE_METHOD(any,any);
+    GTENSOR_TENSOR_REDUCE_INITIAL_METHOD(max,max);
+    GTENSOR_TENSOR_REDUCE_INITIAL_METHOD(min,min);
+    GTENSOR_TENSOR_REDUCE_INITIAL_METHOD(sum,sum);
+    GTENSOR_TENSOR_REDUCE_INITIAL_METHOD(prod,prod);
+    GTENSOR_TENSOR_CUMULATE_METHOD(cumsum,cumsum);
+    GTENSOR_TENSOR_CUMULATE_METHOD(cumprod,cumprod);
+    //statistic
+    GTENSOR_TENSOR_REDUCE_METHOD(ptp,ptp);
+    GTENSOR_TENSOR_REDUCE_METHOD(mean,mean);
+    GTENSOR_TENSOR_REDUCE_METHOD(median,median);
+    GTENSOR_TENSOR_REDUCE_METHOD(var,var);
+    GTENSOR_TENSOR_REDUCE_METHOD(std,std);
+    //sort
+    GTENSOR_TENSOR_SORT_METHOD(sort,sort);
+    GTENSOR_TENSOR_SORT_METHOD(argsort,argsort);
+    GTENSOR_TENSOR_REDUCE_METHOD(argmax,argmax);
+    GTENSOR_TENSOR_REDUCE_METHOD(argmin,argmin);
+    auto nonzero()const{
+        return gtensor::nonzero(*this);
+    }
+    //indexing
+    template<typename DimT, typename...Us>
+    auto take(const basic_tensor<Us...>& indexes, const DimT& axis)const{
+        return gtensor::take(*this,indexes,axis);
+    }
+    template<typename...Us>
+    auto take(const basic_tensor<Us...>& indexes)const{
+        return gtensor::take(*this,indexes);
+    }
+
     //view construction operators and methods
     //slice view
     auto operator()(std::initializer_list<std::initializer_list<slice_item_type>> subs)const{
@@ -536,4 +616,9 @@ void swap(basic_tensor<T>& u, basic_tensor<T>& v){
 }
 
 }   //end of namespace gtensor
+
+#undef GTENSOR_TENSOR_REDUCE_METHOD
+#undef GTENSOR_TENSOR_REDUCE_INITIAL_METHOD
+#undef GTENSOR_TENSOR_CUMULATE_METHOD
+#undef GTENSOR_TENSOR_SORT_METHOD
 #endif

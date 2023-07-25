@@ -515,14 +515,14 @@ private:
 
 #define GTENSOR_TENSOR_SORT_ROUTINE(NAME,F)\
 template<typename...Ts, typename DimT=int, typename Comparator=std::less<void>>\
-static auto NAME(const basic_tensor<Ts...>& t, const DimT& axis=-1, const Comparator& comparator=std::less<void>{}){\
+auto NAME(const basic_tensor<Ts...>& t, const DimT& axis=-1, const Comparator& comparator=std::less<void>{}){\
     using config_type = typename basic_tensor<Ts...>::config_type;\
     return sort_search_selector_t<config_type>::F(t,axis,comparator);\
 }
 
 #define GTENSOR_TENSOR_PARTITION_ROUTINE(NAME,F)\
 template<typename...Ts, typename Nth, typename DimT=int, typename Comparator=std::less<void>>\
-static auto NAME(const basic_tensor<Ts...>& t, const Nth& nth, const DimT& axis=-1, const Comparator& comparator=std::less<void>{}){\
+auto NAME(const basic_tensor<Ts...>& t, const Nth& nth, const DimT& axis=-1, const Comparator& comparator=std::less<void>{}){\
     using config_type = typename basic_tensor<Ts...>::config_type;\
     return sort_search_selector_t<config_type>::F(t,nth,axis,comparator);\
 }
