@@ -110,16 +110,18 @@ struct builder
     }
 
     //build from numerical ranges
-    template<typename T, typename Order, typename Config, typename U>
-    static auto arange(const U& start, const U& stop, const U& step){
+    //T may be numeric type or no_value, if no_value result tensor value_type is made from Start,Stop,Step types
+    template<typename T, typename Order, typename Config, typename Start, typename Stop, typename Step>
+    static auto arange(const Start& start, const Stop& stop, const Step& step){
         ASSERT_ORDER(Order);
-        static_assert(math::numeric_traits<U>::is_integral() || math::numeric_traits<U>::is_floating_point(),"arange arguments must be of numeric type");
-        using tensor_type = tensor<T,Order,config::extend_config_t<Config,T>>;
-        using value_type = typename tensor_type::value_type;
+        using common_value_type = std::common_type_t<Start,Stop,Step>;
+        static_assert(math::numeric_traits<common_value_type>::is_integral() || math::numeric_traits<common_value_type>::is_floating_point(),"arange arguments must be of numeric type");
+        using value_type = std::conditional_t<std::is_same_v<T,detail::no_value>,common_value_type,T>;
+        using tensor_type = tensor<value_type,Order,config::extend_config_t<Config,T>>;
         using index_type = typename tensor_type::index_type;
         using shape_type = typename tensor_type::shape_type;
-        using integral_type = math::make_integral_t<U>;
-        using fp_type = math::make_floating_point_t<U>;
+        using integral_type = math::make_integral_t<common_value_type>;
+        using fp_type = math::make_floating_point_t<common_value_type>;
         auto n = static_cast<index_type>(static_cast<integral_type>(math::ceil((stop-start)/static_cast<fp_type>(step))));
         n = n > 0 ? n : index_type{0};
         tensor_type res(shape_type{n});
@@ -451,13 +453,14 @@ auto ones_like(const basic_tensor<Ts...>& t){
 }
 
 //make 1d tensor of evenly spaced values whithin a given interval
-template<typename T, typename Order = config::c_order, typename Config = config::default_config, typename U>
-auto arange(const U& start, const U& stop, const U& step){
+//result value_type, layout and config may be specified by explicit template arguments
+template<typename T=detail::no_value, typename Order = config::c_order, typename Config = config::default_config, typename Start, typename Stop, typename Step=int>
+auto arange(const Start& start, const Stop& stop, const Step& step=Step{1}){
     return builder_selector_t<Config>::template arange<T,Order,Config>(start,stop,step);
 }
-template<typename T, typename Order = config::c_order, typename Config = config::default_config, typename U>
-auto arange(const U& stop){
-    return builder_selector_t<Config>::template arange<T,Order,Config>(U{0},stop,U{1});
+template<typename T=detail::no_value, typename Order = config::c_order, typename Config = config::default_config, typename Stop>
+auto arange(const Stop& stop){
+    return builder_selector_t<Config>::template arange<T,Order,Config>(Stop{0},stop,Stop{1});
 }
 
 //make tensor of num evenly spaced samples, calculated over the interval start, stop

@@ -50,6 +50,7 @@ struct default_numeric_traits<T,std::true_type>
     }
 };
 
+//should be specialized for other hierarchy of types
 template<typename T> struct numeric_traits : default_numeric_traits<T,typename std::is_arithmetic<T>::type>
 {
     //default types for numeric_traits of arithmetic types

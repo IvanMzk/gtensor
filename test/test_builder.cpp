@@ -358,12 +358,23 @@ TEST_CASE("test_builder_arange_overload","[test_builder]")
 {
     using gtensor::tensor;
     using gtensor::arange;
+    using gtensor::tensor_close;
 
     REQUIRE(arange<int>(5) == tensor<int>{0,1,2,3,4});
     REQUIRE(arange<double>(10) == tensor<double>{0,1,2,3,4,5,6,7,8,9});
-
     REQUIRE(arange<int>(2.2,5.0,0.5) == tensor<int>{2,2,2,2,2,2});
     REQUIRE(arange<double>(2.2,5.0,0.5) == tensor<double>{2.2,2.7,3.2,3.7,4.2,4.7});
+    //common value type
+    REQUIRE(arange(5) == tensor<int>{0,1,2,3,4});
+    REQUIRE(arange(5,20) == tensor<int>{5,6,7,8,9,10,11,12,13,14,15,16,17,18,19});
+    REQUIRE(arange(5,20,3) == tensor<int>{5,8,11,14,17});
+    REQUIRE(arange(0.5,10) == tensor<double>{0.5,1.5,2.5,3.5,4.5,5.5,6.5,7.5,8.5,9.5});
+    REQUIRE(arange(0.5,20,2) == tensor<double>{0.5,2.5,4.5,6.5,8.5,10.5,12.5,14.5,16.5,18.5});
+    REQUIRE(arange(3,20.7,2) == tensor<double>{3,5,7,9,11,13,15,17,19});
+    REQUIRE(arange(4.5,20.7) == tensor<double>{4.5,5.5,6.5,7.5,8.5,9.5,10.5,11.5,12.5,13.5,14.5,15.5,16.5,17.5,18.5,19.5,20.5});
+    REQUIRE(arange(4.5,20.7,3) == tensor<double>{4.5,7.5,10.5,13.5,16.5,19.5});
+    REQUIRE(tensor_close(arange(0,1,0.08),tensor<double>{0.0,0.08,0.16,0.24,0.32,0.4,0.48,0.56,0.64,0.72,0.8,0.88,0.96}));
+    REQUIRE(tensor_close(arange(0.0,1.0,0.08),tensor<double>{0.0,0.08,0.16,0.24,0.32,0.4,0.48,0.56,0.64,0.72,0.8,0.88,0.96}));
 }
 
 TEMPLATE_TEST_CASE("test_builder_linspace","[test_builder]",

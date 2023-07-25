@@ -240,7 +240,7 @@ class reducer
                     const auto axes_size = detail::make_axes_size(pshape,parent.size(),axes);
                     auto predicate = detail::make_traverse_predicate(axes,std::false_type{});
                     const auto strides = detail::make_strides_div_predicate<config_type>(pshape,predicate,traverse_order{});
-                    auto traverser = detail::make_forward_traverser(pshape,parent.create_walker(),detail::make_traverse_predicate(axes,std::true_type{}));  //traverse all bit axes
+                    auto traverser = detail::make_forward_traverser(pshape,parent.create_walker(),detail::make_traverse_predicate(axes,std::true_type{}));  //traverse all but axes
                     auto a = res.template traverse_order_adapter<order>();
                     auto res_it = a.begin();
                     do{
