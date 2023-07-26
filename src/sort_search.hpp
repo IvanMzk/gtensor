@@ -515,14 +515,14 @@ private:
 
 #define GTENSOR_TENSOR_SORT_ROUTINE(NAME,F)\
 template<typename...Ts, typename DimT=int, typename Comparator=std::less<void>>\
-auto NAME(const basic_tensor<Ts...>& t, const DimT& axis=-1, const Comparator& comparator=std::less<void>{}){\
+auto NAME(const basic_tensor<Ts...>& t, const DimT& axis=-1, const Comparator& comparator=Comparator{}){\
     using config_type = typename basic_tensor<Ts...>::config_type;\
     return sort_search_selector_t<config_type>::F(t,axis,comparator);\
 }
 
 #define GTENSOR_TENSOR_PARTITION_ROUTINE(NAME,F)\
 template<typename...Ts, typename Nth, typename DimT=int, typename Comparator=std::less<void>>\
-auto NAME(const basic_tensor<Ts...>& t, const Nth& nth, const DimT& axis=-1, const Comparator& comparator=std::less<void>{}){\
+auto NAME(const basic_tensor<Ts...>& t, const Nth& nth, const DimT& axis=-1, const Comparator& comparator=Comparator{}){\
     using config_type = typename basic_tensor<Ts...>::config_type;\
     return sort_search_selector_t<config_type>::F(t,nth,axis,comparator);\
 }
@@ -584,6 +584,7 @@ GTENSOR_TENSOR_SORT_SEARCH_REDUCE_ROUTINE(nanargmax,nanargmax);
 //axes can be container or scalar
 GTENSOR_TENSOR_SORT_SEARCH_REDUCE_ROUTINE(count_nonzero,count_nonzero);
 
+//returns a container of tensors, one for each dimension of t, containing the indices of the non-zero elements in that dimension
 template<typename...Ts>
 auto nonzero(const basic_tensor<Ts...>& t){
     using config_type = typename basic_tensor<Ts...>::config_type;

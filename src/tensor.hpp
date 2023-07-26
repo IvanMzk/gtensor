@@ -47,13 +47,6 @@ auto NAME()const{\
     return gtensor::F(*this);\
 }
 
-#define GTENSOR_TENSOR_SORT_METHOD(NAME,F)\
-template<typename DimT=int, typename Comparator=std::less<void>>\
-auto NAME(const DimT& axis=-1, const Comparator& comparator=std::less<void>{})const{\
-    return gtensor::F(*this,axis,comparator);\
-}
-
-
 namespace gtensor{
 template<typename T, typename Layout, typename Config> class tensor;
 
@@ -362,9 +355,15 @@ public:
     GTENSOR_TENSOR_REDUCE_METHOD(median,median);
     GTENSOR_TENSOR_REDUCE_METHOD(var,var);
     GTENSOR_TENSOR_REDUCE_METHOD(std,std);
-    //sort
-    GTENSOR_TENSOR_SORT_METHOD(sort,sort);
-    GTENSOR_TENSOR_SORT_METHOD(argsort,argsort);
+    //sort_search
+    template<typename DimT=dim_type, typename Comparator=std::less<void>>
+    void sort(const DimT& axis=-1, const Comparator& comparator=Comparator{}){
+        return gtensor::transform(*this,axis,[&comparator](auto first, auto last){std::sort(first,last,comparator);});
+    }
+    template<typename DimT=dim_type, typename Comparator=std::less<void>>
+    auto argsort(const DimT& axis=-1, const Comparator& comparator=Comparator{})const{
+        return gtensor::argsort(*this,axis,comparator);
+    }
     GTENSOR_TENSOR_REDUCE_METHOD(argmax,argmax);
     GTENSOR_TENSOR_REDUCE_METHOD(argmin,argmin);
     auto nonzero()const{
@@ -620,5 +619,4 @@ void swap(basic_tensor<T>& u, basic_tensor<T>& v){
 #undef GTENSOR_TENSOR_REDUCE_METHOD
 #undef GTENSOR_TENSOR_REDUCE_INITIAL_METHOD
 #undef GTENSOR_TENSOR_CUMULATE_METHOD
-#undef GTENSOR_TENSOR_SORT_METHOD
 #endif
