@@ -47,12 +47,12 @@ public:
     }
     storage(const storage& other):
         allocator_{std::allocator_traits<allocator_type>::select_on_container_copy_construction(other.get_allocator())},
-        size_(other.size_),
-        begin_(allocate(size_))
+        size_{other.size_},
+        begin_{allocate(size_)}
     {
-        copy(other.begin(),other.end(),begin_);
+        init(other.begin(),other.end());
     }
-    //no reallocation guarantee
+    //no reallocation
     storage(storage&& other):
         allocator_{std::move(other.allocator_)},
         size_{other.size_},
@@ -81,18 +81,18 @@ public:
     template<typename It, std::enable_if_t<detail::is_iterator<It>,int> =0 >
     storage(It first, It last, const allocator_type& alloc = allocator_type()):
         allocator_{alloc},
-        size_{std::distance(first,last)},
+        size_{static_cast<const difference_type&>std::distance(first,last)},
         begin_{allocate(size_)}
     {
         init(first,last);
     }
     //construct storage from init list
-    storage(std::initializer_list<value_type> init_data, const allocator_type& alloc = allocator_type()):
+    storage(std::initializer_list<value_type> init, const allocator_type& alloc = allocator_type()):
         allocator_{alloc},
-        size_{static_cast<size_type>(init_data.size())},
+        size_{static_cast<const difference_type&>(init.size())},
         begin_{allocate(size_)}
     {
-        init(init_data.begin(),init_data.end());
+        init(init.begin(),init.end());
     }
 
     pointer data(){return begin_;}
@@ -187,7 +187,7 @@ private:
     }
 
     allocator_type allocator_;
-    size_type size_;
+    difference_type size_;
     pointer begin_;
 };
 
