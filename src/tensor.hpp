@@ -196,6 +196,7 @@ public:
             return false;
         }
     }
+
     //meta-data interface
     const auto& descriptor()const{
         return impl().descriptor();
@@ -216,6 +217,7 @@ public:
     bool empty()const{
         return static_cast<bool>(impl_) ? impl().empty() : true;
     }
+
     //data interface
     //trverse order of iterator and indexer is config_type::order
     auto begin(){
@@ -302,7 +304,8 @@ public:
     auto traverse_order_adapter()const{
         return detail::traverse_order_adapter<const impl_type,TraverseOrder>{impl()};
     }
-    //reduce_slide_transform
+
+    //reduce_slide_transform methods to perform along axes using custom functor
     //reduce along axes, axes may be container or scalar
     //f should be like [](auto first, auto last){...}, where first,last is range along axes
     //f should return scalar - first,last reduction result - that determines result's value_type
@@ -340,7 +343,8 @@ public:
         gtensor::transform(*this, axis, f);
     }
 
-    //math
+    //some methods that call corresponding free function of gtensor modules (tensor_math, statistic,...)
+    //tensor_math
     GTENSOR_TENSOR_REDUCE_METHOD(all,all);
     GTENSOR_TENSOR_REDUCE_METHOD(any,any);
     GTENSOR_TENSOR_REDUCE_INITIAL_METHOD(max,max);
@@ -356,6 +360,7 @@ public:
     GTENSOR_TENSOR_REDUCE_METHOD(var,var);
     GTENSOR_TENSOR_REDUCE_METHOD(std,std);
     //sort_search
+    //inplace sort, should use gtensor::sort to sort copy
     template<typename DimT=dim_type, typename Comparator=std::less<void>>
     void sort(const DimT& axis=-1, const Comparator& comparator=Comparator{}){
         return gtensor::transform(*this,axis,[&comparator](auto first, auto last){std::sort(first,last,comparator);});
