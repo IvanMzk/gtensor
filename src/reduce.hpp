@@ -437,21 +437,7 @@ auto reduce_flatten(const basic_tensor<Ts...>& t, F f, bool keep_dims, Args&&...
 //F is slide functor that takes iterators range of data to be slided, dst iterators range, optional parameters
 //F call operator must be defined like this: template<typename It,typename DstIt,typename...Args> void operator()(It first, It last, DstIt dfirst, DstIt dlast, Args...){...}
 //where Args is optional parameters
-//result tensor has value_type that is same as source tensor value_type
-template<typename DimT, typename...Ts, typename F, typename IdxT, typename...Args>
-auto slide(const basic_tensor<Ts...>& t, const DimT& axis, F f, const IdxT& window_size, const IdxT& window_step, Args&&...args){
-    using config_type = typename basic_tensor<Ts...>::config_type;
-    using value_type = typename basic_tensor<Ts...>::value_type;
-    return reducer_selector_t<config_type>::template slide<value_type>(t, axis, f, window_size, window_step,std::forward<Args>(args)...);
-}
-//slide like over flatten
-template<typename F, typename...Ts, typename IdxT, typename...Args>
-auto slide_flatten(const basic_tensor<Ts...>& t, F f, const IdxT& window_size, const IdxT& window_step, Args&&...args){
-    using config_type = typename basic_tensor<Ts...>::config_type;
-    using value_type = typename basic_tensor<Ts...>::value_type;
-    return reducer_selector_t<config_type>::template slide_flatten<value_type>(t, f, window_size, window_step,std::forward<Args>(args)...);
-}
-//as above, but with explicit result value_type specialization
+//result tensor's has value_type should be specialized explicitly
 template<typename ResultT, typename DimT, typename...Ts, typename F, typename IdxT, typename...Args>
 auto slide(const basic_tensor<Ts...>& t, const DimT& axis, F f, const IdxT& window_size, const IdxT& window_step, Args&&...args){
     using config_type = typename basic_tensor<Ts...>::config_type;

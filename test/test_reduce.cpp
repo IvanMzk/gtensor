@@ -769,7 +769,7 @@ TEST_CASE("test_slide","[test_reduce]")
         auto window_size = std::get<3>(t);
         auto window_step = std::get<4>(t);
         auto expected = std::get<5>(t);
-        auto result = slide(tensor, axis, functor, window_size, window_step);
+        auto result = slide<value_type>(tensor, axis, functor, window_size, window_step);
         REQUIRE(result == expected);
     };
     apply_by_element(test, test_data);
@@ -808,7 +808,7 @@ TEMPLATE_TEST_CASE("test_slide_flatten","[test_reduce]",
         auto window_size = std::get<2>(t);
         auto window_step = std::get<3>(t);
         auto expected = std::get<4>(t);
-        auto result = slide_flatten(tensor, functor, window_size, window_step);
+        auto result = slide_flatten<value_type>(tensor, functor, window_size, window_step);
         REQUIRE(result == expected);
     };
     apply_by_element(test, test_data);
@@ -841,7 +841,7 @@ TEST_CASE("test_slide_custom_arg","[test_reduce]")
         auto window_step = std::get<4>(t);
         auto denom = std::get<5>(t);
         auto expected = std::get<6>(t);
-        auto result = slide(tensor, axis, functor, window_size, window_step, window_size, window_step, denom);
+        auto result = slide<value_type>(tensor, axis, functor, window_size, window_step, window_size, window_step, denom);
         REQUIRE(result == expected);
     };
     apply_by_element(test, test_data);
@@ -876,7 +876,7 @@ TEST_CASE("test_slide_exception","[test_reduce]")
         auto functor = std::get<2>(t);
         auto window_size = std::get<3>(t);
         auto window_step = std::get<4>(t);
-        REQUIRE_THROWS_AS(slide(tensor, axis, functor, window_size, window_step), value_error);
+        REQUIRE_THROWS_AS(slide<value_type>(tensor, axis, functor, window_size, window_step), value_error);
     };
     apply_by_element(test, test_data);
 }
@@ -903,7 +903,7 @@ TEST_CASE("test_slide_flatten_exception","[test_reduce]")
         auto functor = std::get<1>(t);
         auto window_size = std::get<2>(t);
         auto window_step = std::get<3>(t);
-        REQUIRE_THROWS_AS(slide_flatten(tensor, functor, window_size, window_step), value_error);
+        REQUIRE_THROWS_AS(slide_flatten<value_type>(tensor, functor, window_size, window_step), value_error);
     };
     apply_by_element(test, test_data);
 }
