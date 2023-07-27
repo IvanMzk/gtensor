@@ -42,16 +42,18 @@ static auto NAME(const basic_tensor<Ts...>& t, bool keep_dims = false, const Ini
 template<typename...Ts, typename DimT>\
 static auto NAME(const basic_tensor<Ts...>& t, const DimT& axis){\
     using index_type = typename basic_tensor<Ts...>::index_type;\
+    using value_type = typename basic_tensor<Ts...>::value_type;\
     const index_type window_size = 1;\
     const index_type window_step = 1;\
-    return slide(t,axis,F{}, window_size, window_step);\
+    return slide<value_type>(t,axis,F{}, window_size, window_step);\
 }\
 template<typename...Ts>\
 static auto NAME(const basic_tensor<Ts...>& t){\
     using index_type = typename basic_tensor<Ts...>::index_type;\
+    using value_type = typename basic_tensor<Ts...>::value_type;\
     const index_type window_size = 1;\
     const index_type window_step = 1;\
-    return slide_flatten(t,F{}, window_size, window_step);\
+    return slide_flatten<value_type>(t,F{}, window_size, window_step);\
 }
 
 struct tensor_math
@@ -201,12 +203,13 @@ struct tensor_math
     template<typename...Ts, typename DimT>
     static auto diff(const basic_tensor<Ts...>& t, std::size_t n, const DimT& axis){
         using index_type = typename basic_tensor<Ts...>::index_type;
+        using value_type = typename basic_tensor<Ts...>::value_type;
         const index_type window_size = 2;
         const index_type window_step = 1;
         if (n==0){
             return t;
         }else{
-            auto res = slide(t, axis, math_reduce_operations::diff_1{}, window_size, window_step);
+            auto res = slide<value_type>(t, axis, math_reduce_operations::diff_1{}, window_size, window_step);
             return diff(res, --n, axis);
         }
     }
@@ -214,9 +217,10 @@ struct tensor_math
     template<typename...Ts, typename DimT>
     static auto diff2(const basic_tensor<Ts...>& t, const DimT& axis){
         using index_type = typename basic_tensor<Ts...>::index_type;
+        using value_type = typename basic_tensor<Ts...>::value_type;
         const index_type window_size = 3;
         const index_type window_step = 1;
-        return slide(t, axis, math_reduce_operations::diff_2{}, window_size, window_step);
+        return slide<value_type>(t, axis, math_reduce_operations::diff_2{}, window_size, window_step);
     }
 
     //gradient along given axis, interior points has 2-nd order accuracy approximation using central difference, boundary points has 1-st order accuracy approximation

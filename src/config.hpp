@@ -3,6 +3,7 @@
 
 #include <vector>
 #include "storage_adapter.hpp"
+#include "storage.hpp"
 
 namespace gtensor{
 namespace config{
@@ -31,7 +32,8 @@ struct default_config
     //must provide at least storage(const difference_type& n) constructor, which constructs storage of size n
     //must provide at least subscript const operator or const iterator
     //template<typename T> using storage = std::vector<T>;
-    template<typename T> using storage = storage_vector<T>;
+    //template<typename T> using storage = storage_vector<T>;
+    template<typename T> using storage = gtensor::storage<T>;
 
     //meta-data elements storage template i.e. shape, strides are specialization of shape
     //must provide std::vector like interface

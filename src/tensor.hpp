@@ -584,12 +584,13 @@ public:
         tensor(forward_tag::tag(), shape_type{}, value__)
     {}
     //init list shape and value
-    tensor(std::initializer_list<index_type> shape__, const value_type& value__):
+    template<typename IdxT>
+    tensor(std::initializer_list<IdxT> shape__, const value_type& value__):
         tensor(forward_tag::tag(), shape__, value__)
     {}
     //init list shape and range
-    template<typename It>
-    tensor(std::initializer_list<index_type> shape__, It begin__, It end__):
+    template<typename IdxT, typename It>
+    tensor(std::initializer_list<IdxT> shape__, It begin__, It end__):
         tensor(forward_tag::tag(), shape__, begin__, end__)
     {}
 

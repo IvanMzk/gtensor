@@ -77,11 +77,15 @@ public:
     {
         init(v, std::false_type{});
     }
+
+    template<typename, typename = void> struct is_input_iterator : std::false_type{};
+    template<typename U> struct is_input_iterator<U,std::void_t<typename std::iterator_traits<U>::iterator_category>> : std::is_convertible<typename std::iterator_traits<U>::iterator_category*,std::input_iterator_tag*>{};
+
     //construct storage from iterators range
-    template<typename It, std::enable_if_t<detail::is_iterator<It>,int> =0 >
+    template<typename It, std::enable_if_t<is_input_iterator<It>::value,int> =0 >
     storage(It first, It last, const allocator_type& alloc = allocator_type()):
         allocator_{alloc},
-        size_{static_cast<const difference_type&>std::distance(first,last)},
+        size_{static_cast<const difference_type&>(std::distance(first,last))},
         begin_{allocate(size_)}
     {
         init(first,last);

@@ -76,9 +76,10 @@ struct sort_search
     template<typename...Ts, typename DimT, typename Comparator>
     static auto sort(const basic_tensor<Ts...>& t, const DimT& axis, const Comparator& comparator){
         using index_type = typename basic_tensor<Ts...>::index_type;
+        using value_type = typename basic_tensor<Ts...>::value_type;
         const index_type window_size = 1;
         const index_type window_step = 1;
-        return slide(t,axis,sort_search_reduce_operations::sort{}, window_size, window_step, comparator);
+        return slide<value_type>(t,axis,sort_search_reduce_operations::sort{}, window_size, window_step, comparator);
     }
 
     //return indexes that sort tensor along axis, axis is scalar
@@ -99,9 +100,10 @@ struct sort_search
     static auto partition(const basic_tensor<Ts...>& t, const Nth& nth, const DimT& axis, const Comparator& comparator){
         using config_type = typename basic_tensor<Ts...>::config_type;
         using index_type = typename basic_tensor<Ts...>::index_type;
+        using value_type = typename basic_tensor<Ts...>::value_type;
         const index_type window_size = 1;
         const index_type window_step = 1;
-        return slide(t,axis,sort_search_reduce_operations::nth_element_partition{}, window_size, window_step, nth, comparator, config_type{});
+        return slide<value_type>(t,axis,sort_search_reduce_operations::nth_element_partition{}, window_size, window_step, nth, comparator, config_type{});
     }
 
     //return indexes that partially sort tensor along axis, axis is scalar
@@ -184,7 +186,7 @@ struct sort_search
         using container_difference_type = typename container_type::difference_type;
         const auto dim = static_cast<index_type>(t.dim());
         if (t.empty()){
-            return result_tensor_type({0,dim},0);
+            return result_tensor_type({index_type{0},dim},0);
         }else{
             container_type indexes{};
             const auto n = t.size()*dim;
