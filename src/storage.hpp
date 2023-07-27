@@ -8,6 +8,74 @@
 namespace gtensor{
 
 template<typename T, typename Alloc = std::allocator<T>>
+class minimal_storage
+{
+public:
+    using allocator_type = Alloc;
+    using value_type = T;
+    using pointer = typename std::allocator_traits<Alloc>::pointer;
+    using const_pointer = typename std::allocator_traits<Alloc>::const_pointer;
+    using reference = T&;
+    using const_reference = const T&;
+    using difference_type = typename std::allocator_traits<Alloc>::difference_type;
+    using size_type = typename std::allocator_traits<Alloc>::size_type;
+
+    virtual ~minimal_storage(){deallocate();}
+
+    minimal_storage(const minimal_storage&) = delete;
+    minimal_storage& operator=(const minimal_storage&) = delete;
+    minimal_storage& operator=(minimal_storage&&) = delete;
+
+    minimal_storage(minimal_storage&& other):
+        allocator_{std::move(other.allocator_)},
+        size_{other.size_},
+        begin_{other.begin_}
+    {
+        other.size_ = 0;
+        other.begin_ = nullptr;
+    }
+
+    //construct storage of n elements, no initialization is performed for trivially copyable value_type
+    explicit minimal_storage(const difference_type& n, const allocator_type& alloc = allocator_type()):
+        allocator_{alloc},
+        size_{n},
+        begin_{allocate(n)}
+    {
+        init(value_type{}, typename std::is_trivially_copyable<value_type>::type{});
+    }
+
+    pointer data(){return begin_;}
+    const_pointer data()const{return begin_;}
+    reference operator[](const difference_type& i){return *(begin_+i);}
+    const_reference operator[](const difference_type& i)const{return *(begin_+i);}
+
+private:
+
+    //leave uninitialized
+    void init(const value_type&, std::true_type){
+    }
+    //initialize to v
+    void init(const value_type& v, std::false_type){
+        std::uninitialized_fill(begin_,begin_+size_,v);
+    }
+
+    pointer allocate(const difference_type& n){
+        return allocator_.allocate(n);
+    }
+    void deallocate(){
+        if (begin_){
+            allocator_.deallocate(begin_,size_);
+            size_ = 0;
+            begin_ = nullptr;
+        }
+    }
+
+    allocator_type allocator_;
+    difference_type size_;
+    pointer begin_;
+};
+
+template<typename T, typename Alloc = std::allocator<T>>
 class storage
 {
 public:

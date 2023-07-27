@@ -512,26 +512,59 @@ TEST_CASE("test_gtensor_compound_assign_operator_lhs_is_view","[test_tensor_oper
     apply_by_element(test,test_data);
 }
 
-TEST_CASE("test_gtensor_assignment_self_assignment","[test_tensor_operators]")
-{
-    struct assign_exception{};
-    struct throw_on_assign{
-        throw_on_assign() = default;
-        throw_on_assign(const throw_on_assign&) = default;
-        throw_on_assign& operator=(const throw_on_assign&){
+namespace test_gtensor_assignment_self_assignment{
+
+struct assign_exception{};
+struct throw_on_assign{
+    inline static bool is_throw = false;
+    throw_on_assign() = default;
+    throw_on_assign(const throw_on_assign&) = default;
+    throw_on_assign& operator=(const throw_on_assign&){
+        if (is_throw){
             throw assign_exception{};
         }
-    };
-    REQUIRE_THROWS(throw_on_assign{} = throw_on_assign{});
+        return *this;
+    }
+};
+
+}
+
+TEST_CASE("test_gtensor_assignment_self_assignment","[test_tensor_operators]")
+{
+    using test_gtensor_assignment_self_assignment::assign_exception;
+    using test_gtensor_assignment_self_assignment::throw_on_assign;
     using value_type = throw_on_assign;
     using tensor_type = gtensor::tensor<value_type>;
     using gtensor::assign;
+    throw_on_assign::is_throw = false;
+    REQUIRE_NOTHROW(throw_on_assign{} = throw_on_assign{});
+    throw_on_assign::is_throw = true;
+    REQUIRE_THROWS(throw_on_assign{} = throw_on_assign{});
+    throw_on_assign::is_throw = false;
     tensor_type t({10},value_type{});
-    REQUIRE_NOTHROW(assign(t,t));
-    REQUIRE_THROWS_AS(assign(t,tensor_type(value_type{})),assign_exception);
-    auto v = t.transpose();
-    REQUIRE_NOTHROW(assign(v,v));
-    REQUIRE_THROWS_AS(assign(v,t),assign_exception);
+    SECTION("copy_assign_the_same")
+    {
+        throw_on_assign::is_throw = true;
+        REQUIRE_NOTHROW(assign(t,t));
+    }
+    SECTION("assign_not_same")
+    {
+        tensor_type rhs(value_type{});
+        throw_on_assign::is_throw = true;
+        REQUIRE_THROWS_AS(assign(t,rhs),assign_exception);
+    }
+    SECTION("copy_assign_the_same_view")
+    {
+        auto v = t.transpose();
+        throw_on_assign::is_throw = true;
+        REQUIRE_NOTHROW(assign(v,v));
+    }
+    SECTION("assign_not_same_view")
+    {
+        auto v = t.transpose();
+        throw_on_assign::is_throw = true;
+        REQUIRE_THROWS_AS(assign(v,t),assign_exception);
+    }
 }
 
 TEST_CASE("test_gtensor_assignment_self_assignment_expression","[test_tensor_operators]")

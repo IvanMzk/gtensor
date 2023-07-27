@@ -28,8 +28,8 @@ public:
         impl_(init_list)
     {}
 
-    decltype(std::declval<const impl_type&>()[std::declval<inner_index_type>()]) operator[](index_type i)const{return impl_[i.value()];}
-    decltype(std::declval<impl_type&>()[std::declval<inner_index_type>()]) operator[](index_type i){return impl_[i.value()];}
+    decltype(auto) operator[](index_type i)const{return impl_[i.value()];}
+    decltype(auto) operator[](index_type i){return impl_[i.value()];}
 };
 
 template<typename ValT> using storage_vector = storage_adapter<std::vector<ValT>>;
