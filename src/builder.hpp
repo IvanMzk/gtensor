@@ -190,7 +190,7 @@ struct builder
         if (t.dim() == 1){
             const auto d = t.size();
             const auto n = k>=0 ? k+d : -k+d;
-            auto res = empty<value_type,order,config_type>(shape_type{n,n});
+            auto res = zeros<value_type,order,config_type>(shape_type{n,n});
             traverse_diagonal<order>(
                 res.template traverse_order_adapter<order>().begin(),
                 [it=t.template traverse_order_adapter<order>().begin()](auto& e)mutable{
