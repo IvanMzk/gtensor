@@ -7,6 +7,94 @@
 
 namespace gtensor{
 
+namespace detail{
+
+template<typename It, typename Alloc>
+void destroy(It first, It last, Alloc& alloc){
+    using value_type = typename std::iterator_traits<It>::value_type;
+    if constexpr (!std::is_trivially_copyable_v<value_type>){
+        for (;first!=last; ++first){
+            std::allocator_traits<Alloc>::destroy(alloc,std::addressof(*first));
+        }
+    }
+}
+
+template<typename It, typename T, typename Alloc>
+void uninitialized_fill(It first, It last, const T& v, Alloc& alloc){
+    auto it=first;
+    try
+    {
+        for (;it!=last; ++it){
+            std::allocator_traits<Alloc>::construct(alloc,std::addressof(*it),v);
+        }
+    }
+    catch (...)
+    {
+        destroy(first,it,alloc);
+        throw;
+    }
+}
+
+template<typename It, typename DstIt, typename Alloc>
+auto uninitialized_copy(It first, It last, DstIt dfirst, Alloc& alloc){
+    auto it=dfirst;
+    try
+    {
+        for (;first!=last; ++first,(void) ++it){
+            std::allocator_traits<Alloc>::construct(alloc,std::addressof(*it),*first);
+        }
+        return it;
+    }
+    catch (...)
+    {
+        destroy(dfirst,it,alloc);
+        throw;
+    }
+}
+
+template<typename Alloc>
+struct row_buffer
+{
+    using allocator_type = Alloc;
+    using pointer = typename std::allocator_traits<Alloc>::pointer;
+    using difference_type = typename std::allocator_traits<Alloc>::difference_type;
+
+    allocator_type& allocator_;
+    difference_type size_;
+    pointer ptr_;
+    ~row_buffer(){
+        if (ptr_){
+            allocator_.deallocate(ptr_,size_);
+        }
+    }
+
+    row_buffer() = default;
+    row_buffer(const row_buffer&) = delete;
+    row_buffer(row_buffer&&) = delete;
+    row_buffer(allocator_type& allocator__, difference_type size__, pointer ptr__):
+        allocator_{allocator__},
+        size_{size__},
+        ptr_{ptr__}
+    {}
+
+    allocator_type& get_allocator(){
+        return allocator_;
+    }
+
+    pointer get()const{
+        return ptr_;
+    }
+
+
+    pointer release(){
+        auto res = ptr_;
+        ptr_ = nullptr;
+        return res;
+    }
+};
+
+}
+
 template<typename T, typename Alloc = std::allocator<T>>
 class minimal_storage
 {
@@ -20,7 +108,10 @@ public:
     using difference_type = typename std::allocator_traits<Alloc>::difference_type;
     using size_type = typename std::allocator_traits<Alloc>::size_type;
 
-    virtual ~minimal_storage(){deallocate();}
+    virtual ~minimal_storage()
+    {
+        free();
+    }
 
     minimal_storage(const minimal_storage&) = delete;
     minimal_storage& operator=(const minimal_storage&) = delete;
@@ -37,11 +128,9 @@ public:
 
     //construct storage of n elements, no initialization is performed for trivially copyable value_type
     explicit minimal_storage(const difference_type& n, const allocator_type& alloc = allocator_type()):
-        allocator_{alloc},
-        size_{n},
-        begin_{allocate(n)}
+        allocator_{alloc}
     {
-        init(value_type{}, typename std::is_trivially_copyable<value_type>::type{});
+        init(n,value_type{},false);
     }
 
     pointer data(){return begin_;}
@@ -51,32 +140,42 @@ public:
 
 private:
 
-    //leave uninitialized
-    void init(const value_type&, std::true_type){
-    }
-    //initialize to v
-    void init(const value_type& v, std::false_type){
-        std::uninitialized_fill(begin_,begin_+size_,v);
+    void init(const difference_type& n, const value_type& v, bool init_trivial){
+        auto new_buffer = allocate_buffer(n);
+        if (!std::is_trivially_copyable_v<value_type> || init_trivial){
+            detail::uninitialized_fill(new_buffer.get(),new_buffer.get()+n,v,new_buffer.get_allocator());
+        }
+        size_=n;
+        begin_=new_buffer.release();
     }
 
-    pointer allocate(const difference_type& n){
-        return allocator_.allocate(n);
+    auto allocate_buffer(const difference_type& n, allocator_type& alloc){
+        return detail::row_buffer<allocator_type>{alloc,n,alloc.allocate(n)};
     }
-    void deallocate(){
+    auto allocate_buffer(const difference_type& n){
+        return allocate_buffer(n,allocator_);
+    }
+
+    //destroy and deallocate
+    void free(allocator_type& alloc){
         if (begin_){
-            allocator_.deallocate(begin_,size_);
+            detail::destroy(begin_,begin_+size_,alloc);
+            alloc.deallocate(begin_,size_);
             size_ = 0;
             begin_ = nullptr;
         }
     }
+    void free(){
+        free(allocator_);
+    }
 
     allocator_type allocator_;
-    difference_type size_;
-    pointer begin_;
+    difference_type size_{0};
+    pointer begin_{nullptr};
 };
 
 template<typename T, typename Alloc = std::allocator<T>>
-class storage
+class basic_storage
 {
 public:
     using allocator_type = Alloc;
@@ -92,36 +191,35 @@ public:
     using difference_type = typename std::allocator_traits<Alloc>::difference_type;
     using size_type = typename std::allocator_traits<Alloc>::size_type;
 
-    virtual ~storage(){deallocate();}
+    virtual ~basic_storage()
+    {
+        free();
+    }
     //default constructor, no allocation take place
-    storage(const allocator_type& alloc = allocator_type()):
-        allocator_{alloc},
-        size_{0},
-        begin_{}
+    basic_storage(const allocator_type& alloc = allocator_type()):
+        allocator_{alloc}
     {}
     //reallocate if not equal sizes or not equal allocators
-    storage& operator=(const storage& other){
+    basic_storage& operator=(const basic_storage& other){
         if (this != &other){
             copy_assign(other, typename std::allocator_traits<allocator_type>::propagate_on_container_copy_assignment{});
         }
         return *this;
     }
     //use copy assignment if other's allocator disallow to propagate and allocators not equal, otherwise steal from other and put other in default state
-    storage& operator=(storage&& other){
+    basic_storage& operator=(basic_storage&& other){
         if (this != &other){
             move_assign(std::move(other),  typename std::allocator_traits<allocator_type>::propagate_on_container_move_assignment{});
         }
         return *this;
     }
-    storage(const storage& other):
-        allocator_{std::allocator_traits<allocator_type>::select_on_container_copy_construction(other.get_allocator())},
-        size_{other.size_},
-        begin_{allocate(size_)}
+    basic_storage(const basic_storage& other):
+        allocator_{std::allocator_traits<allocator_type>::select_on_container_copy_construction(other.get_allocator())}
     {
         init(other.begin(),other.end());
     }
     //no reallocation
-    storage(storage&& other):
+    basic_storage(basic_storage&& other):
         allocator_{std::move(other.allocator_)},
         size_{other.size_},
         begin_{other.begin_}
@@ -130,20 +228,16 @@ public:
         other.begin_ = nullptr;
     }
     //construct storage of n elements, no initialization is performed for trivially copyable value_type
-    explicit storage(const difference_type& n, const allocator_type& alloc = allocator_type()):
-        allocator_{alloc},
-        size_{n},
-        begin_{allocate(n)}
+    explicit basic_storage(const difference_type& n, const allocator_type& alloc = allocator_type()):
+        allocator_{alloc}
     {
-        init(value_type{}, typename std::is_trivially_copyable<value_type>::type{});
+        init(n,value_type{},false);
     }
-    //construct storage with n elements initialized to v
-    storage(const difference_type& n, const value_type& v, const allocator_type& alloc = allocator_type()):
-        allocator_{alloc},
-        size_{n},
-        begin_{allocate(n)}
+    //construct storage of n elements initialized to v
+    basic_storage(const difference_type& n, const value_type& v, const allocator_type& alloc = allocator_type()):
+        allocator_{alloc}
     {
-        init(v, std::false_type{});
+        init(n,v,true);
     }
 
     template<typename, typename = void> struct is_input_iterator : std::false_type{};
@@ -151,18 +245,14 @@ public:
 
     //construct storage from iterators range
     template<typename It, std::enable_if_t<is_input_iterator<It>::value,int> =0 >
-    storage(It first, It last, const allocator_type& alloc = allocator_type()):
-        allocator_{alloc},
-        size_{static_cast<const difference_type&>(std::distance(first,last))},
-        begin_{allocate(size_)}
+    basic_storage(It first, It last, const allocator_type& alloc = allocator_type()):
+        allocator_{alloc}
     {
         init(first,last);
     }
-    //construct storage from init list
-    storage(std::initializer_list<value_type> init, const allocator_type& alloc = allocator_type()):
-        allocator_{alloc},
-        size_{static_cast<const difference_type&>(init.size())},
-        begin_{allocate(size_)}
+    //construct basic_storage from init list
+    basic_storage(std::initializer_list<value_type> init, const allocator_type& alloc = allocator_type()):
+        allocator_{alloc}
     {
         init(init.begin(),init.end());
     }
@@ -185,37 +275,41 @@ public:
 
 private:
     //no copy assign other's allocator
-    void copy_assign(const storage& other, std::false_type){
-        auto other_size = other.size();
+    void copy_assign(const basic_storage& other, std::false_type){
+        const auto other_size = other.size();
+        //reallocate even if size()>other.size()
         if (size()!=other_size){
-            auto new_buffer = allocate(other_size);
-            deallocate();
+            auto new_buffer = allocate_buffer(other_size);
+            detail::uninitialized_copy(other.begin(),other.end(),new_buffer.get(),new_buffer.get_allocator());
+            free();
             size_ = other_size;
-            begin_ = new_buffer;
+            begin_ = new_buffer.release();
+        }else{
+            std::copy(other.begin(),other.end(),begin_);
         }
-        std::copy(other.begin(),other.end(),begin_);
     }
 
     //copy assign other's allocator
-    void copy_assign(const storage& other, std::true_type){
+    void copy_assign(const basic_storage& other, std::true_type){
         if (allocator_ ==  other.allocator_ || typename std::allocator_traits<allocator_type>::is_always_equal()){
             copy_assign(other, std::false_type{});
         }else{
             auto other_size = other.size();
             auto other_allocator = other.get_allocator();
-            auto new_buffer = other_allocator.allocate(other_size);
-            deallocate();
+            auto new_buffer = allocate_buffer(other_size,other_allocator);
+            detail::uninitialized_copy(other.begin(),other.end(),new_buffer.get(),new_buffer.get_allocator());
+            auto old_alloc = std::move(allocator_);
+            allocator_ = std::move(other_allocator);
+            free(old_alloc);
             size_ = other_size;
-            begin_ = new_buffer;
-            allocator_ = other_allocator;
+            begin_ = new_buffer.release();
         }
-        std::copy(other.begin(),other.end(),begin_);
     }
 
     //no move assign other's allocator, if allocators not equal copy are made
-    void move_assign(storage&& other, std::false_type){
+    void move_assign(basic_storage&& other, std::false_type){
         if (allocator_ ==  other.allocator_ || typename std::allocator_traits<allocator_type>::is_always_equal()){
-            deallocate();
+            free();
             size_ = other.size_;
             begin_ = other.begin_;
             other.size_ = 0;
@@ -226,41 +320,56 @@ private:
     }
 
     //move assign other's allocator
-    void move_assign(storage&& other, std::true_type){
-        deallocate();
+    void move_assign(basic_storage&& other, std::true_type){
+        auto old_alloc = std::move(allocator_);
         allocator_ = std::move(other.allocator_);
+        free(old_alloc);
         size_ = other.size_;
         begin_ = other.begin_;
         other.size_ = 0;
         other.begin_ = nullptr;
     }
 
-    //leave uninitialized
-    void init(const value_type& v, std::true_type){
-    }
-    //initialize to v
-    void init(const value_type& v, std::false_type){
-        std::uninitialized_fill(begin(),end(),v);
+    void init(const difference_type& n, const value_type& v, bool init_trivial){
+        auto new_buffer = allocate_buffer(n);
+        if (!std::is_trivially_copyable_v<value_type> || init_trivial){
+            detail::uninitialized_fill(new_buffer.get(),new_buffer.get()+n,v,new_buffer.get_allocator());
+        }
+        size_=n;
+        begin_=new_buffer.release();
     }
     template<typename It>
     void init(It first, It last){
-        std::uninitialized_copy(first,last,begin());
+        const auto n = static_cast<const difference_type&>(std::distance(first,last));
+        auto new_buffer = allocate_buffer(n);
+        detail::uninitialized_copy(first,last,new_buffer.get(),new_buffer.get_allocator());
+        size_ = n;
+        begin_=new_buffer.release();
     }
 
-    pointer allocate(const difference_type& n){
-        return allocator_.allocate(n);
+    auto allocate_buffer(const difference_type& n, allocator_type& alloc){
+        return detail::row_buffer<allocator_type>{alloc,n,alloc.allocate(n)};
     }
-    void deallocate(){
+    auto allocate_buffer(const difference_type& n){
+        return allocate_buffer(n,allocator_);
+    }
+
+    //destroy and deallocate
+    void free(allocator_type& alloc){
         if (begin_){
-            allocator_.deallocate(begin_,size_);
+            detail::destroy(begin(),end(),alloc);
+            alloc.deallocate(begin_,size_);
             size_ = 0;
             begin_ = nullptr;
         }
     }
+    void free(){
+        free(allocator_);
+    }
 
     allocator_type allocator_;
-    difference_type size_;
-    pointer begin_;
+    difference_type size_{0};
+    pointer begin_{nullptr};
 };
 
 }   //end of namespace gtensor
