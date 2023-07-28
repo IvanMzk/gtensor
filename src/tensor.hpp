@@ -170,7 +170,6 @@ public:
         swap(other);
     }
     //makes tensor in specified layout by copying shape and elements from this
-    //this element's traverse order the same as specified layout
     template<typename Order = config::c_order>
     auto copy(Order order = Order{})const{
         ASSERT_ORDER(Order);

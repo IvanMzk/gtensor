@@ -222,7 +222,8 @@ TEST_CASE("test_tensor_constructor_shape_container_range","[test_tensor]")
     SECTION("range_<_size")
     {
         using index_type = tensor_type::index_type;
-        const value_type any{-1};
+        const value_type any{std::numeric_limits<value_type>::max()};
+
         //0layout,1shape,2elements,3range_size,4expected
         auto test_data = std::make_tuple(
             //c_order layout
