@@ -251,12 +251,21 @@ public:
         init(first,last);
     }
     //construct basic_storage from init list
-    basic_storage(std::initializer_list<value_type> init, const allocator_type& alloc = allocator_type()):
+    basic_storage(std::initializer_list<value_type> init_list, const allocator_type& alloc = allocator_type()):
         allocator_{alloc}
     {
-        init(init.begin(),init.end());
+        init(init_list.begin(),init_list.end());
     }
 
+    void swap(basic_storage& other){
+        if constexpr (std::allocator_traits<allocator_type>::propagate_on_container_swap::value){
+            std::swap(allocator_,other.allocator_);
+        }
+        std::swap(size_,other.size_);
+        std::swap(begin_,other.begin_);
+    }
+    difference_type size()const{return size_;}
+    bool empty()const{return begin()==end();}
     pointer data(){return begin_;}
     const_pointer data()const{return  begin_;}
     iterator begin(){return begin_;}
@@ -269,8 +278,6 @@ public:
     const_reverse_iterator rend()const{return  std::make_reverse_iterator(begin());}
     reference operator[](const difference_type& i){return *(begin_+i);}
     const_reference operator[](const difference_type& i)const{return *(begin_+i);}
-    difference_type size()const{return size_;}
-    bool empty()const{return begin()==end();}
     allocator_type get_allocator()const{return allocator_;}
 
 private:
@@ -291,7 +298,7 @@ private:
 
     //copy assign other's allocator
     void copy_assign(const basic_storage& other, std::true_type){
-        if (allocator_ ==  other.allocator_ || typename std::allocator_traits<allocator_type>::is_always_equal()){
+        if (std::allocator_traits<allocator_type>::is_always_equal::value || allocator_ ==  other.allocator_){
             copy_assign(other, std::false_type{});
         }else{
             auto other_size = other.size();
@@ -308,7 +315,7 @@ private:
 
     //no move assign other's allocator, if allocators not equal copy are made
     void move_assign(basic_storage&& other, std::false_type){
-        if (allocator_ ==  other.allocator_ || typename std::allocator_traits<allocator_type>::is_always_equal()){
+        if (std::allocator_traits<allocator_type>::is_always_equal::value || allocator_ ==  other.allocator_){
             free();
             size_ = other.size_;
             begin_ = other.begin_;
@@ -371,6 +378,28 @@ private:
     difference_type size_{0};
     pointer begin_{nullptr};
 };
+
+
+template<typename T, typename Alloc>
+void swap(basic_storage<T,Alloc>& lhs, basic_storage<T,Alloc>& rhs){
+    lhs.swap(rhs);
+}
+
+template<typename T, typename Alloc>
+bool operator==(const basic_storage<T,Alloc>& lhs, const basic_storage<T,Alloc>& rhs){
+    if (&lhs == &rhs){
+        return true;
+    }else if (lhs.size()==rhs.size()){
+        return std::equal(lhs.begin(),lhs.end(),rhs.begin());
+    }else{
+        return false;
+    }
+}
+
+template<typename T, typename Alloc>
+bool operator!=(const basic_storage<T,Alloc>& lhs, const basic_storage<T,Alloc>& rhs){
+    return !(lhs==rhs);
+}
 
 }   //end of namespace gtensor
 #endif
