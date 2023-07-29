@@ -123,27 +123,36 @@ public:
     explicit basic_tensor(std::shared_ptr<impl_type>&& impl__):
         impl_{std::move(impl__)}
     {}
-    //assignment
-    basic_tensor& operator=(const basic_tensor& rhs){
+
+    //value assignment operator=
+    basic_tensor& operator=(const basic_tensor& rhs)&{
         copy_assign_(rhs);
         return *this;
     }
-    basic_tensor& operator=(basic_tensor&& rhs){
+    basic_tensor& operator=(basic_tensor&& rhs)&{
         move_assign_(std::move(rhs));
         return *this;
     }
-    //converting assignment
-    template<typename,typename> struct disable_forward_rhs0;
-    template<typename Rhs> struct disable_forward_rhs0<std::false_type, Rhs> : std::negation<std::is_convertible<Rhs,value_type>>{};
-    template<typename Rhs> struct disable_forward_rhs0<std::true_type, Rhs> : std::is_convertible<Rhs,basic_tensor>{};
-    template<typename Rhs> struct disable_forward_rhs : disable_forward_rhs0<std::bool_constant<detail::is_tensor_v<Rhs>>, Rhs>{};
-
-    template<typename Rhs, std::enable_if_t<!disable_forward_rhs<std::remove_cv_t<std::remove_reference_t<Rhs>>>::value,int> =0>
-    basic_tensor& operator=(Rhs&& rhs){
+    template<typename Rhs, std::enable_if_t<!std::is_convertible_v<std::remove_cv_t<std::remove_reference_t<Rhs>>*,basic_tensor*>,int> =0>
+    basic_tensor& operator=(Rhs&& rhs)&{
         copy_assign_(std::forward<Rhs>(rhs));
         return *this;
     }
-    //broadcast assignment, impl of this never changes, shapes of this and rhs must be broadcastable, or rhs convertible to value_type
+    //elementwise broadcast assignment operator=
+    basic_tensor& operator=(const basic_tensor& rhs)&&{
+        assign(rhs);
+        return *this;
+    }
+    basic_tensor& operator=(basic_tensor&& rhs)&&{
+        assign(std::move(rhs));
+        return *this;
+    }
+    template<typename Rhs, std::enable_if_t<!std::is_convertible_v<std::remove_cv_t<std::remove_reference_t<Rhs>>*,basic_tensor*>,int> =0>
+    basic_tensor& operator=(Rhs&& rhs)&&{
+        assign(std::forward<Rhs>(rhs));
+        return *this;
+    }
+    //elementwise broadcast assignment, impl of this never changes, shapes of this and rhs must be broadcastable, or rhs convertible to value_type
     template<typename Rhs>
     basic_tensor& assign(Rhs&& rhs){
         gtensor::assign(*this, std::forward<Rhs>(rhs));
@@ -170,12 +179,12 @@ public:
         swap(other);
     }
     //makes tensor in specified layout by copying shape and elements from this
-    template<typename Order = config::c_order>
+    template<typename T=value_type, typename Config=config_type, typename Order = config::c_order>
     auto copy(Order order = Order{})const{
         ASSERT_ORDER(Order);
         (void)(order);
         auto a = traverse_order_adapter<Order>();
-        return tensor<value_type,Order,config_type>(shape(),a.begin(),a.end());
+        return tensor<T,Order,Config>(shape(),a.begin(),a.end());
     }
     //makes 1d tensor in specified layout by copying elements from this
     //this element's traverse order the same as specified layout
@@ -471,40 +480,45 @@ private:
             swap(tensor<value_type,order,config_type>{std::forward<Container>(new_shape),a.begin(),a.end()});
         }
     }
+
     template<typename Rhs>
     void copy_assign_(Rhs&& rhs){
-        using RhsT = std::remove_cv_t<std::remove_reference_t<Rhs>>;
+        using Rhs_ = std::remove_cv_t<std::remove_reference_t<Rhs>>;
         if (is_same(rhs)){  //self assignment
             return;
         }
         if constexpr (std::is_convertible_v<tensor<value_type,order,config_type>*,basic_tensor*>){  //value assignment
-            if constexpr (detail::is_tensor_v<RhsT>){
+            if constexpr (detail::is_tensor_v<Rhs_>){
                 const auto& rhs_shape = rhs.shape();
                 auto a = rhs.template traverse_order_adapter<order>();
                 if (shape() == rhs_shape){
                     std::copy(a.begin(),a.end(),traverse_order_adapter<order>().begin());
                 }else{
-                    swap(tensor<value_type,order,config_type>(rhs_shape,a.begin(),a.end()));
+                    //swap(tensor<value_type,order,config_type>(rhs_shape,a.begin(),a.end()));
+                    swap(rhs.template copy<value_type,config_type>(order{}));
                 }
-            }else{
+            }else if constexpr (std::is_convertible_v<Rhs_,value_type>){
                 if (size() == index_type{1}){
                     *begin() = std::forward<Rhs>(rhs);
                 }else{
                     swap(tensor<value_type,order,config_type>(rhs));
                 }
+            }else{
+                static_assert(detail::always_false<Rhs>,"can't assign rhs: invalid rhs");
             }
-        }else{  //broadcast assignment if possible, not compile otherwise
-            assign(std::forward<Rhs>(rhs));
+        }else{
+            static_assert(detail::always_false<basic_tensor>,"can't assign value to view");
         }
     }
+
     void move_assign_(basic_tensor&& rhs){
         if (is_same(rhs)){  //self assignment
             return;
         }
-        if constexpr (std::is_convertible_v<tensor<value_type,order,config_type>,basic_tensor>){  //value assignment
+        if constexpr (std::is_convertible_v<tensor<value_type,order,config_type>*,basic_tensor*>){  //value assignment
             swap(rhs);
-        }else{  //broadcast assignment if possible, not compile otherwise
-            assign(std::move(rhs));
+        }else{
+            static_assert(detail::always_false<basic_tensor>,"can't assign value to view");
         }
     }
 };
@@ -542,24 +556,32 @@ public:
     tensor(const tensor&) = default;
     tensor(tensor&&) = default;
 
-    //assignment
-    tensor& operator=(const tensor& rhs){
+    //value assignment operator=
+    tensor& operator=(const tensor& rhs)&{
         basic_tensor_base::operator=(rhs);
         return *this;
     }
-    tensor& operator=(tensor&& rhs){
+    tensor& operator=(tensor&& rhs)&{
         basic_tensor_base::operator=(std::move(rhs));
         return *this;
     }
-    //converting assignment
-    template<typename,typename> struct disable_forward_rhs0;
-    template<typename Rhs> struct disable_forward_rhs0<std::false_type, Rhs> : std::negation<std::is_convertible<Rhs,value_type>>{};
-    template<typename Rhs> struct disable_forward_rhs0<std::true_type, Rhs> : std::is_convertible<Rhs,tensor>{};
-    template<typename Rhs> struct disable_forward_rhs : disable_forward_rhs0<std::bool_constant<detail::is_tensor_v<Rhs>>, Rhs>{};
-
-    template<typename Rhs, std::enable_if_t<!disable_forward_rhs<std::remove_cv_t<std::remove_reference_t<Rhs>>>::value,int> =0>
-    tensor& operator=(Rhs&& rhs){
+    template<typename Rhs, std::enable_if_t<!std::is_convertible_v<std::remove_cv_t<std::remove_reference_t<Rhs>>*,tensor*>,int> =0>
+    tensor& operator=(Rhs&& rhs)&{
         basic_tensor_base::operator=(std::forward<Rhs>(rhs));
+        return *this;
+    }
+    //elementwise broadcast assignment operator=
+    tensor& operator=(const tensor& rhs)&&{
+        std::move(*this).basic_tensor_base::operator=(rhs);
+        return *this;
+    }
+    tensor& operator=(tensor&& rhs)&&{
+        std::move(*this).basic_tensor_base::operator=(std::move(rhs));
+        return *this;
+    }
+    template<typename Rhs, std::enable_if_t<!std::is_convertible_v<std::remove_cv_t<std::remove_reference_t<Rhs>>*,tensor*>,int> =0>
+    tensor& operator=(Rhs&& rhs)&&{
+        std::move(*this).basic_tensor_base::operator=(std::forward<Rhs>(rhs));
         return *this;
     }
     //broadcast assignment, impl of this never changes, shapes of this and rhs must be broadcastable, or rhs convertible to value_type

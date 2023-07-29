@@ -393,7 +393,9 @@ TEST_CASE("test_tensor_operator==","[test_tensor]")
     }
 }
 
-//test tensor operator=
+
+
+//value assignment operator=
 TEMPLATE_TEST_CASE("test_tensor_copy_assignment_converting_copy_assignment_result","[test_tensor]",
     //0lhs_value_type,1rhs_value_type
     (std::tuple<int,int>),
@@ -556,7 +558,8 @@ TEMPLATE_TEST_CASE("test_tensor_converting_move_assignment_result","[test_tensor
     apply_by_element(test,test_data);
 }
 
-TEMPLATE_TEST_CASE("test_tensor_copy_assignment_converting_copy_assignment_lhs_is_view","[test_tensor]",
+//broadcast elementwise assignment operator=
+TEMPLATE_TEST_CASE("test_tensor_copy_assignment_converting_copy_assignment_lhs_is_rvalue_view","[test_tensor]",
     (std::tuple<int,int>),
     (std::tuple<double,int>)
 )
@@ -625,7 +628,7 @@ TEMPLATE_TEST_CASE("test_tensor_copy_assignment_converting_copy_assignment_lhs_i
         auto expected_lhs = std::get<4>(t);
         auto expected_rhs = std::get<5>(t);
         auto lhs = lhs_view_maker(parent);
-        auto& result = lhs = rhs;
+        auto& result = std::move(lhs) = rhs;
         REQUIRE(std::is_same_v<decltype(lhs),std::remove_reference_t<decltype(result)>>);
         REQUIRE(&result == &lhs);
         REQUIRE(result == expected_lhs);
@@ -635,7 +638,7 @@ TEMPLATE_TEST_CASE("test_tensor_copy_assignment_converting_copy_assignment_lhs_i
     apply_by_element(test,test_data);
 }
 
-TEMPLATE_TEST_CASE("test_tensor_move_assignment_converting_move_assignment_lhs_is_view","[test_tensor]",
+TEMPLATE_TEST_CASE("test_tensor_move_assignment_converting_move_assignment_lhs_is_rvalue_view","[test_tensor]",
     (std::tuple<int,int>),
     (std::tuple<double,int>)
 )
@@ -684,7 +687,7 @@ TEMPLATE_TEST_CASE("test_tensor_move_assignment_converting_move_assignment_lhs_i
         auto expected_parent = std::get<3>(t);
         auto expected_lhs = std::get<4>(t);
         auto lhs = lhs_view_maker(parent);
-        auto& result = lhs = std::move(rhs);
+        auto& result = std::move(lhs) = std::move(rhs);
         REQUIRE(std::is_same_v<decltype(lhs),std::remove_reference_t<decltype(result)>>);
         REQUIRE(&result == &lhs);
         REQUIRE(result == expected_lhs);
@@ -692,6 +695,34 @@ TEMPLATE_TEST_CASE("test_tensor_move_assignment_converting_move_assignment_lhs_i
         REQUIRE(rhs.empty());
     };
     apply_by_element(test,test_data);
+}
+
+TEST_CASE("test_tensor_assign_to_rvalue_view_or_tensor","[test_tensor]")
+{
+    using gtensor::tensor;
+    tensor<double> t{1,2,3,4,5,6,7,8,9,10,11,12};
+
+    SECTION("assign1")
+    {
+        t.reshape(2,2,3) = tensor<double>{{3,2,1},{1,2,3}};
+        REQUIRE(t == tensor<double>{3,2,1,1,2,3,3,2,1,1,2,3});
+    }
+    SECTION("assign2")
+    {
+        t.reshape(2,2,3).transpose() = tensor<int>{{2,1},{3,2}};
+        REQUIRE(t == tensor<double>{2,2,2,3,3,3,1,1,1,2,2,2});
+    }
+    SECTION("assign3")
+    {
+        using slice_type = tensor<double>::slice_type;
+        t.reshape(2,2,3)(slice_type{},slice_type{},1) = 0;
+        REQUIRE(t == tensor<double>{1,0,3,4,0,6,7,0,9,10,0,12});
+    }
+    SECTION("assign4")
+    {
+        std::move(t) = 5;
+        REQUIRE(t == tensor<double>{5,5,5,5,5,5,5,5,5,5,5,5});
+    }
 }
 
 namespace test_tensor_assignment_corner_cases{
@@ -720,42 +751,49 @@ TEST_CASE("test_tensor_assignment_corner_cases","[test_tensor]")
     throw_on_assign::is_throw = true;
     REQUIRE_THROWS(throw_on_assign{} = throw_on_assign{});
     throw_on_assign::is_throw = false;
-    SECTION("copy_assign_to_same_tensor_view")
+    SECTION("copy_assign_to_same_lvalue")
     {
         using value_type = throw_on_assign;
         using tensor_type = gtensor::tensor<value_type>;
         //assign may be required during construction
-        auto test_data = std::make_tuple(
-            tensor_type({10},value_type{}),
-            tensor_type({10},value_type{}).transpose()
-        );
+        tensor_type t({10},value_type{});
         throw_on_assign::is_throw = true;   //enable throwing on assign
-        auto test = [](auto lhs){
-            const auto ptr_to_first_expected = &(*lhs.begin());
-            REQUIRE_NOTHROW(lhs.operator=(lhs));    //no assignment
-            const auto ptr_to_first_result = &(*lhs.begin());
-            REQUIRE(ptr_to_first_result == ptr_to_first_expected);  //no reallocation
-        };
-        apply_by_element(test,test_data);
+        const auto ptr_to_first_expected = &(*t.begin());
+        REQUIRE_NOTHROW(t.operator=(t));    //self assignment
+        const auto ptr_to_first_result = &(*t.begin());
+        REQUIRE(ptr_to_first_result == ptr_to_first_expected);  //no reallocation
     }
-    SECTION("move_assign_to_same_tensor")
+    SECTION("copy_assign_to_same_rvalue")
     {
         using value_type = throw_on_assign;
         using tensor_type = gtensor::tensor<value_type>;
-        auto test_data = std::make_tuple(
-            tensor_type({10},value_type{}),
-            tensor_type({10},value_type{}).transpose()
-        );
+        //assign may be required during construction
+        tensor_type t({10},value_type{});
         throw_on_assign::is_throw = true;   //enable throwing on assign
-        auto test = [](auto lhs){
-            const auto ptr_to_first_expected = &(*lhs.begin());
-            REQUIRE_NOTHROW(lhs.operator=(std::move(lhs)));    //no assignment
-            const auto ptr_to_first_result = &(*lhs.begin());
-            REQUIRE(ptr_to_first_result == ptr_to_first_expected);  //no reallocation
-        };
-        apply_by_element(test,test_data);
+        REQUIRE_NOTHROW(std::move(t).operator=(t));    //self assignment
     }
-    SECTION("move_assign")
+    SECTION("move_assign_to_same_lvalue")
+    {
+        using value_type = throw_on_assign;
+        using tensor_type = gtensor::tensor<value_type>;
+        //assign may be required during construction
+        tensor_type t({10},value_type{});
+        throw_on_assign::is_throw = true;   //enable throwing on assign
+        const auto ptr_to_first_expected = &(*t.begin());
+        REQUIRE_NOTHROW(t.operator=(std::move(t)));    //self assignment
+        const auto ptr_to_first_result = &(*t.begin());
+        REQUIRE(ptr_to_first_result == ptr_to_first_expected);  //no reallocation
+    }
+    SECTION("move_assign_to_same_rvalue")
+    {
+        using value_type = throw_on_assign;
+        using tensor_type = gtensor::tensor<value_type>;
+        //assign may be required during construction
+        tensor_type t({10},value_type{});
+        throw_on_assign::is_throw = true;   //enable throwing on assign
+        REQUIRE_NOTHROW(std::move(t).operator=(std::move(t)));    //self assignment
+    }
+    SECTION("move_assign_to_lvalue")
     {
         using value_type = throw_on_assign;
         using tensor_type = gtensor::tensor<value_type>;
@@ -767,7 +805,16 @@ TEST_CASE("test_tensor_assignment_corner_cases","[test_tensor]")
         const auto ptr_to_first_result = &(*lhs.begin());
         REQUIRE(ptr_to_first_result == ptr_to_first_expected);  //swap impl
     }
-    SECTION("copy_assign_convert_copy_assign_to_tensor_same_shape")
+    SECTION("move_assign_to_rvalue")
+    {
+        using value_type = throw_on_assign;
+        using tensor_type = gtensor::tensor<value_type>;
+        tensor_type lhs({10},value_type{});
+        tensor_type rhs({10},value_type{});
+        throw_on_assign::is_throw = true;   //enable throwing on assign
+        REQUIRE_THROWS_AS(std::move(lhs).operator=(std::move(rhs)),test_tensor_assignment_corner_cases::assign_exception);    //elementwise assignment
+    }
+    SECTION("copy_assign_convert_copy_assign_to_lvalue_same_shape")
     {
         using gtensor::tensor;
         //0lhs,1rhs,2expected_lhs,3expected_rhs
@@ -791,7 +838,7 @@ TEST_CASE("test_tensor_assignment_corner_cases","[test_tensor]")
         };
         apply_by_element(test,test_data);
     }
-    SECTION("convert_move_assign_to_tensor_same_shape")
+    SECTION("convert_move_assign_to_lvalue_same_shape")
     {
         using gtensor::tensor;
         //0lhs,1rhs,2expected_lhs,3expected_rhs
@@ -815,13 +862,16 @@ TEST_CASE("test_tensor_assignment_corner_cases","[test_tensor]")
     }
 }
 
-TEST_CASE("test_tensor_assignment_exception","[test_tensor]")
+TEST_CASE("test_tensor_elementwise_assignment_exception","[test_tensor]")
 {
     using tensor_type = gtensor::tensor<int>;
     using gtensor::value_error;
     auto lhs = tensor_type{{1,2,3},{4,5,6}}(1);
     tensor_type rhs{1,2};
-    REQUIRE_THROWS_AS(lhs = rhs, value_error);
+    //shapes not broadcast
+    REQUIRE_THROWS_AS((std::move(lhs) = rhs), value_error);
+    REQUIRE_THROWS_AS((tensor_type{{1,2,3},{4,5,6}}(1) = rhs), value_error);
+    REQUIRE_THROWS_AS((tensor_type{{1,2,3},{4,5,6}}.reshape(-1) = tensor_type{1,2}), value_error);
 }
 
 //test broadcast assign
