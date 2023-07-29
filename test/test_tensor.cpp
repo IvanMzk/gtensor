@@ -393,8 +393,6 @@ TEST_CASE("test_tensor_operator==","[test_tensor]")
     }
 }
 
-
-
 //value assignment operator=
 TEMPLATE_TEST_CASE("test_tensor_copy_assignment_converting_copy_assignment_result","[test_tensor]",
     //0lhs_value_type,1rhs_value_type
@@ -719,6 +717,16 @@ TEST_CASE("test_tensor_assign_to_rvalue_view_or_tensor","[test_tensor]")
         REQUIRE(t == tensor<double>{1,0,3,4,0,6,7,0,9,10,0,12});
     }
     SECTION("assign4")
+    {
+        t(t>3&&t<10) = 0;
+        REQUIRE(t == tensor<double>{1,2,3,0,0,0,0,0,0,10,11,12});
+    }
+    SECTION("assign5")
+    {
+        t.reshape(2,2,3)(tensor<int>{{1,0},{0,1}},tensor<int>{{0,1},{1,0}}) = tensor<int>{{8},{9}};
+        REQUIRE(t == tensor<double>{1,2,3,8,8,8,9,9,9,10,11,12});
+    }
+    SECTION("assign6")
     {
         std::move(t) = 5;
         REQUIRE(t == tensor<double>{5,5,5,5,5,5,5,5,5,5,5,5});
