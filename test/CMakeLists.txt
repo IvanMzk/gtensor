@@ -16,7 +16,7 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_random.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_sort_search.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_algorithm.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/benchmark_expression_template.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/benchmark_tensor.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_mapping_view.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_helpers_for_testing.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_tmp.cpp
@@ -30,8 +30,8 @@ target_sources(Test PRIVATE
 #
     #${CMAKE_CURRENT_SOURCE_DIR}/test_data_accessor_indexer.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_data_accessor_walker.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_data_accessor_traverser.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_iterator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_data_accessor_traverser.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_iterator.cpp
 ##
     #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_core.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_implementation.cpp
