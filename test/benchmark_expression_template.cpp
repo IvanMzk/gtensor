@@ -40,16 +40,23 @@ TEMPLATE_TEST_CASE("benchmark_expression_template","[benchmark_expression_templa
 
     auto tree_50_1E6 = make_asymmetric_tree<50>(t1,t2);
 
-    auto bench_iteration_deref = [](const auto& t, auto traverse_order){
+    auto bench_iteration_deref = [](const auto& t, auto order){
         using tensor_type = std::remove_cv_t<std::remove_reference_t<decltype(t)>>;
         using value_type = typename tensor_type::value_type;
-        auto a = t.template traverse_order_adapter<decltype(traverse_order)>();
+        auto a = t.template traverse_order_adapter<decltype(order)>();
         value_type v{0};
         for (auto it=a.begin(),last=a.end(); it!=last; ++it){
             v += *it;
         }
         return v;
     };
-    benchmark("c_iteration_deref_depth50_10E6",bench_iteration_deref,tree_50_1E6,c_order{});
-    benchmark("f_iteration_deref_depth50_10E6",bench_iteration_deref,tree_50_1E6,f_order{});
+
+    auto bench_copy = [](const auto& t, auto order){
+        return t.copy(order);
+    };
+
+    benchmark("c_copy_depth50_10E6",bench_copy,tree_50_1E6,c_order{});
+    benchmark("f_copy_depth50_10E6",bench_copy,tree_50_1E6,f_order{});
+    // benchmark("c_iteration_deref_depth50_10E6",bench_iteration_deref,tree_50_1E6,c_order{});
+    // benchmark("f_iteration_deref_depth50_10E6",bench_iteration_deref,tree_50_1E6,f_order{});
 }
