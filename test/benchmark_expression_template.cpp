@@ -1,50 +1,48 @@
-#include "gtensor.hpp"
-#include "test_config.hpp"
 #include "benchmark_helpers.hpp"
+#include "tensor.hpp"
 
 namespace benchmark_expression_template_helpers{
 }   //end of namespace benchmark_expression_template_helpers
 
-TEST_CASE("benchmark_expression_template","[benchmark_expression_template]"){
-    using value_type = float;
-    using test_config_type = typename test_config::config_host_engine_selector<gtensor::config::engine_expression_template>::config_type;
-    using tensor_type = gtensor::tensor<value_type,test_config_type>;
-    using benchmark_helpers::asymmetric_tree_maker;
-    using benchmark_helpers::symmetric_tree_maker;
+
+TEST_CASE("test_benchmark_helpers_make_tree","[test_benchmark_helpers]")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using benchmark_helpers::make_asymmetric_tree;
+
+    REQUIRE(make_asymmetric_tree<1>(tensor_type{{1,2,3},{4,5,6}},tensor_type{{1,2,3},{4,5,6}}) == tensor_type{{2,4,6},{8,10,12}});
+    REQUIRE(make_asymmetric_tree<1>(tensor_type{{1,2,3},{4,5,6}},tensor_type{7,8,9}) == tensor_type{{8,10,12},{11,13,15}});
+    REQUIRE(make_asymmetric_tree<2>(tensor_type{{1,2,3},{4,5,6}},tensor_type{{1,2,3},{4,5,6}}) == tensor_type{{3,6,9},{12,15,18}});
+    REQUIRE(make_asymmetric_tree<2>(tensor_type{{1,2,3},{4,5,6}},tensor_type{7,8,9}) == tensor_type{{15,18,21},{18,21,24}});
+    REQUIRE(make_asymmetric_tree<3>(tensor_type{{1,2,3},{4,5,6}},tensor_type{{1,2,3},{4,5,6}}) == tensor_type{{4,8,12},{16,20,24}});
+    REQUIRE(make_asymmetric_tree<3>(tensor_type{{1,2,3},{4,5,6}},tensor_type{7,8,9}) == tensor_type{{22,26,30},{25,29,33}});
+    REQUIRE(make_asymmetric_tree<4>(tensor_type{{1,2,3},{4,5,6}},tensor_type{{1,2,3},{4,5,6}}) == tensor_type{{5,10,15},{20,25,30}});
+    REQUIRE(make_asymmetric_tree<4>(tensor_type{{1,2,3},{4,5,6}},tensor_type{7,8,9}) == tensor_type{{29,34,39},{32,37,42}});
+
+}
+
+TEST_CASE("benchmark_expression_template","[benchmark_expression_template]")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using benchmark_helpers::make_asymmetric_tree;
     using benchmark_helpers::benchmark;
-    using benchmark_helpers::making_iter_iterate_deref;
-    using benchmark_helpers::making_riter_iterate_deref;
 
-    auto benchmark_worker = making_iter_iterate_deref;
-    //auto benchmark_worker = making_riter_iterate_deref;
-    static constexpr std::size_t tree_depth = 5;
-    static constexpr std::size_t deep_tree_depth = 50;
+    auto t1 = tensor_type({10,100,1000},2);
+    auto t2 = tensor_type({100,1000},1);
 
+    auto tree_50_1E6 = make_asymmetric_tree<50>(t1,t2);
 
-    // auto trivial_tensor_maker = []{return asymmetric_tree_maker<tree_depth>{}(tensor_type({100,100}, 0.0f),tensor_type({100,100}, 0.0f));};
-    // auto broadcast_tensor_maker = []{return asymmetric_tree_maker<tree_depth>{}(tensor_type({10,100,10}, 0.0f),tensor_type({100,10}, 0.0f));};
+    auto bench_iteration_deref = [](const auto& t){
+        using tensor_type = std::remove_cv_t<std::remove_reference_t<decltype(t)>>;
+        using value_type = typename tensor_type::value_type;
+        value_type a;
+        for (auto it=t.begin(),last=t.end(); it!=last; ++it){
+            a = *it;
+        }
+        return a;
+    };
 
-    auto trivial_tensor_maker = []{return asymmetric_tree_maker<tree_depth>{}(tensor_type({1000,1000}, 0.0f),tensor_type({1000,1000}, 0.0f));};
-    auto broadcast_tensor_maker = []{return asymmetric_tree_maker<tree_depth>{}(tensor_type({100,100,100}, 0.0f),tensor_type({100,100}, 0.0f));};
-    auto deep_tree_tensor_maker = []{return asymmetric_tree_maker<deep_tree_depth>{}(tensor_type({10,10000}, 0.0f),tensor_type({10,10000}, 0.0f));};
-
-    // auto trivial_tensor_maker = []{return asymmetric_tree_maker<deep_tree_depth>{}(tensor_type({10000,10}, 0.0f),tensor_type({10000,10}, 0.0f));};
-    // auto broadcast_tensor_maker = []{return asymmetric_tree_maker<deep_tree_depth>{}(tensor_type({100,100,10}, 0.0f),tensor_type({100,10}, 0.0f));};
-
-
-    benchmark("broadcast",benchmark_worker, broadcast_tensor_maker());
-    benchmark("trivial_broadcast",benchmark_worker, trivial_tensor_maker());
-
-    benchmark("slice_of_broadcast",benchmark_worker, broadcast_tensor_maker()({}));
-    benchmark("transpose_of_broadcast",benchmark_worker, broadcast_tensor_maker().transpose());
-    benchmark("reshape_of_broadcast",benchmark_worker, broadcast_tensor_maker().reshape());
-    benchmark("subdim_of_broadcast",benchmark_worker, broadcast_tensor_maker()());
-
-    benchmark("slice_of_trivial",benchmark_worker, trivial_tensor_maker()({}));
-    benchmark("transpose_of_trivial",benchmark_worker, trivial_tensor_maker().transpose());
-    benchmark("reshape_of_trivial",benchmark_worker, trivial_tensor_maker().reshape());
-    benchmark("subdim_of_trivial",benchmark_worker, trivial_tensor_maker()());
-
-    benchmark("benchmark_deep_tree",benchmark_worker, deep_tree_tensor_maker());
-
+    benchmark("bench_depth50_10E6",bench_iteration_deref,tree_50_1E6);
 }
