@@ -3,7 +3,7 @@
 #include "test_config.hpp"
 #include "libdivide_helper.hpp"
 
-TEMPLATE_TEST_CASE("test_make_dividers", "[test_libdivide_helper]", std::int64_t, integral_type::integral<std::int64_t>)
+TEMPLATE_TEST_CASE("test_make_dividers", "[test_libdivide_helper]", std::size_t, std::ptrdiff_t)
 {
     using native_config_type = test_config::config_div_mode_selector_t<gtensor::config::mode_div_native>;
     using libdivide_config_type = test_config::config_div_mode_selector_t<gtensor::config::mode_div_libdivide>;
@@ -21,7 +21,7 @@ TEMPLATE_TEST_CASE("test_make_dividers", "[test_libdivide_helper]", std::int64_t
     REQUIRE(make_dividers<libdivide_config_type>(std::vector<value_type>{3,4,5}) == std::vector<libdivide_divider_type>{libdivide_divider_type{3},libdivide_divider_type{4},libdivide_divider_type{5}});
 }
 
-TEMPLATE_TEST_CASE("test_divide", "[test_libdivide_helper]", std::int64_t, integral_type::integral<std::int64_t>)
+TEMPLATE_TEST_CASE("test_divide", "[test_libdivide_helper]", std::size_t, std::ptrdiff_t)
 {
     using value_type = TestType;
     using libdivide_divider_type =  gtensor::detail::libdivide_divider<value_type>;

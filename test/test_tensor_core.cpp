@@ -2,7 +2,6 @@
 #include <string>
 #include <list>
 #include "catch.hpp"
-#include "integral_type.hpp"
 #include "tensor_core.hpp"
 #include "test_config.hpp"
 #include "helpers_for_testing.hpp"
@@ -107,27 +106,6 @@ public:
     decltype(auto) operator[](size_type i){return impl_[i];}
 };
 template<typename T>
-class subscriptable_storage_integral
-{
-    using inner_storage_type = std::vector<T>;
-    using inner_size_type = typename inner_storage_type::size_type;
-    using inner_difference_type = typename inner_storage_type::difference_type;
-    inner_storage_type impl_;
-public:
-    using value_type = T;
-    using size_type = integral_type::integral<inner_size_type>;
-    using difference_type = integral_type::integral<inner_difference_type>;
-    subscriptable_storage_integral(size_type n):
-        impl_(n.value())
-    {}
-    template<typename It>
-    subscriptable_storage_integral(It first, It last):
-        impl_(first,last)
-    {}
-    size_type size()const{return impl_.size();}
-    decltype(auto) operator[](size_type i){return impl_[i.value()];}
-};
-template<typename T>
 class iterable_storage
 {
     using inner_storage_type = std::vector<T>;
@@ -147,29 +125,6 @@ public:
     auto begin(){return impl_.begin();}
     auto end(){return impl_.end();}
 };
-template<typename T>
-class iterable_storage_integral
-{
-    using config_type = gtensor::config::extend_config_t<test_config::config_storage_selector_t<subscriptable_storage_integral>,T>;
-    using inner_storage_type = typename config_type::template storage<T>;
-    using indexer_type = gtensor::basic_indexer<inner_storage_type&>;
-    using iterator = gtensor::indexer_iterator<config_type,indexer_type>;
-    inner_storage_type impl_;
-public:
-    using value_type = T;
-    using size_type = typename inner_storage_type::size_type;
-    using difference_type = typename inner_storage_type::difference_type;
-    iterable_storage_integral(size_type n):
-        impl_(n)
-    {}
-    template<typename It>
-    iterable_storage_integral(It first, It last):
-        impl_(first,last)
-    {}
-    size_type size()const{return impl_.size();}
-    iterator begin(){return iterator{indexer_type{impl_},0};}
-    iterator end(){return iterator{indexer_type{impl_},size()};}
-};
 }   //end of namespace test_storage_core
 
 TEMPLATE_TEST_CASE("test_storage_core","[test_tensor_implementation]",
@@ -177,9 +132,7 @@ TEMPLATE_TEST_CASE("test_storage_core","[test_tensor_implementation]",
     (std::tuple<test_config::config_storage_selector_t<std::vector>, std::true_type, std::true_type>),
     (std::tuple<test_config::config_storage_selector_t<std::list>, std::true_type, std::false_type>),
     (std::tuple<test_config::config_storage_selector_t<test_storage_core::subscriptable_storage>, std::false_type, std::true_type>),
-    (std::tuple<test_config::config_storage_selector_t<test_storage_core::subscriptable_storage_integral>, std::false_type, std::true_type>),
-    (std::tuple<test_config::config_storage_selector_t<test_storage_core::iterable_storage>, std::true_type, std::false_type>),
-    (std::tuple<test_config::config_storage_selector_t<test_storage_core::iterable_storage_integral>, std::true_type, std::false_type>)
+    (std::tuple<test_config::config_storage_selector_t<test_storage_core::iterable_storage>, std::true_type, std::false_type>)
 )
 {
     using value_type = int;
