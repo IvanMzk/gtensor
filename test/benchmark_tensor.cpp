@@ -22,73 +22,125 @@ TEST_CASE("test_benchmark_helpers_make_tree","[test_benchmark_helpers]")
 
 }
 
-TEMPLATE_TEST_CASE("benchmark_expression_view_iterator","[benchmark_tensor]",
-    gtensor::config::c_order,
-    gtensor::config::f_order
-)
-{
-    using value_type = double;
-    using gtensor::tensor;
-    using gtensor::config::c_order;
-    using gtensor::config::f_order;
-    using tensor_type = gtensor::tensor<value_type,TestType>;
-    using benchmark_helpers::make_asymmetric_tree;
-    using benchmark_helpers::benchmark;
+// TEMPLATE_TEST_CASE("benchmark_expression_view_iterator","[benchmark_tensor]",
+//     gtensor::config::c_order,
+//     gtensor::config::f_order
+// )
+// {
+//     using value_type = double;
+//     using gtensor::tensor;
+//     using gtensor::config::c_order;
+//     using gtensor::config::f_order;
+//     using tensor_type = gtensor::tensor<value_type,TestType>;
+//     using benchmark_helpers::make_asymmetric_tree;
+//     using benchmark_helpers::benchmark;
 
-    auto t1 = tensor_type({10,100,1000},2);
-    auto t2 = tensor_type({100,1000},1);
+//     auto t1 = tensor_type({10,100,1000},2);
+//     auto t2 = tensor_type({100,1000},1);
 
-    auto tree_50_1E6 = make_asymmetric_tree<50>(t1,t2);
+//     auto tree_50_1E6 = make_asymmetric_tree<50>(t1,t2);
 
-    auto bench_iteration_deref = [](const auto& t, auto order){
-        using tensor_type = std::remove_cv_t<std::remove_reference_t<decltype(t)>>;
-        using value_type = typename tensor_type::value_type;
-        auto a = t.template traverse_order_adapter<decltype(order)>();
-        value_type v{0};
-        for (auto it=a.begin(),last=a.end(); it!=last; ++it){
-            v += *it;
-        }
-        return v;
-    };
+//     auto bench_iteration_deref = [](const auto& t, auto order){
+//         using tensor_type = std::remove_cv_t<std::remove_reference_t<decltype(t)>>;
+//         using value_type = typename tensor_type::value_type;
+//         auto a = t.template traverse_order_adapter<decltype(order)>();
+//         value_type v{0};
+//         for (auto it=a.begin(),last=a.end(); it!=last; ++it){
+//             v += *it;
+//         }
+//         return v;
+//     };
 
-    benchmark("c_iteration_deref_depth50_10E6",bench_iteration_deref,tree_50_1E6,c_order{});
-    benchmark("f_iteration_deref_depth50_10E6",bench_iteration_deref,tree_50_1E6,f_order{});
-}
+//     benchmark("c_iteration_deref_depth50_10E6",bench_iteration_deref,tree_50_1E6,c_order{});
+//     benchmark("f_iteration_deref_depth50_10E6",bench_iteration_deref,tree_50_1E6,f_order{});
+// }
 
-TEMPLATE_TEST_CASE("benchmark_expression_view_reverse_iterator","[benchmark_tensor]",
-    gtensor::config::c_order,
-    gtensor::config::f_order
-)
-{
-    using value_type = double;
-    using gtensor::tensor;
-    using gtensor::config::c_order;
-    using gtensor::config::f_order;
-    using tensor_type = gtensor::tensor<value_type,TestType>;
-    using benchmark_helpers::make_asymmetric_tree;
-    using benchmark_helpers::benchmark;
+// TEMPLATE_TEST_CASE("benchmark_expression_view_reverse_iterator","[benchmark_tensor]",
+//     gtensor::config::c_order,
+//     gtensor::config::f_order
+// )
+// {
+//     using value_type = double;
+//     using gtensor::tensor;
+//     using gtensor::config::c_order;
+//     using gtensor::config::f_order;
+//     using tensor_type = gtensor::tensor<value_type,TestType>;
+//     using benchmark_helpers::make_asymmetric_tree;
+//     using benchmark_helpers::benchmark;
 
-    auto t1 = tensor_type({10,100,1000},2);
-    auto t2 = tensor_type({100,1000},1);
+//     auto t1 = tensor_type({10,100,1000},2);
+//     auto t2 = tensor_type({100,1000},1);
 
-    auto tree_50_1E6 = make_asymmetric_tree<50>(t1,t2);
+//     auto tree_50_1E6 = make_asymmetric_tree<50>(t1,t2);
 
-    auto bench_iteration_deref = [](const auto& t, auto order){
-        using tensor_type = std::remove_cv_t<std::remove_reference_t<decltype(t)>>;
-        using value_type = typename tensor_type::value_type;
-        auto a = t.template traverse_order_adapter<decltype(order)>();
-        value_type v{0};
-        for (auto it=a.rbegin(),last=a.rend(); it!=last; ++it){
-            v += *it;
-        }
-        return v;
-    };
+//     auto bench_iteration_deref = [](const auto& t, auto order){
+//         using tensor_type = std::remove_cv_t<std::remove_reference_t<decltype(t)>>;
+//         using value_type = typename tensor_type::value_type;
+//         auto a = t.template traverse_order_adapter<decltype(order)>();
+//         value_type v{0};
+//         for (auto it=a.rbegin(),last=a.rend(); it!=last; ++it){
+//             v += *it;
+//         }
+//         return v;
+//     };
 
-    benchmark("c_reverse_iteration_deref_depth50_10E6",bench_iteration_deref,tree_50_1E6,c_order{});
-    benchmark("f_reverse_iteration_deref_depth50_10E6",bench_iteration_deref,tree_50_1E6,f_order{});
-}
+//     benchmark("c_reverse_iteration_deref_depth50_10E6",bench_iteration_deref,tree_50_1E6,c_order{});
+//     benchmark("f_reverse_iteration_deref_depth50_10E6",bench_iteration_deref,tree_50_1E6,f_order{});
+// }
 
-TEMPLATE_TEST_CASE("benchmark_expression_view_copy","[benchmark_tensor]",
+// TEMPLATE_TEST_CASE("benchmark_expression_view_copy","[benchmark_tensor]",
+//     gtensor::config::c_order,
+//     gtensor::config::f_order
+// )
+// {
+//     using value_type = double;
+//     using gtensor::tensor;
+//     using gtensor::config::c_order;
+//     using gtensor::config::f_order;
+//     using tensor_type = gtensor::tensor<value_type,TestType>;
+//     using benchmark_helpers::make_asymmetric_tree;
+//     using benchmark_helpers::benchmark;
+
+//     auto bench_copy = [](const auto& t, auto order){
+//         return t.copy(order);
+//     };
+
+//     auto t1 = tensor_type({10,100,1000},2);
+//     auto t2 = tensor_type({100,1000},1);
+//     auto tree_50_1E6 = make_asymmetric_tree<50>(t1,t2);
+//     benchmark("c_copy_depth50_10E6",bench_copy,tree_50_1E6,c_order{});
+//     benchmark("f_copy_depth50_10E6",bench_copy,tree_50_1E6,f_order{});
+
+//     // auto t1 = tensor_type({5,1,100},2);
+//     // auto t2 = tensor_type({100},1);
+//     // auto tree_50_1E2 = make_asymmetric_tree<50>(t1,t2);
+//     // benchmark("c_copy_depth50_10E2",bench_copy,tree_50_1E2,c_order{});
+//     // benchmark("f_copy_depth50_10E2",bench_copy,tree_50_1E2,f_order{});
+// }
+
+// TEMPLATE_TEST_CASE("benchmark_tensor_copy","[benchmark_tensor]",
+//     gtensor::config::c_order,
+//     gtensor::config::f_order
+// )
+// {
+//     using value_type = double;
+//     using gtensor::tensor;
+//     using gtensor::config::c_order;
+//     using gtensor::config::f_order;
+//     using tensor_type = gtensor::tensor<value_type,TestType>;
+//     using benchmark_helpers::make_asymmetric_tree;
+//     using benchmark_helpers::benchmark;
+
+//     auto bench_copy = [](const auto& t, auto order){
+//         return t.copy(order);
+//     };
+
+//     auto t = tensor_type({10,100,1000},2);
+//     benchmark("c_copy_10E6",bench_copy,t,c_order{});
+//     benchmark("f_copy_10E6",bench_copy,t,f_order{});
+// }
+
+TEMPLATE_TEST_CASE("benchmark_tensor_view_copy","[benchmark_tensor]",
     gtensor::config::c_order,
     gtensor::config::f_order
 )
@@ -105,15 +157,26 @@ TEMPLATE_TEST_CASE("benchmark_expression_view_copy","[benchmark_tensor]",
         return t.copy(order);
     };
 
-    auto t1 = tensor_type({10,100,1000},2);
-    auto t2 = tensor_type({100,1000},1);
-    auto tree_50_1E6 = make_asymmetric_tree<50>(t1,t2);
-    benchmark("c_copy_depth50_10E6",bench_copy,tree_50_1E6,c_order{});
-    benchmark("f_copy_depth50_10E6",bench_copy,tree_50_1E6,f_order{});
+    auto bench_iteration_deref = [](const auto& t, auto order){
+        using tensor_type = std::remove_cv_t<std::remove_reference_t<decltype(t)>>;
+        using value_type = typename tensor_type::value_type;
+        auto a = t.template traverse_order_adapter<decltype(order)>();
+        value_type s{0};
+        for (auto it=a.begin(),last=a.end(); it!=last; ++it){
+            s += *it;
+        }
+        return s;
+    };
 
-    // auto t1 = tensor_type({5,1,100},2);
-    // auto t2 = tensor_type({100},1);
-    // auto tree_50_1E2 = make_asymmetric_tree<50>(t1,t2);
-    // benchmark("c_copy_depth50_10E2",bench_copy,tree_50_1E2,c_order{});
-    // benchmark("f_copy_depth50_10E2",bench_copy,tree_50_1E2,f_order{});
+    //auto t = tensor_type({10,100,1000},2).transpose().transpose(1,0,2);
+    //auto v = tensor_type({10,100,1000},2).transpose();
+    //auto v = tensor_type({10,100,1000},2)({{0,-1,1},{0,-1,2},{0,-1,1}});
+    auto v = tensor_type({10,100,1000},2)({{0,-1,1},{0,-1,1},{0,-1,1}})({{0,-1,1},{0,-1,1},{0,-1,1}});
+    std::cout<<std::endl<<gtensor::detail::shape_to_str(v.shape());
+
+    benchmark("c_copy_view_10E6",bench_iteration_deref,v,c_order{});
+    benchmark("f_copy_view_10E6",bench_iteration_deref,v,f_order{});
+    // benchmark("c_copy_view_10E6",bench_copy,v,c_order{});
+    // benchmark("f_copy_view_10E6",bench_copy,v,f_order{});
 }
+
