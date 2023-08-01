@@ -345,8 +345,9 @@ public:
     void walk(const dim_type& axis, const index_type& steps){base_walker_type::walk(map_axis(axis),steps);}
     void step(const dim_type& axis){base_walker_type::step(map_axis(axis));}
     void step_back(const dim_type& axis){base_walker_type::step_back(map_axis(axis));}
-    using base_walker_type::reset;
-    using base_walker_type::reset_back;
+    void reset(const dim_type& axis){base_walker_type::reset(map_axis(axis));}
+    void reset_back(const dim_type& axis){base_walker_type::reset_back(map_axis(axis));}
+    void reset_back(){base_walker_type::reset_back();}
     using base_walker_type::operator*;
     using base_walker_type::update_offset;
 private:

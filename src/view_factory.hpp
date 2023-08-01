@@ -149,10 +149,22 @@ inline typename ShT::value_type make_slice_view_offset(const ShT& pshape, const 
 }
 
 //transpose view helpers
+template<typename Config, typename DimT, typename Container>
+auto make_transpose_view_axes_map(const DimT& pdim, const Container& subs){
+    using dim_type = typename Config::dim_type;
+    using res_type = typename Config::template shape<dim_type>;
+    if (std::empty(subs)){
+        res_type res(pdim,dim_type{0});
+        std::iota(res.rbegin(),res.rend(),dim_type{0});
+        return res;
+    }else{
+        return res_type{subs.begin(),subs.end()};
+    }
+}
 template<typename ShT, typename Container>
 ShT make_transpose_view_shape(const ShT& pshape, const Container& subs){
     using shape_type = ShT;
-    using dim_type = typename shape_type::size_type;
+    using dim_type = typename shape_type::difference_type;
     if (std::empty(subs)){
         return shape_type(pshape.rbegin(), pshape.rend());
     }else{
@@ -572,8 +584,11 @@ class view_factory
     template<typename Config, typename Order, typename Parent> using reshape_view = tensor_implementation<reshape_view_core<Config,Order,Parent>>;
     template<typename Config, typename Order, typename Parent> using subdim_view = tensor_implementation<view_core<Config,subdim_view_descriptor<Config, Order>,Parent>>;
     template<typename Config, typename Order, typename Parent> using slice_view = tensor_implementation<view_core<Config,slice_view_descriptor<Config, Order>,Parent>>;
-    template<typename Config, typename Order, typename Parent> using transpose_view = tensor_implementation<view_core<Config,transpose_view_descriptor<Config, Order>,Parent>>;
     template<typename Config, typename Order, typename Parent> using mapping_view = tensor_implementation<view_core<Config,mapping_view_descriptor<Config, Order>,Parent>>;
+
+    //template<typename Config, typename Order, typename Parent> using transpose_view = tensor_implementation<view_core<Config,transpose_view_descriptor<Config, Order>,Parent>>;
+    template<typename Parent> using transpose_view = tensor_implementation<transpose_view_core<Parent>>;
+
 
     //subdim view
     template<typename...Ts, typename Container>
@@ -624,21 +639,34 @@ class view_factory
     template<typename...Ts, typename Container>
     static auto create_transpose_view_container(const basic_tensor<Ts...>& parent, const Container& subs){
         using parent_type = basic_tensor<Ts...>;
-        using order = typename parent_type::order;
         using config_type = typename parent_type::config_type;
-        using index_type = typename parent_type::index_type;
-        using descriptor_type = transpose_view_descriptor<config_type, order>;
-        using view_type = transpose_view<config_type,order,parent_type>;
-        detail::check_transpose_args(parent.dim(),subs);
+        using view_type = transpose_view<parent_type>;
+        const auto pdim = parent.dim();
+        detail::check_transpose_args(pdim,subs);
         return std::make_shared<view_type>(
-            descriptor_type{
-                detail::make_transpose_view_shape(parent.shape(),subs),
-                detail::make_view_transpose_strides(parent.strides(),subs),
-                index_type{0}
-            },
+            detail::make_transpose_view_axes_map<config_type>(pdim,subs),
+            detail::make_transpose_view_shape(parent.shape(),subs),
             parent
         );
     }
+    // template<typename...Ts, typename Container>
+    // static auto create_transpose_view_container(const basic_tensor<Ts...>& parent, const Container& subs){
+    //     using parent_type = basic_tensor<Ts...>;
+    //     using order = typename parent_type::order;
+    //     using config_type = typename parent_type::config_type;
+    //     using index_type = typename parent_type::index_type;
+    //     using descriptor_type = transpose_view_descriptor<config_type, order>;
+    //     using view_type = transpose_view<config_type,order,parent_type>;
+    //     detail::check_transpose_args(parent.dim(),subs);
+    //     return std::make_shared<view_type>(
+    //         descriptor_type{
+    //             detail::make_transpose_view_shape(parent.shape(),subs),
+    //             detail::make_view_transpose_strides(parent.strides(),subs),
+    //             index_type{0}
+    //         },
+    //         parent
+    //     );
+    // }
     template<typename...Ts, typename...Subs>
     static auto create_transpose_view_variadic(const basic_tensor<Ts...>& parent, const Subs&...subs){
         using config_type = typename basic_tensor<Ts...>::config_type;
