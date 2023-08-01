@@ -523,5 +523,63 @@ private:
     index_map_type index_map_;
 };
 
+
+template<typename Config, typename Order>
+class transpose_descriptor : public basic_descriptor<Config,Order>
+{
+    using basic_descriptor_base = basic_descriptor<Config,Order>;
+    using typename basic_descriptor_base::dim_type;
+    using axes_map_type = typename Config::template shape<dim_type>;
+public:
+    using typename basic_descriptor_base::index_type;
+    using typename basic_descriptor_base::shape_type;
+
+    template<typename ShT, typename Container>
+    transpose_descriptor(Container&& axes_map__,ShT&& shape__):
+        basic_descriptor_base{std::forward<ShT>(shape__)},
+        axes_map_{detail::make_shape_of_type<axes_map_type>(std::forward<Container>(axes_map__))}
+    {}
+    const axes_map_type& axes_map()const{return axes_map_;}
+private:
+    axes_map_type axes_map_;
+};
+
+template<typename Config, typename Order, typename Base>
+class descriptor_w_offset : public Base
+{
+    using base_type = Base;
+public:
+    using typename base_type::index_type;
+    using typename base_type::shape_type;
+
+    template<typename Container, typename...Args>
+    descriptor_w_offset(Container&& offset__, Args&&...args__):
+        base_type{std::forward<Args>(args__)...},
+        offset_{detail::make_shape_of_type<shape_type>(std::forward<Container>(offset__))}
+    {}
+    const shape_type& offset()const{return offset_;}
+private:
+    shape_type offset_;
+};
+
+template<typename Config, typename Order, typename Base>
+class descriptor_w_scale : public Base
+{
+    using base_type = Base;
+public:
+    using typename base_type::index_type;
+    using typename base_type::shape_type;
+
+    template<typename Container, typename...Args>
+    descriptor_w_scale(Container&& scale__, Args&&...args__):
+        base_type{std::forward<Args>(args__)...},
+        scale_{detail::make_shape_of_type<shape_type>(std::forward<Container>(scale__))}
+    {}
+    const shape_type& scale()const{return scale_;}
+private:
+    shape_type scale_;
+};
+
+
 }   //end of namespace gtensor
 #endif
