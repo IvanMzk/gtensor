@@ -557,7 +557,7 @@ public:
         base_type{std::forward<Args>(args__)...},
         offset_{detail::make_shape_of_type<shape_type>(std::forward<Container>(offset__))}
     {}
-    const shape_type& offset()const{return offset_;}
+    const shape_type& get_offset()const{return offset_;}
 private:
     shape_type offset_;
 };

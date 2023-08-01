@@ -198,7 +198,7 @@ public:
         reset_strides_{&reset_strides__},
         offset_{offset__},
         cursor_{offset__},
-        dim_offset_{max_dim__ - detail::make_dim(adapted_strides__)}
+        dim_offset_{max_dim__ - dim()}
     {}
     //direction argument must be in range [0,max_dim_-1]
     void walk(const dim_type& direction, const index_type& steps){
@@ -227,6 +227,8 @@ public:
         }
     }
     void reset_back(){cursor_ = offset_;}
+    void update_offset(){offset_+=cursor_;}
+    dim_type dim()const{return detail::make_dim(*adapted_strides_);}
     cursor_type cursor()const{return cursor_;}
     cursor_type offset()const{return offset_;}
 private:
@@ -258,11 +260,192 @@ public:
     void reset(const dim_type& direction){index_walker.reset(direction);}
     void reset_back(const dim_type& direction){index_walker.reset_back(direction);}
     void reset_back(){index_walker.reset_back();}
+    void update_offset(){index_walker.update_offset();}
+    dim_type dim(){return index_walker.dim();}
     decltype(auto) operator*()const{return indexer[index_walker.cursor()];}
 private:
     walker_common<config_type, index_type> index_walker;
     indexer_type indexer;
 };
+
+//view walker
+template<typename Config, typename BaseWalker>
+class trivial_view_walker : private BaseWalker
+{
+    using base_walker_type = BaseWalker;
+public:
+    using config_type = Config;
+    using index_type = typename config_type::index_type;
+    using dim_type = typename config_type::dim_type;
+
+    template<typename BaseWalker_>
+    trivial_view_walker(BaseWalker_&& base_walker):
+        base_walker_type{std::forward<BaseWalker_>(base_walker)}
+    {}
+    using base_walker_type::walk;
+    using base_walker_type::step;
+    using base_walker_type::step_back;
+    using base_walker_type::reset;
+    using base_walker_type::reset_back;
+    using base_walker_type::operator*;
+    using base_walker_type::update_offset;
+};
+
+template<typename Config, typename BaseWalker>
+class offsetting_walker : private BaseWalker
+{
+    using base_walker_type = BaseWalker;
+public:
+    using config_type = Config;
+    using index_type = typename config_type::index_type;
+    using dim_type = typename config_type::dim_type;
+    using shape_type = typename config_type::shape_type;
+
+    //offset is in parent dimension, i.e. offset.size() may be greater than view dim if view reduce dimensions
+    template<typename...Args>
+    offsetting_walker(const shape_type& offset,Args&&...args):
+        base_walker_type{std::forward<Args>(args)...}
+    {
+        const auto n = detail::make_dim(offset);
+        for (dim_type axis=0; axis!=n; ++axis){
+            base_walker_type::walk(axis,offset[axis]);
+        }
+        base_walker_type::update_offset();
+    }
+    using base_walker_type::walk;
+    using base_walker_type::step;
+    using base_walker_type::step_back;
+    using base_walker_type::reset;
+    using base_walker_type::reset_back;
+    using base_walker_type::operator*;
+    using base_walker_type::update_offset;
+};
+
+template<typename Config, typename BaseWalker>
+class mapping_axes_walker : private BaseWalker
+{
+    using base_walker_type = BaseWalker;
+    using axes_map_type = typename Config::template shape<typename Config::dim_type>;
+public:
+    using config_type = Config;
+    using index_type = typename config_type::index_type;
+    using dim_type = typename config_type::dim_type;
+    using shape_type = typename config_type::shape_type;
+
+    //if a is axis of view then axes_map_[a] is corresponding axis of view's parent
+    //axes_map_.size() always equals to view dim
+    template<typename...Args>
+    mapping_axes_walker(const axes_map_type& axes_map__, Args&&...args):
+        base_walker_type{std::forward<Args>(args)...},
+        axes_map_{&axes_map__}
+    {}
+    dim_type dim()const{return detail::make_dim(*axes_map_);}
+    void walk(const dim_type& axis, const index_type& steps){base_walker_type::walk(map_axis(axis),steps);}
+    void step(const dim_type& axis){base_walker_type::step(map_axis(axis));}
+    void step_back(const dim_type& axis){base_walker_type::step_back(map_axis(axis));}
+    using base_walker_type::reset;
+    using base_walker_type::reset_back;
+    using base_walker_type::operator*;
+    using base_walker_type::update_offset;
+private:
+    dim_type map_axis(const dim_type& axis){
+        return (*axes_map_)[axis];
+    }
+    const axes_map_type* axes_map_;
+};
+
+template<typename Config, typename BaseWalker>
+class scaling_walker : private BaseWalker
+{
+    using base_walker_type = BaseWalker;
+public:
+    using config_type = Config;
+    using index_type = typename config_type::index_type;
+    using dim_type = typename config_type::dim_type;
+    using shape_type = typename config_type::shape_type;
+
+    //if a is axis of view then step_scale_[a] is steps number along a in parent that corresponds single step along a in view
+    //step_scale_.size() always equals to view dim
+    template<typename...Args>
+    scaling_walker(const shape_type& step_scale__, Args&&...args):
+        base_walker_type{std::forward<Args>(args)...},
+        step_scale_{&step_scale__}
+    {}
+    dim_type dim()const{return detail::make_dim(*step_scale_);}
+    void walk(const dim_type& axis, const index_type& steps){base_walker_type::walk(axis,steps*scale_step(axis));}
+    void step(const dim_type& axis){base_walker_type::step(scale_step(axis));}
+    void step_back(const dim_type& axis){base_walker_type::step_back(scale_step(axis));}
+    using base_walker_type::reset;
+    using base_walker_type::reset_back;
+    using base_walker_type::operator*;
+    using base_walker_type::update_offset;
+private:
+
+    index_type scale_step(const dim_type& axis)const{
+        return (*step_scale_)[axis];
+    }
+    const shape_type* step_scale_;
+};
+
+template<typename Config, typename BaseWalker>
+class axes_correction_walker : private BaseWalker
+{
+    using base_walker_type = BaseWalker;
+public:
+    using config_type = Config;
+    using index_type = typename config_type::index_type;
+    using dim_type = typename config_type::dim_type;
+    using shape_type = typename config_type::shape_type;
+
+    template<typename...Args>
+    axes_correction_walker(const dim_type& max_dim,Args&&...args):
+        base_walker_type{std::forward<Args>(args)...},
+        dim_offset_{max_dim-base_walker_type::dim()}
+    {}
+
+    void walk(const dim_type& axis, const index_type& steps){
+        if (can_move_on_axis(axis)){
+            base_walker_type::walk(make_axis(axis),steps);
+        }
+    }
+    void step(const dim_type& axis){
+        if (can_move_on_axis(axis)){
+            base_walker_type::step(make_axis(axis));
+        }
+    }
+    void step_back(const dim_type& axis){
+        if (can_move_on_axis(axis)){
+            base_walker_type::step_back(make_axis(axis));
+        }
+    }
+    void reset(const dim_type& axis){
+        if (can_move_on_axis(axis)){
+            base_walker_type::reset(make_axis(axis));
+        }
+    }
+    void reset_back(const dim_type& axis){
+        if (can_move_on_axis(axis)){
+            base_walker_type::reset_back(make_axis(axis));
+        }
+    }
+    void reset_back(){
+        base_walker_type::reset_back();
+    }
+    using base_walker_type::operator*;
+    using base_walker_type::update_offset;
+    using base_walker_type::dim;
+private:
+    bool can_move_on_axis(const dim_type& axis)const{
+        return axis >= dim_offset_;
+    }
+    dim_type make_axis(const dim_type& axis)const{
+        return axis - dim_offset_;
+    }
+    dim_type dim_offset_;
+};
+
+
+
 
 //default traverse predicate to traverse over all axes
 struct TraverseAllPredicate{};
