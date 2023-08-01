@@ -269,14 +269,15 @@ private:
 };
 
 //view walker
-template<typename Config, typename BaseWalker>
+template<typename BaseWalker>
 class trivial_view_walker : private BaseWalker
 {
     using base_walker_type = BaseWalker;
 public:
-    using config_type = Config;
-    using index_type = typename config_type::index_type;
-    using dim_type = typename config_type::dim_type;
+    using typename base_walker_type::config_type;
+    using typename base_walker_type::shape_type;
+    using typename base_walker_type::index_type;
+    using typename base_walker_type::dim_type;
 
     template<typename BaseWalker_>
     trivial_view_walker(BaseWalker_&& base_walker):
@@ -291,15 +292,15 @@ public:
     using base_walker_type::update_offset;
 };
 
-template<typename Config, typename BaseWalker>
+template<typename BaseWalker>
 class offsetting_walker : private BaseWalker
 {
     using base_walker_type = BaseWalker;
 public:
-    using config_type = Config;
-    using index_type = typename config_type::index_type;
-    using dim_type = typename config_type::dim_type;
-    using shape_type = typename config_type::shape_type;
+    using typename base_walker_type::config_type;
+    using typename base_walker_type::shape_type;
+    using typename base_walker_type::index_type;
+    using typename base_walker_type::dim_type;
 
     //offset is in parent dimension, i.e. offset.size() may be greater than view dim if view reduce dimensions
     template<typename...Args>
@@ -321,16 +322,17 @@ public:
     using base_walker_type::update_offset;
 };
 
-template<typename Config, typename BaseWalker>
+template<typename BaseWalker>
 class mapping_axes_walker : private BaseWalker
 {
     using base_walker_type = BaseWalker;
-    using axes_map_type = typename Config::template shape<typename Config::dim_type>;
+    using base_config_type = typename base_walker_type::config_type;
+    using axes_map_type = typename base_config_type::template shape<typename base_config_type::dim_type>;
 public:
-    using config_type = Config;
-    using index_type = typename config_type::index_type;
-    using dim_type = typename config_type::dim_type;
-    using shape_type = typename config_type::shape_type;
+    using typename base_walker_type::config_type;
+    using typename base_walker_type::shape_type;
+    using typename base_walker_type::index_type;
+    using typename base_walker_type::dim_type;
 
     //if a is axis of view then axes_map_[a] is corresponding axis of view's parent
     //axes_map_.size() always equals to view dim
@@ -359,10 +361,10 @@ class scaling_walker : private BaseWalker
 {
     using base_walker_type = BaseWalker;
 public:
-    using config_type = Config;
-    using index_type = typename config_type::index_type;
-    using dim_type = typename config_type::dim_type;
-    using shape_type = typename config_type::shape_type;
+    using typename base_walker_type::config_type;
+    using typename base_walker_type::shape_type;
+    using typename base_walker_type::index_type;
+    using typename base_walker_type::dim_type;
 
     //if a is axis of view then step_scale_[a] is steps number along a in parent that corresponds single step along a in view
     //step_scale_.size() always equals to view dim
@@ -387,15 +389,15 @@ private:
     const shape_type* step_scale_;
 };
 
-template<typename Config, typename BaseWalker>
+template<typename BaseWalker>
 class axes_correction_walker : private BaseWalker
 {
     using base_walker_type = BaseWalker;
 public:
-    using config_type = Config;
-    using index_type = typename config_type::index_type;
-    using dim_type = typename config_type::dim_type;
-    using shape_type = typename config_type::shape_type;
+    using typename base_walker_type::config_type;
+    using typename base_walker_type::shape_type;
+    using typename base_walker_type::index_type;
+    using typename base_walker_type::dim_type;
 
     template<typename...Args>
     axes_correction_walker(const dim_type& max_dim,Args&&...args):

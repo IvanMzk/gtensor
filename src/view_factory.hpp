@@ -147,10 +147,7 @@ inline typename ShT::value_type make_slice_view_offset(const ShT& pshape, const 
     }
     return res;
 }
-template<typename ShT, typename DimT, typename SliceT>
-inline typename ShT::value_type make_slice_view_offset_direction(const ShT& pshape, const ShT& pstrides, const DimT& direction, const SliceT& subs){
-    return pstrides[direction]*make_slice_start(pshape[direction],subs);
-}
+
 //transpose view helpers
 template<typename ShT, typename Container>
 ShT make_transpose_view_shape(const ShT& pshape, const Container& subs){
