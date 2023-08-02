@@ -544,7 +544,7 @@ private:
     axes_map_type axes_map_;
 };
 
-template<typename Config, typename Order, typename Base>
+template<typename Base>
 class descriptor_w_offset : public Base
 {
     using base_type = Base;
@@ -562,7 +562,7 @@ private:
     shape_type offset_;
 };
 
-template<typename Config, typename Order, typename Base>
+template<typename Base>
 class descriptor_w_scale : public Base
 {
     using base_type = Base;

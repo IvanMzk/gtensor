@@ -203,6 +203,9 @@ public:
     void walk(const dim_type& axis, const index_type& steps){
         cursor_+=steps*(*adapted_strides_)[axis];
     }
+    void walk_back(const dim_type& axis, const index_type& steps){
+        cursor_-=steps*(*adapted_strides_)[axis];
+    }
     void step(const dim_type& axis){
         cursor_+=(*adapted_strides_)[axis];
     }
@@ -244,6 +247,7 @@ public:
         indexer{std::forward<Indexer_>(indexer_)}
     {}
     void walk(const dim_type& axis, const index_type& steps){impl.walk(axis,steps);}
+    void walk_back(const dim_type& axis, const index_type& steps){impl.walk_back(axis,steps);}
     void step(const dim_type& axis){impl.step(axis);}
     void step_back(const dim_type& axis){impl.step_back(axis);}
     void reset(const dim_type& axis){impl.reset(axis);}
@@ -273,6 +277,7 @@ public:
         base_walker_type{std::forward<BaseWalker_>(base_walker)}
     {}
     using base_walker_type::walk;
+    using base_walker_type::walk_back;
     using base_walker_type::step;
     using base_walker_type::step_back;
     using base_walker_type::reset;
@@ -293,8 +298,9 @@ public:
 
     //offset is in parent dimension, i.e. offset.size() may be greater than view dim if view reduce dimensions
     template<typename...Args>
-    offsetting_walker(const shape_type& offset,Args&&...args):
-        base_walker_type{std::forward<Args>(args)...}
+    offsetting_walker(const shape_type& shape_,const shape_type& offset,Args&&...args):
+        base_walker_type{std::forward<Args>(args)...},
+        shape_{&shape_}
     {
         const auto n = detail::make_dim(offset);
         for (dim_type axis=0; axis!=n; ++axis){
@@ -303,12 +309,16 @@ public:
         base_walker_type::update_offset();
     }
     using base_walker_type::walk;
+    using base_walker_type::walk_back;
     using base_walker_type::step;
     using base_walker_type::step_back;
-    using base_walker_type::reset;
-    using base_walker_type::reset_back;
+    void reset(const dim_type& axis){base_walker_type::walk(axis,(*shape)[axis]-index_type{1});}
+    void reset_back(const dim_type& axis){base_walker_type::walk_back(axis,(*shape)[axis]-index_type{1});}
+    void reset_back(){base_walker_type::reset_back();}
     using base_walker_type::operator*;
     using base_walker_type::update_offset;
+private:
+    const shape_type* shape;
 };
 
 template<typename BaseWalker>
@@ -332,6 +342,7 @@ public:
     {}
     dim_type dim()const{return detail::make_dim(*axes_map_);}
     void walk(const dim_type& axis, const index_type& steps){base_walker_type::walk(map_axis(axis),steps);}
+    void walk_back(const dim_type& axis, const index_type& steps){base_walker_type::walk_back(map_axis(axis),steps);}
     void step(const dim_type& axis){base_walker_type::step(map_axis(axis));}
     void step_back(const dim_type& axis){base_walker_type::step_back(map_axis(axis));}
     void reset(const dim_type& axis){base_walker_type::reset(map_axis(axis));}
@@ -365,6 +376,7 @@ public:
     {}
     dim_type dim()const{return detail::make_dim(*step_scale_);}
     void walk(const dim_type& axis, const index_type& steps){base_walker_type::walk(axis,steps*scale_step(axis));}
+    void walk_back(const dim_type& axis, const index_type& steps){base_walker_type::walk_back(axis,steps*scale_step(axis));}
     void step(const dim_type& axis){base_walker_type::step(scale_step(axis));}
     void step_back(const dim_type& axis){base_walker_type::step_back(scale_step(axis));}
     using base_walker_type::reset;
@@ -398,6 +410,11 @@ public:
     void walk(const dim_type& axis, const index_type& steps){
         if (can_move_on_axis(axis)){
             base_walker_type::walk(make_axis(axis),steps);
+        }
+    }
+    void walk_back(const dim_type& axis, const index_type& steps){
+        if (can_move_on_axis(axis)){
+            base_walker_type::walk_back(make_axis(axis),steps);
         }
     }
     void step(const dim_type& axis){
