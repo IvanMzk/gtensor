@@ -751,7 +751,7 @@ class view_factory
                 parent.strides(),
                 subs_size,
                 index_map,
-                walker_forward_traverser<config_type, decltype(subs.create_walker())>{subs_shape, subs.create_walker(subs_dim)}...
+                walker_forward_traverser<config_type, decltype(subs.create_walker(subs_dim))>{subs_shape, subs.create_walker(subs_dim)}...
             );
         }
         return std::make_shared<view_type>(
@@ -765,11 +765,14 @@ class view_factory
         using order = typename parent_type::order;
         using config_type = typename parent_type::config_type;
         using index_map_type = typename config_type::index_map_type;
+        using dim_type = typename parent_type::dim_type;
         using shape_type = typename parent_type::shape_type;
         using descriptor_type = mapping_descriptor<config_type,order>;
         using view_type = mapping_view<config_type,order,parent_type>;
         using subs_tensor_type = typename Container::value_type;
-        using traverser_container_type = typename config_type::template container<walker_forward_traverser<config_type, decltype(std::declval<const subs_tensor_type&>().create_walker())>>;
+        using traverser_container_type = typename config_type::template container<
+            walker_forward_traverser<config_type, decltype(std::declval<const subs_tensor_type&>().create_walker(std::declval<dim_type>()))>
+        >;
         const auto& pshape = parent.shape();
         const auto shapes = detail::make_shapes_container(subs);
         detail::check_index_mapping_view_subs_container(pshape, shapes);
@@ -782,9 +785,7 @@ class view_factory
         index_map_type index_map(res_size);
         if (res_size!=0){
             traverser_container_type subs_traversers{};
-            if constexpr (detail::is_static_castable_v<typename Container::size_type, typename traverser_container_type::size_type>){
-                subs_traversers.reserve(static_cast<typename traverser_container_type::size_type>(subs_number));
-            }
+            detail::reserve(subs_traversers,subs_number);
             for (const auto& sub : subs){
                 subs_traversers.emplace_back(subs_shape,sub.create_walker(subs_dim));
             }
@@ -811,7 +812,6 @@ class view_factory
         using dim_type = typename parent_type::dim_type;
         using index_map_type = typename config_type::index_map_type;
         using index_container_type = typename config_type::template container<index_type>;
-        using index_container_difference_type = typename index_container_type::difference_type;
         using descriptor_type = mapping_descriptor<config_type,order>;
         using view_type = mapping_view<config_type,order,parent_type>;
         const auto& pshape = parent.shape();
@@ -822,9 +822,7 @@ class view_factory
             index_type subs_trues_number{0};
             const dim_type subs_dim = subs.dim();
             const index_type chunk_size = detail::mapping_view_chunk_size(pshape, subs_dim);
-            if constexpr (detail::is_static_castable_v<index_type,index_container_difference_type>){
-                index_container.reserve(static_cast<index_container_difference_type>(parent.size()));
-            }
+            detail::reserve(index_container,parent.size());
             subs_trues_number = detail::fill_bool_map<order>(
                 parent.strides(),
                 subs_dim,

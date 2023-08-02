@@ -79,7 +79,22 @@ public:
     using test_core_base_type::descriptor;
     auto create_walker(dim_type max_dim){
         using indexer_type = gtensor::basic_indexer<storage_type&>;
-        return gtensor::walker<config_type,indexer_type>{descriptor().adapted_strides(),descriptor().reset_strides(),descriptor().offset(),indexer_type{elements_},max_dim};
+        return gtensor::axes_correction_walker<gtensor::indexer_walker<config_type,indexer_type>>{
+            max_dim,
+            descriptor().adapted_strides(),
+            descriptor().reset_strides(),
+            descriptor().offset(),
+            indexer_type{elements_}
+        };
+    }
+    auto create_walker(){
+        using indexer_type = gtensor::basic_indexer<storage_type&>;
+        return gtensor::indexer_walker<config_type,indexer_type>{
+            descriptor().adapted_strides(),
+            descriptor().reset_strides(),
+            descriptor().offset(),
+            indexer_type{elements_}
+        };
     }
 };
 template<typename Config, typename T, typename Order>
@@ -145,7 +160,22 @@ public:
     using test_core_base_type::descriptor;
     auto create_walker(dim_type max_dim)const{
         using indexer_type = gtensor::basic_indexer<const storage_type&>;
-        return gtensor::walker<config_type,indexer_type>{descriptor().adapted_strides(),descriptor().reset_strides(),descriptor().offset(),indexer_type{elements_},max_dim};
+        return gtensor::axes_correction_walker<gtensor::indexer_walker<config_type,indexer_type>>{
+            max_dim,
+            descriptor().adapted_strides(),
+            descriptor().reset_strides(),
+            descriptor().offset(),
+            indexer_type{elements_}
+        };
+    }
+    auto create_walker()const{
+        using indexer_type = gtensor::basic_indexer<const storage_type&>;
+        return gtensor::indexer_walker<config_type,indexer_type>{
+            descriptor().adapted_strides(),
+            descriptor().reset_strides(),
+            descriptor().offset(),
+            indexer_type{elements_}
+        };
     }
 };
 template<typename Config, typename T, typename Order>
@@ -211,13 +241,31 @@ public:
     using test_core_base_type::test_core_base_type;
     using test_core_base_type::elements_;
     using test_core_base_type::descriptor;
-    auto create_walker(dim_type max_dim)const{
-        using indexer_type = gtensor::basic_indexer<const storage_type&>;
-        return gtensor::walker<config_type,indexer_type>{descriptor().adapted_strides(),descriptor().reset_strides(),descriptor().offset(),indexer_type{elements_},max_dim};
+    auto create_walker(dim_type max_dim)const{return create_walker_helper(*this,max_dim);}
+    auto create_walker(dim_type max_dim){return create_walker_helper(*this,max_dim);}
+    auto create_walker()const{return create_walker_helper(*this);}
+    auto create_walker(){return create_walker_helper(*this);}
+private:
+    template<typename U>
+    static auto create_walker_helper(U& instance, dim_type max_dim){
+        using indexer_type = std::conditional_t<std::is_const_v<U>, gtensor::basic_indexer<const storage_type&>, gtensor::basic_indexer<storage_type&>>;
+        return gtensor::axes_correction_walker<gtensor::indexer_walker<config_type,indexer_type>>{
+            max_dim,
+            instance.descriptor().adapted_strides(),
+            instance.descriptor().reset_strides(),
+            instance.descriptor().offset(),
+            indexer_type{instance.elements_}
+        };
     }
-    auto create_walker(dim_type max_dim){
-        using indexer_type = gtensor::basic_indexer<storage_type&>;
-        return gtensor::walker<config_type,indexer_type>{descriptor().adapted_strides(),descriptor().reset_strides(),descriptor().offset(),indexer_type{elements_},max_dim};
+    template<typename U>
+    static auto create_walker_helper(U& instance){
+        using indexer_type = std::conditional_t<std::is_const_v<U>, gtensor::basic_indexer<const storage_type&>, gtensor::basic_indexer<storage_type&>>;
+        return gtensor::indexer_walker<config_type,indexer_type>{
+            instance.descriptor().adapted_strides(),
+            instance.descriptor().reset_strides(),
+            instance.descriptor().offset(),
+            indexer_type{instance.elements_}
+        };
     }
 };
 template<typename Config, typename T, typename Order>

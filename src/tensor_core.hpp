@@ -260,7 +260,18 @@ public:
     const descriptor_type& descriptor()const{return descriptor_;}
     auto create_walker(const dim_type& max_dim)const{return create_walker_helper(*this, max_dim);}
     auto create_walker(const dim_type& max_dim){return create_walker_helper(*this, max_dim);}
+    auto create_walker()const{return create_walker_helper(*this);}
+    auto create_walker(){return create_walker_helper(*this);}
 private:
+    template<typename U>
+    static auto create_walker_helper(U& instance){
+        using parent_walker_type = decltype(instance.parent_.create_walker());
+        using walker_type = mapping_axes_walker<trivial_view_walker<parent_walker_type>>;
+        return walker_type{
+            instance.descriptor_.axes_map(),
+            instance.parent_.create_walker()
+        };
+    }
     template<typename U>
     static auto create_walker_helper(U& instance, const dim_type& max_dim){
         using parent_walker_type = decltype(instance.parent_.create_walker());

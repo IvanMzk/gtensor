@@ -67,15 +67,12 @@ TEST_CASE("test_walker_forward_traverser","test_data_accessor")
 {
     using value_type = int;
     using config_type = gtensor::config::extend_config_t<test_config::config_storage_selector_t<std::vector>,value_type>;
-    using gtensor::basic_indexer;
-    using gtensor::walker;
     using gtensor::walker_forward_traverser;
     using shape_type = typename config_type::shape_type;
-    using dim_type = typename config_type::dim_type;
     using index_type = typename config_type::index_type;
     using storage_type = typename config_type::template storage<value_type>;
-    using indexer_type = basic_indexer<storage_type&>;
-    using walker_type = walker<config_type, indexer_type>;
+    using indexer_type = gtensor::basic_indexer<storage_type&>;
+    using walker_type = gtensor::indexer_walker<config_type, indexer_type>;
     using gtensor::config::c_order;
     using gtensor::config::f_order;
     using gtensor::detail::make_strides;
@@ -162,8 +159,7 @@ TEST_CASE("test_walker_forward_traverser","test_data_accessor")
         auto adapted_strides = make_adapted_strides(shape,strides);
         auto reset_strides = make_reset_strides(shape,strides);
         index_type offset{0};
-        dim_type max_dim = gtensor::detail::make_dim(shape);
-        auto walker =  walker_type{adapted_strides, reset_strides, offset, indexer, max_dim};
+        auto walker =  walker_type{adapted_strides, reset_strides, offset, indexer};
         using traverser_type = walker_forward_traverser<config_type, walker_type>;
         auto traverser = traverser_type{shape, walker};
         auto result_is_next = command(traverser);
@@ -180,15 +176,12 @@ TEST_CASE("test_walker_bidirectional_traverser","test_data_accessor")
 {
     using value_type = int;
     using config_type = gtensor::config::extend_config_t<test_config::config_storage_selector_t<std::vector>,value_type>;
-    using gtensor::basic_indexer;
-    using gtensor::walker;
     using gtensor::walker_bidirectional_traverser;
     using shape_type = typename config_type::shape_type;
-    using dim_type = typename config_type::dim_type;
     using index_type = typename config_type::index_type;
     using storage_type = typename config_type::template storage<value_type>;
-    using indexer_type = basic_indexer<storage_type&>;
-    using walker_type = walker<config_type, indexer_type>;
+    using indexer_type = gtensor::basic_indexer<storage_type&>;
+    using walker_type = gtensor::indexer_walker<config_type, indexer_type>;
     using gtensor::config::c_order;
     using gtensor::config::f_order;
     using gtensor::detail::make_strides;
@@ -306,8 +299,7 @@ TEST_CASE("test_walker_bidirectional_traverser","test_data_accessor")
         auto adapted_strides = make_adapted_strides(shape,strides);
         auto reset_strides = make_reset_strides(shape,strides);
         index_type offset{0};
-        dim_type max_dim = gtensor::detail::make_dim(shape);
-        auto walker =  walker_type{adapted_strides, reset_strides, offset, indexer, max_dim};
+        auto walker =  walker_type{adapted_strides, reset_strides, offset, indexer};
         using traverser_type = walker_bidirectional_traverser<config_type, walker_type>;
         auto traverser = traverser_type{shape, walker};
         auto result_is_next = command(traverser);
@@ -324,15 +316,12 @@ TEST_CASE("test_walker_random_access_traverser","test_data_accessor")
 {
     using value_type = int;
     using config_type = gtensor::config::extend_config_t<test_config::config_storage_selector_t<std::vector>,value_type>;
-    using gtensor::basic_indexer;
-    using gtensor::walker;
     using gtensor::walker_random_access_traverser;
     using shape_type = typename config_type::shape_type;
-    using dim_type = typename config_type::dim_type;
     using index_type = typename config_type::index_type;
     using storage_type = typename config_type::template storage<value_type>;
-    using indexer_type = basic_indexer<storage_type&>;
-    using walker_type = walker<config_type, indexer_type>;
+    using indexer_type = gtensor::basic_indexer<storage_type&>;
+    using walker_type = gtensor::indexer_walker<config_type, indexer_type>;
     using gtensor::config::c_order;
     using gtensor::config::f_order;
     using gtensor::detail::make_strides;
@@ -416,8 +405,7 @@ TEST_CASE("test_walker_random_access_traverser","test_data_accessor")
         auto adapted_strides = make_adapted_strides(shape,strides);
         auto reset_strides = make_reset_strides(shape,strides);
         index_type offset{0};
-        dim_type max_dim = gtensor::detail::make_dim(shape);
-        auto walker =  walker_type{adapted_strides, reset_strides, offset, indexer, max_dim};
+        auto walker =  walker_type{adapted_strides, reset_strides, offset, indexer};
         auto strides_div = make_strides_div<config_type>(shape, traverser_order);
         using traverser_order_type = decltype(traverser_order);
         using traverser_type = walker_random_access_traverser<config_type, walker_type, traverser_order_type>;
@@ -436,14 +424,11 @@ TEST_CASE("test_walker_traverser_predicate","test_data_accessor")
 {
     using value_type = int;
     using config_type = gtensor::config::extend_config_t<test_config::config_storage_selector_t<std::vector>,value_type>;
-    using gtensor::basic_indexer;
-    using gtensor::walker;
     using shape_type = typename config_type::shape_type;
-    using dim_type = typename config_type::dim_type;
     using index_type = typename config_type::index_type;
     using storage_type = typename config_type::template storage<value_type>;
-    using indexer_type = basic_indexer<storage_type&>;
-    using walker_type = walker<config_type, indexer_type>;
+    using indexer_type = gtensor::basic_indexer<storage_type&>;
+    using walker_type = gtensor::indexer_walker<config_type, indexer_type>;
     using gtensor::config::c_order;
     using gtensor::config::f_order;
     using gtensor::detail::make_strides;
@@ -564,8 +549,7 @@ TEST_CASE("test_walker_traverser_predicate","test_data_accessor")
         auto adapted_strides = make_adapted_strides(shape,strides);
         auto reset_strides = make_reset_strides(shape,strides);
         index_type offset{0};
-        dim_type max_dim = gtensor::detail::make_dim(shape);
-        auto walker =  walker_type{adapted_strides, reset_strides, offset, indexer, max_dim};
+        auto walker =  walker_type{adapted_strides, reset_strides, offset, indexer};
         auto traverser = traverser_type{shape, walker, predicate};
         auto result_is_next = command(traverser);
         auto result_index = traverser.index();
@@ -581,14 +565,11 @@ TEST_CASE("test_walker_random_access_traverser_predicate","test_data_accessor")
 {
     using value_type = int;
     using config_type = gtensor::config::extend_config_t<test_config::config_storage_selector_t<std::vector>,value_type>;
-    using gtensor::basic_indexer;
-    using gtensor::walker;
     using shape_type = typename config_type::shape_type;
-    using dim_type = typename config_type::dim_type;
     using index_type = typename config_type::index_type;
     using storage_type = typename config_type::template storage<value_type>;
-    using indexer_type = basic_indexer<storage_type&>;
-    using walker_type = walker<config_type, indexer_type>;
+    using indexer_type = gtensor::basic_indexer<storage_type&>;
+    using walker_type = gtensor::indexer_walker<config_type, indexer_type>;
     using gtensor::config::c_order;
     using gtensor::config::f_order;
     using gtensor::detail::make_strides;
@@ -655,8 +636,7 @@ TEST_CASE("test_walker_random_access_traverser_predicate","test_data_accessor")
         auto adapted_strides = make_adapted_strides(shape,strides);
         auto reset_strides = make_reset_strides(shape,strides);
         index_type offset{0};
-        dim_type max_dim = gtensor::detail::make_dim(shape);
-        auto walker =  walker_type{adapted_strides, reset_strides, offset, indexer, max_dim};
+        auto walker =  walker_type{adapted_strides, reset_strides, offset, indexer};
         auto traverser = traverser_type{shape, strides_div, walker, predicate};
         auto result_is_next = command(traverser);
         auto result_index = traverser.index();

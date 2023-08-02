@@ -109,15 +109,12 @@ TEST_CASE("test_walker_indexer","test_data_accessor")
 {
     using value_type = int;
     using config_type = gtensor::config::extend_config_t<test_config::config_storage_selector_t<std::vector>,value_type>;
-    using gtensor::basic_indexer;
     using gtensor::walker_indexer;
-    using gtensor::walker;
     using shape_type = typename config_type::shape_type;
-    using dim_type = typename config_type::dim_type;
     using index_type = typename config_type::index_type;
     using storage_type = typename config_type::template storage<value_type>;
-    using indexer_type = basic_indexer<storage_type&>;
-    using walker_type = walker<config_type, indexer_type>;
+    using indexer_type = gtensor::basic_indexer<storage_type&>;
+    using walker_type = gtensor::indexer_walker<config_type, indexer_type>;
     using gtensor::config::c_order;
     using gtensor::config::f_order;
     using helpers_for_testing::apply_by_element;
@@ -195,9 +192,8 @@ TEST_CASE("test_walker_indexer","test_data_accessor")
         auto strides = gtensor::detail::make_strides(shape, elements_order_type{});
         auto adapted_strides = gtensor::detail::make_adapted_strides(shape, strides);
         auto reset_strides = gtensor::detail::make_reset_strides(shape, strides);
-        dim_type dim = gtensor::detail::make_dim(shape);
         indexer_type indexer{elements};
-        walker_type walker{adapted_strides, reset_strides, offset, indexer, dim};
+        walker_type walker{adapted_strides, reset_strides, offset, indexer};
         using walker_indexer_type = walker_indexer<walker_type,indexer_order_type>;
         auto strides_div = gtensor::detail::make_strides_div<config_type>(shape,indexer_order_type{});
         walker_indexer_type walker_indexer{strides_div, walker};

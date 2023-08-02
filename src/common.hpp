@@ -33,7 +33,8 @@ GENERATE_HAS_CALLABLE_METHOD(operator[](std::declval<typename T::size_type>()), 
 GENERATE_HAS_CALLABLE_METHOD(operator[](std::declval<typename T::difference_type>()), has_callable_subscript_operator_difference_type);
 GENERATE_HAS_CALLABLE_METHOD(operator[](std::declval<typename T::index_type>()), has_callable_subscript_operator_index_type);
 GENERATE_HAS_CALLABLE_METHOD(create_indexer(), has_callable_create_indexer);
-GENERATE_HAS_CALLABLE_METHOD(create_walker(std::declval<typename T::dim_type>()), has_callable_create_walker);
+GENERATE_HAS_CALLABLE_METHOD(create_walker(), has_callable_create_walker);
+GENERATE_HAS_CALLABLE_METHOD(create_walker(std::declval<typename T::dim_type>()), has_callable_create_walker_dim_type);
 GENERATE_HAS_CALLABLE_METHOD(begin(), has_callable_begin);
 GENERATE_HAS_CALLABLE_METHOD(end(), has_callable_end);
 GENERATE_HAS_CALLABLE_METHOD(rbegin(), has_callable_rbegin);

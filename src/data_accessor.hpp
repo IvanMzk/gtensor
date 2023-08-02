@@ -193,38 +193,27 @@ public:
     using dim_type = typename Config::dim_type;
     using shape_type = typename Config::shape_type;
 
-    walker_common(const shape_type& adapted_strides__, const shape_type& reset_strides__, const cursor_type& offset__, const dim_type& max_dim__):
+    walker_common(const shape_type& adapted_strides__, const shape_type& reset_strides__, const cursor_type& offset__):
         adapted_strides_{&adapted_strides__},
         reset_strides_{&reset_strides__},
         offset_{offset__},
-        cursor_{offset__},
-        dim_offset_{max_dim__ - dim()}
+        cursor_{offset__}
     {}
-    //direction argument must be in range [0,max_dim_-1]
-    void walk(const dim_type& direction, const index_type& steps){
-        if (direction >= dim_offset_){
-            cursor_+=steps*(*adapted_strides_)[direction - dim_offset_];
-        }
+    //axis must be in range [0,dim-1]
+    void walk(const dim_type& axis, const index_type& steps){
+        cursor_+=steps*(*adapted_strides_)[axis];
     }
-    void step(const dim_type& direction){
-        if (direction >= dim_offset_){
-            cursor_+=(*adapted_strides_)[direction - dim_offset_];
-        }
+    void step(const dim_type& axis){
+        cursor_+=(*adapted_strides_)[axis];
     }
-    void step_back(const dim_type& direction){
-        if (direction >= dim_offset_){
-            cursor_-=(*adapted_strides_)[direction - dim_offset_];
-        }
+    void step_back(const dim_type& axis){
+        cursor_-=(*adapted_strides_)[axis];
     }
-    void reset(const dim_type& direction){
-        if (direction >= dim_offset_){
-            cursor_+=(*reset_strides_)[direction - dim_offset_];
-        }
+    void reset(const dim_type& axis){
+        cursor_+=(*reset_strides_)[axis];
     }
-    void reset_back(const dim_type& direction){
-        if (direction >= dim_offset_){
-            cursor_-=(*reset_strides_)[direction - dim_offset_];
-        }
+    void reset_back(const dim_type& axis){
+        cursor_-=(*reset_strides_)[axis];
     }
     void reset_back(){cursor_ = offset_;}
     void update_offset(){offset_+=cursor_;}
@@ -236,12 +225,11 @@ private:
     const shape_type* reset_strides_;
     cursor_type offset_;
     cursor_type cursor_;
-    dim_type dim_offset_;
 };
 
 //Indexer is adaptee
 template<typename Config, typename Indexer>
-class walker
+class indexer_walker
 {
     using indexer_type = Indexer;
 public:
@@ -250,25 +238,26 @@ public:
     using dim_type = typename config_type::dim_type;
     using shape_type = typename config_type::shape_type;
 
-    walker(const shape_type& adapted_strides_, const shape_type& reset_strides_, const index_type& offset_, const indexer_type& indexer_, const dim_type& max_dim_):
-        index_walker{adapted_strides_, reset_strides_, offset_, max_dim_},
-        indexer{indexer_}
+    template<typename Indexer_>
+    indexer_walker(const shape_type& adapted_strides_, const shape_type& reset_strides_, const index_type& offset_, Indexer_&& indexer_):
+        impl{adapted_strides_, reset_strides_, offset_},
+        indexer{std::forward<Indexer_>(indexer_)}
     {}
-    void walk(const dim_type& direction, const index_type& steps){index_walker.walk(direction,steps);}
-    void step(const dim_type& direction){index_walker.step(direction);}
-    void step_back(const dim_type& direction){index_walker.step_back(direction);}
-    void reset(const dim_type& direction){index_walker.reset(direction);}
-    void reset_back(const dim_type& direction){index_walker.reset_back(direction);}
-    void reset_back(){index_walker.reset_back();}
-    void update_offset(){index_walker.update_offset();}
-    dim_type dim(){return index_walker.dim();}
-    decltype(auto) operator*()const{return indexer[index_walker.cursor()];}
+    void walk(const dim_type& axis, const index_type& steps){impl.walk(axis,steps);}
+    void step(const dim_type& axis){impl.step(axis);}
+    void step_back(const dim_type& axis){impl.step_back(axis);}
+    void reset(const dim_type& axis){impl.reset(axis);}
+    void reset_back(const dim_type& axis){impl.reset_back(axis);}
+    void reset_back(){impl.reset_back();}
+    void update_offset(){impl.update_offset();}
+    dim_type dim(){return impl.dim();}
+    decltype(auto) operator*()const{return indexer[impl.cursor()];}
 private:
-    walker_common<config_type, index_type> index_walker;
+    walker_common<config_type, index_type> impl;
     indexer_type indexer;
 };
 
-//view walker
+//walker decorators
 template<typename BaseWalker>
 class trivial_view_walker : private BaseWalker
 {
@@ -446,8 +435,6 @@ private:
     }
     dim_type dim_offset_;
 };
-
-
 
 
 //default traverse predicate to traverse over all axes

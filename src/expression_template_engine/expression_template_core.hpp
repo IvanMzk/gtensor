@@ -40,6 +40,12 @@ public:
     auto create_walker(dim_type max_dim)const{
         return create_walker_helper(*this,max_dim,sequence_type{});
     }
+    auto create_walker(){
+        return create_walker(descriptor_.dim());
+    }
+    auto create_walker()const{
+        return create_walker(descriptor_.dim());
+    }
 private:
     template<typename U, std::size_t...I>
     static auto create_walker_helper(U& instance, dim_type max_dim, std::index_sequence<I...>){
