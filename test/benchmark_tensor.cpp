@@ -140,7 +140,65 @@ TEST_CASE("test_benchmark_helpers_make_tree","[test_benchmark_helpers]")
 //     benchmark("f_copy_10E6",bench_copy,t,f_order{});
 // }
 
-TEMPLATE_TEST_CASE("benchmark_tensor_view_copy","[benchmark_tensor]",
+// TEMPLATE_TEST_CASE("benchmark_tensor_transpose_view_copy","[benchmark_tensor]",
+//     gtensor::config::c_order,
+//     gtensor::config::f_order
+// )
+// {
+//     using value_type = double;
+//     using gtensor::tensor;
+//     using gtensor::config::c_order;
+//     using gtensor::config::f_order;
+//     using tensor_type = gtensor::tensor<value_type,TestType>;
+//     using benchmark_helpers::make_asymmetric_tree;
+//     using benchmark_helpers::benchmark;
+
+//     auto bench_copy = [](const auto& t, auto order){
+//         return t.copy(order);
+//     };
+
+//     //auto v = tensor_type({10,100,1000},2).transpose();
+//     auto v = tensor_type({10,100,1000},2).transpose().transpose(2,0,1).transpose(0,2,1);
+//     //auto v = tensor_type({10,100,1000},2).transpose().transpose(1,0,2);
+//     //auto v = tensor_type({10,100,1000},2)({{0,-1,1},{0,-1,2},{0,-1,1}});
+//     //auto v = tensor_type({10,100,1000},2)({{0,-1,1},{0,-1,1},{0,-1,1}})({{0,-1,1},{0,-1,1},{0,-1,1}});
+//     //std::cout<<std::endl<<gtensor::detail::shape_to_str(v.shape());
+
+//     benchmark("c_copy_transpose_view_10E6",bench_copy,v,c_order{});
+//     benchmark("f_copy_transpose_view_10E6",bench_copy,v,f_order{});
+// }
+
+// TEMPLATE_TEST_CASE("benchmark_tensor_slice_view_copy","[benchmark_tensor]",
+//     gtensor::config::c_order,
+//     gtensor::config::f_order
+// )
+// {
+//     using value_type = double;
+//     using gtensor::tensor;
+//     using gtensor::config::c_order;
+//     using gtensor::config::f_order;
+//     using tensor_type = gtensor::tensor<value_type,TestType>;
+//     using benchmark_helpers::make_asymmetric_tree;
+//     using benchmark_helpers::benchmark;
+
+//     auto bench_copy = [](const auto& t, auto order){
+//         return t.copy(order);
+//     };
+
+//     auto v1 = tensor_type({10,100,1000},2)({{0,-1},{},{0,-1}});
+//     //auto v2 = tensor_type({10,100,1000},2)({{},{},{0,-1}})({{},{},{0,-1}});
+//     // auto v3 = tensor_type({10,100,1000},2)({{},{},{}})({{},{},{}})({{},{},{}});
+
+//     benchmark("c_copy_slice1_view_10E6",bench_copy,v1,c_order{});
+//     benchmark("f_copy_slice1_view_10E6",bench_copy,v1,f_order{});
+//     //benchmark("c_copy_slice2_view_10E6",bench_copy,v2,c_order{});
+//     //benchmark("f_copy_slice2_view_10E6",bench_copy,v2,f_order{});
+//     // benchmark("c_copy_slice3_view_10E6",bench_copy,v3,c_order{});
+//     // benchmark("f_copy_slice3_view_10E6",bench_copy,v3,f_order{});
+// }
+
+
+TEMPLATE_TEST_CASE("benchmark_tensor_tree_slice_view_copy","[benchmark_tensor]",
     gtensor::config::c_order,
     gtensor::config::f_order
 )
@@ -157,26 +215,17 @@ TEMPLATE_TEST_CASE("benchmark_tensor_view_copy","[benchmark_tensor]",
         return t.copy(order);
     };
 
-    // auto bench_iteration_deref = [](const auto& t, auto order){
-    //     using tensor_type = std::remove_cv_t<std::remove_reference_t<decltype(t)>>;
-    //     using value_type = typename tensor_type::value_type;
-    //     auto a = t.template traverse_order_adapter<decltype(order)>();
-    //     value_type s{0};
-    //     for (auto it=a.begin(),last=a.end(); it!=last; ++it){
-    //         s += *it;
-    //     }
-    //     return s;
-    // };
+    auto t1 = tensor_type({10,100,1000},2);
+    auto t2 = tensor_type({100,1000},1);
+    auto tree_50_1E6 = make_asymmetric_tree<50>(t1,t2);
+    auto v1 = tree_50_1E6({{0,-1},{},{0,-1}});
 
-    auto v = tensor_type({10,100,1000},2).transpose();
-    //auto v = tensor_type({10,100,1000},2).transpose().transpose(1,0,2);
-    //auto v = tensor_type({10,100,1000},2)({{0,-1,1},{0,-1,2},{0,-1,1}});
-    //auto v = tensor_type({10,100,1000},2)({{0,-1,1},{0,-1,1},{0,-1,1}})({{0,-1,1},{0,-1,1},{0,-1,1}});
-    std::cout<<std::endl<<gtensor::detail::shape_to_str(v.shape());
 
-    //benchmark("c_copy_view_10E6",bench_iteration_deref,v,c_order{});
-    //benchmark("f_copy_view_10E6",bench_iteration_deref,v,f_order{});
-    benchmark("c_copy_view_10E6",bench_copy,v,c_order{});
-    benchmark("f_copy_view_10E6",bench_copy,v,f_order{});
+    benchmark("c_copy_tree_slice1_view_10E6",bench_copy,v1,c_order{});
+    benchmark("f_copy_tree_slice1_view_10E6",bench_copy,v1,f_order{});
+    //benchmark("c_copy_slice2_view_10E6",bench_copy,v2,c_order{});
+    //benchmark("f_copy_slice2_view_10E6",bench_copy,v2,f_order{});
+    // benchmark("c_copy_slice3_view_10E6",bench_copy,v3,c_order{});
+    // benchmark("f_copy_slice3_view_10E6",bench_copy,v3,f_order{});
 }
 
