@@ -12,37 +12,6 @@ namespace gtensor{
 
 namespace detail{
 
-//create indexer
-template<typename Core, typename Descriptor>
-inline auto create_indexer(Core& t, const Descriptor& descriptor){
-    using order = typename Core::order;
-    if constexpr (has_callable_create_indexer<Core>::value){
-        return t.create_indexer();
-    }else if constexpr (has_callable_subscript_operator<Core>::value){
-        return gtensor::basic_indexer<Core&>{t};
-    }else if constexpr (has_callable_create_walker<Core>::value){
-        using walker_type = decltype(t.create_walker());
-        return gtensor::walker_indexer<walker_type, order>{descriptor.strides_div() ,t.create_walker()};
-    }else if constexpr (has_callable_iterator<Core>::value){
-        using iterator_type = decltype(t.begin());
-        return gtensor::iterator_indexer<iterator_type>{t.begin()};
-    }else{
-        static_assert(detail::always_false<Core>,"can't make data accessor");
-    }
-}
-template<typename TraverseOrder, typename Core, typename Descriptor>
-inline auto create_indexer(Core& t, const Descriptor& descriptor){
-    ASSERT_ORDER(TraverseOrder);
-    if constexpr (std::is_same_v<typename Core::order,TraverseOrder>){
-        return create_indexer(t,descriptor);
-    }else{
-        return basic_indexer<decltype(create_indexer(t,descriptor)),decltype(detail::make_order_converter(descriptor))>{
-            create_indexer(t,descriptor),
-            detail::make_order_converter(descriptor)
-        };
-    }
-}
-
 //create walker
 template<typename Config, typename Indexer> using max_dim_indexer_walker = gtensor::axes_correction_walker<gtensor::indexer_walker<Config,Indexer>>;
 template<typename Core, typename Descriptor, typename DimT>
@@ -81,6 +50,38 @@ inline auto create_walker(Core& t, const Descriptor& descriptor){
         return gtensor::indexer_walker<config_type,indexer_type>{descriptor.adapted_strides(),descriptor.reset_strides(),index_type{0},indexer_type{t.begin()}};
     }else{
         static_assert(detail::always_false<Core>,"can't make data accessor");
+    }
+}
+
+//create indexer
+template<typename TraverseOrder, typename Core, typename Descriptor>
+inline auto create_walker_indexer(Core& t, const Descriptor& descriptor){
+    ASSERT_ORDER(TraverseOrder);
+    using walker_type = decltype(create_walker(t,descriptor));
+    return gtensor::walker_indexer<walker_type, TraverseOrder>{descriptor.strides_div(TraverseOrder{}), create_walker(t,descriptor)};
+}
+template<typename Core, typename Descriptor>
+inline auto create_indexer(Core& t, const Descriptor& descriptor){
+    if constexpr (has_callable_create_indexer<Core>::value){
+        return t.create_indexer();
+    }else if constexpr (has_callable_subscript_operator<Core>::value){
+        return gtensor::basic_indexer<Core&>{t};
+    }else if constexpr (has_callable_create_walker<Core>::value){
+        return create_walker_indexer<typename Core::order>(t,descriptor);
+    }else if constexpr (has_callable_iterator<Core>::value){
+        using iterator_type = decltype(t.begin());
+        return gtensor::iterator_indexer<iterator_type>{t.begin()};
+    }else{
+        static_assert(detail::always_false<Core>,"can't make data accessor");
+    }
+}
+template<typename TraverseOrder, typename Core, typename Descriptor>
+inline auto create_indexer(Core& t, const Descriptor& descriptor){
+    ASSERT_ORDER(TraverseOrder);
+    if constexpr (std::is_same_v<typename Core::order,TraverseOrder>){
+        return create_indexer(t,descriptor);
+    }else{
+        return create_walker_indexer<TraverseOrder>(t,descriptor);
     }
 }
 
