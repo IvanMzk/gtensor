@@ -290,7 +290,7 @@ template<typename Parent>
 class slice_view_core
 {
     using parent_type = Parent;
-    using descriptor_type = descriptor_w_scale<descriptor_w_offset<basic_descriptor<typename Parent::config_type,typename Parent::order>>>;
+    using descriptor_type = descriptor_w_scale<descriptor_w_offset<transpose_descriptor<typename Parent::config_type,typename Parent::order>>>;
 public:
     using config_type = typename parent_type::config_type;
     using order = typename parent_type::order;
@@ -298,9 +298,9 @@ public:
     using dim_type = typename parent_type::dim_type;
     using shape_type = typename parent_type::shape_type;
 
-    template<typename Scale, typename Offset, typename ShT, typename Parent_>
-    slice_view_core(Scale&& scale__, Offset&& offset__, ShT&& shape__, Parent_&& parent__):
-        descriptor_{std::forward<Scale>(scale__),std::forward<Offset>(offset__),std::forward<ShT>(shape__)},
+    template<typename Scale, typename Offset, typename AxesMap, typename ShT, typename Parent_>
+    slice_view_core(Scale&& scale__, Offset&& offset__, AxesMap&& axes_map__, ShT&& shape__, Parent_&& parent__):
+        descriptor_{std::forward<Scale>(scale__),std::forward<Offset>(offset__),std::forward<AxesMap>(axes_map__),std::forward<ShT>(shape__)},
         parent_{std::forward<Parent_>(parent__)}
     {}
 
@@ -313,10 +313,11 @@ private:
     template<typename U>
     static auto create_walker_helper(U& instance){
         using parent_walker_type = decltype(instance.parent_.create_walker());
-        using walker_type = scaling_walker<offsetting_walker<trivial_view_walker<parent_walker_type>>>;
+        using walker_type = resetting_walker<scaling_walker<mapping_axes_walker<offsetting_walker<trivial_view_walker<parent_walker_type>>>>>;
         return walker_type{
-            instance.descriptor_.scale(),
             instance.descriptor_.shape(),
+            instance.descriptor_.scale(),
+            instance.descriptor_.axes_map(),
             instance.descriptor_.get_offset(),
             instance.parent_.create_walker()
         };
@@ -324,11 +325,12 @@ private:
     template<typename U>
     static auto create_walker_helper(U& instance, const dim_type& max_dim){
         using parent_walker_type = decltype(instance.parent_.create_walker());
-        using walker_type = axes_correction_walker<scaling_walker<offsetting_walker<trivial_view_walker<parent_walker_type>>>>;
+        using walker_type = axes_correction_walker<resetting_walker<scaling_walker<mapping_axes_walker<offsetting_walker<trivial_view_walker<parent_walker_type>>>>>>;
         return walker_type{
             max_dim,
-            instance.descriptor_.scale(),
             instance.descriptor_.shape(),
+            instance.descriptor_.scale(),
+            instance.descriptor_.axes_map(),
             instance.descriptor_.get_offset(),
             instance.parent_.create_walker()
         };
@@ -337,6 +339,56 @@ private:
     parent_type parent_;
 };
 
+template<typename Parent>
+class subdim_view_core
+{
+    using parent_type = Parent;
+    using descriptor_type = descriptor_w_offset<transpose_descriptor<typename Parent::config_type,typename Parent::order>>;
+public:
+    using config_type = typename parent_type::config_type;
+    using order = typename parent_type::order;
+    using value_type = typename parent_type::value_type;
+    using dim_type = typename parent_type::dim_type;
+    using shape_type = typename parent_type::shape_type;
+
+    template<typename Offset, typename AxesMap, typename ShT, typename Parent_>
+    subdim_view_core(Offset&& offset__, AxesMap&& axes_map__, ShT&& shape__, Parent_&& parent__):
+        descriptor_{std::forward<Offset>(offset__),std::forward<AxesMap>(axes_map__),std::forward<ShT>(shape__)},
+        parent_{std::forward<Parent_>(parent__)}
+    {}
+
+    const descriptor_type& descriptor()const{return descriptor_;}
+    auto create_walker(const dim_type& max_dim)const{return create_walker_helper(*this, max_dim);}
+    auto create_walker(const dim_type& max_dim){return create_walker_helper(*this, max_dim);}
+    auto create_walker()const{return create_walker_helper(*this);}
+    auto create_walker(){return create_walker_helper(*this);}
+private:
+    template<typename U>
+    static auto create_walker_helper(U& instance){
+        using parent_walker_type = decltype(instance.parent_.create_walker());
+        using walker_type = resetting_walker<mapping_axes_walker<offsetting_walker<trivial_view_walker<parent_walker_type>>>>;
+        return walker_type{
+            instance.descriptor_.shape(),
+            instance.descriptor_.axes_map(),
+            instance.descriptor_.get_offset(),
+            instance.parent_.create_walker()
+        };
+    }
+    template<typename U>
+    static auto create_walker_helper(U& instance, const dim_type& max_dim){
+        using parent_walker_type = decltype(instance.parent_.create_walker());
+        using walker_type = axes_correction_walker<resetting_walker<mapping_axes_walker<offsetting_walker<trivial_view_walker<parent_walker_type>>>>>;
+        return walker_type{
+            max_dim,
+            instance.descriptor_.shape(),
+            instance.descriptor_.axes_map(),
+            instance.descriptor_.get_offset(),
+            instance.parent_.create_walker()
+        };
+    }
+    descriptor_type descriptor_;
+    parent_type parent_;
+};
 
 
 template<typename Config, typename Order, typename Parent>

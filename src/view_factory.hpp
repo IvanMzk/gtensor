@@ -11,10 +11,6 @@
 
 namespace gtensor{
 
-// class subscript_exception : public std::runtime_error{
-//     public: subscript_exception(const char* what):runtime_error(what){}
-// };
-
 namespace detail{
 //slice view helpers
 template<typename IdxT>
@@ -73,6 +69,10 @@ template<typename SliceT, typename IdxT>
 inline IdxT make_slice_view_cstride_element(const IdxT& pstride_element, const SliceT& subs){
     return pstride_element*subs.step();
 }
+template<typename SliceT, typename IdxT>
+inline IdxT make_slice_view_scale_element(const IdxT&, const SliceT& subs){
+    return subs.step();
+}
 template<typename ShT, typename Container>
 inline typename ShT::difference_type make_slice_view_dim(const ShT& pshape, const Container& subs){
     using dim_type = typename ShT::difference_type;
@@ -130,6 +130,47 @@ template<typename ShT, typename DimT, typename Container>
 inline ShT make_slice_view_cstrides(const ShT& pstrides, const DimT& res_dim, const Container& subs){
     return make_slice_view_shape_cstrides(pstrides, res_dim, subs, [](const auto& pelement, const auto& subs_){return make_slice_view_cstride_element(pelement,subs_);});
 }
+//slice view step_scale
+template<typename ShT, typename DimT, typename Container>
+inline ShT make_slice_view_scale(DimT res_dim, const Container& subs){
+    using index_type = typename ShT::value_type;
+    ShT res{};
+    detail::reserve(res,res_dim);
+    for (auto subs_it = subs.begin(); subs_it!=subs.end(); ++subs_it){
+        const auto& subs_ = *subs_it;
+        if (!subs_.is_reduce()){
+            res.push_back(subs_.step());
+            --res_dim;
+        }
+    }
+    while (res_dim!=0){
+        res.push_back(index_type{1});
+        --res_dim;
+    }
+    return res;
+}
+//slice view axes_map
+template<typename Config, typename DimT, typename Container>
+inline auto make_slice_view_axes_map(DimT res_dim, const Container& subs){
+    using dim_type = typename Config::dim_type;
+    using res_type = typename Config::template shape<dim_type>;
+    res_type res{};
+    detail::reserve(res,res_dim);
+    dim_type a{0};
+    for (auto subs_it = subs.begin(); subs_it!=subs.end(); ++subs_it,++a){
+        const auto& subs_ = *subs_it;
+        if (!subs_.is_reduce()){
+            res.push_back(a);
+            --res_dim;
+        }
+    }
+    while (res_dim!=0){
+        res.push_back(a);
+        ++a;
+        --res_dim;
+    }
+    return res;
+}
 //slice view offset
 template<typename ShT, typename Container>
 inline typename ShT::value_type make_slice_view_offset(const ShT& pshape, const ShT& pstrides, const Container& subs){
@@ -144,6 +185,22 @@ inline typename ShT::value_type make_slice_view_offset(const ShT& pshape, const 
         index_type start_ = make_slice_start(pshape_element, subs_);
         start_ = subs_.step()>zero_index ? bound_low(zero_index, start_):bound_high(pshape_element-index_type{1}, start_);
         res+=*pstrides_it*start_;
+    }
+    return res;
+}
+template<typename ShT, typename Container>
+inline ShT make_slice_view_multidim_offset(const ShT& pshape, const Container& subs){
+    using index_type = typename ShT::value_type;
+    const index_type zero_index{0};
+    ShT res{};
+    detail::reserve(res,subs.size());
+    auto pshape_it = pshape.begin();
+    for (auto subs_it = subs.begin(); subs_it!=subs.end(); ++subs_it,++pshape_it){
+        const auto& pshape_element = *pshape_it;
+        const auto& subs_ = *subs_it;
+        index_type start_ = make_slice_start(pshape_element, subs_);
+        start_ = subs_.step()>zero_index ? bound_low(zero_index, start_):bound_high(pshape_element-index_type{1}, start_);
+        res.push_back(start_);
     }
     return res;
 }
@@ -238,6 +295,25 @@ inline typename ShT::value_type make_subdim_view_offset(const ShT& pshape, const
     for (auto subs_it = subs.begin(); subs_it!=subs.end(); ++subs_it,++pshape_it,++pstrides_it){
         res+=*pstrides_it*make_subdim_index(*pshape_it,*subs_it);
     }
+    return res;
+}
+template<typename ShT, typename Container>
+inline ShT make_subdim_view_multidim_offset(const ShT& pshape, const Container& subs){
+    ShT res{};
+    detail::reserve(res,subs.size());
+    auto pshape_it = pshape.begin();
+    for (auto subs_it = subs.begin(); subs_it!=subs.end(); ++subs_it,++pshape_it){
+        res.push_back(make_subdim_index(*pshape_it,*subs_it));
+    }
+    return res;
+}
+template<typename Config, typename ShT, typename DimT>
+inline auto make_subdim_view_axes_map(const ShT& pshape, const DimT& subs_number){
+    using dim_type = typename Config::dim_type;
+    using res_type = typename Config::template shape<dim_type>;
+    const auto res_dim = detail::make_dim(pshape) - subs_number;
+    res_type res(res_dim,dim_type{0});
+    std::iota(res.begin(),res.end(),subs_number);
     return res;
 }
 template<typename ShT, typename Container>
@@ -577,36 +653,28 @@ auto fill_bool_map(const ShT& pstrides, const DimT& subs_dim, const IdxT& chunk_
 
 class view_factory
 {
-    template<typename Config, typename Order> using subdim_view_descriptor = descriptor_with_offset<Config, Order>;
-    template<typename Config, typename Order> using slice_view_descriptor = converting_descriptor<Config, Order>;
-    template<typename Config, typename Order> using transpose_view_descriptor = converting_descriptor<Config, Order>;
     template<typename Config, typename Order> using mapping_view_descriptor = mapping_descriptor<Config, Order>;
     template<typename Config, typename Order, typename Parent> using reshape_view = tensor_implementation<reshape_view_core<Config,Order,Parent>>;
-    template<typename Config, typename Order, typename Parent> using subdim_view = tensor_implementation<view_core<Config,subdim_view_descriptor<Config, Order>,Parent>>;
-    template<typename Config, typename Order, typename Parent> using slice_view = tensor_implementation<view_core<Config,slice_view_descriptor<Config, Order>,Parent>>;
     template<typename Config, typename Order, typename Parent> using mapping_view = tensor_implementation<view_core<Config,mapping_view_descriptor<Config, Order>,Parent>>;
 
-    //template<typename Config, typename Order, typename Parent> using transpose_view = tensor_implementation<view_core<Config,transpose_view_descriptor<Config, Order>,Parent>>;
+    template<typename Parent> using slice_view = tensor_implementation<slice_view_core<Parent>>;
+    template<typename Parent> using subdim_view = tensor_implementation<subdim_view_core<Parent>>;
     template<typename Parent> using transpose_view = tensor_implementation<transpose_view_core<Parent>>;
-
 
     //subdim view
     template<typename...Ts, typename Container>
     static auto create_subdim_view_container(const basic_tensor<Ts...>& parent, const Container& subs){
         using parent_type = basic_tensor<Ts...>;
-        using order = typename parent_type::order;
         using config_type = typename parent_type::config_type;
         using dim_type = typename parent_type::dim_type;
-        using descriptor_type = subdim_view_descriptor<config_type, order>;
-        using view_type = subdim_view<config_type,order,parent_type>;
+        using view_type = subdim_view<parent_type>;
         const auto& pshape = parent.shape();
         detail::check_subdim_args(pshape,subs);
-        const dim_type subs_number = subs.size();
+        const auto subs_number = static_cast<const dim_type&>(subs.size());
         return std::make_shared<view_type>(
-            descriptor_type{
-                detail::make_subdim_view_shape(pshape,subs_number),
-                detail::make_subdim_view_offset(pshape,parent.strides(),subs)
-            },
+            detail::make_subdim_view_multidim_offset(pshape,subs),
+            detail::make_subdim_view_axes_map<config_type>(pshape,subs_number),
+            detail::make_subdim_view_shape(pshape,subs_number),
             parent
         );
     }
@@ -649,24 +717,6 @@ class view_factory
             parent
         );
     }
-    // template<typename...Ts, typename Container>
-    // static auto create_transpose_view_container(const basic_tensor<Ts...>& parent, const Container& subs){
-    //     using parent_type = basic_tensor<Ts...>;
-    //     using order = typename parent_type::order;
-    //     using config_type = typename parent_type::config_type;
-    //     using index_type = typename parent_type::index_type;
-    //     using descriptor_type = transpose_view_descriptor<config_type, order>;
-    //     using view_type = transpose_view<config_type,order,parent_type>;
-    //     detail::check_transpose_args(parent.dim(),subs);
-    //     return std::make_shared<view_type>(
-    //         descriptor_type{
-    //             detail::make_transpose_view_shape(parent.shape(),subs),
-    //             detail::make_view_transpose_strides(parent.strides(),subs),
-    //             index_type{0}
-    //         },
-    //         parent
-    //     );
-    // }
     template<typename...Ts, typename...Subs>
     static auto create_transpose_view_variadic(const basic_tensor<Ts...>& parent, const Subs&...subs){
         using config_type = typename basic_tensor<Ts...>::config_type;
@@ -678,23 +728,19 @@ class view_factory
     template<typename...Ts, typename Container>
     static auto create_slice_view_container(const basic_tensor<Ts...>& parent, const Container& subs){
         using parent_type = basic_tensor<Ts...>;
-        using order = typename parent_type::order;
         using config_type = typename parent_type::config_type;
-        using dim_type = typename parent_type::dim_type;
+        using shape_type = typename parent_type::shape_type;
         using slice_type = typename parent_type::slice_type;
-        using descriptor_type = slice_view_descriptor<config_type, order>;
-        using view_type = slice_view<config_type,order,parent_type>;
+        using view_type = slice_view<parent_type>;
         static_assert(std::is_same_v<typename Container::value_type,slice_type>);
         const auto& pshape = parent.shape();
         detail::check_slice_view_args(pshape,subs);
-        const auto& pstrides = parent.strides();
-        dim_type res_dim = detail::make_slice_view_dim(pshape, subs);
+        const auto res_dim = detail::make_slice_view_dim(pshape, subs);
         return std::make_shared<view_type>(
-            descriptor_type{
-                detail::make_slice_view_shape(pshape,res_dim,subs),
-                detail::make_slice_view_cstrides(pstrides,res_dim,subs),
-                detail::make_slice_view_offset(pshape,pstrides,subs)
-            },
+            detail::make_slice_view_scale<shape_type>(res_dim,subs),
+            detail::make_slice_view_multidim_offset(pshape,subs),
+            detail::make_slice_view_axes_map<config_type>(res_dim,subs),
+            detail::make_slice_view_shape(pshape,res_dim,subs),
             parent
         );
     }
@@ -707,7 +753,6 @@ class view_factory
     template<typename...Ts,typename...Subs>
     static auto create_slice_view_variadic(const basic_tensor<Ts...>& parent, const Subs&...subs){
         using parent_type = basic_tensor<Ts...>;
-        using order = typename parent_type::order;
         using config_type = typename parent_type::config_type;
         using slice_type = typename parent_type::slice_type;
         using slice_item_type = typename slice_type::slice_item_type;
@@ -719,8 +764,8 @@ class view_factory
             const auto& operator()(const slice_type& slice){return slice;}
         };
 
-        if constexpr(std::is_same_v<order,gtensor::config::c_order> && (std::is_convertible_v<Subs,index_type>&&...)){
-            //can make subdim view, in c_order optimized descriptor, which uses only offset and no stride to convert index is used
+        if constexpr((std::is_convertible_v<Subs,index_type>&&...)){
+            //can make subdim view with optimized walker without scaling
             return create_subdim_view_variadic(parent, subs...);
         }else{
             slice_maker maker{};
@@ -906,7 +951,6 @@ public:
         return create_slice_view_variadic(parent, subs...);
     }
     //index mapping view
-
     template<typename IdxT, typename...Subs> struct enable_index_mapping_view_variadic_ : std::conjunction<
         std::bool_constant<detail::is_tensor_of_type_v<Subs,IdxT>>...
     >{};

@@ -25,51 +25,65 @@ public:
         walkers_{std::forward<Walkers_>(walkers__)...}
     {}
 
-    void walk(const dim_type& direction, const index_type& steps){
-        walk_helper(direction,steps,sequence_type{});
+    void walk(const dim_type& axis, const index_type& steps){
+        walk_helper(axis,steps,sequence_type{});
     }
-    void step(const dim_type& direction){
-        step_helper(direction,sequence_type{});
+    void walk_back(const dim_type& axis, const index_type& steps){
+        walk_back_helper(axis,steps,sequence_type{});
     }
-    void step_back(const dim_type& direction){
-        step_back_helper(direction,sequence_type{});
+    void step(const dim_type& axis){
+        step_helper(axis,sequence_type{});
     }
-    void reset(const dim_type& direction){
-        reset_helper(direction,sequence_type{});
+    void step_back(const dim_type& axis){
+        step_back_helper(axis,sequence_type{});
     }
-    void reset_back(const dim_type& direction){
-        reset_back_helper(direction,sequence_type{});
+    void reset(const dim_type& axis){
+        reset_helper(axis,sequence_type{});
+    }
+    void reset_back(const dim_type& axis){
+        reset_back_helper(axis,sequence_type{});
     }
     void reset_back(){
         reset_back_helper(sequence_type{});
+    }
+    void update_offset(){
+        update_offset_helper(sequence_type{});
     }
     result_type operator*()const{
         return deref_helper(sequence_type{});
     }
 private:
     template<std::size_t...I>
-    void walk_helper(const dim_type& direction, const index_type& steps, std::index_sequence<I...>){
-        (std::get<I>(walkers_).walk(direction,steps),...);
+    void walk_helper(const dim_type& axis, const index_type& steps, std::index_sequence<I...>){
+        (std::get<I>(walkers_).walk(axis,steps),...);
     }
     template<std::size_t...I>
-    void step_helper(const dim_type& direction, std::index_sequence<I...>){
-        (std::get<I>(walkers_).step(direction),...);
+    void walk_back_helper(const dim_type& axis, const index_type& steps, std::index_sequence<I...>){
+        (std::get<I>(walkers_).walk_back(axis,steps),...);
     }
     template<std::size_t...I>
-    void step_back_helper(const dim_type& direction, std::index_sequence<I...>){
-        (std::get<I>(walkers_).step_back(direction),...);
+    void step_helper(const dim_type& axis, std::index_sequence<I...>){
+        (std::get<I>(walkers_).step(axis),...);
     }
     template<std::size_t...I>
-    void reset_helper(const dim_type& direction, std::index_sequence<I...>){
-        (std::get<I>(walkers_).reset(direction),...);
+    void step_back_helper(const dim_type& axis, std::index_sequence<I...>){
+        (std::get<I>(walkers_).step_back(axis),...);
     }
     template<std::size_t...I>
-    void reset_back_helper(const dim_type& direction, std::index_sequence<I...>){
-        (std::get<I>(walkers_).reset_back(direction),...);
+    void reset_helper(const dim_type& axis, std::index_sequence<I...>){
+        (std::get<I>(walkers_).reset(axis),...);
+    }
+    template<std::size_t...I>
+    void reset_back_helper(const dim_type& axis, std::index_sequence<I...>){
+        (std::get<I>(walkers_).reset_back(axis),...);
     }
     template<std::size_t...I>
     void reset_back_helper(std::index_sequence<I...>){
         (std::get<I>(walkers_).reset_back(),...);
+    }
+    template<std::size_t...I>
+    void update_offset_helper(std::index_sequence<I...>){
+        (std::get<I>(walkers_).update_offset(),...);
     }
     template<std::size_t...I>
     result_type deref_helper(std::index_sequence<I...>)const{
