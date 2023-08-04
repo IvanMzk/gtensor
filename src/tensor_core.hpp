@@ -391,14 +391,14 @@ private:
 };
 
 
-template<typename Config, typename Order, typename Parent>
+template<typename Order, typename Parent>
 class reshape_view_core
 {
-    using descriptor_type = basic_descriptor<Config,Order>;
+    using descriptor_type = basic_descriptor<typename Parent::config_type,Order>;
     using parent_type = Parent;
 public:
     using order = Order;
-    using config_type = Config;
+    using config_type = typename Parent::config_type;
     using value_type = typename Parent::value_type;
     using dim_type = typename config_type::dim_type;
 

@@ -654,9 +654,9 @@ auto fill_bool_map(const ShT& pstrides, const DimT& subs_dim, const IdxT& chunk_
 class view_factory
 {
     template<typename Config, typename Order> using mapping_view_descriptor = mapping_descriptor<Config, Order>;
-    template<typename Config, typename Order, typename Parent> using reshape_view = tensor_implementation<reshape_view_core<Config,Order,Parent>>;
     template<typename Config, typename Order, typename Parent> using mapping_view = tensor_implementation<view_core<Config,mapping_view_descriptor<Config, Order>,Parent>>;
 
+    template<typename Order, typename Parent> using reshape_view = tensor_implementation<reshape_view_core<Order,Parent>>;
     template<typename Parent> using slice_view = tensor_implementation<slice_view_core<Parent>>;
     template<typename Parent> using subdim_view = tensor_implementation<subdim_view_core<Parent>>;
     template<typename Parent> using transpose_view = tensor_implementation<transpose_view_core<Parent>>;
@@ -688,8 +688,7 @@ class view_factory
     template<typename Order, typename...Ts, typename Container>
     static auto create_reshape_view_container(const basic_tensor<Ts...>& parent, const Container& subs){
         using parent_type = basic_tensor<Ts...>;
-        using config_type = typename parent_type::config_type;
-        using view_type = reshape_view<config_type,Order,parent_type>;
+        using view_type = reshape_view<Order,parent_type>;
         const auto& psize = parent.size();
         detail::check_reshape_args(psize,subs);
         return std::make_shared<view_type>(
