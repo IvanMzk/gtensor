@@ -250,25 +250,6 @@ auto flat_to_flat(const StT& strides, const CStT& cstrides, IdxT offset, IdxT id
     return offset;
 }
 
-template<typename Descriptor>
-class converter
-{
-    const Descriptor* desc_;
-public:
-    converter(const Descriptor& desc__):
-        desc_{&desc__}
-    {}
-    template<typename IdxT>
-    decltype(auto) operator()(const IdxT& idx)const{
-        return desc_->convert_order_inline(idx);
-    }
-};
-
-template<typename Descriptor>
-auto make_order_converter(const Descriptor& desc){
-    return converter<Descriptor>{desc};
-}
-
 template<typename Config, typename Mode> class strides_div_extension;
 
 template<typename Config>
@@ -352,32 +333,6 @@ public:
 
 }   //end of namespace detail
 
-//descriptor abstract interface
-template<typename Config>
-class descriptor_base{
-public:
-    using config_type = Config;
-    using index_type = typename config_type::index_type;
-    using dim_type = typename config_type::dim_type;
-    using shape_type = typename config_type::shape_type;
-    using strides_div_type = detail::strides_div_t<config_type>;
-
-    virtual ~descriptor_base(){}
-    virtual index_type convert(const index_type& idx)const = 0;
-    virtual index_type convert_order(const index_type& idx)const = 0;
-    virtual dim_type dim()const = 0;
-    virtual index_type size()const = 0;
-    virtual index_type offset()const = 0;
-    virtual const shape_type& shape()const = 0;
-    virtual const strides_div_type& strides_div()const = 0; //strides optimized for division
-    virtual const strides_div_type& strides_div(gtensor::config::c_order)const = 0; //strides optimized for division
-    virtual const strides_div_type& strides_div(gtensor::config::f_order)const = 0; //strides optimized for division
-    virtual const shape_type& strides()const = 0;
-    virtual const shape_type& adapted_strides()const = 0;
-    virtual const shape_type& reset_strides()const = 0;
-    virtual const shape_type& cstrides()const = 0;
-};
-
 //common staff
 template<typename Config>
 class descriptor_common
@@ -406,42 +361,32 @@ private:
     index_type size_{detail::make_size(shape_)};
 };
 
-//descriptors implementation
+//descriptors
 template<typename Config, typename Order>
-class basic_descriptor : public descriptor_base<Config>
+class basic_descriptor
 {
     ASSERT_ORDER(Order);
-    using descriptor_base_type = descriptor_base<Config>;
     descriptor_common<Config> impl_;
 public:
-    using typename descriptor_base_type::config_type;
-    using typename descriptor_base_type::index_type;
-    using typename descriptor_base_type::dim_type;
-    using typename descriptor_base_type::shape_type;
-    using typename descriptor_base_type::strides_div_type;
+    using config_type = Config;
+    using index_type = typename config_type::index_type;
+    using dim_type = typename config_type::dim_type;
+    using shape_type = typename config_type::shape_type;
+    using strides_div_type = detail::strides_div_t<config_type>;
 
     template<typename ShT, std::enable_if_t<!std::is_convertible_v<std::decay_t<ShT>, basic_descriptor>,int> =0 >
     explicit basic_descriptor(ShT&& shape__):
         impl_{std::forward<ShT>(shape__), Order{}}
     {}
-    dim_type dim()const override{return impl_.dim();}
-    index_type size()const override{return impl_.size();}
-    const shape_type& shape()const override{return impl_.shape();}
-    const strides_div_type& strides_div(gtensor::config::c_order)const override{return strides_div_helper<gtensor::config::c_order>();}
-    const strides_div_type& strides_div(gtensor::config::f_order)const override{return strides_div_helper<gtensor::config::f_order>();}
-    const strides_div_type& strides_div()const override{return strides_div_helper<Order>();}
-    const shape_type& strides()const override{return impl_.strides();}
-    const shape_type& adapted_strides()const override{return impl_.adapted_strides();}
-    const shape_type& reset_strides()const override{return impl_.reset_strides();}
-    index_type offset()const override{return index_type{0};}
-    const shape_type& cstrides()const override{return strides();}
-    index_type convert(const index_type& idx)const override{return operator()(idx);}
-    index_type convert_order(const index_type& idx)const override{return convert_order_inline(idx);}
-    index_type operator()(const index_type& idx)const{return idx;}
-    index_type convert_order_inline(const index_type& idx)const{
-        using changed_order_type = detail::change_order_t<Order>;
-        return detail::flat_to_flat<changed_order_type>(strides_div_helper<changed_order_type>(),strides(),offset(),idx);
-    }
+    dim_type dim()const{return impl_.dim();}
+    index_type size()const{return impl_.size();}
+    const shape_type& shape()const{return impl_.shape();}
+    const strides_div_type& strides_div(gtensor::config::c_order)const{return strides_div_helper<gtensor::config::c_order>();}
+    const strides_div_type& strides_div(gtensor::config::f_order)const{return strides_div_helper<gtensor::config::f_order>();}
+    const strides_div_type& strides_div()const{return strides_div_helper<Order>();}
+    const shape_type& strides()const{return impl_.strides();}
+    const shape_type& adapted_strides()const{return impl_.adapted_strides();}
+    const shape_type& reset_strides()const{return impl_.reset_strides();}
 private:
     template<typename Order_>
     const strides_div_type& strides_div_helper()const{
@@ -452,77 +397,6 @@ private:
         }
     }
 };
-
-template<typename Config, typename Order>
-class descriptor_with_offset : public basic_descriptor<Config,Order>
-{
-    using basic_descriptor_base = basic_descriptor<Config,Order>;
-public:
-    using typename basic_descriptor_base::index_type;
-    using typename basic_descriptor_base::shape_type;
-
-    template<typename ShT>
-    descriptor_with_offset(ShT&& shape__, index_type offset__):
-        basic_descriptor_base{std::forward<ShT>(shape__)},
-        offset_{offset__}
-    {}
-    index_type offset()const override{return offset_;}
-    index_type convert(const index_type& idx)const override{return operator()(idx);}
-    index_type operator()(const index_type& idx)const{return idx+offset_;}
-private:
-    index_type offset_;
-};
-
-template<typename Config, typename Order>
-class converting_descriptor : public descriptor_with_offset<Config,Order>
-{
-    using descriptor_with_offset_base = descriptor_with_offset<Config,Order>;
-public:
-    using typename descriptor_with_offset_base::index_type;
-    using typename descriptor_with_offset_base::shape_type;
-    using descriptor_with_offset_base::shape;
-    using descriptor_with_offset_base::offset;
-    using descriptor_with_offset_base::strides_div;
-
-    template<typename ShT, typename StT>
-    converting_descriptor(ShT&& shape__, StT&& cstrides__,  const index_type& offset__):
-        descriptor_with_offset_base{std::forward<ShT>(shape__), offset__},
-        cstrides_{std::forward<StT>(cstrides__)}
-    {}
-    const shape_type& cstrides()const override{
-        return cstrides_;
-    }
-    index_type convert(const index_type& idx)const override{
-        return operator()(idx);
-    }
-    index_type operator()(const index_type& idx)const{
-        return detail::flat_to_flat<Order>(strides_div(),cstrides(),offset(),idx);
-    }
-private:
-    shape_type cstrides_;
-};
-
-template<typename Config, typename Order>
-class mapping_descriptor : public basic_descriptor<Config,Order>
-{
-    using basic_descriptor_base = basic_descriptor<Config,Order>;
-    using index_map_type = typename Config::index_map_type;
-public:
-    using typename basic_descriptor_base::shape_type;
-    using typename basic_descriptor_base::index_type;
-
-    mapping_descriptor() = default;
-    template<typename ShT, typename Map>
-    mapping_descriptor(ShT&& shape__, Map&& index_map__):
-        basic_descriptor_base{std::forward<ShT>(shape__)},
-        index_map_{std::forward<Map>(index_map__)}
-    {}
-    index_type convert(const index_type& idx)const override{return operator()(idx);}
-    index_type operator()(const index_type& idx)const{return index_map_[idx];}
-private:
-    index_map_type index_map_;
-};
-
 
 template<typename Config, typename Order>
 class transpose_descriptor : public basic_descriptor<Config,Order>
@@ -557,7 +431,7 @@ public:
         base_type{std::forward<Args>(args__)...},
         offset_{detail::make_shape_of_type<shape_type>(std::forward<Container>(offset__))}
     {}
-    const shape_type& get_offset()const{return offset_;}
+    const shape_type& offset()const{return offset_;}
 private:
     shape_type offset_;
 };
@@ -579,7 +453,6 @@ public:
 private:
     shape_type scale_;
 };
-
 
 }   //end of namespace gtensor
 #endif

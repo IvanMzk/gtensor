@@ -83,7 +83,7 @@ public:
             max_dim,
             descriptor().adapted_strides(),
             descriptor().reset_strides(),
-            descriptor().offset(),
+            index_type{0},
             indexer_type{elements_}
         };
     }
@@ -92,7 +92,7 @@ public:
         return gtensor::indexer_walker<config_type,indexer_type>{
             descriptor().adapted_strides(),
             descriptor().reset_strides(),
-            descriptor().offset(),
+            index_type{0},
             indexer_type{elements_}
         };
     }
@@ -164,7 +164,7 @@ public:
             max_dim,
             descriptor().adapted_strides(),
             descriptor().reset_strides(),
-            descriptor().offset(),
+            index_type{0},
             indexer_type{elements_}
         };
     }
@@ -173,7 +173,7 @@ public:
         return gtensor::indexer_walker<config_type,indexer_type>{
             descriptor().adapted_strides(),
             descriptor().reset_strides(),
-            descriptor().offset(),
+            index_type{0},
             indexer_type{elements_}
         };
     }
@@ -253,7 +253,7 @@ private:
             max_dim,
             instance.descriptor().adapted_strides(),
             instance.descriptor().reset_strides(),
-            instance.descriptor().offset(),
+            index_type{0},
             indexer_type{instance.elements_}
         };
     }
@@ -263,7 +263,7 @@ private:
         return gtensor::indexer_walker<config_type,indexer_type>{
             instance.descriptor().adapted_strides(),
             instance.descriptor().reset_strides(),
-            instance.descriptor().offset(),
+            index_type{0},
             indexer_type{instance.elements_}
         };
     }

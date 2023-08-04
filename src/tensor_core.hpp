@@ -150,7 +150,10 @@ private:
         if constexpr (std::is_same_v<order,config::c_order>){    //no map needed
             detail::copy_from_list(init_data, begin_());
         }else{  //mapper from c order to f order
-            detail::copy_from_list(init_data, begin_(), detail::make_order_converter(descriptor_));
+            auto index_mapper = [this](const auto& idx){
+                return detail::flat_to_flat<config::c_order>(descriptor_.strides_div(config::c_order{}),descriptor_.strides(),index_type{0},idx);
+            };
+            detail::copy_from_list(init_data, begin_(), index_mapper);
         }
     }
 
@@ -286,7 +289,7 @@ private:
             instance.descriptor_.shape(),
             instance.descriptor_.scale(),
             instance.descriptor_.axes_map(),
-            instance.descriptor_.get_offset(),
+            instance.descriptor_.offset(),
             instance.parent_.create_walker()
         };
     }
@@ -299,7 +302,7 @@ private:
             instance.descriptor_.shape(),
             instance.descriptor_.scale(),
             instance.descriptor_.axes_map(),
-            instance.descriptor_.get_offset(),
+            instance.descriptor_.offset(),
             instance.parent_.create_walker()
         };
     }
@@ -338,7 +341,7 @@ private:
         return walker_type{
             instance.descriptor_.shape(),
             instance.descriptor_.axes_map(),
-            instance.descriptor_.get_offset(),
+            instance.descriptor_.offset(),
             instance.parent_.create_walker()
         };
     }
@@ -350,7 +353,7 @@ private:
             max_dim,
             instance.descriptor_.shape(),
             instance.descriptor_.axes_map(),
-            instance.descriptor_.get_offset(),
+            instance.descriptor_.offset(),
             instance.parent_.create_walker()
         };
     }
