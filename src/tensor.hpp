@@ -183,7 +183,7 @@ public:
     auto copy(Order order = Order{})const{
         ASSERT_ORDER(Order);
         (void)(order);
-        auto a = traverse_order_adapter<Order>();
+        auto a = traverse_order_adapter(Order{});
         return tensor<T,Order,Config>(shape(),a.begin(),a.end());
     }
     //makes 1d tensor in specified layout by copying elements from this
@@ -192,7 +192,7 @@ public:
     auto flatten(Order order = Order{})const{
         ASSERT_ORDER(Order);
         (void)(order);
-        auto a = traverse_order_adapter<Order>();
+        auto a = traverse_order_adapter(Order{});
         return tensor<value_type,Order,config_type>({size()},a.begin(),a.end());
     }
     //check is this and other are tensors and have the same implementation
@@ -267,7 +267,7 @@ public:
     }
     //return data interface adapter with specified traverse order
     template<typename TraverseOrder>
-    auto traverse_order_adapter(){
+    auto traverse_order_adapter(TraverseOrder){
         return detail::traverse_order_adapter<impl_type,TraverseOrder>{impl()};
     }
     //const data interface
@@ -309,7 +309,7 @@ public:
         return impl().create_walker();
     }
     template<typename TraverseOrder>
-    auto traverse_order_adapter()const{
+    auto traverse_order_adapter(TraverseOrder)const{
         return detail::traverse_order_adapter<const impl_type,TraverseOrder>{impl()};
     }
 
@@ -476,7 +476,7 @@ private:
         static_assert(std::is_convertible_v<tensor<value_type,order,config_type>*,basic_tensor*>,"can't resize view");
         const auto& shape_ = shape();
         if (!std::equal(shape_.begin(),shape_.end(),new_shape.begin(),new_shape.end())){
-            auto a = traverse_order_adapter<order>();
+            auto a = traverse_order_adapter(order{});
             swap(tensor<value_type,order,config_type>{std::forward<Container>(new_shape),a.begin(),a.end()});
         }
     }
@@ -490,9 +490,9 @@ private:
         if constexpr (std::is_convertible_v<tensor<value_type,order,config_type>*,basic_tensor*>){  //value assignment
             if constexpr (detail::is_tensor_v<Rhs_>){
                 const auto& rhs_shape = rhs.shape();
-                auto a = rhs.template traverse_order_adapter<order>();
+                auto a = rhs.traverse_order_adapter(order{});
                 if (shape() == rhs_shape){
-                    std::copy(a.begin(),a.end(),traverse_order_adapter<order>().begin());
+                    std::copy(a.begin(),a.end(),traverse_order_adapter(order{}).begin());
                 }else{
                     //swap(tensor<value_type,order,config_type>(rhs_shape,a.begin(),a.end()));
                     swap(rhs.template copy<value_type,config_type>(order{}));

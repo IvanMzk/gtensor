@@ -43,7 +43,7 @@ TEST_CASE("test_benchmark_helpers_make_tree","[test_benchmark_helpers]")
 //     auto bench_iteration_deref = [](const auto& t, auto order){
 //         using tensor_type = std::remove_cv_t<std::remove_reference_t<decltype(t)>>;
 //         using value_type = typename tensor_type::value_type;
-//         auto a = t.template traverse_order_adapter<decltype(order)>();
+//         auto a = t.traverse_order_adapter(decltype(order){});
 //         value_type v{0};
 //         for (auto it=a.begin(),last=a.end(); it!=last; ++it){
 //             v += *it;
@@ -76,7 +76,7 @@ TEST_CASE("test_benchmark_helpers_make_tree","[test_benchmark_helpers]")
 //     auto bench_iteration_deref = [](const auto& t, auto order){
 //         using tensor_type = std::remove_cv_t<std::remove_reference_t<decltype(t)>>;
 //         using value_type = typename tensor_type::value_type;
-//         auto a = t.template traverse_order_adapter<decltype(order)>();
+//         auto a = t.traverse_order_adapter(decltype(order){});
 //         value_type v{0};
 //         for (auto it=a.rbegin(),last=a.rend(); it!=last; ++it){
 //             v += *it;

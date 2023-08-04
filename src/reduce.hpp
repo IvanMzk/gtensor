@@ -222,7 +222,7 @@ class reducer
         auto res = tensor<res_value_type,order,res_config_type>{detail::make_reduce_shape(pshape, axes, keep_dims)};
         if (!res.empty()){
             if (parent.empty()){    //zero size axis is reduced
-                auto a = parent.template traverse_order_adapter<order>();
+                auto a = parent.traverse_order_adapter(order{});
                 const auto e = reduce_f(a.begin(), a.end(), std::forward<Args>(args)...);
                 std::fill(res.begin(), res.end(), e);
             }else{
@@ -230,10 +230,10 @@ class reducer
                 if (res_size == index_type{1}){
                     const auto pdim = parent.dim();
                     if (pdim == dim_type{1}){   //1d, can use native order
-                        auto a = parent.template traverse_order_adapter<order>();
+                        auto a = parent.traverse_order_adapter(order{});
                         *res.begin() = reduce_f(a.begin(), a.end(), std::forward<Args>(args)...);
                     }else{  //traverse like over flatten
-                        auto a = parent.template traverse_order_adapter<config::c_order>();
+                        auto a = parent.traverse_order_adapter(config::c_order{});
                         *res.begin() = reduce_f(a.begin(), a.end(), std::forward<Args>(args)...);
                     }
                 }else{
@@ -241,7 +241,7 @@ class reducer
                     auto predicate = detail::make_traverse_predicate(axes,std::false_type{});
                     const auto strides = detail::make_strides_div_predicate<config_type>(pshape,predicate,traverse_order{});
                     auto traverser = detail::make_forward_traverser(pshape,parent.create_walker(),detail::make_traverse_predicate(axes,std::true_type{}));  //traverse all but axes
-                    auto a = res.template traverse_order_adapter<order>();
+                    auto a = res.traverse_order_adapter(order{});
                     auto res_it = a.begin();
                     do{
                         *res_it = reduce_f(
@@ -268,10 +268,10 @@ class reducer
         using res_type = tensor<res_value_type,order,res_config_type>;
         //assuming iterator traverse order doesn't change result type, may not compile otherwise
         if (t.dim() == 1){   //1d, can use native order
-            auto a = t.template traverse_order_adapter<order>();
+            auto a = t.traverse_order_adapter(order{});
             return  res_type(detail::make_reduce_shape(t.shape(),keep_dims), reduce_f(a.begin(), a.end(), std::forward<Args>(args)...));
         }else{  //traverse like over flatten
-            auto a = t.template traverse_order_adapter<config::c_order>();
+            auto a = t.traverse_order_adapter(config::c_order{});
             return  res_type(detail::make_reduce_shape(t.shape(),keep_dims), reduce_f(a.begin(), a.end(), std::forward<Args>(args)...));
         }
     }
@@ -297,8 +297,8 @@ class reducer
         if (!res.empty()){
             const auto pdim = parent.dim();
             if (pdim == dim_type{1}){
-                auto parent_a = parent.template traverse_order_adapter<order>();
-                auto res_a = res.template traverse_order_adapter<order>();
+                auto parent_a = parent.traverse_order_adapter(order{});
+                auto res_a = res.traverse_order_adapter(order{});
                 slide_f(parent_a.begin(), parent_a.end(), res_a.begin(), res_a.end(), std::forward<Args>(args)...);
             }else{
                 const auto& res_shape = res.shape();
@@ -342,12 +342,12 @@ class reducer
         auto res = tensor<res_value_type,order,res_config_type>{shape_type{detail::make_slide_size(psize, window_size, window_step)}};
         if (!res.empty()){
             const auto pdim = parent.dim();
-            auto res_a = res.template traverse_order_adapter<order>();
+            auto res_a = res.traverse_order_adapter(order{});
             if (pdim == dim_type{1}){
-                auto parent_a = parent.template traverse_order_adapter<order>();
+                auto parent_a = parent.traverse_order_adapter(order{});
                 slide_f(parent_a.begin(), parent_a.end(), res_a.begin(), res_a.end(), std::forward<Args>(args)...);
             }else{
-                auto parent_a = parent.template traverse_order_adapter<config::c_order>();
+                auto parent_a = parent.traverse_order_adapter(config::c_order{});
                 slide_f(parent_a.begin(), parent_a.end(), res_a.begin(), res_a.end(), std::forward<Args>(args)...);
             }
         }
@@ -367,7 +367,7 @@ class reducer
         detail::check_transform_args(pshape, axis);
         const auto pdim = parent.dim();
         if (pdim == dim_type{1}){
-            auto a = parent.template traverse_order_adapter<order>();
+            auto a = parent.traverse_order_adapter(order{});
             transform_f(a.begin(), a.end(), std::forward<Args>(args)...);
         }else{
             const auto parent_axis_size = detail::make_axis_size(pshape,axis);

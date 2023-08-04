@@ -78,7 +78,7 @@ private:
         using tensor_type = tensor<T,Order,config::extend_config_t<Config,T>>;
         using shape_type = typename tensor_type::shape_type;
         tensor_type res(detail::make_shape_of_type<shape_type>(std::forward<Size>(size)));
-        auto a = res.template traverse_order_adapter<Order>();
+        auto a = res.traverse_order_adapter(Order{});
         generate_distribution(a.begin(), a.end(), bit_generator, distribution);
         return res;
     }
@@ -343,7 +343,7 @@ private:
             const auto axis = detail::make_axis(dim,axis_);
             detail::check_shuffle_args(t.shape(),axis);
             distribution_type distribution{};
-            auto a = t.template traverse_order_adapter<order>();
+            auto a = t.traverse_order_adapter(order{});
             if (dim == 1){
                 shuffle_range(a.begin(),a.end(),bit_generator_);
             }else if(t.size()>1){
@@ -453,7 +453,7 @@ private:
                 return take(t,indexes,axis);
             }
             const auto indexes_size = indexes.size();
-            auto a_indexes = indexes.template traverse_order_adapter<order>();
+            auto a_indexes = indexes.traverse_order_adapter(order{});
             if constexpr (is_p){
                 container_type cdf(static_cast<const container_difference_type&>(p.size()));
                 const auto cdf_first = cdf.begin();

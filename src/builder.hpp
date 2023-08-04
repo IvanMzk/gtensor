@@ -45,7 +45,7 @@ struct builder
         auto res = zeros<T,Order,Config>(std::initializer_list<IdxT>{n_,m_});
         if (!res.empty()){
             traverse_diagonal<Order>(
-                res.template traverse_order_adapter<Order>().begin(),
+                res.traverse_order_adapter(Order{}).begin(),
                 [](auto& e){e=T{1};},
                 n_,
                 m_,
@@ -192,8 +192,8 @@ struct builder
             const auto n = k>=0 ? k+d : -k+d;
             auto res = zeros<value_type,order,config_type>(shape_type{n,n});
             traverse_diagonal<order>(
-                res.template traverse_order_adapter<order>().begin(),
-                [it=t.template traverse_order_adapter<order>().begin()](auto& e)mutable{
+                res.traverse_order_adapter(order{}).begin(),
+                [it=t.traverse_order_adapter(order{}).begin()](auto& e)mutable{
                     e = *it;
                     ++it;
                 },
@@ -209,8 +209,8 @@ struct builder
             const auto d = make_diagonal_size(n,m,k);
             auto res = empty<value_type,order,config_type>(shape_type{d});
             traverse_diagonal<order>(
-                t.template traverse_order_adapter<order>().begin(),
-                [it=res.template traverse_order_adapter<order>().begin()](auto& e)mutable{
+                t.traverse_order_adapter(order{}).begin(),
+                [it=res.traverse_order_adapter(order{}).begin()](auto& e)mutable{
                     *it = e;
                     ++it;
                 },
@@ -324,7 +324,7 @@ private:
                 auto predicate = detail::make_traverse_predicate(axis,std::true_type{});    //inverse, traverse all but axis
                 const auto& res_shape = res.shape();
                 auto res_traverser = detail::make_forward_traverser(res_shape,res.create_walker(),predicate);
-                auto a = intervals.template traverse_order_adapter<Order>();
+                auto a = intervals.traverse_order_adapter(Order{});
                 for (auto it=a.begin(),last=a.end(); it!=last; ++it,res_traverser.template next<Order>()){
                     const auto& interval = *it;
                     generator(

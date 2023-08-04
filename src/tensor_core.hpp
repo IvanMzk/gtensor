@@ -395,7 +395,7 @@ private:
 
     template<typename U>
     static auto create_indexer_helper(U& instance){
-        auto a = instance.parent_.template traverse_order_adapter<order>();
+        auto a = instance.parent_.traverse_order_adapter(order{});
         using parent_indexer_type = decltype(a.create_indexer());
         return basic_indexer<parent_indexer_type,index_mapper>{
             a.create_indexer(),
@@ -428,67 +428,67 @@ public:
     //reshape view can use parent's data interface taking order into account
     //non const data interface
     auto begin(){
-        return parent_.template traverse_order_adapter<order>().begin();
+        return parent_.traverse_order_adapter(order{}).begin();
     }
     auto end(){
-        return parent_.template traverse_order_adapter<order>().end();
+        return parent_.traverse_order_adapter(order{}).end();
     }
     auto rbegin(){
-        return parent_.template traverse_order_adapter<order>().rbegin();
+        return parent_.traverse_order_adapter(order{}).rbegin();
     }
     auto rend(){
-        return parent_.template traverse_order_adapter<order>().rend();
+        return parent_.traverse_order_adapter(order{}).rend();
     }
     template<typename Container>
     auto begin(Container&& shape){
-        return parent_.template traverse_order_adapter<order>().begin(std::forward<Container>(shape));
+        return parent_.traverse_order_adapter(order{}).begin(std::forward<Container>(shape));
     }
     template<typename Container>
     auto end(Container&& shape){
-        return parent_.template traverse_order_adapter<order>().end(std::forward<Container>(shape));
+        return parent_.traverse_order_adapter(order{}).end(std::forward<Container>(shape));
     }
     template<typename Container>
     auto rbegin(Container&& shape){
-        return parent_.template traverse_order_adapter<order>().rbegin(std::forward<Container>(shape));
+        return parent_.traverse_order_adapter(order{}).rbegin(std::forward<Container>(shape));
     }
     template<typename Container>
     auto rend(Container&& shape){
-        return parent_.template traverse_order_adapter<order>().rend(std::forward<Container>(shape));
+        return parent_.traverse_order_adapter(order{}).rend(std::forward<Container>(shape));
     }
     auto create_indexer(){
-        return parent_.template traverse_order_adapter<order>().create_indexer();
+        return parent_.traverse_order_adapter(order{}).create_indexer();
     }
     //const data interface
     auto begin()const{
-        return parent_.template traverse_order_adapter<order>().begin();
+        return parent_.traverse_order_adapter(order{}).begin();
     }
     auto end()const{
-        return parent_.template traverse_order_adapter<order>().end();
+        return parent_.traverse_order_adapter(order{}).end();
     }
     auto rbegin()const{
-        return parent_.template traverse_order_adapter<order>().rbegin();
+        return parent_.traverse_order_adapter(order{}).rbegin();
     }
     auto rend()const{
-        return parent_.template traverse_order_adapter<order>().rend();
+        return parent_.traverse_order_adapter(order{}).rend();
     }
     template<typename Container>
     auto begin(Container&& shape)const{
-        return parent_.template traverse_order_adapter<order>().begin(std::forward<Container>(shape));
+        return parent_.traverse_order_adapter(order{}).begin(std::forward<Container>(shape));
     }
     template<typename Container>
     auto end(Container&& shape)const{
-        return parent_.template traverse_order_adapter<order>().end(std::forward<Container>(shape));
+        return parent_.traverse_order_adapter(order{}).end(std::forward<Container>(shape));
     }
     template<typename Container>
     auto rbegin(Container&& shape)const{
-        return parent_.template traverse_order_adapter<order>().rbegin(std::forward<Container>(shape));
+        return parent_.traverse_order_adapter(order{}).rbegin(std::forward<Container>(shape));
     }
     template<typename Container>
     auto rend(Container&& shape)const{
-        return parent_.template traverse_order_adapter<order>().rend(std::forward<Container>(shape));
+        return parent_.traverse_order_adapter(order{}).rend(std::forward<Container>(shape));
     }
     auto create_indexer()const{
-        return parent_.template traverse_order_adapter<order>().create_indexer();
+        return parent_.traverse_order_adapter(order{}).create_indexer();
     }
 private:
     descriptor_type descriptor_;

@@ -218,7 +218,7 @@ struct statistic
         auto weights_begin = [&weights]{
             (void)weights;
             if constexpr (has_weights){
-                return weights.template traverse_order_adapter<order>().begin();
+                return weights.traverse_order_adapter(order{}).begin();
             }else{
                 return detail::no_value{};
             }
@@ -226,14 +226,14 @@ struct statistic
         auto weights_end = [&weights]{
             (void)weights;
             if constexpr (has_weights){
-                return weights.template traverse_order_adapter<order>().end();
+                return weights.traverse_order_adapter(order{}).end();
             }else{
                 return detail::no_value{};
             }
         };
 
         check_histogram_arguments(t,bins,range,weights);
-        auto a = t.template traverse_order_adapter<order>();
+        auto a = t.traverse_order_adapter(order{});
         if constexpr (detail::is_container_of_type_v<Bins, value_type>){    //not uniform bin width, need copy and sort data, range doesnt matter
             const auto edges_number = static_cast<index_type>(bins.size());
             auto edges_first = bins.begin();
@@ -409,7 +409,7 @@ private:
         );
         const auto edges_number = static_cast<index_type>(edges.size());
         res_type res_bins({edges_number-1},res_value_type{0});
-        auto a = res_bins.template traverse_order_adapter<order>();
+        auto a = res_bins.traverse_order_adapter(order{});
         {
             auto res_bins_it = a.begin();
             auto edges_it=edges.begin();
@@ -488,7 +488,7 @@ private:
         const auto bins_number = static_cast<index_type>(static_cast<integral_type>(bins_.second));
 
         res_type res_bins({bins_number},res_value_type{0});
-        auto a = res_bins.template traverse_order_adapter<order>();
+        auto a = res_bins.traverse_order_adapter(order{});
         auto res_bins_indexer = a.create_indexer();
         if constexpr (has_weights){
             for (;first!=last; ++first,++wfirst){
@@ -514,7 +514,7 @@ private:
         }
         //make intervals
         res_type res_intervals({bins_number+index_type{1}},res_value_type{rmin});
-        auto res_intervals_a = res_intervals.template traverse_order_adapter<order>();
+        auto res_intervals_a = res_intervals.traverse_order_adapter(order{});
         auto res_intervals_it = res_intervals_a.begin();
         auto res_intervals_last = res_intervals_a.end();
         auto edge = *res_intervals_it;

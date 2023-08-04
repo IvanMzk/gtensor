@@ -164,7 +164,7 @@ struct sort_search
                 auto indexes_first = indexes.begin();
                 for (auto res_it=res.begin(),res_last=res.end(); res_it!=res_last; ++res_it,++indexes_first){
                     auto& e = *res_it;
-                    auto a = e.template traverse_order_adapter<order>();
+                    auto a = e.traverse_order_adapter(order{});
                     auto indexes_it = indexes_first;
                     for (auto it=a.begin(),last=a.end(); it!=last; ++it,indexes_it+=dim){
                         *it = *indexes_it;
@@ -204,7 +204,7 @@ struct sort_search
                 result_tensor_type res({nonzero_n,dim},0);
                 if (!indexes.empty()){
                     auto dim_ = static_cast<container_difference_type>(dim);
-                    auto res_it = res.template traverse_order_adapter<order>().begin();
+                    auto res_it = res.traverse_order_adapter(order{}).begin();
                     auto indexes_first = indexes.begin();
                     for(index_type i=0; i!=dim; ++i,++indexes_first){
                         auto indexes_it = indexes_first;
@@ -371,12 +371,12 @@ struct sort_search
             }
         };
         auto sorted = make_sorted();
-        auto a = sorted.template traverse_order_adapter<order>();
+        auto a = sorted.traverse_order_adapter(order{});
         if constexpr (detail::is_tensor_v<V>){
             using res_type = tensor<index_type,order,config_type>;
             res_type res(v.shape());
-            auto a_v = v.template traverse_order_adapter<order>();
-            std::transform(a_v.begin(),a_v.end(),res.template traverse_order_adapter<order>().begin(),[&a,&find_index](const auto& val){return find_index(a.begin(),a.end(),val);});
+            auto a_v = v.traverse_order_adapter(order{});
+            std::transform(a_v.begin(),a_v.end(),res.traverse_order_adapter(order{}).begin(),[&a,&find_index](const auto& val){return find_index(a.begin(),a.end(),val);});
             return res;
         }else{
             return find_index(a.begin(),a.end(),v);
@@ -393,7 +393,7 @@ private:
         using config_type = typename tensor_type::config_type;
         using index_type = typename tensor_type::index_type;
         using shape_type = typename tensor_type::shape_type;
-        auto a = t.template traverse_order_adapter<FlattenOrder>();
+        auto a = t.traverse_order_adapter(FlattenOrder{});
         const auto size = t.size();
         struct element{
             value_type v_;

@@ -110,8 +110,8 @@ struct tensor_operators
             return true;
         }else{
             const bool equal_shapes = u.shape() == v.shape();
-            auto a_u = u.template traverse_order_adapter<common_order>();
-            auto a_v = v.template traverse_order_adapter<common_order>();
+            auto a_u = u.traverse_order_adapter(common_order{});
+            auto a_v = v.traverse_order_adapter(common_order{});
             if (equal_nan){
                 return equal_shapes && std::equal(a_u.begin(), a_u.end(), a_v.begin(), gtensor::operations::math_isequal<std::true_type>{});
             }else{
@@ -128,8 +128,8 @@ struct tensor_operators
             return true;
         }else{
             const bool equal_shapes = u.shape() == v.shape();
-            auto a_u = u.template traverse_order_adapter<common_order>();
-            auto a_v = v.template traverse_order_adapter<common_order>();
+            auto a_u = u.traverse_order_adapter(common_order{});
+            auto a_v = v.traverse_order_adapter(common_order{});
             if (equal_nan){
                 return equal_shapes && std::equal(a_u.begin(), a_u.end(), a_v.begin(), operations::math_isclose<Tol,std::true_type>{relative_tolerance,absolute_tolerance});
             }else{
@@ -155,8 +155,8 @@ struct tensor_operators
             return true;
         }else{
             auto common_shape = detail::make_broadcast_shape<shape_type>(u.shape(),v.shape());
-            auto a_u = u.template traverse_order_adapter<common_order>();
-            auto a_v = v.template traverse_order_adapter<common_order>();
+            auto a_u = u.traverse_order_adapter(common_order{});
+            auto a_v = v.traverse_order_adapter(common_order{});
             if (equal_nan){
                 return std::equal(a_u.begin(common_shape), a_u.end(common_shape), a_v.begin(common_shape), operations::math_isclose<Tol,std::true_type>{relative_tolerance,absolute_tolerance});
             }else{

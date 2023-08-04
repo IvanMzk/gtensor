@@ -175,11 +175,11 @@ template<typename Order, typename Container>
 auto make_iterators_container(const Container& ts){
     using tensor_type = typename Container::value_type;
     using config_type = typename tensor_type::config_type;
-    using iterator_type = decltype(std::declval<const tensor_type>().template traverse_order_adapter<Order>().begin());
+    using iterator_type = decltype(std::declval<const tensor_type>().traverse_order_adapter(Order{}).begin());
     typename config_type::template container<iterator_type> iterators{};
     iterators.reserve(ts.size());
     for (const auto& t : ts){
-        iterators.push_back(t.template traverse_order_adapter<Order>().begin());
+        iterators.push_back(t.traverse_order_adapter(Order{}).begin());
     }
     return iterators;
 }
@@ -335,7 +335,7 @@ auto fill_concatenate_container(const DimT& axis, const Shapes& shapes, ResIt re
     using index_type = typename tensor_type::index_type;
     using config_type = typename tensor_type::config_type;
     //0chunk_size,1iterator
-    using ts_internals_type = std::tuple<index_type, decltype((*ts.begin()).template traverse_order_adapter<Order>().begin())>;
+    using ts_internals_type = std::tuple<index_type, decltype((*ts.begin()).traverse_order_adapter(Order{}).begin())>;
 
     typename config_type::template container<ts_internals_type> ts_internals{};
     ts_internals.reserve(ts.size());
@@ -353,7 +353,7 @@ auto fill_concatenate_container(const DimT& axis, const Shapes& shapes, ResIt re
     for (auto ts_it = ts.begin(); ts_it!=ts.end(); ++ts_it,++shapes_it){
         const auto& shape = unwrap_shape(*shapes_it);
         index_type chunk_size = chunk_size_*shape[axis];
-        ts_internals.emplace_back(chunk_size, (*ts_it).template traverse_order_adapter<Order>().begin());
+        ts_internals.emplace_back(chunk_size, (*ts_it).traverse_order_adapter(Order{}).begin());
     }
 
     auto iterations_number = make_concatenate_iterations_number<Order>(first_shape, axis);
@@ -409,7 +409,7 @@ static auto stack_variadic(const DimT& axis_, const basic_tensor<Us...>& t, cons
     constexpr auto tensors_number = sizeof...(Ts) + 1;
     auto res_shape = detail::make_stack_shape(axis, shape, index_type{tensors_number});
     if constexpr (tensors_number == 1){
-        auto a = t.template traverse_order_adapter<common_order>();
+        auto a = t.traverse_order_adapter(common_order{});
         return tensor<res_value_type, common_order, config_type>(std::move(res_shape), a.begin(), a.end());
     }else{
         auto res = tensor<res_value_type, common_order, config_type>(std::move(res_shape), res_value_type{});
@@ -418,9 +418,9 @@ static auto stack_variadic(const DimT& axis_, const basic_tensor<Us...>& t, cons
                 axis,
                 shape,
                 t.size(),
-                res.template traverse_order_adapter<common_order>().begin(),
-                t.template traverse_order_adapter<common_order>().begin(),
-                ts.template traverse_order_adapter<common_order>().begin()...
+                res.traverse_order_adapter(common_order{}).begin(),
+                t.traverse_order_adapter(common_order{}).begin(),
+                ts.traverse_order_adapter(common_order{}).begin()...
             );
         }
         return res;
@@ -442,7 +442,7 @@ static auto stack_container(const DimT& axis_, const Container& ts){
     auto res_shape = detail::make_stack_shape(axis, shape, tensors_number);
     const auto& t = *ts.begin();
     if (tensors_number == index_type{1}){
-        auto a = t.template traverse_order_adapter<order>();
+        auto a = t.traverse_order_adapter(order{});
         return tensor<res_value_type, order, config_type>(std::move(res_shape), a.begin(), a.end());
     }else{
         auto res = tensor<res_value_type, order, config_type>(std::move(res_shape), res_value_type{});
@@ -452,7 +452,7 @@ static auto stack_container(const DimT& axis_, const Container& ts){
                 axis,
                 shape,
                 t.size(),
-                res.template traverse_order_adapter<order>().begin(),
+                res.traverse_order_adapter(order{}).begin(),
                 iterators
             );
         }
@@ -477,7 +477,7 @@ static auto concatenate_variadic(const DimT& axis_, const basic_tensor<Us...>& t
     auto res_shape = detail::make_concatenate_variadic_shape(axis, shapes);
     constexpr auto tensors_number = sizeof...(Ts) + 1;
     if constexpr (tensors_number == 1){
-        auto a = t.template traverse_order_adapter<common_order>();
+        auto a = t.traverse_order_adapter(common_order{});
         return tensor<res_value_type, common_order, config_type>(std::move(res_shape),a.begin(),a.end());
     }else{
         auto res = tensor<res_value_type, common_order, config_type>(std::move(res_shape));
@@ -485,10 +485,10 @@ static auto concatenate_variadic(const DimT& axis_, const basic_tensor<Us...>& t
             detail::fill_concatenate<common_order>(
                 axis,
                 shapes,
-                res.template traverse_order_adapter<common_order>().begin(),
+                res.traverse_order_adapter(common_order{}).begin(),
                 std::make_index_sequence<tensors_number>{},
-                t.template traverse_order_adapter<common_order>().begin(),
-                ts.template traverse_order_adapter<common_order>().begin()...
+                t.traverse_order_adapter(common_order{}).begin(),
+                ts.traverse_order_adapter(common_order{}).begin()...
             );
         }
         return res;
@@ -512,7 +512,7 @@ static auto concatenate_container(const DimT& axis_, const Container& ts){
         detail::fill_concatenate_container<order>(
             axis,
             shapes,
-            res.template traverse_order_adapter<order>().begin(),
+            res.traverse_order_adapter(order{}).begin(),
             ts
         );
     }

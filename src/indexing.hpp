@@ -199,9 +199,9 @@ static auto take_flatten(const basic_tensor<Ts...>& t, const basic_tensor<Us...>
     tensor<value_type,order,config_type> res(indexes.shape());
     if (!res.empty()){
         const auto size = t.size();
-        auto indexer = t.template traverse_order_adapter<FlattenOrder>().create_indexer();
-        auto indexes_it = indexes.template traverse_order_adapter<order>().begin();
-        auto a_res = res.template traverse_order_adapter<order>();
+        auto indexer = t.traverse_order_adapter(FlattenOrder{}).create_indexer();
+        auto indexes_it = indexes.traverse_order_adapter(order{}).begin();
+        auto a_res = res.traverse_order_adapter(order{});
         for (auto res_it=a_res.begin(),res_last=a_res.end(); res_it!=res_last; ++res_it,++indexes_it){
             const auto& idx = static_cast<const index_type&>(*indexes_it);
             if (idx < size){
@@ -250,7 +250,7 @@ static auto take(const basic_tensor<Ts...>& t, const basic_tensor<Us...>& indexe
             auto res_predicate = detail::make_traverse_predicate(res_axes,std::true_type{});    //inverse, traverse all but res_axes
             auto res_strides = detail::make_strides_div_predicate<config_type>(res_shape,res_predicate,order{});
             auto res_traverser = detail::make_forward_traverser(res_shape,res.create_walker(),detail::make_traverse_predicate(res_axes,std::false_type{}));
-            auto a_indexes = indexes.template traverse_order_adapter<order>();
+            auto a_indexes = indexes.traverse_order_adapter(order{});
             for (auto indexes_it=a_indexes.begin(),indexes_last=a_indexes.end(); indexes_it!=indexes_last; ++indexes_it,res_traverser.template next<order>()){
                 const auto& idx = static_cast<const index_type&>(*indexes_it);
                 if (idx < axis_size){
