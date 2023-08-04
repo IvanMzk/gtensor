@@ -762,9 +762,11 @@ class view_factory
         };
 
         if constexpr((std::is_convertible_v<Subs,index_type>&&...)){
+            //all subscripts are scalars
             //can make subdim view with optimized walker without scaling
             return create_subdim_view_variadic(parent, subs...);
         }else{
+            //mixed subscripts
             slice_maker maker{};
             return create_slice_view_container(parent, typename config_type::template container<slice_type>{maker(subs)...});
         }

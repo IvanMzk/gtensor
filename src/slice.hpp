@@ -173,7 +173,7 @@ public:
     bool is_reduce()const{return detail::is_r(mask_);}
     friend bool operator==(const slice& lhs, const slice& rhs){return lhs.mask_==rhs.mask_ && lhs.start_==rhs.start_ && lhs.stop_==rhs.stop_ && lhs.step_==rhs.step_;}
     friend std::ostream& operator<<(std::ostream& os, const slice& lhs){
-        os <<"("<<lhs.start_<<":"<<lhs.stop_<<":"<<lhs.step_<<")";
+        os <<"("<<lhs.is_start()<<lhs.is_stop()<<lhs.is_step()<<lhs.is_reduce()<<" "<<lhs.start_<<":"<<lhs.stop_<<":"<<lhs.step_<<")";
         return os;
     }
 

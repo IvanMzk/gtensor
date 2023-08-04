@@ -310,6 +310,7 @@ private:
     parent_type parent_;
 };
 
+//core of slice view that is created using variadic slice indexing interface where all subscripts are scalars (reduce slice subscripts)
 template<typename Parent>
 class subdim_view_core
 {
