@@ -477,7 +477,7 @@ auto fill_index_map(const ShT& pshape, const ShT& pstrides, const IdxT& subs_siz
         do{
             dim_type n{0};
             index_type chunk_first{0};
-            ((chunk_first+=check_index(static_cast<index_type>(*subs_traverser.walker()),pshape[n])*pstrides[n],++n),...);
+            ((chunk_first+=check_index(static_cast<index_type>(*subs_traverser),pshape[n])*pstrides[n],++n),...);
             index_map[i] = chunk_first;
             ++i;
         }while(((subs_traverser.template next<Order>()),...));
@@ -487,7 +487,7 @@ auto fill_index_map(const ShT& pshape, const ShT& pstrides, const IdxT& subs_siz
         do{
             dim_type n{0};
             index_type chunk_first{0};
-            ((chunk_first+=check_index(static_cast<index_type>(*subs_traverser.walker()),pshape[n])*pstrides[n],++n),...);
+            ((chunk_first+=check_index(static_cast<index_type>(*subs_traverser),pshape[n])*pstrides[n],++n),...);
             if constexpr (std::is_same_v<Order, gtensor::config::c_order>){
                 for(index_type chunk_last=chunk_first+chunk_size; chunk_first!=chunk_last; ++chunk_first){
                     index_map[i] = chunk_first;
@@ -522,7 +522,7 @@ auto fill_index_map_container(const ShT& pshape, const ShT& pstrides, const IdxT
 
     if (chunk_size == index_type{1}){
         do{
-            index_map[i] = check_index(static_cast<index_type>(*first_tr.walker()), shape_element)*stride_element;
+            index_map[i] = check_index(static_cast<index_type>(*first_tr), shape_element)*stride_element;
             ++i;
         }
         while (first_tr.template next<Order>());
@@ -533,7 +533,7 @@ auto fill_index_map_container(const ShT& pshape, const ShT& pstrides, const IdxT
             shape_element = *pshape_it;
             i = index_type{0};
             do{
-                index_map[i] += check_index(static_cast<index_type>(*tr.walker()), shape_element)*stride_element;
+                index_map[i] += check_index(static_cast<index_type>(*tr), shape_element)*stride_element;
                 ++i;
             }
             while (tr.template next<Order>());
@@ -542,7 +542,7 @@ auto fill_index_map_container(const ShT& pshape, const ShT& pstrides, const IdxT
         const index_type stride_step = pstrides[subs_number];
         const index_type map_step = subs_size;
         do{
-            index_type chunk_first = check_index(static_cast<index_type>(*first_tr.walker()), shape_element)*stride_element;
+            index_type chunk_first = check_index(static_cast<index_type>(*first_tr), shape_element)*stride_element;
             if constexpr (std::is_same_v<Order, gtensor::config::c_order>){
                 for(const index_type chunk_last = chunk_first+chunk_size; chunk_first!=chunk_last; ++chunk_first){
                     index_map[i] = chunk_first;
@@ -563,7 +563,7 @@ auto fill_index_map_container(const ShT& pshape, const ShT& pstrides, const IdxT
             shape_element = *pshape_it;
             i = index_type{0};
             do{
-                index_type chunk_first = check_index(static_cast<index_type>(*tr.walker()), shape_element)*stride_element;
+                index_type chunk_first = check_index(static_cast<index_type>(*tr), shape_element)*stride_element;
                 if constexpr (std::is_same_v<Order, gtensor::config::c_order>){
                     for(index_type i_last = i+chunk_size; i!=i_last; ++i){
                         index_map[i] += chunk_first;
@@ -620,7 +620,7 @@ auto fill_bool_map(const ShT& pstrides, const DimT& subs_dim, const IdxT& chunk_
     index_type trues_number{0};
     if (chunk_size == index_type{1}){
         do{
-            if(*subs_traverser.walker()){
+            if(*subs_traverser){
                 index_container.push_back(
                     std::inner_product(subs_traverser.index().begin(), subs_traverser.index().end(), pstrides.begin(), index_type{0})
                 );
@@ -631,7 +631,7 @@ auto fill_bool_map(const ShT& pstrides, const DimT& subs_dim, const IdxT& chunk_
         //if subs_dim==pdim than chunk_size is 1 and if branch is executed
         const auto stride_step = pstrides[subs_dim];
         do{
-            if(*subs_traverser.walker()){
+            if(*subs_traverser){
                 auto block_first = std::inner_product(subs_traverser.index().begin(), subs_traverser.index().end(), pstrides.begin(), index_type{0});
                 if constexpr (std::is_same_v<Order, gtensor::config::c_order>){
                     for(index_type j{0}; j!=chunk_size; ++j){
