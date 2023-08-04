@@ -653,13 +653,11 @@ auto fill_bool_map(const ShT& pstrides, const DimT& subs_dim, const IdxT& chunk_
 
 class view_factory
 {
-    template<typename Config, typename Order> using mapping_view_descriptor = mapping_descriptor<Config, Order>;
-    template<typename Config, typename Order, typename Parent> using mapping_view = tensor_implementation<view_core<Config,mapping_view_descriptor<Config, Order>,Parent>>;
-
     template<typename Order, typename Parent> using reshape_view = tensor_implementation<reshape_view_core<Order,Parent>>;
     template<typename Parent> using slice_view = tensor_implementation<slice_view_core<Parent>>;
     template<typename Parent> using subdim_view = tensor_implementation<subdim_view_core<Parent>>;
     template<typename Parent> using transpose_view = tensor_implementation<transpose_view_core<Parent>>;
+    template<typename Parent> using mapping_view = tensor_implementation<mapping_view_core<Parent>>;
 
     //subdim view
     template<typename...Ts, typename Container>
@@ -777,10 +775,10 @@ class view_factory
         using parent_type = basic_tensor<Ts...>;
         using order = typename parent_type::order;
         using config_type = typename parent_type::config_type;
-        using index_map_type = typename config_type::index_map_type;
+        using index_type = typename parent_type::index_type;
         using shape_type = typename parent_type::shape_type;
-        using descriptor_type = mapping_descriptor<config_type,order>;
-        using view_type = mapping_view<config_type,order,parent_type>;
+        using view_type = mapping_view<parent_type>;
+        using index_map_type = typename config_type::template index_map<index_type>;
         const auto& pshape = parent.shape();
         detail::check_index_mapping_view_subs_variadic(pshape, subs.shape()...);
         const auto subs_shape = detail::make_broadcast_shape<shape_type>(subs.shape()...);
@@ -799,7 +797,8 @@ class view_factory
             );
         }
         return std::make_shared<view_type>(
-            descriptor_type{std::move(res_shape),std::move(index_map)},
+            std::move(index_map),
+            std::move(res_shape),
             parent
         );
     }
@@ -808,11 +807,11 @@ class view_factory
         using parent_type = basic_tensor<Ts...>;
         using order = typename parent_type::order;
         using config_type = typename parent_type::config_type;
-        using index_map_type = typename config_type::index_map_type;
         using dim_type = typename parent_type::dim_type;
+        using index_type = typename parent_type::index_type;
         using shape_type = typename parent_type::shape_type;
-        using descriptor_type = mapping_descriptor<config_type,order>;
-        using view_type = mapping_view<config_type,order,parent_type>;
+        using view_type = mapping_view<parent_type>;
+        using index_map_type = typename config_type::template index_map<index_type>;
         using subs_tensor_type = typename Container::value_type;
         using traverser_container_type = typename config_type::template container<
             walker_forward_traverser<config_type, decltype(std::declval<const subs_tensor_type&>().create_walker(std::declval<dim_type>()))>
@@ -842,7 +841,8 @@ class view_factory
             );
         }
         return std::make_shared<view_type>(
-            descriptor_type{std::move(res_shape),std::move(index_map)},
+            std::move(index_map),
+            std::move(res_shape),
             parent
         );
     }
@@ -854,10 +854,9 @@ class view_factory
         using config_type = typename parent_type::config_type;
         using index_type = typename parent_type::index_type;
         using dim_type = typename parent_type::dim_type;
-        using index_map_type = typename config_type::index_map_type;
+        using index_map_type = typename config_type::template index_map<index_type>;
         using index_container_type = typename config_type::template container<index_type>;
-        using descriptor_type = mapping_descriptor<config_type,order>;
-        using view_type = mapping_view<config_type,order,parent_type>;
+        using view_type = mapping_view<parent_type>;
         const auto& pshape = parent.shape();
         const auto& subs_shape = subs.shape();
         detail::check_bool_mapping_view_subs(pshape, subs_shape);
@@ -897,16 +896,15 @@ class view_factory
             }
 
             return std::make_shared<view_type>(
-                descriptor_type{std::move(res_shape), std::move(index_map)},
+                std::move(index_map),
+                std::move(res_shape),
                 parent
             );
         }else{
             index_type subs_trues_number = std::count(subs.begin(),subs.end(),true);
             return std::make_shared<view_type>(
-                descriptor_type{
-                    detail::make_bool_mapping_view_shape(pshape, subs_trues_number, subs.dim()),
-                    index_map_type(0)
-                },
+                index_map_type(0),
+                detail::make_bool_mapping_view_shape(pshape, subs_trues_number, subs.dim()),
                 parent
             );
         }

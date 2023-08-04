@@ -206,40 +206,8 @@ private:
 };
 
 //view core owns its parent and provide data accessor to its data
-//Descriptor depends on kind of view
+//view descriptor type depends on kind of view
 //Parent is type of view parent(origin) i.e. it is basic_tensor specialization
-template<typename Config, typename Descriptor, typename Parent>
-class view_core
-{
-    using descriptor_type = Descriptor;
-    using parent_type = Parent;
-public:
-    using config_type = Config;
-    using order = typename Parent::order;
-    using value_type = typename Parent::value_type;
-
-    template<typename Descriptor_, typename Parent_>
-    view_core(Descriptor_&& descriptor__, Parent_&& parent__):
-        descriptor_{std::forward<Descriptor_>(descriptor__)},
-        parent_{std::forward<Parent_>(parent__)}
-    {}
-
-    const descriptor_type& descriptor()const{return descriptor_;}
-    auto create_indexer()const{return create_indexer_helper(*this);}
-    auto create_indexer(){return create_indexer_helper(*this);}
-private:
-    template<typename U>
-    static auto create_indexer_helper(U& instance){
-        return basic_indexer<decltype(instance.parent_.template traverse_order_adapter<order>().create_indexer()), const descriptor_type&>{
-            instance.parent_.template traverse_order_adapter<order>().create_indexer(),
-            static_cast<const descriptor_type&>(instance.descriptor_)
-        };
-    }
-    descriptor_type descriptor_;
-    parent_type parent_;
-};
-
-//transpose view core
 template<typename Parent>
 class transpose_view_core
 {
@@ -390,6 +358,50 @@ private:
     parent_type parent_;
 };
 
+template<typename Parent>
+class mapping_view_core
+{
+    using parent_config_type = typename Parent::config_type;
+    using descriptor_type = basic_descriptor<parent_config_type,typename Parent::order>;
+    using parent_type = Parent;
+    using index_map_type = typename parent_config_type::template index_map<typename parent_config_type::index_type>;
+public:
+    using config_type = parent_config_type;
+    using order = typename Parent::order;
+    using value_type = typename Parent::value_type;
+    using index_type = typename Parent::index_type;
+
+    template<typename IndexMap, typename ShT, typename Parent_>
+    mapping_view_core(IndexMap&& index_map__, ShT&& shape__, Parent_&& parent__):
+        index_map_{std::forward<IndexMap>(index_map__)},
+        descriptor_{std::forward<ShT>(shape__)},
+        parent_{std::forward<Parent_>(parent__)}
+    {}
+
+    const descriptor_type& descriptor()const{return descriptor_;}
+    auto create_indexer()const{return create_indexer_helper(*this);}
+    auto create_indexer(){return create_indexer_helper(*this);}
+private:
+    struct index_mapper{
+        const index_map_type* map;
+        index_type operator()(const index_type& idx)const{
+            return (*map)[idx];
+        }
+    };
+
+    template<typename U>
+    static auto create_indexer_helper(U& instance){
+        auto a = instance.parent_.template traverse_order_adapter<order>();
+        using parent_indexer_type = decltype(a.create_indexer());
+        return basic_indexer<parent_indexer_type,index_mapper>{
+            a.create_indexer(),
+            index_mapper{&instance.index_map_}
+        };
+    }
+    index_map_type index_map_;
+    descriptor_type descriptor_;
+    parent_type parent_;
+};
 
 template<typename Order, typename Parent>
 class reshape_view_core
