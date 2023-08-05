@@ -198,7 +198,70 @@ TEST_CASE("test_benchmark_helpers_make_tree","[test_benchmark_helpers]")
 // }
 
 
-TEMPLATE_TEST_CASE("benchmark_tensor_tree_slice_view_copy","[benchmark_tensor]",
+// TEMPLATE_TEST_CASE("benchmark_tensor_tree_slice_view_copy","[benchmark_tensor]",
+//     gtensor::config::c_order,
+//     gtensor::config::f_order
+// )
+// {
+//     using value_type = double;
+//     using gtensor::tensor;
+//     using gtensor::config::c_order;
+//     using gtensor::config::f_order;
+//     using tensor_type = gtensor::tensor<value_type,TestType>;
+//     using benchmark_helpers::make_asymmetric_tree;
+//     using benchmark_helpers::benchmark;
+
+//     auto bench_copy = [](const auto& t, auto order){
+//         return t.copy(order);
+//     };
+
+//     auto t1 = tensor_type({10,100,1000},2);
+//     auto t2 = tensor_type({100,1000},1);
+//     auto tree_50_1E6 = make_asymmetric_tree<50>(t1,t2);
+//     auto v1 = tree_50_1E6({{0,-1},{},{0,-1}});
+
+
+//     benchmark("c_copy_tree_slice1_view_10E6",bench_copy,v1,c_order{});
+//     benchmark("f_copy_tree_slice1_view_10E6",bench_copy,v1,f_order{});
+//     //benchmark("c_copy_slice2_view_10E6",bench_copy,v2,c_order{});
+//     //benchmark("f_copy_slice2_view_10E6",bench_copy,v2,f_order{});
+//     // benchmark("c_copy_slice3_view_10E6",bench_copy,v3,c_order{});
+//     // benchmark("f_copy_slice3_view_10E6",bench_copy,v3,f_order{});
+// }
+
+// TEMPLATE_TEST_CASE("benchmark_tensor_reduce","[benchmark_tensor]",
+//     gtensor::config::c_order,
+//     gtensor::config::f_order
+// )
+// {
+//     using value_type = double;
+//     using gtensor::tensor;
+//     using gtensor::config::c_order;
+//     using gtensor::config::f_order;
+//     using tensor_type = gtensor::tensor<value_type,TestType>;
+//     using benchmark_helpers::make_asymmetric_tree;
+//     using benchmark_helpers::benchmark;
+
+//     auto bench_sum = [](const auto& t, auto...axes){
+//         if constexpr (sizeof...(axes)==0){
+//             auto tmp = t.sum();
+//             return tmp.size();
+//         }else{
+//             auto tmp = t.sum({axes...});
+//             return tmp.size();
+//         }
+//     };
+
+//     auto t = tensor_type({2,5,100,1000},2);
+
+//     benchmark("sum_all_10E6",bench_sum,t);
+//     benchmark("sum_axis_10E6",bench_sum,t,1);
+//     benchmark("sum_axes2_10E6",bench_sum,t,0,2);
+//     benchmark("sum_axes3_10E6",bench_sum,t,0,1,2);
+//     benchmark("sum_axes4_10E6",bench_sum,t,0,1,2,3);
+// }
+
+TEMPLATE_TEST_CASE("benchmark_tensor_argmax","[benchmark_tensor]",
     gtensor::config::c_order,
     gtensor::config::f_order
 )
@@ -211,21 +274,22 @@ TEMPLATE_TEST_CASE("benchmark_tensor_tree_slice_view_copy","[benchmark_tensor]",
     using benchmark_helpers::make_asymmetric_tree;
     using benchmark_helpers::benchmark;
 
-    auto bench_copy = [](const auto& t, auto order){
-        return t.copy(order);
+    auto bench_argmax = [](const auto& t, auto...axes){
+        if constexpr (sizeof...(axes)==0){
+            auto tmp = t.argmax();
+            return tmp.size();
+        }else{
+            auto tmp = t.argmax({axes...});
+            return tmp.size();
+        }
     };
 
-    auto t1 = tensor_type({10,100,1000},2);
-    auto t2 = tensor_type({100,1000},1);
-    auto tree_50_1E6 = make_asymmetric_tree<50>(t1,t2);
-    auto v1 = tree_50_1E6({{0,-1},{},{0,-1}});
+    auto t = tensor_type({2,5,100,1000},2);
 
-
-    benchmark("c_copy_tree_slice1_view_10E6",bench_copy,v1,c_order{});
-    benchmark("f_copy_tree_slice1_view_10E6",bench_copy,v1,f_order{});
-    //benchmark("c_copy_slice2_view_10E6",bench_copy,v2,c_order{});
-    //benchmark("f_copy_slice2_view_10E6",bench_copy,v2,f_order{});
-    // benchmark("c_copy_slice3_view_10E6",bench_copy,v3,c_order{});
-    // benchmark("f_copy_slice3_view_10E6",bench_copy,v3,f_order{});
+    benchmark("argmax_all_10E6",bench_argmax,t);
+    benchmark("argmax_axis_10E6",bench_argmax,t,1);
+    // benchmark("argmax_axes2_10E6",bench_argmax,t,0,2);
+    // benchmark("argmax_axes3_10E6",bench_argmax,t,0,1,2);
+    // benchmark("argmax_axes4_10E6",bench_argmax,t,0,1,2,3);
 }
 

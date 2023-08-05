@@ -271,6 +271,9 @@ class reducer
             auto a = t.traverse_order_adapter(order{});
             return  res_type(detail::make_reduce_shape(t.shape(),keep_dims), reduce_f(a.begin(), a.end(), std::forward<Args>(args)...));
         }else{  //traverse like over flatten
+            //assuming changing traverse order when traverse like over flatten is not logic error (i.e. reduce functor not expected particular order)
+            //logic error for argmax like functions
+            //auto a = t.traverse_order_adapter(order{});
             auto a = t.traverse_order_adapter(config::c_order{});
             return  res_type(detail::make_reduce_shape(t.shape(),keep_dims), reduce_f(a.begin(), a.end(), std::forward<Args>(args)...));
         }
