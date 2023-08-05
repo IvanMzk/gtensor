@@ -673,7 +673,7 @@ private:
     bool prev_c(){
         auto amax = axis_max();
         auto index_it = index_.begin()+amax;
-        while (amax!=dim_type{0}){
+        for (const auto amin=axis_min(); amax!=amin;){
             --index_it;
             --amax;
             if (prev_on_axis(amax, *index_it)){
