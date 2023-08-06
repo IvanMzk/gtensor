@@ -12,20 +12,6 @@ namespace gtensor{
 
 namespace detail{
 
-template<typename Container, typename DimT, typename Axes>
-auto make_axes(const DimT& dim, const Axes& axes_){
-    if constexpr (detail::is_container_v<Axes>){
-        Container res{};
-        detail::reserve(res,axes_.size());
-        for (auto it=axes_.begin(), last=axes_.end(); it!=last; ++it){
-            res.push_back(make_axis(dim,*it));
-        }
-        return res;
-    }else{
-        return make_axis(dim,axes_);
-    }
-}
-
 template<typename ShT>
 auto check_reduce_args(const ShT& shape, const typename ShT::difference_type& axis){
     using dim_type = typename ShT::difference_type;

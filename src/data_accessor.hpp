@@ -2,11 +2,74 @@
 #define DATA_ACCESSOR_HPP_
 
 #include <type_traits>
+#include <numeric>
+#include <algorithm>
+#include <iterator>
 #include "descriptor.hpp"
 
 namespace gtensor{
 
 namespace detail{
+
+
+//Axes is container or scalar
+//result is also container or scalar of axes
+template<typename Config, typename DimT, typename Axes>
+auto make_axes(const DimT& dim, const Axes& axes_){
+    if constexpr (detail::is_container_v<Axes>){
+        using dim_type = typename Config::dim_type;
+        using res_type = typename Config::template shape<dim_type>;
+        res_type res{};
+        detail::reserve(res,axes_.size());
+        std::transform(axes_.begin(),axes_.end(),std::back_inserter(res),[dim](const auto& axis_){return make_axis(dim,axis_);});
+        return res;
+    }else{
+        return make_axis(dim,axes_);
+    }
+}
+
+//Axes is container or scalar, axes should be result of make_axes
+//result is container of permuted axes
+template<typename Config, typename DimT, typename Axes>
+auto make_range_traverser_axes_map(const DimT& dim, const Axes& axes){
+    using dim_type = typename Config::dim_type;
+    using res_type = typename Config::template shape<dim_type>;
+    res_type res(dim,dim_type{0});
+    std::iota(res.begin(),res.end(),dim_type{0});
+    if constexpr (detail::is_container_v<Axes>){
+        std::partition(res.begin(),res.end(),
+            [&axes](const auto& axis){
+                const auto last = axes.end();
+                return std::find_if(axes.begin(),last,[axis](const auto& a){return axis == a;}) != last;
+            }
+        );
+    }else{  //axes scalar
+        std::iter_swap(res.begin(),res.begin()+axes);
+    }
+    return res;
+}
+
+//make shape for given axes permutation
+template<typename ShT, typename AxesMap>
+auto make_range_traverser_shape(const ShT& shape, const AxesMap& axes_map){
+    const auto dim = detail::make_dim(shape);
+    ShT res{};
+    detail::reserve(res,dim);
+    std::transform(axes_map.begin(),axes_map.end(),std::back_inserter(res),[&shape](const auto& a){return shape[a];});
+    return res;
+}
+
+//make strides_div for walker_random_access_traverser
+template<typename Config, typename ShT, typename DimT, typename Order>
+auto make_range_traverser_strides_div(const ShT& shape, const DimT& axes_size, Order order){
+    using res_type = strides_div_t<Config>;
+    using res_value_type = typename res_type::value_type;
+    const auto dim = detail::make_dim(shape);
+    res_type res(dim,res_value_type{1});
+    make_strides(shape.begin(),shape.begin()+axes_size,res.begin(),res.begin()+axes_size,order);
+    make_strides(shape.begin()+axes_size,shape.end(),res.begin()+axes_size,res.end(),order);
+    return res;
+}
 
 template<typename Config, typename ShT, typename Predicate, typename Order>
 auto make_strides_div_predicate(const ShT& shape, const Predicate& predicate, Order order){
