@@ -144,9 +144,10 @@ public:
     using const_reference = typename detail::iterator_internals_selector<result_type>::const_reference;
 
     //begin should be constructed with zero flat_index_ argument, end with size() flat_index_argument
-    template<typename Walker_>
-    walker_iterator(Walker_&& walker_, const shape_type& shape_, const strides_div_type& strides_, const difference_type& flat_index_):
-        traverser{shape_, strides_, std::forward<Walker_>(walker_)},
+    //args should be axis_min,axis_max for range traverser and empty otherwise
+    template<typename Walker_, typename...Args>
+    walker_iterator(Walker_&& walker_, const shape_type& shape_, const strides_div_type& strides_, const difference_type& flat_index_, const Args&...args):
+        traverser{shape_, strides_, std::forward<Walker_>(walker_),args...},
         flat_index{flat_index_}
     {
         if (flat_index_ > difference_type{0}){

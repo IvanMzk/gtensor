@@ -37,7 +37,7 @@ auto make_range_traverser_axes_map(const DimT& dim, const Axes& axes){
     res_type res(dim,dim_type{0});
     std::iota(res.begin(),res.end(),dim_type{0});
     if constexpr (detail::is_container_v<Axes>){
-        std::partition(res.begin(),res.end(),
+        std::stable_partition(res.begin(),res.end(),
             [&axes](const auto& axis){
                 const auto last = axes.end();
                 return std::find_if(axes.begin(),last,[axis](const auto& a){return axis == a;}) != last;
