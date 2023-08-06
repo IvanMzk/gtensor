@@ -93,37 +93,43 @@ inline T make_shape_element(const T& shape_element){
     using shape_element_type = T;
     return shape_element==shape_element_type{0} ? shape_element_type{1}:shape_element;
 }
+
+
+
+template<typename It, typename DstIt, typename Order>
+inline void make_strides(It shape_first, It shape_last, DstIt strides_first, DstIt strides_last, Order, typename std::iterator_traits<It>::value_type min_stride = 1){
+    using result_value_type = typename std::iterator_traits<DstIt>::value_type;
+    if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
+        *--strides_last = result_value_type(min_stride);
+        while(strides_last != strides_first){
+            min_stride *= make_shape_element(*--shape_last);
+            *--strides_last = result_value_type(min_stride);
+        }
+    }else if constexpr (std::is_same_v<Order,gtensor::config::f_order>){
+        *strides_first = result_value_type(min_stride);
+        for(++strides_first; strides_first!=strides_last; ++strides_first,++shape_first){
+            min_stride *= make_shape_element(*shape_first);
+            *strides_first = result_value_type(min_stride);
+        }
+    }else{
+        static_assert(always_false<Order>,"invalid Order argument");
+    }
+}
+
 template<typename ResT, typename ShT, typename Order>
-inline ResT make_strides(const ShT& shape, Order, typename ShT::value_type min_stride = typename ShT::value_type(1)){
+inline ResT make_strides(const ShT& shape, Order order, typename ShT::value_type min_stride = typename ShT::value_type(1)){
     using result_type = ResT;
     using result_value_type = typename result_type::value_type;
     if (!std::empty(shape)){
         result_type res(shape.size(), result_value_type());
-        auto shape_first = shape.begin();
-        auto shape_last = shape.end();
-        if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
-            auto res_it = res.end();
-            *--res_it = result_value_type(min_stride);
-            for(;res_it != res.begin();){
-                min_stride *= make_shape_element(*--shape_last);
-                *--res_it = result_value_type(min_stride);
-            }
-        }else if constexpr (std::is_same_v<Order,gtensor::config::f_order>){
-            auto res_it = res.begin();
-            *res_it = result_value_type(min_stride);
-            for(++res_it;res_it != res.end();++res_it,++shape_first){
-                min_stride *= make_shape_element(*shape_first);
-                *res_it = result_value_type(min_stride);
-            }
-        }else{
-            static_assert(always_false<Order>,"invalid Order argument");
-        }
+        make_strides(shape.begin(),shape.end(),res.begin(),res.end(),order);
         return res;
     }
     else{
         return result_type{};
     }
 }
+
 template<typename ShT, typename Order>
 inline ShT make_strides(const ShT& shape, Order order, typename ShT::value_type min_stride = typename ShT::value_type(1)){
     return make_strides<ShT,ShT>(shape, order, min_stride);
