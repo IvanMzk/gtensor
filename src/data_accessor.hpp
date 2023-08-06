@@ -779,20 +779,12 @@ class walker_random_access_traverser : public Base
     using base_type::axis_min;
     using base_type::axis_max;
     using base_type::to_first;
-protected:
+    using strides_div_type = detail::strides_div_t<typename base_type::config_type>;
+public:
     using typename base_type::config_type;
     using typename base_type::dim_type;
     using typename base_type::index_type;
     using typename base_type::shape_type;
-    using strides_div_type = detail::strides_div_t<config_type>;
-    void move_(index_type n){
-        if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
-            move_c(n);
-        }else{
-            move_f(n);
-        }
-    }
-public:
     //depending on Base, args is empty or axis_min,axis_max
     template<typename Walker_, typename...Args>
     walker_random_access_traverser(const shape_type& shape__, const strides_div_type& strides__, Walker_&& walker__, const Args&...args):
@@ -807,6 +799,13 @@ public:
         move_(n);
     }
 private:
+    void move_(index_type n){
+        if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
+            move_c(n);
+        }else{
+            move_f(n);
+        }
+    }
     void move_c(index_type n){
         auto index_it = index_.begin()+axis_min();
         auto strides_it = strides_->begin()+axis_min();

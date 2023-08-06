@@ -167,7 +167,8 @@ TEST_CASE("test_random_access_iterator_difference","[test_iterator]")
             auto indexer = indexer_type{storage};
             using walker_type = gtensor::indexer_walker<config_type, indexer_type>;
             walker_type walker{adapted_strides,reset_strides,offset,indexer};
-            using iterator_type = walker_iterator<config_type,walker_type,traverse_order>;
+            using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,traverse_order>;
+            using iterator_type = walker_iterator<config_type,traverser_type>;
             auto strides_div = make_strides_div<config_type>(shape, traverse_order{});
             auto first = iterator_type{walker, shape, strides_div, index_type{0}};
             auto last = iterator_type{walker, shape, strides_div, size};
@@ -193,7 +194,8 @@ TEST_CASE("test_random_access_iterator_difference","[test_iterator]")
             auto indexer = indexer_type{storage};
             using walker_type = gtensor::indexer_walker<config_type, indexer_type>;
             walker_type walker{adapted_strides,reset_strides,offset,indexer};
-            using iterator_type = reverse_walker_iterator<config_type,walker_type,traverse_order>;
+            using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,traverse_order>;
+            using iterator_type = reverse_walker_iterator<config_type,traverser_type>;
             auto strides_div = make_strides_div<config_type>(shape, traverse_order{});
             auto first = iterator_type{walker, shape, strides_div, size};
             auto last = iterator_type{walker, shape, strides_div, index_type{0}};
@@ -220,7 +222,8 @@ TEST_CASE("test_random_access_iterator_difference","[test_iterator]")
             auto max_dim = make_dim(shape);
             using walker_type = gtensor::axes_correction_walker<gtensor::indexer_walker<config_type, indexer_type>>;
             walker_type walker{max_dim,adapted_strides,reset_strides,offset,indexer};
-            using iterator_type = broadcast_iterator<config_type,walker_type,traverse_order>;
+            using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,traverse_order>;
+            using iterator_type = broadcast_iterator<config_type,traverser_type>;
             auto strides_div = make_strides_div<config_type>(shape, traverse_order{});
             auto first = iterator_type{walker, shape, strides_div, index_type{0}};
             auto last = iterator_type{walker, shape, strides_div, size};
@@ -247,7 +250,8 @@ TEST_CASE("test_random_access_iterator_difference","[test_iterator]")
             auto max_dim = make_dim(shape);
             using walker_type = gtensor::axes_correction_walker<gtensor::indexer_walker<config_type, indexer_type>>;
             walker_type walker{max_dim,adapted_strides,reset_strides,offset,indexer};
-            using iterator_type = reverse_broadcast_iterator<config_type,walker_type,traverse_order>;
+            using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,traverse_order>;
+            using iterator_type = reverse_broadcast_iterator<config_type,traverser_type>;
             auto strides_div = make_strides_div<config_type>(shape, traverse_order{});
             auto first = iterator_type{walker, shape, strides_div, size};
             auto last = iterator_type{walker, shape, strides_div, index_type{0}};
@@ -477,7 +481,8 @@ TEST_CASE("test_random_access_iterator_dereference","[test_iterator]")
             using walker_type = gtensor::indexer_walker<config_type, indexer_type>;
             walker_type walker{adapted_strides,reset_strides,offset,indexer};
             using traverse_order_type = decltype(traverse_order);
-            using iterator_type = walker_iterator<config_type,walker_type,traverse_order_type>;
+            using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,traverse_order_type>;
+            using iterator_type = walker_iterator<config_type,traverser_type>;
             auto strides_div = make_strides_div<config_type>(shape, traverse_order);
             auto first = iterator_type{walker, shape, strides_div, index_type{0}};
             auto last = iterator_type{walker, shape, strides_div, size};
@@ -504,7 +509,8 @@ TEST_CASE("test_random_access_iterator_dereference","[test_iterator]")
             using walker_type = gtensor::indexer_walker<config_type, indexer_type>;
             walker_type walker{adapted_strides,reset_strides,offset,indexer};
             using traverse_order_type = decltype(traverse_order);
-            using iterator_type = reverse_walker_iterator<config_type,walker_type,traverse_order_type>;
+            using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,traverse_order_type>;
+            using iterator_type = reverse_walker_iterator<config_type,traverser_type>;
             auto strides_div = make_strides_div<config_type>(shape, traverse_order);
             auto first = iterator_type{walker, shape, strides_div, size};
             auto last = iterator_type{walker, shape, strides_div, index_type{0}};
@@ -533,7 +539,8 @@ TEST_CASE("test_random_access_iterator_dereference","[test_iterator]")
             using walker_type = gtensor::axes_correction_walker<gtensor::indexer_walker<config_type, indexer_type>>;
             walker_type walker{max_dim,adapted_strides,reset_strides,offset,indexer};
             using traverse_order_type = decltype(traverse_order);
-            using iterator_type = broadcast_iterator<config_type,walker_type,traverse_order_type>;
+            using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,traverse_order_type>;
+            using iterator_type = broadcast_iterator<config_type,traverser_type>;
             auto strides_div = make_strides_div<config_type>(shape, traverse_order);
             auto first = iterator_type{walker, shape, strides_div, index_type{0}};
             auto last = iterator_type{walker, shape, strides_div, size};
@@ -561,7 +568,8 @@ TEST_CASE("test_random_access_iterator_dereference","[test_iterator]")
             using walker_type = gtensor::axes_correction_walker<gtensor::indexer_walker<config_type, indexer_type>>;
             walker_type walker{max_dim,adapted_strides,reset_strides,offset,indexer};
             using traverse_order_type = decltype(traverse_order);
-            using iterator_type = reverse_broadcast_iterator<config_type,walker_type,traverse_order_type>;
+            using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,traverse_order_type>;
+            using iterator_type = reverse_broadcast_iterator<config_type,traverser_type>;
             auto strides_div = make_strides_div<config_type>(shape, traverse_order);
             auto first = iterator_type{walker, shape, strides_div, size};
             auto last = iterator_type{walker, shape, strides_div, index_type{0}};
@@ -570,6 +578,12 @@ TEST_CASE("test_random_access_iterator_dereference","[test_iterator]")
         };
         apply_by_element(test,test_data);
     }
+}
+
+namespace test_random_access_iterator_result_type{
+
+template<typename Config, typename Walker,typename Order> using traverser = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<Config,Walker>>,Order>;
+
 }
 
 TEST_CASE("test_random_access_iterator_result_type","test_iterator")
@@ -591,29 +605,30 @@ TEST_CASE("test_random_access_iterator_result_type","test_iterator")
     using gtensor::reverse_walker_iterator;
     using gtensor::broadcast_iterator;
     using gtensor::reverse_broadcast_iterator;
+    using test_random_access_iterator_result_type::traverser;
 
     REQUIRE(std::is_same_v<decltype(*std::declval<indexer_iterator<config_type,indexer_type>>()),value_type&>);
     REQUIRE(std::is_same_v<decltype(*std::declval<indexer_iterator<config_type,const_indexer_type>>()),const value_type&>);
     REQUIRE(std::is_same_v<decltype(*std::declval<reverse_indexer_iterator<config_type,indexer_type>>()),value_type&>);
     REQUIRE(std::is_same_v<decltype(*std::declval<reverse_indexer_iterator<config_type,const_indexer_type>>()),const value_type&>);
 
-    REQUIRE(std::is_same_v<decltype(*std::declval<walker_iterator<config_type,walker_type,c_order>>()),value_type&>);
-    REQUIRE(std::is_same_v<decltype(*std::declval<walker_iterator<config_type,const_walker_type,c_order>>()),const value_type&>);
-    REQUIRE(std::is_same_v<decltype(*std::declval<reverse_walker_iterator<config_type,walker_type,c_order>>()),value_type&>);
-    REQUIRE(std::is_same_v<decltype(*std::declval<reverse_walker_iterator<config_type,const_walker_type,c_order>>()),const value_type&>);
-    REQUIRE(std::is_same_v<decltype(*std::declval<walker_iterator<config_type,walker_type,f_order>>()),value_type&>);
-    REQUIRE(std::is_same_v<decltype(*std::declval<walker_iterator<config_type,const_walker_type,f_order>>()),const value_type&>);
-    REQUIRE(std::is_same_v<decltype(*std::declval<reverse_walker_iterator<config_type,walker_type,f_order>>()),value_type&>);
-    REQUIRE(std::is_same_v<decltype(*std::declval<reverse_walker_iterator<config_type,const_walker_type,f_order>>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<walker_iterator<config_type,traverser<config_type,walker_type,c_order>>>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<walker_iterator<config_type,traverser<config_type,const_walker_type,c_order>>>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<reverse_walker_iterator<config_type,traverser<config_type,walker_type,c_order>>>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<reverse_walker_iterator<config_type,traverser<config_type,const_walker_type,c_order>>>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<walker_iterator<config_type,traverser<config_type,walker_type,f_order>>>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<walker_iterator<config_type,traverser<config_type,const_walker_type,f_order>>>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<reverse_walker_iterator<config_type,traverser<config_type,walker_type,f_order>>>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<reverse_walker_iterator<config_type,traverser<config_type,const_walker_type,f_order>>>()),const value_type&>);
 
-    REQUIRE(std::is_same_v<decltype(*std::declval<broadcast_iterator<config_type,max_dim_walker_type,c_order>>()),value_type&>);
-    REQUIRE(std::is_same_v<decltype(*std::declval<broadcast_iterator<config_type,const_max_dim_walker_type,c_order>>()),const value_type&>);
-    REQUIRE(std::is_same_v<decltype(*std::declval<reverse_broadcast_iterator<config_type,max_dim_walker_type,c_order>>()),value_type&>);
-    REQUIRE(std::is_same_v<decltype(*std::declval<reverse_broadcast_iterator<config_type,const_max_dim_walker_type,c_order>>()),const value_type&>);
-    REQUIRE(std::is_same_v<decltype(*std::declval<broadcast_iterator<config_type,max_dim_walker_type,f_order>>()),value_type&>);
-    REQUIRE(std::is_same_v<decltype(*std::declval<broadcast_iterator<config_type,const_max_dim_walker_type,f_order>>()),const value_type&>);
-    REQUIRE(std::is_same_v<decltype(*std::declval<reverse_broadcast_iterator<config_type,max_dim_walker_type,f_order>>()),value_type&>);
-    REQUIRE(std::is_same_v<decltype(*std::declval<reverse_broadcast_iterator<config_type,const_max_dim_walker_type,f_order>>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<broadcast_iterator<config_type,traverser<config_type,max_dim_walker_type,c_order>>>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<broadcast_iterator<config_type,traverser<config_type,const_max_dim_walker_type,c_order>>>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<reverse_broadcast_iterator<config_type,traverser<config_type,max_dim_walker_type,c_order>>>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<reverse_broadcast_iterator<config_type,traverser<config_type,const_max_dim_walker_type,c_order>>>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<broadcast_iterator<config_type,traverser<config_type,max_dim_walker_type,f_order>>>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<broadcast_iterator<config_type,traverser<config_type,const_max_dim_walker_type,f_order>>>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<reverse_broadcast_iterator<config_type,traverser<config_type,max_dim_walker_type,f_order>>>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<reverse_broadcast_iterator<config_type,traverser<config_type,const_max_dim_walker_type,f_order>>>()),const value_type&>);
 }
 
 TEMPLATE_TEST_CASE("test_gtensor_iterator_std_reverse_adapter","[test_iterator]",
@@ -652,7 +667,8 @@ TEMPLATE_TEST_CASE("test_gtensor_iterator_std_reverse_adapter","[test_iterator]"
     SECTION("test_walker_iterator_std_reverse_adapter")
     {
         using walker_type = gtensor::indexer_walker<config_type, indexer_type>;
-        using iterator_type = walker_iterator<config_type,walker_type, order>;
+        using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,order>;
+        using iterator_type = walker_iterator<config_type,traverser_type>;
         using reverse_iterator_type = reverse_iterator_generic<iterator_type>;
         auto strides = gtensor::detail::make_strides(shape, order{});
         auto strides_div = gtensor::detail::make_strides_div<config_type>(shape, order{});
@@ -742,7 +758,8 @@ TEST_CASE("test_walker_iterator_traverse","[test_iterator]")
             auto indexer = indexer_type{storage};
             walker_type walker{adapted_strides,reset_strides,offset,indexer};
             using traverse_order_type = decltype(traverse_order);
-            using iterator_type = walker_iterator<config_type,walker_type,traverse_order_type>;
+            using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,traverse_order_type>;
+            using iterator_type = walker_iterator<config_type,traverser_type>;
             auto strides_div = make_strides_div<config_type>(shape, traverse_order);
             auto first = iterator_type{walker, shape, strides_div, index_type{0}};
             auto last = iterator_type{walker, shape, strides_div, size};
@@ -769,7 +786,8 @@ TEST_CASE("test_walker_iterator_traverse","[test_iterator]")
             auto indexer = indexer_type{storage};
             walker_type walker{adapted_strides,reset_strides,offset,indexer};
             using traverse_order_type = decltype(traverse_order);
-            using iterator_type = reverse_walker_iterator<config_type,walker_type,traverse_order_type>;
+            using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,traverse_order_type>;
+            using iterator_type = reverse_walker_iterator<config_type,traverser_type>;
             auto strides_div = make_strides_div<config_type>(shape, traverse_order);
             auto first = iterator_type{walker, shape, strides_div, size};
             auto last = iterator_type{walker, shape, strides_div, index_type{0}};
@@ -870,7 +888,8 @@ TEST_CASE("test_broadcast_iterator_traverse","[test_iterator]")
             dim_type max_dim = std::max(gtensor::detail::make_dim(broadcast_shape),gtensor::detail::make_dim(shape));
             walker_type walker{max_dim,adapted_strides,reset_strides,offset,indexer};
             using traverse_order_type = decltype(traverse_order);
-            using iterator_type = broadcast_iterator<config_type,walker_type,traverse_order_type>;
+            using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,traverse_order_type>;
+            using iterator_type = broadcast_iterator<config_type,traverser_type>;
             auto strides_div = make_strides_div<config_type>(broadcast_shape, traverse_order);
             auto size = make_size(broadcast_shape);
             auto first = iterator_type{walker, broadcast_shape, strides_div, index_type{0}};
@@ -899,7 +918,8 @@ TEST_CASE("test_broadcast_iterator_traverse","[test_iterator]")
             dim_type max_dim = std::max(gtensor::detail::make_dim(broadcast_shape),gtensor::detail::make_dim(shape));
             walker_type walker{max_dim,adapted_strides,reset_strides,offset,indexer};
             using traverse_order_type = decltype(traverse_order);
-            using iterator_type = reverse_broadcast_iterator<config_type,walker_type,traverse_order_type>;
+            using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,traverse_order_type>;
+            using iterator_type = reverse_broadcast_iterator<config_type,traverser_type>;
             auto strides_div = make_strides_div<config_type>(broadcast_shape, traverse_order);
             auto size = make_size(broadcast_shape);
             auto rfirst = iterator_type{walker, broadcast_shape, strides_div, size};
