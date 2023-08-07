@@ -229,11 +229,28 @@ public:
 
     template<typename Walker, typename Inverse=std::false_type>
     auto begin(Walker&& walker, Inverse inverse=Inverse{})const{
-        return create_walker_iterator(std::forward<Walker>(walker),0,inverse);
+        return create_walker_iterator(std::forward<Walker>(walker),0,inverse,std::false_type{});
     }
     template<typename Walker, typename Inverse=std::false_type>
     auto end(Walker&& walker, Inverse inverse=Inverse{})const{
-        return create_walker_iterator(std::forward<Walker>(walker),axes_size(inverse),inverse);
+        return create_walker_iterator(std::forward<Walker>(walker),axes_size(inverse),inverse,std::false_type{});
+    }
+    template<typename Walker, typename Inverse=std::false_type>
+    auto rbegin(Walker&& walker, Inverse inverse=Inverse{})const{
+        return create_walker_iterator(std::forward<Walker>(walker),axes_size(inverse),inverse,std::true_type{});
+    }
+    template<typename Walker, typename Inverse=std::false_type>
+    auto rend(Walker&& walker, Inverse inverse=Inverse{})const{
+        return create_walker_iterator(std::forward<Walker>(walker),0,inverse,std::true_type{});
+    }
+
+    template<typename Walker, typename Inverse=std::false_type>
+    auto begin_complement(Walker&& walker, Inverse inverse=Inverse{})const{
+        return create_complement_walker_iterator(std::forward<Walker>(walker),0,inverse);
+    }
+    template<typename Walker, typename Inverse=std::false_type>
+    auto end_complement(Walker&& walker, Inverse inverse=Inverse{})const{
+        return create_complement_walker_iterator(std::forward<Walker>(walker),axes_size(inverse),inverse);
     }
 
 private:
@@ -255,20 +272,39 @@ private:
         }
     }
 
-
-    template<typename Walker, typename Inverse>
-    auto create_walker_iterator(Walker&& walker, const index_type& pos, Inverse inverse)const{
+    template<typename Walker, typename Inverse, typename Reverse>
+    auto create_walker_iterator(Walker&& walker, const index_type& pos, Inverse inverse, Reverse reverse)const{
         using Walker_ = std::remove_cv_t<std::remove_reference_t<Walker>>;
         using walker_type = gtensor::mapping_axes_walker<Walker_>;
         using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_range_traverser<config_type,walker_type>>,Order>;
-        using iterator_type = gtensor::walker_iterator<config_type,traverser_type>;
+        using iterator_type = std::conditional_t<reverse.value,gtensor::reverse_walker_iterator<config_type,traverser_type>,gtensor::walker_iterator<config_type,traverser_type>>;
         if constexpr (inverse.value){   //traverse all but axes
             return iterator_type{walker_type{axes_map_,std::forward<Walker>(walker)},traverse_shape_,traverse_strides_,pos,axes_number(),make_dim(traverse_shape_)};
         }else{  //traverse axes
             if constexpr (detail::is_container_v<axes_type>){
                 return iterator_type{walker_type{axes_map_,std::forward<Walker>(walker)},traverse_shape_,traverse_strides_,pos,0,axes_number()};
             }else{  //axes scalar
-                return gtensor::axis_iterator<config_type,Walker_>{std::forward<Walker>(walker),axes_,pos};
+                using axis_iterator_type = std::conditional_t<reverse.value,gtensor::reverse_axis_iterator<config_type,Walker_>,gtensor::axis_iterator<config_type,Walker_>>;
+                return axis_iterator_type{std::forward<Walker>(walker),axes_,pos};
+            }
+        }
+    }
+
+    //expected already permuted walker, returned from traverser that created using create_forward_traverser method
+    //inverser must be complement to traverser's
+    //e.g. given 4-dim if axes are 0,2 and traverser not inverse - it goes along axes 0,2 then complement iterator must be inverse to go along axes 1,3 from traverser's walker position
+    template<typename Walker, typename Inverse>
+    auto create_complement_walker_iterator(Walker&& walker, const index_type& pos, Inverse inverse)const{
+        using walker_type = std::remove_cv_t<std::remove_reference_t<Walker>>;
+        using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_range_traverser<config_type,walker_type>>,Order>;
+        using iterator_type = gtensor::walker_iterator<config_type,traverser_type>;
+        if constexpr (inverse.value){   //traverse all but axes
+            return iterator_type{std::forward<Walker>(walker),traverse_shape_,traverse_strides_,pos,axes_number(),make_dim(traverse_shape_)};
+        }else{  //traverse axes
+            if constexpr (detail::is_container_v<axes_type>){
+                return iterator_type{std::forward<Walker>(walker),traverse_shape_,traverse_strides_,pos,0,axes_number()};
+            }else{  //axes scalar
+                return gtensor::axis_iterator<config_type,walker_type>{std::forward<Walker>(walker),0,pos}; //axis always zero, walker is already permuted
             }
         }
     }
@@ -335,12 +371,12 @@ static auto take(const basic_tensor<Ts...>& t, const basic_tensor<Us...>& indexe
         if (!res.empty()){
             const auto& input_shape = t.shape();
             const auto axis_size = input_shape[axis];
-            const auto chunk_size = t.size() / axis_size;
+            //const auto chunk_size = t.size() / axis_size;
             //auto input_predicate = detail::make_traverse_predicate(axis,std::true_type{});  //inverse, traverse all but axis
             //auto input_strides = detail::make_strides_div_predicate<config_type>(input_shape,input_predicate,order{});
             //auto input_walker = t.create_walker();
 
-            auto input_iterator_maker = detail::make_axes_iterator_maker(input_shape,axis,order{});
+            auto input_iterator_maker = detail::make_axes_iterator_maker<config_type>(input_shape,axis,order{});
             auto input_walker = t.create_walker();
 
             const auto indexes_dim = indexes.dim();
@@ -350,7 +386,7 @@ static auto take(const basic_tensor<Ts...>& t, const basic_tensor<Us...>& indexe
             // auto res_predicate = detail::make_traverse_predicate(res_axes,std::true_type{});    //inverse, traverse all but res_axes
             // auto res_strides = detail::make_strides_div_predicate<config_type>(res_shape,res_predicate,order{});
             // auto res_traverser = detail::make_forward_traverser(res_shape,res.create_walker(),detail::make_traverse_predicate(res_axes,std::false_type{}));
-            auto res_iterator_maker = detail::make_axes_iterator_maker(res_shape,res_axes,order{});
+            auto res_iterator_maker = detail::make_axes_iterator_maker<config_type>(res_shape,res_axes,order{});
             auto res_traverser = res_iterator_maker.create_forward_traverser(res.create_walker(),std::false_type{});
 
             auto a_indexes = indexes.traverse_order_adapter(order{});
@@ -358,13 +394,15 @@ static auto take(const basic_tensor<Ts...>& t, const basic_tensor<Us...>& indexe
                 const auto& idx = static_cast<const index_type&>(*indexes_it);
                 if (idx < axis_size){
                     input_walker.walk(axis,idx);
+                    // std::cout<<std::endl;
+                    // std::for_each(input_iterator_maker.begin(input_walker,std::true_type{}),input_iterator_maker.end(input_walker,std::true_type{}),[](auto e){std::cout<<e<<" ";});
                     std::copy(
                         // detail::make_axes_iterator<order>(input_shape,input_strides,input_walker,0,input_predicate),
                         // detail::make_axes_iterator<order>(input_shape,input_strides,input_walker,chunk_size,input_predicate),
                         // detail::make_axes_iterator<order>(res_shape,res_strides,res_traverser.walker(),0,res_predicate)
                         input_iterator_maker.begin(input_walker,std::true_type{}),
                         input_iterator_maker.end(input_walker,std::true_type{}),
-                        res_iterator_maker.begin(res_traverser.walker(),std::true_type{})
+                        res_iterator_maker.begin_complement(res_traverser.walker(),std::true_type{})
                     );
                     input_walker.walk(axis,-idx);
                 }else{

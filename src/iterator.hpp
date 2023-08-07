@@ -383,6 +383,7 @@ GTENSOR_ITERATOR_OPERATOR_LESS_EQUAL(reverse_iterator_generic);
 
 template<typename Config, typename Indexer> using reverse_indexer_iterator = reverse_iterator_generic<indexer_iterator<Config,Indexer>>;
 template<typename Config, typename Traverser> using reverse_walker_iterator = reverse_iterator_generic<walker_iterator<Config,Traverser>>;
+template<typename Config, typename Walker> using reverse_axis_iterator = reverse_iterator_generic<axis_iterator<Config,Walker>>;
 template<typename Config, typename Traverser> using reverse_broadcast_iterator = reverse_iterator_generic<broadcast_iterator<Config,Traverser>>;
 
 }   //end of namespace gtensor

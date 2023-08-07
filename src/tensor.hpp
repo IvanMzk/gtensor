@@ -6,45 +6,45 @@
 #include "tensor_factory.hpp"
 #include "view_factory.hpp"
 #include "tensor_operators.hpp"
-#include "reduce.hpp"
-#include "tensor_math.hpp"
-#include "statistic.hpp"
-#include "sort_search.hpp"
+// #include "reduce.hpp"
+// #include "tensor_math.hpp"
+// #include "statistic.hpp"
+// #include "sort_search.hpp"
 
 #define GTENSOR_TENSOR_REDUCE_METHOD(NAME,F)\
 template<typename Axes>\
 auto NAME(const Axes& axes, bool keep_dims = false)const{\
-    return gtensor::F(*this,axes,keep_dims);\
+    return F(*this,axes,keep_dims);\
 }\
 template<typename DimT>\
 auto NAME(std::initializer_list<DimT> axes, bool keep_dims = false)const{\
-    return gtensor::F(*this,axes,keep_dims);\
+    return F(*this,axes,keep_dims);\
 }\
 auto NAME(bool keep_dims = false)const{\
-    return gtensor::F(*this,keep_dims);\
+    return F(*this,keep_dims);\
 }
 
 #define GTENSOR_TENSOR_REDUCE_INITIAL_METHOD(NAME,F)\
 template<typename Axes, typename Initial = gtensor::detail::no_value>\
 auto NAME(const Axes& axes, bool keep_dims = false, const Initial& initial = Initial{})const{\
-    return gtensor::F(*this,axes,keep_dims,initial);\
+    return F(*this,axes,keep_dims,initial);\
 }\
 template<typename DimT, typename Initial = gtensor::detail::no_value>\
 auto NAME(std::initializer_list<DimT> axes, bool keep_dims = false, const Initial& initial = Initial{})const{\
-    return gtensor::F(*this,axes,keep_dims,initial);\
+    return F(*this,axes,keep_dims,initial);\
 }\
 template<typename Initial = gtensor::detail::no_value>\
 auto NAME(bool keep_dims = false, const Initial& initial = Initial{})const{\
-    return gtensor::F(*this,keep_dims,initial);\
+    return F(*this,keep_dims,initial);\
 }
 
 #define GTENSOR_TENSOR_CUMULATE_METHOD(NAME,F)\
 template<typename DimT>\
 auto NAME(const DimT& axis)const{\
-    return gtensor::F(*this,axis);\
+    return F(*this,axis);\
 }\
 auto NAME()const{\
-    return gtensor::F(*this);\
+    return F(*this);\
 }
 
 namespace gtensor{
@@ -319,16 +319,16 @@ public:
     //f should return scalar - first,last reduction result - that determines result's value_type
     template<typename Axes, typename F>
     auto reduce(const Axes& axes, F f, bool keep_dims=false)const{
-        return gtensor::reduce(*this, axes, f, keep_dims);
+        return reduce(*this, axes, f, keep_dims);
     }
     template<typename F>
     auto reduce(std::initializer_list<dim_type> axes, F f, bool keep_dims=false)const{
-        return gtensor::reduce(*this, axes, f, keep_dims);
+        return reduce(*this, axes, f, keep_dims);
     }
     //reduce like over flatten
     template<typename F>
     auto reduce(F f, bool keep_dims=false)const{
-        return gtensor::reduce_flatten(*this, f, keep_dims);
+        return reduce_flatten(*this, f, keep_dims);
     }
     //slide along given axis, axis is scalar
     //as if sliding window of width window_size moves along axis with step window_step and each window reduction result is stored to destination range
@@ -337,18 +337,19 @@ public:
     //result's value_type may be specified by explicit specialization of R
     template<typename R=value_type, typename F>
     auto slide(const dim_type& axis, F f, const index_type& window_size, const index_type& window_step)const{
-        return gtensor::slide<R>(*this, axis, f, window_size, window_step);
+        return slide<R>(*this, axis, f, window_size, window_step);
     }
     //slide like over flatten
+    template<int> auto slide_flatten(); //dummy declaration
     template<typename R=value_type, typename F>
     auto slide(F f, const index_type& window_size, const index_type& window_step)const{
-        return gtensor::slide_flatten<R>(*this, f, window_size, window_step);
+        return slide_flatten<R>(*this, f, window_size, window_step);
     }
     //inplace tensor transform
     //f should be like [](auto first, auto last){...}, where first,last is range along axes
     template<typename F>
     void transform(const dim_type& axis, F f){
-        gtensor::transform(*this, axis, f);
+        transform(*this, axis, f);
     }
 
     //some methods that call corresponding free function of gtensor modules (tensor_math, statistic,...)
@@ -371,25 +372,25 @@ public:
     //inplace sort, should use gtensor::sort to sort copy
     template<typename DimT=dim_type, typename Comparator=std::less<void>>
     void sort(const DimT& axis=-1, const Comparator& comparator=Comparator{}){
-        return gtensor::transform(*this,axis,[&comparator](auto first, auto last){std::sort(first,last,comparator);});
+        return transform(*this,axis,[&comparator](auto first, auto last){std::sort(first,last,comparator);});
     }
     template<typename DimT=dim_type, typename Comparator=std::less<void>>
     auto argsort(const DimT& axis=-1, const Comparator& comparator=Comparator{})const{
-        return gtensor::argsort(*this,axis,comparator);
+        return argsort(*this,axis,comparator);
     }
     GTENSOR_TENSOR_REDUCE_METHOD(argmax,argmax);
     GTENSOR_TENSOR_REDUCE_METHOD(argmin,argmin);
     auto nonzero()const{
-        return gtensor::nonzero(*this);
+        return nonzero(*this);
     }
     //indexing
     template<typename DimT, typename...Us>
     auto take(const basic_tensor<Us...>& indexes, const DimT& axis)const{
-        return gtensor::take(*this,indexes,axis);
+        return take(*this,indexes,axis);
     }
     template<typename...Us>
     auto take(const basic_tensor<Us...>& indexes)const{
-        return gtensor::take(*this,indexes);
+        return take(*this,indexes);
     }
 
     //view construction operators and methods
