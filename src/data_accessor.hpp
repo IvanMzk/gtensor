@@ -44,7 +44,9 @@ auto make_range_traverser_axes_map(const DimT& dim, const Axes& axes){
             }
         );
     }else{  //axes scalar
-        std::iter_swap(res.begin(),res.begin()+axes);
+        auto tmp = *(res.begin()+axes);
+        std::copy_backward(res.begin(),res.begin()+axes,res.begin()+axes+1);
+        *res.begin() = tmp;
     }
     return res;
 }

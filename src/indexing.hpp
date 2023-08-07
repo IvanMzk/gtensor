@@ -208,7 +208,7 @@ public:
         axes_{make_axes<config_type>(make_dim(shape__),axes__)},
         axes_map_{make_range_traverser_axes_map<config_type>(make_dim(shape__),axes_)},
         traverse_shape_{make_range_traverser_shape(*shape_,axes_map_)},
-        traverse_strides_{make_range_traverser_strides_div<config_type>(traverse_shape_,axes_.size(),Order{})}
+        traverse_strides_{make_range_traverser_strides_div<config_type>(traverse_shape_,axes_number(),Order{})}
     {}
 
     const auto& axes()const{
@@ -221,9 +221,9 @@ public:
         using walker_type = gtensor::mapping_axes_walker<Walker_>;
         using traverser_type = gtensor::walker_forward_range_traverser<config_type,walker_type>;
         if constexpr (inverse.value){   //traverse all but axes
-            return traverser_type{traverse_shape_,walker_type{axes_map_,std::forward<Walker>(walker)},axes_.size(),make_dim(shape_)};
+            return traverser_type{traverse_shape_,walker_type{axes_map_,std::forward<Walker>(walker)},axes_number(),make_dim(shape_)};
         }else{  //traverse axes
-            return traverser_type{traverse_shape_,walker_type{axes_map_,std::forward<Walker>(walker)},0,axes_.size()};
+            return traverser_type{traverse_shape_,walker_type{axes_map_,std::forward<Walker>(walker)},0,axes_number()};
         }
     }
 
@@ -238,14 +238,23 @@ public:
 
 private:
 
-    template<typename Inverse>
-    auto axes_size(Inverse inverse)const{
-        if constexpr (inverse.value){
-            return std::accumulate(traverse_shape_.begin()+axes_.size(),traverse_shape_.end(),index_type{1},std::multiplies<void>{});
+    dim_type axes_number()const{
+        if constexpr (detail::is_container_v<axes_type>){
+            return axes_.size();
         }else{
-            return std::accumulate(traverse_shape_.begin(),traverse_shape_.begin()+axes_.size(),index_type{1},std::multiplies<void>{});
+            return 1;
         }
     }
+
+    template<typename Inverse>
+    index_type axes_size(Inverse inverse)const{
+        if constexpr (inverse.value){
+            return std::accumulate(traverse_shape_.begin()+axes_number(),traverse_shape_.end(),index_type{1},std::multiplies<void>{});
+        }else{
+            return std::accumulate(traverse_shape_.begin(),traverse_shape_.begin()+axes_number(),index_type{1},std::multiplies<void>{});
+        }
+    }
+
 
     template<typename Walker, typename Inverse>
     auto create_walker_iterator(Walker&& walker, const index_type& pos, Inverse inverse)const{
@@ -254,9 +263,13 @@ private:
         using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_range_traverser<config_type,walker_type>>,Order>;
         using iterator_type = gtensor::walker_iterator<config_type,traverser_type>;
         if constexpr (inverse.value){   //traverse all but axes
-            return iterator_type{walker_type{axes_map_,std::forward<Walker>(walker)},traverse_shape_,traverse_strides_,axes_.size(),make_dim(traverse_shape_)};
+            return iterator_type{walker_type{axes_map_,std::forward<Walker>(walker)},traverse_shape_,traverse_strides_,pos,axes_number(),make_dim(traverse_shape_)};
         }else{  //traverse axes
-            return iterator_type{walker_type{axes_map_,std::forward<Walker>(walker)},traverse_shape_,traverse_strides_,0,axes_.size()};
+            if constexpr (detail::is_container_v<axes_type>){
+                return iterator_type{walker_type{axes_map_,std::forward<Walker>(walker)},traverse_shape_,traverse_strides_,pos,0,axes_number()};
+            }else{  //axes scalar
+                return gtensor::axis_iterator<config_type,Walker_>{std::forward<Walker>(walker),axes_,pos};
+            }
         }
     }
 };
