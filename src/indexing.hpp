@@ -78,11 +78,12 @@ class axes_iterator_maker{
     using strides_div_type = strides_div_t<config_type>;
     using axes_container_type = typename config_type::template shape<dim_type>;
     //using axes_type = std::conditional_t<is_container_v<Axes>,axes_container_type,dim_type>;
-    using axes_type = decltype(make_axes<config_type>(std::declval<dim_type>(),std::declval<Axes>()));
+    //using axes_type = decltype(make_axes<config_type>(std::declval<dim_type>(),std::declval<Axes>()));
+    using axes_type = Axes;
     using axes_map_type = decltype(make_range_traverser_axes_map<config_type>(std::declval<dim_type>(),std::declval<axes_type>()));
 
     const shape_type* shape_;
-    axes_type axes_;
+    const axes_type* axes_;
     axes_map_type axes_map_;
     shape_type traverse_shape_;
     strides_div_type traverse_strides_;
@@ -90,15 +91,12 @@ class axes_iterator_maker{
 public:
     axes_iterator_maker(const shape_type& shape__, const Axes& axes__):
         shape_{&shape__},
-        axes_{make_axes<config_type>(make_dim(shape__),axes__)},
-        axes_map_{make_range_traverser_axes_map<config_type>(make_dim(shape__),axes_)},
+        axes_{&axes__},
+        //axes_{make_axes<config_type>(make_dim(shape__),axes__)},
+        axes_map_{make_range_traverser_axes_map<config_type>(make_dim(shape__),axes__)},
         traverse_shape_{make_range_traverser_shape(*shape_,axes_map_)},
         traverse_strides_{make_range_traverser_strides_div<config_type>(traverse_shape_,axes_number(),Order{})}
     {}
-
-    const auto& axes()const{
-        return axes_;
-    }
 
     template<typename Walker, typename Inverse=std::false_type>
     auto create_forward_traverser(Walker&& walker, Inverse inverse=Inverse{})const{
@@ -142,7 +140,7 @@ private:
 
     dim_type axes_number()const{
         if constexpr (detail::is_container_v<axes_type>){
-            return axes_.size();
+            return axes_->size();
         }else{
             return 1;
         }
@@ -170,7 +168,7 @@ private:
                 return iterator_type{walker_type{axes_map_,std::forward<Walker>(walker)},traverse_shape_,traverse_strides_,pos,0,axes_number()};
             }else{  //axes scalar
                 using axis_iterator_type = std::conditional_t<reverse.value,gtensor::reverse_axis_iterator<config_type,Walker_>,gtensor::axis_iterator<config_type,Walker_>>;
-                return axis_iterator_type{std::forward<Walker>(walker),axes_,pos};
+                return axis_iterator_type{std::forward<Walker>(walker),*axes_,pos};
             }
         }
     }
@@ -196,8 +194,8 @@ private:
 };
 
 template<typename Config, typename ShT, typename Axes, typename Order>
-auto make_axes_iterator_maker(const ShT& shape, const Axes& axes_, Order){
-    return axes_iterator_maker<Config,Axes,Order>{shape,axes_};
+auto make_axes_iterator_maker(const ShT& shape, const Axes& axes, Order){
+    return axes_iterator_maker<Config,Axes,Order>{shape,axes};
 }
 
 }   //end of namespace detail

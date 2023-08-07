@@ -6,10 +6,6 @@
 #include "tensor_factory.hpp"
 #include "view_factory.hpp"
 #include "tensor_operators.hpp"
-// #include "reduce.hpp"
-// #include "tensor_math.hpp"
-// #include "statistic.hpp"
-// #include "sort_search.hpp"
 
 #define GTENSOR_TENSOR_REDUCE_METHOD(NAME,F)\
 template<typename Axes>\

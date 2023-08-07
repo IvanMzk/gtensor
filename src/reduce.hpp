@@ -155,20 +155,6 @@ auto make_slide_shape(const IdxT& size, const ShT& shape, const DimT& axis, cons
     return res;
 }
 
-template<typename ShT>
-auto make_axis_size(const ShT& shape, const typename ShT::difference_type& axis){
-    return shape[axis];
-}
-template<typename ShT, typename Axes>
-auto make_axes_size(const ShT& shape, const typename ShT::value_type& size, const Axes& axes){
-    using index_type = typename ShT::value_type;
-    if constexpr (detail::is_container_v<Axes>){
-        return std::accumulate(axes.begin(),axes.end(),index_type{1},[&shape](const auto& r, const auto& a){return r*shape[a];});
-    }else{
-        return make_axis_size(shape,axes);
-    }
-}
-
 }   //end of namespace detail
 
 class reducer
@@ -182,28 +168,15 @@ class reducer
         using dim_type = typename config_type::dim_type;
         using index_type = typename config_type::index_type;
         using shape_type = typename config_type::shape_type;
-        using strides_div_type = detail::strides_div_t<config_type>;
-        using axes_container_type = typename config_type::template container<dim_type>;
-        using axes_type = decltype(detail::make_axes<axes_container_type>(std::declval<dim_type>(),axes_));
-        using predicate_type = decltype(detail::make_traverse_predicate(std::declval<axes_type&>(),std::false_type{}));
-        using walker_type = decltype(parent.create_walker());
-        using iterator_type = decltype(
-            detail::make_axes_iterator<traverse_order>(
-                std::declval<shape_type&>(),
-                std::declval<strides_div_type&>(),
-                std::declval<walker_type>(),
-                std::declval<index_type>(),
-                std::declval<predicate_type>()
-            )
-        );
-        using result_type = decltype(reduce_f(std::declval<iterator_type>(),std::declval<iterator_type>(),std::declval<Args>()...));
+        using axes_iterator_maker_type = decltype(detail::make_axes_iterator_maker<config_type>(std::declval<shape_type>(),axes_,traverse_order{}));
+        using axes_iterator_type = decltype(std::declval<axes_iterator_maker_type>().begin(parent.create_walker(),std::false_type{}));
+        using result_type = decltype(reduce_f(std::declval<axes_iterator_type>(),std::declval<axes_iterator_type>(),std::declval<Args>()...));
         using res_value_type = std::remove_cv_t<std::remove_reference_t<result_type>>;
         using res_config_type = config::extend_config_t<config_type,res_value_type>;
-        using axis_type = detail::axis_type_t<Axes>;
-        static_assert(math::numeric_traits<axis_type>::is_integral() && !std::is_same_v<bool,axis_type>,"Axes must be container of integrals or integral");
 
-        auto axes = detail::make_axes<axes_container_type>(parent.dim(),axes_);
+        const auto pdim = parent.dim();
         const auto& pshape = parent.shape();
+        auto axes = detail::make_axes<config_type>(pdim,axes_);
         detail::check_reduce_args(pshape, axes);
         auto res = tensor<res_value_type,order,res_config_type>{detail::make_reduce_shape(pshape, axes, keep_dims)};
         if (!res.empty()){
@@ -214,7 +187,6 @@ class reducer
             }else{
                 const auto res_size = res.size();
                 if (res_size == index_type{1}){
-                    const auto pdim = parent.dim();
                     if (pdim == dim_type{1}){   //1d, can use native order
                         auto a = parent.traverse_order_adapter(order{});
                         *res.begin() = reduce_f(a.begin(), a.end(), std::forward<Args>(args)...);
@@ -223,16 +195,14 @@ class reducer
                         *res.begin() = reduce_f(a.begin(), a.end(), std::forward<Args>(args)...);
                     }
                 }else{
-                    const auto axes_size = detail::make_axes_size(pshape,parent.size(),axes);
-                    auto predicate = detail::make_traverse_predicate(axes,std::false_type{});
-                    const auto strides = detail::make_strides_div_predicate<config_type>(pshape,predicate,traverse_order{});
-                    auto traverser = detail::make_forward_traverser(pshape,parent.create_walker(),detail::make_traverse_predicate(axes,std::true_type{}));  //traverse all but axes
+                    auto axes_iterator_maker = detail::make_axes_iterator_maker<config_type>(pshape,axes,traverse_order{});
+                    auto traverser = axes_iterator_maker.create_forward_traverser(parent.create_walker(),std::true_type{});
                     auto a = res.traverse_order_adapter(order{});
                     auto res_it = a.begin();
                     do{
                         *res_it = reduce_f(
-                            detail::make_axes_iterator<traverse_order>(pshape,strides,traverser.walker(),0,predicate),
-                            detail::make_axes_iterator<traverse_order>(pshape,strides,traverser.walker(),axes_size,predicate),
+                            axes_iterator_maker.begin_complement(traverser.walker(),std::false_type{}),
+                            axes_iterator_maker.end_complement(traverser.walker(),std::false_type{}),
                             std::forward<Args>(args)...
                         );
                         ++res_it;
@@ -291,18 +261,17 @@ class reducer
                 slide_f(parent_a.begin(), parent_a.end(), res_a.begin(), res_a.end(), std::forward<Args>(args)...);
             }else{
                 const auto& res_shape = res.shape();
-                const auto parent_axis_size = detail::make_axis_size(pshape,axis);
-                const auto res_axis_size = detail::make_axis_size(res_shape,axis);
-                auto predicate = detail::make_traverse_predicate(axis,std::true_type{});    //inverse, to traverse all but axis
-                auto parent_traverser = detail::make_forward_traverser(pshape,parent.create_walker(),predicate);
-                auto res_traverser = detail::make_forward_traverser(res_shape,res.create_walker(),predicate);
+                auto parent_axes_iterator_maker = detail::make_axes_iterator_maker<config_type>(pshape,axis,order{});
+                auto res_axes_iterator_maker = detail::make_axes_iterator_maker<config_type>(res_shape,axis,order{});
+                auto parent_traverser = parent_axes_iterator_maker.create_forward_traverser(parent.create_walker(),std::true_type{});
+                auto res_traverser = res_axes_iterator_maker.create_forward_traverser(res.create_walker(),std::true_type{});
                 do{
                     //0first,1last,2dst_first,3dst_last,4args
                     slide_f(
-                        detail::make_axis_iterator(parent_traverser.walker(),axis,index_type{0}),
-                        detail::make_axis_iterator(parent_traverser.walker(),axis,parent_axis_size),
-                        detail::make_axis_iterator(res_traverser.walker(),axis,index_type{0}),
-                        detail::make_axis_iterator(res_traverser.walker(),axis,res_axis_size),
+                        parent_axes_iterator_maker.begin_complement(parent_traverser.walker(),std::false_type{}),
+                        parent_axes_iterator_maker.end_complement(parent_traverser.walker(),std::false_type{}),
+                        res_axes_iterator_maker.begin_complement(res_traverser.walker(),std::false_type{}),
+                        res_axes_iterator_maker.end_complement(res_traverser.walker(),std::false_type{}),
                         std::forward<Args>(args)...
                     );
                     res_traverser.template next<order>();
@@ -349,7 +318,6 @@ class reducer
         using order = typename parent_type::order;
         using config_type = typename parent_type::config_type;
         using dim_type = typename config_type::dim_type;
-        using index_type = typename config_type::index_type;
 
         const auto& pshape = parent.shape();
         const dim_type axis = detail::make_axis(pshape,axis_);
@@ -359,13 +327,13 @@ class reducer
             auto a = parent.traverse_order_adapter(order{});
             transform_f(a.begin(), a.end(), std::forward<Args>(args)...);
         }else{
-            const auto parent_axis_size = detail::make_axis_size(pshape,axis);
-            auto traverser = detail::make_forward_traverser(pshape,parent.create_walker(),detail::make_traverse_predicate(axis,std::true_type{}));
+            auto axes_iterator_maker = detail::make_axes_iterator_maker<config_type>(pshape,axis,order{});
+            auto traverser = axes_iterator_maker.create_forward_traverser(parent.create_walker(),std::true_type{});
             do{
                 //0first,1last,2args
                 transform_f(
-                    detail::make_axis_iterator(traverser.walker(),axis,index_type{0}),
-                    detail::make_axis_iterator(traverser.walker(),axis,parent_axis_size),
+                    axes_iterator_maker.begin_complement(traverser.walker(),std::false_type{}),
+                    axes_iterator_maker.end_complement(traverser.walker(),std::false_type{}),
                     std::forward<Args>(args)...
                 );
             }while(traverser.template next<order>());
@@ -404,6 +372,7 @@ public:
     static void transform(basic_tensor<Ts...>& t, const DimT& axis, F f, Args&&...args){
         transform_(t,axis,f,std::forward<Args>(args)...);
     }
+
 };
 
 //make tensor reduction along axes, axes can be scalar or container,
