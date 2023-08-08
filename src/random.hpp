@@ -8,6 +8,7 @@
 #include "math.hpp"
 #include "indexing.hpp"
 #include "builder.hpp"
+#include "reduce.hpp"
 
 
 namespace gtensor{
@@ -339,7 +340,6 @@ private:
             using distribution_type = std::uniform_int_distribution<integral_type>;
             using distribution_param_type = distribution_type::param_type;
             const auto dim = t.dim();
-            const auto size = t.size();
             const auto axis = detail::make_axis(dim,axis_);
             detail::check_shuffle_args(t.shape(),axis);
             distribution_type distribution{};
@@ -349,11 +349,9 @@ private:
             }else if(t.size()>1){
                 const auto& shape = t.shape();
                 const auto axis_size = shape[axis];
-                const auto chunk_size = size / axis_size;
                 auto w1 = t.create_walker();
                 auto w2 = t.create_walker();
-                auto predicate = detail::make_traverse_predicate(axis,std::true_type{});    //inverse, traverse all but axis
-                auto strides = detail::make_strides_div_predicate<config_type>(shape,predicate,order{});
+                auto axes_iterator_maker = detail::make_axes_iterator_maker<config_type>(shape,axis,order{});
                 for (auto i=axis_size-1; i>0; --i){
                     const auto j = distribution(bit_generator_, distribution_param_type(0, static_cast<const integral_type&>(i)));
                     if (i!=j){
@@ -362,9 +360,9 @@ private:
                         w1.walk(axis,i);
                         w2.walk(axis,static_cast<const index_type&>(j));
                         std::swap_ranges(
-                            detail::make_axes_iterator<order>(shape,strides,w1,0,predicate),
-                            detail::make_axes_iterator<order>(shape,strides,w1,chunk_size,predicate),
-                            detail::make_axes_iterator<order>(shape,strides,w2,0,predicate)
+                            axes_iterator_maker.begin(w1,std::true_type{}),
+                            axes_iterator_maker.end(w1,std::true_type{}),
+                            axes_iterator_maker.begin(w2,std::true_type{})
                         );
                     }
                 }

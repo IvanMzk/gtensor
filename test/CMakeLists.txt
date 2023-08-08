@@ -53,7 +53,7 @@ target_sources(Test PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search.cpp
 #
     ${CMAKE_CURRENT_SOURCE_DIR}/test_builder.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_random.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_random.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/test.cpp
 )
