@@ -237,14 +237,11 @@ struct sort_search
             const auto axis = detail::make_axis(shape,axis_);
             const auto axis_size = shape[axis];
             const auto chunk_size = axis_size==0 ? index_type{0} : t.size()/axis_size;
-            const auto predicate = detail::make_traverse_predicate(axis,std::true_type{});  //inverse, traverse all but axis
-            const auto strides = detail::make_strides_div_predicate<config_type>(shape,predicate,config::c_order{});
-            auto traverser = detail::make_forward_traverser(t.shape(),t.create_walker(),detail::make_traverse_predicate(axis)); //traverse along axis
+            auto axes_iterator_maker = detail::make_axes_iterator_maker<config_type>(shape,axis,config::c_order{});
+            auto traverser = axes_iterator_maker.create_forward_traverser(t.create_walker(),std::false_type{});
             using walker_type = std::remove_cv_t<std::remove_reference_t<decltype(traverser.walker())>>;
-            auto make_iterator = [&shape,&strides,&predicate,&chunk_size](const auto& w, const auto& pos){
-                return pos == 0 ?
-                    detail::make_axes_iterator<config::c_order>(shape,strides,w,0,predicate):
-                    detail::make_axes_iterator<config::c_order>(shape,strides,w,chunk_size,predicate);
+            auto make_iterator = [&axes_iterator_maker](const auto& w, const auto& pos){
+                return pos == 0 ? axes_iterator_maker.begin_complement(w,std::true_type{}) : axes_iterator_maker.end_complement(w,std::true_type{});
             };
             using make_iterator_type = decltype(make_iterator);
 
@@ -316,14 +313,14 @@ struct sort_search
             res_shape_[axis] = n_unique;
             tensor<value_type,order,config_type> res(std::move(res_shape_));
             const auto& res_shape = res.shape();
-            const auto res_strides = detail::make_strides_div_predicate<config_type>(res_shape,predicate,config::c_order{});
-            auto res_traverser = detail::make_forward_traverser(res_shape,res.create_walker(),detail::make_traverse_predicate(axis)); //traverse along axis
+            auto res_axes_iterator_maker = detail::make_axes_iterator_maker<config_type>(res_shape,axis,config::c_order{});
+            auto res_traverser = res_axes_iterator_maker.create_forward_traverser(res.create_walker(),std::false_type{});
             for (auto chunks_it=chunks.begin(); chunks_it!=unique_last; ++chunks_it,res_traverser.template next<order>()){
                 const auto& chunk = *chunks_it;
                 std::copy(
                     chunk.begin(),
                     chunk.end(),
-                    detail::make_axes_iterator<config::c_order>(res_shape,res_strides,res_traverser.walker(),0,predicate)
+                    res_axes_iterator_maker.begin_complement(res_traverser.walker(),std::true_type{})
                 );
             }
             using index_tensor_type = tensor<index_type,order,config_type>;
