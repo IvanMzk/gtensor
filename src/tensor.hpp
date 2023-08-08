@@ -43,6 +43,12 @@ auto NAME()const{\
     return F(*this);\
 }
 
+#define GTENSOR_ADL_PROXY_METHOD(NAME,F)\
+template<typename...Args>\
+static auto NAME(Args&&...args){\
+    return F(std::forward<Args>(args)...);\
+}
+
 namespace gtensor{
 template<typename T, typename Layout, typename Config> class tensor;
 
@@ -90,6 +96,39 @@ public:
     auto create_indexer()const{
         return impl_->template create_indexer<TraverseOrder>();
     }
+};
+
+template<int> auto slide(); //dummy declaration
+template<int> auto slide_flatten(); //dummy declaration
+struct adl_proxy{
+    template<typename ResT, typename...Args>
+    static auto slide_(Args&&...args){
+        return slide<ResT>(std::forward<Args>(args)...);
+    }
+    template<typename ResT, typename...Args>
+    static auto slide_flatten_(Args&&...args){
+        return slide_flatten<ResT>(std::forward<Args>(args)...);
+    }
+    GTENSOR_ADL_PROXY_METHOD(reduce_,reduce);
+    GTENSOR_ADL_PROXY_METHOD(transform_,transform);
+    GTENSOR_ADL_PROXY_METHOD(all_,all);
+    GTENSOR_ADL_PROXY_METHOD(any_,any);
+    GTENSOR_ADL_PROXY_METHOD(max_,max);
+    GTENSOR_ADL_PROXY_METHOD(min_,min);
+    GTENSOR_ADL_PROXY_METHOD(sum_,sum);
+    GTENSOR_ADL_PROXY_METHOD(prod_,prod);
+    GTENSOR_ADL_PROXY_METHOD(cumsum_,cumsum);
+    GTENSOR_ADL_PROXY_METHOD(cumprod_,cumprod);
+    GTENSOR_ADL_PROXY_METHOD(ptp_,ptp);
+    GTENSOR_ADL_PROXY_METHOD(mean_,mean);
+    GTENSOR_ADL_PROXY_METHOD(median_,median);
+    GTENSOR_ADL_PROXY_METHOD(var_,var);
+    GTENSOR_ADL_PROXY_METHOD(stdev_,stdev);
+    GTENSOR_ADL_PROXY_METHOD(argmax_,argmax);
+    GTENSOR_ADL_PROXY_METHOD(argmin_,argmin);
+    GTENSOR_ADL_PROXY_METHOD(argsort_,argsort);
+    GTENSOR_ADL_PROXY_METHOD(nonzero_,nonzero);
+    GTENSOR_ADL_PROXY_METHOD(take_,take);
 };
 
 }   //end of namespace detail
@@ -315,11 +354,11 @@ public:
     //f should return scalar - first,last reduction result - that determines result's value_type
     template<typename Axes, typename F>
     auto reduce(const Axes& axes, F f, bool keep_dims=false)const{
-        return reduce(*this, axes, f, keep_dims);
+        return detail::adl_proxy::reduce_(*this, axes, f, keep_dims);
     }
     template<typename F>
     auto reduce(std::initializer_list<dim_type> axes, F f, bool keep_dims=false)const{
-        return reduce(*this, axes, f, keep_dims);
+        return detail::adl_proxy::reduce_(*this, axes, f, keep_dims);
     }
     //reduce like over flatten
     template<typename F>
@@ -333,60 +372,59 @@ public:
     //result's value_type may be specified by explicit specialization of R
     template<typename R=value_type, typename F>
     auto slide(const dim_type& axis, F f, const index_type& window_size, const index_type& window_step)const{
-        return slide<R>(*this, axis, f, window_size, window_step);
+        return detail::adl_proxy::slide_<R>(*this, axis, f, window_size, window_step);
     }
     //slide like over flatten
-    template<int> auto slide_flatten(); //dummy declaration
     template<typename R=value_type, typename F>
     auto slide(F f, const index_type& window_size, const index_type& window_step)const{
-        return slide_flatten<R>(*this, f, window_size, window_step);
+        return detail::adl_proxy::slide_flatten_<R>(*this, f, window_size, window_step);
     }
     //inplace tensor transform
     //f should be like [](auto first, auto last){...}, where first,last is range along axes
     template<typename F>
     void transform(const dim_type& axis, F f){
-        transform(*this, axis, f);
+        detail::adl_proxy::transform_(*this, axis, f);
     }
 
     //some methods that call corresponding free function of gtensor modules (tensor_math, statistic,...)
     //tensor_math
-    GTENSOR_TENSOR_REDUCE_METHOD(all,all);
-    GTENSOR_TENSOR_REDUCE_METHOD(any,any);
-    GTENSOR_TENSOR_REDUCE_INITIAL_METHOD(max,max);
-    GTENSOR_TENSOR_REDUCE_INITIAL_METHOD(min,min);
-    GTENSOR_TENSOR_REDUCE_INITIAL_METHOD(sum,sum);
-    GTENSOR_TENSOR_REDUCE_INITIAL_METHOD(prod,prod);
-    GTENSOR_TENSOR_CUMULATE_METHOD(cumsum,cumsum);
-    GTENSOR_TENSOR_CUMULATE_METHOD(cumprod,cumprod);
+    GTENSOR_TENSOR_REDUCE_METHOD(all,detail::adl_proxy::all_);
+    GTENSOR_TENSOR_REDUCE_METHOD(any,detail::adl_proxy::any_);
+    GTENSOR_TENSOR_REDUCE_INITIAL_METHOD(max,detail::adl_proxy::max_);
+    GTENSOR_TENSOR_REDUCE_INITIAL_METHOD(min,detail::adl_proxy::min_);
+    GTENSOR_TENSOR_REDUCE_INITIAL_METHOD(sum,detail::adl_proxy::sum_);
+    GTENSOR_TENSOR_REDUCE_INITIAL_METHOD(prod,detail::adl_proxy::prod_);
+    GTENSOR_TENSOR_CUMULATE_METHOD(cumsum,detail::adl_proxy::cumsum_);
+    GTENSOR_TENSOR_CUMULATE_METHOD(cumprod,detail::adl_proxy::cumprod_);
     //statistic
-    GTENSOR_TENSOR_REDUCE_METHOD(ptp,ptp);
-    GTENSOR_TENSOR_REDUCE_METHOD(mean,mean);
-    GTENSOR_TENSOR_REDUCE_METHOD(median,median);
-    GTENSOR_TENSOR_REDUCE_METHOD(var,var);
-    GTENSOR_TENSOR_REDUCE_METHOD(std,std);
+    GTENSOR_TENSOR_REDUCE_METHOD(ptp,detail::adl_proxy::ptp_);
+    GTENSOR_TENSOR_REDUCE_METHOD(mean,detail::adl_proxy::mean_);
+    GTENSOR_TENSOR_REDUCE_METHOD(median,detail::adl_proxy::median_);
+    GTENSOR_TENSOR_REDUCE_METHOD(var,detail::adl_proxy::var_);
+    GTENSOR_TENSOR_REDUCE_METHOD(stdev,detail::adl_proxy::stdev_);
     //sort_search
     //inplace sort, should use gtensor::sort to sort copy
     template<typename DimT=dim_type, typename Comparator=std::less<void>>
     void sort(const DimT& axis=-1, const Comparator& comparator=Comparator{}){
-        return transform(*this,axis,[&comparator](auto first, auto last){std::sort(first,last,comparator);});
+        return detail::adl_proxy::transform_(*this,axis,[&comparator](auto first, auto last){std::sort(first,last,comparator);});
     }
     template<typename DimT=dim_type, typename Comparator=std::less<void>>
     auto argsort(const DimT& axis=-1, const Comparator& comparator=Comparator{})const{
-        return argsort(*this,axis,comparator);
+        return detail::adl_proxy::argsort_(*this,axis,comparator);
     }
-    GTENSOR_TENSOR_REDUCE_METHOD(argmax,argmax);
-    GTENSOR_TENSOR_REDUCE_METHOD(argmin,argmin);
+    GTENSOR_TENSOR_REDUCE_METHOD(argmax,detail::adl_proxy::argmax_);
+    GTENSOR_TENSOR_REDUCE_METHOD(argmin,detail::adl_proxy::argmin_);
     auto nonzero()const{
-        return nonzero(*this);
+        return detail::adl_proxy::nonzero_(*this);
     }
     //indexing
     template<typename DimT, typename...Us>
     auto take(const basic_tensor<Us...>& indexes, const DimT& axis)const{
-        return take(*this,indexes,axis);
+        return detail::adl_proxy::take_(*this,indexes,axis);
     }
     template<typename...Us>
     auto take(const basic_tensor<Us...>& indexes)const{
-        return take(*this,indexes);
+        return detail::adl_proxy::take_(*this,indexes);
     }
 
     //view construction operators and methods
@@ -643,4 +681,5 @@ void swap(basic_tensor<T>& u, basic_tensor<T>& v){
 #undef GTENSOR_TENSOR_REDUCE_METHOD
 #undef GTENSOR_TENSOR_REDUCE_INITIAL_METHOD
 #undef GTENSOR_TENSOR_CUMULATE_METHOD
+#undef GTENSOR_ADL_PROXY_METHOD
 #endif

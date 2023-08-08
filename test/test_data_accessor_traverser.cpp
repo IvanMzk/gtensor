@@ -203,42 +203,6 @@ TEST_CASE("test_make_range_traverser_strides_div","test_data_accessor")
     apply_by_element(test,test_data);
 }
 
-TEST_CASE("test_make_strides_div_predicate","test_data_accessor")
-{
-    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config, int>;
-    using shape_type = config_type::shape_type;
-    using strides_div_type = gtensor::detail::strides_div_t<config_type>;
-    using divider_type = typename strides_div_type::value_type;
-    using gtensor::config::c_order;
-    using gtensor::config::f_order;
-    using gtensor::detail::make_strides_div_predicate;
-    using helpers_for_testing::apply_by_element;
-    //0shape,1predicate,2order,3expected
-    auto test_data = std::make_tuple(
-        std::make_tuple(shape_type{},[](auto){return true;},c_order{},strides_div_type{}),
-        std::make_tuple(shape_type{1},[](auto){return true;},c_order{},strides_div_type{divider_type{1}}),
-        std::make_tuple(shape_type{1},[](auto){return false;},c_order{},strides_div_type{}),
-        std::make_tuple(shape_type{2,3,4,5},[](auto){return true;},c_order{},strides_div_type{divider_type{60},divider_type{20},divider_type{5},divider_type{1}}),
-        std::make_tuple(shape_type{2,3,4,5},[](auto){return false;},c_order{},strides_div_type{}),
-        std::make_tuple(shape_type{2,3,4,5},[](auto i){return i==0;},c_order{},strides_div_type{divider_type{1}}),
-        std::make_tuple(shape_type{2,3,4,5},[](auto i){return i==3;},c_order{},strides_div_type{divider_type{1}}),
-        std::make_tuple(shape_type{2,3,4,5},[](auto i){return i==0 || i==3;},c_order{},strides_div_type{divider_type{5},divider_type{1}}),
-        std::make_tuple(shape_type{2,3,4,5},[](auto i){return i!=0;},c_order{},strides_div_type{divider_type{20},divider_type{5},divider_type{1}}),
-        std::make_tuple(shape_type{2,3,4,5},[](auto i){return i!=2;},c_order{},strides_div_type{divider_type{15},divider_type{5},divider_type{1}}),
-        std::make_tuple(shape_type{2,3,4,5},[](auto i){return i!=1 && i!=3;},c_order{},strides_div_type{divider_type{4},divider_type{1}})
-    );
-    auto test = [](const auto& t){
-        auto shape = std::get<0>(t);
-        auto predicate = std::get<1>(t);
-        auto order = std::get<2>(t);
-        auto expected = std::get<3>(t);
-
-        auto result = make_strides_div_predicate<config_type>(shape,predicate,order);
-        REQUIRE(result == expected);
-    };
-    apply_by_element(test,test_data);
-}
-
 TEST_CASE("test_walker_forward_traverser","test_data_accessor")
 {
     using value_type = int;

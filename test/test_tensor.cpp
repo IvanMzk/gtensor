@@ -1,6 +1,10 @@
 #include <tuple>
 #include <vector>
 #include "catch.hpp"
+#include "reduce.hpp"
+#include "tensor_math.hpp"
+#include "statistic.hpp"
+#include "sort_search.hpp"
 #include "tensor.hpp"
 #include "helpers_for_testing.hpp"
 #include "test_config.hpp"
@@ -1320,7 +1324,9 @@ TEMPLATE_TEST_CASE("test_tensor_data_interface","[test_tensor]",
             tensor_type ten = std::get<0>(t);
             auto elements_c_traverse = std::get<1>(t);
             auto walker = ten.create_walker();
-            using walker_iterator_type = gtensor::walker_iterator<config_type,decltype(walker),c_order>;
+            using walker_type = decltype(walker);
+            using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,gtensor::config::c_order>;
+            using walker_iterator_type = gtensor::walker_iterator<config_type,traverser_type>;
             walker_iterator_type first{walker, ten.shape(), ten.descriptor().strides_div(c_order{}), index_type{0}};
             walker_iterator_type last{walker, ten.shape(), ten.descriptor().strides_div(c_order{}), ten.size()};
             REQUIRE(std::equal(first,last,elements_c_traverse.begin(),elements_c_traverse.end()));
@@ -1333,7 +1339,9 @@ TEMPLATE_TEST_CASE("test_tensor_data_interface","[test_tensor]",
             tensor_type ten = std::get<0>(t);
             auto elements_f_traverse = std::get<2>(t);
             auto walker = ten.create_walker();
-            using walker_iterator_type = gtensor::walker_iterator<config_type,decltype(walker),f_order>;
+            using walker_type = decltype(walker);
+            using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,gtensor::config::f_order>;
+            using walker_iterator_type = gtensor::walker_iterator<config_type,traverser_type>;
             walker_iterator_type first{walker, ten.shape(), ten.descriptor().strides_div(f_order{}), index_type{0}};
             walker_iterator_type last{walker, ten.shape(), ten.descriptor().strides_div(f_order{}), ten.size()};
             REQUIRE(std::equal(first,last,elements_f_traverse.begin(),elements_f_traverse.end()));
@@ -2045,18 +2053,18 @@ TEST_CASE("test_tensor_statistic_methods","[test_tensor]")
     REQUIRE(tensor_close(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.var(std::vector<int>{0,1}) ,tensor_type{7.1875,0.0,4.1875,3.6875},1E-2,1E-2));
     REQUIRE(tensor_close(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.var(std::vector<int>{1,-1},true) ,tensor_type{{{6.234}},{{4.0}}},1E-2,1E-2));
 
-    //std
-    REQUIRE(tensor_type(2).std() == tensor_type(0));
-    REQUIRE(tensor_type(0).std(true) == tensor_type(0));
-    REQUIRE(tensor_close(tensor_type{1,2,3,4,5}.std(true), tensor_type{1.414},1E-2,1E-2));
-    REQUIRE(tensor_close(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.std() ,tensor_type(2.279),1E-2,1E-2));
-    REQUIRE(tensor_close(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.std(true) ,tensor_type{{{2.270}}},1E-2,1E-2));
-    REQUIRE(tensor_close(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.std(2) ,tensor_type{{2.772,1.5},{2.046,1.920}},1E-2,1E-2));
-    REQUIRE(tensor_close(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.std(1,true) ,tensor_type{{{3.5,0.0,0.0,1.0}},{{1.0,0.0,1.5,0.5}}},1E-2,1E-2));
-    REQUIRE(tensor_close(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.std({0,1}) ,tensor_type{2.680,0.0,2.046,1.920},1E-2,1E-2));
-    REQUIRE(tensor_close(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.std({1,-1},true) ,tensor_type{{{2.496}},{{2.0}}},1E-2,1E-2));
-    REQUIRE(tensor_close(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.std(std::vector<int>{0,1}) ,tensor_type{2.680,0.0,2.046,1.920},1E-2,1E-2));
-    REQUIRE(tensor_close(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.std(std::vector<int>{1,-1},true) ,tensor_type{{{2.496}},{{2.0}}},1E-2,1E-2));
+    //stdev
+    REQUIRE(tensor_type(2).stdev() == tensor_type(0));
+    REQUIRE(tensor_type(0).stdev(true) == tensor_type(0));
+    REQUIRE(tensor_close(tensor_type{1,2,3,4,5}.stdev(true), tensor_type{1.414},1E-2,1E-2));
+    REQUIRE(tensor_close(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.stdev() ,tensor_type(2.279),1E-2,1E-2));
+    REQUIRE(tensor_close(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.stdev(true) ,tensor_type{{{2.270}}},1E-2,1E-2));
+    REQUIRE(tensor_close(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.stdev(2) ,tensor_type{{2.772,1.5},{2.046,1.920}},1E-2,1E-2));
+    REQUIRE(tensor_close(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.stdev(1,true) ,tensor_type{{{3.5,0.0,0.0,1.0}},{{1.0,0.0,1.5,0.5}}},1E-2,1E-2));
+    REQUIRE(tensor_close(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.stdev({0,1}) ,tensor_type{2.680,0.0,2.046,1.920},1E-2,1E-2));
+    REQUIRE(tensor_close(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.stdev({1,-1},true) ,tensor_type{{{2.496}},{{2.0}}},1E-2,1E-2));
+    REQUIRE(tensor_close(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.stdev(std::vector<int>{0,1}) ,tensor_type{2.680,0.0,2.046,1.920},1E-2,1E-2));
+    REQUIRE(tensor_close(tensor_type{{{-3,3,3,-2},{4,3,3,0}},{{-2,3,1,3},{0,3,-2,2}}}.stdev(std::vector<int>{1,-1},true) ,tensor_type{{{2.496}},{{2.0}}},1E-2,1E-2));
 }
 
 TEST_CASE("test_tensor_indexing_methods","[test_tensor]")

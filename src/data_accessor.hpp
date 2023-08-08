@@ -11,7 +11,6 @@ namespace gtensor{
 
 namespace detail{
 
-
 //Axes is container or scalar
 //result is also container or scalar of axes
 template<typename Config, typename DimT, typename Axes>
@@ -73,22 +72,7 @@ auto make_range_traverser_strides_div(const ShT& shape, const DimT& axes_size, O
     return res;
 }
 
-template<typename Config, typename ShT, typename Predicate, typename Order>
-auto make_strides_div_predicate(const ShT& shape, const Predicate& predicate, Order order){
-    using dim_type = typename ShT::difference_type;
-    const dim_type dim = detail::make_dim(shape);
-    ShT tmp{};
-    tmp.reserve(dim);
-    for (dim_type i{0}; i!=dim; ++i){
-        if (predicate(i)){
-            tmp.push_back(shape[i]);
-        }
-    }
-    return detail::make_strides_div<Config>(tmp, order);
-}
-
 }   //end of namespace detail
-
 
 //basic indexer is data accessor that uses flat index to address data
 //indexers can be chained to make data view
@@ -334,30 +318,6 @@ private:
 
 //walker decorators
 template<typename BaseWalker>
-class trivial_view_walker : private BaseWalker
-{
-    using base_walker_type = BaseWalker;
-public:
-    using typename base_walker_type::config_type;
-    using typename base_walker_type::shape_type;
-    using typename base_walker_type::index_type;
-    using typename base_walker_type::dim_type;
-
-    template<typename BaseWalker_>
-    trivial_view_walker(BaseWalker_&& base_walker):
-        base_walker_type{std::forward<BaseWalker_>(base_walker)}
-    {}
-    using base_walker_type::walk;
-    using base_walker_type::walk_back;
-    using base_walker_type::step;
-    using base_walker_type::step_back;
-    using base_walker_type::reset;
-    using base_walker_type::reset_back;
-    using base_walker_type::operator*;
-    using base_walker_type::update_offset;
-};
-
-template<typename BaseWalker>
 class offsetting_walker : private BaseWalker
 {
     using base_walker_type = BaseWalker;
@@ -580,13 +540,8 @@ private:
     dim_type dim_offset_;
 };
 
-
-//default traverse predicate to traverse over all axes
-struct TraverseAllPredicate{};
-
 //walker_traverser implement algorithms to iterate walker using given shape
 //traverse shape may be not native walker shape but shapes must be broadcastable
-//Predicate specify what directions should be traversed
 template<typename Config, typename Walker>
 class walker_forward_traverser
 {
@@ -664,6 +619,7 @@ private:
     }
 };
 
+//traverse walker in specified axes range
 template<typename Config, typename Walker>
 class walker_forward_range_traverser : public walker_forward_traverser<Config, Walker>
 {
@@ -837,137 +793,6 @@ private:
 
     const strides_div_type* strides_;
 };
-
-
-
-
-
-
-
-// template<typename Config, typename Walker, typename Order, typename Predicate>
-// class walker_random_access_traverser_common : public walker_bidirectional_traverser<Config, Walker, Predicate>
-// {
-//     ASSERT_ORDER(Order);
-//     using walker_bidirectional_traverser_base = walker_bidirectional_traverser<Config, Walker, Predicate>;
-//     using typename walker_bidirectional_traverser_base::predicate_type;
-//     using walker_bidirectional_traverser_base::walker_;
-//     using walker_bidirectional_traverser_base::index_;
-//     using walker_bidirectional_traverser_base::dim_;
-//     using walker_bidirectional_traverser_base::predicate_;
-// protected:
-//     using typename walker_bidirectional_traverser_base::config_type;
-//     using typename walker_bidirectional_traverser_base::dim_type;
-//     using typename walker_bidirectional_traverser_base::index_type;
-//     using typename walker_bidirectional_traverser_base::shape_type;
-//     using strides_div_type = detail::strides_div_t<Config>;
-//     void move_(index_type n){
-//         if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
-//             move_c(n);
-//         }else{
-//             move_f(n);
-//         }
-//     }
-// public:
-//     template<typename Walker_, typename Predicate_>
-//     walker_random_access_traverser_common(const shape_type& shape__, const strides_div_type& strides__, Walker_&& walker__, Predicate_&& predicate__):
-//         walker_bidirectional_traverser_base(shape__, std::forward<Walker_>(walker__), std::forward<Predicate_>(predicate__)),
-//         strides_{&strides__}
-//     {}
-//     bool next(){return walker_bidirectional_traverser_base::template next<Order>();}
-//     bool prev(){return walker_bidirectional_traverser_base::template prev<Order>();}
-
-// private:
-//     void move_c(index_type n){
-//         auto index_it = index_.begin();
-//         auto strides_it = strides_->begin();
-//         for (dim_type direction{0}, last{dim_}; direction!=last; ++direction,++index_it){
-//             if constexpr (!std::is_same_v<predicate_type,TraverseAllPredicate>){
-//                 if (predicate_(direction) == false){    //traverse directions with true predicate only
-//                     continue;
-//                 }
-//             }
-//             auto steps = detail::divide(n,*strides_it);
-//             if (steps!=index_type{0}){
-//                 walker_.walk(direction,steps);
-//             }
-//             *index_it = steps;
-//             ++strides_it;
-
-//         }
-//     }
-//     void move_f(index_type n){
-//         auto index_it = index_.end();
-//         auto strides_it = strides_->end();
-//         for (dim_type direction{dim_}, first{0}; direction!=first;){
-//             --direction;
-//             --index_it;
-//             if constexpr (!std::is_same_v<predicate_type,TraverseAllPredicate>){
-//                 if (predicate_(direction) == false){    //traverse directions with true predicate only
-//                     continue;
-//                 }
-//             }
-//             --strides_it;
-//             auto steps = detail::divide(n,*strides_it);
-//             if (steps!=index_type{0}){
-//                 walker_.walk(direction,steps);
-//             }
-//             *index_it = steps;
-//         }
-//     }
-
-//     const strides_div_type* strides_;
-// };
-
-// template<typename Config, typename Walker, typename Order, typename Predicate = TraverseAllPredicate>
-// class walker_random_access_traverser : public walker_random_access_traverser_common<Config,Walker,Order,Predicate>
-// {
-//     ASSERT_ORDER(Order);
-//     using walker_random_access_traverser_common_base = walker_random_access_traverser_common<Config,Walker,Order,Predicate>;
-//     using typename walker_random_access_traverser_common_base::strides_div_type;
-//     Walker offset_;
-// public:
-//     using typename walker_random_access_traverser_common_base::config_type;
-//     using typename walker_random_access_traverser_common_base::dim_type;
-//     using typename walker_random_access_traverser_common_base::index_type;
-//     using typename walker_random_access_traverser_common_base::shape_type;
-//     using walker_random_access_traverser_common_base::walker;
-//     template<typename Walker_, typename Predicate_>
-//     walker_random_access_traverser(const shape_type& shape__, const strides_div_type& strides__, Walker_&& walker__, Predicate_&& predicate__):
-//         walker_random_access_traverser_common_base{shape__, strides__, std::forward<Walker_>(walker__), std::forward<Predicate_>(predicate__)},
-//         offset_{walker()}
-//     {}
-
-//     //n must be in range [0,size-1], where size = make_size(shape__)
-//     void move(index_type n){
-//         walker() = offset_;
-//         walker_random_access_traverser_common_base::move_(n);
-//     }
-// };
-
-// template<typename Config, typename Walker, typename Order>
-// class walker_random_access_traverser<Config,Walker,Order,TraverseAllPredicate> : public walker_random_access_traverser_common<Config,Walker,Order,TraverseAllPredicate>
-// {
-//     ASSERT_ORDER(Order);
-//     using walker_random_access_traverser_common_base = walker_random_access_traverser_common<Config,Walker,Order,TraverseAllPredicate>;
-//     using strides_div_type = typename walker_random_access_traverser_common_base::strides_div_type;
-// public:
-//     using typename walker_random_access_traverser_common_base::config_type;
-//     using typename walker_random_access_traverser_common_base::dim_type;
-//     using typename walker_random_access_traverser_common_base::index_type;
-//     using typename walker_random_access_traverser_common_base::shape_type;
-//     using walker_random_access_traverser_common_base::walker_random_access_traverser_common_base;
-
-//     template<typename Walker_>
-//     walker_random_access_traverser(const shape_type& shape__, const strides_div_type& strides__, Walker_&& walker__):
-//         walker_random_access_traverser_common_base{shape__,strides__,std::forward<Walker_>(walker__),TraverseAllPredicate{}}
-//     {}
-
-//     //n must be in range [0,size-1], where size = make_size(shape__)
-//     void move(index_type n){
-//         walker_random_access_traverser_common_base::walker().reset_back();
-//         walker_random_access_traverser_common_base::move_(n);
-//     }
-// };
 
 }   //end of namespace gtensor
 #endif
