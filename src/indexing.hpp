@@ -92,7 +92,6 @@ public:
     axes_iterator_maker(const shape_type& shape__, const Axes& axes__):
         shape_{&shape__},
         axes_{&axes__},
-        //axes_{make_axes<config_type>(make_dim(shape__),axes__)},
         axes_map_{make_range_traverser_axes_map<config_type>(make_dim(shape__),axes__)},
         traverse_shape_{make_range_traverser_shape(*shape_,axes_map_)},
         traverse_strides_{make_range_traverser_strides_div<config_type>(traverse_shape_,axes_number(),Order{})}

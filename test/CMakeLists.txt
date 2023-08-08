@@ -21,6 +21,7 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_SOURCE_DIR}/test_tmp.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_traverser.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_tensor.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_reduce.cpp
 
     #${CMAKE_CURRENT_SOURCE_DIR}/test_storage.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_common.cpp
@@ -42,13 +43,13 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_operators.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor.cpp
 #
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_indexing.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_reduce.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_indexing.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_reduce.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_manipulation.cpp
 #
     #${CMAKE_CURRENT_SOURCE_DIR}/test_math_elementwise.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_math_along_axes.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_statistic.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_statistic.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search.cpp
 #
     #${CMAKE_CURRENT_SOURCE_DIR}/test_builder.cpp
