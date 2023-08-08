@@ -163,7 +163,56 @@ auto reduce_sum(const basic_tensor<Ts...>& parent, std::initializer_list<U> axes
 //     // benchmark("sum_axes4_10E6",bench_sum,t,0,1,2,3);
 // }
 
-TEMPLATE_TEST_CASE("benchmark_reduce_stdev","[benchmark_tensor]",
+// TEMPLATE_TEST_CASE("benchmark_reduce_stdev","[benchmark_tensor]",
+//     gtensor::config::c_order,
+//     gtensor::config::f_order
+// )
+// {
+//     using value_type = double;
+//     using gtensor::tensor;
+//     using gtensor::config::c_order;
+//     using gtensor::config::f_order;
+//     using tensor_type = gtensor::tensor<value_type,TestType>;
+//     using benchmark_helpers::benchmark;
+
+//     auto bench_sum = [](const auto& t, auto...axes){
+//         if constexpr (sizeof...(axes) == 1){
+//             auto tmp = gtensor::std(t,axes...);
+//             return tmp.size();
+//         }else{
+//             auto tmp = gtensor::std(t,{axes...});
+//             return tmp.size();
+//         }
+//     };
+
+//     //auto t = tensor_type({10,5,100,1000},2);
+//     auto t = tensor_type({50,50,50,50},2);
+
+//     //like over flatten
+//     //benchmark("std_all_10E6",bench_sum,t);
+
+//     //single axis
+//     // benchmark("std_axis_10E6",bench_sum,t,0);
+//     // benchmark("std_axis_10E6",bench_sum,t,1);
+//     // benchmark("std_axis_10E6",bench_sum,t,2);
+//     // benchmark("std_axis_10E6",bench_sum,t,3);
+
+//     //axes
+//     benchmark("std_axes2_10E6",bench_sum,t,0,1);
+//     benchmark("std_axes2_10E6",bench_sum,t,0,2);
+//     benchmark("std_axes2_10E6",bench_sum,t,0,3);
+//     benchmark("std_axes2_10E6",bench_sum,t,1,2);
+//     benchmark("std_axes2_10E6",bench_sum,t,1,3);
+//     benchmark("std_axes2_10E6",bench_sum,t,2,3);
+
+
+//     // benchmark("std_axes2_10E6",bench_sum,t,0,2);
+//     // benchmark("std_axes3_10E6",bench_sum,t,0,1,2);
+//     // benchmark("std_axes4_10E6",bench_sum,t,0,1,2,3);
+// }
+
+
+TEMPLATE_TEST_CASE("benchmark_tensor_sum","[benchmark_tensor]",
     gtensor::config::c_order,
     gtensor::config::f_order
 )
@@ -176,89 +225,32 @@ TEMPLATE_TEST_CASE("benchmark_reduce_stdev","[benchmark_tensor]",
     using benchmark_helpers::benchmark;
 
     auto bench_sum = [](const auto& t, auto...axes){
-        if constexpr (sizeof...(axes) == 1){
-            auto tmp = gtensor::std(t,axes...);
-            return tmp.size();
-        }else{
-            auto tmp = gtensor::std(t,{axes...});
-            return tmp.size();
-        }
+        auto tmp = t.sum({axes...});
+        return tmp.size();
     };
 
     //auto t = tensor_type({10,5,100,1000},2);
     auto t = tensor_type({50,50,50,50},2);
 
     //like over flatten
-    //benchmark("std_all_10E6",bench_sum,t);
+    //benchmark("sum_all_10E6",bench_sum,t);
 
     //single axis
-    // benchmark("std_axis_10E6",bench_sum,t,0);
-    // benchmark("std_axis_10E6",bench_sum,t,1);
-    // benchmark("std_axis_10E6",bench_sum,t,2);
-    // benchmark("std_axis_10E6",bench_sum,t,3);
+    // benchmark("sum_axis_10E6",bench_sum,t,0);
+    // benchmark("sum_axis_10E6",bench_sum,t,1);
+    // benchmark("sum_axis_10E6",bench_sum,t,2);
+    // benchmark("sum_axis_10E6",bench_sum,t,3);
 
     //axes
-    benchmark("std_axes2_10E6",bench_sum,t,0,1);
-    benchmark("std_axes2_10E6",bench_sum,t,0,2);
-    benchmark("std_axes2_10E6",bench_sum,t,0,3);
-    benchmark("std_axes2_10E6",bench_sum,t,1,2);
-    benchmark("std_axes2_10E6",bench_sum,t,1,3);
-    benchmark("std_axes2_10E6",bench_sum,t,2,3);
+    benchmark("sum_axes2_10E6",bench_sum,t,0,1);
+    benchmark("sum_axes2_10E6",bench_sum,t,0,2);
+    benchmark("sum_axes2_10E6",bench_sum,t,0,3);
+    benchmark("sum_axes2_10E6",bench_sum,t,1,2);
+    benchmark("sum_axes2_10E6",bench_sum,t,1,3);
+    benchmark("sum_axes2_10E6",bench_sum,t,2,3);
 
 
-    // benchmark("std_axes2_10E6",bench_sum,t,0,2);
-    // benchmark("std_axes3_10E6",bench_sum,t,0,1,2);
-    // benchmark("std_axes4_10E6",bench_sum,t,0,1,2,3);
+    // benchmark("sum_axes2_10E6",bench_sum,t,0,2);
+    // benchmark("sum_axes3_10E6",bench_sum,t,0,1,2);
+    // benchmark("sum_axes4_10E6",bench_sum,t,0,1,2,3);
 }
-
-
-// TEMPLATE_TEST_CASE("benchmark_tensor_reduce","[benchmark_tensor]",
-//     gtensor::config::c_order,
-//     gtensor::config::f_order
-// )
-// {
-//     using value_type = double;
-//     using gtensor::tensor;
-//     using gtensor::config::c_order;
-//     using gtensor::config::f_order;
-//     using tensor_type = gtensor::tensor<value_type,TestType>;
-//     using benchmark_helpers::make_asymmetric_tree;
-//     using benchmark_helpers::benchmark;
-
-//     auto bench_sum = [](const auto& t, auto...axes){
-//         if constexpr (sizeof...(axes)==0){
-//             //auto tmp = t.sum();
-//             auto tmp = gtensor::sum(t);
-//             return tmp.size();
-//         }else{
-//             //auto tmp = t.sum({axes...});
-//             auto tmp = gtensor::sum(t,{axes...});
-//             return tmp.size();
-//         }
-//     };
-
-//     //auto t = tensor_type({10,5,100,1000},2);
-//     auto t = tensor_type({50,50,50,50},2);
-
-//     //like over flatten
-//     //benchmark("sum_all_10E6",bench_sum,t);
-
-//     //single axis
-//     // benchmark("sum_axis_10E6",bench_sum,t,0);
-//     // benchmark("sum_axis_10E6",bench_sum,t,1);
-//     // benchmark("sum_axis_10E6",bench_sum,t,2);
-//     // benchmark("sum_axis_10E6",bench_sum,t,3);
-
-//     //axes
-//     benchmark("sum_axes2_10E6",bench_sum,t,0,1);
-//     benchmark("sum_axes2_10E6",bench_sum,t,0,2);
-//     benchmark("sum_axes2_10E6",bench_sum,t,0,3);
-//     benchmark("sum_axes2_10E6",bench_sum,t,1,2);
-//     benchmark("sum_axes2_10E6",bench_sum,t,1,3);
-//     benchmark("sum_axes2_10E6",bench_sum,t,2,3);
-
-
-//     // benchmark("sum_axes2_10E6",bench_sum,t,0,2);
-//     // benchmark("sum_axes3_10E6",bench_sum,t,0,1,2);
-//     // benchmark("sum_axes4_10E6",bench_sum,t,0,1,2,3);
-// }
