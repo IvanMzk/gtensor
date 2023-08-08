@@ -72,8 +72,8 @@ TEST_CASE("test_make_range_traverser_axes_map_axes_scalar","test_data_accessor")
         std::make_tuple(dim_type{2},1,axes_type{1,0}),
         std::make_tuple(dim_type{4},0,axes_type{0,1,2,3}),
         std::make_tuple(dim_type{4},1,axes_type{1,0,2,3}),
-        std::make_tuple(dim_type{4},2,axes_type{2,1,0,3}),
-        std::make_tuple(dim_type{4},3,axes_type{3,1,2,0})
+        std::make_tuple(dim_type{4},2,axes_type{2,0,1,3}),
+        std::make_tuple(dim_type{4},3,axes_type{3,0,1,2})
     );
     auto test = [](const auto& t){
         auto dim = std::get<0>(t);
