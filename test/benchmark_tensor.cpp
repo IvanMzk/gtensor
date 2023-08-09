@@ -23,38 +23,38 @@ TEST_CASE("test_benchmark_helpers_make_tree","[test_benchmark_helpers]")
 
 }
 
-// TEMPLATE_TEST_CASE("benchmark_expression_view_iterator","[benchmark_tensor]",
-//     gtensor::config::c_order,
-//     gtensor::config::f_order
-// )
-// {
-//     using value_type = double;
-//     using gtensor::tensor;
-//     using gtensor::config::c_order;
-//     using gtensor::config::f_order;
-//     using tensor_type = gtensor::tensor<value_type,TestType>;
-//     using benchmark_helpers::make_asymmetric_tree;
-//     using benchmark_helpers::benchmark;
+TEMPLATE_TEST_CASE("benchmark_expression_view_iterator","[benchmark_tensor]",
+    gtensor::config::c_order,
+    gtensor::config::f_order
+)
+{
+    using value_type = double;
+    using gtensor::tensor;
+    using gtensor::config::c_order;
+    using gtensor::config::f_order;
+    using tensor_type = gtensor::tensor<value_type,TestType>;
+    using benchmark_helpers::make_asymmetric_tree;
+    using benchmark_helpers::benchmark;
 
-//     auto t1 = tensor_type({10,100,1000},2);
-//     auto t2 = tensor_type({100,1000},1);
+    auto t1 = tensor_type({10,100,1000},2);
+    auto t2 = tensor_type({100,1000},1);
 
-//     auto tree_50_1E6 = make_asymmetric_tree<50>(t1,t2);
+    auto tree_50_1E6 = make_asymmetric_tree<50>(t1,t2);
 
-//     auto bench_iteration_deref = [](const auto& t, auto order){
-//         using tensor_type = std::remove_cv_t<std::remove_reference_t<decltype(t)>>;
-//         using value_type = typename tensor_type::value_type;
-//         auto a = t.traverse_order_adapter(decltype(order){});
-//         value_type v{0};
-//         for (auto it=a.begin(),last=a.end(); it!=last; ++it){
-//             v += *it;
-//         }
-//         return v;
-//     };
+    auto bench_iteration_deref = [](const auto& t, auto order){
+        using tensor_type = std::remove_cv_t<std::remove_reference_t<decltype(t)>>;
+        using value_type = typename tensor_type::value_type;
+        auto a = t.traverse_order_adapter(decltype(order){});
+        value_type v{0};
+        for (auto it=a.begin(),last=a.end(); it!=last; ++it){
+            v += *it;
+        }
+        return v;
+    };
 
-//     benchmark("c_iteration_deref_depth50_10E6",bench_iteration_deref,tree_50_1E6,c_order{});
-//     benchmark("f_iteration_deref_depth50_10E6",bench_iteration_deref,tree_50_1E6,f_order{});
-// }
+    benchmark("c_iteration_deref_depth50_10E6",bench_iteration_deref,tree_50_1E6,c_order{});
+    benchmark("f_iteration_deref_depth50_10E6",bench_iteration_deref,tree_50_1E6,f_order{});
+}
 
 // TEMPLATE_TEST_CASE("benchmark_expression_view_reverse_iterator","[benchmark_tensor]",
 //     gtensor::config::c_order,
