@@ -229,7 +229,7 @@ namespace benchmark_expression_template_helpers{
 //     // benchmark("f_copy_slice3_view_10E6",bench_copy,v3,f_order{});
 // }
 
-TEMPLATE_TEST_CASE("benchmark_tensor_reduce","[benchmark_tensor]",
+TEMPLATE_TEST_CASE("benchmark_sum","[benchmark_tensor]",
     gtensor::config::c_order,
     gtensor::config::f_order
 )
@@ -239,7 +239,6 @@ TEMPLATE_TEST_CASE("benchmark_tensor_reduce","[benchmark_tensor]",
     using gtensor::config::c_order;
     using gtensor::config::f_order;
     using tensor_type = gtensor::tensor<value_type,TestType>;
-    using benchmark_helpers::make_asymmetric_tree;
     using benchmark_helpers::benchmark;
 
     auto bench_sum = [](const auto& t, auto...axes){
@@ -259,18 +258,18 @@ TEMPLATE_TEST_CASE("benchmark_tensor_reduce","[benchmark_tensor]",
     //benchmark("sum_all_10E6",bench_sum,t);
 
     //single axis
-    // benchmark("sum_axis_10E6",bench_sum,t,0);
-    // benchmark("sum_axis_10E6",bench_sum,t,1);
-    // benchmark("sum_axis_10E6",bench_sum,t,2);
-    // benchmark("sum_axis_10E6",bench_sum,t,3);
+    benchmark("sum_axis_10E6",bench_sum,t,0);
+    benchmark("sum_axis_10E6",bench_sum,t,1);
+    benchmark("sum_axis_10E6",bench_sum,t,2);
+    benchmark("sum_axis_10E6",bench_sum,t,3);
 
     //axes
-    benchmark("sum_axes_0_1_10E6",bench_sum,t,0,1);
-    benchmark("sum_axes_0_2_10E6",bench_sum,t,0,2);
-    benchmark("sum_axes_0_3_10E6",bench_sum,t,0,3);
-    benchmark("sum_axes_1_2_10E6",bench_sum,t,1,2);
-    benchmark("sum_axes_1_3_10E6",bench_sum,t,1,3);
-    benchmark("sum_axes_2_3_10E6",bench_sum,t,2,3);
+    // benchmark("sum_axes_0_1_10E6",bench_sum,t,0,1);
+    // benchmark("sum_axes_0_2_10E6",bench_sum,t,0,2);
+    // benchmark("sum_axes_0_3_10E6",bench_sum,t,0,3);
+    // benchmark("sum_axes_1_2_10E6",bench_sum,t,1,2);
+    // benchmark("sum_axes_1_3_10E6",bench_sum,t,1,3);
+    // benchmark("sum_axes_2_3_10E6",bench_sum,t,2,3);
 
     //benchmark("sum_axes3_10E6",bench_sum,t,0,1,2);
     //benchmark("sum_axes4_10E6",bench_sum,t,0,1,2,3);
