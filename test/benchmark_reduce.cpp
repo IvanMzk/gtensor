@@ -178,7 +178,10 @@ TEMPLATE_TEST_CASE("benchmark_tensor_sum","[benchmark_tensor]",
         return tmp.size();
     };
 
-    auto t = tensor_type({50,5,10,10,5,50},2);
+    //auto t = tensor_type({50,5,10,10,5,50},2);
+    //auto t = tensor_type({50,50,50,50},2);
+    auto t = tensor_type({1000,10,1000},2);
+    //auto t = tensor_type({100000000},2);
 
     //like over flatten
     //benchmark("sum_all_10E6",bench_sum,t);
@@ -187,22 +190,20 @@ TEMPLATE_TEST_CASE("benchmark_tensor_sum","[benchmark_tensor]",
     benchmark("sum_axis_10E6",bench_sum,t,0);
     benchmark("sum_axis_10E6",bench_sum,t,1);
     benchmark("sum_axis_10E6",bench_sum,t,2);
-    benchmark("sum_axis_10E6",bench_sum,t,3);
-    benchmark("sum_axis_10E6",bench_sum,t,4);
-    benchmark("sum_axis_10E6",bench_sum,t,5);
+    // benchmark("sum_axis_10E6",bench_sum,t,3);
+    // benchmark("sum_axis_10E6",bench_sum,t,4);
+    // benchmark("sum_axis_10E6",bench_sum,t,5);
 
     //axes
-    benchmark("sum_axes01_10E6",bench_sum,t,0,1);
-    benchmark("sum_axes02_10E6",bench_sum,t,0,2);
-    benchmark("sum_axes03_10E6",bench_sum,t,0,3);
-    benchmark("sum_axes12_10E6",bench_sum,t,1,2);
-    benchmark("sum_axes13_10E6",bench_sum,t,1,3);
-    benchmark("sum_axes23_10E6",bench_sum,t,2,3);
-    benchmark("sum_axes34_10E6",bench_sum,t,3,4);
-    benchmark("sum_axes45_10E6",bench_sum,t,4,5);
+    // benchmark("sum_axes01_10E6",bench_sum,t,0,1);
+    // benchmark("sum_axes02_10E6",bench_sum,t,0,2);
+    // benchmark("sum_axes03_10E6",bench_sum,t,0,3);
+    // benchmark("sum_axes12_10E6",bench_sum,t,1,2);
+    // benchmark("sum_axes13_10E6",bench_sum,t,1,3);
+    // benchmark("sum_axes23_10E6",bench_sum,t,2,3);
 
-    benchmark("sum_axes012_10E6",bench_sum,t,0,1,2);
-    benchmark("sum_axes024_10E6",bench_sum,t,0,2,4);
-    benchmark("sum_axes135_10E6",bench_sum,t,1,3,5);
-    benchmark("sum_axes543_10E6",bench_sum,t,5,4,3);
+    // benchmark("sum_axes012_10E6",bench_sum,t,0,1,2);
+    // benchmark("sum_axes024_10E6",bench_sum,t,0,2,4);
+    // benchmark("sum_axes135_10E6",bench_sum,t,1,3,5);
+    // benchmark("sum_axes543_10E6",bench_sum,t,5,4,3);
 }

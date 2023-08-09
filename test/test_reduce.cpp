@@ -1,5 +1,6 @@
 #include <algorithm>
 #include "catch.hpp"
+#include "builder.hpp"
 #include "reduce.hpp"
 #include "tensor.hpp"
 #include "helpers_for_testing.hpp"
@@ -732,6 +733,41 @@ TEST_CASE("test_reduce_flatten","[test_reduce]")
     apply_by_element(test, test_data);
 }
 
+TEST_CASE("test_reduce_big","[test_reduce]")
+{
+    using value_type = std::size_t;
+    using tensor_type = gtensor::tensor<value_type>;
+    using shape_type = tensor_type::shape_type;
+    using test_reduce_::sum;
+    using test_reduce_::prod;
+    using test_reduce_::max;
+    using test_reduce_::min;
+    using gtensor::reduce;
+
+    tensor_type t(shape_type{32,16,8,64,4,16}); //1<<24
+    std::for_each(t.begin(),t.end(),[init=value_type{123}](auto& e)mutable{e=init*279470273%0xfffffffb; init=e;});
+    std::for_each(t.begin(),t.end(),[](auto& e){e%=2;});
+
+    REQUIRE(
+        reduce(t,std::vector<int>{0,2,3,5},sum{},false) ==
+        tensor_type{{130985,131241,131122,131418},{131063,130985,130771,131109},{130880,130776,131173,130602},{130953,131504,130845,130713},{130533,131118,131072,130999},{131537,131601,131137,130747},{130771,131109,131092,131087},{131009,131288,131239,131240},{131045,130487,131331,131042},{130738,130992,131102,131046},{131303,130886,131084,131374},{130716,131235,131133,130959},{130922,131557,131289,131151},{130930,130964,131054,130756},{131444,131149,131506,130919},{131779,130963,131140,130513}}
+    );
+
+    REQUIRE(
+        reduce(t,std::vector<int>{0,1,3,5},sum{},false) ==
+        tensor_type{{262550,262341,261387,262795},{262126,262338,263037,261910},{262039,261752,262161,261542},{261610,261842,262138,262175},{262190,262597,262274,262151},{262391,262182,262827,261800},{261970,262571,261781,261997},{261732,262232,262485,261305}}
+    );
+
+    REQUIRE(
+        reduce(t,std::vector<int>{0,1,2,3,5},sum{},false) ==
+        tensor_type{2096608,2097855,2098090,2095675}
+    );
+
+    REQUIRE(
+        reduce(t,std::vector<int>{1,2,3,4,5},sum{},false) ==
+        tensor_type{262294,262306,261408,262194,261907,262785,262000,262093,262364,261515,261966,262240,262489,262095,262097,262023,262345,261632,262444,262166,262217,262027,262144,262242,262540,261711,262199,261935,262167,262702,261858,262123}
+    );
+}
 
 TEST_CASE("test_slide","[test_reduce]")
 {
