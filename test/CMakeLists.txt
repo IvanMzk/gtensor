@@ -20,8 +20,8 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_SOURCE_DIR}/test_helpers_for_testing.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_tmp.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_traverser.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_tensor.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/benchmark_reduce.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/benchmark_tensor.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_reduce.cpp
 
     #${CMAKE_CURRENT_SOURCE_DIR}/test_storage.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_common.cpp
