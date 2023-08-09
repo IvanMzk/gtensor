@@ -91,7 +91,8 @@ inline auto create_walker_iterator(Core& t, const Descriptor& descriptor, const 
     ASSERT_ORDER(TraverseOrder);
     using config_type = typename Core::config_type;
     using walker_type = decltype(create_walker(t,descriptor));
-    return gtensor::walker_iterator<config_type,walker_type,TraverseOrder>{
+    using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,TraverseOrder>;
+    return gtensor::walker_iterator<config_type,traverser_type>{
         create_walker(t,descriptor),
         descriptor.shape(),
         descriptor.strides_div(TraverseOrder{}),
@@ -158,7 +159,8 @@ inline auto create_reverse_walker_iterator(Core& t, const Descriptor& descriptor
     ASSERT_ORDER(TraverseOrder);
     using config_type = typename Core::config_type;
     using walker_type = decltype(create_walker(t,descriptor));
-    return gtensor::reverse_walker_iterator<config_type,walker_type,TraverseOrder>{
+    using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,TraverseOrder>;
+    return gtensor::reverse_walker_iterator<config_type,traverser_type>{
         create_walker(t,descriptor),
         descriptor.shape(),
         descriptor.strides_div(TraverseOrder{}),
@@ -244,7 +246,8 @@ inline auto create_broadcast_iterator(Core& t, const Descriptor& descriptor, ShT
     dim_type max_dim = std::max(descriptor.dim(), detail::make_dim(shape));
     auto strides_div = make_strides_div<config_type>(shape, TraverseOrder{});
     using walker_type = decltype(create_walker(t,descriptor,max_dim));
-    return broadcast_iterator<config_type,walker_type,TraverseOrder>{
+    using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,TraverseOrder>;
+    return broadcast_iterator<config_type,traverser_type>{
         create_walker(t,descriptor,max_dim),
         std::forward<ShT>(shape),
         std::move(strides_div),
@@ -273,7 +276,8 @@ inline auto create_reverse_broadcast_iterator(Core& t, const Descriptor& descrip
     dim_type max_dim = std::max(descriptor.dim(), detail::make_dim(shape));
     auto strides_div = make_strides_div<config_type>(shape, TraverseOrder{});
     using walker_type = decltype(create_walker(t,descriptor,max_dim));
-    return reverse_broadcast_iterator<config_type,walker_type,TraverseOrder>{
+    using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,TraverseOrder>;
+    return reverse_broadcast_iterator<config_type,traverser_type>{
         create_walker(t,descriptor,max_dim),
         std::forward<ShT>(shape),
         std::move(strides_div),

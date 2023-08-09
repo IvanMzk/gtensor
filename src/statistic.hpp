@@ -54,7 +54,7 @@ struct statistic
 
     //standart deviation of elements along given axes
     //axes may be scalar or container
-    GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(std,statistic_reduce_operations::stdev);
+    GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(stdev,statistic_reduce_operations::stdev);
 
     //quantile of elements along given axes
     //axes may be scalar or container
@@ -628,7 +628,7 @@ GTENSOR_TENSOR_STATISTIC_REDUCE_ROUTINE(var,var);
 
 //standart deviation of elements along given axes
 //axes may be scalar or container
-GTENSOR_TENSOR_STATISTIC_REDUCE_ROUTINE(std,std);
+GTENSOR_TENSOR_STATISTIC_REDUCE_ROUTINE(stdev,stdev);
 
 //median of elements along given axes
 //axes may be scalar or container

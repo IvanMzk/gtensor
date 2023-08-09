@@ -218,7 +218,9 @@ TEST_CASE("test_expression_template_core","[test_expression_template_engine]")
         REQUIRE(result_dim == expected_dim);
         REQUIRE(result_size == expected_size);
         REQUIRE(result_shape == expected_shape);
-        using iterator_type = walker_iterator<config_type,decltype(result_core.create_walker(result_dim)),gtensor::config::c_order>;
+        using walker_type = decltype(result_core.create_walker(result_dim));
+        using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,gtensor::config::c_order>;
+        using iterator_type = walker_iterator<config_type,traverser_type>;
         auto result_first = iterator_type{
             result_core.create_walker(result_dim),
             result_core.descriptor().shape(),

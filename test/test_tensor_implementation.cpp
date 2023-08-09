@@ -474,8 +474,10 @@ TEMPLATE_TEST_CASE("test_tensor_implementation","[test_tensor_implementation]",
             tensor_implementation_type tensor_implementation{shape, elements.begin(), elements.end()};
             auto result_shape = tensor_implementation.shape();
             REQUIRE(result_shape == expected_shape);
+            using walker_type = decltype(tensor_implementation.create_walker());
             using traverse_order_type = decltype(traverse_order);
-            using walker_iterator_type = gtensor::walker_iterator<config_type,decltype(tensor_implementation.create_walker()),traverse_order_type>;
+            using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,traverse_order_type>;
+            using walker_iterator_type = gtensor::walker_iterator<config_type,traverser_type>;
             walker_iterator_type first{
                 tensor_implementation.create_walker(),
                 tensor_implementation.shape(),

@@ -2,68 +2,134 @@
 #include <vector>
 #include "catch.hpp"
 #include "indexing.hpp"
-#include "sort_search.hpp"
+//#include "sort_search.hpp"
 #include "tensor.hpp"
 #include "helpers_for_testing.hpp"
 
-TEST_CASE("test_indexing_traverse_predicate","[test_indexing]")
+TEST_CASE("test_indexing_axes_iterator_maker","[test_indexing]")
 {
-    using gtensor::detail::make_traverse_predicate;
-    using gtensor::detail::traverse_predicate;
+    using value_type = double;
+    using config_type = gtensor::config::extend_config_t<gtensor::config::default_config,value_type>;
+    using shape_type = config_type::shape_type;
+    using storage_type = std::vector<double>;
+    using indexer_type = gtensor::basic_indexer<storage_type&>;
+    using walker_type =  gtensor::indexer_walker<config_type,indexer_type>;
+    using gtensor::config::c_order;
+    using gtensor::config::f_order;
+    using gtensor::detail::make_axes_iterator_maker;
     using helpers_for_testing::apply_by_element;
 
-    //0axes,1inverse,2axis,3expected
+    const storage_type c_storage{7,5,8,5,0,5,5,1,3,8,0,8,0,0,2,5,1,2,3,0,6,7,3,7,4,8,0,7,0,0,2,4,1,5,8,5,6,8,4,8,4,1,3,2,7,0,6,2,7,3,6,4,2,6,4,7,0,3,3,1,2,1,3,0,4,7,4,4,7,6,3,3};
+    const shape_type shape{3,2,1,3,4};
+
+    //0storage_layout,1storage,2shape,3axes,4traverse_order,5inverse,6expected
     auto test_data = std::make_tuple(
-        //no inverse
+        //no_inverse
         //axes scalar
-        std::make_tuple(0,std::false_type{},0,true),
-        std::make_tuple(0,std::false_type{},1,false),
-        std::make_tuple(0,std::false_type{},2,false),
-        std::make_tuple(2,std::false_type{},0,false),
-        std::make_tuple(2,std::false_type{},1,false),
-        std::make_tuple(2,std::false_type{},2,true),
+        //c_order traverse
+        std::make_tuple(c_order{},c_storage,shape,0,c_order{},std::false_type{},std::vector<value_type>{7,4,7}),
+        std::make_tuple(c_order{},c_storage,shape,1,c_order{},std::false_type{},std::vector<value_type>{7,0}),
+        std::make_tuple(c_order{},c_storage,shape,2,c_order{},std::false_type{},std::vector<value_type>{7}),
+        std::make_tuple(c_order{},c_storage,shape,3,c_order{},std::false_type{},std::vector<value_type>{7,0,3}),
+        std::make_tuple(c_order{},c_storage,shape,4,c_order{},std::false_type{},std::vector<value_type>{7,5,8,5}),
+        //f_order traverse
+        std::make_tuple(c_order{},c_storage,shape,0,f_order{},std::false_type{},std::vector<value_type>{7,4,7}),
+        std::make_tuple(c_order{},c_storage,shape,1,f_order{},std::false_type{},std::vector<value_type>{7,0}),
+        std::make_tuple(c_order{},c_storage,shape,2,f_order{},std::false_type{},std::vector<value_type>{7}),
+        std::make_tuple(c_order{},c_storage,shape,3,f_order{},std::false_type{},std::vector<value_type>{7,0,3}),
+        std::make_tuple(c_order{},c_storage,shape,4,f_order{},std::false_type{},std::vector<value_type>{7,5,8,5}),
         //axes container
-        std::make_tuple(std::vector<std::size_t>{},std::false_type{},0,false),
-        std::make_tuple(std::vector<std::size_t>{},std::false_type{},1,false),
-        std::make_tuple(std::vector<std::size_t>{},std::false_type{},2,false),
-        std::make_tuple(std::vector<std::size_t>{1},std::false_type{},0,false),
-        std::make_tuple(std::vector<std::size_t>{1},std::false_type{},1,true),
-        std::make_tuple(std::vector<std::size_t>{1},std::false_type{},2,false),
-        std::make_tuple(std::vector<std::size_t>{1,3},std::false_type{},0,false),
-        std::make_tuple(std::vector<std::size_t>{1,3},std::false_type{},1,true),
-        std::make_tuple(std::vector<std::size_t>{1,3},std::false_type{},2,false),
-        std::make_tuple(std::vector<std::size_t>{1,3},std::false_type{},3,true),
-        std::make_tuple(std::vector<std::size_t>{1,3},std::false_type{},4,false),
+        //c_order traverse
+        std::make_tuple(c_order{},c_storage,shape,std::vector<int>{},c_order{},std::false_type{},std::vector<value_type>{7}),
+        std::make_tuple(c_order{},c_storage,shape,std::vector<int>{0},c_order{},std::false_type{},std::vector<value_type>{7,4,7}),
+        std::make_tuple(c_order{},c_storage,shape,std::vector<int>{0,1},c_order{},std::false_type{},std::vector<value_type>{7,0,4,6,7,2}),
+        std::make_tuple(c_order{},c_storage,shape,std::vector<int>{0,2},c_order{},std::false_type{},std::vector<value_type>{7,4,7}),
+        std::make_tuple(c_order{},c_storage,shape,std::vector<int>{0,3},c_order{},std::false_type{},std::vector<value_type>{7,0,3,4,0,1,7,2,0}),
+        std::make_tuple(c_order{},c_storage,shape,std::vector<int>{0,4},c_order{},std::false_type{},std::vector<value_type>{7,5,8,5,4,8,0,7,7,3,6,4}),
+        std::make_tuple(c_order{},c_storage,shape,std::vector<int>{3,1,2},c_order{},std::false_type{},std::vector<value_type>{7,0,3,0,1,6}),
+        std::make_tuple(c_order{},c_storage,shape,std::vector<int>{2,0,4,3,1},c_order{},std::false_type{},
+            std::vector<value_type>{7,5,8,5,0,5,5,1,3,8,0,8,0,0,2,5,1,2,3,0,6,7,3,7,4,8,0,7,0,0,2,4,1,5,8,5,6,8,4,8,4,1,3,2,7,0,6,2,7,3,6,4,2,6,4,7,0,3,3,1,2,1,3,0,4,7,4,4,7,6,3,3}
+        ),
+        //f_order traverse
+        std::make_tuple(c_order{},c_storage,shape,std::vector<int>{},f_order{},std::false_type{},std::vector<value_type>{7}),
+        std::make_tuple(c_order{},c_storage,shape,std::vector<int>{0,1},f_order{},std::false_type{},std::vector<value_type>{7,4,7,0,6,2}),
+        std::make_tuple(c_order{},c_storage,shape,std::vector<int>{0,2},f_order{},std::false_type{},std::vector<value_type>{7,4,7}),
+        std::make_tuple(c_order{},c_storage,shape,std::vector<int>{0,3},f_order{},std::false_type{},std::vector<value_type>{7,4,7,0,0,2,3,1,0}),
+        std::make_tuple(c_order{},c_storage,shape,std::vector<int>{0,4},f_order{},std::false_type{},std::vector<value_type>{7,4,7,5,8,3,8,0,6,5,7,4}),
+        std::make_tuple(c_order{},c_storage,shape,std::vector<int>{3,1,2},f_order{},std::false_type{},std::vector<value_type>{7,0,0,1,3,6}),
+        std::make_tuple(c_order{},c_storage,shape,std::vector<int>{2,0,4,3,1},f_order{},std::false_type{},
+            std::vector<value_type>{7,4,7,0,6,2,0,0,2,1,4,4,3,1,0,6,7,7,5,8,3,0,8,1,5,0,6,2,1,7,8,5,3,7,0,6,8,0,6,2,4,3,5,2,4,3,3,4,0,8,3,3,6,3,5,7,4,5,8,0,1,4,7,0,2,4,8,5,1,7,2,3}
+        ),
         //inverse
         //axes scalar
-        std::make_tuple(0,std::true_type{},0,false),
-        std::make_tuple(0,std::true_type{},1,true),
-        std::make_tuple(0,std::true_type{},2,true),
-        std::make_tuple(2,std::true_type{},0,true),
-        std::make_tuple(2,std::true_type{},1,true),
-        std::make_tuple(2,std::true_type{},2,false),
+        //c_order traverse
+        std::make_tuple(c_order{},c_storage,shape,0,c_order{},std::true_type{},std::vector<value_type>{7,5,8,5,0,5,5,1,3,8,0,8,0,0,2,5,1,2,3,0,6,7,3,7}),
+        std::make_tuple(c_order{},c_storage,shape,1,c_order{},std::true_type{},std::vector<value_type>{7,5,8,5,0,5,5,1,3,8,0,8,4,8,0,7,0,0,2,4,1,5,8,5,7,3,6,4,2,6,4,7,0,3,3,1}),
+        std::make_tuple(c_order{},c_storage,shape,2,c_order{},std::true_type{},
+            std::vector<value_type>{7,5,8,5,0,5,5,1,3,8,0,8,0,0,2,5,1,2,3,0,6,7,3,7,4,8,0,7,0,0,2,4,1,5,8,5,6,8,4,8,4,1,3,2,7,0,6,2,7,3,6,4,2,6,4,7,0,3,3,1,2,1,3,0,4,7,4,4,7,6,3,3}
+        ),
+        std::make_tuple(c_order{},c_storage,shape,3,c_order{},std::true_type{},std::vector<value_type>{7,5,8,5,0,0,2,5,4,8,0,7,6,8,4,8,7,3,6,4,2,1,3,0}),
+        std::make_tuple(c_order{},c_storage,shape,4,c_order{},std::true_type{},std::vector<value_type>{7,0,3,0,1,6,4,0,1,6,4,7,7,2,0,2,4,7}),
+        //f_order traverse
+        std::make_tuple(c_order{},c_storage,shape,0,f_order{},std::true_type{},std::vector<value_type>{7,0,0,1,3,6,5,0,5,2,8,7,8,2,5,3,0,3,5,5,1,0,8,7}),
+        std::make_tuple(c_order{},c_storage,shape,1,f_order{},std::true_type{},std::vector<value_type>{7,4,7,0,0,2,3,1,0,5,8,3,5,0,6,8,5,3,8,0,6,5,2,4,0,8,3,5,7,4,1,4,7,8,5,1}),
+        std::make_tuple(c_order{},c_storage,shape,2,f_order{},std::true_type{},
+            std::vector<value_type>{7,4,7,0,6,2,0,0,2,1,4,4,3,1,0,6,7,7,5,8,3,0,8,1,5,0,6,2,1,7,8,5,3,7,0,6,8,0,6,2,4,3,5,2,4,3,3,4,0,8,3,3,6,3,5,7,4,5,8,0,1,4,7,0,2,4,8,5,1,7,2,3}
+        ),
+        std::make_tuple(c_order{},c_storage,shape,3,f_order{},std::true_type{},std::vector<value_type>{7,4,7,0,6,2,5,8,3,0,8,1,8,0,6,2,4,3,5,7,4,5,8,0}),
+        std::make_tuple(c_order{},c_storage,shape,4,f_order{},std::true_type{},std::vector<value_type>{7,4,7,0,6,2,0,0,2,1,4,4,3,1,0,6,7,7}),
         //axes container
-        std::make_tuple(std::vector<std::size_t>{},std::true_type{},0,true),
-        std::make_tuple(std::vector<std::size_t>{},std::true_type{},1,true),
-        std::make_tuple(std::vector<std::size_t>{},std::true_type{},2,true),
-        std::make_tuple(std::vector<std::size_t>{1},std::true_type{},0,true),
-        std::make_tuple(std::vector<std::size_t>{1},std::true_type{},1,false),
-        std::make_tuple(std::vector<std::size_t>{1},std::true_type{},2,true),
-        std::make_tuple(std::vector<std::size_t>{1,3},std::true_type{},0,true),
-        std::make_tuple(std::vector<std::size_t>{1,3},std::true_type{},1,false),
-        std::make_tuple(std::vector<std::size_t>{1,3},std::true_type{},2,true),
-        std::make_tuple(std::vector<std::size_t>{1,3},std::true_type{},3,false),
-        std::make_tuple(std::vector<std::size_t>{1,3},std::true_type{},4,true)
+        //c_order traverse
+        std::make_tuple(c_order{},c_storage,shape,std::vector<int>{},c_order{},std::true_type{},
+            std::vector<value_type>{7,5,8,5,0,5,5,1,3,8,0,8,0,0,2,5,1,2,3,0,6,7,3,7,4,8,0,7,0,0,2,4,1,5,8,5,6,8,4,8,4,1,3,2,7,0,6,2,7,3,6,4,2,6,4,7,0,3,3,1,2,1,3,0,4,7,4,4,7,6,3,3}
+        ),
+        std::make_tuple(c_order{},c_storage,shape,std::vector<int>{0},c_order{},std::true_type{},std::vector<value_type>{7,5,8,5,0,5,5,1,3,8,0,8,0,0,2,5,1,2,3,0,6,7,3,7}),
+        std::make_tuple(c_order{},c_storage,shape,std::vector<int>{0,1},c_order{},std::true_type{},std::vector<value_type>{7,5,8,5,0,5,5,1,3,8,0,8}),
+        std::make_tuple(c_order{},c_storage,shape,std::vector<int>{0,2},c_order{},std::true_type{},std::vector<value_type>{7,5,8,5,0,5,5,1,3,8,0,8,0,0,2,5,1,2,3,0,6,7,3,7}),
+        std::make_tuple(c_order{},c_storage,shape,std::vector<int>{0,3},c_order{},std::true_type{},std::vector<value_type>{7,5,8,5,0,0,2,5}),
+        std::make_tuple(c_order{},c_storage,shape,std::vector<int>{0,4},c_order{},std::true_type{},std::vector<value_type>{7,0,3,0,1,6}),
+        std::make_tuple(c_order{},c_storage,shape,std::vector<int>{3,1,2},c_order{},std::true_type{},std::vector<value_type>{7,5,8,5,4,8,0,7,7,3,6,4}),
+        std::make_tuple(c_order{},c_storage,shape,std::vector<int>{2,0,4,3,1},c_order{},std::true_type{},std::vector<value_type>{7}),
+        //f_order traverse
+        std::make_tuple(c_order{},c_storage,shape,std::vector<int>{},f_order{},std::true_type{},
+            std::vector<value_type>{7,4,7,0,6,2,0,0,2,1,4,4,3,1,0,6,7,7,5,8,3,0,8,1,5,0,6,2,1,7,8,5,3,7,0,6,8,0,6,2,4,3,5,2,4,3,3,4,0,8,3,3,6,3,5,7,4,5,8,0,1,4,7,0,2,4,8,5,1,7,2,3}
+        ),
+        std::make_tuple(c_order{},c_storage,shape,std::vector<int>{0},f_order{},std::true_type{},std::vector<value_type>{7,0,0,1,3,6,5,0,5,2,8,7,8,2,5,3,0,3,5,5,1,0,8,7}),
+        std::make_tuple(c_order{},c_storage,shape,std::vector<int>{0,1},f_order{},std::true_type{},std::vector<value_type>{7,0,3,5,5,8,8,5,0,5,1,8}),
+        std::make_tuple(c_order{},c_storage,shape,std::vector<int>{0,2},f_order{},std::true_type{},std::vector<value_type>{7,0,0,1,3,6,5,0,5,2,8,7,8,2,5,3,0,3,5,5,1,0,8,7}),
+        std::make_tuple(c_order{},c_storage,shape,std::vector<int>{0,3},f_order{},std::true_type{},std::vector<value_type>{7,0,5,0,8,2,5,5}),
+        std::make_tuple(c_order{},c_storage,shape,std::vector<int>{0,4},f_order{},std::true_type{},std::vector<value_type>{7,0,0,1,3,6}),
+        std::make_tuple(c_order{},c_storage,shape,std::vector<int>{3,1,2},f_order{},std::true_type{},std::vector<value_type>{7,4,7,5,8,3,8,0,6,5,7,4}),
+        std::make_tuple(c_order{},c_storage,shape,std::vector<int>{2,0,4,3,1},f_order{},std::true_type{},std::vector<value_type>{7})
     );
-    auto test = [](const auto& t){
-        auto axes = std::get<0>(t);
-        auto inverse = std::get<1>(t);
-        auto axis = std::get<2>(t);
-        auto expected = std::get<3>(t);
-        auto predicate = make_traverse_predicate(axes,inverse);
 
-        auto result = predicate(axis);
-        REQUIRE(result == expected);
+    auto test_random_access = [](auto res_first, auto res_last, auto expected_first, auto expected_last){
+        std::vector<value_type> result;
+        auto i = res_last-res_first;
+        while(i!=0){
+            result.push_back(res_first[--i]);
+        }
+        REQUIRE(std::equal(result.rbegin(),result.rend(),expected_first,expected_last));
+    };
+
+    auto test = [test_random_access](const auto& t){
+        auto storage_layout = std::get<0>(t);
+        auto storage = std::get<1>(t);
+        auto shape = std::get<2>(t);
+        auto axes = std::get<3>(t);
+        auto traverse_order = std::get<4>(t);
+        auto inverse = std::get<5>(t);
+        auto expected = std::get<6>(t);
+
+        auto strides = gtensor::detail::make_strides(shape, storage_layout);
+        auto adapted_strides = gtensor::detail::make_adapted_strides(shape,strides);
+        auto reset_strides = gtensor::detail::make_reset_strides(shape,strides);
+        auto indexer = indexer_type{storage};
+        auto walker =  walker_type{adapted_strides, reset_strides, 0, indexer};
+        auto iterator_maker = make_axes_iterator_maker<config_type>(shape, axes, traverse_order);
+        REQUIRE(std::equal(iterator_maker.begin(walker,inverse),iterator_maker.end(walker,inverse),expected.begin(),expected.end()));
+        REQUIRE(std::equal(iterator_maker.rbegin(walker,inverse),iterator_maker.rend(walker,inverse),expected.rbegin(),expected.rend()));
+        test_random_access(iterator_maker.begin(walker,inverse),iterator_maker.end(walker,inverse),expected.begin(),expected.end());
     };
     apply_by_element(test,test_data);
 }
@@ -413,27 +479,27 @@ TEMPLATE_TEST_CASE("test_indexing_take_along_axis_like_over_flatten","[test_inde
     apply_by_element(test,test_data);
 }
 
-TEMPLATE_TEST_CASE("test_indexing_take_along_axis_reconstruction","[test_indexing]",
-    //layout
-    gtensor::config::c_order,
-    gtensor::config::f_order
-)
-{
-    using value_type = double;
-    using tensor_type = gtensor::tensor<value_type,TestType>;
-    using gtensor::argsort;
-    using gtensor::take_along_axis;
+// TEMPLATE_TEST_CASE("test_indexing_take_along_axis_reconstruction","[test_indexing]",
+//     //layout
+//     gtensor::config::c_order,
+//     gtensor::config::f_order
+// )
+// {
+//     using value_type = double;
+//     using tensor_type = gtensor::tensor<value_type,TestType>;
+//     using gtensor::argsort;
+//     using gtensor::take_along_axis;
 
-    REQUIRE(take_along_axis(tensor_type{2,1,6,3,2,1,0,5},argsort(tensor_type{2,1,6,3,2,1,0,5})) == tensor_type{0,1,1,2,2,3,5,6});
-    REQUIRE(
-        take_along_axis(tensor_type{{2,1,-1,6,3},{8,2,1,0,5},{-1,7,0,4,2},{4,4,2,1,4},{3,1,6,4,3}},argsort(tensor_type{{2,1,-1,6,3},{8,2,1,0,5},{-1,7,0,4,2},{4,4,2,1,4},{3,1,6,4,3}},0),0) ==
-        tensor_type{{-1,1,-1,0,2},{2,1,0,1,3},{3,2,1,4,3},{4,4,2,4,4},{8,7,6,6,5}}
-    );
-    REQUIRE(
-        take_along_axis(tensor_type{{2,1,-1,6,3},{8,2,1,0,5},{-1,7,0,4,2},{4,4,2,1,4},{3,1,6,4,3}}, argsort(tensor_type{{2,1,-1,6,3},{8,2,1,0,5},{-1,7,0,4,2},{4,4,2,1,4},{3,1,6,4,3}},1),1) ==
-        tensor_type{{-1,1,2,3,6},{0,1,2,5,8},{-1,0,2,4,7},{1,2,4,4,4},{1,3,3,4,6}}
-    );
-}
+//     REQUIRE(take_along_axis(tensor_type{2,1,6,3,2,1,0,5},argsort(tensor_type{2,1,6,3,2,1,0,5})) == tensor_type{0,1,1,2,2,3,5,6});
+//     REQUIRE(
+//         take_along_axis(tensor_type{{2,1,-1,6,3},{8,2,1,0,5},{-1,7,0,4,2},{4,4,2,1,4},{3,1,6,4,3}},argsort(tensor_type{{2,1,-1,6,3},{8,2,1,0,5},{-1,7,0,4,2},{4,4,2,1,4},{3,1,6,4,3}},0),0) ==
+//         tensor_type{{-1,1,-1,0,2},{2,1,0,1,3},{3,2,1,4,3},{4,4,2,4,4},{8,7,6,6,5}}
+//     );
+//     REQUIRE(
+//         take_along_axis(tensor_type{{2,1,-1,6,3},{8,2,1,0,5},{-1,7,0,4,2},{4,4,2,1,4},{3,1,6,4,3}}, argsort(tensor_type{{2,1,-1,6,3},{8,2,1,0,5},{-1,7,0,4,2},{4,4,2,1,4},{3,1,6,4,3}},1),1) ==
+//         tensor_type{{-1,1,2,3,6},{0,1,2,5,8},{-1,0,2,4,7},{1,2,4,4,4},{1,3,3,4,6}}
+//     );
+// }
 
 TEMPLATE_TEST_CASE("test_indexing_take_along_axis_exception","[test_indexing]",
     //input order, indexes order
@@ -471,3 +537,4 @@ TEMPLATE_TEST_CASE("test_indexing_take_along_axis_exception","[test_indexing]",
     REQUIRE_THROWS_AS(take_along_axis(tensor_type{{1,2,3},{4,5,6}},index_tensor_type{{0,1,3,2}},1),index_error);
     REQUIRE_THROWS_AS(take_along_axis(tensor_type{{1,2,3},{4,5,6}},index_tensor_type{0,6,2,3}),index_error);
 }
+

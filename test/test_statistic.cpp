@@ -399,8 +399,8 @@ TEMPLATE_TEST_CASE("test_statistic_std_nanstd_normal_values","test_statistic",
     using result_value_type = typename gtensor::math::numeric_traits<value_type>::floating_point_type;
     static constexpr result_value_type nan = gtensor::math::numeric_traits<result_value_type>::nan();
     using result_tensor_type = gtensor::tensor<result_value_type>;
-    REQUIRE(std::is_same_v<typename decltype(gtensor::std(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>()))::value_type,result_value_type>);
-    REQUIRE(std::is_same_v<typename decltype(gtensor::std(std::declval<tensor_type>(),std::declval<std::vector<int>>(),std::declval<bool>()))::value_type,result_value_type>);
+    REQUIRE(std::is_same_v<typename decltype(gtensor::stdev(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>()))::value_type,result_value_type>);
+    REQUIRE(std::is_same_v<typename decltype(gtensor::stdev(std::declval<tensor_type>(),std::declval<std::vector<int>>(),std::declval<bool>()))::value_type,result_value_type>);
     REQUIRE(std::is_same_v<typename decltype(nanstd(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>()))::value_type,result_value_type>);
     REQUIRE(std::is_same_v<typename decltype(nanstd(std::declval<tensor_type>(),std::declval<std::vector<int>>(),std::declval<bool>()))::value_type,result_value_type>);
 
@@ -444,7 +444,7 @@ TEMPLATE_TEST_CASE("test_statistic_std_nanstd_normal_values","test_statistic",
             auto axes = std::get<1>(t);
             auto keep_dims = std::get<2>(t);
             auto expected = std::get<3>(t);
-            auto result = gtensor::std(ten,axes,keep_dims);
+            auto result = gtensor::stdev(ten,axes,keep_dims);
             REQUIRE(tensor_close(result,expected,1E-2,1E-2,true));
         };
         apply_by_element(test,test_data);
@@ -470,24 +470,24 @@ TEMPLATE_TEST_CASE("test_statistic_std_nanstd_initializer_list_axes_all_axes","t
 {
     using value_type = TestType;
     using tensor_type = gtensor::tensor<value_type>;
-    using gtensor::std;
+    using gtensor::stdev;
     using gtensor::nanstd;
     using gtensor::tensor_close;
     using helpers_for_testing::apply_by_element;
     using result_value_type = typename gtensor::math::numeric_traits<value_type>::floating_point_type;
     using result_tensor_type = gtensor::tensor<result_value_type>;
 
-    REQUIRE(std::is_same_v<typename decltype(std(std::declval<tensor_type>(),std::declval<std::initializer_list<int>>(),std::declval<bool>()))::value_type,result_value_type>);
+    REQUIRE(std::is_same_v<typename decltype(stdev(std::declval<tensor_type>(),std::declval<std::initializer_list<int>>(),std::declval<bool>()))::value_type,result_value_type>);
     REQUIRE(std::is_same_v<typename decltype(nanstd(std::declval<tensor_type>(),std::declval<std::initializer_list<int>>(),std::declval<bool>()))::value_type,result_value_type>);
     //std
-    REQUIRE(tensor_close(std(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0},false), result_tensor_type{{3,3,3},{3,3,3}}, 1E-2, 1E-2));
-    REQUIRE(tensor_close(std(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1},false), result_tensor_type{3.354,3.354,3.354}, 1E-2, 1E-2));
-    REQUIRE(tensor_close(std(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{2,1},true), result_tensor_type{{{1.707}},{{1.707}}}, 1E-2, 1E-2));
+    REQUIRE(tensor_close(stdev(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0},false), result_tensor_type{{3,3,3},{3,3,3}}, 1E-2, 1E-2));
+    REQUIRE(tensor_close(stdev(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1},false), result_tensor_type{3.354,3.354,3.354}, 1E-2, 1E-2));
+    REQUIRE(tensor_close(stdev(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{2,1},true), result_tensor_type{{{1.707}},{{1.707}}}, 1E-2, 1E-2));
     //all axes
-    REQUIRE(tensor_close(std(tensor_type{{{5}}}), result_tensor_type(0), 1E-2, 1E-2));
-    REQUIRE(tensor_close(std(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},false), result_tensor_type(3.452), 1E-2, 1E-2));
-    REQUIRE(tensor_close(std(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}}), result_tensor_type(3.452), 1E-2, 1E-2));
-    REQUIRE(tensor_close(std(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},true), result_tensor_type{{{3.452}}}, 1E-2, 1E-2));
+    REQUIRE(tensor_close(stdev(tensor_type{{{5}}}), result_tensor_type(0), 1E-2, 1E-2));
+    REQUIRE(tensor_close(stdev(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},false), result_tensor_type(3.452), 1E-2, 1E-2));
+    REQUIRE(tensor_close(stdev(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}}), result_tensor_type(3.452), 1E-2, 1E-2));
+    REQUIRE(tensor_close(stdev(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},true), result_tensor_type{{{3.452}}}, 1E-2, 1E-2));
 
     //nanstd
     REQUIRE(tensor_close(nanstd(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0},false), result_tensor_type{{3,3,3},{3,3,3}}, 1E-2, 1E-2));
@@ -504,7 +504,7 @@ TEST_CASE("test_statistic_std_nanstd_nan_values","test_statistic")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
-    using gtensor::std;
+    using gtensor::stdev;
     using gtensor::nanstd;
     using gtensor::tensor_equal;
     using helpers_for_testing::apply_by_element;
@@ -514,18 +514,18 @@ TEST_CASE("test_statistic_std_nanstd_nan_values","test_statistic")
     //0result,1expected
     auto test_data = std::make_tuple(
         //std
-        std::make_tuple(std(tensor_type{1.0,0.5,nan,4.0,3.0,2.0}), tensor_type(nan)),
-        std::make_tuple(std(tensor_type{1.0,0.5,2.0,4.0,3.0,pos_inf}), tensor_type(nan)),
-        std::make_tuple(std(tensor_type{1.0,0.5,2.0,neg_inf,3.0,4.0}), tensor_type(nan)),
-        std::make_tuple(std(tensor_type{1.0,0.5,2.0,neg_inf,3.0,pos_inf}), tensor_type(nan)),
-        std::make_tuple(std(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf}), tensor_type(nan)),
-        std::make_tuple(std(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}}), tensor_type(nan)),
-        std::make_tuple(std(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}},0), tensor_type{nan,nan,nan}),
-        std::make_tuple(std(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}},1), tensor_type{nan,nan,nan}),
-        std::make_tuple(std(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}}), tensor_type(nan)),
-        std::make_tuple(std(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}},0), tensor_type{nan,nan,nan,1.118}),
-        std::make_tuple(std(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}},1), tensor_type{nan,nan,nan,nan}),
-        std::make_tuple(std(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf},std::vector<int>{}), tensor_type{0.0,nan,0.0,nan,0.0,nan}),
+        std::make_tuple(stdev(tensor_type{1.0,0.5,nan,4.0,3.0,2.0}), tensor_type(nan)),
+        std::make_tuple(stdev(tensor_type{1.0,0.5,2.0,4.0,3.0,pos_inf}), tensor_type(nan)),
+        std::make_tuple(stdev(tensor_type{1.0,0.5,2.0,neg_inf,3.0,4.0}), tensor_type(nan)),
+        std::make_tuple(stdev(tensor_type{1.0,0.5,2.0,neg_inf,3.0,pos_inf}), tensor_type(nan)),
+        std::make_tuple(stdev(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf}), tensor_type(nan)),
+        std::make_tuple(stdev(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}}), tensor_type(nan)),
+        std::make_tuple(stdev(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}},0), tensor_type{nan,nan,nan}),
+        std::make_tuple(stdev(tensor_type{{nan,nan,nan},{nan,nan,nan},{nan,nan,nan}},1), tensor_type{nan,nan,nan}),
+        std::make_tuple(stdev(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}}), tensor_type(nan)),
+        std::make_tuple(stdev(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}},0), tensor_type{nan,nan,nan,1.118}),
+        std::make_tuple(stdev(tensor_type{{nan,nan,nan,1.0},{nan,1.5,nan,2.0},{0.5,2.0,nan,3.0},{0.5,2.0,nan,4.0}},1), tensor_type{nan,nan,nan,nan}),
+        std::make_tuple(stdev(tensor_type{1.0,nan,2.0,neg_inf,3.0,pos_inf},std::vector<int>{}), tensor_type{0.0,nan,0.0,nan,0.0,nan}),
         //nanstd
         std::make_tuple(nanstd(tensor_type{1.0,0.5,nan,4.0,3.0,2.0}), tensor_type(1.28)),
         std::make_tuple(nanstd(tensor_type{1.0,nan,2.0,4.0,3.0,pos_inf}), tensor_type(nan)),

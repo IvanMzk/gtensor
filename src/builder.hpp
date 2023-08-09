@@ -301,6 +301,7 @@ private:
         using common_value_type = detail::tensor_common_value_type_t<Start,Stop,Num>;
         using res_value_type = std::conditional_t<std::is_same_v<T,detail::no_value>,math::make_floating_point_t<common_value_type>,math::make_floating_point_t<T>>;
         using tensor_type = tensor<res_value_type,Order,config::extend_config_t<Config,T>>;
+        using config_type = typename tensor_type::config_type;
         using index_type = typename tensor_type::index_type;
         using shape_type = typename tensor_type::shape_type;
         check_make_space_args(num);
@@ -321,15 +322,15 @@ private:
             const auto axis = detail::make_axis(res_dim, axis_);
             tensor_type res(make_space_shape(intervals.shape(),n,axis));
             if (!res.empty()){
-                auto predicate = detail::make_traverse_predicate(axis,std::true_type{});    //inverse, traverse all but axis
                 const auto& res_shape = res.shape();
-                auto res_traverser = detail::make_forward_traverser(res_shape,res.create_walker(),predicate);
+                auto axes_iterator_maker = detail::make_axes_iterator_maker<config_type>(res_shape,axis,Order{});
+                auto res_traverser = axes_iterator_maker.create_forward_traverser(res.create_walker(),std::true_type{});
                 auto a = intervals.traverse_order_adapter(Order{});
                 for (auto it=a.begin(),last=a.end(); it!=last; ++it,res_traverser.template next<Order>()){
                     const auto& interval = *it;
                     generator(
-                        detail::make_axis_iterator(res_traverser.walker(),axis,index_type{0}),
-                        detail::make_axis_iterator(res_traverser.walker(),axis,n),
+                        axes_iterator_maker.begin_complement(res_traverser.walker(),std::false_type{}),
+                        axes_iterator_maker.end_complement(res_traverser.walker(),std::false_type{}),
                         interval.first,
                         interval.second,
                         num

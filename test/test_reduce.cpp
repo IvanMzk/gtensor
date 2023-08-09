@@ -1,5 +1,6 @@
 #include <algorithm>
 #include "catch.hpp"
+#include "reduce.hpp"
 #include "tensor.hpp"
 #include "helpers_for_testing.hpp"
 #include "test_config.hpp"
