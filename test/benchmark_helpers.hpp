@@ -2,8 +2,10 @@
 #define BENCHMARK_HELPERS_HPP_
 
 #include <type_traits>
+#include <string>
 #define CATCH_CONFIG_ENABLE_BENCHMARKING
 #include "catch.hpp"
+#include "config.hpp"
 
 namespace benchmark_helpers{
 
@@ -46,6 +48,9 @@ public:
         return std::chrono::duration<float,std::milli>(end.point_-start.point_).count();
     }
 };
+
+auto order_to_str(gtensor::config::c_order){return std::string{"c_order"};}
+auto order_to_str(gtensor::config::f_order){return std::string{"f_order"};}
 
 }   //end of namespace benchmark_helpers
 

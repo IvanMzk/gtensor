@@ -219,30 +219,39 @@ TEMPLATE_TEST_CASE("benchmark_tensor_big","[benchmark_tensor]",
     using gtensor::config::c_order;
     using gtensor::config::f_order;
     using tensor_type = gtensor::tensor<value_type,TestType>;
+    using shape_type = typename tensor_type::shape_type;
     using benchmark_helpers::benchmark;
     using benchmark_helpers::cpu_timer;
+    using benchmark_helpers::order_to_str;
+    using gtensor::detail::shape_to_str;
 
-    auto t = tensor_type({10000,3,100,200},2);
     const auto axis=0;
-    //mean
-    {
-        auto start = cpu_timer{};
-        auto t_mean = t.mean(axis);
-        auto stop = cpu_timer{};
-        std::cout<<std::endl<<"mean "<<stop-start<<" ms";
-    }
-    //median
-    // {
-    //     auto start = cpu_timer{};
-    //     auto t_median = t.median(axis);
-    //     auto stop = cpu_timer{};
-    //     std::cout<<std::endl<<"median "<<stop-start<<" ms";
-    // }
-    //std
-    {
-        auto start = cpu_timer{};
-        auto t_std = t.stdev(axis);
-        auto stop = cpu_timer{};
-        std::cout<<std::endl<<"std "<<stop-start<<" ms";
+    std::vector<shape_type> shapes{
+        shape_type{100000000,3,1,2},
+        shape_type{10000000,3,1,20},
+        shape_type{1000000,3,10,20},
+        shape_type{100000,3,100,20},
+        shape_type{10000,3,100,200},
+        shape_type{1000,3,1000,200},
+        shape_type{100,3,1000,2000},
+        shape_type{50,6,1000,2000}
+    };
+    for (auto it=shapes.begin(), last=shapes.end(); it!=last; ++it){
+        auto t = tensor_type(*it,2);
+        std::cout<<std::endl<<order_to_str(typename tensor_type::order{})<<" "<<shape_to_str(t.shape())<<" axes "<<axis;
+        //mean
+        {
+            auto start = cpu_timer{};
+            auto t_mean = t.mean(axis);
+            auto stop = cpu_timer{};
+            std::cout<<std::endl<<"mean "<<stop-start<<" ms";
+        }
+        //std
+        {
+            auto start = cpu_timer{};
+            auto t_std = t.stdev(axis);
+            auto stop = cpu_timer{};
+            std::cout<<std::endl<<"std "<<stop-start<<" ms";
+        }
     }
 }
