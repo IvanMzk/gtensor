@@ -158,7 +158,7 @@ auto make_slide_shape(const IdxT& size, const ShT& shape, const DimT& axis, cons
 }
 
 inline constexpr std::size_t pool_workers_n = 10;
-inline constexpr std::size_t pool_queue_size = 100;
+inline constexpr std::size_t pool_queue_size = 400;
 inline auto& get_pool(){
     static thread_pool::thread_pool_v3 pool_{pool_workers_n, pool_queue_size};
     return pool_;
@@ -217,39 +217,36 @@ class reducer
                             std::forward<Args>(args)...
                         )
                     );
-                    static constexpr int max_par_tasks = 10;
+                    static constexpr int max_par_tasks = 100;
                     queue::st_bounded_queue<future_type> futures{max_par_tasks};
                     do{
-                        // auto f = detail::get_pool().push(
-                        //     reduce_f,
-                        //     axes_iterator_maker.begin_complement(traverser.walker(),std::false_type{}),
-                        //     axes_iterator_maker.end_complement(traverser.walker(),std::false_type{}),
-                        //     std::forward<Args>(args)...
-                        // );
-                        // // *res_it = f.get();
-                        // // ++res_it;
-
-                        // if (!futures.try_push(std::move(f))){    //par task limit
-                        //     future_type f_{};
-                        //     futures.try_pop(f_);
-                        //     *res_it = f_.get();
-                        //     ++res_it;
-                        //     futures.try_push(std::move(f));
-                        // }
-
-                        *res_it = reduce_f(
+                        auto f = detail::get_pool().push(
+                            reduce_f,
                             axes_iterator_maker.begin_complement(traverser.walker(),std::false_type{}),
                             axes_iterator_maker.end_complement(traverser.walker(),std::false_type{}),
                             std::forward<Args>(args)...
                         );
-                        ++res_it;
+                        if (!futures.try_push(std::move(f))){    //par task limit
+                            future_type f_{};
+                            futures.try_pop(f_);
+                            *res_it = f_.get();
+                            ++res_it;
+                            futures.try_push(std::move(f));
+                        }
+
+                        // *res_it = reduce_f(
+                        //     axes_iterator_maker.begin_complement(traverser.walker(),std::false_type{}),
+                        //     axes_iterator_maker.end_complement(traverser.walker(),std::false_type{}),
+                        //     std::forward<Args>(args)...
+                        // );
+                        // ++res_it;
 
                     }while(traverser.template next<order>());
-                    // future_type f_{};
-                    // while(futures.try_pop(f_)){
-                    //     *res_it = f_.get();
-                    //     ++res_it;
-                    // }
+                    future_type f_{};
+                    while(futures.try_pop(f_)){
+                        *res_it = f_.get();
+                        ++res_it;
+                    }
                 }
             }
         }
