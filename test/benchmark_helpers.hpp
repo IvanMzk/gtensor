@@ -6,6 +6,7 @@
 #define CATCH_CONFIG_ENABLE_BENCHMARKING
 #include "catch.hpp"
 #include "config.hpp"
+#include "descriptor.hpp"
 
 namespace benchmark_helpers{
 
@@ -49,8 +50,17 @@ public:
     }
 };
 
+
 auto order_to_str(gtensor::config::c_order){return std::string{"c_order"};}
 auto order_to_str(gtensor::config::f_order){return std::string{"f_order"};}
+template<typename Axes>
+auto axes_to_str(const Axes& axes){
+    if constexpr (gtensor::detail::is_container_v<Axes>){
+        return gtensor::detail::shape_to_str(axes);
+    }else{
+        return std::to_string(axes);
+    }
+}
 
 }   //end of namespace benchmark_helpers
 
