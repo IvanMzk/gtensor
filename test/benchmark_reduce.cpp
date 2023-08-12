@@ -257,7 +257,7 @@ auto reduce_sum(const basic_tensor<Ts...>& parent, std::initializer_list<U> axes
 //     }
 // }
 
-TEMPLATE_TEST_CASE("test_expression_big","[benchmark_tensor]",
+TEMPLATE_TEST_CASE("test_expression","[benchmark_tensor]",
     gtensor::config::c_order,
     gtensor::config::f_order
 )
@@ -295,6 +295,89 @@ TEMPLATE_TEST_CASE("test_expression_big","[benchmark_tensor]",
         )
     );
 }
+
+TEMPLATE_TEST_CASE("benchmark_expression","[benchmark_tensor]",
+    gtensor::config::c_order,
+    gtensor::config::f_order
+)
+{
+    using value_type = double;
+    using gtensor::tensor;
+    using gtensor::tensor_close;
+    using gtensor::config::c_order;
+    using gtensor::config::f_order;
+    using tensor_type = gtensor::tensor<value_type,TestType>;
+    using shape_type = typename tensor_type::shape_type;
+    using benchmark_helpers::benchmark;
+    using benchmark_helpers::cpu_timer;
+    using benchmark_helpers::order_to_str;
+    using gtensor::detail::shape_to_str;
+    using benchmark_helpers::axes_to_str;
+    using benchmark_helpers::make_asymmetric_tree;
+    using helpers_for_testing::generate_lehmer;
+
+    auto t1 = tensor_type(shape_type{100,1000,1000});
+    auto t2 = tensor_type(shape_type{1000,1000});
+    generate_lehmer(t1.begin(),t1.end(),123);
+    generate_lehmer(t2.begin(),t2.end(),456);
+    auto t = (t1+t2)*(t1-t2)/(t1*t2);
+    const auto axes = 0;
+    {
+        auto start = cpu_timer{};
+        t.mean(axes);
+        auto stop = cpu_timer{};
+        std::cout<<std::endl<<"mean "<<stop-start<<" ms";
+
+    }
+    {
+        auto start = cpu_timer{};
+        t.stdev(axes);
+        auto stop = cpu_timer{};
+        std::cout<<std::endl<<"stdev "<<stop-start<<" ms";
+
+    }
+}
+
+TEMPLATE_TEST_CASE("benchmark_deep_expression","[benchmark_tensor]",
+    gtensor::config::c_order,
+    gtensor::config::f_order
+)
+{
+    using value_type = double;
+    using gtensor::tensor;
+    using gtensor::tensor_close;
+    using gtensor::config::c_order;
+    using gtensor::config::f_order;
+    using tensor_type = gtensor::tensor<value_type,TestType>;
+    using shape_type = typename tensor_type::shape_type;
+    using benchmark_helpers::benchmark;
+    using benchmark_helpers::cpu_timer;
+    using benchmark_helpers::order_to_str;
+    using gtensor::detail::shape_to_str;
+    using benchmark_helpers::axes_to_str;
+    using benchmark_helpers::make_asymmetric_tree;
+    using helpers_for_testing::generate_lehmer;
+
+    auto t1 = tensor_type(shape_type{100,1000,1000});
+    auto t2 = tensor_type(shape_type{1000,1000});
+    auto t = make_asymmetric_tree<50>(t1,t2);
+    const auto axes = 0;
+    {
+        auto start = cpu_timer{};
+        t.mean(axes);
+        auto stop = cpu_timer{};
+        std::cout<<std::endl<<"mean "<<stop-start<<" ms";
+
+    }
+    {
+        auto start = cpu_timer{};
+        t.stdev(axes);
+        auto stop = cpu_timer{};
+        std::cout<<std::endl<<"stdev "<<stop-start<<" ms";
+
+    }
+}
+
 
 // TEMPLATE_TEST_CASE("benchmark_tensor_big","[benchmark_tensor]",
 //     gtensor::config::c_order,

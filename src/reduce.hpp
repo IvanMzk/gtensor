@@ -157,6 +157,123 @@ auto make_slide_shape(const IdxT& size, const ShT& shape, const DimT& axis, cons
     return res;
 }
 
+template<typename Axes>
+void sort_axes(Axes& axes){
+    if constexpr (detail::is_container_v<Axes>){
+        if (!std::is_sorted(axes.begin(),axes.end())){
+            std::sort(axes.begin(),axes.end());
+        }
+    }
+}
+
+template<typename Axes, typename Order>
+auto make_leading_axes(const Axes& sorted_axes, Order){
+    if constexpr (detail::is_container_v<Axes>){
+        if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
+            auto axes_it = sorted_axes.end();
+            const auto a_start = *--axes_it;
+            auto a_stop = a_start;
+            for(const auto axes_first=sorted_axes.begin(); axes_it!=axes_first;){
+                auto a_ = *--axes_it;
+                if (a_+1 == a_stop){
+                    a_stop = a_;
+                }else{
+                    break;
+                }
+            }
+            return std::make_pair(a_start,a_stop);
+        }else{
+            auto axes_it = sorted_axes.begin();
+            const auto a_start = *axes_it;
+            auto a_stop = a_start;
+            for(const auto axes_last=std::prev(sorted_axes.end()); axes_it!=axes_last;){
+                auto a_ = *++axes_it;
+                if (a_ == a_stop+1){
+                    a_stop = a_;
+                }else{
+                    break;
+                }
+            }
+            return std::make_pair(a_start,a_stop);
+        }
+    }else{
+        return std::make_pair(sorted_axes,sorted_axes);
+    }
+}
+
+template<typename ShT, typename Pair>
+auto make_inner_size(const ShT& strides, const Pair& axes_range){
+    return strides[axes_range.first];
+}
+
+template<typename ShT, typename Pair>
+auto make_outer_size(const ShT& shape, const Pair& axes_range){
+    const auto a_minmax = std::minmax(axes_range.first,axes_range.second);
+    auto res = shape[a_minmax.first];
+    for (auto a=a_minmax.first+1, a_last=a_minmax.second+1; a!=a_last; ++a){
+        res*=shape[a];
+    }
+    return res;
+}
+
+template<typename ShT, typename Pair, typename Order>
+auto make_traverse_index_shape(const ShT& shape, const Pair& axes_range, Order){
+    if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
+        return ShT{shape.begin(), shape.begin()+axes_range.second};
+    }else{
+        return ShT{shape.begin()+axes_range.second+1,shape.end()};
+    }
+}
+
+template<typename Config, typename DimT, typename Axes>
+auto make_reduce_axes_map(const DimT& dim, const Axes& sorted_axes){
+    using dim_type = typename Config::dim_type;
+    using res_type = typename Config::template shape<dim_type>;
+    if constexpr (detail::is_container_v<Axes>){
+        const auto axes_size = static_cast<const dim_type&>(sorted_axes.size());
+        res_type res{};
+        res.reserve(dim-axes_size);
+        for (dim_type a=0, a_last=dim; a!=a_last; ++a){
+            if (!std::binary_search(sorted_axes.begin(),sorted_axes.end(),a)){
+                res.push_back(a);
+            }
+        }
+        return res;
+    }else{
+        res_type res(dim-1,dim_type{0});
+        std::iota(res.begin()+sorted_axes,res.end(),sorted_axes+1);
+        std::iota(res.begin(),res.begin()+sorted_axes,0);
+        return res;
+    }
+}
+
+template<typename ShT, typename Pair, typename AxesMap, typename Order>
+auto make_traverse_index_strides(const ShT& traverse_shape, const ShT& res_strides, const Pair& leading_axes, const AxesMap& map, Order){
+    using dim_type = typename ShT::difference_type;
+    const auto traverse_index_dim = detail::make_dim(traverse_shape);
+    ShT res(traverse_index_dim,0);
+    if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
+        for (dim_type a=0, a_last=res_strides.size(); a!=a_last; ++a){
+            auto a_ = map[a];
+            if (a_ < leading_axes.second){
+                res[a_] = res_strides[a];
+            }
+        }
+    }else{
+        for (dim_type a=0, a_last=res_strides.size(); a!=a_last; ++a){
+            auto a_ = map[a];
+            if (a_ > leading_axes.second){
+                res[a_-leading_axes.second-1] = res_strides[a];
+            }
+        }
+    }
+    return res;
+}
+
+
+
+
+
 inline constexpr std::size_t pool_workers_n = 10;
 inline constexpr std::size_t pool_queue_size = 400;
 inline auto& get_pool(){
@@ -168,6 +285,33 @@ inline auto& get_pool(){
 
 class reducer
 {
+    //F is binary functor, takes elements, return reduce result, like std::plus
+    //traverse input countigous
+    template<typename F, typename Axes, typename...Ts, typename Initial>
+    static auto reduce_binary_(const basic_tensor<Ts...>& parent, const Axes& axes_, F reduce_f, bool keep_dims, const Initial& initial){
+        using parent_type = basic_tensor<Ts...>;
+        using order = typename parent_type::order;
+        using config_type = typename parent_type::config_type;
+        //using traverse_order = typename parent_type::traverse_order;
+        using value_type = typename config_type::value_type;
+        //using dim_type = typename config_type::dim_type;
+        //using index_type = typename config_type::index_type;
+        //using shape_type = typename config_type::shape_type;
+        using result_type = decltype(reduce_f(std::declval<value_type>(),std::declval<value_type>()));
+        using res_value_type = std::remove_cv_t<std::remove_reference_t<result_type>>;
+        using res_config_type = config::extend_config_t<config_type,res_value_type>;
+
+        const auto pdim = parent.dim();
+        const auto& pshape = parent.shape();
+        auto axes = detail::make_axes<config_type>(pdim,axes_);
+        detail::check_reduce_args(pshape, axes);
+        auto res = tensor<res_value_type,order,res_config_type>{detail::make_reduce_shape(pshape, axes, keep_dims)};
+        detail::sort_axes(axes);
+
+
+    }
+
+    //F takes iterators range to be reduces and additional args
     template<typename F, typename Axes, typename...Ts, typename...Args>
     static auto reduce_(const basic_tensor<Ts...>& parent, const Axes& axes_, F reduce_f, bool keep_dims, Args&&...args){
         using parent_type = basic_tensor<Ts...>;
@@ -220,33 +364,33 @@ class reducer
                     static constexpr int max_par_tasks = 100;
                     queue::st_bounded_queue<future_type> futures{max_par_tasks};
                     do{
-                        auto f = detail::get_pool().push(
-                            reduce_f,
-                            axes_iterator_maker.begin_complement(traverser.walker(),std::false_type{}),
-                            axes_iterator_maker.end_complement(traverser.walker(),std::false_type{}),
-                            std::forward<Args>(args)...
-                        );
-                        if (!futures.try_push(std::move(f))){    //par task limit
-                            future_type f_{};
-                            futures.try_pop(f_);
-                            *res_it = f_.get();
-                            ++res_it;
-                            futures.try_push(std::move(f));
-                        }
-
-                        // *res_it = reduce_f(
+                        // auto f = detail::get_pool().push(
+                        //     reduce_f,
                         //     axes_iterator_maker.begin_complement(traverser.walker(),std::false_type{}),
                         //     axes_iterator_maker.end_complement(traverser.walker(),std::false_type{}),
                         //     std::forward<Args>(args)...
                         // );
-                        // ++res_it;
+                        // if (!futures.try_push(std::move(f))){    //par task limit
+                        //     future_type f_{};
+                        //     futures.try_pop(f_);
+                        //     *res_it = f_.get();
+                        //     ++res_it;
+                        //     futures.try_push(std::move(f));
+                        // }
+
+                        *res_it = reduce_f(
+                            axes_iterator_maker.begin_complement(traverser.walker(),std::false_type{}),
+                            axes_iterator_maker.end_complement(traverser.walker(),std::false_type{}),
+                            std::forward<Args>(args)...
+                        );
+                        ++res_it;
 
                     }while(traverser.template next<order>());
-                    future_type f_{};
-                    while(futures.try_pop(f_)){
-                        *res_it = f_.get();
-                        ++res_it;
-                    }
+                    // future_type f_{};
+                    // while(futures.try_pop(f_)){
+                    //     *res_it = f_.get();
+                    //     ++res_it;
+                    // }
                 }
             }
         }
