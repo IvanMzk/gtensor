@@ -292,18 +292,15 @@ class reducer
 {
     //axes can be container or scalar
     //F is binary functor, takes elements, return reduce result, like std::plus
-    //initial must be such that expression reduce_f(initial,value_type{}) be valid or no_value
+    //initial must be such that expression reduce_f(initial,element) be valid or no_value
     //traverse input countigous
     template<typename F, typename Axes, typename...Ts, typename Initial>
     static auto reduce_binary_(const basic_tensor<Ts...>& parent, const Axes& axes_, F reduce_f, bool keep_dims, const Initial& initial){
         using parent_type = basic_tensor<Ts...>;
         using order = typename parent_type::order;
         using config_type = typename parent_type::config_type;
-        //using traverse_order = typename parent_type::traverse_order;
         using value_type = typename parent_type::value_type;
-        //using dim_type = typename config_type::dim_type;
         using index_type = typename config_type::index_type;
-        //using shape_type = typename config_type::shape_type;
         using result_type = decltype(reduce_f(std::declval<value_type>(),std::declval<value_type>()));
         using res_value_type = std::remove_cv_t<std::remove_reference_t<result_type>>;
         using res_config_type = config::extend_config_t<config_type,res_value_type>;
@@ -679,8 +676,12 @@ auto reduce(const basic_tensor<Ts...>& t, const Axes& axes, F f, bool keep_dims,
     return reducer_selector_t<config_type>::reduce(t, axes, f, keep_dims, std::forward<Args>(args)...);
 }
 
-template<typename F, typename Axes, typename...Ts, typename Initial>
-auto reduce_binary(const basic_tensor<Ts...>& t, const Axes& axes, F f, bool keep_dims, const Initial& initial){
+//make tensor reduction along axes, axes can be scalar or container,
+//F is binary reduce functor that operates on tensor's elements
+//result tensor has value_type that is return type of F
+//initial must be such that expression f(initial,element) be valid or no_value
+template<typename F, typename Axes, typename...Ts, typename Initial=detail::no_value>
+auto reduce_binary(const basic_tensor<Ts...>& t, const Axes& axes, F f, bool keep_dims, const Initial& initial=Initial{}){
     using config_type = typename basic_tensor<Ts...>::config_type;
     return reducer_selector_t<config_type>::reduce_binary(t, axes, f, keep_dims, initial);
 }
