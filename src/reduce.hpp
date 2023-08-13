@@ -419,7 +419,7 @@ class reducer
         using parent_type = basic_tensor<Ts...>;
         using order = typename parent_type::order;
         using config_type = typename parent_type::config_type;
-        using traverse_order = typename parent_type::traverse_order;
+        using traverse_order = config::c_order; //order to traverse along axes
         using dim_type = typename config_type::dim_type;
         using index_type = typename config_type::index_type;
         using shape_type = typename config_type::shape_type;
@@ -504,7 +504,7 @@ class reducer
         using tensor_type = basic_tensor<Ts...>;
         using order = typename tensor_type::order;
         using config_type = typename tensor_type::config_type;
-        using result_type = decltype(reduce_f(t.begin(),t.end(),std::declval<Args>()...));
+        using result_type = decltype(reduce_f(t.begin(),t.end(),std::declval<Args>()...));  //assuming traverse order not affected result type
         using res_value_type = std::remove_cv_t<std::remove_reference_t<result_type>>;
         using res_config_type = config::extend_config_t<config_type,res_value_type>;
         using res_type = tensor<res_value_type,order,res_config_type>;

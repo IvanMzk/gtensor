@@ -874,10 +874,13 @@ struct center
 
 }   //end of namespace test_reduce_
 
-TEST_CASE("test_reduce","[test_reduce]")
+TEMPLATE_TEST_CASE("test_reduce","[test_reduce]",
+    gtensor::config::c_order,
+    gtensor::config::f_order
+)
 {
     using value_type = double;
-    using tensor_type = gtensor::tensor<value_type>;
+    using tensor_type = gtensor::tensor<value_type,TestType>;
     using dim_type = typename tensor_type::dim_type;
     using test_reduce_::sum;
     using test_reduce_::sum_of_squares;
@@ -887,6 +890,7 @@ TEST_CASE("test_reduce","[test_reduce]")
     using test_reduce_::max;
     using test_reduce_::min;
     using test_reduce_::min_or_zero;
+    using test_reduce_::center;
     using gtensor::reduce;
     using helpers_for_testing::apply_by_element;
     //0tensor,1axes,2functor,3keep_dims,4expected
@@ -1042,7 +1046,10 @@ TEST_CASE("test_reduce","[test_reduce]")
         std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::initializer_list<dim_type>{-2,-1}, sum{}, false, tensor_type{6,22}),
         std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::initializer_list<dim_type>{-1,-3}, prod{}, false, tensor_type{0,252}),
         std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::initializer_list<dim_type>{1,2}, sum{}, true, tensor_type{{{6}},{{22}}}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::initializer_list<dim_type>{2,0}, prod{}, true, tensor_type{{{0},{252}}})
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::initializer_list<dim_type>{2,0}, prod{}, true, tensor_type{{{0},{252}}}),
+        //c_order traverse along axes
+        std::make_tuple(tensor_type{{{7,4,8,8},{3,4,5,6},{4,0,0,0}},{{0,1,4,7},{0,1,2,7},{2,8,3,4}}}, std::vector<dim_type>{0,1}, center{}, false, tensor_type{2.0,0.5,2.0,3.5}),
+        std::make_tuple(tensor_type{{{7,4,8,8},{3,4,5,6},{4,0,0,0}},{{0,1,4,7},{0,1,2,7},{2,8,3,4}}}, std::vector<dim_type>{1,2}, center{}, false, tensor_type{4.5,1.5})
     );
     auto test = [](const auto& t){
         auto tensor = std::get<0>(t);
