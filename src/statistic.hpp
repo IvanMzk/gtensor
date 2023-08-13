@@ -31,7 +31,7 @@ static auto NAME(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims 
 }\
 template<typename...Ts>\
 static auto NAME(const basic_tensor<Ts...>& t, bool keep_dims = false){\
-    return reduce_flatten(t,F{},keep_dims);\
+    return reduce_flatten(t,F{},keep_dims,true);\
 }
 
 struct statistic
@@ -64,7 +64,7 @@ struct statistic
         using config_type = typename basic_tensor<Ts...>::config_type;
         static_assert(math::numeric_traits<Q>::is_floating_point(),"q must be of floating point type");
         if constexpr (std::is_same_v<Axes,detail::no_value>){
-            return reduce_flatten(t,statistic_reduce_operations::quantile{},keep_dims,q,config_type{});
+            return reduce_flatten(t,statistic_reduce_operations::quantile{},keep_dims,false,q,config_type{});
         }else{
             return reduce(t,axes,statistic_reduce_operations::quantile{},keep_dims,q,config_type{});
         }
@@ -109,7 +109,7 @@ struct statistic
         using config_type = typename basic_tensor<Ts...>::config_type;
         static_assert(math::numeric_traits<Q>::is_floating_point(),"q must be of floating point type");
         if constexpr (std::is_same_v<Axes,detail::no_value>){
-            return reduce_flatten(t,statistic_reduce_operations::nanquantile{},keep_dims,q,config_type{});
+            return reduce_flatten(t,statistic_reduce_operations::nanquantile{},keep_dims,false,q,config_type{});
         }else{
             return reduce(t,axes,statistic_reduce_operations::nanquantile{},keep_dims,q,config_type{});
         }
@@ -141,7 +141,7 @@ struct statistic
     static auto average(const basic_tensor<Ts...>& t, const Axes& axes, const Container& weights, bool keep_dims=false){
         using value_type = typename basic_tensor<Ts...>::value_type;
         if constexpr (std::is_same_v<Axes,detail::no_value>){
-            return reduce_flatten(t,statistic_reduce_operations::average<value_type>{},keep_dims,weights);
+            return reduce_flatten(t,statistic_reduce_operations::average<value_type>{},keep_dims,false,weights);
         }else{
             return reduce(t,axes,statistic_reduce_operations::average<value_type>{},keep_dims,weights);
         }

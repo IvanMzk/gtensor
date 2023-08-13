@@ -500,7 +500,7 @@ class reducer
     }
 
     template<typename F, typename...Ts, typename...Args>
-    static auto reduce_flatten_(const basic_tensor<Ts...>& t, F reduce_f, bool keep_dims, Args&&...args){
+    static auto reduce_flatten_(const basic_tensor<Ts...>& t, F reduce_f, bool keep_dims, bool any_order, Args&&...args){
         using tensor_type = basic_tensor<Ts...>;
         using order = typename tensor_type::order;
         using config_type = typename tensor_type::config_type;
@@ -508,14 +508,10 @@ class reducer
         using res_value_type = std::remove_cv_t<std::remove_reference_t<result_type>>;
         using res_config_type = config::extend_config_t<config_type,res_value_type>;
         using res_type = tensor<res_value_type,order,res_config_type>;
-        //assuming iterator traverse order doesn't change result type, may not compile otherwise
-        if (t.dim() == 1){   //1d, can use native order
+        if (t.dim()==1 || any_order){   //1d or any_order, can use native order
             auto a = t.traverse_order_adapter(order{});
             return  res_type(detail::make_reduce_shape(t.shape(),keep_dims), reduce_f(a.begin(), a.end(), std::forward<Args>(args)...));
         }else{  //traverse like over flatten
-            //assuming changing traverse order when traverse like over flatten is not logic error (i.e. reduce functor not expected particular order)
-            //logic error for argmax like functions
-            //auto a = t.traverse_order_adapter(order{});
             auto a = t.traverse_order_adapter(config::c_order{});
             return  res_type(detail::make_reduce_shape(t.shape(),keep_dims), reduce_f(a.begin(), a.end(), std::forward<Args>(args)...));
         }
@@ -645,8 +641,8 @@ public:
     }
 
     template<typename F, typename...Ts, typename...Args>
-    static auto reduce_flatten(const basic_tensor<Ts...>& t, F f, bool keep_dims, Args&&...args){
-        return reduce_flatten_(t,f,keep_dims,std::forward<Args>(args)...);
+    static auto reduce_flatten(const basic_tensor<Ts...>& t, F f, bool keep_dims, bool any_order, Args&&...args){
+        return reduce_flatten_(t,f,keep_dims,any_order,std::forward<Args>(args)...);
     }
 
     template<typename ResultT, typename...Ts, typename DimT, typename F, typename IdxT, typename...Args>
@@ -688,9 +684,9 @@ auto reduce_binary(const basic_tensor<Ts...>& t, const Axes& axes, F f, bool kee
 
 //reduce like over flatten
 template<typename F, typename...Ts, typename...Args>
-auto reduce_flatten(const basic_tensor<Ts...>& t, F f, bool keep_dims, Args&&...args){
+auto reduce_flatten(const basic_tensor<Ts...>& t, F f, bool keep_dims, bool any_order, Args&&...args){
     using config_type = typename basic_tensor<Ts...>::config_type;
-    return reducer_selector_t<config_type>::reduce_flatten(t, f, keep_dims, std::forward<Args>(args)...);
+    return reducer_selector_t<config_type>::reduce_flatten(t, f, keep_dims, any_order, std::forward<Args>(args)...);
 }
 
 //make tensor that is result of applying F to sliding window over axis, axis is scalar

@@ -856,6 +856,22 @@ struct sort{
     }
 };
 
+//take central element, order matters
+struct center
+{
+    template<typename It>
+    auto operator()(It first, It last){
+        const auto n = last-first;
+        const auto i=n/2;
+        auto center_it = first+i;
+        const auto res = *center_it;
+        if (n%2==0){
+            return (res+*--center_it)/2;
+        }
+        return res;
+    }
+};
+
 }   //end of namespace test_reduce_
 
 TEST_CASE("test_reduce","[test_reduce]")
@@ -1116,51 +1132,58 @@ TEST_CASE("test_reduce_ecxeption","[test_reduce]")
     apply_by_element(test, test_data);
 }
 
-TEST_CASE("test_reduce_flatten","[test_reduce]")
+TEMPLATE_TEST_CASE("test_reduce_flatten","[test_reduce]",
+    gtensor::config::c_order,
+    gtensor::config::f_order
+)
 {
     using value_type = double;
-    using tensor_type = gtensor::tensor<value_type>;
+    using tensor_type = gtensor::tensor<value_type,TestType>;
     using test_reduce_::sum;
     using test_reduce_::prod;
     using test_reduce_::max;
     using test_reduce_::min;
+    using test_reduce_::center;
     using gtensor::reduce_flatten;
     using helpers_for_testing::apply_by_element;
-    //0tensor,1functor,2keep_dims,3expected
+    //0tensor,1functor,2keep_dims,3any_order,4expected
     auto test_data = std::make_tuple(
         //keep_dims is false
-        std::make_tuple(tensor_type{}, sum{}, false, tensor_type(value_type{0})),
-        std::make_tuple(tensor_type{}, prod{}, false, tensor_type(value_type{1})),
-        std::make_tuple(tensor_type{}.reshape(1,0), sum{}, false, tensor_type(value_type{0})),
-        std::make_tuple(tensor_type{}.reshape(1,0), prod{}, false, tensor_type(value_type{1})),
-        std::make_tuple(tensor_type{1,2,3,4,5,6}, sum{}, false, tensor_type(21)),
-        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, sum{}, false, tensor_type(21)),
-        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, sum{}, false, tensor_type(21)),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, sum{}, false, tensor_type(21)),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, prod{}, false, tensor_type(720)),
-        std::make_tuple(tensor_type{{1,6,7,9},{4,5,7,0}}, max{}, false, tensor_type(9)),
-        std::make_tuple(tensor_type{{1,6,7,9},{4,5,7,0}}, min{}, false, tensor_type(0)),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, sum{}, false, tensor_type(28)),
+        std::make_tuple(tensor_type{}, sum{}, false, true, tensor_type(value_type{0})),
+        std::make_tuple(tensor_type{}, prod{}, false, true, tensor_type(value_type{1})),
+        std::make_tuple(tensor_type{}.reshape(1,0), sum{}, false, true, tensor_type(value_type{0})),
+        std::make_tuple(tensor_type{}.reshape(1,0), prod{}, false, true, tensor_type(value_type{1})),
+        std::make_tuple(tensor_type{1,2,3,4,5,6}, sum{}, false, true, tensor_type(21)),
+        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, sum{}, false, true, tensor_type(21)),
+        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, sum{}, false, true, tensor_type(21)),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, sum{}, false, true, tensor_type(21)),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, prod{}, false, true, tensor_type(720)),
+        std::make_tuple(tensor_type{{1,6,7,9},{4,5,7,0}}, max{}, false, true, tensor_type(9)),
+        std::make_tuple(tensor_type{{1,6,7,9},{4,5,7,0}}, min{}, false, true, tensor_type(0)),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, sum{}, false, true, tensor_type(28)),
         //keep_dims is true
-        std::make_tuple(tensor_type{}, sum{}, true, tensor_type{value_type{0}}),
-        std::make_tuple(tensor_type{}, prod{}, true, tensor_type{value_type{1}}),
-        std::make_tuple(tensor_type{}.reshape(2,1,0), sum{}, true, tensor_type{{{value_type{0}}}}),
-        std::make_tuple(tensor_type{}.reshape(0,2,3), prod{}, true, tensor_type{{{value_type{1}}}}),
-        std::make_tuple(tensor_type{1,2,3,4,5,6}, sum{}, true, tensor_type{21}),
-        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, sum{}, true, tensor_type{{21}}),
-        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, sum{}, true, tensor_type{{21}}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, sum{}, true, tensor_type{{21}}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, prod{}, true, tensor_type{{720}}),
-        std::make_tuple(tensor_type{{1,6,7,9},{4,5,7,0}}, max{}, true, tensor_type{{9}}),
-        std::make_tuple(tensor_type{{1,6,7,9},{4,5,7,0}}, min{}, true, tensor_type{{0}}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, sum{}, true, tensor_type{{{28}}})
+        std::make_tuple(tensor_type{}, sum{}, true, true, tensor_type{value_type{0}}),
+        std::make_tuple(tensor_type{}, prod{}, true, true, tensor_type{value_type{1}}),
+        std::make_tuple(tensor_type{}.reshape(2,1,0), sum{}, true, true, tensor_type{{{value_type{0}}}}),
+        std::make_tuple(tensor_type{}.reshape(0,2,3), prod{}, true, true, tensor_type{{{value_type{1}}}}),
+        std::make_tuple(tensor_type{1,2,3,4,5,6}, sum{}, true, true, tensor_type{21}),
+        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, sum{}, true, true, tensor_type{{21}}),
+        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, sum{}, true, true, tensor_type{{21}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, sum{}, true, true, tensor_type{{21}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, prod{}, true, true, tensor_type{{720}}),
+        std::make_tuple(tensor_type{{1,6,7,9},{4,5,7,0}}, max{}, true, true, tensor_type{{9}}),
+        std::make_tuple(tensor_type{{1,6,7,9},{4,5,7,0}}, min{}, true, true, tensor_type{{0}}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, sum{}, true, true, tensor_type{{{28}}}),
+        //any_order
+        std::make_tuple(tensor_type{{1,6,7,9},{4,5,7,0}}, center{}, false, false, tensor_type(6.5))
     );
     auto test = [](const auto& t){
         auto tensor = std::get<0>(t);
         auto functor = std::get<1>(t);
         auto keep_dims = std::get<2>(t);
-        auto expected = std::get<3>(t);
-        auto result = reduce_flatten(tensor, functor, keep_dims);
+        auto any_arder = std::get<3>(t);
+        auto expected = std::get<4>(t);
+        auto result = reduce_flatten(tensor, functor, keep_dims, any_arder);
         REQUIRE(result == expected);
     };
     apply_by_element(test, test_data);

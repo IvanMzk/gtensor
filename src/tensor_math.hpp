@@ -25,7 +25,7 @@ static auto NAME(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims 
 }\
 template<typename...Ts>\
 static auto NAME(const basic_tensor<Ts...>& t, bool keep_dims = false){\
-    return reduce_flatten(t,F{},keep_dims);\
+    return reduce_flatten(t,F{},keep_dims,true);\
 }
 
 #define GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(NAME,F)\
@@ -35,7 +35,7 @@ static auto NAME(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims 
 }\
 template<typename...Ts, typename Initial = gtensor::detail::no_value>\
 static auto NAME(const basic_tensor<Ts...>& t, bool keep_dims = false, const Initial& initial = Initial{}){\
-    return reduce_flatten(t,F{},keep_dims,initial);\
+    return reduce_flatten(t,F{},keep_dims,true,initial);\
 }
 
 #define GTENSOR_TENSOR_MATH_CUMULATE_FUNCTION(NAME,F)\

@@ -360,10 +360,10 @@ public:
     auto reduce(std::initializer_list<dim_type> axes, F f, bool keep_dims=false)const{
         return detail::adl_proxy::reduce_(*this, axes, f, keep_dims);
     }
-    //reduce like over flatten
+    //reduce like over flatten or unspecified order if any_order is true
     template<typename F>
-    auto reduce(F f, bool keep_dims=false)const{
-        return reduce_flatten(*this, f, keep_dims);
+    auto reduce(F f, bool keep_dims=false, bool any_order=false)const{
+        return reduce_flatten(*this, f, keep_dims, any_order);
     }
     //slide along given axis, axis is scalar
     //as if sliding window of width window_size moves along axis with step window_step and each window reduction result is stored to destination range

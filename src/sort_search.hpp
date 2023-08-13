@@ -54,6 +54,16 @@ void check_searchsorted_args(const DimT& dim, const Sorter& sorter){
 }
 
 
+#define GTENSOR_TENSOR_ARG_SEARCH_REDUCE_FUNCTION(NAME,F)\
+template<typename...Ts, typename Axis>\
+static auto NAME(const basic_tensor<Ts...>& t, const Axis& axis, bool keep_dims = false){\
+    return reduce(t,axis,F{},keep_dims);\
+}\
+template<typename...Ts>\
+static auto NAME(const basic_tensor<Ts...>& t, bool keep_dims = false){\
+    return reduce_flatten(t,F{},keep_dims,false);\
+}
+
 #define GTENSOR_TENSOR_SORT_SEARCH_REDUCE_FUNCTION(NAME,F)\
 template<typename...Ts, typename Axes>\
 static auto NAME(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){\
@@ -61,7 +71,7 @@ static auto NAME(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims 
 }\
 template<typename...Ts>\
 static auto NAME(const basic_tensor<Ts...>& t, bool keep_dims = false){\
-    return reduce_flatten(t,F{},keep_dims);\
+    return reduce_flatten(t,F{},keep_dims,true);\
 }
 
 //tensor sort,search functions implementation
@@ -119,10 +129,10 @@ struct sort_search
     }
 
 
-    GTENSOR_TENSOR_SORT_SEARCH_REDUCE_FUNCTION(argmin,sort_search_reduce_operations::argmin);
-    GTENSOR_TENSOR_SORT_SEARCH_REDUCE_FUNCTION(argmax,sort_search_reduce_operations::argmax);
-    GTENSOR_TENSOR_SORT_SEARCH_REDUCE_FUNCTION(nanargmin,sort_search_reduce_operations::nanargmin);
-    GTENSOR_TENSOR_SORT_SEARCH_REDUCE_FUNCTION(nanargmax,sort_search_reduce_operations::nanargmax);
+    GTENSOR_TENSOR_ARG_SEARCH_REDUCE_FUNCTION(argmin,sort_search_reduce_operations::argmin);
+    GTENSOR_TENSOR_ARG_SEARCH_REDUCE_FUNCTION(argmax,sort_search_reduce_operations::argmax);
+    GTENSOR_TENSOR_ARG_SEARCH_REDUCE_FUNCTION(nanargmin,sort_search_reduce_operations::nanargmin);
+    GTENSOR_TENSOR_ARG_SEARCH_REDUCE_FUNCTION(nanargmax,sort_search_reduce_operations::nanargmax);
 
     GTENSOR_TENSOR_SORT_SEARCH_REDUCE_FUNCTION(count_nonzero,sort_search_reduce_operations::count_nonzero);
 
@@ -563,20 +573,16 @@ GTENSOR_TENSOR_PARTITION_ROUTINE(partition,partition);
 //Comparator is binary predicate functor, like std::less<void> or std::greater<void>, if Comparator not given operator< is used
 GTENSOR_TENSOR_PARTITION_ROUTINE(argpartition,argpartition);
 
-//index of min element along given axes, propagating nan
-//axes can be container or scalar
+//index of min element along given axis, propagating nan, axes is scalar
 GTENSOR_TENSOR_SORT_SEARCH_REDUCE_ROUTINE(argmin,argmin);
 
-//index of max element along given axes, propagating nan
-//axes can be container or scalar
+//index of max element along given axis, propagating nan, axes is scalar
 GTENSOR_TENSOR_SORT_SEARCH_REDUCE_ROUTINE(argmax,argmax);
 
-//index of min element along given axes, ignoring nan
-//axes can be container or scalar
+//index of min element along given axis, ignoring nan, axes is scalar
 GTENSOR_TENSOR_SORT_SEARCH_REDUCE_ROUTINE(nanargmin,nanargmin);
 
-//index of max element along given axes, ignoring nan
-//axes can be container or scalar
+//index of max element along given axis, ignoring nan, axes is scalar
 GTENSOR_TENSOR_SORT_SEARCH_REDUCE_ROUTINE(nanargmax,nanargmax);
 
 //count number of values for which static_cast<bool>(e) evaluates to true
@@ -619,6 +625,7 @@ auto searchsorted(const basic_tensor<Ts...>& t, const V& v, Side side=Side{}, co
     return sort_search_selector_t<config_type>::searchsorted(t,v,side,sorter);
 }
 
+#undef GTENSOR_TENSOR_ARG_SEARCH_REDUCE_FUNCTION
 #undef GTENSOR_TENSOR_SORT_SEARCH_REDUCE_FUNCTION
 #undef GTENSOR_TENSOR_SORT_ROUTINE
 #undef GTENSOR_TENSOR_PARTITION_ROUTINE
