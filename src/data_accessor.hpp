@@ -270,8 +270,6 @@ public:
     void reset_back(){cursor_ = offset_;}
     void update_offset(){offset_+=cursor_;}
     dim_type dim()const{return detail::make_dim(*adapted_strides_);}
-    //cursor_type cursor()const{return cursor_;}
-    //cursor_type offset()const{return offset_;}
     cursor_type operator*()const{return cursor_;}
 private:
     const shape_type* adapted_strides_;

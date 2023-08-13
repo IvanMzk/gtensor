@@ -226,9 +226,14 @@ auto make_traverse_index_shape(const ShT& shape, const Pair& leading_axes, Order
 }
 
 template<typename Config, typename DimT, typename Axes>
-auto make_reduce_axes_map(const DimT& dim, const Axes& sorted_axes){
+auto make_reduce_axes_map(const DimT& dim, const Axes& sorted_axes, bool keep_dims){
     using dim_type = typename Config::dim_type;
     using res_type = typename Config::template shape<dim_type>;
+    if (keep_dims){
+        res_type res(dim,dim_type{0});
+        std::iota(res.begin(),res.end(),dim_type{0});
+        return res;
+    }
     if constexpr (detail::is_container_v<Axes>){
         const auto axes_size = static_cast<const dim_type&>(sorted_axes.size());
         res_type res{};
@@ -285,7 +290,9 @@ inline auto& get_pool(){
 
 class reducer
 {
+    //axes can be container or scalar
     //F is binary functor, takes elements, return reduce result, like std::plus
+    //initial must be such that expression reduce_f(initial,value_type{}) be valid or no_value
     //traverse input countigous
     template<typename F, typename Axes, typename...Ts, typename Initial>
     static auto reduce_binary_(const basic_tensor<Ts...>& parent, const Axes& axes_, F reduce_f, bool keep_dims, const Initial& initial){
@@ -293,13 +300,14 @@ class reducer
         using order = typename parent_type::order;
         using config_type = typename parent_type::config_type;
         //using traverse_order = typename parent_type::traverse_order;
-        using value_type = typename config_type::value_type;
+        using value_type = typename parent_type::value_type;
         //using dim_type = typename config_type::dim_type;
-        //using index_type = typename config_type::index_type;
+        using index_type = typename config_type::index_type;
         //using shape_type = typename config_type::shape_type;
         using result_type = decltype(reduce_f(std::declval<value_type>(),std::declval<value_type>()));
         using res_value_type = std::remove_cv_t<std::remove_reference_t<result_type>>;
         using res_config_type = config::extend_config_t<config_type,res_value_type>;
+        static constexpr bool has_initial = !std::is_same_v<Initial,detail::no_value>;
 
         const auto pdim = parent.dim();
         const auto& pshape = parent.shape();
@@ -307,15 +315,103 @@ class reducer
         detail::check_reduce_args(pshape, axes);
         auto res = tensor<res_value_type,order,res_config_type>{detail::make_reduce_shape(pshape, axes, keep_dims)};
         if (!res.empty()){
+            //empty axes container
+            if constexpr (detail::is_container_v<Axes>){
+                if (axes.empty()){
+                    if constexpr (has_initial){
+                        std::transform(parent.begin(),parent.end(),res.begin(),[&reduce_f,&initial](const auto& e){return reduce_f(initial,e);});
+                    }else{
+                        std::copy(parent.begin(),parent.end(),res.begin());
+                    }
+                    return res;
+                }
+            }
+            //reduce zero size axes
+            if (parent.empty()){
+                if constexpr (has_initial){
+                    std::fill(res.begin(),res.end(),initial);
+                    return res;
+                }else{
+                    throw value_error("cant reduce zero size dimension without initial value");
+                }
+            }
+            //reduce to 0dim case
+
             detail::sort_axes(axes);
             const auto leading_axes = detail::make_leading_axes(axes,order{});
             const auto inner_size = detail::make_inner_size(parent.strides(),leading_axes);
-            const auto outer_size = detail::make_inner_size(pshape,leading_axes);
+            const auto outer_size = detail::make_outer_size(pshape,leading_axes);
             const auto traverse_index_shape = detail::make_traverse_index_shape(pshape,leading_axes,order{});
-            const auto axes_map = detail::make_reduce_axes_map<config_type>(pdim,axes);
+            const auto axes_map = detail::make_reduce_axes_map<config_type>(pdim,axes,keep_dims);
             const auto traverse_index_strides = detail::make_traverse_index_strides(traverse_index_shape,res.descriptor().adapted_strides(),leading_axes,axes_map,order{});
             const auto traverse_index_reset_strides = detail::make_traverse_index_strides(traverse_index_shape,res.descriptor().reset_strides(),leading_axes,axes_map,order{});
+            using walker_type = cursor_walker<config_type,index_type>;
+            using traverser_type = walker_forward_traverser<config_type,walker_type>;
+            traverser_type traverser{traverse_index_shape,walker_type{traverse_index_strides,traverse_index_reset_strides,0}};
+            auto it = parent.traverse_order_adapter(order{}).begin();
+            const auto res_first = res.traverse_order_adapter(order{}).begin();
+            auto res_it = res_first;
+            bool init = true;
+            auto offset = *traverser;
+            if (inner_size == 1){
+                do{
+                    const auto& initial_ = *it;
+                    const auto res_ = std::accumulate(it+1,it+outer_size,initial_,reduce_f);
+                    it+=outer_size;
+                    auto& e = *res_it;
+                    if (init){
+                        if constexpr (has_initial){
+                            e = reduce_f(initial,res_);
+                        }else{  //no initial
+                            e = res_;
+                        }
+                    }else{
+                        e = reduce_f(e,res_);
+                    }
 
+                    if (traverser.template next<order>()){
+                        const auto new_offset = *traverser;
+                        if (new_offset > offset){   //reach uninitialized
+                            init=true;
+                            offset = new_offset;
+                        }else{
+                            init=false;
+                        }
+                        res_it=res_first + new_offset;
+                    }else{
+                        break;
+                    }
+                }while(true);
+            }else{
+                do{
+                    if (init){
+                        if constexpr (has_initial){
+                            std::transform(res_it,res_it+inner_size,it,res_it,[&reduce_f,&initial](auto&&, auto&& r){return reduce_f(initial,r);});
+                        }else{  //no initial
+                            std::copy(it,it+inner_size,res_it);
+                        }
+                        it+=inner_size;
+                    }
+                    const auto i_stop=init?1:0;
+                    for (auto i=outer_size; i!=i_stop; --i){
+                        std::transform(res_it,res_it+inner_size,it,res_it,reduce_f);
+                        it+=inner_size;
+                    }
+
+                    if (traverser.template next<order>()){
+                        const auto new_offset = *traverser;
+                        if (new_offset > offset){   //reach uninitialized
+                            init=true;
+                            offset = new_offset;
+                        }else{
+                            init=false;
+                        }
+                        res_it=res_first + new_offset;
+                    }else{
+                        break;
+                    }
+                }while(true);
+            }
         }
         return res;
     }
@@ -546,6 +642,11 @@ public:
         return reduce_(t,axes,f,keep_dims,std::forward<Args>(args)...);
     }
 
+    template<typename F, typename Axes, typename...Ts, typename Initial>
+    static auto reduce_binary(const basic_tensor<Ts...>& t, const Axes& axes, F f, bool keep_dims, const Initial& initial){
+        return reduce_binary_(t,axes,f,keep_dims,initial);
+    }
+
     template<typename F, typename...Ts, typename...Args>
     static auto reduce_flatten(const basic_tensor<Ts...>& t, F f, bool keep_dims, Args&&...args){
         return reduce_flatten_(t,f,keep_dims,std::forward<Args>(args)...);
@@ -577,6 +678,13 @@ auto reduce(const basic_tensor<Ts...>& t, const Axes& axes, F f, bool keep_dims,
     using config_type = typename basic_tensor<Ts...>::config_type;
     return reducer_selector_t<config_type>::reduce(t, axes, f, keep_dims, std::forward<Args>(args)...);
 }
+
+template<typename F, typename Axes, typename...Ts, typename Initial>
+auto reduce_binary(const basic_tensor<Ts...>& t, const Axes& axes, F f, bool keep_dims, const Initial& initial){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return reducer_selector_t<config_type>::reduce_binary(t, axes, f, keep_dims, initial);
+}
+
 //reduce like over flatten
 template<typename F, typename...Ts, typename...Args>
 auto reduce_flatten(const basic_tensor<Ts...>& t, F f, bool keep_dims, Args&&...args){
