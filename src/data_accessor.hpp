@@ -234,7 +234,7 @@ public:
 //walker is indexer adapter that allows address data elements using multidimensional index
 //Cursor is responsible for storing flat position, it may have semantic of integral type or random access iterator
 template<typename Config, typename Cursor>
-class walker_common
+class cursor_walker
 {
 public:
     using cursor_type = Cursor;
@@ -242,7 +242,7 @@ public:
     using dim_type = typename Config::dim_type;
     using shape_type = typename Config::shape_type;
 
-    walker_common(const shape_type& adapted_strides__, const shape_type& reset_strides__, const cursor_type& offset__):
+    cursor_walker(const shape_type& adapted_strides__, const shape_type& reset_strides__, const cursor_type& offset__):
         adapted_strides_{&adapted_strides__},
         reset_strides_{&reset_strides__},
         offset_{offset__},
@@ -270,8 +270,9 @@ public:
     void reset_back(){cursor_ = offset_;}
     void update_offset(){offset_+=cursor_;}
     dim_type dim()const{return detail::make_dim(*adapted_strides_);}
-    cursor_type cursor()const{return cursor_;}
-    cursor_type offset()const{return offset_;}
+    //cursor_type cursor()const{return cursor_;}
+    //cursor_type offset()const{return offset_;}
+    cursor_type operator*()const{return cursor_;}
 private:
     const shape_type* adapted_strides_;
     const shape_type* reset_strides_;
@@ -310,9 +311,9 @@ public:
     void reset_back(){impl.reset_back();}
     void update_offset(){impl.update_offset();}
     dim_type dim(){return impl.dim();}
-    decltype(auto) operator*()const{return indexer[impl.cursor()];}
+    decltype(auto) operator*()const{return indexer[*impl];}
 private:
-    walker_common<config_type, index_type> impl;
+    cursor_walker<config_type, index_type> impl;
     indexer_type indexer;
 };
 

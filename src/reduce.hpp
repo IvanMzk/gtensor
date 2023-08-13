@@ -202,13 +202,13 @@ auto make_leading_axes(const Axes& sorted_axes, Order){
 }
 
 template<typename ShT, typename Pair>
-auto make_inner_size(const ShT& strides, const Pair& axes_range){
-    return strides[axes_range.first];
+auto make_inner_size(const ShT& strides, const Pair& leading_axes){
+    return strides[leading_axes.first];
 }
 
 template<typename ShT, typename Pair>
-auto make_outer_size(const ShT& shape, const Pair& axes_range){
-    const auto a_minmax = std::minmax(axes_range.first,axes_range.second);
+auto make_outer_size(const ShT& shape, const Pair& leading_axes){
+    const auto a_minmax = std::minmax(leading_axes.first,leading_axes.second);
     auto res = shape[a_minmax.first];
     for (auto a=a_minmax.first+1, a_last=a_minmax.second+1; a!=a_last; ++a){
         res*=shape[a];
@@ -217,11 +217,11 @@ auto make_outer_size(const ShT& shape, const Pair& axes_range){
 }
 
 template<typename ShT, typename Pair, typename Order>
-auto make_traverse_index_shape(const ShT& shape, const Pair& axes_range, Order){
+auto make_traverse_index_shape(const ShT& shape, const Pair& leading_axes, Order){
     if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
-        return ShT{shape.begin(), shape.begin()+axes_range.second};
+        return ShT{shape.begin(), shape.begin()+leading_axes.second};
     }else{
-        return ShT{shape.begin()+axes_range.second+1,shape.end()};
+        return ShT{shape.begin()+leading_axes.second+1,shape.end()};
     }
 }
 
@@ -306,9 +306,18 @@ class reducer
         auto axes = detail::make_axes<config_type>(pdim,axes_);
         detail::check_reduce_args(pshape, axes);
         auto res = tensor<res_value_type,order,res_config_type>{detail::make_reduce_shape(pshape, axes, keep_dims)};
-        detail::sort_axes(axes);
+        if (!res.empty()){
+            detail::sort_axes(axes);
+            const auto leading_axes = detail::make_leading_axes(axes,order{});
+            const auto inner_size = detail::make_inner_size(parent.strides(),leading_axes);
+            const auto outer_size = detail::make_inner_size(pshape,leading_axes);
+            const auto traverse_index_shape = detail::make_traverse_index_shape(pshape,leading_axes,order{});
+            const auto axes_map = detail::make_reduce_axes_map<config_type>(pdim,axes);
+            const auto traverse_index_strides = detail::make_traverse_index_strides(traverse_index_shape,res.descriptor().adapted_strides(),leading_axes,axes_map,order{});
+            const auto traverse_index_reset_strides = detail::make_traverse_index_strides(traverse_index_shape,res.descriptor().reset_strides(),leading_axes,axes_map,order{});
 
-
+        }
+        return res;
     }
 
     //F takes iterators range to be reduces and additional args

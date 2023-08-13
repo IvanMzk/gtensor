@@ -81,9 +81,6 @@ auto generate_lehmer(It first, It last, std::size_t init=1){
     std::for_each(first,last,[init](auto& e)mutable{e=init*a%m;init=e;});
 }
 
-auto order_to_str(gtensor::config::c_order){return std::string{"c_order"};}
-auto order_to_str(gtensor::config::f_order){return std::string{"f_order"};}
-
 }   //end of namespace helpers_for_testing
 
 #endif

@@ -50,9 +50,6 @@ public:
     }
 };
 
-
-auto order_to_str(gtensor::config::c_order){return std::string{"c_order"};}
-auto order_to_str(gtensor::config::f_order){return std::string{"f_order"};}
 template<typename Axes>
 auto axes_to_str(const Axes& axes){
     if constexpr (gtensor::detail::is_container_v<Axes>){
@@ -61,6 +58,9 @@ auto axes_to_str(const Axes& axes){
         return std::to_string(axes);
     }
 }
+
+inline auto order_to_str(gtensor::config::c_order){return std::string{"c_order"};}
+inline auto order_to_str(gtensor::config::f_order){return std::string{"f_order"};}
 
 }   //end of namespace benchmark_helpers
 

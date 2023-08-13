@@ -223,7 +223,7 @@ auto reduce_sum(const basic_tensor<Ts...>& parent, std::initializer_list<U> axes
 //     using shape_type = typename tensor_type::shape_type;
 //     using benchmark_helpers::benchmark;
 //     using benchmark_helpers::cpu_timer;
-//     using benchmark_helpers::order_to_str;
+//     using helpers_for_testing::order_to_str;
 //     using gtensor::detail::shape_to_str;
 
 //     const auto axis=0;
@@ -271,7 +271,7 @@ TEMPLATE_TEST_CASE("test_expression","[benchmark_tensor]",
     using shape_type = typename tensor_type::shape_type;
     using benchmark_helpers::benchmark;
     using benchmark_helpers::cpu_timer;
-    using benchmark_helpers::order_to_str;
+    using helpers_for_testing::order_to_str;
     using gtensor::detail::shape_to_str;
     using benchmark_helpers::axes_to_str;
     using benchmark_helpers::make_asymmetric_tree;
@@ -310,7 +310,7 @@ TEMPLATE_TEST_CASE("benchmark_expression","[benchmark_tensor]",
     using shape_type = typename tensor_type::shape_type;
     using benchmark_helpers::benchmark;
     using benchmark_helpers::cpu_timer;
-    using benchmark_helpers::order_to_str;
+    using helpers_for_testing::order_to_str;
     using gtensor::detail::shape_to_str;
     using benchmark_helpers::axes_to_str;
     using benchmark_helpers::make_asymmetric_tree;
@@ -352,7 +352,7 @@ TEMPLATE_TEST_CASE("benchmark_deep_expression","[benchmark_tensor]",
     using shape_type = typename tensor_type::shape_type;
     using benchmark_helpers::benchmark;
     using benchmark_helpers::cpu_timer;
-    using benchmark_helpers::order_to_str;
+    using helpers_for_testing::order_to_str;
     using gtensor::detail::shape_to_str;
     using benchmark_helpers::axes_to_str;
     using benchmark_helpers::make_asymmetric_tree;
@@ -391,7 +391,7 @@ TEMPLATE_TEST_CASE("benchmark_deep_expression","[benchmark_tensor]",
 //     using tensor_type = gtensor::tensor<value_type,TestType>;
 //     using benchmark_helpers::benchmark;
 //     using benchmark_helpers::cpu_timer;
-//     using benchmark_helpers::order_to_str;
+//     using helpers_for_testing::order_to_str;
 //     using gtensor::detail::shape_to_str;
 //     using benchmark_helpers::axes_to_str;
 //     using benchmark_helpers::make_asymmetric_tree;
