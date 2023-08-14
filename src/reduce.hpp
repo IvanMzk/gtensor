@@ -293,7 +293,7 @@ class reducer
     //axes can be container or scalar
     //F is binary functor, takes elements, return reduce result, like std::plus
     //initial must be such that expression reduce_f(initial,element) be valid or no_value
-    //traverse input countigous
+    //traverse input countigous, i.e. traverse order dependes on layout
     template<typename F, typename Axes, typename...Ts, typename Initial>
     static auto reduce_binary_(const basic_tensor<Ts...>& parent, const Axes& axes_, F reduce_f, bool keep_dims, const Initial& initial){
         using parent_type = basic_tensor<Ts...>;
@@ -312,27 +312,39 @@ class reducer
         detail::check_reduce_args(pshape, axes);
         auto res = tensor<res_value_type,order,res_config_type>{detail::make_reduce_shape(pshape, axes, keep_dims)};
         if (!res.empty()){
+            auto a_parent = parent.traverse_order_adapter(order{});
+            auto a_res = res.traverse_order_adapter(order{});
             //empty axes container
             if constexpr (detail::is_container_v<Axes>){
                 if (axes.empty()){
                     if constexpr (has_initial){
-                        std::transform(parent.begin(),parent.end(),res.begin(),[&reduce_f,&initial](const auto& e){return reduce_f(initial,e);});
+                        std::transform(a_parent.begin(),a_parent.end(),a_res.begin(),[&reduce_f,&initial](const auto& e){return reduce_f(initial,e);});
                     }else{
-                        std::copy(parent.begin(),parent.end(),res.begin());
+                        std::copy(a_parent.begin(),a_parent.end(),a_res.begin());
                     }
                     return res;
                 }
             }
-            //reduce zero size axes
+            //reduce zero size
             if (parent.empty()){
                 if constexpr (has_initial){
-                    std::fill(res.begin(),res.end(),initial);
+                    std::fill(a_res.begin(),a_res.end(),initial);
                     return res;
                 }else{
                     throw value_error("cant reduce zero size dimension without initial value");
                 }
             }
-            //reduce to 0dim case
+            //0dim result
+            if (res.size() == index_type{1}){
+                auto it=a_parent.begin();
+                const auto& initial_ = *it;
+                auto res_ = std::accumulate(++it,a_parent.end(),initial_,reduce_f);
+                if constexpr (has_initial){
+                    res_=reduce_f(initial,res_);
+                }
+                *a_res.begin() = res_;
+                return res;
+            }
 
             detail::sort_axes(axes);
             const auto leading_axes = detail::make_leading_axes(axes,order{});
@@ -345,8 +357,8 @@ class reducer
             using walker_type = cursor_walker<config_type,index_type>;
             using traverser_type = walker_forward_traverser<config_type,walker_type>;
             traverser_type traverser{traverse_index_shape,walker_type{traverse_index_strides,traverse_index_reset_strides,0}};
-            auto it = parent.traverse_order_adapter(order{}).begin();
-            const auto res_first = res.traverse_order_adapter(order{}).begin();
+            auto it = a_parent.begin();
+            const auto res_first = a_res.begin();
             auto res_it = res_first;
             bool init = true;
             auto offset = *traverser;
@@ -440,8 +452,7 @@ class reducer
                 const auto e = reduce_f(a.begin(), a.end(), std::forward<Args>(args)...);
                 std::fill(res.begin(), res.end(), e);
             }else{
-                const auto res_size = res.size();
-                if (res_size == index_type{1}){
+                if (res.size() == index_type{1}){
                     if (pdim == dim_type{1} || any_order){   //1d or any_order, can use native order
                         auto a = parent.traverse_order_adapter(order{});
                         *res.begin() = reduce_f(a.begin(), a.end(), std::forward<Args>(args)...);
@@ -455,16 +466,16 @@ class reducer
                     auto a = res.traverse_order_adapter(order{});
                     auto res_it = a.begin();
 
-                    using future_type = decltype(
-                        std::declval<decltype(detail::get_pool())>().push(
-                            reduce_f,
-                            axes_iterator_maker.begin_complement(traverser.walker(),std::false_type{}),
-                            axes_iterator_maker.end_complement(traverser.walker(),std::false_type{}),
-                            std::forward<Args>(args)...
-                        )
-                    );
-                    static constexpr int max_par_tasks = 100;
-                    queue::st_bounded_queue<future_type> futures{max_par_tasks};
+                    // using future_type = decltype(
+                    //     std::declval<decltype(detail::get_pool())>().push(
+                    //         reduce_f,
+                    //         axes_iterator_maker.begin_complement(traverser.walker(),std::false_type{}),
+                    //         axes_iterator_maker.end_complement(traverser.walker(),std::false_type{}),
+                    //         std::forward<Args>(args)...
+                    //     )
+                    // );
+                    //static constexpr int max_par_tasks = 100;
+                    //queue::st_bounded_queue<future_type> futures{max_par_tasks};
                     do{
                         // auto f = detail::get_pool().push(
                         //     reduce_f,
