@@ -57,7 +57,7 @@ void check_searchsorted_args(const DimT& dim, const Sorter& sorter){
 #define GTENSOR_TENSOR_ARG_SEARCH_REDUCE_FUNCTION(NAME,F)\
 template<typename...Ts, typename Axis>\
 static auto NAME(const basic_tensor<Ts...>& t, const Axis& axis, bool keep_dims = false){\
-    return reduce(t,axis,F{},keep_dims);\
+    return reduce(t,axis,F{},keep_dims,false);\
 }\
 template<typename...Ts>\
 static auto NAME(const basic_tensor<Ts...>& t, bool keep_dims = false){\
@@ -67,7 +67,7 @@ static auto NAME(const basic_tensor<Ts...>& t, bool keep_dims = false){\
 #define GTENSOR_TENSOR_SORT_SEARCH_REDUCE_FUNCTION(NAME,F)\
 template<typename...Ts, typename Axes>\
 static auto NAME(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){\
-    return reduce(t,axes,F{},keep_dims);\
+    return reduce(t,axes,F{},keep_dims,true);\
 }\
 template<typename...Ts>\
 static auto NAME(const basic_tensor<Ts...>& t, bool keep_dims = false){\

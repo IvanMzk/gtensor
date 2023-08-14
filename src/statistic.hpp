@@ -27,7 +27,7 @@ enum class histogram_algorithm : std::size_t {automatic,fd,scott,rice,sturges,sq
 #define GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(NAME,F)\
 template<typename...Ts, typename Axes>\
 static auto NAME(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){\
-    return reduce(t,axes,F{},keep_dims);\
+    return reduce(t,axes,F{},keep_dims,true);\
 }\
 template<typename...Ts>\
 static auto NAME(const basic_tensor<Ts...>& t, bool keep_dims = false){\
@@ -66,7 +66,7 @@ struct statistic
         if constexpr (std::is_same_v<Axes,detail::no_value>){
             return reduce_flatten(t,statistic_reduce_operations::quantile{},keep_dims,false,q,config_type{});
         }else{
-            return reduce(t,axes,statistic_reduce_operations::quantile{},keep_dims,q,config_type{});
+            return reduce(t,axes,statistic_reduce_operations::quantile{},keep_dims,false,q,config_type{});
         }
     }
     //like over flatten
@@ -111,7 +111,7 @@ struct statistic
         if constexpr (std::is_same_v<Axes,detail::no_value>){
             return reduce_flatten(t,statistic_reduce_operations::nanquantile{},keep_dims,false,q,config_type{});
         }else{
-            return reduce(t,axes,statistic_reduce_operations::nanquantile{},keep_dims,q,config_type{});
+            return reduce(t,axes,statistic_reduce_operations::nanquantile{},keep_dims,false,q,config_type{});
         }
     }
     //like over flatten, ignoring nan
@@ -143,7 +143,7 @@ struct statistic
         if constexpr (std::is_same_v<Axes,detail::no_value>){
             return reduce_flatten(t,statistic_reduce_operations::average<value_type>{},keep_dims,false,weights);
         }else{
-            return reduce(t,axes,statistic_reduce_operations::average<value_type>{},keep_dims,weights);
+            return reduce(t,axes,statistic_reduce_operations::average<value_type>{},keep_dims,false,weights);
         }
     }
     template<typename...Ts, typename Container>

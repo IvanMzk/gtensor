@@ -21,7 +21,7 @@ static auto NAME(Args&&...args){\
 #define GTENSOR_TENSOR_MATH_REDUCE_FUNCTION(NAME,F)\
 template<typename...Ts, typename Axes>\
 static auto NAME(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){\
-    return reduce(t,axes,F{},keep_dims);\
+    return reduce(t,axes,F{},keep_dims,true);\
 }\
 template<typename...Ts>\
 static auto NAME(const basic_tensor<Ts...>& t, bool keep_dims = false){\
@@ -31,7 +31,7 @@ static auto NAME(const basic_tensor<Ts...>& t, bool keep_dims = false){\
 #define GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(NAME,F)\
 template<typename...Ts, typename Axes, typename Initial = gtensor::detail::no_value>\
 static auto NAME(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false, const Initial& initial = Initial{}){\
-    return reduce(t,axes,F{},keep_dims,initial);\
+    return reduce(t,axes,F{},keep_dims,true,initial);\
 }\
 template<typename...Ts, typename Initial = gtensor::detail::no_value>\
 static auto NAME(const basic_tensor<Ts...>& t, bool keep_dims = false, const Initial& initial = Initial{}){\

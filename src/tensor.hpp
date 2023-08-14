@@ -352,15 +352,17 @@ public:
     //reduce along axes, axes may be container or scalar
     //f should be like [](auto first, auto last){...}, where first,last is range along axes
     //f should return scalar - first,last reduction result - that determines result's value_type
+    //if any_order true traverse order along axes unspecified, c_order otherwise
     template<typename Axes, typename F>
-    auto reduce(const Axes& axes, F f, bool keep_dims=false)const{
-        return detail::adl_proxy::reduce_(*this, axes, f, keep_dims);
+    auto reduce(const Axes& axes, F f, bool keep_dims=false, bool any_order=false)const{
+        return detail::adl_proxy::reduce_(*this, axes, f, keep_dims, any_order);
     }
     template<typename F>
-    auto reduce(std::initializer_list<dim_type> axes, F f, bool keep_dims=false)const{
-        return detail::adl_proxy::reduce_(*this, axes, f, keep_dims);
+    auto reduce(std::initializer_list<dim_type> axes, F f, bool keep_dims=false, bool any_order=false)const{
+        return detail::adl_proxy::reduce_(*this, axes, f, keep_dims, any_order);
     }
-    //reduce like over flatten or unspecified order if any_order is true
+    //reduce like over flatten
+    //if any_order true traverse order unspecified, c_order otherwise
     template<typename F>
     auto reduce(F f, bool keep_dims=false, bool any_order=false)const{
         return reduce_flatten(*this, f, keep_dims, any_order);

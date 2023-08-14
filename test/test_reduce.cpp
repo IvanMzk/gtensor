@@ -893,171 +893,168 @@ TEMPLATE_TEST_CASE("test_reduce","[test_reduce]",
     using test_reduce_::center;
     using gtensor::reduce;
     using helpers_for_testing::apply_by_element;
-    //0tensor,1axes,2functor,3keep_dims,4expected
+    //0tensor,1axes,2functor,3keep_dims,4any_order,5expected
     auto test_data = std::make_tuple(
         //single axis
         //keep_dims is false
-        std::make_tuple(tensor_type{}, dim_type{0}, sum{}, false, tensor_type(value_type{0})),
-        std::make_tuple(tensor_type{}, dim_type{0}, prod{}, false, tensor_type(value_type{1})),
-        std::make_tuple(tensor_type{}.reshape(1,0), dim_type{0}, sum{}, false, tensor_type{}),
-        std::make_tuple(tensor_type{}.reshape(1,0), dim_type{1}, sum{}, false, tensor_type{value_type{0}}),
-        std::make_tuple(tensor_type{}.reshape(2,3,0), dim_type{0}, sum{}, false, tensor_type{}.reshape(3,0)),
-        std::make_tuple(tensor_type{}.reshape(2,3,0), dim_type{1}, sum{}, false, tensor_type{}.reshape(2,0)),
-        std::make_tuple(tensor_type{}.reshape(2,3,0), dim_type{2}, sum{}, false, tensor_type{{value_type{0},value_type{0},value_type{0}},{value_type{0},value_type{0},value_type{0}}}),
-        std::make_tuple(tensor_type{}.reshape(2,3,0), dim_type{2}, prod{}, false, tensor_type{{value_type{1},value_type{1},value_type{1}},{value_type{1},value_type{1},value_type{1}}}),
-        std::make_tuple(tensor_type{1,2,3,4,5,6}, dim_type{0}, sum{}, false, tensor_type(21)),
-        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, dim_type{0}, sum{}, false, tensor_type{21}),
-        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, dim_type{1}, sum{}, false, tensor_type{1,2,3,4,5,6}),
-        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, dim_type{0}, sum{}, false, tensor_type{1,2,3,4,5,6}),
-        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, dim_type{1}, sum{}, false, tensor_type{21}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{0}, sum{}, false, tensor_type{5,7,9}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{1}, sum{}, false, tensor_type{6,15}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{1}, prod{}, false, tensor_type{6,120}),
-        std::make_tuple(tensor_type{{1,6,7,9},{4,5,7,0}}, dim_type{0}, max{}, false, tensor_type{4,6,7,9}),
-        std::make_tuple(tensor_type{{1,6,7,9},{4,5,7,0}}, dim_type{1}, min{}, false, tensor_type{1,0}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{0}, sum{}, false, tensor_type{{4,6},{8,10}}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{-3}, sum_random_access{}, false, tensor_type{{4,6},{8,10}}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{-3}, sum_random_access_reverse{}, false, tensor_type{{4,6},{8,10}}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{1}, sum{}, false, tensor_type{{2,4},{10,12}}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{-2}, sum{}, false, tensor_type{{2,4},{10,12}}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{2}, sum{}, false, tensor_type{{1,5},{9,13}}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{-1}, sum{}, false, tensor_type{{1,5},{9,13}}),
+        std::make_tuple(tensor_type{}, dim_type{0}, sum{}, false, true, tensor_type(value_type{0})),
+        std::make_tuple(tensor_type{}, dim_type{0}, prod{}, false, true, tensor_type(value_type{1})),
+        std::make_tuple(tensor_type{}.reshape(1,0), dim_type{0}, sum{}, false, true, tensor_type{}),
+        std::make_tuple(tensor_type{}.reshape(1,0), dim_type{1}, sum{}, false, true, tensor_type{value_type{0}}),
+        std::make_tuple(tensor_type{}.reshape(2,3,0), dim_type{0}, sum{}, false, true, tensor_type{}.reshape(3,0)),
+        std::make_tuple(tensor_type{}.reshape(2,3,0), dim_type{1}, sum{}, false, true, tensor_type{}.reshape(2,0)),
+        std::make_tuple(tensor_type{}.reshape(2,3,0), dim_type{2}, sum{}, false, true, tensor_type{{value_type{0},value_type{0},value_type{0}},{value_type{0},value_type{0},value_type{0}}}),
+        std::make_tuple(tensor_type{}.reshape(2,3,0), dim_type{2}, prod{}, false, true, tensor_type{{value_type{1},value_type{1},value_type{1}},{value_type{1},value_type{1},value_type{1}}}),
+        std::make_tuple(tensor_type{1,2,3,4,5,6}, dim_type{0}, sum{}, false, true, tensor_type(21)),
+        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, dim_type{0}, sum{}, false, true, tensor_type{21}),
+        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, dim_type{1}, sum{}, false, true, tensor_type{1,2,3,4,5,6}),
+        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, dim_type{0}, sum{}, false, true, tensor_type{1,2,3,4,5,6}),
+        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, dim_type{1}, sum{}, false, true, tensor_type{21}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{0}, sum{}, false, true, tensor_type{5,7,9}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{1}, sum{}, false, true, tensor_type{6,15}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{1}, prod{}, false, true, tensor_type{6,120}),
+        std::make_tuple(tensor_type{{1,6,7,9},{4,5,7,0}}, dim_type{0}, max{}, false, true, tensor_type{4,6,7,9}),
+        std::make_tuple(tensor_type{{1,6,7,9},{4,5,7,0}}, dim_type{1}, min{}, false, true, tensor_type{1,0}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{0}, sum{}, false, true, tensor_type{{4,6},{8,10}}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{-3}, sum_random_access{}, false, true, tensor_type{{4,6},{8,10}}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{-3}, sum_random_access_reverse{}, false, true, tensor_type{{4,6},{8,10}}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{1}, sum{}, false, true, tensor_type{{2,4},{10,12}}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{-2}, sum{}, false, true, tensor_type{{2,4},{10,12}}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{2}, sum{}, false, true, tensor_type{{1,5},{9,13}}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{-1}, sum{}, false, true, tensor_type{{1,5},{9,13}}),
         //keep_dims is true
-        std::make_tuple(tensor_type{}, dim_type{0}, sum{}, true, tensor_type{value_type{0}}),
-        std::make_tuple(tensor_type{}.reshape(1,0), dim_type{0}, sum{}, true, tensor_type{}.reshape(1,0)),
-        std::make_tuple(tensor_type{}.reshape(1,0), dim_type{1}, sum{}, true, tensor_type{{value_type{0}}}),
-        std::make_tuple(tensor_type{}.reshape(2,3,0), dim_type{0}, sum{}, true, tensor_type{}.reshape(1,3,0)),
-        std::make_tuple(tensor_type{}.reshape(2,3,0), dim_type{1}, sum{}, true, tensor_type{}.reshape(2,1,0)),
-        std::make_tuple(tensor_type{}.reshape(2,3,0), dim_type{2}, sum{}, true, tensor_type{{{value_type{0}},{value_type{0}},{value_type{0}}},{{value_type{0}},{value_type{0}},{value_type{0}}}}),
-        std::make_tuple(tensor_type{}.reshape(2,3,0), dim_type{2}, prod{}, true, tensor_type{{{value_type{1}},{value_type{1}},{value_type{1}}},{{value_type{1}},{value_type{1}},{value_type{1}}}}),
-        std::make_tuple(tensor_type{1,2,3,4,5,6}, dim_type{0}, sum{}, true, tensor_type{21}),
-        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, dim_type{0}, sum{}, true, tensor_type{{21}}),
-        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, dim_type{1}, sum{}, true, tensor_type{{1},{2},{3},{4},{5},{6}}),
-        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, dim_type{0}, sum{}, true, tensor_type{{1,2,3,4,5,6}}),
-        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, dim_type{1}, sum{}, true, tensor_type{{21}}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{0}, sum{}, true, tensor_type{{5,7,9}}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{1}, sum{}, true, tensor_type{{6},{15}}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{1}, prod{}, true, tensor_type{{6},{120}}),
-        std::make_tuple(tensor_type{{1,6,7,9},{4,5,7,0}}, dim_type{0}, max{}, true, tensor_type{{4,6,7,9}}),
-        std::make_tuple(tensor_type{{1,6,7,9},{4,5,7,0}}, dim_type{1}, min{}, true, tensor_type{{1},{0}}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{0}, sum{}, true, tensor_type{{{4,6},{8,10}}}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{-3}, sum{}, true, tensor_type{{{4,6},{8,10}}}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{1}, sum{}, true, tensor_type{{{2,4}},{{10,12}}}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{-2}, sum{}, true, tensor_type{{{2,4}},{{10,12}}}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{2}, sum{}, true, tensor_type{{{1},{5}},{{9},{13}}}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{-1}, sum{}, true, tensor_type{{{1},{5}},{{9},{13}}}),
+        std::make_tuple(tensor_type{}, dim_type{0}, sum{}, true, true, tensor_type{value_type{0}}),
+        std::make_tuple(tensor_type{}.reshape(1,0), dim_type{0}, sum{}, true, true, tensor_type{}.reshape(1,0)),
+        std::make_tuple(tensor_type{}.reshape(1,0), dim_type{1}, sum{}, true, true, tensor_type{{value_type{0}}}),
+        std::make_tuple(tensor_type{}.reshape(2,3,0), dim_type{0}, sum{}, true, true, tensor_type{}.reshape(1,3,0)),
+        std::make_tuple(tensor_type{}.reshape(2,3,0), dim_type{1}, sum{}, true, true, tensor_type{}.reshape(2,1,0)),
+        std::make_tuple(tensor_type{}.reshape(2,3,0), dim_type{2}, sum{}, true, true, tensor_type{{{value_type{0}},{value_type{0}},{value_type{0}}},{{value_type{0}},{value_type{0}},{value_type{0}}}}),
+        std::make_tuple(tensor_type{}.reshape(2,3,0), dim_type{2}, prod{}, true, true, tensor_type{{{value_type{1}},{value_type{1}},{value_type{1}}},{{value_type{1}},{value_type{1}},{value_type{1}}}}),
+        std::make_tuple(tensor_type{1,2,3,4,5,6}, dim_type{0}, sum{}, true, true, tensor_type{21}),
+        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, dim_type{0}, sum{}, true, true, tensor_type{{21}}),
+        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, dim_type{1}, sum{}, true, true, tensor_type{{1},{2},{3},{4},{5},{6}}),
+        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, dim_type{0}, sum{}, true, true, tensor_type{{1,2,3,4,5,6}}),
+        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, dim_type{1}, sum{}, true, true, tensor_type{{21}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{0}, sum{}, true, true, tensor_type{{5,7,9}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{1}, sum{}, true, true, tensor_type{{6},{15}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{1}, prod{}, true, true, tensor_type{{6},{120}}),
+        std::make_tuple(tensor_type{{1,6,7,9},{4,5,7,0}}, dim_type{0}, max{}, true, true, tensor_type{{4,6,7,9}}),
+        std::make_tuple(tensor_type{{1,6,7,9},{4,5,7,0}}, dim_type{1}, min{}, true, true, tensor_type{{1},{0}}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{0}, sum{}, true, true, tensor_type{{{4,6},{8,10}}}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{-3}, sum{}, true, true, tensor_type{{{4,6},{8,10}}}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{1}, sum{}, true, true, tensor_type{{{2,4}},{{10,12}}}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{-2}, sum{}, true, true, tensor_type{{{2,4}},{{10,12}}}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{2}, sum{}, true, true, tensor_type{{{1},{5}},{{9},{13}}}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{-1}, sum{}, true, true, tensor_type{{{1},{5}},{{9},{13}}}),
         //axes is container
         //keep_dims is false
         //empty axes
-        std::make_tuple(tensor_type{}, std::vector<dim_type>{}, sum{}, false, tensor_type{}),
-        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{}, sum{}, false, tensor_type{}.reshape(2,3,0)),
-        std::make_tuple(tensor_type{1,2,3,4,5,6}, std::vector<dim_type>{}, sum{}, false, tensor_type{1,2,3,4,5,6}),
-        std::make_tuple(tensor_type{1,2,3,4,5,6}, std::vector<dim_type>{}, sum_of_squares{}, false, tensor_type{1,4,9,16,25,36}),
-        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, std::vector<dim_type>{}, sum{}, false, tensor_type{{1},{2},{3},{4},{5},{6}}),
-        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, std::vector<dim_type>{}, sum_of_squares{}, false, tensor_type{{1},{4},{9},{16},{25},{36}}),
-        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, std::vector<dim_type>{}, sum{}, false, tensor_type{{1,2,3,4,5,6}}),
-        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, std::vector<dim_type>{}, sum_of_squares{}, false, tensor_type{{1,4,9,16,25,36}}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::vector<dim_type>{}, prod{}, false, tensor_type{{1,2,3},{4,5,6}}),
-        std::make_tuple(tensor_type{{1,-2,3},{-4,5,6}}, std::vector<dim_type>{}, min_or_zero{}, false, tensor_type{{1,0,3},{0,5,6}}),
+        std::make_tuple(tensor_type{}, std::vector<dim_type>{}, sum{}, false, true, tensor_type{}),
+        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{}, sum{}, false, true, tensor_type{}.reshape(2,3,0)),
+        std::make_tuple(tensor_type{1,2,3,4,5,6}, std::vector<dim_type>{}, sum{}, false, true, tensor_type{1,2,3,4,5,6}),
+        std::make_tuple(tensor_type{1,2,3,4,5,6}, std::vector<dim_type>{}, sum_of_squares{}, false, true, tensor_type{1,4,9,16,25,36}),
+        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, std::vector<dim_type>{}, sum{}, false, true, tensor_type{{1},{2},{3},{4},{5},{6}}),
+        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, std::vector<dim_type>{}, sum_of_squares{}, false, true, tensor_type{{1},{4},{9},{16},{25},{36}}),
+        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, std::vector<dim_type>{}, sum{}, false, true, tensor_type{{1,2,3,4,5,6}}),
+        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, std::vector<dim_type>{}, sum_of_squares{}, false, true, tensor_type{{1,4,9,16,25,36}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::vector<dim_type>{}, prod{}, false, true, tensor_type{{1,2,3},{4,5,6}}),
+        std::make_tuple(tensor_type{{1,-2,3},{-4,5,6}}, std::vector<dim_type>{}, min_or_zero{}, false, true, tensor_type{{1,0,3},{0,5,6}}),
         //not empty axes
-        std::make_tuple(tensor_type{}, std::vector<dim_type>{0}, sum{}, false, tensor_type(value_type{0})),
-        std::make_tuple(tensor_type{}.reshape(1,0), std::vector<dim_type>{0}, sum{}, false, tensor_type{}),
-        std::make_tuple(tensor_type{}.reshape(1,0), std::vector<dim_type>{1}, sum{}, false, tensor_type{value_type{0}}),
-        std::make_tuple(tensor_type{}.reshape(1,0), std::vector<dim_type>{0,1}, sum{}, false, tensor_type(value_type{0})),
-        std::make_tuple(tensor_type{}.reshape(1,0), std::vector<dim_type>{1,0}, sum{}, false, tensor_type(value_type{0})),
-        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{0}, sum{}, false, tensor_type{}.reshape(3,0)),
-        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{1}, sum{}, false, tensor_type{}.reshape(2,0)),
-        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{2}, sum{}, false, tensor_type{{value_type{0},value_type{0},value_type{0}},{value_type{0},value_type{0},value_type{0}}}),
-        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{2,0}, sum{}, false, tensor_type{value_type{0},value_type{0},value_type{0}}),
-        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{2}, prod{}, false, tensor_type{{value_type{1},value_type{1},value_type{1}},{value_type{1},value_type{1},value_type{1}}}),
-        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{2,0}, prod{}, false, tensor_type{value_type{1},value_type{1},value_type{1}}),
-        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{0,1}, sum{}, false, tensor_type{}),
-        std::make_tuple(tensor_type{1,2,3,4,5,6}, std::vector<dim_type>{0}, sum{}, false, tensor_type(21)),
-        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, std::vector<dim_type>{0}, sum{}, false, tensor_type{21}),
-        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, std::vector<dim_type>{1}, sum{}, false, tensor_type{1,2,3,4,5,6}),
-        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, std::vector<dim_type>{1,0}, sum{}, false, tensor_type(21)),
-        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, std::vector<dim_type>{0,1}, sum{}, false, tensor_type(21)),
-        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, std::vector<dim_type>{0}, sum{}, false, tensor_type{1,2,3,4,5,6}),
-        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, std::vector<dim_type>{1}, sum{}, false, tensor_type{21}),
-        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, std::vector<dim_type>{0,1}, sum{}, false, tensor_type(21)),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::vector<dim_type>{0}, sum{}, false, tensor_type{5,7,9}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::vector<dim_type>{1}, sum{}, false, tensor_type{6,15}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::vector<dim_type>{1,0}, sum{}, false, tensor_type(21)),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::vector<dim_type>{1}, prod{}, false, tensor_type{6,120}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::vector<dim_type>{0}, prod{}, false, tensor_type{4,10,18}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::vector<dim_type>{0,1}, prod{}, false, tensor_type(720)),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{0}, sum{}, false, tensor_type{{4,6},{8,10}}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{1}, sum{}, false, tensor_type{{2,4},{10,12}}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{1}, prod{}, false, tensor_type{{0,3},{24,35}}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{2}, sum{}, false, tensor_type{{1,5},{9,13}}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{1,2}, sum_random_access{}, false, tensor_type{6,22}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{1,2}, sum_random_access_reverse{}, false, tensor_type{6,22}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{2,0}, prod{}, false, tensor_type{0,252}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{-2,-1}, sum{}, false, tensor_type{6,22}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{-1,-3}, prod{}, false, tensor_type{0,252}),
+        std::make_tuple(tensor_type{}, std::vector<dim_type>{0}, sum{}, false, true, tensor_type(value_type{0})),
+        std::make_tuple(tensor_type{}.reshape(1,0), std::vector<dim_type>{0}, sum{}, false, true, tensor_type{}),
+        std::make_tuple(tensor_type{}.reshape(1,0), std::vector<dim_type>{1}, sum{}, false, true, tensor_type{value_type{0}}),
+        std::make_tuple(tensor_type{}.reshape(1,0), std::vector<dim_type>{0,1}, sum{}, false, true, tensor_type(value_type{0})),
+        std::make_tuple(tensor_type{}.reshape(1,0), std::vector<dim_type>{1,0}, sum{}, false, true, tensor_type(value_type{0})),
+        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{0}, sum{}, false, true, tensor_type{}.reshape(3,0)),
+        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{1}, sum{}, false, true, tensor_type{}.reshape(2,0)),
+        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{2}, sum{}, false, true, tensor_type{{value_type{0},value_type{0},value_type{0}},{value_type{0},value_type{0},value_type{0}}}),
+        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{2,0}, sum{}, false, true, tensor_type{value_type{0},value_type{0},value_type{0}}),
+        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{2}, prod{}, false, true, tensor_type{{value_type{1},value_type{1},value_type{1}},{value_type{1},value_type{1},value_type{1}}}),
+        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{2,0}, prod{}, false, true, tensor_type{value_type{1},value_type{1},value_type{1}}),
+        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{0,1}, sum{}, false, true, tensor_type{}),
+        std::make_tuple(tensor_type{1,2,3,4,5,6}, std::vector<dim_type>{0}, sum{}, false, true, tensor_type(21)),
+        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, std::vector<dim_type>{0}, sum{}, false, true, tensor_type{21}),
+        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, std::vector<dim_type>{1}, sum{}, false, true, tensor_type{1,2,3,4,5,6}),
+        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, std::vector<dim_type>{1,0}, sum{}, false, true, tensor_type(21)),
+        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, std::vector<dim_type>{0,1}, sum{}, false, true, tensor_type(21)),
+        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, std::vector<dim_type>{0}, sum{}, false, true, tensor_type{1,2,3,4,5,6}),
+        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, std::vector<dim_type>{1}, sum{}, false, true, tensor_type{21}),
+        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, std::vector<dim_type>{0,1}, sum{}, false, true, tensor_type(21)),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::vector<dim_type>{0}, sum{}, false, true, tensor_type{5,7,9}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::vector<dim_type>{1}, sum{}, false, true, tensor_type{6,15}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::vector<dim_type>{1,0}, sum{}, false, true, tensor_type(21)),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::vector<dim_type>{1}, prod{}, false, true, tensor_type{6,120}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::vector<dim_type>{0}, prod{}, false, true, tensor_type{4,10,18}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::vector<dim_type>{0,1}, prod{}, false, true, tensor_type(720)),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{0}, sum{}, false, true, tensor_type{{4,6},{8,10}}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{1}, sum{}, false, true, tensor_type{{2,4},{10,12}}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{1}, prod{}, false, true, tensor_type{{0,3},{24,35}}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{2}, sum{}, false, true, tensor_type{{1,5},{9,13}}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{1,2}, sum_random_access{}, false, true, tensor_type{6,22}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{1,2}, sum_random_access_reverse{}, false, true, tensor_type{6,22}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{2,0}, prod{}, false, true, tensor_type{0,252}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{-2,-1}, sum{}, false, true, tensor_type{6,22}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{-1,-3}, prod{}, false, true, tensor_type{0,252}),
         //keep_dims is true
         //empty axes
-        std::make_tuple(tensor_type{}, std::vector<dim_type>{}, sum{}, true, tensor_type{}),
-        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{}, sum{}, true, tensor_type{}.reshape(2,3,0)),
-        std::make_tuple(tensor_type{1,2,3,4,5,6}, std::vector<dim_type>{}, sum{}, true, tensor_type{1,2,3,4,5,6}),
-        std::make_tuple(tensor_type{1,2,3,4,5,6}, std::vector<dim_type>{}, sum_of_squares{}, true, tensor_type{1,4,9,16,25,36}),
-        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, std::vector<dim_type>{}, sum{}, true, tensor_type{{1},{2},{3},{4},{5},{6}}),
-        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, std::vector<dim_type>{}, sum_of_squares{}, true, tensor_type{{1},{4},{9},{16},{25},{36}}),
-        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, std::vector<dim_type>{}, sum{}, true, tensor_type{{1,2,3,4,5,6}}),
-        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, std::vector<dim_type>{}, sum_of_squares{}, true, tensor_type{{1,4,9,16,25,36}}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::vector<dim_type>{}, prod{}, true, tensor_type{{1,2,3},{4,5,6}}),
-        std::make_tuple(tensor_type{{1,-2,3},{-4,5,6}}, std::vector<dim_type>{}, min_or_zero{}, true, tensor_type{{1,0,3},{0,5,6}}),
+        std::make_tuple(tensor_type{}, std::vector<dim_type>{}, sum{}, true, true, tensor_type{}),
+        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{}, sum{}, true, true, tensor_type{}.reshape(2,3,0)),
+        std::make_tuple(tensor_type{1,2,3,4,5,6}, std::vector<dim_type>{}, sum{}, true, true, tensor_type{1,2,3,4,5,6}),
+        std::make_tuple(tensor_type{1,2,3,4,5,6}, std::vector<dim_type>{}, sum_of_squares{}, true, true, tensor_type{1,4,9,16,25,36}),
+        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, std::vector<dim_type>{}, sum{}, true, true, tensor_type{{1},{2},{3},{4},{5},{6}}),
+        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, std::vector<dim_type>{}, sum_of_squares{}, true, true, tensor_type{{1},{4},{9},{16},{25},{36}}),
+        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, std::vector<dim_type>{}, sum{}, true, true, tensor_type{{1,2,3,4,5,6}}),
+        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, std::vector<dim_type>{}, sum_of_squares{}, true, true, tensor_type{{1,4,9,16,25,36}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::vector<dim_type>{}, prod{}, true, true, tensor_type{{1,2,3},{4,5,6}}),
+        std::make_tuple(tensor_type{{1,-2,3},{-4,5,6}}, std::vector<dim_type>{}, min_or_zero{}, true, true, tensor_type{{1,0,3},{0,5,6}}),
         //not empty axes
-        std::make_tuple(tensor_type{}, std::vector<dim_type>{0}, sum{}, true, tensor_type{value_type{0}}),
-        std::make_tuple(tensor_type{}.reshape(1,0), std::vector<dim_type>{0}, sum{}, true, tensor_type{}.reshape(1,0)),
-        std::make_tuple(tensor_type{}.reshape(1,0), std::vector<dim_type>{1}, sum{}, true, tensor_type{{value_type{0}}}),
-        std::make_tuple(tensor_type{}.reshape(1,0), std::vector<dim_type>{0,1}, sum{}, true, tensor_type{{value_type{0}}}),
-        std::make_tuple(tensor_type{}.reshape(1,0), std::vector<dim_type>{1,0}, sum{}, true, tensor_type{{value_type{0}}}),
-        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{0}, sum{}, true, tensor_type{}.reshape(1,3,0)),
-        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{1}, sum{}, true, tensor_type{}.reshape(2,1,0)),
-        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{2}, sum{}, true, tensor_type{{{value_type{0}},{value_type{0}},{value_type{0}}},{{value_type{0}},{value_type{0}},{value_type{0}}}}),
-        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{2,0}, sum{}, true, tensor_type{{{value_type{0}},{value_type{0}},{value_type{0}}}}),
-        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{2}, prod{}, true, tensor_type{{{value_type{1}},{value_type{1}},{value_type{1}}},{{value_type{1}},{value_type{1}},{value_type{1}}}}),
-        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{2,0}, prod{}, true, tensor_type{{{value_type{1}},{value_type{1}},{value_type{1}}}}),
-        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{0,1}, sum{}, true, tensor_type{}.reshape(1,1,0)),
-        std::make_tuple(tensor_type{1,2,3,4,5,6}, std::vector<dim_type>{0}, sum{}, true, tensor_type{21}),
-        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, std::vector<dim_type>{0}, sum{}, true, tensor_type{{21}}),
-        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, std::vector<dim_type>{1}, sum{}, true, tensor_type{{1},{2},{3},{4},{5},{6}}),
-        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, std::vector<dim_type>{1,0}, sum{}, true, tensor_type{{21}}),
-        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, std::vector<dim_type>{0,1}, sum{}, true, tensor_type{{21}}),
-        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, std::vector<dim_type>{0}, sum{}, true, tensor_type{{1,2,3,4,5,6}}),
-        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, std::vector<dim_type>{1}, sum{}, true, tensor_type{{21}}),
-        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, std::vector<dim_type>{0,1}, sum{}, true, tensor_type{{21}}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::vector<dim_type>{0}, sum{}, true, tensor_type{{5,7,9}}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::vector<dim_type>{1}, sum{}, true, tensor_type{{6},{15}}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::vector<dim_type>{1,0}, sum{}, true, tensor_type{{21}}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::vector<dim_type>{1}, prod{}, true, tensor_type{{6},{120}}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::vector<dim_type>{0}, prod{}, true, tensor_type{{4,10,18}}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::vector<dim_type>{0,1}, prod{}, true, tensor_type{{720}}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{0}, sum{}, true, tensor_type{{{4,6},{8,10}}}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{1}, sum{}, true, tensor_type{{{2,4}},{{10,12}}}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{1}, prod{}, true, tensor_type{{{0,3}},{{24,35}}}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{2}, sum{}, true, tensor_type{{{1},{5}},{{9},{13}}}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{1,2}, sum{}, true, tensor_type{{{6}},{{22}}}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{2,0}, prod{}, true, tensor_type{{{0},{252}}}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{-2,-1}, sum{}, true, tensor_type{{{6}},{{22}}}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{-1,-3}, prod{}, true, tensor_type{{{0},{252}}}),
-        //axes in initializer_list
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::initializer_list<dim_type>{-2,-1}, sum{}, false, tensor_type{6,22}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::initializer_list<dim_type>{-1,-3}, prod{}, false, tensor_type{0,252}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::initializer_list<dim_type>{1,2}, sum{}, true, tensor_type{{{6}},{{22}}}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::initializer_list<dim_type>{2,0}, prod{}, true, tensor_type{{{0},{252}}}),
-        //c_order traverse along axes
-        std::make_tuple(tensor_type{{{7,4,8,8},{3,4,5,6},{4,0,0,0}},{{0,1,4,7},{0,1,2,7},{2,8,3,4}}}, std::vector<dim_type>{0,1}, center{}, false, tensor_type{2.0,0.5,2.0,3.5}),
-        std::make_tuple(tensor_type{{{7,4,8,8},{3,4,5,6},{4,0,0,0}},{{0,1,4,7},{0,1,2,7},{2,8,3,4}}}, std::vector<dim_type>{1,2}, center{}, false, tensor_type{4.5,1.5})
+        std::make_tuple(tensor_type{}, std::vector<dim_type>{0}, sum{}, true, true, tensor_type{value_type{0}}),
+        std::make_tuple(tensor_type{}.reshape(1,0), std::vector<dim_type>{0}, sum{}, true, true, tensor_type{}.reshape(1,0)),
+        std::make_tuple(tensor_type{}.reshape(1,0), std::vector<dim_type>{1}, sum{}, true, true, tensor_type{{value_type{0}}}),
+        std::make_tuple(tensor_type{}.reshape(1,0), std::vector<dim_type>{0,1}, sum{}, true, true, tensor_type{{value_type{0}}}),
+        std::make_tuple(tensor_type{}.reshape(1,0), std::vector<dim_type>{1,0}, sum{}, true, true, tensor_type{{value_type{0}}}),
+        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{0}, sum{}, true, true, tensor_type{}.reshape(1,3,0)),
+        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{1}, sum{}, true, true, tensor_type{}.reshape(2,1,0)),
+        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{2}, sum{}, true, true, tensor_type{{{value_type{0}},{value_type{0}},{value_type{0}}},{{value_type{0}},{value_type{0}},{value_type{0}}}}),
+        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{2,0}, sum{}, true, true, tensor_type{{{value_type{0}},{value_type{0}},{value_type{0}}}}),
+        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{2}, prod{}, true, true, tensor_type{{{value_type{1}},{value_type{1}},{value_type{1}}},{{value_type{1}},{value_type{1}},{value_type{1}}}}),
+        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{2,0}, prod{}, true, true, tensor_type{{{value_type{1}},{value_type{1}},{value_type{1}}}}),
+        std::make_tuple(tensor_type{}.reshape(2,3,0), std::vector<dim_type>{0,1}, sum{}, true, true, tensor_type{}.reshape(1,1,0)),
+        std::make_tuple(tensor_type{1,2,3,4,5,6}, std::vector<dim_type>{0}, sum{}, true, true, tensor_type{21}),
+        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, std::vector<dim_type>{0}, sum{}, true, true, tensor_type{{21}}),
+        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, std::vector<dim_type>{1}, sum{}, true, true, tensor_type{{1},{2},{3},{4},{5},{6}}),
+        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, std::vector<dim_type>{1,0}, sum{}, true, true, tensor_type{{21}}),
+        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, std::vector<dim_type>{0,1}, sum{}, true, true, tensor_type{{21}}),
+        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, std::vector<dim_type>{0}, sum{}, true, true, tensor_type{{1,2,3,4,5,6}}),
+        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, std::vector<dim_type>{1}, sum{}, true, true, tensor_type{{21}}),
+        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, std::vector<dim_type>{0,1}, sum{}, true, true, tensor_type{{21}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::vector<dim_type>{0}, sum{}, true, true, tensor_type{{5,7,9}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::vector<dim_type>{1}, sum{}, true, true, tensor_type{{6},{15}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::vector<dim_type>{1,0}, sum{}, true, true, tensor_type{{21}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::vector<dim_type>{1}, prod{}, true, true, tensor_type{{6},{120}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::vector<dim_type>{0}, prod{}, true, true, tensor_type{{4,10,18}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::vector<dim_type>{0,1}, prod{}, true, true, tensor_type{{720}}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{0}, sum{}, true, true, tensor_type{{{4,6},{8,10}}}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{1}, sum{}, true, true, tensor_type{{{2,4}},{{10,12}}}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{1}, prod{}, true, true, tensor_type{{{0,3}},{{24,35}}}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{2}, sum{}, true, true, tensor_type{{{1},{5}},{{9},{13}}}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{1,2}, sum{}, true, true, tensor_type{{{6}},{{22}}}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{2,0}, prod{}, true, true, tensor_type{{{0},{252}}}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{-2,-1}, sum{}, true, true, tensor_type{{{6}},{{22}}}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::vector<dim_type>{-1,-3}, prod{}, true, true, tensor_type{{{0},{252}}}),
+        //any_order false, c_order traverse along axes
+        std::make_tuple(tensor_type{{{7,4,8,8},{3,4,5,6},{4,0,0,0}},{{0,1,4,7},{0,1,2,7},{2,8,3,4}}}, std::vector<dim_type>{0,1}, center{}, false, false, tensor_type{2.0,0.5,2.0,3.5}),
+        std::make_tuple(tensor_type{{{7,4,8,8},{3,4,5,6},{4,0,0,0}},{{0,1,4,7},{0,1,2,7},{2,8,3,4}}}, std::vector<dim_type>{1,2}, center{}, false, false, tensor_type{4.5,1.5}),
+        std::make_tuple(tensor_type{{{7,4,8,8},{3,4,5,6},{4,0,0,0}},{{0,1,4,7},{0,1,2,7},{2,8,3,4}}}, std::vector<dim_type>{0,1,2}, center{}, false, false, tensor_type(0))
     );
     auto test = [](const auto& t){
         auto tensor = std::get<0>(t);
         auto axes = std::get<1>(t);
         auto functor = std::get<2>(t);
         auto keep_dims = std::get<3>(t);
-        auto expected = std::get<4>(t);
-        auto result = reduce(tensor, axes, functor, keep_dims);
+        auto any_order = std::get<4>(t);
+        auto expected = std::get<5>(t);
+        auto result = reduce(tensor, axes, functor, keep_dims, any_order);
         REQUIRE(result == expected);
     };
     apply_by_element(test, test_data);
@@ -1071,21 +1068,22 @@ TEST_CASE("test_reduce_custom_arg","[test_reduce]")
     using test_reduce_::sum_init;
     using gtensor::reduce;
     using helpers_for_testing::apply_by_element;
-    //0tensor,1axes,2functor,3keep_dims,4init,5expected
+    //0tensor,1axes,2functor,3keep_dims,4any_order,5init,6expected
     auto test_data = std::make_tuple(
-        std::make_tuple(tensor_type{1,2,3,4,5}, dim_type{0}, sum_init{}, false, value_type{0}, tensor_type(15)),
-        std::make_tuple(tensor_type{1,2,3,4,5}, dim_type{0}, sum_init{}, true, value_type{-1}, tensor_type{14}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{0}, sum_init{}, false, value_type{-1}, tensor_type{4,6,8}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{1}, sum_init{}, false, value_type{1}, tensor_type{7,16})
+        std::make_tuple(tensor_type{1,2,3,4,5}, dim_type{0}, sum_init{}, false, true, value_type{0}, tensor_type(15)),
+        std::make_tuple(tensor_type{1,2,3,4,5}, dim_type{0}, sum_init{}, true, true, value_type{-1}, tensor_type{14}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{0}, sum_init{}, false, true, value_type{-1}, tensor_type{4,6,8}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{1}, sum_init{}, false, true, value_type{1}, tensor_type{7,16})
     );
     auto test = [](const auto& t){
         auto tensor = std::get<0>(t);
         auto axes = std::get<1>(t);
         auto functor = std::get<2>(t);
         auto keep_dims = std::get<3>(t);
-        auto init = std::get<4>(t);
-        auto expected = std::get<5>(t);
-        auto result = reduce(tensor, axes, functor, keep_dims, init);
+        auto any_order = std::get<4>(t);
+        auto init = std::get<5>(t);
+        auto expected = std::get<6>(t);
+        auto result = reduce(tensor, axes, functor, keep_dims, any_order, init);
         REQUIRE(result == expected);
     };
     apply_by_element(test, test_data);
@@ -1103,38 +1101,39 @@ TEST_CASE("test_reduce_ecxeption","[test_reduce]")
     using helpers_for_testing::apply_by_element;
 
 
-    //0tensor,1axes,2functor,3keep_dim
+    //0tensor,1axes,2functor,3keep_dim,4any_order
     auto test_data = std::make_tuple(
         //single axis
-        std::make_tuple(tensor_type(0), dim_type{0}, sum{}, false),
-        std::make_tuple(tensor_type{}, dim_type{1}, sum{}, false),
-        std::make_tuple(tensor_type{1,2,3,4,5,6}, dim_type{1}, sum{}, false),
-        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, dim_type{2}, sum{}, false),
-        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, dim_type{2}, sum{}, false),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{4}, sum{}, false),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{3}, sum{}, false),
+        std::make_tuple(tensor_type(0), dim_type{0}, sum{}, false, true),
+        std::make_tuple(tensor_type{}, dim_type{1}, sum{}, false, true),
+        std::make_tuple(tensor_type{1,2,3,4,5,6}, dim_type{1}, sum{}, false, true),
+        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, dim_type{2}, sum{}, false, true),
+        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, dim_type{2}, sum{}, false, true),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{4}, sum{}, false, true),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, dim_type{3}, sum{}, false, true),
         //axes container
-        std::make_tuple(tensor_type(0), std::vector<dim_type>{0}, sum{}, false),
-        std::make_tuple(tensor_type{0}, std::vector<dim_type>{0,0}, sum{}, false),
-        std::make_tuple(tensor_type{0}, std::vector<dim_type>{1,1}, sum{}, false),
-        std::make_tuple(tensor_type{0}, std::vector<dim_type>{1}, sum{}, false),
-        std::make_tuple(tensor_type{0}, std::vector<dim_type>{0,1}, sum{}, false),
-        std::make_tuple(tensor_type{0}, std::vector<dim_type>{1,0}, sum{}, false),
-        std::make_tuple(tensor_type{1,2,3,4,5,6}, std::vector<dim_type>{0,0}, sum{}, false),
-        std::make_tuple(tensor_type{1,2,3,4,5,6}, std::vector<dim_type>{1,1}, sum{}, false),
-        std::make_tuple(tensor_type{1,2,3,4,5,6}, std::vector<dim_type>{0,1}, sum{}, false),
-        std::make_tuple(tensor_type{1,2,3,4,5,6}, std::vector<dim_type>{1,0}, sum{}, false),
-        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}, std::vector<dim_type>{3}, sum{}, false),
-        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}, std::vector<dim_type>{0,1,0}, sum{}, false),
-        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}, std::vector<dim_type>{1,1}, sum{}, false),
-        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}, std::vector<dim_type>{0,1,2,0}, sum{}, false)
+        std::make_tuple(tensor_type(0), std::vector<dim_type>{0}, sum{}, false, true),
+        std::make_tuple(tensor_type{0}, std::vector<dim_type>{0,0}, sum{}, false, true),
+        std::make_tuple(tensor_type{0}, std::vector<dim_type>{1,1}, sum{}, false, true),
+        std::make_tuple(tensor_type{0}, std::vector<dim_type>{1}, sum{}, false, true),
+        std::make_tuple(tensor_type{0}, std::vector<dim_type>{0,1}, sum{}, false, true),
+        std::make_tuple(tensor_type{0}, std::vector<dim_type>{1,0}, sum{}, false, true),
+        std::make_tuple(tensor_type{1,2,3,4,5,6}, std::vector<dim_type>{0,0}, sum{}, false, true),
+        std::make_tuple(tensor_type{1,2,3,4,5,6}, std::vector<dim_type>{1,1}, sum{}, false, true),
+        std::make_tuple(tensor_type{1,2,3,4,5,6}, std::vector<dim_type>{0,1}, sum{}, false, true),
+        std::make_tuple(tensor_type{1,2,3,4,5,6}, std::vector<dim_type>{1,0}, sum{}, false, true),
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}, std::vector<dim_type>{3}, sum{}, false, true),
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}, std::vector<dim_type>{0,1,0}, sum{}, false, true),
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}, std::vector<dim_type>{1,1}, sum{}, false, true),
+        std::make_tuple(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}, std::vector<dim_type>{0,1,2,0}, sum{}, false, true)
     );
     auto test = [](const auto& t){
         auto tensor = std::get<0>(t);
         auto axes = std::get<1>(t);
         auto functor = std::get<2>(t);
         auto keep_dim = std::get<3>(t);
-        REQUIRE_THROWS_AS(reduce(tensor, axes, functor, keep_dim), axis_error);
+        auto any_order = std::get<4>(t);
+        REQUIRE_THROWS_AS(reduce(tensor, axes, functor, keep_dim, any_order), axis_error);
     };
     apply_by_element(test, test_data);
 }
@@ -1202,32 +1201,30 @@ TEST_CASE("test_reduce_big","[test_reduce]")
     using tensor_type = gtensor::tensor<value_type>;
     using shape_type = tensor_type::shape_type;
     using test_reduce_::sum;
-    using test_reduce_::prod;
-    using test_reduce_::max;
-    using test_reduce_::min;
     using gtensor::reduce;
+    using helpers_for_testing::generate_lehmer;
 
     tensor_type t(shape_type{32,16,8,64,4,16}); //1<<24
-    std::for_each(t.begin(),t.end(),[init=value_type{123}](auto& e)mutable{e=init*279470273%0xfffffffb; init=e;});
+    generate_lehmer(t.begin(),t.end(),123);
     std::for_each(t.begin(),t.end(),[](auto& e){e%=2;});
 
     REQUIRE(
-        reduce(t,std::vector<int>{0,2,3,5},sum{},false) ==
+        reduce(t,std::vector<int>{0,2,3,5},sum{},false,true) ==
         tensor_type{{130985,131241,131122,131418},{131063,130985,130771,131109},{130880,130776,131173,130602},{130953,131504,130845,130713},{130533,131118,131072,130999},{131537,131601,131137,130747},{130771,131109,131092,131087},{131009,131288,131239,131240},{131045,130487,131331,131042},{130738,130992,131102,131046},{131303,130886,131084,131374},{130716,131235,131133,130959},{130922,131557,131289,131151},{130930,130964,131054,130756},{131444,131149,131506,130919},{131779,130963,131140,130513}}
     );
 
     REQUIRE(
-        reduce(t,std::vector<int>{0,1,3,5},sum{},false) ==
+        reduce(t,std::vector<int>{0,1,3,5},sum{},false,true) ==
         tensor_type{{262550,262341,261387,262795},{262126,262338,263037,261910},{262039,261752,262161,261542},{261610,261842,262138,262175},{262190,262597,262274,262151},{262391,262182,262827,261800},{261970,262571,261781,261997},{261732,262232,262485,261305}}
     );
 
     REQUIRE(
-        reduce(t,std::vector<int>{0,1,2,3,5},sum{},false) ==
+        reduce(t,std::vector<int>{0,1,2,3,5},sum{},false,true) ==
         tensor_type{2096608,2097855,2098090,2095675}
     );
 
     REQUIRE(
-        reduce(t,std::vector<int>{1,2,3,4,5},sum{},false) ==
+        reduce(t,std::vector<int>{1,2,3,4,5},sum{},false,true) ==
         tensor_type{262294,262306,261408,262194,261907,262785,262000,262093,262364,261515,261966,262240,262489,262095,262097,262023,262345,261632,262444,262166,262217,262027,262144,262242,262540,261711,262199,261935,262167,262702,261858,262123}
     );
 }

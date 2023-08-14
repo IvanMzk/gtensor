@@ -415,7 +415,7 @@ class reducer
 
     //F takes iterators range to be reduces and additional args
     template<typename F, typename Axes, typename...Ts, typename...Args>
-    static auto reduce_(const basic_tensor<Ts...>& parent, const Axes& axes_, F reduce_f, bool keep_dims, Args&&...args){
+    static auto reduce_(const basic_tensor<Ts...>& parent, const Axes& axes_, F reduce_f, bool keep_dims, bool any_order, Args&&...args){
         using parent_type = basic_tensor<Ts...>;
         using order = typename parent_type::order;
         using config_type = typename parent_type::config_type;
@@ -442,11 +442,11 @@ class reducer
             }else{
                 const auto res_size = res.size();
                 if (res_size == index_type{1}){
-                    if (pdim == dim_type{1}){   //1d, can use native order
+                    if (pdim == dim_type{1} || any_order){   //1d or any_order, can use native order
                         auto a = parent.traverse_order_adapter(order{});
                         *res.begin() = reduce_f(a.begin(), a.end(), std::forward<Args>(args)...);
                     }else{  //traverse like over flatten
-                        auto a = parent.traverse_order_adapter(config::c_order{});
+                        auto a = parent.traverse_order_adapter(traverse_order{});
                         *res.begin() = reduce_f(a.begin(), a.end(), std::forward<Args>(args)...);
                     }
                 }else{
@@ -625,14 +625,14 @@ class reducer
 public:
     //interface
     template<typename F, typename Axes, typename...Ts, typename...Args>
-    static auto reduce(const basic_tensor<Ts...>& t, const Axes& axes, F f, bool keep_dims, Args&&...args){
+    static auto reduce(const basic_tensor<Ts...>& t, const Axes& axes, F f, bool keep_dims, bool any_order, Args&&...args){
         using dim_type = typename basic_tensor<Ts...>::dim_type;
         if constexpr (detail::is_container_of_type_v<Axes,dim_type>){
             if (axes.size() == 1){
-                return reduce_(t,*axes.begin(),f,keep_dims,std::forward<Args>(args)...);
+                return reduce_(t,*axes.begin(),f,keep_dims,any_order,std::forward<Args>(args)...);
             }
         }
-        return reduce_(t,axes,f,keep_dims,std::forward<Args>(args)...);
+        return reduce_(t,axes,f,keep_dims,any_order,std::forward<Args>(args)...);
     }
 
     template<typename F, typename Axes, typename...Ts, typename Initial>
@@ -666,10 +666,11 @@ public:
 //F is reduce functor with parameters: iterators range of data to be reduced, optional parameters; must return scalar - reduction result
 //F call operator must be defined like this: template<typename It,typename...Args> Ret operator()(It first, It last, Args...){...}, Args is optional parameters
 //result tensor has value_type that is return type of F
+//if any_order true traverse order unspecified, c_order otherwise
 template<typename F, typename Axes, typename...Ts, typename...Args>
-auto reduce(const basic_tensor<Ts...>& t, const Axes& axes, F f, bool keep_dims, Args&&...args){
+auto reduce(const basic_tensor<Ts...>& t, const Axes& axes, F f, bool keep_dims, bool any_order, Args&&...args){
     using config_type = typename basic_tensor<Ts...>::config_type;
-    return reducer_selector_t<config_type>::reduce(t, axes, f, keep_dims, std::forward<Args>(args)...);
+    return reducer_selector_t<config_type>::reduce(t, axes, f, keep_dims, any_order, std::forward<Args>(args)...);
 }
 
 //make tensor reduction along axes, axes can be scalar or container,
@@ -683,6 +684,7 @@ auto reduce_binary(const basic_tensor<Ts...>& t, const Axes& axes, F f, bool kee
 }
 
 //reduce like over flatten
+//if any_order true traverse order unspecified, c_order otherwise
 template<typename F, typename...Ts, typename...Args>
 auto reduce_flatten(const basic_tensor<Ts...>& t, F f, bool keep_dims, bool any_order, Args&&...args){
     using config_type = typename basic_tensor<Ts...>::config_type;
