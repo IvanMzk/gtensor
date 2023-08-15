@@ -158,7 +158,7 @@ private:
     }
 
     template<typename It>
-    storage_type construct_from_range(const index_type& size, It& first, It& last){
+    storage_type construct_from_range(const index_type& size, It& first, It& last, std::random_access_iterator_tag){
         using it_difference_type = typename std::iterator_traits<It>::difference_type;
         if constexpr (detail::is_static_castable_v<it_difference_type,index_type>){
             auto d = static_cast<index_type>(std::distance(first,last));

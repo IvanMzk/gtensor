@@ -215,9 +215,8 @@ public:
     }
     //makes tensor in specified layout by copying shape and elements from this
     template<typename T=value_type, typename Config=config_type, typename Order = config::c_order>
-    auto copy(Order order = Order{})const{
+    auto copy(Order)const{
         ASSERT_ORDER(Order);
-        (void)(order);
         auto a = traverse_order_adapter(Order{});
         return tensor<T,Order,Config>(shape(),a.begin(),a.end());
     }
