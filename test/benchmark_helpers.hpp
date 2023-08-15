@@ -62,6 +62,19 @@ auto axes_to_str(const Axes& axes){
 inline auto order_to_str(gtensor::config::c_order){return std::string{"c_order"};}
 inline auto order_to_str(gtensor::config::f_order){return std::string{"f_order"};}
 
+
+inline const std::vector<std::vector<int>> shapes{
+    std::vector<int>{100000000,3,1,2},
+    std::vector<int>{10000000,3,1,20},
+    std::vector<int>{1000000,3,10,20},
+    std::vector<int>{100000,3,100,20},
+    std::vector<int>{10000,3,100,200},
+    std::vector<int>{1000,3,1000,200},
+    std::vector<int>{100,3,1000,2000},
+    std::vector<int>{50,6,1000,2000}
+};
+
+
 }   //end of namespace benchmark_helpers
 
 
