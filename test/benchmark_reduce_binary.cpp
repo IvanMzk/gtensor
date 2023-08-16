@@ -27,22 +27,30 @@ auto mean(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims=false){
     using res_type = gtensor::math::make_floating_point_t<value_type>;
     using f_type = gtensor::math_reduce_operations::nan_propagate_operation<std::plus<res_type>>;
     auto sum = reduce_binary(t,axes,f_type{},keep_dims);
-    auto sum_of_squared = reduce_binary(gtensor::pow(t,2),axes,f_type{},keep_dims);
     const auto axes_size = t.size() / sum.size();
-    //return sum/=axes_size;
-    return (sum/axes_size).copy();
+    return sum/axes_size;
 }
+
+// template<typename Axes, typename...Ts>
+// auto var(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims=false){
+//     auto square = [](const auto& e){return e*e;};
+//     auto mean_ = benchmark_expression_template_helpers::mean(t,axes,true);
+//     auto tmp = gtensor::n_operator(square,t-std::move(mean_)).copy();
+//     return benchmark_expression_template_helpers::mean(tmp,axes,keep_dims);
+// }
 
 template<typename Axes, typename...Ts>
 auto var(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims=false){
     using value_type = typename basic_tensor<Ts...>::value_type;
     using res_type = gtensor::math::make_floating_point_t<value_type>;
     using f_type = gtensor::math_reduce_operations::nan_propagate_operation<std::plus<res_type>>;
+    auto square = [](const auto& e){return e*e;};
     auto sum = reduce_binary(t,axes,f_type{},keep_dims);
-    auto sum_of_squared = reduce_binary(gtensor::pow(t,2),axes,f_type{},keep_dims);
+    auto sum_of_squared = reduce_binary(gtensor::n_operator(square,t).copy(),axes,f_type{},keep_dims);
     const auto axes_size = t.size() / sum.size();
     const auto axes_size_2 = axes_size*axes_size;
-    return ((axes_size*sum_of_squared - gtensor::pow(sum,2))/axes_size_2).copy();
+    auto res = ((axes_size*std::move(sum_of_squared) - gtensor::n_operator(square,std::move(sum)))/axes_size_2);
+    return res.copy();
 }
 
 
@@ -169,68 +177,7 @@ TEMPLATE_TEST_CASE("test_reduce_binary_var","[benchmark_tensor]",
 // }
 
 
-TEMPLATE_TEST_CASE("benchmark_reduce_bunary_sum_big","[benchmark_tensor]",
-    gtensor::config::c_order,
-    gtensor::config::f_order
-)
-{
-    using value_type = double;
-    using gtensor::tensor;
-    using gtensor::config::c_order;
-    using gtensor::config::f_order;
-    using tensor_type = gtensor::tensor<value_type,TestType>;
-    using shape_type = typename tensor_type::shape_type;
-    using order = typename tensor_type::order;
-    using benchmark_helpers::benchmark;
-    using benchmark_helpers::cpu_timer;
-    using benchmark_helpers::order_to_str;
-    using gtensor::detail::shape_to_str;
-    using benchmark_helpers::axes_to_str;
-
-    auto bench_sum = [](const auto& t_, const auto& axes){
-        auto start = cpu_timer{};
-        auto t_copy = t_.copy(order{});
-        //auto tmp = benchmark_expression_template_helpers::sum(t_copy,axes);
-        auto stop = cpu_timer{};
-        std::cout<<std::endl<<"sum axes "<<axes_to_str(axes)<<" "<<stop-start<<" ms";
-        return t_copy.size();
-    };
-
-    std::vector<shape_type> shapes{
-        shape_type{100000000,3,1,2},
-        shape_type{10000000,3,1,20},
-        shape_type{1000000,3,10,20},
-        shape_type{100000,3,100,20},
-        shape_type{10000,3,100,200},
-        shape_type{1000,3,1000,200},
-        shape_type{100,3,1000,2000},
-        shape_type{50,6,1000,2000}
-    };
-    auto axeses = std::make_tuple(0,1,2,3,std::vector<int>{0,1},std::vector<int>{0,2},std::vector<int>{0,3},std::vector<int>{1,2},
-        std::vector<int>{1,3},std::vector<int>{2,3},std::vector<int>{0,1,2},std::vector<int>{1,2,3},std::vector<int>{0,1,2,3}
-    );
-    for (auto it=shapes.begin(), last=shapes.end(); it!=last; ++it){
-        auto t_ = tensor_type(*it,2);
-        auto t = 2*t_+3*t_*(2*t_+1)+4*(t_+2)*(t_-2)*(t_+3);
-        std::cout<<std::endl<<order_to_str(order{})<<" "<<shape_to_str(t.shape());
-        bench_sum(t,std::get<0>(axeses));
-        bench_sum(t,std::get<1>(axeses));
-        bench_sum(t,std::get<2>(axeses));
-        bench_sum(t,std::get<3>(axeses));
-        bench_sum(t,std::get<4>(axeses));
-        bench_sum(t,std::get<5>(axeses));
-        bench_sum(t,std::get<6>(axeses));
-        bench_sum(t,std::get<7>(axeses));
-        bench_sum(t,std::get<8>(axeses));
-        bench_sum(t,std::get<9>(axeses));
-        bench_sum(t,std::get<10>(axeses));
-        bench_sum(t,std::get<11>(axeses));
-        bench_sum(t,std::get<12>(axeses));
-    }
-}
-
-
-// TEMPLATE_TEST_CASE("benchmark_reduce_binary_mean","[benchmark_tensor]",
+// TEMPLATE_TEST_CASE("benchmark_reduce_bunary_sum_big","[benchmark_tensor]",
 //     gtensor::config::c_order,
 //     gtensor::config::f_order
 // )
@@ -247,33 +194,14 @@ TEMPLATE_TEST_CASE("benchmark_reduce_bunary_sum_big","[benchmark_tensor]",
 //     using benchmark_helpers::order_to_str;
 //     using gtensor::detail::shape_to_str;
 //     using benchmark_helpers::axes_to_str;
-//     using helpers_for_testing::apply_by_element;
-//     using helpers_for_testing::generate_lehmer;
 
 //     auto bench_sum = [](const auto& t_, const auto& axes){
 //         auto start = cpu_timer{};
-//         auto tmp = benchmark_expression_template_helpers::mean(t_,axes);
+//         auto t_copy = t_.copy(order{});
+//         //auto tmp = benchmark_expression_template_helpers::sum(t_copy,axes);
 //         auto stop = cpu_timer{};
-//         std::cout<<std::endl<<"binary mean axes "<<axes_to_str(axes)<<" "<<stop-start<<" ms";
-//         return tmp.size();
-
-//         // auto start = cpu_timer{};
-//         // auto tmp = gtensor::mean(t_,axes);
-//         // auto stop = cpu_timer{};
-//         // std::cout<<std::endl<<"mean axes "<<axes_to_str(axes)<<" "<<stop-start<<" ms";
-//         // return tmp.size();
-
-//         // auto start = cpu_timer{};
-//         // auto tmp = gtensor::sum(t_,axes);
-//         // auto stop = cpu_timer{};
-//         // std::cout<<std::endl<<"sum axes "<<axes_to_str(axes)<<" "<<stop-start<<" ms";
-//         // return tmp.size();
-
-//         // auto start = cpu_timer{};
-//         // auto tmp = benchmark_expression_template_helpers::var(t_,axes);
-//         // auto stop = cpu_timer{};
-//         // std::cout<<std::endl<<"binary var axes "<<axes_to_str(axes)<<" "<<stop-start<<" ms";
-//         // return tmp.size();
+//         std::cout<<std::endl<<"sum axes "<<axes_to_str(axes)<<" "<<stop-start<<" ms";
+//         return t_copy.size();
 //     };
 
 //     std::vector<shape_type> shapes{
@@ -289,18 +217,75 @@ TEMPLATE_TEST_CASE("benchmark_reduce_bunary_sum_big","[benchmark_tensor]",
 //     auto axeses = std::make_tuple(0,1,2,3,std::vector<int>{0,1},std::vector<int>{0,2},std::vector<int>{0,3},std::vector<int>{1,2},
 //         std::vector<int>{1,3},std::vector<int>{2,3},std::vector<int>{0,1,2},std::vector<int>{1,2,3},std::vector<int>{0,1,2,3}
 //     );
-//     auto start = cpu_timer{};
 //     for (auto it=shapes.begin(), last=shapes.end(); it!=last; ++it){
-//         auto t = tensor_type(*it);
-//         generate_lehmer(t.begin(),t.end(),123);
-//         auto bench_f = [&bench_sum,&t](const auto& axes){
-//             return bench_sum(t,axes);
-//         };
+//         auto t_ = tensor_type(*it,2);
+//         auto t = 2*t_+3*t_*(2*t_+1)+4*(t_+2)*(t_-2)*(t_+3);
 //         std::cout<<std::endl<<order_to_str(order{})<<" "<<shape_to_str(t.shape());
-//         apply_by_element(bench_f,axeses);
+//         bench_sum(t,std::get<0>(axeses));
+//         bench_sum(t,std::get<1>(axeses));
+//         bench_sum(t,std::get<2>(axeses));
+//         bench_sum(t,std::get<3>(axeses));
+//         bench_sum(t,std::get<4>(axeses));
+//         bench_sum(t,std::get<5>(axeses));
+//         bench_sum(t,std::get<6>(axeses));
+//         bench_sum(t,std::get<7>(axeses));
+//         bench_sum(t,std::get<8>(axeses));
+//         bench_sum(t,std::get<9>(axeses));
+//         bench_sum(t,std::get<10>(axeses));
+//         bench_sum(t,std::get<11>(axeses));
+//         bench_sum(t,std::get<12>(axeses));
 //     }
-//     auto stop = cpu_timer{};
-//     std::cout<<std::endl<<"total "<<stop-start<<" ms";
 // }
+
+
+TEMPLATE_TEST_CASE("benchmark_reduce_binary_var","[benchmark_tensor]",
+    gtensor::config::c_order,
+    gtensor::config::f_order
+)
+{
+    using value_type = double;
+    using gtensor::tensor;
+    using gtensor::config::c_order;
+    using gtensor::config::f_order;
+    using tensor_type = gtensor::tensor<value_type,TestType>;
+    using order = typename tensor_type::order;
+    using benchmark_helpers::benchmark;
+    using benchmark_helpers::cpu_timer;
+    using benchmark_helpers::order_to_str;
+    using gtensor::detail::shape_to_str;
+    using benchmark_helpers::axes_to_str;
+    using benchmark_helpers::shapes;
+    using helpers_for_testing::apply_by_element;
+
+
+    auto bench_reduce_binary_var = [](const auto& t_, const auto& axes, auto mes){
+        auto start = cpu_timer{};
+        auto tmp = benchmark_expression_template_helpers::var(t_,axes);
+        //auto tmp = gtensor::var(t_,axes);
+        auto stop = cpu_timer{};
+        std::cout<<std::endl<<mes<<" "<<axes_to_str(axes)<<" "<<stop-start<<" ms";
+        return tmp.size();
+    };
+
+    auto axeses = std::make_tuple(0,1,2,3,std::vector<int>{0,1},std::vector<int>{0,2},std::vector<int>{0,3},std::vector<int>{1,2},
+        std::vector<int>{1,3},std::vector<int>{2,3},std::vector<int>{0,1,2},std::vector<int>{1,2,3},std::vector<int>{0,1,2,3}
+    );
+    auto start = cpu_timer{};
+    for (auto it=shapes.begin(), last=shapes.end(); it!=last; ++it){
+        auto t = tensor_type(*it,2);
+        std::cout<<std::endl<<"tensor "<<order_to_str(order{})<<" "<<shape_to_str(t.shape());
+        bench_reduce_binary_var(t,std::get<0>(axeses),"reduce_binary var");
+        bench_reduce_binary_var(t,std::get<1>(axeses),"reduce_binary var");
+        bench_reduce_binary_var(t,std::get<2>(axeses),"reduce_binary var");
+        bench_reduce_binary_var(t,std::get<3>(axeses),"reduce_binary var");
+        bench_reduce_binary_var(t,std::get<4>(axeses),"reduce_binary var");
+        bench_reduce_binary_var(t,std::get<5>(axeses),"reduce_binary var");
+        bench_reduce_binary_var(t,std::get<6>(axeses),"reduce_binary var");
+        bench_reduce_binary_var(t,std::get<7>(axeses),"reduce_binary var");
+        bench_reduce_binary_var(t,std::get<8>(axeses),"reduce_binary var");
+    }
+    auto stop = cpu_timer{};
+    std::cout<<std::endl<<"total,ms "<<stop-start;
+}
 
 
