@@ -284,8 +284,8 @@ TEMPLATE_TEST_CASE("benchmark_reduce_binary_var","[benchmark_tensor]",
 
     auto bench_reduce_binary_var = [](const auto& t_, const auto& axes, auto mes){
         auto start = cpu_timer{};
-        auto tmp = benchmark_expression_template_helpers::var(t_,axes);
-        //auto tmp = gtensor::var(t_,axes);
+        //auto tmp = benchmark_expression_template_helpers::var(t_,axes);
+        auto tmp = gtensor::var(t_,axes);
         auto stop = cpu_timer{};
         std::cout<<std::endl<<mes<<" "<<axes_to_str(axes)<<" "<<stop-start<<" ms";
         return tmp.size();
@@ -296,7 +296,8 @@ TEMPLATE_TEST_CASE("benchmark_reduce_binary_var","[benchmark_tensor]",
     );
     auto start = cpu_timer{};
     for (auto it=shapes.begin(), last=shapes.end(); it!=last; ++it){
-        auto t = tensor_type(*it,2);
+        auto t_ = tensor_type(*it,2);
+        auto t = t_+t_;
         std::cout<<std::endl<<"tensor "<<order_to_str(order{})<<" "<<shape_to_str(t.shape());
         bench_reduce_binary_var(t,std::get<0>(axeses),"reduce_binary var");
         bench_reduce_binary_var(t,std::get<1>(axeses),"reduce_binary var");
