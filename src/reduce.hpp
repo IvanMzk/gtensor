@@ -276,9 +276,6 @@ auto make_traverse_index_strides(const ShT& traverse_shape, const ShT& res_strid
 }
 
 
-
-
-
 inline constexpr std::size_t pool_workers_n = 10;
 inline constexpr std::size_t pool_queue_size = 400;
 inline auto& get_pool(){
@@ -301,10 +298,11 @@ class reducer
         using config_type = typename parent_type::config_type;
         using value_type = typename parent_type::value_type;
         using index_type = typename config_type::index_type;
-        using result_type = decltype(reduce_f(std::declval<value_type>(),std::declval<value_type>()));
+        static constexpr bool has_initial = !std::is_same_v<Initial,detail::no_value>;
+        using initial_type = std::conditional_t<has_initial, Initial, value_type>;
+        using result_type =  decltype(reduce_f(std::declval<initial_type>(),std::declval<value_type>()));
         using res_value_type = std::remove_cv_t<std::remove_reference_t<result_type>>;
         using res_config_type = config::extend_config_t<config_type,res_value_type>;
-        static constexpr bool has_initial = !std::is_same_v<Initial,detail::no_value>;
 
         const auto pdim = parent.dim();
         const auto& pshape = parent.shape();
@@ -318,9 +316,10 @@ class reducer
             if constexpr (detail::is_container_v<Axes>){
                 if (axes.empty()){
                     if constexpr (has_initial){
-                        std::transform(a_parent.begin(),a_parent.end(),a_res.begin(),[&reduce_f,&initial](const auto& e){return reduce_f(initial,e);});
+                        std::transform(a_res.begin(),a_res.end(),a_parent.begin(),a_res.begin(),[&reduce_f,&initial](auto&&, auto&& r){return reduce_f(initial,r);});
                     }else{
-                        std::copy(a_parent.begin(),a_parent.end(),a_res.begin());
+                        //assuming reduction of scalar without initial is identity - nothing to reduce
+                        std::transform(a_res.begin(),a_res.end(),a_parent.begin(),a_res.begin(),[](auto&&, auto&& r){return static_cast<const res_value_type&>(r);});
                     }
                     return res;
                 }
@@ -336,13 +335,13 @@ class reducer
             }
             //0dim result
             if (res.size() == index_type{1}){
-                auto it=a_parent.begin();
-                const auto& initial_ = *it;
-                auto res_ = std::accumulate(++it,a_parent.end(),initial_,reduce_f);
                 if constexpr (has_initial){
-                    res_=reduce_f(initial,res_);
+                    *a_res.begin() = std::accumulate(a_parent.begin(),a_parent.end(),initial,reduce_f);
+                }else{
+                    auto it=a_parent.begin();
+                    const auto& initial_ = *it;
+                    *a_res.begin() = std::accumulate(++it,a_parent.end(),initial_,reduce_f);
                 }
-                *a_res.begin() = res_;
                 return res;
             }
 
@@ -364,19 +363,17 @@ class reducer
             auto offset = *traverser;
             if (inner_size == 1){
                 do{
-                    const auto& initial_ = *it;
-                    const auto res_ = std::accumulate(it+1,it+outer_size,initial_,reduce_f);
-                    it+=outer_size;
                     auto& e = *res_it;
                     if (init){
                         if constexpr (has_initial){
-                            e = reduce_f(initial,res_);
+                            e = std::accumulate(it,it+outer_size,initial,reduce_f);
                         }else{  //no initial
-                            e = res_;
+                            e = std::accumulate(it+1,it+outer_size,*it,reduce_f);
                         }
-                    }else{
-                        e = reduce_f(e,res_);
+                    }else{  //e initialized
+                        e = std::accumulate(it,it+outer_size,e,reduce_f);
                     }
+                    it+=outer_size;
 
                     if (traverser.template next<order>()){
                         const auto new_offset = *traverser;
@@ -397,7 +394,7 @@ class reducer
                         if constexpr (has_initial){
                             std::transform(res_it,res_it+inner_size,it,res_it,[&reduce_f,&initial](auto&&, auto&& r){return reduce_f(initial,r);});
                         }else{  //no initial
-                            std::copy(it,it+inner_size,res_it);
+                            std::transform(res_it,res_it+inner_size,it,res_it,[](auto&&, auto&& r){return static_cast<const res_value_type&>(r);});
                         }
                         it+=inner_size;
                     }
