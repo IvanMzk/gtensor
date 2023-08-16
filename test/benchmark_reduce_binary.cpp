@@ -31,6 +31,30 @@ auto mean(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims=false){
     return sum/axes_size;
 }
 
+template<typename Axes, typename...Ts>
+auto var(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims=false){
+    using value_type = typename basic_tensor<Ts...>::value_type;
+    using order = typename basic_tensor<Ts...>::order;
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    using res_type = gtensor::math::make_floating_point_t<value_type>;
+    using res_config_type = gtensor::config::extend_config_t<config_type,res_type>;
+    auto initial = std::make_pair(res_type{0},res_type{0}); //e,e^2
+    auto f = [](const auto& l, const auto& r){
+        using l_type = std::remove_cv_t<std::remove_reference_t<decltype(l)>>;
+        return l_type{l.first+r, l.second+r*r};
+    };
+    auto tmp = gtensor::reduce_binary(t,axes,f,keep_dims,initial);
+    const auto axes_size = t.size() / tmp.size();
+    const auto axes_size_2 = axes_size*axes_size;
+    gtensor::tensor<res_type,order,res_config_type> res(tmp.shape());
+    std::transform(tmp.begin(),tmp.end(),res.begin(),
+        [axes_size,axes_size_2](const auto& e){
+            return (axes_size*e.second - e.first*e.first)/(axes_size_2);
+        }
+    );
+    return res;
+}
+
 // template<typename Axes, typename...Ts>
 // auto var(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims=false){
 //     auto square = [](const auto& e){return e*e;};
@@ -39,19 +63,19 @@ auto mean(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims=false){
 //     return benchmark_expression_template_helpers::mean(tmp,axes,keep_dims);
 // }
 
-template<typename Axes, typename...Ts>
-auto var(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims=false){
-    using value_type = typename basic_tensor<Ts...>::value_type;
-    using res_type = gtensor::math::make_floating_point_t<value_type>;
-    using f_type = gtensor::math_reduce_operations::nan_propagate_operation<std::plus<res_type>>;
-    auto square = [](const auto& e){return e*e;};
-    auto sum = reduce_binary(t,axes,f_type{},keep_dims);
-    auto sum_of_squared = reduce_binary(gtensor::n_operator(square,t).copy(),axes,f_type{},keep_dims);
-    const auto axes_size = t.size() / sum.size();
-    const auto axes_size_2 = axes_size*axes_size;
-    auto res = ((axes_size*std::move(sum_of_squared) - gtensor::n_operator(square,std::move(sum)))/axes_size_2);
-    return res.copy();
-}
+// template<typename Axes, typename...Ts>
+// auto var(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims=false){
+//     using value_type = typename basic_tensor<Ts...>::value_type;
+//     using res_type = gtensor::math::make_floating_point_t<value_type>;
+//     using f_type = gtensor::math_reduce_operations::nan_propagate_operation<std::plus<res_type>>;
+//     auto square = [](const auto& e){return e*e;};
+//     auto sum = reduce_binary(t,axes,f_type{},keep_dims);
+//     auto sum_of_squared = reduce_binary(gtensor::n_operator(square,t).copy(),axes,f_type{},keep_dims);
+//     const auto axes_size = t.size() / sum.size();
+//     const auto axes_size_2 = axes_size*axes_size;
+//     auto res = ((axes_size*std::move(sum_of_squared) - gtensor::n_operator(square,std::move(sum)))/axes_size_2);
+//     return res.copy();
+// }
 
 
 }   //end of namespace benchmark_expression_template_helpers
