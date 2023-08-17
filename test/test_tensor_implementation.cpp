@@ -433,6 +433,18 @@ TEMPLATE_TEST_CASE("test_tensor_implementation","[test_tensor_implementation]",
             test_backward_traverse(rfirst,rlast,expected.rbegin(),expected.rend());
             test_subscript(first,last,expected.begin(),expected.end());
             test_subscript(rfirst,rlast,expected.rbegin(),expected.rend());
+
+            auto first_trivial = tensor_implementation.template begin_trivial<traverse_order_type>();
+            auto last_trivial = tensor_implementation.template end_trivial<traverse_order_type>();
+            auto rfirst_trivial = tensor_implementation.template rbegin_trivial<traverse_order_type>();
+            auto rlast_trivial = tensor_implementation.template rend_trivial<traverse_order_type>();
+
+            test_equal(first_trivial,last_trivial,expected.begin(),expected.end());
+            test_equal(rfirst_trivial,rlast_trivial,expected.rbegin(),expected.rend());
+            test_backward_traverse(first_trivial,last_trivial,expected.begin(),expected.end());
+            test_backward_traverse(rfirst_trivial,rlast_trivial,expected.rbegin(),expected.rend());
+            test_subscript(first_trivial,last_trivial,expected.begin(),expected.end());
+            test_subscript(rfirst_trivial,rlast_trivial,expected.rbegin(),expected.rend());
         };
         apply_by_element(test,test_data);
     }
@@ -452,6 +464,30 @@ TEMPLATE_TEST_CASE("test_tensor_implementation","[test_tensor_implementation]",
             REQUIRE(result_shape == expected_shape);
             using traverse_order_type = decltype(traverse_order);
             auto indexer = tensor_implementation.template create_indexer<traverse_order_type>();
+            std::vector<value_type> result;
+            for (index_type i{0}; i!=tensor_implementation.size(); ++i){
+                result.push_back(indexer[i]);
+            }
+            REQUIRE(std::equal(result.begin(),result.end(),expected.begin(),expected.end()));
+        };
+        apply_by_element(test,test_data);
+    }
+    SECTION("test_trivial_indexer")
+    {
+        auto test = [](const auto& t){
+            auto core_order = std::get<0>(t);
+            auto traverse_order = std::get<1>(t);
+            auto shape = std::get<2>(t);
+            auto expected_shape = shape;
+            auto elements = std::get<3>(t);
+            auto expected = std::get<4>(t);
+            using core_order_type = decltype(core_order);
+            using tensor_implementation_type = tensor_implementation<typename TestType::template core<config_type,value_type,core_order_type>>;
+            tensor_implementation_type tensor_implementation{shape, elements.begin(), elements.end()};
+            auto result_shape = tensor_implementation.shape();
+            REQUIRE(result_shape == expected_shape);
+            using traverse_order_type = decltype(traverse_order);
+            auto indexer = tensor_implementation.template create_trivial_indexer<traverse_order_type>();
             std::vector<value_type> result;
             for (index_type i{0}; i!=tensor_implementation.size(); ++i){
                 result.push_back(indexer[i]);
@@ -486,6 +522,40 @@ TEMPLATE_TEST_CASE("test_tensor_implementation","[test_tensor_implementation]",
             };
             walker_iterator_type last{
                 tensor_implementation.create_walker(),
+                tensor_implementation.shape(),
+                tensor_implementation.descriptor().strides_div(traverse_order),
+                tensor_implementation.size()
+            };
+            REQUIRE(std::equal(first,last,expected.begin(),expected.end()));
+        };
+        apply_by_element(test,test_data);
+    }
+    SECTION("test_trivial_walker")
+    {
+        auto test = [](const auto& t){
+            auto core_order = std::get<0>(t);
+            auto traverse_order = std::get<1>(t);
+            auto shape = std::get<2>(t);
+            auto expected_shape = shape;
+            auto elements = std::get<3>(t);
+            auto expected = std::get<4>(t);
+            using core_order_type = decltype(core_order);
+            using tensor_implementation_type = tensor_implementation<typename TestType::template core<config_type,value_type,core_order_type>>;
+            tensor_implementation_type tensor_implementation{shape, elements.begin(), elements.end()};
+            auto result_shape = tensor_implementation.shape();
+            REQUIRE(result_shape == expected_shape);
+            using walker_type = decltype(tensor_implementation.create_trivial_walker());
+            using traverse_order_type = decltype(traverse_order);
+            using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,traverse_order_type>;
+            using walker_iterator_type = gtensor::walker_iterator<config_type,traverser_type>;
+            walker_iterator_type first{
+                tensor_implementation.create_trivial_walker(),
+                tensor_implementation.shape(),
+                tensor_implementation.descriptor().strides_div(traverse_order),
+                index_type{0}
+            };
+            walker_iterator_type last{
+                tensor_implementation.create_trivial_walker(),
                 tensor_implementation.shape(),
                 tensor_implementation.descriptor().strides_div(traverse_order),
                 tensor_implementation.size()
@@ -636,6 +706,18 @@ TEMPLATE_TEST_CASE("test_tensor_implementation_data_accesor_result_type_non_cons
     REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rbegin<f_order>(std::declval<shape_type>())),value_type&>);
     REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rend<f_order>(std::declval<shape_type>())),value_type&>);
     REQUIRE(std::is_same_v<decltype(std::declval<tensor_implementation_type>().template create_indexer<f_order>()[std::declval<index_type>()]),value_type&>);
+    //trivial
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().create_trivial_walker()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template begin_trivial<c_order>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template end_trivial<c_order>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rbegin_trivial<c_order>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rend_trivial<c_order>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(std::declval<tensor_implementation_type>().template create_trivial_indexer<c_order>()[std::declval<index_type>()]),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template begin_trivial<f_order>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template end_trivial<f_order>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rbegin_trivial<f_order>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rend_trivial<f_order>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(std::declval<tensor_implementation_type>().template create_trivial_indexer<f_order>()[std::declval<index_type>()]),value_type&>);
     //const instance
     //core doesn't provide const access must not compile
 }
@@ -679,6 +761,19 @@ TEMPLATE_TEST_CASE("test_tensor_implementation_data_accesor_result_type_const_ac
     REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rbegin<f_order>(std::declval<shape_type>())),const value_type&>);
     REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rend<f_order>(std::declval<shape_type>())),const value_type&>);
     REQUIRE(std::is_same_v<decltype(std::declval<tensor_implementation_type>().template create_indexer<f_order>()[std::declval<index_type>()]),const value_type&>);
+    //trivial
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().create_trivial_walker()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template begin_trivial<c_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template end_trivial<c_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rbegin_trivial<c_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rend_trivial<c_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(std::declval<tensor_implementation_type>().template create_trivial_indexer<c_order>()[std::declval<index_type>()]),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template begin_trivial<f_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template end_trivial<f_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rbegin_trivial<f_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rend_trivial<f_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(std::declval<tensor_implementation_type>().template create_trivial_indexer<f_order>()[std::declval<index_type>()]),const value_type&>);
+
     //const instance
     REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().create_walker()),const value_type&>);
     REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template begin<c_order>()),const value_type&>);
@@ -699,6 +794,18 @@ TEMPLATE_TEST_CASE("test_tensor_implementation_data_accesor_result_type_const_ac
     REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template rbegin<f_order>(std::declval<shape_type>())),const value_type&>);
     REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template rend<f_order>(std::declval<shape_type>())),const value_type&>);
     REQUIRE(std::is_same_v<decltype(std::declval<const tensor_implementation_type>().template create_indexer<f_order>()[std::declval<index_type>()]),const value_type&>);
+    //trivial
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().create_trivial_walker()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template begin_trivial<c_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template end_trivial<c_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template rbegin_trivial<c_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template rend_trivial<c_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(std::declval<const tensor_implementation_type>().template create_trivial_indexer<c_order>()[std::declval<index_type>()]),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template begin_trivial<f_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template end_trivial<f_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template rbegin_trivial<f_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template rend_trivial<f_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(std::declval<const tensor_implementation_type>().template create_trivial_indexer<f_order>()[std::declval<index_type>()]),const value_type&>);
 }
 
 TEMPLATE_TEST_CASE("test_tensor_implementation_data_accesor_result_type_full_accessible_core","[test_tensor_implementation]",
@@ -740,6 +847,19 @@ TEMPLATE_TEST_CASE("test_tensor_implementation_data_accesor_result_type_full_acc
     REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rbegin<f_order>(std::declval<shape_type>())),value_type&>);
     REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rend<f_order>(std::declval<shape_type>())),value_type&>);
     REQUIRE(std::is_same_v<decltype(std::declval<tensor_implementation_type>().template create_indexer<f_order>()[std::declval<index_type>()]),value_type&>);
+    //trivial
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().create_trivial_walker()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template begin_trivial<c_order>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template end_trivial<c_order>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rbegin_trivial<c_order>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rend_trivial<c_order>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(std::declval<tensor_implementation_type>().template create_trivial_indexer<c_order>()[std::declval<index_type>()]),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template begin_trivial<f_order>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template end_trivial<f_order>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rbegin_trivial<f_order>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<tensor_implementation_type>().template rend_trivial<f_order>()),value_type&>);
+    REQUIRE(std::is_same_v<decltype(std::declval<tensor_implementation_type>().template create_trivial_indexer<f_order>()[std::declval<index_type>()]),value_type&>);
+
     //const instance
     REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().create_walker()),const value_type&>);
     REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template begin<c_order>()),const value_type&>);
@@ -760,4 +880,16 @@ TEMPLATE_TEST_CASE("test_tensor_implementation_data_accesor_result_type_full_acc
     REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template rbegin<f_order>(std::declval<shape_type>())),const value_type&>);
     REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template rend<f_order>(std::declval<shape_type>())),const value_type&>);
     REQUIRE(std::is_same_v<decltype(std::declval<const tensor_implementation_type>().template create_indexer<f_order>()[std::declval<index_type>()]),const value_type&>);
+    //trivial
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().create_trivial_walker()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template begin_trivial<c_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template end_trivial<c_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template rbegin_trivial<c_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template rend_trivial<c_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(std::declval<const tensor_implementation_type>().template create_trivial_indexer<c_order>()[std::declval<index_type>()]),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template begin_trivial<f_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template end_trivial<f_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template rbegin_trivial<f_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(*std::declval<const tensor_implementation_type>().template rend_trivial<f_order>()),const value_type&>);
+    REQUIRE(std::is_same_v<decltype(std::declval<const tensor_implementation_type>().template create_trivial_indexer<f_order>()[std::declval<index_type>()]),const value_type&>);
 }

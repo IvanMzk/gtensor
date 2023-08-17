@@ -64,7 +64,7 @@ public:
     traverse_order_adapter(Impl& impl__):
         impl_{&impl__}
     {}
-
+    //data interface
     auto begin()const{
         return impl_->template begin<TraverseOrder>();
     }
@@ -95,6 +95,23 @@ public:
     }
     auto create_indexer()const{
         return impl_->template create_indexer<TraverseOrder>();
+    }
+
+    //trivial data interface
+    auto begin_trivial()const{
+        return impl_->template begin_trivial<TraverseOrder>();
+    }
+    auto end_trivial()const{
+        return impl_->template end_trivial<TraverseOrder>();
+    }
+    auto rbegin_trivial()const{
+        return impl_->template rbegin_trivial<TraverseOrder>();
+    }
+    auto rend_trivial()const{
+        return impl_->template rend_trivial<TraverseOrder>();
+    }
+    auto create_trivial_indexer()const{
+        return impl_->template create_trivial_indexer<TraverseOrder>();
     }
 };
 
@@ -346,6 +363,46 @@ public:
     template<typename TraverseOrder>
     auto traverse_order_adapter(TraverseOrder)const{
         return detail::traverse_order_adapter<const impl_type,TraverseOrder>{impl()};
+    }
+
+    //trivial data interface
+    auto begin_trivial(){
+        return impl().template begin_trivial<traverse_order>();
+    }
+    auto end_trivial(){
+        return impl().template end_trivial<traverse_order>();
+    }
+    auto rbegin_trivial(){
+        return impl().template rbegin_trivial<traverse_order>();
+    }
+    auto rend_trivial(){
+        return impl().template rend_trivial<traverse_order>();
+    }
+    auto create_trivial_indexer(){
+        return impl().template create_trivial_indexer<traverse_order>();
+    }
+    auto create_trivial_walker(){
+        return impl().create_trivial_walker();
+    }
+
+    //trivial const data interface
+    auto begin_trivial()const{
+        return impl().template begin_trivial<traverse_order>();
+    }
+    auto end_trivial()const{
+        return impl().template end_trivial<traverse_order>();
+    }
+    auto rbegin_trivial()const{
+        return impl().template rbegin_trivial<traverse_order>();
+    }
+    auto rend_trivial()const{
+        return impl().template rend_trivial<traverse_order>();
+    }
+    auto create_trivial_indexer()const{
+        return impl().template create_trivial_indexer<traverse_order>();
+    }
+    auto create_trivial_walker()const{
+        return impl().create_trivial_walker();
     }
 
     //reduce_slide_transform methods to perform along axes using custom functor

@@ -85,6 +85,45 @@ inline auto create_indexer(Core& t, const Descriptor& descriptor){
     }
 }
 
+//create trivial walker
+template<typename Core, typename Descriptor>
+inline auto create_trivial_walker(Core& t, const Descriptor& descriptor){
+    using config_type = typename Core::config_type;
+    using index_type = typename config_type::index_type;
+    if constexpr (has_callable_create_trivial_indexer<Core>::value){
+        using indexer_type = decltype(t.create_trivial_indexer());
+        return gtensor::indexer_walker<config_type,indexer_type>{descriptor.adapted_strides(),descriptor.reset_strides(),index_type{0},t.create_trivial_indexer()};
+    }else{
+        using indexer_type = decltype(create_indexer(t,descriptor));
+        return gtensor::indexer_walker<config_type,indexer_type>{descriptor.adapted_strides(),descriptor.reset_strides(),index_type{0},create_indexer(t,descriptor)};
+    }
+}
+
+//create trivial indexer
+template<typename TraverseOrder, typename Core, typename Descriptor>
+inline auto create_trivial_walker_indexer(Core& t, const Descriptor& descriptor){
+    ASSERT_ORDER(TraverseOrder);
+    using walker_type = decltype(create_trivial_walker(t,descriptor));
+    return gtensor::walker_indexer<walker_type, TraverseOrder>{descriptor.strides_div(TraverseOrder{}), create_trivial_walker(t,descriptor)};
+}
+template<typename Core, typename Descriptor>
+inline auto create_trivial_indexer(Core& t, const Descriptor& descriptor){
+    if constexpr (has_callable_create_trivial_indexer<Core>::value){
+        return t.create_trivial_indexer();
+    }else{
+        return create_indexer(t,descriptor);
+    }
+}
+template<typename TraverseOrder, typename Core, typename Descriptor>
+inline auto create_trivial_indexer(Core& t, const Descriptor& descriptor){
+    ASSERT_ORDER(TraverseOrder);
+    if constexpr (std::is_same_v<typename Core::order,TraverseOrder>){
+        return create_trivial_indexer(t,descriptor);
+    }else{
+        return create_trivial_walker_indexer<TraverseOrder>(t,descriptor);
+    }
+}
+
 //create iterator
 template<typename TraverseOrder, typename Core, typename Descriptor, typename IdxT>
 inline auto create_walker_iterator(Core& t, const Descriptor& descriptor, const IdxT& pos){
@@ -150,6 +189,64 @@ inline auto end(Core& t, const Descriptor& descriptor){
         return end(t,descriptor);
     }else{
         return create_walker_iterator<TraverseOrder>(t,descriptor,descriptor.size());
+    }
+}
+
+//create trivial iterator
+template<typename TraverseOrder, typename Core, typename Descriptor, typename IdxT>
+inline auto create_trivial_walker_iterator(Core& t, const Descriptor& descriptor, const IdxT& pos){
+    ASSERT_ORDER(TraverseOrder);
+    using config_type = typename Core::config_type;
+    using walker_type = decltype(create_trivial_walker(t,descriptor));
+    using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,TraverseOrder>;
+    return gtensor::walker_iterator<config_type,traverser_type>{
+        create_trivial_walker(t,descriptor),
+        descriptor.shape(),
+        descriptor.strides_div(TraverseOrder{}),
+        pos
+    };
+}
+template<typename Core, typename Descriptor>
+inline auto begin_trivial(Core& t, const Descriptor& descriptor){
+    using config_type = typename Core::config_type;
+    using index_type = typename config_type::index_type;
+    if constexpr (has_callable_iterator<Core>::value){  //always use native iterator if any
+        return t.begin();
+    }else if constexpr (has_callable_create_trivial_indexer<Core>::value){
+        return gtensor::indexer_iterator<config_type, decltype(t.create_trivial_indexer())>{t.create_trivial_indexer(), index_type{0}};
+    }else{
+        return begin(t,descriptor);
+    }
+}
+template<typename Core, typename Descriptor>
+inline auto end_trivial(Core& t, const Descriptor& descriptor){
+    using config_type = typename Core::config_type;
+    if constexpr (has_callable_iterator<Core>::value){  //always use native iterator if any
+        return t.end();
+    }else if constexpr (has_callable_create_trivial_indexer<Core>::value){
+        return gtensor::indexer_iterator<config_type, decltype(t.create_trivial_indexer())>{t.create_trivial_indexer(), descriptor.size()};
+    }else{
+        return end(t,descriptor);
+    }
+}
+template<typename TraverseOrder, typename Core, typename Descriptor>
+inline auto begin_trivial(Core& t, const Descriptor& descriptor){
+    ASSERT_ORDER(TraverseOrder);
+    using config_type = typename Core::config_type;
+    using index_type = typename config_type::index_type;
+    if constexpr (std::is_same_v<typename Core::order,TraverseOrder>){
+        return begin_trivial(t,descriptor);
+    }else{
+        return create_trivial_walker_iterator<TraverseOrder>(t,descriptor,index_type{0});
+    }
+}
+template<typename TraverseOrder, typename Core, typename Descriptor>
+inline auto end_trivial(Core& t, const Descriptor& descriptor){
+    ASSERT_ORDER(TraverseOrder);
+    if constexpr (std::is_same_v<typename Core::order,TraverseOrder>){
+        return end_trivial(t,descriptor);
+    }else{
+        return create_trivial_walker_iterator<TraverseOrder>(t,descriptor,descriptor.size());
     }
 }
 
@@ -234,6 +331,68 @@ inline auto rend(Core& t, const Descriptor& descriptor){
         return rend(t,descriptor);
     }else{
         return create_reverse_walker_iterator<TraverseOrder>(t, descriptor, index_type{0});
+    }
+}
+
+//create trivial reverse iterator
+template<typename TraverseOrder, typename Core, typename Descriptor, typename IdxT>
+inline auto create_reverse_trivial_walker_iterator(Core& t, const Descriptor& descriptor, const IdxT& pos){
+    ASSERT_ORDER(TraverseOrder);
+    using config_type = typename Core::config_type;
+    using walker_type = decltype(create_trivial_walker(t,descriptor));
+    using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,TraverseOrder>;
+    return gtensor::reverse_walker_iterator<config_type,traverser_type>{
+        create_trivial_walker(t,descriptor),
+        descriptor.shape(),
+        descriptor.strides_div(TraverseOrder{}),
+        pos
+    };
+}
+template<typename Core, typename Descriptor>
+inline auto rbegin_trivial(Core& t, const Descriptor& descriptor){
+    using config_type = typename Core::config_type;
+    if constexpr (has_callable_reverse_iterator<Core>::value){  //always use native iterator if any
+        return t.rbegin();
+    }else if constexpr (has_callable_iterator<Core>::value){
+        return create_reverse_iterator(t.end());
+    }else if constexpr (has_callable_create_trivial_indexer<Core>::value){
+        return gtensor::reverse_indexer_iterator<config_type, decltype(t.create_trivial_indexer())>{t.create_trivial_indexer(), descriptor.size()};
+    }else{
+        return rbegin(t,descriptor);
+    }
+}
+template<typename Core, typename Descriptor>
+inline auto rend_trivial(Core& t, const Descriptor& descriptor){
+    using config_type = typename Core::config_type;
+    using index_type = typename config_type::index_type;
+    if constexpr (has_callable_reverse_iterator<Core>::value){  //always use native iterator if any
+        return t.rend();
+    }else if constexpr (has_callable_iterator<Core>::value){
+        return create_reverse_iterator(t.begin());
+    }else if constexpr (has_callable_create_trivial_indexer<Core>::value){
+        return gtensor::reverse_indexer_iterator<config_type, decltype(t.create_trivial_indexer())>{t.create_trivial_indexer(), index_type{0}};
+    }else{
+        return rend(t,descriptor);
+    }
+}
+template<typename TraverseOrder, typename Core, typename Descriptor>
+inline auto rbegin_trivial(Core& t, const Descriptor& descriptor){
+    ASSERT_ORDER(TraverseOrder);
+    if constexpr (std::is_same_v<typename Core::order,TraverseOrder>){
+        return rbegin_trivial(t,descriptor);
+    }else{
+        return create_reverse_trivial_walker_iterator<TraverseOrder>(t,descriptor,descriptor.size());
+    }
+}
+template<typename TraverseOrder, typename Core, typename Descriptor>
+inline auto rend_trivial(Core& t, const Descriptor& descriptor){
+    ASSERT_ORDER(TraverseOrder);
+    using config_type = typename Core::config_type;
+    using index_type = typename config_type::index_type;
+    if constexpr (std::is_same_v<typename Core::order,TraverseOrder>){
+        return rend_trivial(t,descriptor);
+    }else{
+        return create_reverse_trivial_walker_iterator<TraverseOrder>(t,descriptor,index_type{0});
     }
 }
 
@@ -433,6 +592,56 @@ public:
     }
     auto create_walker()const{
         return detail::create_walker(core_,descriptor());
+    }
+
+    //trivial data interface
+    template<typename Order>
+    auto begin_trivial(){
+        return detail::begin_trivial<Order>(core_,descriptor());
+    }
+    template<typename Order>
+    auto end_trivial(){
+        return detail::end_trivial<Order>(core_,descriptor());
+    }
+    template<typename Order>
+    auto rbegin_trivial(){
+        return detail::rbegin_trivial<Order>(core_,descriptor());
+    }
+    template<typename Order>
+    auto rend_trivial(){
+        return detail::rend_trivial<Order>(core_,descriptor());
+    }
+    template<typename Order>
+    auto create_trivial_indexer(){
+        return detail::create_trivial_indexer<Order>(core_,descriptor());
+    }
+    auto create_trivial_walker(){
+        return detail::create_trivial_walker(core_,descriptor());
+    }
+
+    //trivial const data interface
+    template<typename Order>
+    auto begin_trivial()const{
+        return detail::begin_trivial<Order>(core_,descriptor());
+    }
+    template<typename Order>
+    auto end_trivial()const{
+        return detail::end_trivial<Order>(core_,descriptor());
+    }
+    template<typename Order>
+    auto rbegin_trivial()const{
+        return detail::rbegin_trivial<Order>(core_,descriptor());
+    }
+    template<typename Order>
+    auto rend_trivial()const{
+        return detail::rend_trivial<Order>(core_,descriptor());
+    }
+    template<typename Order>
+    auto create_trivial_indexer()const{
+        return detail::create_trivial_indexer<Order>(core_,descriptor());
+    }
+    auto create_trivial_walker()const{
+        return detail::create_trivial_walker(core_,descriptor());
     }
 
 private:

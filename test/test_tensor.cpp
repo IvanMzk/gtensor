@@ -1256,16 +1256,24 @@ TEMPLATE_TEST_CASE("test_tensor_data_interface","[test_tensor]",
     using helpers_for_testing::apply_by_element;
     //0tensor,1elements_c_traverse,2elements_f_traverse
     auto test_data = std::make_tuple(
+        //tensor
         std::make_tuple(tensor_type(1),std::vector<value_type>{1},std::vector<value_type>{1}),
         std::make_tuple(tensor_type{},std::vector<value_type>{},std::vector<value_type>{}),
         std::make_tuple(tensor_type{2},std::vector<value_type>{2},std::vector<value_type>{2}),
         std::make_tuple(tensor_type{1,2,3,4,5,6},std::vector<value_type>{1,2,3,4,5,6},std::vector<value_type>{1,2,3,4,5,6}),
-        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<value_type>{1,2,3,4,5,6,7,8,9,10,11,12},std::vector<value_type>{1,7,4,10,2,8,5,11,3,9,6,12})
+        std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<value_type>{1,2,3,4,5,6,7,8,9,10,11,12},std::vector<value_type>{1,7,4,10,2,8,5,11,3,9,6,12}),
+        //trivial expression
+        std::make_tuple((tensor_type(1)+tensor_type(2)+tensor_type(3))*4,std::vector<value_type>{24},std::vector<value_type>{24}),
+        std::make_tuple((tensor_type{1}+tensor_type{2}+tensor_type{3})*4,std::vector<value_type>{24},std::vector<value_type>{24}),
+        std::make_tuple((tensor_type{1,2,3,4,5,6} + 1)*tensor_type{2,3,4,5,6,7},std::vector<value_type>{4,9,16,25,36,49},std::vector<value_type>{4,9,16,25,36,49}),
+        std::make_tuple((tensor_type{{1,2,3},{4,5,6}} + 1)*tensor_type{{2,3,4},{5,6,7}}-tensor_type{{1,1,1},{2,2,2}},std::vector<value_type>{3,8,15,23,34,47},std::vector<value_type>{3,23,8,34,15,47})
     );
+    //data interface
     SECTION("test_iterator")
     {
         auto test = [](const auto& t){
-            tensor_type ten = std::get<0>(t);
+            using ten_type = std::tuple_element_t<0, std::remove_cv_t<std::remove_reference_t<decltype(t)>>>;
+            std::conditional_t<std::is_const_v<tensor_type>,const ten_type,ten_type> ten = std::get<0>(t);
             auto elements_c_traverse = std::get<1>(t);
             auto elements_f_traverse = std::get<2>(t);
             auto first = ten.begin();
@@ -1282,16 +1290,22 @@ TEMPLATE_TEST_CASE("test_tensor_data_interface","[test_tensor]",
     SECTION("test_reverse_iterator")
     {
         auto test = [](const auto& t){
-            tensor_type ten = std::get<0>(t);
+            using ten_type = std::tuple_element_t<0, std::remove_cv_t<std::remove_reference_t<decltype(t)>>>;
+            std::conditional_t<std::is_const_v<tensor_type>,const ten_type,ten_type> ten = std::get<0>(t);
             auto elements_c_traverse = std::get<1>(t);
             auto elements_f_traverse = std::get<2>(t);
             auto first = ten.rbegin();
             auto last = ten.rend();
+            auto first_trivial = ten.rbegin_trivial();
+            auto last_trivial = ten.rend_trivial();
             REQUIRE(std::is_same_v<decltype(first),decltype(last)>);
+            REQUIRE(std::is_same_v<decltype(first_trivial),decltype(last_trivial)>);
             if constexpr (std::is_same_v<traverse_order,c_order>){
                 REQUIRE(std::equal(first,last,elements_c_traverse.rbegin(),elements_c_traverse.rend()));
+                REQUIRE(std::equal(first_trivial,last_trivial,elements_c_traverse.rbegin(),elements_c_traverse.rend()));
             }else{
                 REQUIRE(std::equal(first,last,elements_f_traverse.rbegin(),elements_f_traverse.rend()));
+                REQUIRE(std::equal(first_trivial,last_trivial,elements_f_traverse.rbegin(),elements_f_traverse.rend()));
             }
         };
         apply_by_element(test,test_data);
@@ -1299,7 +1313,8 @@ TEMPLATE_TEST_CASE("test_tensor_data_interface","[test_tensor]",
     SECTION("test_indexer")
     {
         auto test = [](const auto& t){
-            tensor_type ten = std::get<0>(t);
+            using ten_type = std::tuple_element_t<0, std::remove_cv_t<std::remove_reference_t<decltype(t)>>>;
+            std::conditional_t<std::is_const_v<tensor_type>,const ten_type,ten_type> ten = std::get<0>(t);
             auto elements_c_traverse = std::get<1>(t);
             auto elements_f_traverse = std::get<2>(t);
             auto indexer = ten.create_indexer();
@@ -1321,7 +1336,8 @@ TEMPLATE_TEST_CASE("test_tensor_data_interface","[test_tensor]",
     SECTION("test_walker_c_order_traverse")
     {
         auto test = [](const auto& t){
-            tensor_type ten = std::get<0>(t);
+            using ten_type = std::tuple_element_t<0, std::remove_cv_t<std::remove_reference_t<decltype(t)>>>;
+            std::conditional_t<std::is_const_v<tensor_type>,const ten_type,ten_type> ten = std::get<0>(t);
             auto elements_c_traverse = std::get<1>(t);
             auto walker = ten.create_walker();
             using walker_type = decltype(walker);
@@ -1336,7 +1352,8 @@ TEMPLATE_TEST_CASE("test_tensor_data_interface","[test_tensor]",
     SECTION("test_walker_f_order_traverse")
     {
         auto test = [](const auto& t){
-            tensor_type ten = std::get<0>(t);
+            using ten_type = std::tuple_element_t<0, std::remove_cv_t<std::remove_reference_t<decltype(t)>>>;
+            std::conditional_t<std::is_const_v<tensor_type>,const ten_type,ten_type> ten = std::get<0>(t);
             auto elements_f_traverse = std::get<2>(t);
             auto walker = ten.create_walker();
             using walker_type = decltype(walker);
@@ -1348,11 +1365,106 @@ TEMPLATE_TEST_CASE("test_tensor_data_interface","[test_tensor]",
         };
         apply_by_element(test,test_data);
     }
+    //trivial data interface
+    SECTION("test_trivial_iterator")
+    {
+        auto test = [](const auto& t){
+            using ten_type = std::tuple_element_t<0, std::remove_cv_t<std::remove_reference_t<decltype(t)>>>;
+            std::conditional_t<std::is_const_v<tensor_type>,const ten_type,ten_type> ten = std::get<0>(t);
+            auto elements_c_traverse = std::get<1>(t);
+            auto elements_f_traverse = std::get<2>(t);
+            auto first = ten.begin_trivial();
+            auto last = ten.end_trivial();
+            REQUIRE(std::is_same_v<decltype(first),decltype(last)>);
+            if constexpr (std::is_same_v<traverse_order,c_order>){
+                REQUIRE(std::equal(first,last,elements_c_traverse.begin(),elements_c_traverse.end()));
+            }else{
+                REQUIRE(std::equal(first,last,elements_f_traverse.begin(),elements_f_traverse.end()));
+            }
+        };
+        apply_by_element(test,test_data);
+    }
+    SECTION("test_trivial_reverse_iterator")
+    {
+        auto test = [](const auto& t){
+            using ten_type = std::tuple_element_t<0, std::remove_cv_t<std::remove_reference_t<decltype(t)>>>;
+            std::conditional_t<std::is_const_v<tensor_type>,const ten_type,ten_type> ten = std::get<0>(t);
+            auto elements_c_traverse = std::get<1>(t);
+            auto elements_f_traverse = std::get<2>(t);
+            auto first = ten.rbegin_trivial();
+            auto last = ten.rend_trivial();
+            REQUIRE(std::is_same_v<decltype(first),decltype(last)>);
+            if constexpr (std::is_same_v<traverse_order,c_order>){
+                REQUIRE(std::equal(first,last,elements_c_traverse.rbegin(),elements_c_traverse.rend()));
+            }else{
+                REQUIRE(std::equal(first,last,elements_f_traverse.rbegin(),elements_f_traverse.rend()));
+            }
+        };
+        apply_by_element(test,test_data);
+    }
+    SECTION("test_trivial_indexer")
+    {
+        auto test = [](const auto& t){
+            using ten_type = std::tuple_element_t<0, std::remove_cv_t<std::remove_reference_t<decltype(t)>>>;
+            std::conditional_t<std::is_const_v<tensor_type>,const ten_type,ten_type> ten = std::get<0>(t);
+            auto elements_c_traverse = std::get<1>(t);
+            auto elements_f_traverse = std::get<2>(t);
+            auto indexer = ten.create_trivial_indexer();
+            std::vector<value_type> traverse_result{};
+            for(index_type i=0, i_last = ten.size(); i!=i_last; ++i){
+                traverse_result.push_back(indexer[i]);
+            }
+            auto first = traverse_result.begin();
+            auto last = traverse_result.end();
+            REQUIRE(std::is_same_v<decltype(first),decltype(last)>);
+            if constexpr (std::is_same_v<traverse_order,c_order>){
+                REQUIRE(std::equal(first,last,elements_c_traverse.begin(),elements_c_traverse.end()));
+            }else{
+                REQUIRE(std::equal(first,last,elements_f_traverse.begin(),elements_f_traverse.end()));
+            }
+        };
+        apply_by_element(test,test_data);
+    }
+    SECTION("test_trivial_walker_c_order_traverse")
+    {
+        auto test = [](const auto& t){
+            using ten_type = std::tuple_element_t<0, std::remove_cv_t<std::remove_reference_t<decltype(t)>>>;
+            std::conditional_t<std::is_const_v<tensor_type>,const ten_type,ten_type> ten = std::get<0>(t);
+            auto elements_c_traverse = std::get<1>(t);
+            auto walker = ten.create_trivial_walker();
+            using walker_type = decltype(walker);
+            using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,gtensor::config::c_order>;
+            using walker_iterator_type = gtensor::walker_iterator<config_type,traverser_type>;
+            walker_iterator_type first{walker, ten.shape(), ten.descriptor().strides_div(c_order{}), index_type{0}};
+            walker_iterator_type last{walker, ten.shape(), ten.descriptor().strides_div(c_order{}), ten.size()};
+            REQUIRE(std::equal(first,last,elements_c_traverse.begin(),elements_c_traverse.end()));
+        };
+        apply_by_element(test,test_data);
+    }
+    SECTION("test_trivial_walker_f_order_traverse")
+    {
+        auto test = [](const auto& t){
+            using ten_type = std::tuple_element_t<0, std::remove_cv_t<std::remove_reference_t<decltype(t)>>>;
+            std::conditional_t<std::is_const_v<tensor_type>,const ten_type,ten_type> ten = std::get<0>(t);
+            auto elements_f_traverse = std::get<2>(t);
+            auto walker = ten.create_trivial_walker();
+            using walker_type = decltype(walker);
+            using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,gtensor::config::f_order>;
+            using walker_iterator_type = gtensor::walker_iterator<config_type,traverser_type>;
+            walker_iterator_type first{walker, ten.shape(), ten.descriptor().strides_div(f_order{}), index_type{0}};
+            walker_iterator_type last{walker, ten.shape(), ten.descriptor().strides_div(f_order{}), ten.size()};
+            REQUIRE(std::equal(first,last,elements_f_traverse.begin(),elements_f_traverse.end()));
+        };
+        apply_by_element(test,test_data);
+    }
+
     //test traverse adapter
+    //data interface
     SECTION("test_traverse_adapter_c_order_iterator")
     {
         auto test = [](const auto& t){
-            tensor_type ten = std::get<0>(t);
+            using ten_type = std::tuple_element_t<0, std::remove_cv_t<std::remove_reference_t<decltype(t)>>>;
+            std::conditional_t<std::is_const_v<tensor_type>,const ten_type,ten_type> ten = std::get<0>(t);
             auto elements_c_traverse = std::get<1>(t);
             auto a = ten.traverse_order_adapter(c_order{});
             auto first = a.begin();
@@ -1365,7 +1477,8 @@ TEMPLATE_TEST_CASE("test_tensor_data_interface","[test_tensor]",
     SECTION("test_traverse_adapter_f_order_iterator")
     {
         auto test = [](const auto& t){
-            tensor_type ten = std::get<0>(t);
+            using ten_type = std::tuple_element_t<0, std::remove_cv_t<std::remove_reference_t<decltype(t)>>>;
+            std::conditional_t<std::is_const_v<tensor_type>,const ten_type,ten_type> ten = std::get<0>(t);
             auto elements_f_traverse = std::get<2>(t);
             auto a = ten.traverse_order_adapter(f_order{});
             auto first = a.begin();
@@ -1378,7 +1491,8 @@ TEMPLATE_TEST_CASE("test_tensor_data_interface","[test_tensor]",
     SECTION("test_traverse_adapter_c_order_reverse_iterator")
     {
         auto test = [](const auto& t){
-            tensor_type ten = std::get<0>(t);
+            using ten_type = std::tuple_element_t<0, std::remove_cv_t<std::remove_reference_t<decltype(t)>>>;
+            std::conditional_t<std::is_const_v<tensor_type>,const ten_type,ten_type> ten = std::get<0>(t);
             auto elements_c_traverse = std::get<1>(t);
             auto a = ten.traverse_order_adapter(c_order{});
             auto first = a.rbegin();
@@ -1391,7 +1505,8 @@ TEMPLATE_TEST_CASE("test_tensor_data_interface","[test_tensor]",
     SECTION("test_traverse_adapter_f_order_reverse_iterator")
     {
         auto test = [](const auto& t){
-            tensor_type ten = std::get<0>(t);
+            using ten_type = std::tuple_element_t<0, std::remove_cv_t<std::remove_reference_t<decltype(t)>>>;
+            std::conditional_t<std::is_const_v<tensor_type>,const ten_type,ten_type> ten = std::get<0>(t);
             auto elements_f_traverse = std::get<2>(t);
             auto a = ten.traverse_order_adapter(f_order{});
             auto first = a.rbegin();
@@ -1404,7 +1519,8 @@ TEMPLATE_TEST_CASE("test_tensor_data_interface","[test_tensor]",
     SECTION("test_traverse_adapter_c_order_indexer")
     {
         auto test = [](const auto& t){
-            tensor_type ten = std::get<0>(t);
+            using ten_type = std::tuple_element_t<0, std::remove_cv_t<std::remove_reference_t<decltype(t)>>>;
+            std::conditional_t<std::is_const_v<tensor_type>,const ten_type,ten_type> ten = std::get<0>(t);
             auto elements_c_traverse = std::get<1>(t);
             auto a = ten.traverse_order_adapter(c_order{});
             auto indexer = a.create_indexer();
@@ -1421,10 +1537,104 @@ TEMPLATE_TEST_CASE("test_tensor_data_interface","[test_tensor]",
     SECTION("test_traverse_adapter_f_order_indexer")
     {
         auto test = [](const auto& t){
-            tensor_type ten = std::get<0>(t);
+            using ten_type = std::tuple_element_t<0, std::remove_cv_t<std::remove_reference_t<decltype(t)>>>;
+            std::conditional_t<std::is_const_v<tensor_type>,const ten_type,ten_type> ten = std::get<0>(t);
             auto elements_f_traverse = std::get<2>(t);
             auto a = ten.traverse_order_adapter(f_order{});
             auto indexer = a.create_indexer();
+            std::vector<value_type> traverse_result{};
+            for(index_type i=0, i_last = ten.size(); i!=i_last; ++i){
+                traverse_result.push_back(indexer[i]);
+            }
+            auto first = traverse_result.begin();
+            auto last = traverse_result.end();
+            REQUIRE(std::equal(first,last,elements_f_traverse.begin(),elements_f_traverse.end()));
+        };
+        apply_by_element(test,test_data);
+    }
+    //trivial data interface
+    SECTION("test_traverse_adapter_c_order_trivial_iterator")
+    {
+        auto test = [](const auto& t){
+            using ten_type = std::tuple_element_t<0, std::remove_cv_t<std::remove_reference_t<decltype(t)>>>;
+            std::conditional_t<std::is_const_v<tensor_type>,const ten_type,ten_type> ten = std::get<0>(t);
+            auto elements_c_traverse = std::get<1>(t);
+            auto a = ten.traverse_order_adapter(c_order{});
+            auto first = a.begin_trivial();
+            auto last = a.end_trivial();
+            REQUIRE(std::is_same_v<decltype(first),decltype(last)>);
+            REQUIRE(std::equal(first,last,elements_c_traverse.begin(),elements_c_traverse.end()));
+        };
+        apply_by_element(test,test_data);
+    }
+    SECTION("test_traverse_adapter_f_order_trivial_iterator")
+    {
+        auto test = [](const auto& t){
+            using ten_type = std::tuple_element_t<0, std::remove_cv_t<std::remove_reference_t<decltype(t)>>>;
+            std::conditional_t<std::is_const_v<tensor_type>,const ten_type,ten_type> ten = std::get<0>(t);
+            auto elements_f_traverse = std::get<2>(t);
+            auto a = ten.traverse_order_adapter(f_order{});
+            auto first = a.begin_trivial();
+            auto last = a.end_trivial();
+            REQUIRE(std::is_same_v<decltype(first),decltype(last)>);
+            REQUIRE(std::equal(first,last,elements_f_traverse.begin(),elements_f_traverse.end()));
+        };
+        apply_by_element(test,test_data);
+    }
+    SECTION("test_traverse_adapter_c_order_trivial_reverse_iterator")
+    {
+        auto test = [](const auto& t){
+            using ten_type = std::tuple_element_t<0, std::remove_cv_t<std::remove_reference_t<decltype(t)>>>;
+            std::conditional_t<std::is_const_v<tensor_type>,const ten_type,ten_type> ten = std::get<0>(t);
+            auto elements_c_traverse = std::get<1>(t);
+            auto a = ten.traverse_order_adapter(c_order{});
+            auto first = a.rbegin_trivial();
+            auto last = a.rend_trivial();
+            REQUIRE(std::is_same_v<decltype(first),decltype(last)>);
+            REQUIRE(std::equal(first,last,elements_c_traverse.rbegin(),elements_c_traverse.rend()));
+        };
+        apply_by_element(test,test_data);
+    }
+    SECTION("test_traverse_adapter_f_order_trivial_reverse_iterator")
+    {
+        auto test = [](const auto& t){
+            using ten_type = std::tuple_element_t<0, std::remove_cv_t<std::remove_reference_t<decltype(t)>>>;
+            std::conditional_t<std::is_const_v<tensor_type>,const ten_type,ten_type> ten = std::get<0>(t);
+            auto elements_f_traverse = std::get<2>(t);
+            auto a = ten.traverse_order_adapter(f_order{});
+            auto first = a.rbegin_trivial();
+            auto last = a.rend_trivial();
+            REQUIRE(std::is_same_v<decltype(first),decltype(last)>);
+            REQUIRE(std::equal(first,last,elements_f_traverse.rbegin(),elements_f_traverse.rend()));
+        };
+        apply_by_element(test,test_data);
+    }
+    SECTION("test_traverse_adapter_c_order_trivial_indexer")
+    {
+        auto test = [](const auto& t){
+            using ten_type = std::tuple_element_t<0, std::remove_cv_t<std::remove_reference_t<decltype(t)>>>;
+            std::conditional_t<std::is_const_v<tensor_type>,const ten_type,ten_type> ten = std::get<0>(t);
+            auto elements_c_traverse = std::get<1>(t);
+            auto a = ten.traverse_order_adapter(c_order{});
+            auto indexer = a.create_trivial_indexer();
+            std::vector<value_type> traverse_result{};
+            for(index_type i=0, i_last = ten.size(); i!=i_last; ++i){
+                traverse_result.push_back(indexer[i]);
+            }
+            auto first = traverse_result.begin();
+            auto last = traverse_result.end();
+            REQUIRE(std::equal(first,last,elements_c_traverse.begin(),elements_c_traverse.end()));
+        };
+        apply_by_element(test,test_data);
+    }
+    SECTION("test_traverse_adapter_f_order_trivial_indexer")
+    {
+        auto test = [](const auto& t){
+            using ten_type = std::tuple_element_t<0, std::remove_cv_t<std::remove_reference_t<decltype(t)>>>;
+            std::conditional_t<std::is_const_v<tensor_type>,const ten_type,ten_type> ten = std::get<0>(t);
+            auto elements_f_traverse = std::get<2>(t);
+            auto a = ten.traverse_order_adapter(f_order{});
+            auto indexer = a.create_trivial_indexer();
             std::vector<value_type> traverse_result{};
             for(index_type i=0, i_last = ten.size(); i!=i_last; ++i){
                 traverse_result.push_back(indexer[i]);
@@ -2370,3 +2580,4 @@ TEMPLATE_TEST_CASE("test_tensor_view_chain","[test_tensor]",
     };
     apply_by_element(test,test_data);
 }
+

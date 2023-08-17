@@ -238,6 +238,71 @@ TEST_CASE("test_expression_template_core","[test_expression_template_engine]")
     apply_by_element(test,test_data);
 }
 
+TEST_CASE("test_expression_template_core_trivial_indexer","[test_expression_template_engine]")
+{
+    using gtensor::config::c_order;
+    using gtensor::config::f_order;
+    using value_type = double;
+    using config_type = gtensor::config::extend_config_t<test_config::config_engine_selector_t<gtensor::config::engine_expression_template>,value_type>;
+    using index_type = typename config_type::index_type;
+    using c_tensor_type = gtensor::tensor<value_type,c_order,config_type>;
+    using f_tensor_type = gtensor::tensor<value_type,f_order,config_type>;
+    using gtensor::expression_template_core;
+    using test_expression_template_engine_::unary_square;
+    using test_expression_template_engine_::binary_mul;
+    using helpers_for_testing::apply_by_element;
+    //0operation,1operands,2expected_elements
+    auto test_data = std::make_tuple(
+        //c_order operands
+        std::make_tuple(unary_square{}, std::make_tuple(c_tensor_type(2)), std::vector<value_type>{4}),
+        std::make_tuple(unary_square{}, std::make_tuple(c_tensor_type{3}), std::vector<value_type>{9}),
+        std::make_tuple(unary_square{}, std::make_tuple(c_tensor_type{1,2,3,4,5}), std::vector<value_type>{1,4,9,16,25}),
+        std::make_tuple(unary_square{}, std::make_tuple(c_tensor_type{{{1,2,3},{3,2,1}},{{4,5,6},{6,5,4}}}), std::vector<value_type>{1,4,9,9,4,1,16,25,36,36,25,16}),
+        std::make_tuple(binary_mul{}, std::make_tuple(c_tensor_type(2),c_tensor_type(3)), std::vector<value_type>{6}),
+        std::make_tuple(binary_mul{}, std::make_tuple(c_tensor_type{3},c_tensor_type{4}), std::vector<value_type>{12}),
+        std::make_tuple(binary_mul{}, std::make_tuple(c_tensor_type{1,2,3,4,5},c_tensor_type{5,4,3,2,1}), std::vector<value_type>{5,8,9,8,5}),
+        std::make_tuple(binary_mul{}, std::make_tuple(c_tensor_type{{{1,2,3},{3,2,1}},{{4,5,6},{6,5,4}}},c_tensor_type{{{1,1,1},{2,2,2}},{{3,3,3},{4,4,4}}}),
+            std::vector<value_type>{1,2,3,6,4,2,12,15,18,24,20,16}
+        ),
+        std::make_tuple(std::minus<void>{}, std::make_tuple(c_tensor_type{{1,2,3},{4,5,6}},c_tensor_type{{1,1,1},{2,2,2}}),
+            std::vector<value_type>{0,1,2,2,3,4}
+        ),
+        //f_order operands
+        std::make_tuple(unary_square{}, std::make_tuple(f_tensor_type(2)), std::vector<value_type>{4}),
+        std::make_tuple(unary_square{}, std::make_tuple(f_tensor_type{3}), std::vector<value_type>{9}),
+        std::make_tuple(unary_square{}, std::make_tuple(f_tensor_type{1,2,3,4,5}), std::vector<value_type>{1,4,9,16,25}),
+        std::make_tuple(unary_square{}, std::make_tuple(f_tensor_type{{{1,2,3},{3,2,1}},{{4,5,6},{6,5,4}}}), std::vector<value_type>{1,16,9,36,4,25,4,25,9,36,1,16}),
+        std::make_tuple(binary_mul{}, std::make_tuple(f_tensor_type(2),f_tensor_type(3)), std::vector<value_type>{6}),
+        std::make_tuple(binary_mul{}, std::make_tuple(f_tensor_type{3},f_tensor_type{4}), std::vector<value_type>{12}),
+        std::make_tuple(binary_mul{}, std::make_tuple(f_tensor_type{1,2,3,4,5},f_tensor_type{5,4,3,2,1}), std::vector<value_type>{5,8,9,8,5}),
+        std::make_tuple(binary_mul{}, std::make_tuple(f_tensor_type{{{1,2,3},{3,2,1}},{{4,5,6},{6,5,4}}},f_tensor_type{{{1,1,1},{2,2,2}},{{3,3,3},{4,4,4}}}),
+            std::vector<value_type>{1,12,6,24,2,15,4,20,3,18,2,16}
+        ),
+        std::make_tuple(std::minus<void>{}, std::make_tuple(f_tensor_type{{1,2,3},{4,5,6}},f_tensor_type{{1,1,1},{2,2,2}}),
+            std::vector<value_type>{0,2,1,3,2,4}
+        ),
+        //mixed operands
+        std::make_tuple(binary_mul{}, std::make_tuple(c_tensor_type{1,2,3,4,5},f_tensor_type{5,4,3,2,1}), std::vector<value_type>{5,8,9,8,5}),
+        std::make_tuple(binary_mul{}, std::make_tuple(f_tensor_type{1,2,3,4,5},c_tensor_type{5,4,3,2,1}), std::vector<value_type>{5,8,9,8,5})
+    );
+    auto test = [](const auto& t){
+        auto f = std::get<0>(t);
+        using F = decltype(f);
+        auto operands = std::get<1>(t);
+        auto expected_elements = std::get<2>(t);
+        auto make_core = [f](auto&&...operands){
+            return expression_template_core<config_type,F,std::remove_reference_t<decltype(operands)>...>{f,std::forward<decltype(operands)>(operands)...};
+        };
+        auto result_core = std::apply(make_core, operands);
+        using indexer_type = decltype(result_core.create_trivial_indexer());
+        using iterator_type = gtensor::indexer_iterator<config_type,indexer_type>;
+        auto result_first = iterator_type{result_core.create_trivial_indexer(),index_type{0}};
+        auto result_last = iterator_type{result_core.create_trivial_indexer(),result_core.descriptor().size()};
+        REQUIRE(std::equal(result_first,result_last,expected_elements.begin(),expected_elements.end()));
+    };
+    apply_by_element(test,test_data);
+}
+
 TEST_CASE("test_expression_template_core_order","[test_expression_template_engine]")
 {
     using gtensor::config::c_order;

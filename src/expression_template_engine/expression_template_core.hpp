@@ -46,12 +46,29 @@ public:
     auto create_walker()const{
         return create_walker(descriptor_.dim());
     }
+    auto create_trivial_indexer(){
+        return create_trivial_indexer_helper(*this,sequence_type{});
+    }
+    auto create_trivial_indexer()const{
+        return create_trivial_indexer_helper(*this,sequence_type{});
+    }
 private:
     template<typename U, std::size_t...I>
     static auto create_walker_helper(U& instance, dim_type max_dim, std::index_sequence<I...>){
         return expression_template_walker<config_type,std::remove_cv_t<F>,decltype(std::get<I>(instance.operands_).create_walker(max_dim))...>{
             instance.f_,
             std::get<I>(instance.operands_).create_walker(max_dim)...
+        };
+    }
+    template<typename U, std::size_t...I>
+    static auto create_trivial_indexer_helper(U& instance, std::index_sequence<I...>){
+        return expression_template_trivial_indexer<
+            config_type,
+            std::remove_cv_t<F>,
+            decltype(std::get<I>(instance.operands_).traverse_order_adapter(typename Operands::order{}).create_trivial_indexer())...
+        >{
+            instance.f_,
+            std::get<I>(instance.operands_).traverse_order_adapter(typename Operands::order{}).create_trivial_indexer()...
         };
     }
     descriptor_type descriptor_;

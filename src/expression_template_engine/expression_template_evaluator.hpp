@@ -94,5 +94,37 @@ private:
     tuple_type<Walkers...> walkers_;
 };
 
+template<typename Config, typename F, typename...Indexers>
+class expression_template_trivial_indexer
+{
+    template<typename...Ts> using tuple_type = std::tuple<Ts...>;
+    using sequence_type = std::make_index_sequence<sizeof...(Indexers)>;
+public:
+    using config_type = Config;
+    using dim_type = typename Config::dim_type;
+    using index_type = typename Config::index_type;
+    using shape_type = typename Config::shape_type;
+
+    template<typename F_> struct forward_args : std::bool_constant<!std::is_same_v<std::remove_cv_t<std::remove_reference_t<F_>>,expression_template_trivial_indexer>>{};
+
+    template<typename F_, typename...Indexers_, std::enable_if_t<forward_args<F_>::value,int> =0>
+    explicit expression_template_trivial_indexer(F_&& f__, Indexers_&&...indexers__):
+        f_{std::forward<F_>(f__)},
+        indexers_{std::forward<Indexers_>(indexers__)...}
+    {}
+    decltype(auto) operator[](const index_type& idx)const{
+        return subscript_helper(idx, sequence_type{});
+    }
+private:
+    template<std::size_t...I>
+    decltype(auto) subscript_helper(const index_type& idx, std::index_sequence<I...>)const{
+        return f_(std::get<I>(indexers_)[idx]...);
+    }
+
+    F f_;
+    tuple_type<Indexers...> indexers_;
+};
+
+
 }   //end of namespace gtensor
 #endif

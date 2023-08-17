@@ -43,6 +43,11 @@ void copy_n(It first, It last, IdxT n, DstIt dst_first){
     }
 }
 
+template<typename Parent>
+auto create_trivial_indexer(Parent& t){
+    return t.create_trivial_indexer();
+}
+
 }   //end of namespace detail
 
 //storage core combine together data and meta-data
@@ -208,6 +213,22 @@ private:
     storage_type elements_;
 };
 
+
+// template<typename Parent, typename Descriptor>
+// class view_core_common
+// {
+// public:
+//     template<typename Parent_>
+//     view_core_common(AxesMap&& axes_map__, ShT&& shape__, Parent_&& parent__):
+//         descriptor_{std::forward<AxesMap>(axes_map__),std::forward<ShT>(shape__)},
+//         parent_{std::forward<Parent_>(parent__)}
+//     {}
+
+// private:
+//     Parent parent_;
+// };
+
+
 //view core owns its parent and provide data accessor to its data
 //view descriptor type depends on kind of view
 //Parent is type of view parent(origin) i.e. it is basic_tensor specialization
@@ -233,6 +254,8 @@ public:
     auto create_walker(const dim_type& max_dim){return create_walker_helper(*this, max_dim);}
     auto create_walker()const{return create_walker_helper(*this);}
     auto create_walker(){return create_walker_helper(*this);}
+    auto create_trivial_indexer(){return detail::create_trivial_indexer(parent_);}
+    auto create_trivial_indexer()const{return detail::create_trivial_indexer(parent_);}
 private:
     template<typename U>
     static auto create_walker_helper(U& instance){
@@ -280,6 +303,8 @@ public:
     auto create_walker(const dim_type& max_dim){return create_walker_helper(*this, max_dim);}
     auto create_walker()const{return create_walker_helper(*this);}
     auto create_walker(){return create_walker_helper(*this);}
+    auto create_trivial_indexer(){return detail::create_trivial_indexer(parent_);}
+    auto create_trivial_indexer()const{return detail::create_trivial_indexer(parent_);}
 private:
     template<typename U>
     static auto create_walker_helper(U& instance){
@@ -334,6 +359,8 @@ public:
     auto create_walker(const dim_type& max_dim){return create_walker_helper(*this, max_dim);}
     auto create_walker()const{return create_walker_helper(*this);}
     auto create_walker(){return create_walker_helper(*this);}
+    auto create_trivial_indexer(){return detail::create_trivial_indexer(parent_);}
+    auto create_trivial_indexer()const{return detail::create_trivial_indexer(parent_);}
 private:
     template<typename U>
     static auto create_walker_helper(U& instance){
@@ -385,6 +412,8 @@ public:
     const descriptor_type& descriptor()const{return descriptor_;}
     auto create_indexer()const{return create_indexer_helper(*this);}
     auto create_indexer(){return create_indexer_helper(*this);}
+    auto create_trivial_indexer(){return detail::create_trivial_indexer(parent_);}
+    auto create_trivial_indexer()const{return detail::create_trivial_indexer(parent_);}
 private:
     struct index_mapper{
         const index_map_type* map;
@@ -458,6 +487,23 @@ public:
     auto create_indexer(){
         return parent_.traverse_order_adapter(order{}).create_indexer();
     }
+    //trivial data interface
+    auto begin_trivial(){
+        return parent_.traverse_order_adapter(order{}).begin_trivial();
+    }
+    auto end_trivial(){
+        return parent_.traverse_order_adapter(order{}).end_trivial();
+    }
+    auto rbegin_trivial(){
+        return parent_.traverse_order_adapter(order{}).rbegin_trivial();
+    }
+    auto rend_trivial(){
+        return parent_.traverse_order_adapter(order{}).rend_trivial();
+    }
+    auto create_trivial_indexer(){
+        return parent_.traverse_order_adapter(order{}).create_trivial_indexer();
+    }
+
     //const data interface
     auto begin()const{
         return parent_.traverse_order_adapter(order{}).begin();
@@ -489,6 +535,23 @@ public:
     }
     auto create_indexer()const{
         return parent_.traverse_order_adapter(order{}).create_indexer();
+    }
+
+    //trivial const data interface
+    auto begin_trivial()const{
+        return parent_.traverse_order_adapter(order{}).begin_trivial();
+    }
+    auto end_trivial()const{
+        return parent_.traverse_order_adapter(order{}).end_trivial();
+    }
+    auto rbegin_trivial()const{
+        return parent_.traverse_order_adapter(order{}).rbegin_trivial();
+    }
+    auto rend_trivial()const{
+        return parent_.traverse_order_adapter(order{}).rend_trivial();
+    }
+    auto create_trivial_indexer()const{
+        return parent_.traverse_order_adapter(order{}).create_trivial_indexer();
     }
 private:
     descriptor_type descriptor_;
