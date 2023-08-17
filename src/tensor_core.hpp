@@ -213,22 +213,6 @@ private:
     storage_type elements_;
 };
 
-
-// template<typename Parent, typename Descriptor>
-// class view_core_common
-// {
-// public:
-//     template<typename Parent_>
-//     view_core_common(AxesMap&& axes_map__, ShT&& shape__, Parent_&& parent__):
-//         descriptor_{std::forward<AxesMap>(axes_map__),std::forward<ShT>(shape__)},
-//         parent_{std::forward<Parent_>(parent__)}
-//     {}
-
-// private:
-//     Parent parent_;
-// };
-
-
 //view core owns its parent and provide data accessor to its data
 //view descriptor type depends on kind of view
 //Parent is type of view parent(origin) i.e. it is basic_tensor specialization

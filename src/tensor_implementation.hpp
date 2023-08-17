@@ -94,8 +94,7 @@ inline auto create_trivial_walker(Core& t, const Descriptor& descriptor){
         using indexer_type = decltype(t.create_trivial_indexer());
         return gtensor::indexer_walker<config_type,indexer_type>{descriptor.adapted_strides(),descriptor.reset_strides(),index_type{0},t.create_trivial_indexer()};
     }else{
-        using indexer_type = decltype(create_indexer(t,descriptor));
-        return gtensor::indexer_walker<config_type,indexer_type>{descriptor.adapted_strides(),descriptor.reset_strides(),index_type{0},create_indexer(t,descriptor)};
+        return create_walker(t,descriptor);
     }
 }
 
