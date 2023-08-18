@@ -50,12 +50,12 @@ auto create_trivial_indexer(Parent& parent){
 
 template<typename Parent>
 bool is_trivial(const Parent& parent){
-    return parent_.is_trivial();
+    return parent.is_trivial();
 }
 
 template<typename ShT, typename Parent>
 bool is_trivial(const ShT& strides, const Parent& parent){
-    return parent_.is_trivial() && std::equal(strides.begin(),strides.end(),parent.strides().begin(),parent.strides().end());
+    return parent.is_trivial() && std::equal(strides.begin(),strides.end(),parent.strides().begin(),parent.strides().end());
 }
 
 }   //end of namespace detail

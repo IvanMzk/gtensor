@@ -77,7 +77,7 @@ private:
 
     template<std::size_t...I>
     bool is_trivial_helper(std::index_sequence<I...>)const{
-        if (((descriptor.size()==std::get<I>(operands_).size())&&...) && (std::get<I>(operands_).is_trivial()&&...)){
+        if (((descriptor_.size()==std::get<I>(operands_).size())&&...) && (std::get<I>(operands_).is_trivial()&&...)){
             if constexpr ((std::is_same_v<order,typename Operands::order>&&...)){
                 return true;
             }else{
