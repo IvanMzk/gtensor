@@ -769,3 +769,37 @@ TEMPLATE_TEST_CASE("test_tensor_is_trivial_same_layout","[test_tensor]",
     };
     apply_by_element(test,test_data);
 }
+
+TEST_CASE("test_tensor_is_trivial_different_layouts","[test_tensor]")
+{
+    using value_type = double;
+    using gtensor::config::c_order;
+    using gtensor::config::f_order;
+    using gtensor::tensor;
+    using helpers_for_testing::apply_by_element;
+
+    //0tensor,1expected
+    auto test_data = std::make_tuple(
+        //view
+        //reshape, trivial parent
+        std::make_tuple(tensor<value_type,c_order>(1).reshape({},f_order{}), false),
+        std::make_tuple(tensor<value_type,f_order>(1).reshape({},c_order{}), false),
+        std::make_tuple(tensor<value_type,c_order>(1).reshape({1},f_order{}), false),
+        std::make_tuple(tensor<value_type,f_order>(1).reshape({1},c_order{}), false),
+        std::make_tuple(tensor<value_type,c_order>{{1,2,3},{4,5,6}}.reshape({6},f_order{}), false),
+        std::make_tuple(tensor<value_type,f_order>{{1,2,3},{4,5,6}}.reshape({6},c_order{}), false),
+        //expression view
+        std::make_tuple(tensor<value_type,c_order>{1,2,3,4,5,6}+tensor<value_type,f_order>{1,2,3,4,5,6}, true),
+        std::make_tuple(tensor<value_type,c_order>{1,2,3,4,5,6}+tensor<value_type,f_order>{1,2,3,4,5,6}+tensor<value_type,c_order>{1,2,3,4,5,6}, true),
+        std::make_tuple(tensor<value_type,c_order>{{1,2,3},{4,5,6}}+tensor<value_type,f_order>{{1,2,3},{4,5,6}}, false)
+    );
+
+    auto test = [](const auto& t){
+        auto ten = std::get<0>(t);
+        auto expected = std::get<1>(t);
+
+        auto result = ten.is_trivial();
+        REQUIRE(result==expected);
+    };
+    apply_by_element(test,test_data);
+}
