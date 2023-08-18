@@ -40,6 +40,7 @@ GENERATE_HAS_CALLABLE_METHOD(end(), has_callable_end);
 GENERATE_HAS_CALLABLE_METHOD(rbegin(), has_callable_rbegin);
 GENERATE_HAS_CALLABLE_METHOD(rend(), has_callable_rend);
 GENERATE_HAS_CALLABLE_METHOD(create_trivial_indexer(), has_callable_create_trivial_indexer);
+GENERATE_HAS_CALLABLE_METHOD(is_trivial(), has_callable_is_trivial);
 
 template<typename T> using has_callable_subscript_operator = std::disjunction<
     has_callable_subscript_operator_difference_type<T>,

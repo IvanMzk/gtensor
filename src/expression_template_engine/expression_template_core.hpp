@@ -52,6 +52,9 @@ public:
     auto create_trivial_indexer()const{
         return create_trivial_indexer_helper(*this,sequence_type{});
     }
+    bool is_trivial()const{
+        return is_trivial_helper(sequence_type{});
+    }
 private:
     template<typename U, std::size_t...I>
     static auto create_walker_helper(U& instance, dim_type max_dim, std::index_sequence<I...>){
@@ -71,6 +74,18 @@ private:
             std::get<I>(instance.operands_).traverse_order_adapter(typename Operands::order{}).create_trivial_indexer()...
         };
     }
+
+    template<std::size_t...I>
+    bool is_trivial_helper(std::index_sequence<I...>)const{
+        if (((descriptor.size()==std::get<I>(operands_).size())&&...) && (std::get<I>(operands_).is_trivial()&&...)){
+            if constexpr ((std::is_same_v<order,typename Operands::order>&&...)){
+                return true;
+            }else{
+                return ((std::get<I>(operands_).dim()==1)&&...);    //order doesn't matter if 1d
+            }
+        }
+    }
+
     descriptor_type descriptor_;
     F f_;
     tuple_type<Operands...> operands_;

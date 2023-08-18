@@ -454,6 +454,16 @@ inline auto rend_broadcast(Core& t, const Descriptor& descriptor, ShT&& shape){
     return create_reverse_broadcast_iterator<TraverseOrder>(t, descriptor, std::forward<ShT>(shape),index_type{0});
 }
 
+//is_trivial
+template<typename Core>
+inline bool is_trivial(Core& t){
+    if constexpr (has_callable_is_trivial<Core>::value){
+        return t.is_trivial();
+    }else{
+        return false;
+    }
+}
+
 }   //end of namespace detail
 
 //Core must provide interface to access data and meta-data:
@@ -641,6 +651,11 @@ public:
     }
     auto create_trivial_walker()const{
         return detail::create_trivial_walker(core_,descriptor());
+    }
+
+    //is_trivial
+    bool is_trivial()const{
+        return detail::is_trivial(core_);
     }
 
 private:
