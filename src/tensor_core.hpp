@@ -46,7 +46,9 @@ void copy_n(It first, It last, IdxT n, DstIt dst_first){
 
 template<typename Parent>
 auto create_trivial_indexer(Parent& parent){
-    return parent.create_trivial_indexer();
+    using Parent_ = std::remove_cv_t<Parent>;
+    using order = typename Parent_::order;
+    return parent.traverse_order_adapter(order{}).create_trivial_indexer();
 }
 
 template<typename Parent>
@@ -523,10 +525,9 @@ private:
     }
     template<typename U>
     static auto create_trivial_indexer_helper(U& instance){
-        auto a = instance.parent_.traverse_order_adapter(order{});
-        using parent_indexer_type = decltype(a.create_trivial_indexer());
-        return basic_indexer<parent_indexer_type,index_mapper>{
-            a.create_trivial_indexer(),
+        using indexer_type = decltype(detail::create_trivial_indexer(instance.parent_));
+        return basic_indexer<indexer_type,index_mapper>{
+            detail::create_trivial_indexer(instance.parent_),
             index_mapper{&instance.index_map_}
         };
     }
@@ -603,7 +604,7 @@ public:
         return parent_.traverse_order_adapter(order{}).rend_trivial();
     }
     auto create_trivial_indexer(){
-        return parent_.traverse_order_adapter(order{}).create_trivial_indexer();
+        return detail::create_trivial_indexer(parent_);
     }
 
     //const data interface
@@ -653,7 +654,7 @@ public:
         return parent_.traverse_order_adapter(order{}).rend_trivial();
     }
     auto create_trivial_indexer()const{
-        return parent_.traverse_order_adapter(order{}).create_trivial_indexer();
+        return detail::create_trivial_indexer(parent_);
     }
 
     bool is_trivial()const{
