@@ -3,6 +3,7 @@
 
 #include <type_traits>
 #include <iterator>
+#include <algorithm>
 #include "common.hpp"
 #include "init_list_helper.hpp"
 #include "descriptor.hpp"
@@ -57,6 +58,34 @@ template<typename ShT, typename Parent>
 bool is_trivial(const ShT& strides, const Parent& parent){
     return parent.is_trivial() && std::equal(strides.begin(),strides.end(),parent.strides().begin(),parent.strides().end());
 }
+
+template<typename Parent>
+bool is_trivial_parent(const Parent& parent){
+    return parent.is_trivial();
+}
+template<typename ShT>
+bool is_trivial_axes_map(const ShT& axes_map){
+    using dim_type = typename ShT::difference_type;
+    auto lazy_range = [i=dim_type{0}]()mutable{return i++;};
+    for (auto it=axes_map.begin(),last=axes_map.end(); it!=last; ++it){
+        if (*it != lazy_range()){
+            return false;
+        }
+    }
+    return true;
+}
+template<typename ShT>
+bool is_trivial_offset(const ShT& offset){
+    using index_type = typename ShT::value_type;
+    return std::all_of(offset.begin(),offset.end(),[](const auto& e){return e==index_type{0};});
+}
+template<typename ShT>
+bool is_trivial_scale(const ShT& scale){
+    using index_type = typename ShT::value_type;
+    return std::all_of(scale.begin(),scale.end(),[](const auto& e){return e==index_type{1};});
+}
+
+
 
 }   //end of namespace detail
 
@@ -267,7 +296,7 @@ public:
         return detail::create_trivial_indexer(parent_);
     }
     bool is_trivial()const{
-        return detail::is_trivial(descriptor_.strides(),parent_);
+        return detail::is_trivial_axes_map(descriptor_.axes_map()) && detail::is_trivial_parent(parent_);
     }
 private:
     template<typename U>
@@ -333,7 +362,7 @@ public:
         return detail::create_trivial_indexer(parent_);
     }
     bool is_trivial()const{
-        return detail::is_trivial(descriptor_.strides(),parent_);
+        return descriptor_.dim()==parent_.dim() && detail::is_trivial_offset(descriptor_.offset()) && detail::is_trivial_scale(descriptor_.scale()) && detail::is_trivial_parent(parent_);
     }
 private:
     template<typename U>
@@ -406,7 +435,7 @@ public:
         return detail::create_trivial_indexer(parent_);
     }
     bool is_trivial()const{
-        return detail::is_trivial(descriptor_.strides(),parent_);
+        return descriptor_.dim()==parent_.dim() && detail::is_trivial_parent(parent_);
     }
 private:
     template<typename U>

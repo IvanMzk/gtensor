@@ -83,6 +83,8 @@ private:
             }else{
                 return ((std::get<I>(operands_).dim()==1)&&...);    //order doesn't matter if 1d
             }
+        }else{
+            return false;
         }
     }
 

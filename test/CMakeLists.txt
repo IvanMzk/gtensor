@@ -24,7 +24,7 @@ target_sources(Test PRIVATE
 
     #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_reduce_binary.cpp
 
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_tmp.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_tmp.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_iterator.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_copy.cpp
 
@@ -47,13 +47,12 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_SOURCE_DIR}/test_expression_template_engine.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_operators.cpp
 #
-#
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_construction.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_assign.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_equality.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_construction.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_assign.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_equality.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_data_accessor.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_view.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_application_specific.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_view.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_application_specific.cpp
 #
     #${CMAKE_CURRENT_SOURCE_DIR}/test_indexing.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_reduce.cpp

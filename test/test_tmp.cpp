@@ -14,27 +14,23 @@ using gtensor::basic_tensor;
 TEST_CASE("test_tmp","[test_tmp]")
 {
 
+
     using gtensor::config::c_order;
     using gtensor::config::f_order;
     using gtensor::tensor;
+    using tensor_type = tensor<int>;
+    using slice_type = tensor_type::slice_type;
+    using helpers_for_testing::range_to_str;
+    using gtensor::detail::shape_to_str;
 
-    using layout = f_order;
+    auto t = tensor_type{{1,2,3},{4,5,6}};
+    std::cout<<std::endl<<t;
 
-    auto e = tensor<double,layout>{{1,2,3},{4,5,6}} - tensor<double,layout>{{1,1,1},{2,2,2}};
+    std::cout<<std::endl<<shape_to_str(tensor_type{1}.shape());
+    std::cout<<std::endl<<shape_to_str(tensor_type{1}(slice_type{1}).shape());
 
-    std::cout<<std::endl<<e;
-    std::cout<<std::endl<<benchmark_helpers::order_to_str(typename decltype(e)::order{});
-
-    auto a = e.traverse_order_adapter(f_order{});
-
-    auto ind = a.create_trivial_indexer();
-
-    // for (auto i=0; i!=e.size(); ++i){
-    //     std::cout<<std::endl<<ind[i];
-    // }
-
-    // std::cout<<std::endl<<helpers_for_testing::range_to_str(a.begin_trivial(),a.end_trivial());
-    // std::cout<<std::endl<<helpers_for_testing::range_to_str(e.begin_trivial(),e.end_trivial());
+    std::cout<<std::endl<<shape_to_str(tensor_type{1}.strides());
+    std::cout<<std::endl<<shape_to_str(tensor_type{1}(slice_type{1}).strides());
 
 
 }

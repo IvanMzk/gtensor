@@ -405,6 +405,10 @@ public:
         return impl().create_trivial_walker();
     }
 
+    bool is_trivial()const{
+        return impl().is_trivial();
+    }
+
     //reduce_slide_transform methods to perform along axes using custom functor
     //reduce along axes, axes may be container or scalar
     //f should be like [](auto first, auto last){...}, where first,last is range along axes
