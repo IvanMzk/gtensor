@@ -137,31 +137,32 @@ auto bench_iterator = [](const auto& t_, auto order, auto mes){
 //     std::cout<<std::endl<<"total, ms "<<stop-start;
 // }
 
-TEMPLATE_TEST_CASE("benchmark_iterator_deep_expression_with_scalar","[benchmark_tensor]",
-    gtensor::config::c_order,
-    gtensor::config::f_order
-)
-{
-    using value_type = double;
-    using gtensor::tensor;
-    using tensor_type = gtensor::tensor<value_type,TestType>;
-    using gtensor::config::c_order;
-    using gtensor::config::f_order;
-    using order = typename tensor_type::order;
-    using benchmark_helpers::order_to_str;
-    using gtensor::detail::shape_to_str;
-    using benchmark_helpers::shapes;
-    using benchmark_iterator_::bench_iterator;
-    using benchmark_helpers::cpu_timer;
+// TEMPLATE_TEST_CASE("benchmark_iterator_deep_expression_with_scalar","[benchmark_tensor]",
+//     gtensor::config::c_order,
+//     gtensor::config::f_order
+// )
+// {
+//     using value_type = double;
+//     using gtensor::tensor;
+//     using tensor_type = gtensor::tensor<value_type,TestType>;
+//     using gtensor::config::c_order;
+//     using gtensor::config::f_order;
+//     using order = typename tensor_type::order;
+//     using benchmark_helpers::order_to_str;
+//     using gtensor::detail::shape_to_str;
+//     using benchmark_helpers::shapes;
+//     using benchmark_iterator_::bench_iterator;
+//     using benchmark_helpers::cpu_timer;
 
-    auto start = cpu_timer{};
-    for (auto it=shapes.begin(), last=shapes.end(); it!=last; ++it){
-        auto t_ = tensor_type(*it,2);
-        auto t=((((((((((t_+1)+1)+1)+1)+1)+1)+1)+1)+1)+1);  //10
-        std::cout<<std::endl<<"expression with scalar ((((((((((t_+1)+1)+1)+1)+1)+1)+1)+1)+1)+1) "<<order_to_str(order{})<<" "<<shape_to_str(t.shape());
-        bench_iterator(t,c_order{},"iterator");
-        bench_iterator(t,f_order{},"iterator");
-    }
-    auto stop = cpu_timer{};
-    std::cout<<std::endl<<"total, ms "<<stop-start;
-}
+//     auto start = cpu_timer{};
+//     for (auto it=shapes.begin(), last=shapes.end(); it!=last; ++it){
+//         auto t_ = tensor_type(*it,2);
+//         auto t=((((((((((t_+1)+1)+1)+1)+1)+1)+1)+1)+1)+1);  //10
+//         std::cout<<std::endl<<"expression with scalar ((((((((((t_+1)+1)+1)+1)+1)+1)+1)+1)+1)+1) "<<order_to_str(order{})<<" "<<shape_to_str(t.shape());
+//         bench_iterator(t,c_order{},"iterator");
+//         bench_iterator(t,f_order{},"iterator");
+//     }
+//     auto stop = cpu_timer{};
+//     std::cout<<std::endl<<"total, ms "<<stop-start;
+// }
+
