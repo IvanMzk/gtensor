@@ -236,7 +236,11 @@ public:
         ASSERT_ORDER(Order);
         (void)order_;
         auto a = traverse_order_adapter(Order{});
-        return tensor<T,Order,Config>(shape(),a.begin(),a.end());
+        if (is_trivial()){
+            return tensor<T,Order,Config>(shape(),a.begin_trivial(),a.end_trivial());
+        }else{
+            return tensor<T,Order,Config>(shape(),a.begin(),a.end());
+        }
     }
     //makes 1d tensor in specified layout by copying elements from this
     //this element's traverse order the same as specified layout

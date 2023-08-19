@@ -50,6 +50,38 @@ public:
     }
 };
 
+class cpu_interval
+{
+    cpu_timer start_{};
+    cpu_timer stop_{};
+public:
+    cpu_interval() = default;
+    void start(){
+        start_=cpu_timer{};
+    }
+    void stop(){
+        stop_=cpu_timer{};
+    }
+    auto interval()const{
+        return stop_-start_;
+    }
+};
+
+
+template<typename T>
+void fake_use(const T& t){
+    asm volatile("":"+g"(const_cast<T&>(t)));
+}
+
+template<typename F, typename...Args>
+auto timing(F&& f, Args&&...args){
+    cpu_interval dt{};
+    dt.start(),fake_use(f(std::forward<Args>(args)...)),dt.stop();
+    return dt;
+}
+
+
+
 template<typename Axes>
 auto axes_to_str(const Axes& axes){
     if constexpr (gtensor::detail::is_container_v<Axes>){
@@ -73,6 +105,9 @@ inline const std::vector<std::vector<int>> shapes{
     std::vector<int>{100,3,1000,2000},
     std::vector<int>{50,6,1000,2000}
 };
+
+
+
 
 
 }   //end of namespace benchmark_helpers
