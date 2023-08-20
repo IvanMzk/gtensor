@@ -271,7 +271,7 @@ public:
         cursor_ = offset_;
     }
     void update_offset(){
-        offset_+=cursor_;
+        offset_+=(cursor_-offset_);
     }
     dim_type dim()const{
         return detail::make_dim(*adapted_strides_);
@@ -499,7 +499,6 @@ public:
     using typename base_walker_type::index_type;
     using typename base_walker_type::dim_type;
 
-    //offset.size() equals number of subscripts given to make slice view
     template<typename...Args>
     resetting_walker(const shape_type& shape_,Args&&...args):
         base_walker_type{std::forward<Args>(args)...},

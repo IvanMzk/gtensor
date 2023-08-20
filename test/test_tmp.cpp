@@ -23,14 +23,22 @@ TEST_CASE("test_tmp","[test_tmp]")
     using helpers_for_testing::range_to_str;
     using gtensor::detail::shape_to_str;
 
-    auto t = tensor_type{{1,2,3},{4,5,6}};
-    std::cout<<std::endl<<t;
+    auto t = tensor<int,c_order>{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}};
+    //std::cout<<std::endl<<t;
 
-    std::cout<<std::endl<<shape_to_str(tensor_type{1}.shape());
-    std::cout<<std::endl<<shape_to_str(tensor_type{1}(slice_type{1}).shape());
+    //auto e = t(1,1);
+    auto e = t(1)(1)(2);
+    //auto e = t(1)(1);
+    //auto e = t(1);
 
-    std::cout<<std::endl<<shape_to_str(tensor_type{1}.strides());
-    std::cout<<std::endl<<shape_to_str(tensor_type{1}(slice_type{1}).strides());
+    auto w = e.create_walker();
+    std::cout<<std::endl<<*w;
+    w.reset_back();
+    std::cout<<std::endl<<*w;
+
+
+
+
 
 
 }
