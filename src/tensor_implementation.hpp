@@ -14,21 +14,22 @@ namespace detail{
 
 //create walker
 template<typename Config, typename Indexer> using max_dim_indexer_walker = gtensor::axes_correction_walker<gtensor::indexer_walker<Config,Indexer>>;
+template<typename Config, typename Iterator> using max_dim_iterator_walker = gtensor::axes_correction_walker<gtensor::iterator_walker<Config,Iterator>>;
 template<typename Core, typename Descriptor, typename DimT>
 inline auto create_walker(Core& t, const Descriptor& descriptor, const DimT& max_dim){
     using config_type = typename Core::config_type;
     using index_type = typename config_type::index_type;
     if constexpr(has_callable_create_walker_dim_type<Core>::value){
         return t.create_walker(max_dim);
+    }else if constexpr (has_callable_iterator<Core>::value){
+        using iterator_type = decltype(t.begin());
+        return max_dim_iterator_walker<config_type,iterator_type>{max_dim,descriptor.adapted_strides(),descriptor.reset_strides(),t.begin()};
     }else if constexpr (has_callable_create_indexer<Core>::value){
         using indexer_type = decltype(t.create_indexer());
         return max_dim_indexer_walker<config_type,indexer_type>{max_dim,descriptor.adapted_strides(),descriptor.reset_strides(),index_type{0},t.create_indexer()};
     }else if constexpr (has_callable_subscript_operator<Core>::value){
         using indexer_type = gtensor::basic_indexer<Core&>;
         return max_dim_indexer_walker<config_type,indexer_type>{max_dim,descriptor.adapted_strides(),descriptor.reset_strides(),index_type{0},indexer_type{t}};
-    }else if constexpr (has_callable_iterator<Core>::value){
-        using indexer_type = gtensor::iterator_indexer<decltype(t.begin())>;
-        return max_dim_indexer_walker<config_type,indexer_type>{max_dim,descriptor.adapted_strides(),descriptor.reset_strides(),index_type{0},indexer_type{t.begin()}};
     }else{
         static_assert(detail::always_false<Core>,"can't make data accessor");
     }
