@@ -60,7 +60,34 @@ namespace benchmark_traverser_{
 //     std::cout<<std::endl<<mes<<" "<<order_to_str(order)<<" "<<dt.interval()<<" ms";
 // };
 
-auto bench_traverser = [](const auto& t_, auto order, auto mes){
+auto bench_forward_traverser_no_deref = [](const auto& t_, auto order, auto mes){
+    using tensor_type = std::remove_cv_t<std::remove_reference_t<decltype(t_)>>;
+    using config_type = typename tensor_type::config_type;
+    using value_type = typename tensor_type::value_type;
+    using benchmark_helpers::order_to_str;
+    using benchmark_helpers::timing;
+    using traverse_order = decltype(order);
+
+
+    using walker_type = decltype(t_.create_walker());
+    using traverser_type = gtensor::walker_forward_traverser<config_type,walker_type>;
+
+    traverser_type traverser{t_.shape(), t_.create_walker()};
+
+    auto f = [&traverser](){
+        value_type r{0};
+        do{
+            if (traverser.index().size()==0){
+                ++r;
+            }
+        }while(traverser.template next<traverse_order>());
+        return r;
+    };
+    auto dt = timing(f);
+    std::cout<<std::endl<<mes<<" "<<order_to_str(order)<<" "<<dt.interval()<<" ms";
+};
+
+auto bench_random_traverser_no_deref = [](const auto& t_, auto order, auto mes){
     using tensor_type = std::remove_cv_t<std::remove_reference_t<decltype(t_)>>;
     using config_type = typename tensor_type::config_type;
     using value_type = typename tensor_type::value_type;
@@ -76,9 +103,10 @@ auto bench_traverser = [](const auto& t_, auto order, auto mes){
     auto f = [&traverser](){
         value_type r{0};
         do{
-            r+=*traverser;
+            if (traverser.index().size()==0){
+                ++r;
+            }
         }while(traverser.next());
-        std::cout<<std::endl<<r;
         return r;
     };
     auto dt = timing(f);
@@ -110,8 +138,8 @@ auto bench_iterator = [](const auto& t_, auto order, auto mes){
 
 
 TEMPLATE_TEST_CASE("benchmark_traverser_deep_expression","[benchmark_tensor]",
-    gtensor::config::c_order,
-    gtensor::config::f_order
+    gtensor::config::c_order
+    //gtensor::config::f_order
 )
 {
     using value_type = double;
@@ -123,18 +151,21 @@ TEMPLATE_TEST_CASE("benchmark_traverser_deep_expression","[benchmark_tensor]",
     using benchmark_helpers::order_to_str;
     using gtensor::detail::shape_to_str;
     using benchmark_helpers::shapes;
-    using benchmark_traverser_::bench_traverser;
+    using benchmark_traverser_::bench_forward_traverser_no_deref;
+    using benchmark_traverser_::bench_random_traverser_no_deref;
     using benchmark_traverser_::bench_iterator;
     using benchmark_helpers::cpu_timer;
 
     auto start = cpu_timer{};
     for (auto it=shapes.begin(), last=shapes.end(); it!=last; ++it){
         auto t_ = tensor_type(*it,2);
-        //auto t=t_+t_+t_+t_+t_+t_+t_+t_+t_+t_;   //10
-        auto t = t_+t_;
+        auto t=t_+t_+t_+t_+t_+t_+t_+t_+t_+t_;   //10
+        //auto t = t_+t_;
         std::cout<<std::endl<<"deep_expression  t_+t_+t_+t_+t_+t_+t_+t_+t_+t_ "<<order_to_str(order{})<<" "<<shape_to_str(t.shape());
-        bench_iterator(t,c_order{},"iterator");
-        bench_traverser(t,c_order{},"traverser");
+        bench_forward_traverser_no_deref(t,c_order{},"forward_traverser_no_deref");
+        //bench_random_traverser_no_deref(t,c_order{},"random_traverser_no_deref");
+
+        //bench_iterator(t,c_order{},"iterator");
         //bench_traverser(t,f_order{},"iterator");
     }
     auto stop = cpu_timer{};

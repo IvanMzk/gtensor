@@ -563,33 +563,33 @@ public:
     {}
 
     void walk(const dim_type& axis, const index_type& steps){
-        if (can_move_on_axis(axis)){
-            base_walker_type::walk(make_axis(axis),steps);
+        if (axis>=dim_offset_){
+            base_walker_type::walk(axis-dim_offset_,steps);
         }
     }
     void walk_back(const dim_type& axis, const index_type& steps){
-        if (can_move_on_axis(axis)){
-            base_walker_type::walk_back(make_axis(axis),steps);
+        if (axis>=dim_offset_){
+            base_walker_type::walk_back(axis-dim_offset_,steps);
         }
     }
     void step(const dim_type& axis){
-        if (can_move_on_axis(axis)){
-            base_walker_type::step(make_axis(axis));
+        if (axis>=dim_offset_){
+            base_walker_type::step(axis-dim_offset_);
         }
     }
     void step_back(const dim_type& axis){
-        if (can_move_on_axis(axis)){
-            base_walker_type::step_back(make_axis(axis));
+        if (axis>=dim_offset_){
+            base_walker_type::step_back(axis-dim_offset_);
         }
     }
     void reset(const dim_type& axis){
-        if (can_move_on_axis(axis)){
-            base_walker_type::reset(make_axis(axis));
+        if (axis>=dim_offset_){
+            base_walker_type::reset(axis-dim_offset_);
         }
     }
     void reset_back(const dim_type& axis){
-        if (can_move_on_axis(axis)){
-            base_walker_type::reset_back(make_axis(axis));
+        if (axis>=dim_offset_){
+            base_walker_type::reset_back(axis-dim_offset_);
         }
     }
     void reset_back(){
@@ -599,14 +599,70 @@ public:
     using base_walker_type::update_offset;
     using base_walker_type::dim;
 private:
-    bool can_move_on_axis(const dim_type& axis)const{
-        return axis >= dim_offset_;
-    }
-    dim_type make_axis(const dim_type& axis)const{
-        return axis - dim_offset_;
-    }
     dim_type dim_offset_;
 };
+
+// template<typename BaseWalker>
+// class axes_correction_walker : private BaseWalker
+// {
+//     using base_walker_type = BaseWalker;
+// public:
+//     using typename base_walker_type::config_type;
+//     using typename base_walker_type::shape_type;
+//     using typename base_walker_type::index_type;
+//     using typename base_walker_type::dim_type;
+
+//     template<typename...Args>
+//     axes_correction_walker(const dim_type& max_dim,Args&&...args):
+//         base_walker_type{std::forward<Args>(args)...},
+//         dim_offset_{max_dim-base_walker_type::dim()}
+//     {}
+
+//     void walk(const dim_type& axis, const index_type& steps){
+//         if (can_move_on_axis(axis)){
+//             base_walker_type::walk(make_axis(axis),steps);
+//         }
+//     }
+//     void walk_back(const dim_type& axis, const index_type& steps){
+//         if (can_move_on_axis(axis)){
+//             base_walker_type::walk_back(make_axis(axis),steps);
+//         }
+//     }
+//     void step(const dim_type& axis){
+//         if (can_move_on_axis(axis)){
+//             base_walker_type::step(make_axis(axis));
+//         }
+//     }
+//     void step_back(const dim_type& axis){
+//         if (can_move_on_axis(axis)){
+//             base_walker_type::step_back(make_axis(axis));
+//         }
+//     }
+//     void reset(const dim_type& axis){
+//         if (can_move_on_axis(axis)){
+//             base_walker_type::reset(make_axis(axis));
+//         }
+//     }
+//     void reset_back(const dim_type& axis){
+//         if (can_move_on_axis(axis)){
+//             base_walker_type::reset_back(make_axis(axis));
+//         }
+//     }
+//     void reset_back(){
+//         base_walker_type::reset_back();
+//     }
+//     using base_walker_type::operator*;
+//     using base_walker_type::update_offset;
+//     using base_walker_type::dim;
+// private:
+//     bool can_move_on_axis(const dim_type& axis)const{
+//         return axis >= dim_offset_;
+//     }
+//     dim_type make_axis(const dim_type& axis)const{
+//         return axis - dim_offset_;
+//     }
+//     dim_type dim_offset_;
+// };
 
 //walker_traverser implement algorithms to iterate walker using given shape
 //traverse shape may be not native walker shape but shapes must be broadcastable
