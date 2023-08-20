@@ -63,8 +63,6 @@ TEMPLATE_TEST_CASE("test_tensor_data_interface","[test_tensor]",
 )
 {
     using tensor_type = TestType;
-    using order = typename tensor_type::order;
-    using slice_type = typename tensor_type::slice_type;
     using config_type = typename tensor_type::config_type;
     using traverse_order = typename config_type::order;
     using index_type = typename tensor_type::index_type;
