@@ -231,7 +231,7 @@ public:
     }
 };
 
-//walker is indexer adapter that allows address data elements using multidimensional index
+//walker is adapter that allows address data elements using multidimensional index
 //Cursor is responsible for storing flat position, it may have semantic of integral type or random access iterator
 template<typename Config, typename Cursor>
 class cursor_walker
@@ -267,10 +267,18 @@ public:
     void reset_back(const dim_type& axis){
         cursor_-=(*reset_strides_)[axis];
     }
-    void reset_back(){cursor_ = offset_;}
-    void update_offset(){offset_+=cursor_;}
-    dim_type dim()const{return detail::make_dim(*adapted_strides_);}
-    cursor_type operator*()const{return cursor_;}
+    void reset_back(){
+        cursor_ = offset_;
+    }
+    void update_offset(){
+        offset_+=cursor_;
+    }
+    dim_type dim()const{
+        return detail::make_dim(*adapted_strides_);
+    }
+    cursor_type operator*()const{
+        return cursor_;
+    }
 private:
     const shape_type* adapted_strides_;
     const shape_type* reset_strides_;
@@ -303,16 +311,78 @@ public:
     void step(const dim_type& axis){
         impl.step(axis);
     }
-    void step_back(const dim_type& axis){impl.step_back(axis);}
-    void reset(const dim_type& axis){impl.reset(axis);}
-    void reset_back(const dim_type& axis){impl.reset_back(axis);}
-    void reset_back(){impl.reset_back();}
-    void update_offset(){impl.update_offset();}
-    dim_type dim(){return impl.dim();}
-    decltype(auto) operator*()const{return indexer[*impl];}
+    void step_back(const dim_type& axis){
+        impl.step_back(axis);
+    }
+    void reset(const dim_type& axis){
+        impl.reset(axis);
+    }
+    void reset_back(const dim_type& axis){
+        impl.reset_back(axis);
+    }
+    void reset_back(){
+        impl.reset_back();
+    }
+    void update_offset(){
+        impl.update_offset();
+    }
+    dim_type dim(){
+        return impl.dim();
+    }
+    decltype(auto) operator*()const{
+        return indexer[*impl];
+    }
 private:
     cursor_walker<config_type, index_type> impl;
     indexer_type indexer;
+};
+
+//Iterator is adaptee
+template<typename Config, typename Iterator>
+class iterator_walker
+{
+public:
+    using config_type = Config;
+    using index_type = typename config_type::index_type;
+    using dim_type = typename config_type::dim_type;
+    using shape_type = typename config_type::shape_type;
+
+    template<typename Iterator_>
+    iterator_walker(const shape_type& adapted_strides_, const shape_type& reset_strides_, Iterator_&& cursor_):
+        impl{adapted_strides_, reset_strides_, cursor_}
+    {}
+    void walk(const dim_type& axis, const index_type& steps){
+        impl.walk(axis,steps);
+    }
+    void walk_back(const dim_type& axis, const index_type& steps){
+        impl.walk_back(axis,steps);
+    }
+    void step(const dim_type& axis){
+        impl.step(axis);
+    }
+    void step_back(const dim_type& axis){
+        impl.step_back(axis);
+    }
+    void reset(const dim_type& axis){
+        impl.reset(axis);
+    }
+    void reset_back(const dim_type& axis){
+        impl.reset_back(axis);
+    }
+    void reset_back(){
+        impl.reset_back();
+    }
+    void update_offset(){
+        impl.update_offset();
+    }
+    dim_type dim(){
+        return impl.dim();
+    }
+    decltype(auto) operator*()const{
+        return **impl;
+    }
+private:
+    cursor_walker<config_type, Iterator> impl;
 };
 
 //walker decorators

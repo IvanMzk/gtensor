@@ -12,8 +12,6 @@ TEST_CASE("test_walker","test_data_accessor")
     using dim_type = typename config_type::dim_type;
     using index_type = typename config_type::index_type;
     using storage_type = typename config_type::template storage<value_type>;
-    using indexer_type = gtensor::basic_indexer<storage_type&>;
-    using walker_type = gtensor::axes_correction_walker<gtensor::indexer_walker<config_type, indexer_type>>;
     using helpers_for_testing::apply_by_element;
 
     auto test_data = std::make_tuple(
@@ -91,21 +89,45 @@ TEST_CASE("test_walker","test_data_accessor")
         std::make_tuple(storage_type{1,2,3,4,5,6}, shape_type{3,0,1}, shape_type{3,0,2}, index_type{0}, dim_type{3}, [](auto& w){w.walk(2,2); w.reset_back(1);}, value_type{3}),
         std::make_tuple(storage_type{1,2,3,4,5,6}, shape_type{3,0,1}, shape_type{3,0,2}, index_type{0}, dim_type{3}, [](auto& w){w.reset(1);}, value_type{1})
     );
-    auto test = [](const auto& t){
-        auto storage = std::get<0>(t);
-        auto adapted_strides = std::get<1>(t);
-        auto reset_strides = std::get<2>(t);
-        auto offset = std::get<3>(t);
-        auto max_dim = std::get<4>(t);
-        auto mover = std::get<5>(t);
-        auto expected = std::get<6>(t);
-        auto indexer = indexer_type{storage};
-        auto walker =  walker_type{max_dim,adapted_strides,reset_strides,offset,indexer};
-        mover(walker);
-        auto result = *walker;
-        REQUIRE(result == expected);
-    };
-    apply_by_element(test, test_data);
+    SECTION("indexer_walker")
+    {
+        auto test = [](const auto& t){
+            auto storage = std::get<0>(t);
+            auto adapted_strides = std::get<1>(t);
+            auto reset_strides = std::get<2>(t);
+            auto offset = std::get<3>(t);
+            auto max_dim = std::get<4>(t);
+            auto mover = std::get<5>(t);
+            auto expected = std::get<6>(t);
+            using indexer_type = gtensor::basic_indexer<storage_type&>;
+            using walker_type = gtensor::axes_correction_walker<gtensor::indexer_walker<config_type, indexer_type>>;
+            auto indexer = indexer_type{storage};
+            auto walker =  walker_type{max_dim,adapted_strides,reset_strides,offset,indexer};
+            mover(walker);
+            auto result = *walker;
+            REQUIRE(result == expected);
+        };
+        apply_by_element(test, test_data);
+    }
+    SECTION("iterator_walker")
+    {
+        auto test = [](const auto& t){
+            auto storage = std::get<0>(t);
+            auto adapted_strides = std::get<1>(t);
+            auto reset_strides = std::get<2>(t);
+            auto offset = std::get<3>(t);
+            auto max_dim = std::get<4>(t);
+            auto mover = std::get<5>(t);
+            auto expected = std::get<6>(t);
+            using iterator_type = decltype(storage.begin());
+            using walker_type = gtensor::axes_correction_walker<gtensor::iterator_walker<config_type, iterator_type>>;
+            auto walker =  walker_type{max_dim,adapted_strides,reset_strides,storage.begin()+offset};
+            mover(walker);
+            auto result = *walker;
+            REQUIRE(result == expected);
+        };
+        apply_by_element(test, test_data);
+    }
 }
 
 TEST_CASE("test_walker_result_type","test_data_accessor")

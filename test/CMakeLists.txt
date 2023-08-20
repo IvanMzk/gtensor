@@ -26,7 +26,7 @@ target_sources(Test PRIVATE
 
     #${CMAKE_CURRENT_SOURCE_DIR}/test_tmp.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_trivial_iterator.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/benchmark_iterator.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_iterator.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_copy.cpp
 
     #${CMAKE_CURRENT_SOURCE_DIR}/test_storage.cpp
@@ -37,7 +37,7 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_SOURCE_DIR}/test_descriptor.cpp
 #
     #${CMAKE_CURRENT_SOURCE_DIR}/test_data_accessor_indexer.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_data_accessor_walker.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_data_accessor_walker.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_data_accessor_traverser.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_iterator.cpp
 #
