@@ -80,7 +80,7 @@ public:
     auto create_walker(dim_type max_dim){
         using indexer_type = gtensor::basic_indexer<storage_type&>;
         return gtensor::axes_correction_walker<gtensor::indexer_walker<config_type,indexer_type>>{
-            max_dim,
+            max_dim-descriptor().dim(),
             descriptor().adapted_strides(),
             descriptor().reset_strides(),
             index_type{0},
@@ -161,7 +161,7 @@ public:
     auto create_walker(dim_type max_dim)const{
         using indexer_type = gtensor::basic_indexer<const storage_type&>;
         return gtensor::axes_correction_walker<gtensor::indexer_walker<config_type,indexer_type>>{
-            max_dim,
+            max_dim-descriptor().dim(),
             descriptor().adapted_strides(),
             descriptor().reset_strides(),
             index_type{0},
@@ -250,7 +250,7 @@ private:
     static auto create_walker_helper(U& instance, dim_type max_dim){
         using indexer_type = std::conditional_t<std::is_const_v<U>, gtensor::basic_indexer<const storage_type&>, gtensor::basic_indexer<storage_type&>>;
         return gtensor::axes_correction_walker<gtensor::indexer_walker<config_type,indexer_type>>{
-            max_dim,
+            max_dim-instance.descriptor().dim(),
             instance.descriptor().adapted_strides(),
             instance.descriptor().reset_strides(),
             index_type{0},

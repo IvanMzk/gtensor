@@ -102,7 +102,9 @@ TEST_CASE("test_walker","test_data_accessor")
             using indexer_type = gtensor::basic_indexer<storage_type&>;
             using walker_type = gtensor::axes_correction_walker<gtensor::indexer_walker<config_type, indexer_type>>;
             auto indexer = indexer_type{storage};
-            auto walker =  walker_type{max_dim,adapted_strides,reset_strides,offset,indexer};
+            const auto dim = gtensor::detail::make_dim(adapted_strides);
+            const auto dim_offset = max_dim-dim;
+            auto walker =  walker_type{dim_offset,adapted_strides,reset_strides,offset,indexer};
             mover(walker);
             auto result = *walker;
             REQUIRE(result == expected);
@@ -121,7 +123,9 @@ TEST_CASE("test_walker","test_data_accessor")
             auto expected = std::get<6>(t);
             using iterator_type = decltype(storage.begin());
             using walker_type = gtensor::axes_correction_walker<gtensor::cursor_walker<config_type, iterator_type>>;
-            auto walker =  walker_type{max_dim,adapted_strides,reset_strides,storage.begin()+offset};
+            const auto dim = gtensor::detail::make_dim(adapted_strides);
+            const auto dim_offset = max_dim-dim;
+            auto walker =  walker_type{dim_offset,adapted_strides,reset_strides,storage.begin()+offset};
             mover(walker);
             auto result = *walker;
             REQUIRE(result == expected);

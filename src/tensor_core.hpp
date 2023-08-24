@@ -315,7 +315,7 @@ private:
         using parent_walker_type = decltype(instance.parent_.create_walker());
         using walker_type = axes_correction_walker<mapping_axes_walker<parent_walker_type>>;
         return walker_type{
-            max_dim,
+            max_dim-instance.descriptor_.dim(),
             instance.descriptor_.axes_map(),
             instance.parent_.create_walker()
         };
@@ -384,7 +384,7 @@ private:
         using parent_walker_type = decltype(instance.parent_.create_walker());
         using walker_type = axes_correction_walker<resetting_walker<scaling_walker<mapping_axes_walker<offsetting_walker<parent_walker_type>>>>>;
         return walker_type{
-            max_dim,
+            max_dim-instance.descriptor_.dim(),
             instance.descriptor_.shape(),
             instance.descriptor_.scale(),
             instance.descriptor_.axes_map(),
@@ -456,7 +456,7 @@ private:
         using parent_walker_type = decltype(instance.parent_.create_walker());
         using walker_type = axes_correction_walker<resetting_walker<mapping_axes_walker<offsetting_walker<parent_walker_type>>>>;
         return walker_type{
-            max_dim,
+            max_dim-instance.descriptor_.dim(),
             instance.descriptor_.shape(),
             instance.descriptor_.axes_map(),
             instance.descriptor_.offset(),

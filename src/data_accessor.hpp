@@ -415,8 +415,7 @@ public:
         adapted_strides_it_{adapted_strides__.begin()},
         reset_strides_it_{reset_strides__.begin()},
         offset_{offset__},
-        cursor_{offset__},
-        dim_{detail::make_dim(adapted_strides__)}
+        cursor_{offset__}
     {}
     //axis must be in range [0,dim-1]
     void walk(const dim_type& axis, const index_type& steps){
@@ -443,9 +442,6 @@ public:
     void update_offset(){
         offset_+=(cursor_-offset_);
     }
-    dim_type dim()const{
-        return dim_;
-    }
     result_type operator*()const{
         if constexpr (detail::is_iterator_v<Cursor>){
             return *cursor_;
@@ -458,7 +454,6 @@ private:
     shape_iterator_type reset_strides_it_;
     cursor_type offset_;
     cursor_type cursor_;
-    dim_type dim_;
 };
 
 //Indexer is adaptee
@@ -500,9 +495,6 @@ public:
     }
     void update_offset(){
         impl.update_offset();
-    }
-    dim_type dim(){
-        return impl.dim();
     }
     decltype(auto) operator*()const{
         return indexer[*impl];
@@ -563,7 +555,6 @@ public:
         base_walker_type{std::forward<Args>(args)...},
         axes_map_{&axes_map__}
     {}
-    dim_type dim()const{return detail::make_dim(*axes_map_);}
     void walk(const dim_type& axis, const index_type& steps){base_walker_type::walk(map_axis(axis),steps);}
     void walk_back(const dim_type& axis, const index_type& steps){base_walker_type::walk_back(map_axis(axis),steps);}
     void step(const dim_type& axis){
@@ -599,7 +590,6 @@ public:
         base_walker_type{std::forward<Args>(args)...},
         step_scale_{&step_scale__}
     {}
-    dim_type dim()const{return detail::make_dim(*step_scale_);}
     void walk(const dim_type& axis, const index_type& steps){base_walker_type::walk(axis,steps*step_scale(axis));}
     void walk_back(const dim_type& axis, const index_type& steps){base_walker_type::walk_back(axis,steps*step_scale(axis));}
     void step(const dim_type& axis){base_walker_type::walk(axis,step_scale(axis));}
@@ -631,7 +621,6 @@ public:
         base_walker_type{std::forward<Args>(args)...},
         shape{&shape_}
     {}
-    using base_walker_type::dim;
     void walk(const dim_type& axis, const index_type& steps){
         if (can_move_on_axis(axis)){
             base_walker_type::walk(axis,steps);
@@ -684,9 +673,9 @@ public:
     using typename base_walker_type::dim_type;
 
     template<typename...Args>
-    axes_correction_walker(const dim_type& max_dim,Args&&...args):
+    axes_correction_walker(const dim_type& dim_offset__,Args&&...args):
         base_walker_type{std::forward<Args>(args)...},
-        dim_offset_{max_dim-base_walker_type::dim()}
+        dim_offset_{dim_offset__}
     {}
 
     void walk(const dim_type& axis, const index_type& steps){
@@ -724,7 +713,6 @@ public:
     }
     using base_walker_type::operator*;
     using base_walker_type::update_offset;
-    using base_walker_type::dim;
 private:
     dim_type dim_offset_;
 };
