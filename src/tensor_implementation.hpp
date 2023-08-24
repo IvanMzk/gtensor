@@ -14,7 +14,7 @@ namespace detail{
 
 //create walker
 template<typename Config, typename Indexer> using max_dim_indexer_walker = gtensor::axes_correction_walker<gtensor::indexer_walker<Config,Indexer>>;
-template<typename Config, typename Iterator> using max_dim_iterator_walker = gtensor::axes_correction_walker<gtensor::iterator_walker<Config,Iterator>>;
+template<typename Config, typename Iterator> using max_dim_iterator_walker = gtensor::axes_correction_walker<gtensor::cursor_walker<Config,Iterator>>;
 template<typename Core, typename Descriptor, typename DimT>
 inline auto create_walker(Core& t, const Descriptor& descriptor, const DimT& max_dim){
     using config_type = typename Core::config_type;
@@ -42,7 +42,7 @@ inline auto create_walker(Core& t, const Descriptor& descriptor){
         return t.create_walker();
     }else if constexpr (has_callable_iterator<Core>::value){
         using iterator_type = decltype(t.begin());
-        return gtensor::iterator_walker<config_type,iterator_type>{descriptor.adapted_strides(),descriptor.reset_strides(),t.begin()};
+        return gtensor::cursor_walker<config_type,iterator_type>{descriptor.adapted_strides(),descriptor.reset_strides(),t.begin()};
     }else if constexpr (has_callable_create_indexer<Core>::value){
         using indexer_type = decltype(t.create_indexer());
         return gtensor::indexer_walker<config_type,indexer_type>{descriptor.adapted_strides(),descriptor.reset_strides(),index_type{0},t.create_indexer()};

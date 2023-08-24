@@ -3,6 +3,7 @@
 
 #include <type_traits>
 #include <string>
+#include <cmath>
 #define CATCH_CONFIG_ENABLE_BENCHMARKING
 #include "catch.hpp"
 #include "config.hpp"
@@ -94,6 +95,29 @@ auto axes_to_str(const Axes& axes){
 inline auto order_to_str(gtensor::config::c_order){return std::string{"c_order"};}
 inline auto order_to_str(gtensor::config::f_order){return std::string{"f_order"};}
 
+template<typename Container>
+auto mean(const Container& intervals){
+    using value_type = typename Container::value_type;
+    return std::accumulate(intervals.begin(),intervals.end(),value_type{0})/intervals.size();
+}
+template<typename Container>
+auto stdev(const Container& intervals){
+    using value_type = typename Container::value_type;
+    auto m = mean(intervals);
+    auto v = std::accumulate(intervals.begin(),intervals.end(),value_type{0},[m](const auto& init, const auto& e){auto d=e-m; return init+d*d;})/intervals.size();
+    return std::sqrt(v);
+}
+
+template<typename Container>
+auto statistic(const Container& intervals){
+    std::stringstream ss{};
+    ss<<"min "<<*std::min_element(intervals.begin(),intervals.end())<<" ";
+    ss<<"max "<<*std::max_element(intervals.begin(),intervals.end())<<" ";
+    ss<<"mean "<<mean(intervals)<<" ";
+    ss<<"stdev "<<stdev(intervals);
+    return ss.str();
+}
+
 
 inline const std::vector<std::vector<int>> shapes{
     std::vector<int>{100000000,3,1,2},
@@ -104,6 +128,38 @@ inline const std::vector<std::vector<int>> shapes{
     std::vector<int>{1000,3,1000,200},
     std::vector<int>{100,3,1000,2000},
     std::vector<int>{50,6,1000,2000}
+};
+
+inline const std::vector<std::vector<int>> small_shapes{
+    std::vector<int>{1000000,3,1,2},
+    std::vector<int>{100000,3,1,20},
+    std::vector<int>{10000,3,10,20},
+    std::vector<int>{1000,3,100,20},
+    std::vector<int>{100,3,100,200},
+    std::vector<int>{50,30,20,200},
+    std::vector<int>{10,30,40,20}
+};
+
+inline const std::vector<std::vector<int>> small_shapes_1{
+    std::vector<int>{100000,3,1,2},
+    std::vector<int>{10000,3,1,20},
+    std::vector<int>{1000,3,10,20},
+    std::vector<int>{100,3,100,20},
+    std::vector<int>{10,3,100,200},
+    std::vector<int>{10,30,10,200},
+    std::vector<int>{100,30,10,20}
+};
+
+inline const std::vector<std::vector<int>> small_shapes_2{
+    std::vector<int>{20,20,20,20},
+    std::vector<int>{20,20,20,20},
+    std::vector<int>{20,20,20,20},
+    std::vector<int>{20,20,20,20},
+    std::vector<int>{20,20,20,20},
+    std::vector<int>{20,20,20,20},
+    std::vector<int>{20,20,20,20},
+    std::vector<int>{20,20,20,20},
+    std::vector<int>{20,20,20,20}
 };
 
 

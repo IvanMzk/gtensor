@@ -2,8 +2,22 @@
 #define EXPRESSION_TEMPLATE_EVALUATOR_HPP_
 
 #include <type_traits>
-
 namespace gtensor{
+
+namespace detail{
+
+template<std::size_t I, typename F, typename...Ts, std::enable_if_t<(I==sizeof...(Ts)),int> =0>
+void apply_per_element(const F&, std::tuple<Ts...>&){}
+
+template<std::size_t I=0, typename F, typename...Ts, std::enable_if_t<(I<sizeof...(Ts)),int> =0>
+void apply_per_element(const F& f, std::tuple<Ts...>& t){
+    f(std::get<I>(t));
+    apply_per_element<I+1>(f,t);
+}
+
+}
+
+
 //expression template evaluator
 template<typename Config, typename F, typename...Walkers>
 class expression_template_walker
@@ -16,6 +30,7 @@ public:
     using dim_type = typename Config::dim_type;
     using index_type = typename Config::index_type;
     using shape_type = typename Config::shape_type;
+    using size_type = typename shape_type::size_type;
 
     template<typename F_> struct forward_args : std::bool_constant<!std::is_same_v<std::remove_cv_t<std::remove_reference_t<F_>>,expression_template_walker>>{};
 
@@ -26,64 +41,54 @@ public:
     {}
 
     void walk(const dim_type& axis, const index_type& steps){
-        walk_helper(axis,steps,sequence_type{});
+        auto f = [&axis,&steps](auto& w){w.walk(axis,steps);};
+        //detail::apply_per_element(f,walkers_);
+        apply(f,sequence_type{});
     }
     void walk_back(const dim_type& axis, const index_type& steps){
-        walk_back_helper(axis,steps,sequence_type{});
+        auto f = [&axis,&steps](auto& w){w.walk_back(axis,steps);};
+        //detail::apply_per_element(f,walkers_);
+        apply(f,sequence_type{});
     }
     void step(const dim_type& axis){
-        step_helper(axis,sequence_type{});
+        auto f = [&axis](auto& w){w.step(axis);};
+        //detail::apply_per_element(f,walkers_);
+        apply(f,sequence_type{});
     }
     void step_back(const dim_type& axis){
-        step_back_helper(axis,sequence_type{});
+        auto f = [&axis](auto& w){w.step_back(axis);};
+        //detail::apply_per_element(f,walkers_);
+        apply(f,sequence_type{});
     }
     void reset(const dim_type& axis){
-        reset_helper(axis,sequence_type{});
+        auto f = [&axis](auto& w){w.reset(axis);};
+        //detail::apply_per_element(f,walkers_);
+        apply(f,sequence_type{});
     }
     void reset_back(const dim_type& axis){
-        reset_back_helper(axis,sequence_type{});
+        auto f = [&axis](auto& w){w.reset_back(axis);};
+        //detail::apply_per_element(f,walkers_);
+        apply(f,sequence_type{});
     }
     void reset_back(){
-        reset_back_helper(sequence_type{});
+        auto f = [](auto& w){w.reset_back();};
+        //detail::apply_per_element(f,walkers_);
+        apply(f,sequence_type{});
+
     }
     void update_offset(){
-        update_offset_helper(sequence_type{});
+        auto f = [](auto& w){w.update_offset();};
+        //detail::apply_per_element(f,walkers_);
+        apply(f,sequence_type{});
+
     }
     result_type operator*()const{
         return deref_helper(sequence_type{});
     }
 private:
-    template<std::size_t...I>
-    void walk_helper(const dim_type& axis, const index_type& steps, std::index_sequence<I...>){
-        (std::get<I>(walkers_).walk(axis,steps),...);
-    }
-    template<std::size_t...I>
-    void walk_back_helper(const dim_type& axis, const index_type& steps, std::index_sequence<I...>){
-        (std::get<I>(walkers_).walk_back(axis,steps),...);
-    }
-    template<std::size_t...I>
-    void step_helper(const dim_type& axis, std::index_sequence<I...>){
-        (std::get<I>(walkers_).step(axis),...);
-    }
-    template<std::size_t...I>
-    void step_back_helper(const dim_type& axis, std::index_sequence<I...>){
-        (std::get<I>(walkers_).step_back(axis),...);
-    }
-    template<std::size_t...I>
-    void reset_helper(const dim_type& axis, std::index_sequence<I...>){
-        (std::get<I>(walkers_).reset(axis),...);
-    }
-    template<std::size_t...I>
-    void reset_back_helper(const dim_type& axis, std::index_sequence<I...>){
-        (std::get<I>(walkers_).reset_back(axis),...);
-    }
-    template<std::size_t...I>
-    void reset_back_helper(std::index_sequence<I...>){
-        (std::get<I>(walkers_).reset_back(),...);
-    }
-    template<std::size_t...I>
-    void update_offset_helper(std::index_sequence<I...>){
-        (std::get<I>(walkers_).update_offset(),...);
+    template<typename F_, std::size_t...I>
+    void apply(F_ f, std::index_sequence<I...>){
+        (f(std::get<I>(walkers_)),...);
     }
     template<std::size_t...I>
     result_type deref_helper(std::index_sequence<I...>)const{

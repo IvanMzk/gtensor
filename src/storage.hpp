@@ -267,7 +267,7 @@ public:
     difference_type size()const{return end_-begin_;}
     bool empty()const{return begin()==end();}
     pointer data(){return begin_;}
-    const_pointer data()const{return  begin_;}
+    const_pointer data()const{return begin_;}
     iterator begin(){return begin_;}
     iterator end(){return  end_;}
     reverse_iterator rbegin(){return std::make_reverse_iterator(end());}
@@ -278,6 +278,8 @@ public:
     const_reverse_iterator rend()const{return  std::make_reverse_iterator(begin());}
     reference operator[](const difference_type& i){return *(begin_+i);}
     const_reference operator[](const difference_type& i)const{return *(begin_+i);}
+    //reference operator[](const size_type& i){return *(begin_+i);}
+    //const_reference operator[](const size_type& i)const{return *(begin_+i);}
     allocator_type get_allocator()const{return allocator_;}
 
 private:

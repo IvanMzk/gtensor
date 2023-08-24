@@ -72,6 +72,170 @@ auto make_range_traverser_strides_div(const ShT& shape, const DimT& axes_size, O
     return res;
 }
 
+//traverser helpers
+#define NEXT_ON_AXIS(axis)\
+auto& i = *(index_first+axis);\
+if (i == *(shape_first+axis)-1){\
+    i = 0;\
+    walker.reset_back(axis);\
+}else{\
+    ++i;\
+    walker.step(axis);\
+    return true;\
+}
+
+#define PREV_ON_AXIS(axis)\
+auto& i = *(index_first+axis);\
+if (i == 0){\
+    i = *(shape_first+axis)-1;\
+    walker.reset(axis);\
+}else{\
+    --i;\
+    walker.step_back(axis);\
+    return true;\
+}
+
+//traverse all axes
+template<typename Walker, typename IdxIt, typename ShIt, typename DimT>
+bool next_c(Walker& walker, const IdxIt index_first, const ShIt shape_first, DimT dim){
+    while(dim!=0){
+        --dim;
+        NEXT_ON_AXIS(dim);
+    }
+    return false;
+}
+
+template<typename Walker, typename IdxIt, typename ShIt, typename DimT>
+bool next_f(Walker& walker, const IdxIt index_first, const ShIt shape_first, const DimT& dim){
+    using dim_type = typename std::iterator_traits<ShIt>::difference_type;
+    for (dim_type a=0; a!=dim; ++a){
+        NEXT_ON_AXIS(a);
+    }
+    return false;
+}
+
+template<typename Walker, typename IdxIt, typename ShIt, typename DimT>
+bool prev_c(Walker& walker, const IdxIt index_first, const ShIt shape_first, DimT dim){
+    while(dim!=0){
+        --dim;
+        PREV_ON_AXIS(dim);
+    }
+    return false;
+}
+
+template<typename Walker, typename IdxIt, typename ShIt, typename DimT>
+bool prev_f(Walker& walker, const IdxIt index_first, const ShIt shape_first, const DimT& dim){
+    using dim_type = typename std::iterator_traits<ShIt>::difference_type;
+    for (dim_type a=0; a!=dim; ++a){
+        PREV_ON_AXIS(a);
+    }
+    return false;
+}
+
+//traverse axes range
+template<typename Walker, typename IdxIt, typename ShIt, typename DimT>
+bool next_c(Walker& walker, const IdxIt index_first, const ShIt shape_first, const DimT& axis_min, DimT axis_max){
+    while(axis_max!=axis_min){
+        --axis_max;
+        NEXT_ON_AXIS(axis_max);
+    }
+    return false;
+}
+
+template<typename Walker, typename IdxIt, typename ShIt, typename DimT>
+bool next_f(Walker& walker, const IdxIt index_first, const ShIt shape_first, DimT axis_min, const DimT& axis_max){
+    for (;axis_min!=axis_max; ++axis_min){
+        NEXT_ON_AXIS(axis_min);
+    }
+    return false;
+}
+
+template<typename Walker, typename IdxIt, typename ShIt, typename DimT>
+bool prev_c(Walker& walker, const IdxIt index_first, const ShIt shape_first, const DimT& axis_min, DimT axis_max){
+    while(axis_max!=axis_min){
+        --axis_max;
+        PREV_ON_AXIS(axis_max);
+    }
+    return false;
+}
+
+template<typename Walker, typename IdxIt, typename ShIt, typename DimT>
+bool prev_f(Walker& walker, const IdxIt index_first, const ShIt shape_first, DimT axis_min, const DimT& axis_max){
+    for (;axis_min!=axis_max; ++axis_min){
+        PREV_ON_AXIS(axis_min);
+    }
+    return false;
+}
+
+#undef NEXT_ON_AXIS
+#undef PREV_ON_AXIS
+
+#define TO_LAST_ON_AXIS(axis)\
+auto& i = *(index_first+axis);\
+auto dec_axis_size = *(shape_first+axis)-1;\
+walker.walk(axis, dec_axis_size-i);\
+i = dec_axis_size;
+
+//move on all axes
+template<typename Walker, typename IdxIt>
+void to_first(Walker& walker, IdxIt index_first, const IdxIt index_last){
+    walker.reset_back();
+    for (;index_first!=index_last; ++index_first){
+        *index_first=0;
+    }
+}
+template<typename Walker, typename IdxIt, typename ShIt, typename DimT>
+void to_last(Walker& walker, const IdxIt index_first, const ShIt shape_first, DimT dim){
+    while(dim!=0){
+        --dim;
+        TO_LAST_ON_AXIS(dim);
+    }
+}
+//move on axes range
+template<typename Walker, typename IdxIt, typename DimT>
+void to_first(Walker& walker, const IdxIt index_first, DimT axis_min, const DimT& axis_max){
+    for (;axis_min!=axis_max; ++axis_min){
+        auto& i = *(index_first+axis_min);
+        walker.walk_back(axis_min, i);
+        i = 0;
+    }
+}
+template<typename Walker, typename IdxIt, typename ShIt, typename DimT>
+void to_last(Walker& walker, const IdxIt index_first, const ShIt shape_first, DimT axis_min, const DimT& axis_max){
+    for (;axis_min!=axis_max; ++axis_min){
+        TO_LAST_ON_AXIS(axis_min);
+    }
+}
+
+#undef TO_LAST_ON_AXIS
+
+#define ADVANCE_ON_AXIS(axis)\
+auto steps = detail::divide(n,*(strides_first+axis));\
+if (steps!=0){\
+    walker.walk(axis,steps);\
+}\
+*(index_first+axis) = steps;\
+
+//move on axes range
+template<typename Walker, typename IdxIt,  typename StIt, typename DimT, typename IdxT>
+void advance_c(Walker& walker, IdxIt index_first, StIt strides_first, DimT axis_min, const DimT& axis_max, IdxT n){
+    for (;axis_min!=axis_max; ++axis_min){
+        ADVANCE_ON_AXIS(axis_min);
+    }
+}
+template<typename Walker, typename IdxIt,  typename StIt, typename DimT, typename IdxT>
+void advance_f(Walker& walker, IdxIt index_first, StIt strides_first, const DimT& axis_min, DimT axis_max, IdxT n){
+    while(axis_max!=axis_min){
+        --axis_max;
+        ADVANCE_ON_AXIS(axis_max);
+    }
+}
+
+#undef ADVANCE_ON_AXIS
+
+template<typename T, typename=void> inline constexpr bool is_range_traverser_v = false;
+template<typename T> inline constexpr bool is_range_traverser_v<T,std::void_t<decltype(std::declval<T>().axis_min()),decltype(std::declval<T>().axis_max())>> = true;
+
 }   //end of namespace detail
 
 //basic indexer is data accessor that uses flat index to address data
@@ -236,36 +400,42 @@ public:
 template<typename Config, typename Cursor>
 class cursor_walker
 {
+    using shape_iterator_type = typename Config::shape_type::const_iterator;
+    struct iter_{using type = decltype(*std::declval<Cursor>());};
+    struct cur_{using type = const Cursor&;};
+    using result_type = typename std::conditional_t<detail::is_iterator_v<Cursor>,iter_,cur_>::type;
 public:
+    using config_type = Config;
     using cursor_type = Cursor;
     using index_type = typename Config::index_type;
     using dim_type = typename Config::dim_type;
     using shape_type = typename Config::shape_type;
 
     cursor_walker(const shape_type& adapted_strides__, const shape_type& reset_strides__, const cursor_type& offset__):
-        adapted_strides_{&adapted_strides__},
-        reset_strides_{&reset_strides__},
+        adapted_strides_it_{adapted_strides__.begin()},
+        reset_strides_it_{reset_strides__.begin()},
         offset_{offset__},
-        cursor_{offset__}
+        cursor_{offset__},
+        dim_{detail::make_dim(adapted_strides__)}
     {}
     //axis must be in range [0,dim-1]
     void walk(const dim_type& axis, const index_type& steps){
-        cursor_+=steps*(*adapted_strides_)[axis];
+        cursor_+=steps**(adapted_strides_it_+axis);
     }
     void walk_back(const dim_type& axis, const index_type& steps){
-        cursor_-=steps*(*adapted_strides_)[axis];
+        cursor_-=steps**(adapted_strides_it_+axis);
     }
     void step(const dim_type& axis){
-        cursor_+=(*adapted_strides_)[axis];
+        cursor_+=*(adapted_strides_it_+axis);
     }
     void step_back(const dim_type& axis){
-        cursor_-=(*adapted_strides_)[axis];
+        cursor_-=*(adapted_strides_it_+axis);
     }
     void reset(const dim_type& axis){
-        cursor_+=(*reset_strides_)[axis];
+        cursor_+=*(reset_strides_it_+axis);
     }
     void reset_back(const dim_type& axis){
-        cursor_-=(*reset_strides_)[axis];
+        cursor_-=*(reset_strides_it_+axis);
     }
     void reset_back(){
         cursor_ = offset_;
@@ -274,16 +444,21 @@ public:
         offset_+=(cursor_-offset_);
     }
     dim_type dim()const{
-        return detail::make_dim(*adapted_strides_);
+        return dim_;
     }
-    cursor_type operator*()const{
-        return cursor_;
+    result_type operator*()const{
+        if constexpr (detail::is_iterator_v<Cursor>){
+            return *cursor_;
+        }else{
+            return cursor_;
+        }
     }
 private:
-    const shape_type* adapted_strides_;
-    const shape_type* reset_strides_;
+    shape_iterator_type adapted_strides_it_;
+    shape_iterator_type reset_strides_it_;
     cursor_type offset_;
     cursor_type cursor_;
+    dim_type dim_;
 };
 
 //Indexer is adaptee
@@ -335,54 +510,6 @@ public:
 private:
     cursor_walker<config_type, index_type> impl;
     indexer_type indexer;
-};
-
-//Iterator is adaptee
-template<typename Config, typename Iterator>
-class iterator_walker
-{
-public:
-    using config_type = Config;
-    using index_type = typename config_type::index_type;
-    using dim_type = typename config_type::dim_type;
-    using shape_type = typename config_type::shape_type;
-
-    template<typename Iterator_>
-    iterator_walker(const shape_type& adapted_strides_, const shape_type& reset_strides_, Iterator_&& cursor_):
-        impl{adapted_strides_, reset_strides_, cursor_}
-    {}
-    void walk(const dim_type& axis, const index_type& steps){
-        impl.walk(axis,steps);
-    }
-    void walk_back(const dim_type& axis, const index_type& steps){
-        impl.walk_back(axis,steps);
-    }
-    void step(const dim_type& axis){
-        impl.step(axis);
-    }
-    void step_back(const dim_type& axis){
-        impl.step_back(axis);
-    }
-    void reset(const dim_type& axis){
-        impl.reset(axis);
-    }
-    void reset_back(const dim_type& axis){
-        impl.reset_back(axis);
-    }
-    void reset_back(){
-        impl.reset_back();
-    }
-    void update_offset(){
-        impl.update_offset();
-    }
-    dim_type dim(){
-        return impl.dim();
-    }
-    decltype(auto) operator*()const{
-        return **impl;
-    }
-private:
-    cursor_walker<config_type, Iterator> impl;
 };
 
 //walker decorators
@@ -602,68 +729,6 @@ private:
     dim_type dim_offset_;
 };
 
-// template<typename BaseWalker>
-// class axes_correction_walker : private BaseWalker
-// {
-//     using base_walker_type = BaseWalker;
-// public:
-//     using typename base_walker_type::config_type;
-//     using typename base_walker_type::shape_type;
-//     using typename base_walker_type::index_type;
-//     using typename base_walker_type::dim_type;
-
-//     template<typename...Args>
-//     axes_correction_walker(const dim_type& max_dim,Args&&...args):
-//         base_walker_type{std::forward<Args>(args)...},
-//         dim_offset_{max_dim-base_walker_type::dim()}
-//     {}
-
-//     void walk(const dim_type& axis, const index_type& steps){
-//         if (can_move_on_axis(axis)){
-//             base_walker_type::walk(make_axis(axis),steps);
-//         }
-//     }
-//     void walk_back(const dim_type& axis, const index_type& steps){
-//         if (can_move_on_axis(axis)){
-//             base_walker_type::walk_back(make_axis(axis),steps);
-//         }
-//     }
-//     void step(const dim_type& axis){
-//         if (can_move_on_axis(axis)){
-//             base_walker_type::step(make_axis(axis));
-//         }
-//     }
-//     void step_back(const dim_type& axis){
-//         if (can_move_on_axis(axis)){
-//             base_walker_type::step_back(make_axis(axis));
-//         }
-//     }
-//     void reset(const dim_type& axis){
-//         if (can_move_on_axis(axis)){
-//             base_walker_type::reset(make_axis(axis));
-//         }
-//     }
-//     void reset_back(const dim_type& axis){
-//         if (can_move_on_axis(axis)){
-//             base_walker_type::reset_back(make_axis(axis));
-//         }
-//     }
-//     void reset_back(){
-//         base_walker_type::reset_back();
-//     }
-//     using base_walker_type::operator*;
-//     using base_walker_type::update_offset;
-//     using base_walker_type::dim;
-// private:
-//     bool can_move_on_axis(const dim_type& axis)const{
-//         return axis >= dim_offset_;
-//     }
-//     dim_type make_axis(const dim_type& axis)const{
-//         return axis - dim_offset_;
-//     }
-//     dim_type dim_offset_;
-// };
-
 //walker_traverser implement algorithms to iterate walker using given shape
 //traverse shape may be not native walker shape but shapes must be broadcastable
 template<typename Config, typename Walker>
@@ -689,57 +754,18 @@ public:
         walker_{std::forward<Walker_>(walker__)},
         index_(dim_, index_type{0})
     {}
-    dim_type axis_min()const{return 0;}
-    dim_type axis_max()const{return dim_;}
     const auto& index()const{return index_;}
     const auto& walker()const{return walker_;}
     auto& walker(){return walker_;}
     decltype(auto) operator*()const{return *walker_;}
-    //traverse over range [axis_min,axis_max)
-    template<typename Order>
-    bool next(const dim_type& amin, const dim_type& amax){
-        ASSERT_ORDER(Order);
-        if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
-            return next_c(amin, amax);
-        }else{
-            return next_f(amin, amax);
-        }
-    }
     template<typename Order>
     bool next(){
-        return next<Order>(axis_min(), axis_max());
-    }
-private:
-    bool next_c(const dim_type& axis_min, dim_type axis_max){
-        auto index_it = index_.begin()+axis_max;
-        while(axis_max!=axis_min){
-            --index_it;
-            --axis_max;
-            if (next_on_axis(axis_max, *index_it)){
-                return true;
-            }
+        ASSERT_ORDER(Order);
+        if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
+            return detail::next_c(walker_,index_.begin(),shape_->begin(),dim_);
+        }else{
+            return detail::next_f(walker_,index_.begin(),shape_->begin(),dim_);
         }
-        return false;
-    }
-    bool next_f(dim_type axis_min, const dim_type& axis_max){
-        auto index_it = index_.begin()+axis_min;
-        for (;axis_min!=axis_max; ++axis_min,++index_it){
-            if (next_on_axis(axis_min, *index_it)){
-                return true;
-            }
-        }
-        return false;
-    }
-    bool next_on_axis(dim_type axis, index_type& index){
-        if (index == (*shape_)[axis]-index_type{1}){   //axis at their max
-            index = index_type{0};
-            walker_.reset_back(axis);
-        }else{  //can next on axis
-            ++index;
-            walker_.step(axis);
-            return true;
-        }
-        return false;
     }
 };
 
@@ -748,15 +774,18 @@ template<typename Config, typename Walker>
 class walker_forward_range_traverser : public walker_forward_traverser<Config, Walker>
 {
     using base_type = walker_forward_traverser<Config,Walker>;
-    public:
+public:
     using typename base_type::config_type;
     using typename base_type::shape_type;
     using typename base_type::index_type;
     using typename base_type::dim_type;
 protected:
+    using base_type::shape_;
+    using base_type::dim_;
+    using base_type::walker_;
+    using base_type::index_;
     dim_type axis_min_;
     dim_type axis_max_;
-    using walker_type = Walker;
 
 public:
     template<typename Walker_>
@@ -769,7 +798,12 @@ public:
     dim_type axis_max()const{return axis_max_;}
     template<typename Order>
     bool next(){
-        return base_type::template next<Order>(axis_min(), axis_max());
+        ASSERT_ORDER(Order);
+        if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
+            return detail::next_c(walker_,index_.begin(),shape_->begin(),axis_min_,axis_max_);
+        }else{
+            return detail::next_f(walker_,index_.begin(),shape_->begin(),axis_min_,axis_max_);
+        }
     }
 };
 
@@ -779,74 +813,49 @@ class walker_bidirectional_traverser : public Base
 {
     using base_type = Base;
 protected:
-    using base_type::walker_;
-    using base_type::dim_;
-    using base_type::index_;
     using base_type::shape_;
+    using base_type::dim_;
+    using base_type::walker_;
+    using base_type::index_;
+    static constexpr bool is_range_traverser = detail::is_range_traverser_v<base_type>;
 public:
     using typename base_type::config_type;
     using typename base_type::dim_type;
     using typename base_type::index_type;
     using typename base_type::shape_type;
     using base_type::base_type;
-    using base_type::axis_min;
-    using base_type::axis_max;
 
     template<typename Order>
     bool prev(){
         ASSERT_ORDER(Order);
         if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
-            return prev_c();
+            if constexpr (is_range_traverser){
+                return detail::prev_c(walker_,index_.begin(),shape_->begin(),base_type::axis_min(),base_type::axis_max());
+            }else{
+                return detail::prev_c(walker_,index_.begin(),shape_->begin(),dim_);
+            }
         }else{
-            return prev_f();
+            if constexpr (is_range_traverser){
+                return detail::prev_f(walker_,index_.begin(),shape_->begin(),base_type::axis_min(),base_type::axis_max());
+            }else{
+                return detail::prev_f(walker_,index_.begin(),shape_->begin(),dim_);
+            }
         }
     }
+
     void to_last(){
-        for (auto axis=axis_min(); axis!=axis_max(); ++axis){
-            auto dec_axis_size = (*shape_)[axis]-index_type{1};
-            walker_.walk(axis, dec_axis_size-index_[axis]);
-            index_[axis] = dec_axis_size;
+        if constexpr (is_range_traverser){
+            detail::to_last(walker_,index_.begin(),shape_->begin(),base_type::axis_min(),base_type::axis_max());
+        }else{
+            detail::to_last(walker_,index_.begin(),shape_->begin(),dim_);
         }
     }
     void to_first(){
-        for (auto axis=axis_min(); axis!=axis_max(); ++axis){
-            walker_.walk_back(axis, index_[axis]);
-            index_[axis] = 0;
+        if constexpr (is_range_traverser){
+            detail::to_first(walker_,index_.begin(),base_type::axis_min(),base_type::axis_max());
+        }else{
+            detail::to_first(walker_,index_.begin(),index_.end());
         }
-    }
-private:
-    bool prev_c(){
-        auto amax = axis_max();
-        auto index_it = index_.begin()+amax;
-        for (const auto amin=axis_min(); amax!=amin;){
-            --index_it;
-            --amax;
-            if (prev_on_axis(amax, *index_it)){
-                return true;
-            }
-        }
-        return false;
-    }
-    bool prev_f(){
-        auto amin = axis_min();
-        auto index_it = index_.begin()+amin;
-        for (const auto amax=axis_max(); amin!=amax; ++amin,++index_it){
-            if (prev_on_axis(amin, *index_it)){
-                return true;
-            }
-        }
-        return false;
-    }
-    bool prev_on_axis(const dim_type& axis, index_type& index){
-        if (index == index_type{0}){   //axis at their min
-            index = (*shape_)[axis]-index_type{1};
-            walker_.reset(axis);
-        }else{  //can prev on axis
-            --index;
-            walker_.step_back(axis);
-            return true;
-        }
-        return false;
     }
 };
 
@@ -858,10 +867,11 @@ class walker_random_access_traverser : public Base
     using base_type::walker_;
     using base_type::index_;
     using base_type::dim_;
-    using base_type::axis_min;
-    using base_type::axis_max;
     using base_type::to_first;
+    using base_type::is_range_traverser;
     using strides_div_type = detail::strides_div_t<typename base_type::config_type>;
+
+    const strides_div_type* strides_;
 public:
     using typename base_type::config_type;
     using typename base_type::dim_type;
@@ -878,44 +888,20 @@ public:
     //n must be in range [0,size-1], where size = make_size(shape__)
     void move(index_type n){
         to_first();
-        move_(n);
-    }
-private:
-    void move_(index_type n){
         if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
-            move_c(n);
+            if constexpr (is_range_traverser){
+                return detail::advance_c(walker_,index_.begin(),strides_->begin(),base_type::axis_min(),base_type::axis_max(),n);
+            }else{
+                return detail::advance_c(walker_,index_.begin(),strides_->begin(),dim_type{0},dim_,n);
+            }
         }else{
-            move_f(n);
-        }
-    }
-    void move_c(index_type n){
-        auto index_it = index_.begin()+axis_min();
-        auto strides_it = strides_->begin()+axis_min();
-        for (dim_type axis=axis_min(), last=axis_max(); axis!=last; ++axis,++index_it){
-            auto steps = detail::divide(n,*strides_it);
-            if (steps!=index_type{0}){
-                walker_.walk(axis,steps);
+            if constexpr (is_range_traverser){
+                return detail::advance_f(walker_,index_.begin(),strides_->begin(),base_type::axis_min(),base_type::axis_max(),n);
+            }else{
+                return detail::advance_f(walker_,index_.begin(),strides_->begin(),dim_type{0},dim_,n);
             }
-            *index_it = steps;
-            ++strides_it;
         }
     }
-    void move_f(index_type n){
-        auto index_it = index_.begin()+axis_max();
-        auto strides_it = strides_->begin()+axis_max();
-        for (dim_type axis=axis_max(), first=axis_min(); axis!=first;){
-            --axis;
-            --index_it;
-            --strides_it;
-            auto steps = detail::divide(n,*strides_it);
-            if (steps!=index_type{0}){
-                walker_.walk(axis,steps);
-            }
-            *index_it = steps;
-        }
-    }
-
-    const strides_div_type* strides_;
 };
 
 }   //end of namespace gtensor

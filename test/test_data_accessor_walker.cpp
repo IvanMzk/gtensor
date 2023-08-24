@@ -109,7 +109,7 @@ TEST_CASE("test_walker","test_data_accessor")
         };
         apply_by_element(test, test_data);
     }
-    SECTION("iterator_walker")
+    SECTION("cursor_walker")
     {
         auto test = [](const auto& t){
             auto storage = std::get<0>(t);
@@ -120,7 +120,7 @@ TEST_CASE("test_walker","test_data_accessor")
             auto mover = std::get<5>(t);
             auto expected = std::get<6>(t);
             using iterator_type = decltype(storage.begin());
-            using walker_type = gtensor::axes_correction_walker<gtensor::iterator_walker<config_type, iterator_type>>;
+            using walker_type = gtensor::axes_correction_walker<gtensor::cursor_walker<config_type, iterator_type>>;
             auto walker =  walker_type{max_dim,adapted_strides,reset_strides,storage.begin()+offset};
             mover(walker);
             auto result = *walker;

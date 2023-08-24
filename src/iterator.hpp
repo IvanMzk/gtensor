@@ -101,6 +101,7 @@ public:
     result_type operator[](difference_type n)const{return *(*this+n);}
     result_type operator*() const{return indexer[flat_index];}
     inline difference_type friend operator-(const indexer_iterator& lhs, const indexer_iterator& rhs){return lhs.flat_index - rhs.flat_index;}
+    inline difference_type friend operator==(const indexer_iterator& lhs, const indexer_iterator& rhs){return lhs.flat_index == rhs.flat_index;}
 private:
     auto& advance(difference_type n){
         flat_index+=n;
@@ -117,7 +118,6 @@ GTENSOR_ITERATOR_OPERATOR_PREFIX_INC(indexer_iterator);
 GTENSOR_ITERATOR_OPERATOR_PREFIX_DEC(indexer_iterator);
 GTENSOR_ITERATOR_OPERATOR_POSTFIX_INC(indexer_iterator);
 GTENSOR_ITERATOR_OPERATOR_POSTFIX_DEC(indexer_iterator);
-GTENSOR_ITERATOR_OPERATOR_EQUAL(indexer_iterator);
 GTENSOR_ITERATOR_OPERATOR_NOT_EQUAL(indexer_iterator);
 GTENSOR_ITERATOR_OPERATOR_GREATER(indexer_iterator);
 GTENSOR_ITERATOR_OPERATOR_LESS(indexer_iterator);
@@ -149,12 +149,7 @@ public:
     walker_iterator(Walker_&& walker_, const shape_type& shape_, const strides_div_type& strides_, const difference_type& flat_index_, const Args&...args):
         traverser{shape_, strides_, std::forward<Walker_>(walker_),args...},
         flat_index{flat_index_}
-    {
-        if (flat_index_ > difference_type{0}){
-            traverser.move(flat_index_-difference_type(1));
-            traverser.next();
-        }
-    }
+    {}
     walker_iterator& operator++(){
         traverser.next();
         ++flat_index;
@@ -172,6 +167,7 @@ public:
     result_type operator[](difference_type n)const{return *(*this+n);}
     result_type operator*() const{return *traverser;}
     inline difference_type friend operator-(const walker_iterator& lhs, const walker_iterator& rhs){return lhs.flat_index - rhs.flat_index;}
+    inline difference_type friend operator==(const walker_iterator& lhs, const walker_iterator& rhs){return lhs.flat_index == rhs.flat_index;}
 private:
     void advance(difference_type n){
         flat_index+=n;
@@ -186,7 +182,6 @@ GTENSOR_ITERATOR_OPERATOR_PLUS(walker_iterator);
 GTENSOR_ITERATOR_OPERATOR_MINUS(walker_iterator);
 GTENSOR_ITERATOR_OPERATOR_POSTFIX_INC(walker_iterator);
 GTENSOR_ITERATOR_OPERATOR_POSTFIX_DEC(walker_iterator);
-GTENSOR_ITERATOR_OPERATOR_EQUAL(walker_iterator);
 GTENSOR_ITERATOR_OPERATOR_NOT_EQUAL(walker_iterator);
 GTENSOR_ITERATOR_OPERATOR_GREATER(walker_iterator);
 GTENSOR_ITERATOR_OPERATOR_LESS(walker_iterator);
@@ -211,7 +206,6 @@ public:
     using reference = typename detail::iterator_internals_selector<result_type>::reference;
     using const_reference = typename detail::iterator_internals_selector<result_type>::const_reference;
 
-    //assuming usual stoarge subscript operator semantic i.e. subscript index in range [0,size()-1]:
     //begin should be constructed with zero flat_index_ argument, end with size() flat_index_argument
     template<typename Walker_>
     axis_iterator(Walker_&& walker_, const dim_type& reduce_axis_, const difference_type& flat_index_):
@@ -241,6 +235,7 @@ public:
     result_type operator[](difference_type n)const{return *(*this+n);}
     result_type operator*() const{return *walker;}
     inline difference_type friend operator-(const axis_iterator& lhs, const axis_iterator& rhs){return lhs.flat_index - rhs.flat_index;}
+    inline difference_type friend operator==(const axis_iterator& lhs, const axis_iterator& rhs){return lhs.flat_index == rhs.flat_index;}
 private:
     void advance(difference_type n){
         walker.walk(reduce_axis, n);
@@ -256,7 +251,6 @@ GTENSOR_ITERATOR_OPERATOR_PLUS(axis_iterator);
 GTENSOR_ITERATOR_OPERATOR_MINUS(axis_iterator);
 GTENSOR_ITERATOR_OPERATOR_POSTFIX_INC(axis_iterator);
 GTENSOR_ITERATOR_OPERATOR_POSTFIX_DEC(axis_iterator);
-GTENSOR_ITERATOR_OPERATOR_EQUAL(axis_iterator);
 GTENSOR_ITERATOR_OPERATOR_NOT_EQUAL(axis_iterator);
 GTENSOR_ITERATOR_OPERATOR_GREATER(axis_iterator);
 GTENSOR_ITERATOR_OPERATOR_LESS(axis_iterator);
