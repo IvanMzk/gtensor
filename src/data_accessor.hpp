@@ -210,11 +210,18 @@ void to_last(Walker& walker, const IdxIt index_first, const ShIt shape_first, Di
 #undef TO_LAST_ON_AXIS
 
 #define ADVANCE_ON_AXIS(axis)\
-auto steps = detail::divide(n,*(strides_first+axis));\
-if (steps!=0){\
-    walker.walk(axis,steps);\
-}\
-*(index_first+axis) = steps;\
+if(n==0){\
+    break;\
+}else{\
+    const auto& stride = *(strides_first+axis);\
+    if (n<stride){\
+        *(index_first+axis) = 0;\
+    }else{\
+        auto steps = detail::divide(n,stride);\
+        walker.walk(axis,steps);\
+        *(index_first+axis) = steps;\
+    }\
+}
 
 //move on axes range
 template<typename Walker, typename IdxIt,  typename StIt, typename DimT, typename IdxT>

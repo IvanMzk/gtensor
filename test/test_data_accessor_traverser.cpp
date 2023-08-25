@@ -494,6 +494,8 @@ TEST_CASE("test_walker_random_access_traverser","test_data_accessor")
         std::make_tuple(c_order{}, c_order{}, storage_c, shape, [](auto& tr){return tr.advance(7),tr.to_last(),true;}, shape_type{1,2,1}, value_type{12}, true),
         std::make_tuple(c_order{}, c_order{}, storage_c, shape, [](auto& tr){return tr.prev(),tr.advance(3),true;}, shape_type{0,1,1}, value_type{4}, true),
         std::make_tuple(c_order{}, c_order{}, storage_c, shape, [](auto& tr){return tr.next(),tr.advance(3),true;}, shape_type{0,1,1}, value_type{4}, true),
+        std::make_tuple(c_order{}, c_order{}, storage_c, shape, [](auto& tr){return tr.next(),tr.advance(6),tr.next(),true;}, shape_type{1,0,1}, value_type{8}, true),
+        std::make_tuple(c_order{}, c_order{}, storage_c, shape, [](auto& tr){return tr.next(),tr.advance(8),tr.next(),true;}, shape_type{1,1,1}, value_type{10}, true),
         //elements in c_order, traverse f_order
         std::make_tuple(c_order{}, f_order{}, storage_c, shape, [](auto& tr){return tr.advance(0), true;}, shape_type{0,0,0}, value_type{1}, true),
         std::make_tuple(c_order{}, f_order{}, storage_c, shape, [](auto& tr){return tr.advance(1), true;}, shape_type{1,0,0}, value_type{7}, true),
@@ -507,6 +509,8 @@ TEST_CASE("test_walker_random_access_traverser","test_data_accessor")
         std::make_tuple(c_order{}, f_order{}, storage_c, shape, [](auto& tr){return tr.advance(7),tr.to_last(),true;}, shape_type{1,2,1}, value_type{12}, true),
         std::make_tuple(c_order{}, f_order{}, storage_c, shape, [](auto& tr){return tr.prev(),tr.advance(3),true;}, shape_type{1,1,0}, value_type{9}, true),
         std::make_tuple(c_order{}, f_order{}, storage_c, shape, [](auto& tr){return tr.next(),tr.advance(3),true;}, shape_type{1,1,0}, value_type{9}, true),
+        std::make_tuple(c_order{}, c_order{}, storage_c, shape, [](auto& tr){return tr.next(),tr.advance(6),tr.next(),true;}, shape_type{1,0,1}, value_type{8}, true),
+        std::make_tuple(c_order{}, c_order{}, storage_c, shape, [](auto& tr){return tr.next(),tr.advance(8),tr.next(),true;}, shape_type{1,1,1}, value_type{10}, true),
         //elements in f_order, traverse c_order
         std::make_tuple(f_order{}, c_order{}, storage_f, shape, [](auto& tr){return tr.advance(0), true;}, shape_type{0,0,0}, value_type{1}, true),
         std::make_tuple(f_order{}, c_order{}, storage_f, shape, [](auto& tr){return tr.advance(1), true;}, shape_type{0,0,1}, value_type{2}, true),
@@ -520,6 +524,8 @@ TEST_CASE("test_walker_random_access_traverser","test_data_accessor")
         std::make_tuple(f_order{}, c_order{}, storage_f, shape, [](auto& tr){return tr.advance(7),tr.to_last(),true;}, shape_type{1,2,1}, value_type{12}, true),
         std::make_tuple(f_order{}, c_order{}, storage_f, shape, [](auto& tr){return tr.prev(),tr.advance(3),true;}, shape_type{0,1,1}, value_type{4}, true),
         std::make_tuple(f_order{}, c_order{}, storage_f, shape, [](auto& tr){return tr.next(),tr.advance(3),true;}, shape_type{0,1,1}, value_type{4}, true),
+        std::make_tuple(f_order{}, c_order{}, storage_f, shape, [](auto& tr){return tr.next(),tr.advance(6),tr.next(),true;}, shape_type{1,0,1}, value_type{8}, true),
+        std::make_tuple(f_order{}, c_order{}, storage_f, shape, [](auto& tr){return tr.next(),tr.advance(8),tr.next(),true;}, shape_type{1,1,1}, value_type{10}, true),
         //elements in f_order, traverse f_order
         std::make_tuple(f_order{}, f_order{}, storage_f, shape, [](auto& tr){return tr.advance(0), true;}, shape_type{0,0,0}, value_type{1}, true),
         std::make_tuple(f_order{}, f_order{}, storage_f, shape, [](auto& tr){return tr.advance(1), true;}, shape_type{1,0,0}, value_type{7}, true),
@@ -532,7 +538,9 @@ TEST_CASE("test_walker_random_access_traverser","test_data_accessor")
         std::make_tuple(f_order{}, f_order{}, storage_f, shape, [](auto& tr){return tr.to_last(),tr.advance(7),true;}, shape_type{1,0,1}, value_type{8}, true),
         std::make_tuple(f_order{}, f_order{}, storage_f, shape, [](auto& tr){return tr.advance(7),tr.to_last(),true;}, shape_type{1,2,1}, value_type{12}, true),
         std::make_tuple(f_order{}, f_order{}, storage_f, shape, [](auto& tr){return tr.prev(),tr.advance(3),true;}, shape_type{1,1,0}, value_type{9}, true),
-        std::make_tuple(f_order{}, f_order{}, storage_f, shape, [](auto& tr){return tr.next(),tr.advance(3),true;}, shape_type{1,1,0}, value_type{9}, true)
+        std::make_tuple(f_order{}, f_order{}, storage_f, shape, [](auto& tr){return tr.next(),tr.advance(3),true;}, shape_type{1,1,0}, value_type{9}, true),
+        std::make_tuple(f_order{}, f_order{}, storage_f, shape, [](auto& tr){return tr.next(),tr.advance(6),tr.next(),true;}, shape_type{1,0,1}, value_type{8}, true),
+        std::make_tuple(f_order{}, f_order{}, storage_f, shape, [](auto& tr){return tr.next(),tr.advance(8),tr.next(),true;}, shape_type{1,1,1}, value_type{10}, true)
     );
     auto test = [](const auto& t){
         auto elements_order = std::get<0>(t);
@@ -737,7 +745,9 @@ TEST_CASE("test_walker_random_access_traverser_range","test_data_accessor")
         //elements in c_order
         //traverse direction 1 c_order,c_order
         std::make_tuple(c_order{}, c_order{}, storage_c, shape, axes_type{1}, axes_type{1,0,2}, [](auto& tr){return tr.advance(0),true;}, shape_type{0,0,0}, value_type{1}, true),
+        std::make_tuple(c_order{}, c_order{}, storage_c, shape, axes_type{1}, axes_type{1,0,2}, [](auto& tr){return tr.next(),tr.advance(0),true;}, shape_type{0,0,0}, value_type{1}, true),
         std::make_tuple(c_order{}, c_order{}, storage_c, shape, axes_type{1}, axes_type{1,0,2}, [](auto& tr){return tr.advance(0),tr.next();}, shape_type{1,0,0}, value_type{5}, true),
+        std::make_tuple(c_order{}, c_order{}, storage_c, shape, axes_type{1}, axes_type{1,0,2}, [](auto& tr){return tr.next(),tr.advance(0),tr.next();}, shape_type{1,0,0}, value_type{5}, true),
         std::make_tuple(c_order{}, c_order{}, storage_c, shape, axes_type{1}, axes_type{1,0,2}, [](auto& tr){return tr.advance(0),tr.prev();}, shape_type{2,0,0}, value_type{9}, false),
         std::make_tuple(c_order{}, c_order{}, storage_c, shape, axes_type{1}, axes_type{1,0,2}, [](auto& tr){return tr.advance(1),true;}, shape_type{1,0,0}, value_type{5}, true),
         std::make_tuple(c_order{}, c_order{}, storage_c, shape, axes_type{1}, axes_type{1,0,2}, [](auto& tr){return tr.advance(1),tr.next();}, shape_type{2,0,0}, value_type{9}, true),
@@ -748,7 +758,9 @@ TEST_CASE("test_walker_random_access_traverser_range","test_data_accessor")
         std::make_tuple(c_order{}, c_order{}, storage_c, shape, axes_type{1}, axes_type{1,0,2}, [](auto& tr){return tr.advance(2),tr.prev();}, shape_type{1,0,0}, value_type{5}, true),
         //traverse direction 0,2 c_order,f_order
         std::make_tuple(c_order{}, f_order{}, storage_c, shape, axes_type{0,2}, axes_type{0,2,1}, [](auto& tr){return tr.advance(0),true;}, shape_type{0,0,0}, value_type{1}, true),
+        std::make_tuple(c_order{}, f_order{}, storage_c, shape, axes_type{0,2}, axes_type{0,2,1}, [](auto& tr){return tr.next(),tr.advance(0),true;}, shape_type{0,0,0}, value_type{1}, true),
         std::make_tuple(c_order{}, f_order{}, storage_c, shape, axes_type{0,2}, axes_type{0,2,1}, [](auto& tr){return tr.advance(0),tr.next();}, shape_type{1,0,0}, value_type{13}, true),
+        std::make_tuple(c_order{}, f_order{}, storage_c, shape, axes_type{0,2}, axes_type{0,2,1}, [](auto& tr){return tr.next(),tr.advance(0),tr.next();}, shape_type{1,0,0}, value_type{13}, true),
         std::make_tuple(c_order{}, f_order{}, storage_c, shape, axes_type{0,2}, axes_type{0,2,1}, [](auto& tr){return tr.advance(0),tr.prev();}, shape_type{1,3,0}, value_type{16}, false),
         std::make_tuple(c_order{}, f_order{}, storage_c, shape, axes_type{0,2}, axes_type{0,2,1}, [](auto& tr){return tr.advance(1),true;}, shape_type{1,0,0}, value_type{13}, true),
         std::make_tuple(c_order{}, f_order{}, storage_c, shape, axes_type{0,2}, axes_type{0,2,1}, [](auto& tr){return tr.advance(4),true;}, shape_type{0,2,0}, value_type{3}, true),
@@ -757,7 +769,9 @@ TEST_CASE("test_walker_random_access_traverser_range","test_data_accessor")
         std::make_tuple(c_order{}, f_order{}, storage_c, shape, axes_type{0,2}, axes_type{0,2,1}, [](auto& tr){return tr.advance(7),tr.next();}, shape_type{0,0,0}, value_type{1}, false),
         //traverse direction 0,2 f_order,c_order
         std::make_tuple(f_order{}, c_order{}, storage_f, shape, axes_type{0,2}, axes_type{0,2,1}, [](auto& tr){return tr.advance(0),true;}, shape_type{0,0,0}, value_type{1}, true),
+        std::make_tuple(f_order{}, c_order{}, storage_f, shape, axes_type{0,2}, axes_type{0,2,1}, [](auto& tr){return tr.next(),tr.advance(0),true;}, shape_type{0,0,0}, value_type{1}, true),
         std::make_tuple(f_order{}, c_order{}, storage_f, shape, axes_type{0,2}, axes_type{0,2,1}, [](auto& tr){return tr.advance(0),tr.next();}, shape_type{0,1,0}, value_type{2}, true),
+        std::make_tuple(f_order{}, c_order{}, storage_f, shape, axes_type{0,2}, axes_type{0,2,1}, [](auto& tr){return tr.next(),tr.advance(0),tr.next();}, shape_type{0,1,0}, value_type{2}, true),
         std::make_tuple(f_order{}, c_order{}, storage_f, shape, axes_type{0,2}, axes_type{0,2,1}, [](auto& tr){return tr.advance(0),tr.prev();}, shape_type{1,3,0}, value_type{16}, false),
         std::make_tuple(f_order{}, c_order{}, storage_f, shape, axes_type{0,2}, axes_type{0,2,1}, [](auto& tr){return tr.advance(1),true;}, shape_type{0,1,0}, value_type{2}, true),
         std::make_tuple(f_order{}, c_order{}, storage_f, shape, axes_type{0,2}, axes_type{0,2,1}, [](auto& tr){return tr.advance(4),true;}, shape_type{1,0,0}, value_type{13}, true),
@@ -780,8 +794,6 @@ TEST_CASE("test_walker_random_access_traverser_range","test_data_accessor")
         auto strides = make_strides(shape, elements_order);
         auto adapted_strides = make_adapted_strides(shape,strides);
         auto reset_strides = make_reset_strides(shape,strides);
-        //auto dim = gtensor::detail::make_dim(shape);
-        //auto axes_map = make_range_traverser_axes_map<config_type>(dim,axes);
         using walker_type = gtensor::mapping_axes_walker<gtensor::indexer_walker<config_type,indexer_type>>;
         auto walker =  walker_type{axes_map, adapted_strides, reset_strides, index_type{0}, indexer};
 

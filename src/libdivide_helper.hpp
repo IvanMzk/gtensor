@@ -19,7 +19,13 @@ public:
         divider_base{divider__},
         divider_{divider__}
     {}
-    auto divider()const{return divider_;}
+    T divider()const{return divider_;}
+    bool friend operator<(const T& lhs, const libdivide_divider& rhs){
+        return lhs < rhs.divider_;
+    }
+    bool friend operator<(const libdivide_divider& lhs,const T& rhs){
+        return lhs.divider_<rhs;
+    }
 };
 
 template<typename Config, typename T> using libdivide_dividers_t = typename Config::template container<libdivide_divider<T>>;
