@@ -34,7 +34,25 @@ TEST_CASE("test_is_iterator","[test_common]")
     using gtensor::detail::is_iterator_v;
     REQUIRE(!is_iterator_v<int>);
     REQUIRE(!is_iterator_v<std::vector<int>>);
+    REQUIRE(is_iterator_v<const double*>);
+    REQUIRE(is_iterator_v<std::string*>);
     REQUIRE(is_iterator_v<std::vector<int>::iterator>);
+    REQUIRE(is_iterator_v<std::vector<int>::const_iterator>);
+    REQUIRE(is_iterator_v<std::list<int>::iterator>);
+    REQUIRE(is_iterator_v<std::list<int>::const_iterator>);
+}
+
+TEST_CASE("test_is_random_access_iterator","[test_common]")
+{
+    using gtensor::detail::is_random_access_iterator_v;
+    REQUIRE(!is_random_access_iterator_v<int>);
+    REQUIRE(!is_random_access_iterator_v<std::vector<int>>);
+    REQUIRE(!is_random_access_iterator_v<std::list<int>::iterator>);
+    REQUIRE(!is_random_access_iterator_v<std::list<int>::const_iterator>);
+    REQUIRE(is_random_access_iterator_v<const double*>);
+    REQUIRE(is_random_access_iterator_v<std::string*>);
+    REQUIRE(is_random_access_iterator_v<std::vector<int>::iterator>);
+    REQUIRE(is_random_access_iterator_v<std::vector<int>::const_iterator>);
 }
 
 TEST_CASE("test_has_callable_iterator","[test_tensor_implementation]")
@@ -70,6 +88,41 @@ TEST_CASE("test_has_callable_iterator","[test_tensor_implementation]")
     REQUIRE(has_callable_iterator<std::list<int>>::value);
     REQUIRE(has_callable_iterator<std::vector<int>>::value);
     REQUIRE(has_callable_iterator<std::string>::value);
+}
+
+TEST_CASE("test_has_callable_random_access_iterator","[test_tensor_implementation]")
+{
+    struct const_iterable{
+        const int* begin()const{return nullptr;}
+        const int* end()const{return nullptr;}
+    };
+    struct non_const_iterable{
+        int* begin(){return nullptr;}
+        int* end(){return nullptr;}
+    };
+    struct iterable{
+        const int* begin()const{return nullptr;}
+        const int* end()const{return nullptr;}
+        int* begin(){return nullptr;}
+        int* end(){return nullptr;}
+    };
+
+    using gtensor::detail::has_callable_random_access_iterator;
+    REQUIRE(!has_callable_random_access_iterator<void>::value);
+    REQUIRE(!has_callable_random_access_iterator<void*>::value);
+    REQUIRE(!has_callable_random_access_iterator<int>::value);
+    REQUIRE(!has_callable_random_access_iterator<int*>::value);
+    REQUIRE(!has_callable_random_access_iterator<int[]>::value);
+    REQUIRE(!has_callable_random_access_iterator<const non_const_iterable>::value);
+    REQUIRE(!has_callable_random_access_iterator<std::list<int>>::value);
+
+    REQUIRE(has_callable_random_access_iterator<non_const_iterable>::value);
+    REQUIRE(has_callable_random_access_iterator<const_iterable>::value);
+    REQUIRE(has_callable_random_access_iterator<const const_iterable>::value);
+    REQUIRE(has_callable_random_access_iterator<iterable>::value);
+    REQUIRE(has_callable_random_access_iterator<const iterable>::value);
+    REQUIRE(has_callable_random_access_iterator<std::vector<int>>::value);
+    REQUIRE(has_callable_random_access_iterator<std::string>::value);
 }
 
 TEST_CASE("test_has_callable_reverse_iterator","[test_tensor_implementation]")

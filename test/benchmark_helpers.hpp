@@ -137,7 +137,7 @@ inline const std::vector<std::vector<int>> small_shapes{
     std::vector<int>{1000,3,100,20},
     std::vector<int>{100,3,100,200},
     std::vector<int>{50,30,20,200},
-    std::vector<int>{10,30,40,20}
+    std::vector<int>{20,10,30,1000}
 };
 
 inline const std::vector<std::vector<int>> small_shapes_1{

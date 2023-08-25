@@ -54,8 +54,11 @@ template<typename, typename = void> inline constexpr bool is_random_access_itera
 template<typename T> inline constexpr bool is_random_access_iterator_v<T,std::void_t<std::enable_if_t<is_iterator_v<T>>>> = std::is_convertible_v<typename std::iterator_traits<T>::iterator_category,std::random_access_iterator_tag>;
 
 template<typename T> using has_callable_iterator = std::conjunction<has_callable_begin<T>,has_callable_end<T>>;
-template<typename T> using has_callable_random_access_iterator = std::conjunction<has_callable_begin<T>,has_callable_end<T>,std::bool_constant<is_random_access_iterator_v<T>>>;
 template<typename T> using has_callable_reverse_iterator = std::conjunction<has_callable_rbegin<T>,has_callable_rend<T>>;
+
+template<typename,typename> struct has_callable_random_access_iterator_helper : std::false_type{};
+template<typename T> struct has_callable_random_access_iterator_helper<T,std::true_type> : std::bool_constant<is_random_access_iterator_v<decltype(std::declval<T>().begin())>>{};
+template<typename T> using has_callable_random_access_iterator = has_callable_random_access_iterator_helper<T,std::bool_constant<has_callable_iterator<T>::value>>;
 
 template<typename...> inline constexpr bool always_false = false;
 

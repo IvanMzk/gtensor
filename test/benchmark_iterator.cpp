@@ -31,7 +31,11 @@ public:
         dim{gtensor::detail::make_dim(*shape)}
     {}
     forward_iterator& operator++(){
-        gtensor::detail::next<Order>(walker,index,*shape);
+        if constexpr (std::is_same_v<gtensor::config::c_order,Order>){
+            gtensor::detail::next_c(walker,index.begin(),shape->begin(),dim);
+        }else{
+            gtensor::detail::next_f(walker,index.begin(),shape->begin(),dim);
+        }
         ++flat_index;
         return *this;
     }
@@ -75,18 +79,18 @@ public:
     {}
     bidirectional_iterator& operator++(){
         if constexpr (std::is_same_v<gtensor::config::c_order,Order>){
-            gtensor::detail::next_13::next_c(walker,index.begin(),shape->begin(),dim);
+            gtensor::detail::next_c(walker,index.begin(),shape->begin(),dim);
         }else{
-            gtensor::detail::next_13::next_f(walker,index.begin(),shape->begin(),dim);
+            gtensor::detail::next_f(walker,index.begin(),shape->begin(),dim);
         }
         ++flat_index;
         return *this;
     }
     bidirectional_iterator& operator--(){
         if constexpr (std::is_same_v<gtensor::config::c_order,Order>){
-            gtensor::detail::next_13::prev_c(walker,index.begin(),shape->begin(),dim);
+            gtensor::detail::prev_c(walker,index.begin(),shape->begin(),dim);
         }else{
-            gtensor::detail::next_13::prev_f(walker,index.begin(),shape->begin(),dim);
+            gtensor::detail::prev_f(walker,index.begin(),shape->begin(),dim);
         }
         --flat_index;
         return *this;
@@ -237,7 +241,7 @@ TEMPLATE_TEST_CASE("benchmark_iterator_small_shapes","[benchmark_tensor]",
         return r;
     };
 
-    const auto& shapes = benchmark_helpers::small_shapes_1;
+    const auto& shapes = benchmark_helpers::small_shapes_2;
     constexpr std::size_t bench_iterations = 1000;
     std::vector<double> intervals{};
     for (auto n=bench_iterations; n!=0; --n){
