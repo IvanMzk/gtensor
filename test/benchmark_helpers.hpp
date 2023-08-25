@@ -95,6 +95,11 @@ auto axes_to_str(const Axes& axes){
 inline auto order_to_str(gtensor::config::c_order){return std::string{"c_order"};}
 inline auto order_to_str(gtensor::config::f_order){return std::string{"f_order"};}
 
+template<typename> struct opposite_order;
+template<> struct opposite_order<gtensor::config::c_order>{using type = gtensor::config::f_order;};
+template<> struct opposite_order<gtensor::config::f_order>{using type = gtensor::config::c_order;};
+template<typename T> using opposite_order_t = typename opposite_order<T>::type;
+
 template<typename Container>
 auto mean(const Container& intervals){
     using value_type = typename Container::value_type;

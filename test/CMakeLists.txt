@@ -26,11 +26,11 @@ target_sources(Test PRIVATE
 
     #${CMAKE_CURRENT_SOURCE_DIR}/test_tmp.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_trivial_iterator.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_iterator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/benchmark_iterator.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_copy.cpp
 
     #${CMAKE_CURRENT_SOURCE_DIR}/test_storage.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_common.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_common.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_libdivide_helper.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_init_list_helper.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_slice.cpp
