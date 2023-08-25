@@ -223,6 +223,17 @@ if(n==0){\
     }\
 }
 
+#define ADVANCE_ON_AXIS_NO_INDEX(axis)\
+if(n==0){\
+    break;\
+}else{\
+    const auto& stride = *(strides_first+axis);\
+    if (!(n<stride)){\
+        auto steps = detail::divide(n,stride);\
+        walker.walk(axis,steps);\
+    }\
+}
+
 //move on axes range
 template<typename Walker, typename IdxIt,  typename StIt, typename DimT, typename IdxT>
 void advance_c(Walker& walker, IdxIt index_first, StIt strides_first, DimT axis_min, const DimT& axis_max, IdxT n){
@@ -237,8 +248,23 @@ void advance_f(Walker& walker, IdxIt index_first, StIt strides_first, const DimT
         ADVANCE_ON_AXIS(axis_max);
     }
 }
+//move on all axes without index state
+template<typename Walker, typename StIt, typename DimT, typename IdxT>
+void advance_c(Walker& walker, StIt strides_first, const DimT& dim, IdxT n){
+    for (DimT a=0; a!=dim; ++a){
+        ADVANCE_ON_AXIS_NO_INDEX(a);
+    }
+}
+template<typename Walker, typename StIt, typename DimT, typename IdxT>
+void advance_f(Walker& walker, StIt strides_first, DimT dim, IdxT n){
+    while(dim!=0){
+        --dim;
+        ADVANCE_ON_AXIS_NO_INDEX(dim);
+    }
+}
 
 #undef ADVANCE_ON_AXIS
+#undef ADVANCE_ON_AXIS_NO_INDEX
 
 template<typename T, typename=void> inline constexpr bool is_range_traverser_v = false;
 template<typename T> inline constexpr bool is_range_traverser_v<T,std::void_t<decltype(std::declval<T>().axis_min()),decltype(std::declval<T>().axis_max())>> = true;
@@ -346,37 +372,22 @@ class walker_indexer
 
     const strides_div_type* strides_;
     mutable walker_type walker_;
+    dim_type dim_;
 public:
     template<typename Walker_>
     walker_indexer(const strides_div_type& strides__, Walker_&& walker__):
         strides_{&strides__},
-        walker_{std::forward<Walker_>(walker__)}
+        walker_{std::forward<Walker_>(walker__)},
+        dim_{static_cast<const dim_type&>(strides__.size())}
     {}
-    decltype(auto) operator[](index_type i)const{
+    decltype(auto) operator[](const index_type& n)const{
         walker_.reset_back();
-        subscript_helper(i, Order{});
+        if constexpr (std::is_same_v<gtensor::config::c_order,Order>){
+            detail::advance_c(walker_,strides_->begin(),dim_,n);
+        }else{
+            detail::advance_f(walker_,strides_->begin(),dim_,n);
+        }
         return *walker_;
-    }
-private:
-    decltype(auto) subscript_helper(index_type i, gtensor::config::c_order)const{
-        dim_type direction{0};
-        for(auto strides_it = strides_->begin(), srtides_end=strides_->end(); strides_it!=srtides_end; ++strides_it, ++direction){
-            auto steps = detail::divide(i,*strides_it);
-            if (steps!=index_type{0}){
-                walker_.walk(direction,steps);
-            }
-        }
-    }
-    decltype(auto) subscript_helper(index_type i, gtensor::config::f_order)const{
-        auto direction = static_cast<dim_type>(strides_->size());
-        for(auto strides_it = strides_->end(), strides_first=strides_->begin(); strides_it!=strides_first;){
-            --strides_it;
-            --direction;
-            auto steps = detail::divide(i,*strides_it);
-            if (steps!=index_type{0}){
-                walker_.walk(direction,steps);
-            }
-        }
     }
 };
 //iterator-indexer adaptes iterator to indexer interface
@@ -393,9 +404,7 @@ public:
     explicit iterator_indexer(Iterator_&& iterator__):
         iterator_{std::forward<Iterator_>(iterator__)}
     {}
-    template<typename U>
-    decltype(auto) operator[](const U& i)const{
-        static_assert(std::is_convertible_v<U,difference_type>);
+    decltype(auto) operator[](const difference_type& i)const{
         iterator_type tmp = iterator_;
         std::advance(tmp, i);
         return *tmp;

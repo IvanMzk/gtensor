@@ -48,7 +48,13 @@ template<typename T> using has_callable_subscript_operator = std::disjunction<
     has_callable_subscript_operator_index_type<T>
 >;
 
+template<typename, typename = void> inline constexpr bool is_iterator_v = false;
+template<typename T> inline constexpr bool is_iterator_v<T,std::void_t<typename std::iterator_traits<T>::iterator_category>> = true;
+template<typename, typename = void> inline constexpr bool is_random_access_iterator_v = false;
+template<typename T> inline constexpr bool is_random_access_iterator_v<T,std::void_t<std::enable_if_t<is_iterator_v<T>>>> = std::is_convertible_v<typename std::iterator_traits<T>::iterator_category,std::random_access_iterator_tag>;
+
 template<typename T> using has_callable_iterator = std::conjunction<has_callable_begin<T>,has_callable_end<T>>;
+template<typename T> using has_callable_random_access_iterator = std::conjunction<has_callable_begin<T>,has_callable_end<T>,std::bool_constant<is_random_access_iterator_v<T>>>;
 template<typename T> using has_callable_reverse_iterator = std::conjunction<has_callable_rbegin<T>,has_callable_rend<T>>;
 
 template<typename...> inline constexpr bool always_false = false;
@@ -72,9 +78,6 @@ template<typename T, typename IdxT> inline constexpr bool is_container_of_tensor
 
 template<typename T, typename=void> inline constexpr bool is_bool_tensor_v = false;
 template<typename T> inline constexpr bool is_bool_tensor_v<T,std::void_t<std::enable_if_t<is_tensor_v<T>>>> = std::is_same_v<typename T::value_type, bool>;
-
-template<typename, typename = void> inline constexpr bool is_iterator_v = false;
-template<typename T> inline constexpr bool is_iterator_v<T,std::void_t<typename std::iterator_traits<T>::iterator_category>> = true;
 
 template<typename From, typename To, typename=void> inline constexpr bool is_static_castable_v = false;
 template<typename From, typename To> inline constexpr bool is_static_castable_v<From,To,std::void_t<decltype(static_cast<To>(std::declval<From>()))>> = true;
