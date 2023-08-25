@@ -874,7 +874,7 @@ public:
     bool next(){return base_type::template next<Order>();}
     bool prev(){return base_type::template prev<Order>();}
     //n must be in range [0,size-1], where size = make_size(shape__)
-    void move(index_type n){
+    void advance(index_type n){
         to_first();
         if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
             if constexpr (is_range_traverser){

@@ -97,16 +97,46 @@ public:
         indexer{std::forward<Indexer_>(indexer_)},
         flat_index{flat_index_}
     {}
-    auto& operator+=(difference_type n){return advance(n);}
-    result_type operator[](difference_type n)const{return *(*this+n);}
-    result_type operator*() const{return indexer[flat_index];}
-    inline difference_type friend operator-(const indexer_iterator& lhs, const indexer_iterator& rhs){return lhs.flat_index - rhs.flat_index;}
-    inline difference_type friend operator==(const indexer_iterator& lhs, const indexer_iterator& rhs){return lhs.flat_index == rhs.flat_index;}
-private:
-    auto& advance(difference_type n){
+    indexer_iterator& operator++(){
+        ++flat_index;
+        return *this;
+    }
+    indexer_iterator& operator--(){
+        --flat_index;
+        return *this;
+    }
+    indexer_iterator& operator+=(difference_type n){
         flat_index+=n;
         return *this;
     }
+    result_type operator[](difference_type n)const{
+        return *(*this+n);
+    }
+    result_type operator*()const{
+        return indexer[flat_index];
+    }
+    difference_type operator-(const indexer_iterator& rhs)const{
+        return flat_index - rhs.flat_index;
+    }
+    bool operator==(const indexer_iterator& rhs)const{
+        return flat_index == rhs.flat_index;
+    }
+    bool operator!=(const indexer_iterator& rhs)const{
+        return flat_index != rhs.flat_index;
+    }
+    bool operator>(const indexer_iterator& rhs)const{
+        return flat_index > rhs.flat_index;
+    }
+    bool operator>=(const indexer_iterator& rhs)const{
+        return flat_index >= rhs.flat_index;
+    }
+    bool operator<(const indexer_iterator& rhs)const{
+        return flat_index < rhs.flat_index;
+    }
+    bool operator<=(const indexer_iterator& rhs)const{
+        return flat_index <= rhs.flat_index;
+    }
+private:
     indexer_type indexer;
     difference_type flat_index;
 };
@@ -114,15 +144,8 @@ private:
 GTENSOR_ITERATOR_OPERATOR_ASSIGN_MINUS(indexer_iterator);
 GTENSOR_ITERATOR_OPERATOR_PLUS(indexer_iterator);
 GTENSOR_ITERATOR_OPERATOR_MINUS(indexer_iterator);
-GTENSOR_ITERATOR_OPERATOR_PREFIX_INC(indexer_iterator);
-GTENSOR_ITERATOR_OPERATOR_PREFIX_DEC(indexer_iterator);
 GTENSOR_ITERATOR_OPERATOR_POSTFIX_INC(indexer_iterator);
 GTENSOR_ITERATOR_OPERATOR_POSTFIX_DEC(indexer_iterator);
-GTENSOR_ITERATOR_OPERATOR_NOT_EQUAL(indexer_iterator);
-GTENSOR_ITERATOR_OPERATOR_GREATER(indexer_iterator);
-GTENSOR_ITERATOR_OPERATOR_LESS(indexer_iterator);
-GTENSOR_ITERATOR_OPERATOR_GREATER_EQUAL(indexer_iterator);
-GTENSOR_ITERATOR_OPERATOR_LESS_EQUAL(indexer_iterator);
 
 //random access iterator, use walker data accessor
 template<typename Config, typename Traverser>
@@ -161,18 +184,39 @@ public:
         return *this;
     }
     walker_iterator& operator+=(difference_type n){
-        advance(n);
+        flat_index+=n;
+        traverser.advance(flat_index);
         return *this;
     }
-    result_type operator[](difference_type n)const{return *(*this+n);}
-    result_type operator*() const{return *traverser;}
-    inline difference_type friend operator-(const walker_iterator& lhs, const walker_iterator& rhs){return lhs.flat_index - rhs.flat_index;}
-    inline difference_type friend operator==(const walker_iterator& lhs, const walker_iterator& rhs){return lhs.flat_index == rhs.flat_index;}
-private:
-    void advance(difference_type n){
-        flat_index+=n;
-        traverser.move(flat_index);
+    result_type operator[](difference_type n)const{
+        return *(*this+n);
     }
+    result_type operator*()const{
+        return *traverser;
+    }
+    difference_type operator-(const walker_iterator& rhs)const{
+        return flat_index - rhs.flat_index;
+    }
+    bool operator==(const walker_iterator& rhs)const{
+        return flat_index == rhs.flat_index;
+    }
+    bool operator!=(const walker_iterator& rhs)const{
+        return flat_index != rhs.flat_index;
+    }
+    bool operator>(const walker_iterator& rhs)const{
+        return flat_index > rhs.flat_index;
+    }
+    bool operator>=(const walker_iterator& rhs)const{
+        return flat_index >= rhs.flat_index;
+    }
+    bool operator<(const walker_iterator& rhs)const{
+        return flat_index < rhs.flat_index;
+    }
+    bool operator<=(const walker_iterator& rhs)const{
+        return flat_index <= rhs.flat_index;
+    }
+
+private:
     traverser_type traverser;
     difference_type flat_index;
 };
@@ -182,11 +226,6 @@ GTENSOR_ITERATOR_OPERATOR_PLUS(walker_iterator);
 GTENSOR_ITERATOR_OPERATOR_MINUS(walker_iterator);
 GTENSOR_ITERATOR_OPERATOR_POSTFIX_INC(walker_iterator);
 GTENSOR_ITERATOR_OPERATOR_POSTFIX_DEC(walker_iterator);
-GTENSOR_ITERATOR_OPERATOR_NOT_EQUAL(walker_iterator);
-GTENSOR_ITERATOR_OPERATOR_GREATER(walker_iterator);
-GTENSOR_ITERATOR_OPERATOR_LESS(walker_iterator);
-GTENSOR_ITERATOR_OPERATOR_GREATER_EQUAL(walker_iterator);
-GTENSOR_ITERATOR_OPERATOR_LESS_EQUAL(walker_iterator);
 
 //random access iterator, use walker data accessor
 //iterate along specified axis
@@ -208,41 +247,61 @@ public:
 
     //begin should be constructed with zero flat_index_ argument, end with size() flat_index_argument
     template<typename Walker_>
-    axis_iterator(Walker_&& walker_, const dim_type& reduce_axis_, const difference_type& flat_index_):
+    axis_iterator(Walker_&& walker_, const dim_type& axis_, const difference_type& flat_index_):
         walker{std::forward<Walker_>(walker_)},
-        reduce_axis{reduce_axis_},
+        axis{axis_},
         flat_index{flat_index_}
     {
         if (flat_index_ > 0){
-            walker.walk(reduce_axis_, flat_index_ - difference_type{1});
-            walker.step(reduce_axis_);
+            walker.walk(axis_, flat_index_ - difference_type{1});
+            walker.step(axis_);
         }
     }
-    axis_iterator& operator+=(difference_type n){
-        advance(n);
-        return *this;
-    }
     axis_iterator& operator++(){
-        walker.step(reduce_axis);
+        walker.step(axis);
         ++flat_index;
         return *this;
     }
     axis_iterator& operator--(){
-        walker.step_back(reduce_axis);
+        walker.step_back(axis);
         --flat_index;
         return *this;
     }
-    result_type operator[](difference_type n)const{return *(*this+n);}
-    result_type operator*() const{return *walker;}
-    inline difference_type friend operator-(const axis_iterator& lhs, const axis_iterator& rhs){return lhs.flat_index - rhs.flat_index;}
-    inline difference_type friend operator==(const axis_iterator& lhs, const axis_iterator& rhs){return lhs.flat_index == rhs.flat_index;}
-private:
-    void advance(difference_type n){
-        walker.walk(reduce_axis, n);
+    axis_iterator& operator+=(difference_type n){
+        walker.walk(axis, n);
         flat_index+=n;
+        return *this;
     }
+    result_type operator[](difference_type n)const{
+        return *(*this+n);
+    }
+    result_type operator*()const{
+        return *walker;
+    }
+    difference_type operator-(const axis_iterator& rhs)const{
+        return flat_index - rhs.flat_index;
+    }
+    bool operator==(const axis_iterator& rhs)const{
+        return flat_index == rhs.flat_index;
+    }
+    bool operator!=(const axis_iterator& rhs)const{
+        return flat_index != rhs.flat_index;
+    }
+    bool operator>(const axis_iterator& rhs)const{
+        return flat_index > rhs.flat_index;
+    }
+    bool operator>=(const axis_iterator& rhs)const{
+        return flat_index >= rhs.flat_index;
+    }
+    bool operator<(const axis_iterator& rhs)const{
+        return flat_index < rhs.flat_index;
+    }
+    bool operator<=(const axis_iterator& rhs)const{
+        return flat_index <= rhs.flat_index;
+    }
+private:
     walker_type walker;
-    dim_type reduce_axis;
+    dim_type axis;
     difference_type flat_index;
 };
 
@@ -251,11 +310,6 @@ GTENSOR_ITERATOR_OPERATOR_PLUS(axis_iterator);
 GTENSOR_ITERATOR_OPERATOR_MINUS(axis_iterator);
 GTENSOR_ITERATOR_OPERATOR_POSTFIX_INC(axis_iterator);
 GTENSOR_ITERATOR_OPERATOR_POSTFIX_DEC(axis_iterator);
-GTENSOR_ITERATOR_OPERATOR_NOT_EQUAL(axis_iterator);
-GTENSOR_ITERATOR_OPERATOR_GREATER(axis_iterator);
-GTENSOR_ITERATOR_OPERATOR_LESS(axis_iterator);
-GTENSOR_ITERATOR_OPERATOR_GREATER_EQUAL(axis_iterator);
-GTENSOR_ITERATOR_OPERATOR_LESS_EQUAL(axis_iterator);
 
 //random access broadcast iterator
 template<typename Config, typename Traverser>
@@ -279,6 +333,13 @@ public:
     using typename walker_iterator_base::const_reference;
     using walker_iterator_base::operator*;
     using walker_iterator_base::operator[];
+
+    template<typename Walker_, typename ShT, typename StT>
+    broadcast_iterator(Walker_&& walker__, ShT&& shape__, StT&& strides__, const difference_type& flat_index_):
+        extension_base{std::forward<ShT>(shape__), std::forward<StT>(strides__)},
+        walker_iterator_base{std::forward<Walker_>(walker__), extension_base::shape(), extension_base::strides(), flat_index_}
+    {}
+
     broadcast_iterator& operator++(){
         ++static_cast<walker_iterator_base&>(*this);
         return *this;
@@ -291,15 +352,27 @@ public:
         static_cast<walker_iterator_base&>(*this)+=n;
         return *this;
     }
-    inline difference_type friend operator-(const broadcast_iterator& lhs, const broadcast_iterator& rhs){
-        return static_cast<const walker_iterator_base&>(lhs) - static_cast<const walker_iterator_base&>(rhs);
+    difference_type operator-(const broadcast_iterator& rhs)const{
+        return static_cast<const walker_iterator_base&>(*this) - static_cast<const walker_iterator_base&>(rhs);
     }
-
-    template<typename Walker_, typename ShT, typename StT>
-    broadcast_iterator(Walker_&& walker__, ShT&& shape__, StT&& strides__, const difference_type& flat_index_):
-        extension_base{std::forward<ShT>(shape__), std::forward<StT>(strides__)},
-        walker_iterator_base{std::forward<Walker_>(walker__), extension_base::shape(), extension_base::strides(), flat_index_}
-    {}
+    bool operator==(const broadcast_iterator& rhs)const{
+        return static_cast<const walker_iterator_base&>(*this) == static_cast<const walker_iterator_base&>(rhs);
+    }
+    bool operator!=(const broadcast_iterator& rhs)const{
+        return static_cast<const walker_iterator_base&>(*this) != static_cast<const walker_iterator_base&>(rhs);
+    }
+    bool operator>(const broadcast_iterator& rhs)const{
+        return static_cast<const walker_iterator_base&>(*this) > static_cast<const walker_iterator_base&>(rhs);
+    }
+    bool operator>=(const broadcast_iterator& rhs)const{
+        return static_cast<const walker_iterator_base&>(*this) >= static_cast<const walker_iterator_base&>(rhs);
+    }
+    bool operator<(const broadcast_iterator& rhs)const{
+        return static_cast<const walker_iterator_base&>(*this) < static_cast<const walker_iterator_base&>(rhs);
+    }
+    bool operator<=(const broadcast_iterator& rhs)const{
+        return static_cast<const walker_iterator_base&>(*this) <= static_cast<const walker_iterator_base&>(rhs);
+    }
 };
 
 GTENSOR_ITERATOR_OPERATOR_ASSIGN_MINUS(broadcast_iterator);
@@ -307,12 +380,6 @@ GTENSOR_ITERATOR_OPERATOR_PLUS(broadcast_iterator);
 GTENSOR_ITERATOR_OPERATOR_MINUS(broadcast_iterator);
 GTENSOR_ITERATOR_OPERATOR_POSTFIX_INC(broadcast_iterator);
 GTENSOR_ITERATOR_OPERATOR_POSTFIX_DEC(broadcast_iterator);
-GTENSOR_ITERATOR_OPERATOR_EQUAL(broadcast_iterator);
-GTENSOR_ITERATOR_OPERATOR_NOT_EQUAL(broadcast_iterator);
-GTENSOR_ITERATOR_OPERATOR_GREATER(broadcast_iterator);
-GTENSOR_ITERATOR_OPERATOR_LESS(broadcast_iterator);
-GTENSOR_ITERATOR_OPERATOR_GREATER_EQUAL(broadcast_iterator);
-GTENSOR_ITERATOR_OPERATOR_LESS_EQUAL(broadcast_iterator);
 
 template<typename Iterator>
 class reverse_iterator_generic : private Iterator
@@ -357,9 +424,29 @@ public:
         static_cast<iterator_base&>(*this)+=-n;
         return *this;
     }
-    result_type operator[](difference_type n)const{return *(*this+n);}
-    inline difference_type friend operator-(const reverse_iterator_generic& lhs, const reverse_iterator_generic& rhs){
-        return static_cast<const iterator_base&>(rhs) - static_cast<const iterator_base&>(lhs);
+    result_type operator[](difference_type n)const{
+        return *(*this+n);
+    }
+    difference_type operator-(const reverse_iterator_generic& rhs)const{
+        return static_cast<const iterator_base&>(rhs) - static_cast<const iterator_base&>(*this);
+    }
+    bool operator==(const reverse_iterator_generic& rhs)const{
+        return static_cast<const iterator_base&>(*this) == static_cast<const iterator_base&>(rhs);
+    }
+    bool operator!=(const reverse_iterator_generic& rhs)const{
+        return static_cast<const iterator_base&>(*this) != static_cast<const iterator_base&>(rhs);
+    }
+    bool operator>(const reverse_iterator_generic& rhs)const{
+        return static_cast<const iterator_base&>(rhs) > static_cast<const iterator_base&>(*this);
+    }
+    bool operator>=(const reverse_iterator_generic& rhs)const{
+        return static_cast<const iterator_base&>(rhs) >= static_cast<const iterator_base&>(*this);
+    }
+    bool operator<(const reverse_iterator_generic& rhs)const{
+        return static_cast<const iterator_base&>(rhs) < static_cast<const iterator_base&>(*this);
+    }
+    bool operator<=(const reverse_iterator_generic& rhs)const{
+        return static_cast<const iterator_base&>(rhs) <= static_cast<const iterator_base&>(*this);
     }
 };
 
@@ -368,20 +455,25 @@ GTENSOR_ITERATOR_OPERATOR_PLUS(reverse_iterator_generic);
 GTENSOR_ITERATOR_OPERATOR_MINUS(reverse_iterator_generic);
 GTENSOR_ITERATOR_OPERATOR_POSTFIX_INC(reverse_iterator_generic);
 GTENSOR_ITERATOR_OPERATOR_POSTFIX_DEC(reverse_iterator_generic);
-GTENSOR_ITERATOR_OPERATOR_EQUAL(reverse_iterator_generic);
-GTENSOR_ITERATOR_OPERATOR_NOT_EQUAL(reverse_iterator_generic);
-GTENSOR_ITERATOR_OPERATOR_GREATER(reverse_iterator_generic);
-GTENSOR_ITERATOR_OPERATOR_LESS(reverse_iterator_generic);
-GTENSOR_ITERATOR_OPERATOR_GREATER_EQUAL(reverse_iterator_generic);
-GTENSOR_ITERATOR_OPERATOR_LESS_EQUAL(reverse_iterator_generic);
 
 template<typename Config, typename Indexer> using reverse_indexer_iterator = reverse_iterator_generic<indexer_iterator<Config,Indexer>>;
 template<typename Config, typename Traverser> using reverse_walker_iterator = reverse_iterator_generic<walker_iterator<Config,Traverser>>;
 template<typename Config, typename Walker> using reverse_axis_iterator = reverse_iterator_generic<axis_iterator<Config,Walker>>;
 template<typename Config, typename Traverser> using reverse_broadcast_iterator = reverse_iterator_generic<broadcast_iterator<Config,Traverser>>;
 
+#undef GTENSOR_ITERATOR_OPERATOR_ASSIGN_MINUS
+#undef GTENSOR_ITERATOR_OPERATOR_PLUS
+#undef GTENSOR_ITERATOR_OPERATOR_MINUS
+#undef GTENSOR_ITERATOR_OPERATOR_PREFIX_INC
+#undef GTENSOR_ITERATOR_OPERATOR_PREFIX_DEC
+#undef GTENSOR_ITERATOR_OPERATOR_POSTFIX_INC
+#undef GTENSOR_ITERATOR_OPERATOR_POSTFIX_DEC
+#undef GTENSOR_ITERATOR_OPERATOR_EQUAL
+#undef GTENSOR_ITERATOR_OPERATOR_NOT_EQUAL
+#undef GTENSOR_ITERATOR_OPERATOR_GREATER
+#undef GTENSOR_ITERATOR_OPERATOR_LESS
+#undef GTENSOR_ITERATOR_OPERATOR_GREATER_EQUAL
+#undef GTENSOR_ITERATOR_OPERATOR_LESS_EQUAL
+
 }   //end of namespace gtensor
-
-
-
 #endif
