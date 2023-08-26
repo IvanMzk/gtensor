@@ -2,80 +2,105 @@
 #include "tensor.hpp"
 #include "test_config.hpp"
 
-TEMPLATE_TEST_CASE("benchmark_iterator_small_shapes","[benchmark_tensor]",
-    (std::tuple<gtensor::config::c_order,gtensor::config::c_order>),
-    (std::tuple<gtensor::config::c_order,gtensor::config::f_order>),
-    (std::tuple<gtensor::config::f_order,gtensor::config::c_order>),
-    (std::tuple<gtensor::config::f_order,gtensor::config::f_order>)
-)
-{
-    using layout = std::tuple_element_t<0,TestType>;
-    using traverse_order = std::tuple_element_t<1,TestType>;
-    using value_type = double;
-    using gtensor::tensor;
-    using config_type = gtensor::config::extend_config_t<test_config::config_storage_selector_t<gtensor::basic_storage>,value_type>;
-    using tensor_type = gtensor::tensor<value_type,layout,config_type>;
-    using slice_type = typename tensor_type::slice_type;
-    using gtensor::config::c_order;
-    using gtensor::config::f_order;
-    using config_type = typename tensor_type::config_type;
-    using order = typename tensor_type::order;
-    using benchmark_helpers::order_to_str;
-    using gtensor::detail::shape_to_str;
-    using benchmark_helpers::timing;
-    using benchmark_helpers::statistic;
-    using benchmark_helpers::opposite_order_t;
 
-    //traverse range with deref
-    auto traverse_forward = [](auto&& first, auto&& last){
-        value_type r{0};
-        for(;first!=last; ++first){
-            r+=*first;
-        }
-        return r;
-    };
+namespace benchmark_iterator_{
 
-    auto traverse_backward = [](auto&& first, auto&& last){
-        value_type r{0};
-        while(last!=first){
-            --last;
-            r+=*last;
-        }
-        return r;
-    };
+using gtensor::detail::shape_to_str;
+using benchmark_helpers::order_to_str;
+using gtensor::config::c_order;
+using gtensor::config::f_order;
+using benchmark_helpers::timing;
+using benchmark_helpers::statistic;
+using benchmark_helpers::opposite_order_t;
 
-    //traverse range no deref
-    auto traverse_no_deref = [](auto&& first, auto&& last){
-        for(;first!=last; ++first){}
-        return first==last;
-    };
+template<typename Tensor, typename Layout, typename TraverseOrder>
+struct bench_iterator_helper{
+    using tensor_type = Tensor;
+    using layout = Layout;
+    using traverse_order = TraverseOrder;
+    using shape_type = typename tensor_type::shape_type;
 
-    auto bench_iterator = [](auto mes, auto n_iters, auto shapes, auto builder_f, auto traverse_f){
+    template<typename Shapes, typename Builder, typename Traverser>
+    auto operator()(std::string mes, std::size_t n_iters, Shapes shapes, Builder builder_f, Traverser traverse_f, bool reverse_iterator=false){
         std::cout<<std::endl<<"layout "<<order_to_str(layout{})<<" traverse "<<order_to_str(traverse_order{})<<" "<<mes;
         std::vector<double> total_intervals{};
         for (auto it=shapes.begin(), last=shapes.end(); it!=last; ++it){
             const auto& shape = *it;
             std::vector<double> intervals{};
             for (auto n=n_iters; n!=0; --n){
-                auto t_ = tensor_type(shape,2);
+                auto t_ = tensor_type(shape_type(shape.begin(),shape.end()),2);
                 auto t=builder_f(t_);
-                auto a = t.traverse_order_adapter(traverse_order{});
                 //measure traverse time
-                auto dt = timing(traverse_f,a.begin(),a.end());
-                //save measurements
-                auto interval = dt.interval();
-                intervals.push_back(interval);
-                total_intervals.push_back(interval);
+                double dt = 0;
+                auto a = t.traverse_order_adapter(traverse_order{});
+                if (reverse_iterator){
+                    dt = timing(traverse_f,a.rbegin(),a.rend());
+                }else{
+                    dt = timing(traverse_f,a.begin(),a.end());
+                }
+                intervals.push_back(dt);
+                total_intervals.push_back(dt);
             }
             std::cout<<std::endl<<"shape "<<shape_to_str(shape)<<" "<<statistic(intervals);
         }
         std::cout<<std::endl<<"TOTAL "<<statistic(total_intervals);
-    };
+    }
+};
+
+//traverse range with deref
+auto traverse_forward = [](auto&& first, auto&& last){
+    using iterator_type = std::remove_cv_t<std::remove_reference_t<decltype(first)>>;
+    using value_type = typename std::iterator_traits<iterator_type>::value_type;
+    value_type r{0};
+    for(;first!=last; ++first){
+        r+=*first;
+    }
+    return r;
+};
+auto traverse_backward = [](auto&& first, auto&& last){
+    using iterator_type = std::remove_cv_t<std::remove_reference_t<decltype(first)>>;
+    using value_type = typename std::iterator_traits<iterator_type>::value_type;
+    value_type r{0};
+    while(last!=first){
+        --last;
+        r+=*last;
+    }
+    return r;
+};
+//traverse range no deref
+auto traverse_no_deref = [](auto&& first, auto&& last){
+    for(;first!=last; ++first){}
+    return first==last;
+};
+
+template<typename Shapes, typename Builder, typename Traverser>
+auto bench_iterator(std::string mes, std::size_t n_iters, Shapes shapes, Builder builder_f, Traverser traverse_f, bool reverse_iterator=false){
+    using value_type = double;
+    using config_type = gtensor::config::extend_config_t<test_config::config_storage_selector_t<gtensor::basic_storage>,value_type>;
+    bench_iterator_helper<gtensor::tensor<value_type,c_order,config_type>,c_order,c_order>{}(mes,n_iters,shapes,builder_f,traverse_f);
+    bench_iterator_helper<gtensor::tensor<value_type,c_order,config_type>,c_order,f_order>{}(mes,n_iters,shapes,builder_f,traverse_f);
+    bench_iterator_helper<gtensor::tensor<value_type,f_order,config_type>,f_order,c_order>{}(mes,n_iters,shapes,builder_f,traverse_f);
+    bench_iterator_helper<gtensor::tensor<value_type,f_order,config_type>,f_order,f_order>{}(mes,n_iters,shapes,builder_f,traverse_f);
+}
+
+}
+
+
+TEST_CASE("benchmark_iterator_small_shapes","[benchmark_tensor]")
+{
+
+    using tensor_type = gtensor::tensor<double>;
+    using slice_type = typename tensor_type::slice_type;
+    using benchmark_helpers::opposite_order_t;
+    using benchmark_iterator_::bench_iterator;
+    using benchmark_iterator_::traverse_forward;
+    using benchmark_iterator_::traverse_backward;
+
 
     const auto n_iters = 100;
     const auto shapes = benchmark_helpers::small_shapes;
     //tensor
-    //bench_iterator("tensor traverse",n_iters,shapes,[](auto& t){return t;},traverse_forward);
+    bench_iterator("tensor traverse",n_iters,shapes,[](auto& t){return t;},traverse_forward,true);
     //bench_iterator("tensor traverse backward",n_iters,shapes,[](auto& t){return t;},traverse_backward);
     //expression view
     //bench_iterator("expression t+t+t+t+t+t+t+t+t+t traverse",n_iters,shapes,[](auto& t){return t+t+t+t+t+t+t+t+t+t;},traverse_forward);

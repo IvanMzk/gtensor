@@ -47,7 +47,7 @@ public:
         point_{clock_type::now()}
     {}
     friend auto operator-(const cpu_timer& end, const cpu_timer& start){
-        return std::chrono::duration<float,std::milli>(end.point_-start.point_).count();
+        return std::chrono::duration<double,std::milli>(end.point_-start.point_).count();
     }
 };
 
@@ -65,6 +65,9 @@ public:
     }
     auto interval()const{
         return stop_-start_;
+    }
+    operator double()const{
+        return interval();
     }
 };
 
