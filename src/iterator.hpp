@@ -36,25 +36,6 @@ template<typename...Ts> inline bool operator>=(const ITERATOR<Ts...>& lhs, const
 template<typename...Ts> inline bool operator<=(const ITERATOR<Ts...>& lhs, const ITERATOR<Ts...>& rhs){return !(lhs > rhs);}
 
 namespace detail{
-    template<typename ResT> struct iterator_internals_selector{
-        using value_type = std::remove_cv_t<ResT>;
-        using pointer = value_type*;
-        using reference = ResT;
-        using const_reference = const ResT;
-    };
-    template<typename ResT> struct iterator_internals_selector<ResT&>{
-        using value_type = std::remove_cv_t<ResT>;
-        using pointer = value_type*;
-        using reference = ResT&;
-        using const_reference = const ResT&;
-    };
-    template<> struct iterator_internals_selector<void>{
-        using value_type = void;
-        using pointer = void;
-        using reference = void;
-        using const_reference = void;
-    };
-
     template<typename Config>
     class broadcast_iterator_extension
     {
@@ -81,14 +62,12 @@ class indexer_iterator
 protected:
     using indexer_type = Indexer;
     using index_type = typename Config::index_type;
-    using result_type = decltype(std::declval<indexer_type>()[std::declval<index_type>()]);
 public:
     using iterator_category = std::random_access_iterator_tag;
     using difference_type = index_type;
-    using value_type = typename detail::iterator_internals_selector<result_type>::value_type;
-    using pointer = typename detail::iterator_internals_selector<result_type>::pointer;
-    using reference = typename detail::iterator_internals_selector<result_type>::reference;
-    using const_reference = typename detail::iterator_internals_selector<result_type>::const_reference;
+    using reference = decltype(std::declval<indexer_type>()[std::declval<index_type>()]);
+    using value_type = typename indexer_type::value_type;
+    using pointer = std::add_pointer_t<reference>;
 
     //assuming usual stoarge subscript operator semantic i.e. subscript index in range [0,size()-1]:
     //begin should be constructed with zero flat_index_ argument, end with size() flat_index_argument
@@ -109,10 +88,10 @@ public:
         flat_index+=n;
         return *this;
     }
-    result_type operator[](difference_type n)const{
+    reference operator[](difference_type n)const{
         return *(*this+n);
     }
-    result_type operator*()const{
+    reference operator*()const{
         return indexer[flat_index];
     }
     difference_type operator-(const indexer_iterator& rhs)const{
@@ -154,17 +133,15 @@ class walker_iterator
 protected:
     using config_type = Config;
     using traverser_type = Traverser;
-    using result_type = decltype(*std::declval<traverser_type>());
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     using strides_div_type = detail::strides_div_t<config_type>;
 public:
     using iterator_category = std::random_access_iterator_tag;
     using difference_type = typename config_type::index_type;
-    using value_type = typename detail::iterator_internals_selector<result_type>::value_type;
-    using pointer = typename detail::iterator_internals_selector<result_type>::pointer;
-    using reference = typename detail::iterator_internals_selector<result_type>::reference;
-    using const_reference = typename detail::iterator_internals_selector<result_type>::const_reference;
+    using reference = decltype(*std::declval<traverser_type>());
+    using value_type = typename traverser_type::value_type;
+    using pointer = std::add_pointer_t<reference>;
 
     //begin should be constructed with zero flat_index_ argument, end with size() flat_index_argument
     //args should be axis_min,axis_max for range traverser and empty otherwise
@@ -188,10 +165,10 @@ public:
         traverser.advance(flat_index);
         return *this;
     }
-    result_type operator[](difference_type n)const{
+    reference operator[](difference_type n)const{
         return *(*this+n);
     }
-    result_type operator*()const{
+    reference operator*()const{
         return *traverser;
     }
     difference_type operator-(const walker_iterator& rhs)const{
@@ -236,14 +213,12 @@ protected:
     using walker_type = Walker;
     using index_type = typename Config::index_type;
     using dim_type = typename Config::dim_type;
-    using result_type = decltype(*std::declval<walker_type>());
 public:
     using iterator_category = std::random_access_iterator_tag;
     using difference_type = index_type;
-    using value_type = typename detail::iterator_internals_selector<result_type>::value_type;
-    using pointer = typename detail::iterator_internals_selector<result_type>::pointer;
-    using reference = typename detail::iterator_internals_selector<result_type>::reference;
-    using const_reference = typename detail::iterator_internals_selector<result_type>::const_reference;
+    using reference = decltype(*std::declval<walker_type>());
+    using value_type = typename walker_type::value_type;
+    using pointer = std::add_pointer_t<reference>;
 
     //begin should be constructed with zero flat_index_ argument, end with size() flat_index_argument
     template<typename Walker_>
@@ -272,10 +247,10 @@ public:
         flat_index+=n;
         return *this;
     }
-    result_type operator[](difference_type n)const{
+    reference operator[](difference_type n)const{
         return *(*this+n);
     }
-    result_type operator*()const{
+    reference operator*()const{
         return *walker;
     }
     difference_type operator-(const axis_iterator& rhs)const{
@@ -320,7 +295,6 @@ class broadcast_iterator:
     using extension_base = detail::broadcast_iterator_extension<Config>;
     using walker_iterator_base = walker_iterator<Config,Traverser>;
 protected:
-    using typename walker_iterator_base::result_type;
     using typename walker_iterator_base::shape_type;
     using typename walker_iterator_base::index_type;
     using typename walker_iterator_base::strides_div_type;
@@ -330,7 +304,6 @@ public:
     using typename walker_iterator_base::difference_type;
     using typename walker_iterator_base::pointer;
     using typename walker_iterator_base::reference;
-    using typename walker_iterator_base::const_reference;
     using walker_iterator_base::operator*;
     using walker_iterator_base::operator[];
 
@@ -385,15 +358,12 @@ template<typename Iterator>
 class reverse_iterator_generic : private Iterator
 {
     using iterator_base = Iterator;
-protected:
-    using typename iterator_base::result_type;
 public:
     using iterator_category = std::random_access_iterator_tag;
     using typename iterator_base::value_type;
     using typename iterator_base::difference_type;
     using typename iterator_base::pointer;
     using typename iterator_base::reference;
-    using typename iterator_base::const_reference;
     using iterator_base::operator*;
 
     explicit reverse_iterator_generic(Iterator it):
@@ -424,7 +394,7 @@ public:
         static_cast<iterator_base&>(*this)+=-n;
         return *this;
     }
-    result_type operator[](difference_type n)const{
+    reference operator[](difference_type n)const{
         return *(*this+n);
     }
     difference_type operator-(const reverse_iterator_generic& rhs)const{

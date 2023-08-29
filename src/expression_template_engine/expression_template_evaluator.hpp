@@ -7,16 +7,15 @@ namespace gtensor{
 namespace detail{
 
 template<std::size_t I, typename F, typename...Ts, std::enable_if_t<(I==sizeof...(Ts)),int> =0>
-void apply_per_element(const F&, std::tuple<Ts...>&){}
+inline void apply_per_element(const F&, std::tuple<Ts...>&){}
 
 template<std::size_t I=0, typename F, typename...Ts, std::enable_if_t<(I<sizeof...(Ts)),int> =0>
-void apply_per_element(const F& f, std::tuple<Ts...>& t){
+inline void apply_per_element(const F& f, std::tuple<Ts...>& t){
     f(std::get<I>(t));
     apply_per_element<I+1>(f,t);
 }
 
 }
-
 
 //expression template evaluator
 template<typename Config, typename F, typename...Walkers>
@@ -24,13 +23,13 @@ class expression_template_walker
 {
     template<typename...Ts> using tuple_type = std::tuple<Ts...>;
     using sequence_type = std::make_index_sequence<sizeof...(Walkers)>;
-    using result_type = decltype(std::declval<F>()(*std::declval<Walkers>()...));
 public:
     using config_type = Config;
     using dim_type = typename Config::dim_type;
     using index_type = typename Config::index_type;
     using shape_type = typename Config::shape_type;
     using size_type = typename shape_type::size_type;
+    using value_type = std::remove_cv_t<std::remove_reference_t<decltype(std::declval<F>()(*std::declval<Walkers>()...))>>;
 
     template<typename F_> struct forward_args : std::bool_constant<!std::is_same_v<std::remove_cv_t<std::remove_reference_t<F_>>,expression_template_walker>>{};
 
@@ -42,47 +41,47 @@ public:
 
     void walk(const dim_type& axis, const index_type& steps){
         auto f = [&axis,&steps](auto& w){w.walk(axis,steps);};
-        //detail::apply_per_element(f,walkers_);
-        apply(f,sequence_type{});
+        detail::apply_per_element(f,walkers_);
+        //apply(f,sequence_type{});
     }
     void walk_back(const dim_type& axis, const index_type& steps){
         auto f = [&axis,&steps](auto& w){w.walk_back(axis,steps);};
-        //detail::apply_per_element(f,walkers_);
-        apply(f,sequence_type{});
+        detail::apply_per_element(f,walkers_);
+        //apply(f,sequence_type{});
     }
     void step(const dim_type& axis){
         auto f = [&axis](auto& w){w.step(axis);};
-        //detail::apply_per_element(f,walkers_);
-        apply(f,sequence_type{});
+        detail::apply_per_element(f,walkers_);
+        //apply(f,sequence_type{});
     }
     void step_back(const dim_type& axis){
         auto f = [&axis](auto& w){w.step_back(axis);};
-        //detail::apply_per_element(f,walkers_);
-        apply(f,sequence_type{});
+        detail::apply_per_element(f,walkers_);
+        //apply(f,sequence_type{});
     }
     void reset(const dim_type& axis){
         auto f = [&axis](auto& w){w.reset(axis);};
-        //detail::apply_per_element(f,walkers_);
-        apply(f,sequence_type{});
+        detail::apply_per_element(f,walkers_);
+        //apply(f,sequence_type{});
     }
     void reset_back(const dim_type& axis){
         auto f = [&axis](auto& w){w.reset_back(axis);};
-        //detail::apply_per_element(f,walkers_);
-        apply(f,sequence_type{});
+        detail::apply_per_element(f,walkers_);
+        //apply(f,sequence_type{});
     }
     void reset_back(){
         auto f = [](auto& w){w.reset_back();};
-        //detail::apply_per_element(f,walkers_);
-        apply(f,sequence_type{});
+        detail::apply_per_element(f,walkers_);
+        //apply(f,sequence_type{});
 
     }
     void update_offset(){
         auto f = [](auto& w){w.update_offset();};
-        //detail::apply_per_element(f,walkers_);
-        apply(f,sequence_type{});
+        detail::apply_per_element(f,walkers_);
+        //apply(f,sequence_type{});
 
     }
-    result_type operator*()const{
+    decltype(auto) operator*()const{
         return deref_helper(sequence_type{});
     }
 private:
@@ -91,7 +90,7 @@ private:
         (f(std::get<I>(walkers_)),...);
     }
     template<std::size_t...I>
-    result_type deref_helper(std::index_sequence<I...>)const{
+    decltype(auto) deref_helper(std::index_sequence<I...>)const{
         return f_(*std::get<I>(walkers_)...);
     }
 
@@ -109,6 +108,7 @@ public:
     using dim_type = typename Config::dim_type;
     using index_type = typename Config::index_type;
     using shape_type = typename Config::shape_type;
+    using value_type = std::remove_cv_t<std::remove_reference_t<decltype(std::declval<F>()(std::declval<Indexers>()[std::declval<index_type>()]...))>>;
 
     template<typename F_> struct forward_args : std::bool_constant<!std::is_same_v<std::remove_cv_t<std::remove_reference_t<F_>>,expression_template_trivial_indexer>>{};
 
@@ -129,7 +129,6 @@ private:
     F f_;
     tuple_type<Indexers...> indexers_;
 };
-
 
 }   //end of namespace gtensor
 #endif

@@ -282,6 +282,8 @@ class basic_indexer<Parent&>
     using parent_type = Parent;
     parent_type* parent_;
 public:
+    using value_type = typename parent_type::value_type;
+
     template<typename Parent_> struct enable_parent_ : std::conjunction<
         std::is_lvalue_reference<Parent_>,
         std::negation<std::is_same<std::remove_cv_t<std::remove_reference_t<Parent_>>, basic_indexer>>
@@ -305,6 +307,8 @@ class basic_indexer<Indexer>
     using indexer_type = Indexer;
     indexer_type indexer_;
 public:
+    using value_type = typename indexer_type::value_type;
+
     template<typename Indexer_, std::enable_if_t<!std::is_same_v<std::remove_cv_t<std::remove_reference_t<Indexer_>>, basic_indexer>,int> =0>
     explicit basic_indexer(Indexer_&& indexer__):
         indexer_{std::forward<Indexer_>(indexer__)}
@@ -323,6 +327,8 @@ class basic_indexer<Indexer, Converter&>
     using indexer_type = basic_indexer<Indexer>;
     using Converter_type = Converter;
 public:
+    using value_type = typename indexer_type::value_type;
+
     template<typename Indexer_, typename Converter_, std::enable_if_t<std::is_lvalue_reference_v<Converter_> ,int> = 0>
     basic_indexer(Indexer_&& indexer__,  Converter_&& converter__):
         indexer_{std::forward<Indexer_>(indexer__)},
@@ -343,6 +349,8 @@ class basic_indexer<Indexer, Converter>
     using indexer_type = basic_indexer<Indexer>;
     using Converter_type = Converter;
 public:
+    using value_type = typename indexer_type::value_type;
+
     template<typename Indexer_, typename Converter_>
     basic_indexer(Indexer_&& indexer__,  Converter_&& converter__):
         indexer_{std::forward<Indexer_>(indexer__)},
@@ -374,6 +382,8 @@ class walker_indexer
     mutable walker_type walker_;
     dim_type dim_;
 public:
+    using value_type = typename walker_type::value_type;
+
     template<typename Walker_>
     walker_indexer(const strides_div_type& strides__, Walker_&& walker__):
         strides_{&strides__},
@@ -399,6 +409,7 @@ class iterator_indexer
     using difference_type = typename std::iterator_traits<iterator_type>::difference_type;
     iterator_type iterator_;
 public:
+    using value_type = typename std::iterator_traits<iterator_type>::value_type;
     //iterator__ argument should point to the first element
     template<typename Iterator_, std::enable_if_t<!std::is_convertible_v<std::decay_t<Iterator_>, iterator_indexer>,int> =0>
     explicit iterator_indexer(Iterator_&& iterator__):
@@ -416,16 +427,26 @@ public:
 template<typename Config, typename Cursor>
 class cursor_walker
 {
+    static constexpr bool is_cursor_iterator = detail::is_iterator_v<Cursor>;
+
+    template<typename Cur,typename> struct cursor_traits_helper{
+        using value_type = Cur;
+    };
+
+    template<typename Cur> struct cursor_traits_helper<Cur,std::true_type>{
+        using value_type = typename std::iterator_traits<Cur>::value_type;
+    };
+
+    using cursor_traits = cursor_traits_helper<Cursor,std::bool_constant<is_cursor_iterator>>;
     using shape_iterator_type = typename Config::shape_type::const_iterator;
-    struct iter_{using type = decltype(*std::declval<Cursor>());};
-    struct cur_{using type = const Cursor&;};
-    using result_type = typename std::conditional_t<detail::is_iterator_v<Cursor>,iter_,cur_>::type;
 public:
     using config_type = Config;
     using cursor_type = Cursor;
     using index_type = typename Config::index_type;
     using dim_type = typename Config::dim_type;
     using shape_type = typename Config::shape_type;
+    using value_type = typename cursor_traits::value_type;
+
 
     cursor_walker(const shape_type& adapted_strides__, const shape_type& reset_strides__, const cursor_type& offset__):
         adapted_strides_it_{adapted_strides__.begin()},
@@ -458,8 +479,8 @@ public:
     void update_offset(){
         offset_+=(cursor_-offset_);
     }
-    result_type operator*()const{
-        if constexpr (detail::is_iterator_v<Cursor>){
+    decltype(auto) operator*()const{
+        if constexpr (is_cursor_iterator){
             return *cursor_;
         }else{
             return cursor_;
@@ -472,7 +493,6 @@ private:
     cursor_type cursor_;
 };
 
-//Indexer is adaptee
 template<typename Config, typename Indexer>
 class indexer_walker
 {
@@ -482,6 +502,7 @@ public:
     using index_type = typename config_type::index_type;
     using dim_type = typename config_type::dim_type;
     using shape_type = typename config_type::shape_type;
+    using value_type = typename indexer_type::value_type;
 
     template<typename Indexer_>
     indexer_walker(const shape_type& adapted_strides_, const shape_type& reset_strides_, const index_type& offset_, Indexer_&& indexer_):
@@ -530,6 +551,7 @@ public:
     using typename base_walker_type::shape_type;
     using typename base_walker_type::index_type;
     using typename base_walker_type::dim_type;
+    using typename base_walker_type::value_type;
 
     //offset.size() equals number of subscripts given to make slice view
     template<typename...Args>
@@ -563,6 +585,7 @@ public:
     using typename base_walker_type::shape_type;
     using typename base_walker_type::index_type;
     using typename base_walker_type::dim_type;
+    using typename base_walker_type::value_type;
 
     //if a is axis of view then axes_map_[a] is corresponding axis of view's parent
     //axes_map_.size() always equals to view dim
@@ -598,6 +621,7 @@ public:
     using typename base_walker_type::shape_type;
     using typename base_walker_type::index_type;
     using typename base_walker_type::dim_type;
+    using typename base_walker_type::value_type;
 
     //if a is axis of view then step_scale_[a] is steps number along a in parent that corresponds single step along a in view
     //step_scale_.size() always equals to view dim
@@ -631,6 +655,7 @@ public:
     using typename base_walker_type::shape_type;
     using typename base_walker_type::index_type;
     using typename base_walker_type::dim_type;
+    using typename base_walker_type::value_type;
 
     template<typename...Args>
     resetting_walker(const shape_type& shape_,Args&&...args):
@@ -687,6 +712,7 @@ public:
     using typename base_walker_type::shape_type;
     using typename base_walker_type::index_type;
     using typename base_walker_type::dim_type;
+    using typename base_walker_type::value_type;
 
     template<typename...Args>
     axes_correction_walker(const dim_type& dim_offset__,Args&&...args):
@@ -738,11 +764,13 @@ private:
 template<typename Config, typename Walker>
 class walker_forward_traverser
 {
+    //using result_type = decltype(*std::declval<Walker>());
 public:
     using config_type = Config;
     using shape_type = typename config_type::shape_type;
     using index_type = typename config_type::index_type;
     using dim_type = typename config_type::dim_type;
+    using value_type = typename Walker::value_type;
 protected:
     using walker_type = Walker;
 
@@ -783,6 +811,7 @@ public:
     using typename base_type::shape_type;
     using typename base_type::index_type;
     using typename base_type::dim_type;
+    using typename base_type::value_type;
 protected:
     using base_type::shape_;
     using base_type::dim_;
@@ -827,6 +856,7 @@ public:
     using typename base_type::dim_type;
     using typename base_type::index_type;
     using typename base_type::shape_type;
+    using typename base_type::value_type;
     using base_type::base_type;
 
     template<typename Order>
@@ -881,6 +911,7 @@ public:
     using typename base_type::dim_type;
     using typename base_type::index_type;
     using typename base_type::shape_type;
+    using typename base_type::value_type;
     //depending on Base, args is empty or axis_min,axis_max
     template<typename Walker_, typename...Args>
     walker_random_access_traverser(const shape_type& shape__, const strides_div_type& strides__, Walker_&& walker__, const Args&...args):

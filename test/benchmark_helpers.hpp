@@ -103,6 +103,8 @@ template<> struct opposite_order<gtensor::config::c_order>{using type = gtensor:
 template<> struct opposite_order<gtensor::config::f_order>{using type = gtensor::config::c_order;};
 template<typename T> using opposite_order_t = typename opposite_order<T>::type;
 
+
+
 template<typename Container>
 auto mean(const Container& intervals){
     using value_type = typename Container::value_type;
