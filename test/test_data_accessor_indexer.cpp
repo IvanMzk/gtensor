@@ -114,9 +114,9 @@ TEST_CASE("test_walker_indexer","test_data_accessor")
     using index_type = typename config_type::index_type;
     using storage_type = typename config_type::template storage<value_type>;
     using indexer_type = gtensor::basic_indexer<storage_type&>;
-    using walker_type = gtensor::indexer_walker<config_type, indexer_type>;
     using gtensor::config::c_order;
     using gtensor::config::f_order;
+    using walker_type = gtensor::indexer_walker<config_type, indexer_type, c_order>;
     using helpers_for_testing::apply_by_element;
 
     REQUIRE(std::is_same_v<decltype(*std::declval<walker_type>()), decltype(std::declval<walker_indexer<walker_type,c_order>>()[std::declval<index_type>()])>);

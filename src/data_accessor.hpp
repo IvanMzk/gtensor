@@ -424,7 +424,7 @@ public:
 
 //walker is adapter that allows address data elements using multidimensional index
 //Cursor is responsible for storing flat position, it may have semantic of integral type or random access iterator
-template<typename Config, typename Cursor>
+template<typename Config, typename Cursor, typename Order>
 class cursor_walker
 {
     static constexpr bool is_cursor_iterator = detail::is_iterator_v<Cursor>;
@@ -493,51 +493,34 @@ private:
     cursor_type cursor_;
 };
 
-template<typename Config, typename Indexer>
-class indexer_walker
+template<typename Config, typename Indexer, typename Order>
+class indexer_walker : private cursor_walker<Config,typename Config::index_type,Order>
 {
     using indexer_type = Indexer;
+    using base_type = cursor_walker<Config,typename Config::index_type,Order>;
 public:
-    using config_type = Config;
-    using index_type = typename config_type::index_type;
-    using dim_type = typename config_type::dim_type;
-    using shape_type = typename config_type::shape_type;
+    using typename base_type::config_type;
+    using typename base_type::index_type;
+    using typename base_type::dim_type;
+    using typename base_type::shape_type;
     using value_type = typename indexer_type::value_type;
 
     template<typename Indexer_>
     indexer_walker(const shape_type& adapted_strides_, const shape_type& reset_strides_, const index_type& offset_, Indexer_&& indexer_):
-        impl{adapted_strides_, reset_strides_, offset_},
+        base_type{adapted_strides_, reset_strides_, offset_},
         indexer{std::forward<Indexer_>(indexer_)}
     {}
-    void walk(const dim_type& axis, const index_type& steps){
-        impl.walk(axis,steps);
-    }
-    void walk_back(const dim_type& axis, const index_type& steps){
-        impl.walk_back(axis,steps);
-    }
-    void step(const dim_type& axis){
-        impl.step(axis);
-    }
-    void step_back(const dim_type& axis){
-        impl.step_back(axis);
-    }
-    void reset(const dim_type& axis){
-        impl.reset(axis);
-    }
-    void reset_back(const dim_type& axis){
-        impl.reset_back(axis);
-    }
-    void reset_back(){
-        impl.reset_back();
-    }
-    void update_offset(){
-        impl.update_offset();
-    }
+    using base_type::walk;
+    using base_type::walk_back;
+    using base_type::step;
+    using base_type::step_back;
+    using base_type::reset;
+    using base_type::reset_back;
+    using base_type::update_offset;
     decltype(auto) operator*()const{
-        return indexer[*impl];
+        return indexer[base_type::operator*()];
     }
 private:
-    cursor_walker<config_type, index_type> impl;
     indexer_type indexer;
 };
 

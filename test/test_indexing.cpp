@@ -2,7 +2,7 @@
 #include <vector>
 #include "catch.hpp"
 #include "indexing.hpp"
-//#include "sort_search.hpp"
+#include "sort_search.hpp"
 #include "tensor.hpp"
 #include "helpers_for_testing.hpp"
 
@@ -13,9 +13,9 @@ TEST_CASE("test_indexing_axes_iterator_maker","[test_indexing]")
     using shape_type = config_type::shape_type;
     using storage_type = std::vector<double>;
     using indexer_type = gtensor::basic_indexer<storage_type&>;
-    using walker_type =  gtensor::indexer_walker<config_type,indexer_type>;
     using gtensor::config::c_order;
     using gtensor::config::f_order;
+    using walker_type =  gtensor::indexer_walker<config_type,indexer_type,c_order>;
     using gtensor::detail::make_axes_iterator_maker;
     using helpers_for_testing::apply_by_element;
 
@@ -479,27 +479,27 @@ TEMPLATE_TEST_CASE("test_indexing_take_along_axis_like_over_flatten","[test_inde
     apply_by_element(test,test_data);
 }
 
-// TEMPLATE_TEST_CASE("test_indexing_take_along_axis_reconstruction","[test_indexing]",
-//     //layout
-//     gtensor::config::c_order,
-//     gtensor::config::f_order
-// )
-// {
-//     using value_type = double;
-//     using tensor_type = gtensor::tensor<value_type,TestType>;
-//     using gtensor::argsort;
-//     using gtensor::take_along_axis;
+TEMPLATE_TEST_CASE("test_indexing_take_along_axis_reconstruction","[test_indexing]",
+    //layout
+    gtensor::config::c_order,
+    gtensor::config::f_order
+)
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type,TestType>;
+    using gtensor::argsort;
+    using gtensor::take_along_axis;
 
-//     REQUIRE(take_along_axis(tensor_type{2,1,6,3,2,1,0,5},argsort(tensor_type{2,1,6,3,2,1,0,5})) == tensor_type{0,1,1,2,2,3,5,6});
-//     REQUIRE(
-//         take_along_axis(tensor_type{{2,1,-1,6,3},{8,2,1,0,5},{-1,7,0,4,2},{4,4,2,1,4},{3,1,6,4,3}},argsort(tensor_type{{2,1,-1,6,3},{8,2,1,0,5},{-1,7,0,4,2},{4,4,2,1,4},{3,1,6,4,3}},0),0) ==
-//         tensor_type{{-1,1,-1,0,2},{2,1,0,1,3},{3,2,1,4,3},{4,4,2,4,4},{8,7,6,6,5}}
-//     );
-//     REQUIRE(
-//         take_along_axis(tensor_type{{2,1,-1,6,3},{8,2,1,0,5},{-1,7,0,4,2},{4,4,2,1,4},{3,1,6,4,3}}, argsort(tensor_type{{2,1,-1,6,3},{8,2,1,0,5},{-1,7,0,4,2},{4,4,2,1,4},{3,1,6,4,3}},1),1) ==
-//         tensor_type{{-1,1,2,3,6},{0,1,2,5,8},{-1,0,2,4,7},{1,2,4,4,4},{1,3,3,4,6}}
-//     );
-// }
+    REQUIRE(take_along_axis(tensor_type{2,1,6,3,2,1,0,5},argsort(tensor_type{2,1,6,3,2,1,0,5})) == tensor_type{0,1,1,2,2,3,5,6});
+    REQUIRE(
+        take_along_axis(tensor_type{{2,1,-1,6,3},{8,2,1,0,5},{-1,7,0,4,2},{4,4,2,1,4},{3,1,6,4,3}},argsort(tensor_type{{2,1,-1,6,3},{8,2,1,0,5},{-1,7,0,4,2},{4,4,2,1,4},{3,1,6,4,3}},0),0) ==
+        tensor_type{{-1,1,-1,0,2},{2,1,0,1,3},{3,2,1,4,3},{4,4,2,4,4},{8,7,6,6,5}}
+    );
+    REQUIRE(
+        take_along_axis(tensor_type{{2,1,-1,6,3},{8,2,1,0,5},{-1,7,0,4,2},{4,4,2,1,4},{3,1,6,4,3}}, argsort(tensor_type{{2,1,-1,6,3},{8,2,1,0,5},{-1,7,0,4,2},{4,4,2,1,4},{3,1,6,4,3}},1),1) ==
+        tensor_type{{-1,1,2,3,6},{0,1,2,5,8},{-1,0,2,4,7},{1,2,4,4,4},{1,3,3,4,6}}
+    );
+}
 
 TEMPLATE_TEST_CASE("test_indexing_take_along_axis_exception","[test_indexing]",
     //input order, indexes order

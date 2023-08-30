@@ -165,7 +165,7 @@ TEST_CASE("test_random_access_iterator_difference","[test_iterator]")
             auto adapted_strides = make_adapted_strides(shape, strides);
             auto reset_strides = make_reset_strides(shape, strides);
             auto indexer = indexer_type{storage};
-            using walker_type = gtensor::indexer_walker<config_type, indexer_type>;
+            using walker_type = gtensor::indexer_walker<config_type, indexer_type,elements_order>;
             walker_type walker{adapted_strides,reset_strides,offset,indexer};
             using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,traverse_order>;
             using iterator_type = walker_iterator<config_type,traverser_type>;
@@ -192,7 +192,7 @@ TEST_CASE("test_random_access_iterator_difference","[test_iterator]")
             auto adapted_strides = make_adapted_strides(shape, strides);
             auto reset_strides = make_reset_strides(shape, strides);
             auto indexer = indexer_type{storage};
-            using walker_type = gtensor::indexer_walker<config_type, indexer_type>;
+            using walker_type = gtensor::indexer_walker<config_type, indexer_type,elements_order>;
             walker_type walker{adapted_strides,reset_strides,offset,indexer};
             using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,traverse_order>;
             using iterator_type = reverse_walker_iterator<config_type,traverser_type>;
@@ -219,7 +219,7 @@ TEST_CASE("test_random_access_iterator_difference","[test_iterator]")
             auto adapted_strides = make_adapted_strides(shape, strides);
             auto reset_strides = make_reset_strides(shape, strides);
             auto indexer = indexer_type{storage};
-            using walker_type = gtensor::axes_correction_walker<gtensor::indexer_walker<config_type, indexer_type>>;
+            using walker_type = gtensor::axes_correction_walker<gtensor::indexer_walker<config_type, indexer_type,elements_order>>;
             walker_type walker{0,adapted_strides,reset_strides,offset,indexer};
             using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,traverse_order>;
             using iterator_type = broadcast_iterator<config_type,traverser_type>;
@@ -246,7 +246,7 @@ TEST_CASE("test_random_access_iterator_difference","[test_iterator]")
             auto adapted_strides = make_adapted_strides(shape, strides);
             auto reset_strides = make_reset_strides(shape, strides);
             auto indexer = indexer_type{storage};
-            using walker_type = gtensor::axes_correction_walker<gtensor::indexer_walker<config_type, indexer_type>>;
+            using walker_type = gtensor::axes_correction_walker<gtensor::indexer_walker<config_type, indexer_type,elements_order>>;
             walker_type walker{0,adapted_strides,reset_strides,offset,indexer};
             using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,traverse_order>;
             using iterator_type = reverse_broadcast_iterator<config_type,traverser_type>;
@@ -476,7 +476,8 @@ TEST_CASE("test_random_access_iterator_dereference","[test_iterator]")
             auto adapted_strides = make_adapted_strides(shape, strides);
             auto reset_strides = make_reset_strides(shape, strides);
             auto indexer = indexer_type{storage};
-            using walker_type = gtensor::indexer_walker<config_type, indexer_type>;
+            using elements_order_type = decltype(elements_order);
+            using walker_type = gtensor::indexer_walker<config_type, indexer_type,elements_order_type>;
             walker_type walker{adapted_strides,reset_strides,offset,indexer};
             using traverse_order_type = decltype(traverse_order);
             using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,traverse_order_type>;
@@ -504,7 +505,8 @@ TEST_CASE("test_random_access_iterator_dereference","[test_iterator]")
             auto adapted_strides = make_adapted_strides(shape, strides);
             auto reset_strides = make_reset_strides(shape, strides);
             auto indexer = indexer_type{storage};
-            using walker_type = gtensor::indexer_walker<config_type, indexer_type>;
+            using elements_order_type = decltype(elements_order);
+            using walker_type = gtensor::indexer_walker<config_type, indexer_type, elements_order_type>;
             walker_type walker{adapted_strides,reset_strides,offset,indexer};
             using traverse_order_type = decltype(traverse_order);
             using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,traverse_order_type>;
@@ -533,7 +535,8 @@ TEST_CASE("test_random_access_iterator_dereference","[test_iterator]")
             auto adapted_strides = make_adapted_strides(shape, strides);
             auto reset_strides = make_reset_strides(shape, strides);
             auto indexer = indexer_type{storage};
-            using walker_type = gtensor::axes_correction_walker<gtensor::indexer_walker<config_type, indexer_type>>;
+            using elements_order_type = decltype(elements_order);
+            using walker_type = gtensor::axes_correction_walker<gtensor::indexer_walker<config_type, indexer_type, elements_order_type>>;
             walker_type walker{0,adapted_strides,reset_strides,offset,indexer};
             using traverse_order_type = decltype(traverse_order);
             using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,traverse_order_type>;
@@ -561,7 +564,8 @@ TEST_CASE("test_random_access_iterator_dereference","[test_iterator]")
             auto adapted_strides = make_adapted_strides(shape, strides);
             auto reset_strides = make_reset_strides(shape, strides);
             auto indexer = indexer_type{storage};
-            using walker_type = gtensor::axes_correction_walker<gtensor::indexer_walker<config_type, indexer_type>>;
+            using elements_order_type = decltype(elements_order);
+            using walker_type = gtensor::axes_correction_walker<gtensor::indexer_walker<config_type, indexer_type, elements_order_type>>;
             walker_type walker{0,adapted_strides,reset_strides,offset,indexer};
             using traverse_order_type = decltype(traverse_order);
             using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,traverse_order_type>;
@@ -585,16 +589,16 @@ template<typename Config, typename Walker,typename Order> using traverser = gten
 TEST_CASE("test_random_access_iterator_result_type","test_iterator")
 {
     using value_type = int;
+    using gtensor::config::c_order;
+    using gtensor::config::f_order;
     using config_type = gtensor::config::extend_config_t<test_config::config_storage_selector_t<std::vector>,value_type>;
     using storage_type = typename config_type::template storage<value_type>;
     using indexer_type = gtensor::basic_indexer<storage_type&>;
     using const_indexer_type = gtensor::basic_indexer<const storage_type&>;
-    using walker_type = gtensor::indexer_walker<config_type, indexer_type>;
-    using const_walker_type = gtensor::indexer_walker<config_type, const_indexer_type>;
-    using max_dim_walker_type = gtensor::axes_correction_walker<gtensor::indexer_walker<config_type, indexer_type>>;
-    using const_max_dim_walker_type = gtensor::axes_correction_walker<gtensor::indexer_walker<config_type, const_indexer_type>>;
-    using gtensor::config::c_order;
-    using gtensor::config::f_order;
+    using walker_type = gtensor::indexer_walker<config_type, indexer_type, c_order>;
+    using const_walker_type = gtensor::indexer_walker<config_type, const_indexer_type, c_order>;
+    using max_dim_walker_type = gtensor::axes_correction_walker<gtensor::indexer_walker<config_type, indexer_type, c_order>>;
+    using const_max_dim_walker_type = gtensor::axes_correction_walker<gtensor::indexer_walker<config_type, const_indexer_type, c_order>>;
     using gtensor::indexer_iterator;
     using gtensor::reverse_indexer_iterator;
     using gtensor::walker_iterator;
@@ -662,7 +666,7 @@ TEMPLATE_TEST_CASE("test_gtensor_iterator_std_reverse_adapter","[test_iterator]"
     }
     SECTION("test_walker_iterator_std_reverse_adapter")
     {
-        using walker_type = gtensor::indexer_walker<config_type, indexer_type>;
+        using walker_type = gtensor::indexer_walker<config_type, indexer_type, order>;
         using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,order>;
         using iterator_type = walker_iterator<config_type,traverser_type>;
         using reverse_iterator_type = reverse_iterator_generic<iterator_type>;
@@ -690,7 +694,6 @@ TEST_CASE("test_walker_iterator_traverse","[test_iterator]")
     using shape_type = typename config_type::shape_type;
     using storage_type = typename config_type::template storage<value_type>;
     using indexer_type = gtensor::basic_indexer<storage_type&>;
-    using walker_type = gtensor::indexer_walker<config_type, indexer_type>;
     using gtensor::config::c_order;
     using gtensor::config::f_order;
     using gtensor::walker_iterator;
@@ -752,6 +755,8 @@ TEST_CASE("test_walker_iterator_traverse","[test_iterator]")
             auto adapted_strides = make_adapted_strides(shape, strides);
             auto reset_strides = make_reset_strides(shape, strides);
             auto indexer = indexer_type{storage};
+            using elements_order_type = decltype(elements_order);
+            using walker_type = gtensor::indexer_walker<config_type, indexer_type, elements_order_type>;
             walker_type walker{adapted_strides,reset_strides,offset,indexer};
             using traverse_order_type = decltype(traverse_order);
             using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,traverse_order_type>;
@@ -780,6 +785,8 @@ TEST_CASE("test_walker_iterator_traverse","[test_iterator]")
             auto adapted_strides = make_adapted_strides(shape, strides);
             auto reset_strides = make_reset_strides(shape, strides);
             auto indexer = indexer_type{storage};
+            using elements_order_type = decltype(elements_order);
+            using walker_type = gtensor::indexer_walker<config_type, indexer_type, elements_order_type>;
             walker_type walker{adapted_strides,reset_strides,offset,indexer};
             using traverse_order_type = decltype(traverse_order);
             using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,traverse_order_type>;
@@ -805,7 +812,6 @@ TEST_CASE("test_broadcast_iterator_traverse","[test_iterator]")
     using shape_type = typename config_type::shape_type;
     using storage_type = typename config_type::template storage<value_type>;
     using indexer_type = gtensor::basic_indexer<storage_type&>;
-    using walker_type = gtensor::axes_correction_walker<gtensor::indexer_walker<config_type, indexer_type>>;
     using gtensor::broadcast_iterator;
     using gtensor::reverse_broadcast_iterator;
     using gtensor::config::c_order;
@@ -884,6 +890,8 @@ TEST_CASE("test_broadcast_iterator_traverse","[test_iterator]")
             auto dim = gtensor::detail::make_dim(shape);
             dim_type max_dim = std::max(gtensor::detail::make_dim(broadcast_shape),dim);
             auto dim_offset = max_dim-dim;
+            using elements_order_type = decltype(elements_order);
+            using walker_type = gtensor::axes_correction_walker<gtensor::indexer_walker<config_type, indexer_type, elements_order_type>>;
             walker_type walker{dim_offset,adapted_strides,reset_strides,offset,indexer};
             using traverse_order_type = decltype(traverse_order);
             using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,traverse_order_type>;
@@ -916,6 +924,8 @@ TEST_CASE("test_broadcast_iterator_traverse","[test_iterator]")
             auto dim = gtensor::detail::make_dim(shape);
             dim_type max_dim = std::max(gtensor::detail::make_dim(broadcast_shape),dim);
             auto dim_offset = max_dim-dim;
+            using elements_order_type = decltype(elements_order);
+            using walker_type = gtensor::axes_correction_walker<gtensor::indexer_walker<config_type, indexer_type, elements_order_type>>;
             walker_type walker{dim_offset,adapted_strides,reset_strides,offset,indexer};
             using traverse_order_type = decltype(traverse_order);
             using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_traverser<config_type,walker_type>>,traverse_order_type>;

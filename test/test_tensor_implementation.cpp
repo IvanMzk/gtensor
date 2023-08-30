@@ -79,7 +79,7 @@ public:
     using test_core_base_type::descriptor;
     auto create_walker(dim_type max_dim){
         using indexer_type = gtensor::basic_indexer<storage_type&>;
-        return gtensor::axes_correction_walker<gtensor::indexer_walker<config_type,indexer_type>>{
+        return gtensor::axes_correction_walker<gtensor::indexer_walker<config_type,indexer_type,order>>{
             max_dim-descriptor().dim(),
             descriptor().adapted_strides(),
             descriptor().reset_strides(),
@@ -89,7 +89,7 @@ public:
     }
     auto create_walker(){
         using indexer_type = gtensor::basic_indexer<storage_type&>;
-        return gtensor::indexer_walker<config_type,indexer_type>{
+        return gtensor::indexer_walker<config_type,indexer_type,order>{
             descriptor().adapted_strides(),
             descriptor().reset_strides(),
             index_type{0},
@@ -160,7 +160,7 @@ public:
     using test_core_base_type::descriptor;
     auto create_walker(dim_type max_dim)const{
         using indexer_type = gtensor::basic_indexer<const storage_type&>;
-        return gtensor::axes_correction_walker<gtensor::indexer_walker<config_type,indexer_type>>{
+        return gtensor::axes_correction_walker<gtensor::indexer_walker<config_type,indexer_type,order>>{
             max_dim-descriptor().dim(),
             descriptor().adapted_strides(),
             descriptor().reset_strides(),
@@ -170,7 +170,7 @@ public:
     }
     auto create_walker()const{
         using indexer_type = gtensor::basic_indexer<const storage_type&>;
-        return gtensor::indexer_walker<config_type,indexer_type>{
+        return gtensor::indexer_walker<config_type,indexer_type,order>{
             descriptor().adapted_strides(),
             descriptor().reset_strides(),
             index_type{0},
@@ -249,7 +249,7 @@ private:
     template<typename U>
     static auto create_walker_helper(U& instance, dim_type max_dim){
         using indexer_type = std::conditional_t<std::is_const_v<U>, gtensor::basic_indexer<const storage_type&>, gtensor::basic_indexer<storage_type&>>;
-        return gtensor::axes_correction_walker<gtensor::indexer_walker<config_type,indexer_type>>{
+        return gtensor::axes_correction_walker<gtensor::indexer_walker<config_type,indexer_type,order>>{
             max_dim-instance.descriptor().dim(),
             instance.descriptor().adapted_strides(),
             instance.descriptor().reset_strides(),
@@ -260,7 +260,7 @@ private:
     template<typename U>
     static auto create_walker_helper(U& instance){
         using indexer_type = std::conditional_t<std::is_const_v<U>, gtensor::basic_indexer<const storage_type&>, gtensor::basic_indexer<storage_type&>>;
-        return gtensor::indexer_walker<config_type,indexer_type>{
+        return gtensor::indexer_walker<config_type,indexer_type,order>{
             instance.descriptor().adapted_strides(),
             instance.descriptor().reset_strides(),
             index_type{0},

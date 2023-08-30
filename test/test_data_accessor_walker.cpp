@@ -11,6 +11,7 @@ TEST_CASE("test_walker","test_data_accessor")
     using shape_type = typename config_type::shape_type;
     using dim_type = typename config_type::dim_type;
     using index_type = typename config_type::index_type;
+    using gtensor::config::c_order;
     using storage_type = typename config_type::template storage<value_type>;
     using helpers_for_testing::apply_by_element;
 
@@ -100,7 +101,7 @@ TEST_CASE("test_walker","test_data_accessor")
             auto mover = std::get<5>(t);
             auto expected = std::get<6>(t);
             using indexer_type = gtensor::basic_indexer<storage_type&>;
-            using walker_type = gtensor::axes_correction_walker<gtensor::indexer_walker<config_type, indexer_type>>;
+            using walker_type = gtensor::axes_correction_walker<gtensor::indexer_walker<config_type, indexer_type, c_order>>;
             auto indexer = indexer_type{storage};
             const auto dim = gtensor::detail::make_dim(adapted_strides);
             const auto dim_offset = max_dim-dim;
@@ -122,7 +123,7 @@ TEST_CASE("test_walker","test_data_accessor")
             auto mover = std::get<5>(t);
             auto expected = std::get<6>(t);
             using iterator_type = decltype(storage.begin());
-            using walker_type = gtensor::axes_correction_walker<gtensor::cursor_walker<config_type, iterator_type>>;
+            using walker_type = gtensor::axes_correction_walker<gtensor::cursor_walker<config_type, iterator_type, c_order>>;
             const auto dim = gtensor::detail::make_dim(adapted_strides);
             const auto dim_offset = max_dim-dim;
             auto walker =  walker_type{dim_offset,adapted_strides,reset_strides,storage.begin()+offset};
@@ -139,6 +140,7 @@ TEST_CASE("test_walker_result_type","test_data_accessor")
     using value_type = int;
     using config_type = gtensor::config::extend_config_t<test_config::config_storage_selector_t<std::vector>,value_type>;
     using index_type = typename config_type::index_type;
+    using gtensor::config::c_order;
     using gtensor::basic_indexer;
     using gtensor::indexer_walker;
     using helpers_for_testing::apply_by_element;
@@ -146,14 +148,14 @@ TEST_CASE("test_walker_result_type","test_data_accessor")
     {
         using storage_type = typename config_type::template storage<value_type>;
         using indexer_type = basic_indexer<storage_type&>;
-        using walker_type = indexer_walker<config_type,indexer_type>;
+        using walker_type = indexer_walker<config_type,indexer_type,c_order>;
         REQUIRE(std::is_same_v<decltype(std::declval<storage_type>()[std::declval<index_type>()]),decltype(std::declval<walker_type>().operator*())>);
     }
     SECTION("test_walker_const_storage")
     {
         using storage_type = const typename config_type::template storage<value_type>;
         using indexer_type = basic_indexer<storage_type&>;
-        using walker_type = indexer_walker<config_type,indexer_type>;
+        using walker_type = indexer_walker<config_type,indexer_type,c_order>;
         REQUIRE(std::is_same_v<decltype(std::declval<storage_type>()[std::declval<index_type>()]),decltype(std::declval<walker_type>().operator*())>);
     }
 }

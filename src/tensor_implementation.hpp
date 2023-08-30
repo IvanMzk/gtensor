@@ -13,27 +13,28 @@ namespace gtensor{
 namespace detail{
 
 //create walker
-template<typename Config, typename Indexer> using max_dim_indexer_walker = gtensor::axes_correction_walker<gtensor::indexer_walker<Config,Indexer>>;
-template<typename Config, typename Iterator> using max_dim_iterator_walker = gtensor::axes_correction_walker<gtensor::cursor_walker<Config,Iterator>>;
+template<typename Config, typename Indexer, typename Order> using max_dim_indexer_walker = gtensor::axes_correction_walker<gtensor::indexer_walker<Config,Indexer,Order>>;
+template<typename Config, typename Iterator, typename Order> using max_dim_iterator_walker = gtensor::axes_correction_walker<gtensor::cursor_walker<Config,Iterator,Order>>;
 template<typename Core, typename Descriptor, typename DimT>
 inline auto create_walker(Core& t, const Descriptor& descriptor, const DimT& max_dim){
     using config_type = typename Core::config_type;
     using index_type = typename config_type::index_type;
+    using order = typename Core::order;
     const auto dim_offset = max_dim-descriptor.dim();
     if constexpr(has_callable_create_walker_dim_type<Core>::value){
         return t.create_walker(max_dim);
     }else if constexpr (has_callable_create_indexer<Core>::value){
         using indexer_type = decltype(t.create_indexer());
-        return max_dim_indexer_walker<config_type,indexer_type>{dim_offset,descriptor.adapted_strides(),descriptor.reset_strides(),index_type{0},t.create_indexer()};
+        return max_dim_indexer_walker<config_type,indexer_type,order>{dim_offset,descriptor.adapted_strides(),descriptor.reset_strides(),index_type{0},t.create_indexer()};
     }else if constexpr (has_callable_random_access_iterator<Core>::value){
         using iterator_type = decltype(t.begin());
-        return max_dim_iterator_walker<config_type,iterator_type>{dim_offset,descriptor.adapted_strides(),descriptor.reset_strides(),t.begin()};
+        return max_dim_iterator_walker<config_type,iterator_type,order>{dim_offset,descriptor.adapted_strides(),descriptor.reset_strides(),t.begin()};
     }else if constexpr (has_callable_subscript_operator<Core>::value){
         using indexer_type = gtensor::basic_indexer<Core&>;
-        return max_dim_indexer_walker<config_type,indexer_type>{dim_offset,descriptor.adapted_strides(),descriptor.reset_strides(),index_type{0},indexer_type{t}};
+        return max_dim_indexer_walker<config_type,indexer_type,order>{dim_offset,descriptor.adapted_strides(),descriptor.reset_strides(),index_type{0},indexer_type{t}};
     }else if constexpr (has_callable_iterator<Core>::value){
         using iterator_type = decltype(t.begin());
-        return max_dim_iterator_walker<config_type,iterator_type>{dim_offset,descriptor.adapted_strides(),descriptor.reset_strides(),t.begin()};
+        return max_dim_iterator_walker<config_type,iterator_type,order>{dim_offset,descriptor.adapted_strides(),descriptor.reset_strides(),t.begin()};
     }else{
         static_assert(detail::always_false<Core>,"can't make data accessor");
     }
@@ -42,20 +43,21 @@ template<typename Core, typename Descriptor>
 inline auto create_walker(Core& t, const Descriptor& descriptor){
     using config_type = typename Core::config_type;
     using index_type = typename config_type::index_type;
+    using order = typename Core::order;
     if constexpr(has_callable_create_walker<Core>::value){
         return t.create_walker();
     }else if constexpr (has_callable_create_indexer<Core>::value){
         using indexer_type = decltype(t.create_indexer());
-        return gtensor::indexer_walker<config_type,indexer_type>{descriptor.adapted_strides(),descriptor.reset_strides(),index_type{0},t.create_indexer()};
+        return gtensor::indexer_walker<config_type,indexer_type,order>{descriptor.adapted_strides(),descriptor.reset_strides(),index_type{0},t.create_indexer()};
     }else if constexpr (has_callable_random_access_iterator<Core>::value){
         using iterator_type = decltype(t.begin());
-        return gtensor::cursor_walker<config_type,iterator_type>{descriptor.adapted_strides(),descriptor.reset_strides(),t.begin()};
+        return gtensor::cursor_walker<config_type,iterator_type,order>{descriptor.adapted_strides(),descriptor.reset_strides(),t.begin()};
     }else if constexpr (has_callable_subscript_operator<Core>::value){
         using indexer_type = gtensor::basic_indexer<Core&>;
-        return gtensor::indexer_walker<config_type,indexer_type>{descriptor.adapted_strides(),descriptor.reset_strides(),index_type{0},indexer_type{t}};
+        return gtensor::indexer_walker<config_type,indexer_type,order>{descriptor.adapted_strides(),descriptor.reset_strides(),index_type{0},indexer_type{t}};
     }else if constexpr (has_callable_iterator<Core>::value){
         using iterator_type = decltype(t.begin());
-        return gtensor::cursor_walker<config_type,iterator_type>{descriptor.adapted_strides(),descriptor.reset_strides(),t.begin()};
+        return gtensor::cursor_walker<config_type,iterator_type,order>{descriptor.adapted_strides(),descriptor.reset_strides(),t.begin()};
     }else{
         static_assert(detail::always_false<Core>,"can't make data accessor");
     }
@@ -101,9 +103,10 @@ template<typename Core, typename Descriptor>
 inline auto create_trivial_walker(Core& t, const Descriptor& descriptor){
     using config_type = typename Core::config_type;
     using index_type = typename config_type::index_type;
+    using order = typename Core::order;
     if constexpr (has_callable_create_trivial_indexer<Core>::value){
         using indexer_type = decltype(t.create_trivial_indexer());
-        return gtensor::indexer_walker<config_type,indexer_type>{descriptor.adapted_strides(),descriptor.reset_strides(),index_type{0},t.create_trivial_indexer()};
+        return gtensor::indexer_walker<config_type,indexer_type,order>{descriptor.adapted_strides(),descriptor.reset_strides(),index_type{0},t.create_trivial_indexer()};
     }else{
         return create_walker(t,descriptor);
     }

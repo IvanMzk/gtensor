@@ -30,9 +30,9 @@ struct default_config
     //data elements storage template
     //must provide at least storage(const difference_type& n) constructor, which constructs storage of size n
     //must provide at least subscript const operator or const iterator
-    template<typename T> using storage = gtensor::basic_storage<T>;
+    //template<typename T> using storage = gtensor::basic_storage<T>;
     //template<typename T> using storage = std::vector<T>;
-    //template<typename T> using storage = gtensor::minimal_storage<T>;
+    template<typename T> using storage = gtensor::minimal_storage<T>;
 
     //meta-data elements storage template i.e. shape, strides are specialization of shape
     //must provide std::vector like interface

@@ -353,7 +353,7 @@ class reducer
             const auto axes_map = detail::make_reduce_axes_map<config_type>(pdim,axes,keep_dims);
             const auto traverse_index_strides = detail::make_traverse_index_strides(traverse_index_shape,res.descriptor().adapted_strides(),leading_axes,axes_map,order{});
             const auto traverse_index_reset_strides = detail::make_traverse_index_strides(traverse_index_shape,res.descriptor().reset_strides(),leading_axes,axes_map,order{});
-            using walker_type = cursor_walker<config_type,index_type>;
+            using walker_type = cursor_walker<config_type,index_type,order>;
             using traverser_type = walker_forward_traverser<config_type,walker_type>;
             traverser_type traverser{traverse_index_shape,walker_type{traverse_index_strides,traverse_index_reset_strides,0}};
             auto it = a_parent.begin();

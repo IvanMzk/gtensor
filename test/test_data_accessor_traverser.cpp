@@ -212,9 +212,9 @@ TEST_CASE("test_walker_forward_traverser","test_data_accessor")
     using index_type = typename config_type::index_type;
     using storage_type = typename config_type::template storage<value_type>;
     using indexer_type = gtensor::basic_indexer<storage_type&>;
-    using walker_type = gtensor::indexer_walker<config_type, indexer_type>;
     using gtensor::config::c_order;
     using gtensor::config::f_order;
+    using walker_type = gtensor::indexer_walker<config_type, indexer_type, c_order>;
     using gtensor::detail::make_strides;
     using gtensor::detail::make_adapted_strides;
     using gtensor::detail::make_reset_strides;
@@ -322,9 +322,9 @@ TEST_CASE("test_walker_bidirectional_traverser","test_data_accessor")
     using index_type = typename config_type::index_type;
     using storage_type = typename config_type::template storage<value_type>;
     using indexer_type = gtensor::basic_indexer<storage_type&>;
-    using walker_type = gtensor::indexer_walker<config_type, indexer_type>;
     using gtensor::config::c_order;
     using gtensor::config::f_order;
+    using walker_type = gtensor::indexer_walker<config_type, indexer_type, c_order>;
     using gtensor::detail::make_strides;
     using gtensor::detail::make_adapted_strides;
     using gtensor::detail::make_reset_strides;
@@ -464,9 +464,9 @@ TEST_CASE("test_walker_random_access_traverser","test_data_accessor")
     using index_type = typename config_type::index_type;
     using storage_type = typename config_type::template storage<value_type>;
     using indexer_type = gtensor::basic_indexer<storage_type&>;
-    using walker_type = gtensor::indexer_walker<config_type, indexer_type>;
     using gtensor::config::c_order;
     using gtensor::config::f_order;
+    using walker_type = gtensor::indexer_walker<config_type,indexer_type,c_order>;
     using gtensor::detail::make_strides;
     using gtensor::detail::make_adapted_strides;
     using gtensor::detail::make_reset_strides;
@@ -579,9 +579,9 @@ TEST_CASE("test_walker_range_traverser","test_data_accessor")
     using index_type = typename config_type::index_type;
     using storage_type = typename config_type::template storage<value_type>;
     using indexer_type = gtensor::basic_indexer<storage_type&>;
-    using walker_type = gtensor::indexer_walker<config_type, indexer_type>;
     using gtensor::config::c_order;
     using gtensor::config::f_order;
+    using walker_type = gtensor::indexer_walker<config_type,indexer_type,c_order>;
     using gtensor::detail::make_strides;
     using gtensor::detail::make_adapted_strides;
     using gtensor::detail::make_reset_strides;
@@ -794,7 +794,8 @@ TEST_CASE("test_walker_random_access_traverser_range","test_data_accessor")
         auto strides = make_strides(shape, elements_order);
         auto adapted_strides = make_adapted_strides(shape,strides);
         auto reset_strides = make_reset_strides(shape,strides);
-        using walker_type = gtensor::mapping_axes_walker<gtensor::indexer_walker<config_type,indexer_type>>;
+        using order_type = decltype(elements_order);
+        using walker_type = gtensor::mapping_axes_walker<gtensor::indexer_walker<config_type,indexer_type,order_type>>;
         auto walker =  walker_type{axes_map, adapted_strides, reset_strides, index_type{0}, indexer};
 
         using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_range_traverser<config_type,walker_type>>, decltype(traverse_order)>;
