@@ -455,31 +455,31 @@ public:
         cursor_{offset__}
     {}
     //axis must be in range [0,dim-1]
-    void walk(const dim_type& axis, const index_type& steps){
+    ALWAYS_INLINE void walk(const dim_type& axis, const index_type& steps){
         cursor_+=steps**(adapted_strides_it_+axis);
     }
-    void walk_back(const dim_type& axis, const index_type& steps){
+    ALWAYS_INLINE void walk_back(const dim_type& axis, const index_type& steps){
         cursor_-=steps**(adapted_strides_it_+axis);
     }
-    void step(const dim_type& axis){
+    ALWAYS_INLINE void step(const dim_type& axis){
         cursor_+=*(adapted_strides_it_+axis);
     }
-    void step_back(const dim_type& axis){
+    ALWAYS_INLINE void step_back(const dim_type& axis){
         cursor_-=*(adapted_strides_it_+axis);
     }
-    void reset(const dim_type& axis){
+    ALWAYS_INLINE void reset(const dim_type& axis){
         cursor_+=*(reset_strides_it_+axis);
     }
-    void reset_back(const dim_type& axis){
+    ALWAYS_INLINE void reset_back(const dim_type& axis){
         cursor_-=*(reset_strides_it_+axis);
     }
-    void reset_back(){
+    ALWAYS_INLINE void reset_back(){
         cursor_ = offset_;
     }
-    void update_offset(){
+    ALWAYS_INLINE void update_offset(){
         offset_+=(cursor_-offset_);
     }
-    decltype(auto) operator*()const{
+    ALWAYS_INLINE decltype(auto) operator*()const{
         if constexpr (is_cursor_iterator){
             return *cursor_;
         }else{
@@ -517,7 +517,7 @@ public:
     using base_type::reset;
     using base_type::reset_back;
     using base_type::update_offset;
-    decltype(auto) operator*()const{
+    ALWAYS_INLINE decltype(auto) operator*()const{
         return indexer[base_type::operator*()];
     }
 private:
@@ -577,19 +577,19 @@ public:
         base_walker_type{std::forward<Args>(args)...},
         axes_map_{&axes_map__}
     {}
-    void walk(const dim_type& axis, const index_type& steps){base_walker_type::walk(map_axis(axis),steps);}
-    void walk_back(const dim_type& axis, const index_type& steps){base_walker_type::walk_back(map_axis(axis),steps);}
-    void step(const dim_type& axis){
+    ALWAYS_INLINE void walk(const dim_type& axis, const index_type& steps){base_walker_type::walk(map_axis(axis),steps);}
+    ALWAYS_INLINE void walk_back(const dim_type& axis, const index_type& steps){base_walker_type::walk_back(map_axis(axis),steps);}
+    ALWAYS_INLINE void step(const dim_type& axis){
         base_walker_type::step(map_axis(axis));
     }
-    void step_back(const dim_type& axis){base_walker_type::step_back(map_axis(axis));}
-    void reset(const dim_type& axis){base_walker_type::reset(map_axis(axis));}
-    void reset_back(const dim_type& axis){base_walker_type::reset_back(map_axis(axis));}
-    void reset_back(){base_walker_type::reset_back();}
+    ALWAYS_INLINE void step_back(const dim_type& axis){base_walker_type::step_back(map_axis(axis));}
+    ALWAYS_INLINE void reset(const dim_type& axis){base_walker_type::reset(map_axis(axis));}
+    ALWAYS_INLINE void reset_back(const dim_type& axis){base_walker_type::reset_back(map_axis(axis));}
+    ALWAYS_INLINE void reset_back(){base_walker_type::reset_back();}
     using base_walker_type::operator*;
     using base_walker_type::update_offset;
 private:
-    dim_type map_axis(const dim_type& axis){
+    ALWAYS_INLINE dim_type map_axis(const dim_type& axis){
         return (*axes_map_)[axis];
     }
     const axes_map_type* axes_map_;
@@ -613,17 +613,17 @@ public:
         base_walker_type{std::forward<Args>(args)...},
         step_scale_{&step_scale__}
     {}
-    void walk(const dim_type& axis, const index_type& steps){base_walker_type::walk(axis,steps*step_scale(axis));}
-    void walk_back(const dim_type& axis, const index_type& steps){base_walker_type::walk_back(axis,steps*step_scale(axis));}
-    void step(const dim_type& axis){base_walker_type::walk(axis,step_scale(axis));}
-    void step_back(const dim_type& axis){base_walker_type::walk_back(axis,step_scale(axis));}
+    ALWAYS_INLINE void walk(const dim_type& axis, const index_type& steps){base_walker_type::walk(axis,steps*step_scale(axis));}
+    ALWAYS_INLINE void walk_back(const dim_type& axis, const index_type& steps){base_walker_type::walk_back(axis,steps*step_scale(axis));}
+    ALWAYS_INLINE void step(const dim_type& axis){base_walker_type::walk(axis,step_scale(axis));}
+    ALWAYS_INLINE void step_back(const dim_type& axis){base_walker_type::walk_back(axis,step_scale(axis));}
     using base_walker_type::reset;
     using base_walker_type::reset_back;
     using base_walker_type::operator*;
     using base_walker_type::update_offset;
 private:
 
-    index_type step_scale(const dim_type& axis)const{
+    ALWAYS_INLINE index_type step_scale(const dim_type& axis)const{
         return (*step_scale_)[axis];
     }
     const shape_type* step_scale_;
@@ -645,42 +645,42 @@ public:
         base_walker_type{std::forward<Args>(args)...},
         shape{&shape_}
     {}
-    void walk(const dim_type& axis, const index_type& steps){
+    ALWAYS_INLINE void walk(const dim_type& axis, const index_type& steps){
         if (can_move_on_axis(axis)){
             base_walker_type::walk(axis,steps);
         }
     }
-    void walk_back(const dim_type& axis, const index_type& steps){
+    ALWAYS_INLINE void walk_back(const dim_type& axis, const index_type& steps){
         if (can_move_on_axis(axis)){
             base_walker_type::walk_back(axis,steps);
         }
     }
-    void step(const dim_type& axis){
+    ALWAYS_INLINE void step(const dim_type& axis){
         if (can_move_on_axis(axis)){
             base_walker_type::step(axis);
         }
     }
-    void step_back(const dim_type& axis){
+    ALWAYS_INLINE void step_back(const dim_type& axis){
         if (can_move_on_axis(axis)){
             base_walker_type::step_back(axis);
         }
     }
-    void reset(const dim_type& axis){
+    ALWAYS_INLINE void reset(const dim_type& axis){
         base_walker_type::walk(axis,shape_element(axis)-index_type{1});
     }
-    void reset_back(const dim_type& axis){
+    ALWAYS_INLINE void reset_back(const dim_type& axis){
         base_walker_type::walk_back(axis,shape_element(axis)-index_type{1});
     }
-    void reset_back(){
+    ALWAYS_INLINE void reset_back(){
         base_walker_type::reset_back();
     }
     using base_walker_type::operator*;
     using base_walker_type::update_offset;
 private:
-    index_type shape_element(const dim_type& axis)const{
+    ALWAYS_INLINE index_type shape_element(const dim_type& axis)const{
         return (*shape)[axis];
     }
-    bool can_move_on_axis(const dim_type& axis)const{
+    ALWAYS_INLINE bool can_move_on_axis(const dim_type& axis)const{
         return shape_element(axis)>index_type{1};
     }
     const shape_type* shape;
@@ -703,37 +703,37 @@ public:
         dim_offset_{dim_offset__}
     {}
 
-    void walk(const dim_type& axis, const index_type& steps){
+    ALWAYS_INLINE void walk(const dim_type& axis, const index_type& steps){
         if (axis>=dim_offset_){
             base_walker_type::walk(axis-dim_offset_,steps);
         }
     }
-    void walk_back(const dim_type& axis, const index_type& steps){
+    ALWAYS_INLINE void walk_back(const dim_type& axis, const index_type& steps){
         if (axis>=dim_offset_){
             base_walker_type::walk_back(axis-dim_offset_,steps);
         }
     }
-    void step(const dim_type& axis){
+    ALWAYS_INLINE void step(const dim_type& axis){
         if (axis>=dim_offset_){
             base_walker_type::step(axis-dim_offset_);
         }
     }
-    void step_back(const dim_type& axis){
+    ALWAYS_INLINE void step_back(const dim_type& axis){
         if (axis>=dim_offset_){
             base_walker_type::step_back(axis-dim_offset_);
         }
     }
-    void reset(const dim_type& axis){
+    ALWAYS_INLINE void reset(const dim_type& axis){
         if (axis>=dim_offset_){
             base_walker_type::reset(axis-dim_offset_);
         }
     }
-    void reset_back(const dim_type& axis){
+    ALWAYS_INLINE void reset_back(const dim_type& axis){
         if (axis>=dim_offset_){
             base_walker_type::reset_back(axis-dim_offset_);
         }
     }
-    void reset_back(){
+    ALWAYS_INLINE void reset_back(){
         base_walker_type::reset_back();
     }
     using base_walker_type::operator*;
@@ -772,9 +772,9 @@ public:
     const auto& index()const{return index_;}
     const auto& walker()const{return walker_;}
     auto& walker(){return walker_;}
-    decltype(auto) operator*()const{return *walker_;}
+    ALWAYS_INLINE decltype(auto) operator*()const{return *walker_;}
     template<typename Order>
-    bool next(){
+    ALWAYS_INLINE bool next(){
         ASSERT_ORDER(Order);
         if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
             return detail::next_c(walker_,index_.begin(),shape_->begin(),dim_);
@@ -810,10 +810,10 @@ public:
         axis_min_{axis_min__},
         axis_max_{axis_max__}
     {}
-    dim_type axis_min()const{return axis_min_;}
-    dim_type axis_max()const{return axis_max_;}
+    ALWAYS_INLINE dim_type axis_min()const{return axis_min_;}
+    ALWAYS_INLINE dim_type axis_max()const{return axis_max_;}
     template<typename Order>
-    bool next(){
+    ALWAYS_INLINE bool next(){
         ASSERT_ORDER(Order);
         if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
             return detail::next_c(walker_,index_.begin(),shape_->begin(),axis_min_,axis_max_);
@@ -843,7 +843,7 @@ public:
     using base_type::base_type;
 
     template<typename Order>
-    bool prev(){
+    ALWAYS_INLINE bool prev(){
         ASSERT_ORDER(Order);
         if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
             if constexpr (is_range_traverser){
@@ -860,14 +860,14 @@ public:
         }
     }
 
-    void to_last(){
+    ALWAYS_INLINE void to_last(){
         if constexpr (is_range_traverser){
             detail::to_last(walker_,index_.begin(),shape_->begin(),base_type::axis_min(),base_type::axis_max());
         }else{
             detail::to_last(walker_,index_.begin(),shape_->begin(),dim_);
         }
     }
-    void to_first(){
+    ALWAYS_INLINE void to_first(){
         if constexpr (is_range_traverser){
             detail::to_first(walker_,index_.begin(),base_type::axis_min(),base_type::axis_max());
         }else{
@@ -901,10 +901,10 @@ public:
         base_type(shape__, std::forward<Walker_>(walker__), args...),
         strides_{&strides__}
     {}
-    bool next(){return base_type::template next<Order>();}
-    bool prev(){return base_type::template prev<Order>();}
+    ALWAYS_INLINE bool next(){return base_type::template next<Order>();}
+    ALWAYS_INLINE bool prev(){return base_type::template prev<Order>();}
     //n must be in range [0,size-1], where size = make_size(shape__)
-    void advance(index_type n){
+    ALWAYS_INLINE void advance(index_type n){
         to_first();
         if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
             if constexpr (is_range_traverser){

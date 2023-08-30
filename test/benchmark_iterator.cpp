@@ -103,11 +103,11 @@ TEST_CASE("benchmark_iterator","[benchmark_tensor]")
     using gtensor::config::c_order;
     using gtensor::config::f_order;
 
-    // const auto n_iters = 1;
-    // const auto shapes = benchmark_helpers::shapes;
+    const auto n_iters = 1;
+    const auto shapes = benchmark_helpers::shapes;
 
-    const auto n_iters = 100;
-    const auto shapes = benchmark_helpers::small_shapes;
+    // const auto n_iters = 100;
+    // const auto shapes = benchmark_helpers::small_shapes;
 
     //tensor
     bench_iterator("tensor traverse forward",n_iters,shapes,[](auto&& t){return t;},traverse_forward);
