@@ -18,6 +18,15 @@ struct no_value{};
 #define ASSERT_ORDER(order) static_assert(std::is_same_v<order, gtensor::config::c_order>||std::is_same_v<order, gtensor::config::f_order>, "order must be c_order or f_order");
 #define ASSERT_TENSOR(t) static_assert(detail::is_tensor_v<t>,"tensor expected");
 
+#if defined(__clang__)
+#define ALWAYS_INLINE [[clang::always_inline]]
+#elif defined(__GNUC__) || defined(__GNUG__)
+#define ALWAYS_INLINE __attribute__((always_inline)) inline
+#elif defined(_MSC_VER)
+#define ALWAYS_INLINE __forceinline
+#else
+#define ALWAYS_INLINE inline
+#endif
 
 #define GENERATE_HAS_METHOD_SIGNATURE(function_name,function_signature,trait_name)\
 template<typename T, typename = void>\
