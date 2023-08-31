@@ -97,7 +97,7 @@ if (i == 0){\
 
 //traverse all axes
 template<typename Walker, typename IdxIt, typename ShIt, typename DimT>
-bool next_c(Walker& walker, const IdxIt index_first, const ShIt shape_first, DimT dim){
+ALWAYS_INLINE bool next_c(Walker& walker, const IdxIt index_first, const ShIt shape_first, DimT dim){
     while(dim!=0){
         --dim;
         NEXT_ON_AXIS(dim);
@@ -106,7 +106,7 @@ bool next_c(Walker& walker, const IdxIt index_first, const ShIt shape_first, Dim
 }
 
 template<typename Walker, typename IdxIt, typename ShIt, typename DimT>
-bool next_f(Walker& walker, const IdxIt index_first, const ShIt shape_first, const DimT& dim){
+ALWAYS_INLINE bool next_f(Walker& walker, const IdxIt index_first, const ShIt shape_first, const DimT& dim){
     using dim_type = typename std::iterator_traits<ShIt>::difference_type;
     for (dim_type a=0; a!=dim; ++a){
         NEXT_ON_AXIS(a);
@@ -115,7 +115,7 @@ bool next_f(Walker& walker, const IdxIt index_first, const ShIt shape_first, con
 }
 
 template<typename Walker, typename IdxIt, typename ShIt, typename DimT>
-bool prev_c(Walker& walker, const IdxIt index_first, const ShIt shape_first, DimT dim){
+ALWAYS_INLINE bool prev_c(Walker& walker, const IdxIt index_first, const ShIt shape_first, DimT dim){
     while(dim!=0){
         --dim;
         PREV_ON_AXIS(dim);
@@ -124,7 +124,7 @@ bool prev_c(Walker& walker, const IdxIt index_first, const ShIt shape_first, Dim
 }
 
 template<typename Walker, typename IdxIt, typename ShIt, typename DimT>
-bool prev_f(Walker& walker, const IdxIt index_first, const ShIt shape_first, const DimT& dim){
+ALWAYS_INLINE bool prev_f(Walker& walker, const IdxIt index_first, const ShIt shape_first, const DimT& dim){
     using dim_type = typename std::iterator_traits<ShIt>::difference_type;
     for (dim_type a=0; a!=dim; ++a){
         PREV_ON_AXIS(a);
@@ -134,7 +134,7 @@ bool prev_f(Walker& walker, const IdxIt index_first, const ShIt shape_first, con
 
 //traverse axes range
 template<typename Walker, typename IdxIt, typename ShIt, typename DimT>
-bool next_c(Walker& walker, const IdxIt index_first, const ShIt shape_first, const DimT& axis_min, DimT axis_max){
+ALWAYS_INLINE bool next_c(Walker& walker, const IdxIt index_first, const ShIt shape_first, const DimT& axis_min, DimT axis_max){
     while(axis_max!=axis_min){
         --axis_max;
         NEXT_ON_AXIS(axis_max);
@@ -143,7 +143,7 @@ bool next_c(Walker& walker, const IdxIt index_first, const ShIt shape_first, con
 }
 
 template<typename Walker, typename IdxIt, typename ShIt, typename DimT>
-bool next_f(Walker& walker, const IdxIt index_first, const ShIt shape_first, DimT axis_min, const DimT& axis_max){
+ALWAYS_INLINE bool next_f(Walker& walker, const IdxIt index_first, const ShIt shape_first, DimT axis_min, const DimT& axis_max){
     for (;axis_min!=axis_max; ++axis_min){
         NEXT_ON_AXIS(axis_min);
     }
@@ -151,7 +151,7 @@ bool next_f(Walker& walker, const IdxIt index_first, const ShIt shape_first, Dim
 }
 
 template<typename Walker, typename IdxIt, typename ShIt, typename DimT>
-bool prev_c(Walker& walker, const IdxIt index_first, const ShIt shape_first, const DimT& axis_min, DimT axis_max){
+ALWAYS_INLINE bool prev_c(Walker& walker, const IdxIt index_first, const ShIt shape_first, const DimT& axis_min, DimT axis_max){
     while(axis_max!=axis_min){
         --axis_max;
         PREV_ON_AXIS(axis_max);
@@ -160,7 +160,7 @@ bool prev_c(Walker& walker, const IdxIt index_first, const ShIt shape_first, con
 }
 
 template<typename Walker, typename IdxIt, typename ShIt, typename DimT>
-bool prev_f(Walker& walker, const IdxIt index_first, const ShIt shape_first, DimT axis_min, const DimT& axis_max){
+ALWAYS_INLINE bool prev_f(Walker& walker, const IdxIt index_first, const ShIt shape_first, DimT axis_min, const DimT& axis_max){
     for (;axis_min!=axis_max; ++axis_min){
         PREV_ON_AXIS(axis_min);
     }
@@ -178,14 +178,14 @@ i = dec_axis_size;
 
 //move on all axes
 template<typename Walker, typename IdxIt>
-void to_first(Walker& walker, IdxIt index_first, const IdxIt index_last){
+ALWAYS_INLINE void to_first(Walker& walker, IdxIt index_first, const IdxIt index_last){
     walker.reset_back();
     for (;index_first!=index_last; ++index_first){
         *index_first=0;
     }
 }
 template<typename Walker, typename IdxIt, typename ShIt, typename DimT>
-void to_last(Walker& walker, const IdxIt index_first, const ShIt shape_first, DimT dim){
+ALWAYS_INLINE void to_last(Walker& walker, const IdxIt index_first, const ShIt shape_first, DimT dim){
     while(dim!=0){
         --dim;
         TO_LAST_ON_AXIS(dim);
@@ -193,7 +193,7 @@ void to_last(Walker& walker, const IdxIt index_first, const ShIt shape_first, Di
 }
 //move on axes range
 template<typename Walker, typename IdxIt, typename DimT>
-void to_first(Walker& walker, const IdxIt index_first, DimT axis_min, const DimT& axis_max){
+ALWAYS_INLINE void to_first(Walker& walker, const IdxIt index_first, DimT axis_min, const DimT& axis_max){
     for (;axis_min!=axis_max; ++axis_min){
         auto& i = *(index_first+axis_min);
         walker.walk_back(axis_min, i);
@@ -201,7 +201,7 @@ void to_first(Walker& walker, const IdxIt index_first, DimT axis_min, const DimT
     }
 }
 template<typename Walker, typename IdxIt, typename ShIt, typename DimT>
-void to_last(Walker& walker, const IdxIt index_first, const ShIt shape_first, DimT axis_min, const DimT& axis_max){
+ALWAYS_INLINE void to_last(Walker& walker, const IdxIt index_first, const ShIt shape_first, DimT axis_min, const DimT& axis_max){
     for (;axis_min!=axis_max; ++axis_min){
         TO_LAST_ON_AXIS(axis_min);
     }
@@ -236,13 +236,13 @@ if(n==0){\
 
 //move on axes range
 template<typename Walker, typename IdxIt,  typename StIt, typename DimT, typename IdxT>
-void advance_c(Walker& walker, IdxIt index_first, StIt strides_first, DimT axis_min, const DimT& axis_max, IdxT n){
+ALWAYS_INLINE void advance_c(Walker& walker, IdxIt index_first, StIt strides_first, DimT axis_min, const DimT& axis_max, IdxT n){
     for (;axis_min!=axis_max; ++axis_min){
         ADVANCE_ON_AXIS(axis_min);
     }
 }
 template<typename Walker, typename IdxIt,  typename StIt, typename DimT, typename IdxT>
-void advance_f(Walker& walker, IdxIt index_first, StIt strides_first, const DimT& axis_min, DimT axis_max, IdxT n){
+ALWAYS_INLINE void advance_f(Walker& walker, IdxIt index_first, StIt strides_first, const DimT& axis_min, DimT axis_max, IdxT n){
     while(axis_max!=axis_min){
         --axis_max;
         ADVANCE_ON_AXIS(axis_max);
@@ -250,13 +250,13 @@ void advance_f(Walker& walker, IdxIt index_first, StIt strides_first, const DimT
 }
 //move on all axes without index state
 template<typename Walker, typename StIt, typename DimT, typename IdxT>
-void advance_c(Walker& walker, StIt strides_first, const DimT& dim, IdxT n){
+ALWAYS_INLINE void advance_c(Walker& walker, StIt strides_first, const DimT& dim, IdxT n){
     for (DimT a=0; a!=dim; ++a){
         ADVANCE_ON_AXIS_NO_INDEX(a);
     }
 }
 template<typename Walker, typename StIt, typename DimT, typename IdxT>
-void advance_f(Walker& walker, StIt strides_first, DimT dim, IdxT n){
+ALWAYS_INLINE void advance_f(Walker& walker, StIt strides_first, DimT dim, IdxT n){
     while(dim!=0){
         --dim;
         ADVANCE_ON_AXIS_NO_INDEX(dim);
@@ -294,7 +294,7 @@ public:
         parent_{&parent__}
     {}
     template<typename U>
-    decltype(auto) operator[](const U& i)const{
+    ALWAYS_INLINE decltype(auto) operator[](const U& i)const{
         return (*parent_)[i];
     }
 };
@@ -314,7 +314,7 @@ public:
         indexer_{std::forward<Indexer_>(indexer__)}
     {}
     template<typename U>
-    decltype(auto) operator[](const U& i)const{
+    ALWAYS_INLINE decltype(auto) operator[](const U& i)const{
         return indexer_[i];
     }
 };
@@ -335,7 +335,7 @@ public:
         converter_{&converter__}
     {}
     template<typename U>
-    decltype(auto) operator[](const U& i)const{
+    ALWAYS_INLINE decltype(auto) operator[](const U& i)const{
         return indexer_[converter_->operator()(i)];
     }
 private:
@@ -357,7 +357,7 @@ public:
         converter_{std::forward<Converter_>(converter__)}
     {}
     template<typename U>
-    decltype(auto) operator[](const U& i)const{
+    ALWAYS_INLINE decltype(auto) operator[](const U& i)const{
         return indexer_[converter_(i)];
     }
 private:
@@ -390,7 +390,7 @@ public:
         walker_{std::forward<Walker_>(walker__)},
         dim_{static_cast<const dim_type&>(strides__.size())}
     {}
-    decltype(auto) operator[](const index_type& n)const{
+    ALWAYS_INLINE decltype(auto) operator[](const index_type& n)const{
         walker_.reset_back();
         if constexpr (std::is_same_v<gtensor::config::c_order,Order>){
             detail::advance_c(walker_,strides_->begin(),dim_,n);
@@ -415,7 +415,7 @@ public:
     explicit iterator_indexer(Iterator_&& iterator__):
         iterator_{std::forward<Iterator_>(iterator__)}
     {}
-    decltype(auto) operator[](const difference_type& i)const{
+    ALWAYS_INLINE decltype(auto) operator[](const difference_type& i)const{
         iterator_type tmp = iterator_;
         std::advance(tmp, i);
         return *tmp;
@@ -577,15 +577,27 @@ public:
         base_walker_type{std::forward<Args>(args)...},
         axes_map_{&axes_map__}
     {}
-    ALWAYS_INLINE void walk(const dim_type& axis, const index_type& steps){base_walker_type::walk(map_axis(axis),steps);}
-    ALWAYS_INLINE void walk_back(const dim_type& axis, const index_type& steps){base_walker_type::walk_back(map_axis(axis),steps);}
+    ALWAYS_INLINE void walk(const dim_type& axis, const index_type& steps){
+        base_walker_type::walk(map_axis(axis),steps);
+    }
+    ALWAYS_INLINE void walk_back(const dim_type& axis, const index_type& steps){
+        base_walker_type::walk_back(map_axis(axis),steps);
+    }
     ALWAYS_INLINE void step(const dim_type& axis){
         base_walker_type::step(map_axis(axis));
     }
-    ALWAYS_INLINE void step_back(const dim_type& axis){base_walker_type::step_back(map_axis(axis));}
-    ALWAYS_INLINE void reset(const dim_type& axis){base_walker_type::reset(map_axis(axis));}
-    ALWAYS_INLINE void reset_back(const dim_type& axis){base_walker_type::reset_back(map_axis(axis));}
-    ALWAYS_INLINE void reset_back(){base_walker_type::reset_back();}
+    ALWAYS_INLINE void step_back(const dim_type& axis){
+        base_walker_type::step_back(map_axis(axis));
+    }
+    ALWAYS_INLINE void reset(const dim_type& axis){
+        base_walker_type::reset(map_axis(axis));
+    }
+    ALWAYS_INLINE void reset_back(const dim_type& axis){
+        base_walker_type::reset_back(map_axis(axis));
+    }
+    ALWAYS_INLINE void reset_back(){
+        base_walker_type::reset_back();
+    }
     using base_walker_type::operator*;
     using base_walker_type::update_offset;
 private:
@@ -613,10 +625,18 @@ public:
         base_walker_type{std::forward<Args>(args)...},
         step_scale_{&step_scale__}
     {}
-    ALWAYS_INLINE void walk(const dim_type& axis, const index_type& steps){base_walker_type::walk(axis,steps*step_scale(axis));}
-    ALWAYS_INLINE void walk_back(const dim_type& axis, const index_type& steps){base_walker_type::walk_back(axis,steps*step_scale(axis));}
-    ALWAYS_INLINE void step(const dim_type& axis){base_walker_type::walk(axis,step_scale(axis));}
-    ALWAYS_INLINE void step_back(const dim_type& axis){base_walker_type::walk_back(axis,step_scale(axis));}
+    ALWAYS_INLINE void walk(const dim_type& axis, const index_type& steps){
+        base_walker_type::walk(axis,steps*step_scale(axis));
+    }
+    ALWAYS_INLINE void walk_back(const dim_type& axis, const index_type& steps){
+        base_walker_type::walk_back(axis,steps*step_scale(axis));
+    }
+    ALWAYS_INLINE void step(const dim_type& axis){
+        base_walker_type::walk(axis,step_scale(axis));
+    }
+    ALWAYS_INLINE void step_back(const dim_type& axis){
+        base_walker_type::walk_back(axis,step_scale(axis));
+    }
     using base_walker_type::reset;
     using base_walker_type::reset_back;
     using base_walker_type::operator*;

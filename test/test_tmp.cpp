@@ -14,6 +14,8 @@ using gtensor::basic_tensor;
 TEST_CASE("test_tmp","[test_tmp]")
 {
 
+    using benchmark_helpers::timing;
+    using benchmark_helpers::shapes;
 
     using gtensor::config::c_order;
     using gtensor::config::f_order;
@@ -24,26 +26,10 @@ TEST_CASE("test_tmp","[test_tmp]")
     using shape_type = tensor_type::shape_type;
     using helpers_for_testing::range_to_str;
     using gtensor::detail::shape_to_str;
-    using gtensor::detail::next_13::next_c;
-    using gtensor::detail::next_13::prev_c;
 
-    auto t = tensor<int,c_order>{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}};
-    //auto t = tensor<int,c_order>({5,5,5},0);
-    //auto t = tensor_type{{1,2,3},{4,5,6}};
-    //std::cout<<std::endl<<t;
-    //using walker_type = decltype(t.create_walker());
-    //using travrser_type = gtensor::walker_forward_traverser<config_type,walker_type>;
-    //travrser_type tr{t.shape(),t.create_walker()};
+    auto t = tensor<double,c_order>{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}};
 
-    auto w = t.create_walker();
-    shape_type index(t.dim(),0);
-    auto n = t.size();
-    while(n!=0){
-        --n;
-        prev_c(w,index.begin(),t.shape().begin(),t.dim());
-        std::cout<<std::endl<<shape_to_str(index)<<" "<<*w;
-    }
-
-
+    REQUIRE(std::is_same_v<decltype(t.begin()),decltype(t.begin_trivial())>);
+    REQUIRE(std::is_same_v<decltype(t.traverse_order_adapter(f_order{}).begin()),decltype(t.traverse_order_adapter(f_order{}).begin_trivial())>);
 
 }
