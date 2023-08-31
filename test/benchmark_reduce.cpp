@@ -122,8 +122,9 @@ TEST_CASE("benchmark_reduce","[benchmark_tensor]")
     const auto n_iters = 1;
     const auto shapes = benchmark_helpers::shapes;
 
+    bench_reduce("reduce sum on tensor",n_iters,shapes,axes,[](auto&& t){return t;},reducer_reduce_sum);
     //bench_reduce("reduce_binary sum on tensor",n_iters,shapes,axes,[](auto&& t){return t;},reducer_reduce_binary_sum);
-    bench_reduce("reduce_binary sum on expression view t+t+t+t+t+t+t+t+t+t",n_iters,shapes,axes,[](auto&& t){return t+t+t+t+t+t+t+t+t+t;},reducer_reduce_binary_sum);
+    //bench_reduce("reduce_binary sum on expression view t+t+t+t+t+t+t+t+t+t",n_iters,shapes,axes,[](auto&& t){return t+t+t+t+t+t+t+t+t+t;},reducer_reduce_binary_sum);
 
 }
 
