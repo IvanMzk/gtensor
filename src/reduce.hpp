@@ -438,6 +438,34 @@ class reducer
         return res;
     }
 
+    //reduce like over flatten
+    template<typename F, typename...Ts, typename Initial>
+    static auto reduce_binary_flatten_(const basic_tensor<Ts...>& parent, F reduce_f, bool keep_dims, const Initial& initial){
+        using parent_type = basic_tensor<Ts...>;
+        using order = typename parent_type::order;
+        using config_type = typename parent_type::config_type;
+        using value_type = typename parent_type::value_type;
+        static constexpr bool has_initial = !std::is_same_v<Initial,detail::no_value>;
+        using initial_type = std::conditional_t<has_initial, Initial, value_type>;
+        using result_type =  decltype(reduce_f(std::declval<initial_type>(),std::declval<value_type>()));
+        using res_value_type = std::remove_cv_t<std::remove_reference_t<result_type>>;
+        using res_config_type = config::extend_config_t<config_type,res_value_type>;
+        using res_type = tensor<res_value_type,order,res_config_type>;
+        auto a_parent = parent.traverse_order_adapter(order{});
+        res_type res(detail::make_reduce_shape(parent.shape(),keep_dims));
+        if constexpr (has_initial){
+            *res.begin() = std::accumulate(a_parent.begin(),a_parent.end(),initial,reduce_f);
+        }else{
+            if (parent.empty()){
+                throw value_error("cant reduce zero size dimension without initial value");
+            }else{
+                auto it=a_parent.begin();
+                *res.begin() = std::accumulate(it+1,a_parent.end(),*it,reduce_f);
+            }
+        }
+        return res;
+    }
+
     //F takes iterators range to be reduces and additional args
     template<typename F, typename Axes, typename...Ts, typename...Args>
     static auto reduce_(const basic_tensor<Ts...>& parent, const Axes& axes_, F reduce_f, bool keep_dims, bool any_order, Args&&...args){
@@ -635,6 +663,11 @@ public:
         return reduce_binary_(t,axes,f,keep_dims,initial);
     }
 
+    template<typename F, typename...Ts, typename Initial>
+    static auto reduce_binary_flatten(const basic_tensor<Ts...>& t, F f, bool keep_dims, const Initial& initial){
+        return reduce_binary_flatten_(t,f,keep_dims,initial);
+    }
+
     template<typename F, typename...Ts, typename...Args>
     static auto reduce_flatten(const basic_tensor<Ts...>& t, F f, bool keep_dims, bool any_order, Args&&...args){
         return reduce_flatten_(t,f,keep_dims,any_order,std::forward<Args>(args)...);
@@ -678,7 +711,14 @@ auto reduce_binary(const basic_tensor<Ts...>& t, const Axes& axes, F f, bool kee
     return reducer_selector_t<config_type>::reduce_binary(t, axes, f, keep_dims, initial);
 }
 
-//reduce like over flatten
+//reduce like over flatten, F is binary functor
+template<typename F, typename...Ts, typename Initial=detail::no_value>
+auto reduce_binary_flatten(const basic_tensor<Ts...>& t, F f, bool keep_dims, const Initial& initial=Initial{}){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return reducer_selector_t<config_type>::reduce_binary_flatten(t, f, keep_dims, initial);
+}
+
+//reduce like over flatten, F takes iterators range to be reduced
 //if any_order true traverse order unspecified, c_order otherwise
 template<typename F, typename...Ts, typename...Args>
 auto reduce_flatten(const basic_tensor<Ts...>& t, F f, bool keep_dims, bool any_order, Args&&...args){

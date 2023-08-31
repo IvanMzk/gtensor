@@ -677,6 +677,59 @@ TEMPLATE_TEST_CASE("test_reduce_binary_exception","[test_reduce]",
     apply_by_element(test,test_data);
 }
 
+TEMPLATE_TEST_CASE("test_reduce_binary_flatten","[test_reduce]",
+    gtensor::config::c_order,
+    gtensor::config::f_order
+)
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type,TestType>;
+    using test_reduce_binary_::max;
+    using test_reduce_binary_::min;
+    using gtensor::detail::no_value;
+    using gtensor::reduce_binary_flatten;
+    using helpers_for_testing::apply_by_element;
+    //0tensor,1functor,2keep_dims,3initial,4expected
+    auto test_data = std::make_tuple(
+        //keep_dims is false
+        std::make_tuple(tensor_type{}, std::plus<void>{}, false, value_type{0}, tensor_type(value_type{0})),
+        std::make_tuple(tensor_type{}, std::multiplies<void>{}, false, value_type{1}, tensor_type(value_type{1})),
+        std::make_tuple(tensor_type{}.reshape(1,0), std::plus<void>{}, false, value_type{0}, tensor_type(value_type{0})),
+        std::make_tuple(tensor_type{}.reshape(1,0), std::multiplies<void>{}, false, value_type{1}, tensor_type(value_type{1})),
+        std::make_tuple(tensor_type{1,2,3,4,5,6}, std::plus<void>{}, false, no_value{}, tensor_type(21)),
+        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, std::plus<void>{}, false, no_value{}, tensor_type(21)),
+        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, std::plus<void>{}, false, no_value{}, tensor_type(21)),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::plus<void>{}, false, no_value{}, tensor_type(21)),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::multiplies<void>{}, false, no_value{}, tensor_type(720)),
+        std::make_tuple(tensor_type{{1,6,7,9},{4,5,7,0}}, max{}, false, no_value{}, tensor_type(9)),
+        std::make_tuple(tensor_type{{1,6,7,9},{4,5,7,0}}, min{}, false, no_value{}, tensor_type(0)),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::plus<void>{}, false, no_value{}, tensor_type(28)),
+        //keep_dims is true
+        std::make_tuple(tensor_type{}, std::plus<void>{}, true, value_type{0}, tensor_type{value_type{0}}),
+        std::make_tuple(tensor_type{}, std::multiplies<void>{}, true, value_type{1}, tensor_type{value_type{1}}),
+        std::make_tuple(tensor_type{}.reshape(2,1,0), std::plus<void>{}, true, value_type{0}, tensor_type{{{value_type{0}}}}),
+        std::make_tuple(tensor_type{}.reshape(0,2,3), std::multiplies<void>{}, true, value_type{1}, tensor_type{{{value_type{1}}}}),
+        std::make_tuple(tensor_type{1,2,3,4,5,6}, std::plus<void>{}, true, no_value{}, tensor_type{21}),
+        std::make_tuple(tensor_type{{1},{2},{3},{4},{5},{6}}, std::plus<void>{}, true, no_value{}, tensor_type{{21}}),
+        std::make_tuple(tensor_type{{1,2,3,4,5,6}}, std::plus<void>{}, true, no_value{}, tensor_type{{21}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::plus<void>{}, true, no_value{}, tensor_type{{21}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::multiplies<void>{}, true, no_value{}, tensor_type{{720}}),
+        std::make_tuple(tensor_type{{1,6,7,9},{4,5,7,0}}, max{}, true, no_value{}, tensor_type{{9}}),
+        std::make_tuple(tensor_type{{1,6,7,9},{4,5,7,0}}, min{}, true, no_value{}, tensor_type{{0}}),
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::plus<void>{}, true, no_value{}, tensor_type{{{28}}})
+    );
+    auto test = [](const auto& t){
+        auto tensor = std::get<0>(t);
+        auto functor = std::get<1>(t);
+        auto keep_dims = std::get<2>(t);
+        auto initial = std::get<3>(t);
+        auto expected = std::get<4>(t);
+        auto result = reduce_binary_flatten(tensor, functor, keep_dims, initial);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test, test_data);
+}
+
 namespace test_reduce_{
 
 struct max
