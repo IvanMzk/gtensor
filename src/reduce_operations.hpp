@@ -12,6 +12,15 @@ namespace gtensor{
 //functors to use in tensor_math reduce functions
 namespace math_reduce_operations{
 
+template<typename Operation>
+struct logical_binary_operation{
+    const Operation op{};
+    template<typename U, typename V>
+    bool operator()(const U& u, const V& v)const{
+        return op(static_cast<const bool&>(u),static_cast<const bool&>(v));
+    }
+};
+
 struct all
 {
     template<typename It>
@@ -27,6 +36,7 @@ struct any
         return std::any_of(first,last,[](const auto& e){return static_cast<bool>(e);});
     }
 };
+
 
 //test if initial argument contain valid initial value
 template<typename Initial, typename T> constexpr bool is_initial_v = !std::is_same_v<Initial,gtensor::detail::no_value> && detail::is_static_castable_v<Initial,T>;

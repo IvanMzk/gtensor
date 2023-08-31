@@ -18,24 +18,32 @@ static auto NAME(Args&&...args){\
     return n_operator(F{},std::forward<Args>(args)...);\
 }
 
-#define GTENSOR_TENSOR_MATH_REDUCE_FUNCTION(NAME,F)\
+#define GTENSOR_TENSOR_MATH_REDUCE_FUNCTION(NAME,F,INITIAL)\
 template<typename...Ts, typename Axes>\
-static auto NAME(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){\
-    return reduce(t,axes,F{},keep_dims,true);\
+static auto NAME(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims){\
+    return reduce_binary(t,axes,F{},keep_dims,INITIAL);\
 }\
 template<typename...Ts>\
-static auto NAME(const basic_tensor<Ts...>& t, bool keep_dims = false){\
-    return reduce_flatten(t,F{},keep_dims,true);\
+static auto NAME(const basic_tensor<Ts...>& t, bool keep_dims){\
+    return reduce_binary_flatten(t,F{},keep_dims,INITIAL);\
 }
 
-#define GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(NAME,F)\
-template<typename...Ts, typename Axes, typename Initial = gtensor::detail::no_value>\
-static auto NAME(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false, const Initial& initial = Initial{}){\
-    return reduce(t,axes,F{},keep_dims,true,initial);\
+#define GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(NAME,F,INITIAL)\
+template<typename...Ts, typename Axes, typename Initial>\
+static auto NAME(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims, const Initial& initial){\
+    if constexpr (std::is_same_v<gtensor::detail::no_value,Initial>){\
+        return reduce_binary(t,axes,F{},keep_dims,INITIAL);\
+    }else{\
+        return reduce_binary(t,axes,F{},keep_dims,initial);\
+    }\
 }\
-template<typename...Ts, typename Initial = gtensor::detail::no_value>\
-static auto NAME(const basic_tensor<Ts...>& t, bool keep_dims = false, const Initial& initial = Initial{}){\
-    return reduce_flatten(t,F{},keep_dims,true,initial);\
+template<typename...Ts, typename Initial>\
+static auto NAME(const basic_tensor<Ts...>& t, bool keep_dims, const Initial& initial){\
+    if constexpr (std::is_same_v<gtensor::detail::no_value,Initial>){\
+        return reduce_binary_flatten(t,F{},keep_dims,INITIAL);\
+    }else{\
+        return reduce_binary_flatten(t,F{},keep_dims,initial);\
+    }\
 }
 
 #define GTENSOR_TENSOR_MATH_CUMULATE_FUNCTION(NAME,F)\
@@ -143,27 +151,27 @@ struct tensor_math
 
     //test if all elements along given axes evaluate to true
     //axes may be scalar or container
-    GTENSOR_TENSOR_MATH_REDUCE_FUNCTION(all,math_reduce_operations::all);
+    GTENSOR_TENSOR_MATH_REDUCE_FUNCTION(all,math_reduce_operations::logical_binary_operation<std::logical_and<void>>,true);
 
     //test if any of elements along given axes evaluate to true
     //axes may be scalar or container
-    GTENSOR_TENSOR_MATH_REDUCE_FUNCTION(any,math_reduce_operations::any);
+    GTENSOR_TENSOR_MATH_REDUCE_FUNCTION(any,math_reduce_operations::logical_binary_operation<std::logical_or<void>>,false);
 
     //min element along given axes
     //axes may be scalar or container
-    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(amin,math_reduce_operations::amin);
+    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(amin,math_reduce_operations::nan_propagate_comparator<std::less<void>>,gtensor::detail::no_value{});
 
     // //max element along given axes
     // //axes may be scalar or container
-    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(amax,math_reduce_operations::amax);
+    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(amax,math_reduce_operations::nan_propagate_comparator<std::greater<void>>,gtensor::detail::no_value{});
 
     //sum elements along given axes
     //axes may be scalar or container
-    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(sum,math_reduce_operations::sum);
+    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(sum,math_reduce_operations::nan_propagate_operation<std::plus<void>>,typename basic_tensor<Ts...>::value_type{0});
 
     //multiply elements along given axes
     //axes may be scalar or container
-    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(prod,math_reduce_operations::prod);
+    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(prod,math_reduce_operations::nan_propagate_operation<std::multiplies<void>>,typename basic_tensor<Ts...>::value_type{1});
 
     //cumulative sum along given axis
     //axis is scalar
@@ -176,19 +184,19 @@ struct tensor_math
     //nan versions
     //min element along given axes ignoring nan
     //axes may be scalar or container
-    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(nanmin,math_reduce_operations::nanmin);
+    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(nanmin,math_reduce_operations::nan_ignore_comparator<std::less<void>>,gtensor::detail::no_value{});
 
     //max element along given axes ignoring nan
     //axes may be scalar or container
-    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(nanmax,math_reduce_operations::nanmax);
+    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(nanmax,math_reduce_operations::nan_ignore_comparator<std::greater<void>>,gtensor::detail::no_value{});
 
     //sum elements along given axes, treating nan as zero
     //axes may be scalar or container
-    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(nansum,math_reduce_operations::nansum);
+    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(nansum,math_reduce_operations::nan_ignoring_operation<std::plus<void>>,typename basic_tensor<Ts...>::value_type{0});
 
     //multiply elements along given axes, treating nan as one
     //axes may be scalar or container
-    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(nanprod,math_reduce_operations::nanprod);
+    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(nanprod,math_reduce_operations::nan_ignoring_operation<std::multiplies<void>>,typename basic_tensor<Ts...>::value_type{1});
 
     //cumulative sum along given axis, treating nan as zero
     //axis is scalar
