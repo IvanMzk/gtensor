@@ -98,10 +98,7 @@ TEMPLATE_TEST_CASE("test_reduce_binary_sum","[benchmark_tensor]",
     REQUIRE(benchmark_reduce_::reduce_binary_sum(t,std::vector<int>{2,3}) == tensor_type{{{10,18,13,14},{7,9,8,12}},{{5,13,10,16},{17,9,13,12}},{{9,12,13,12},{13,14,10,7}}});
 }
 
-TEMPLATE_TEST_CASE("benchmark_reduce","[benchmark_tensor]",
-    gtensor::config::c_order,
-    gtensor::config::f_order
-)
+TEST_CASE("benchmark_reduce","[benchmark_tensor]")
 {
 
     using benchmark_reduce_::bench_reduce;
@@ -117,13 +114,16 @@ TEMPLATE_TEST_CASE("benchmark_reduce","[benchmark_tensor]",
         return *r.begin();
     };
 
-    const auto n_iters = 100;
-    const auto shapes = benchmark_helpers::small_shapes;
     const auto axes = benchmark_helpers::axes;
+
+    // const auto n_iters = 100;
+    // const auto shapes = benchmark_helpers::small_shapes;
+
+    const auto n_iters = 1;
+    const auto shapes = benchmark_helpers::shapes;
 
     //bench_reduce("reduce_binary sum on tensor",n_iters,shapes,axes,[](auto&& t){return t;},reducer_reduce_binary_sum);
     bench_reduce("reduce_binary sum on expression view t+t+t+t+t+t+t+t+t+t",n_iters,shapes,axes,[](auto&& t){return t+t+t+t+t+t+t+t+t+t;},reducer_reduce_binary_sum);
-    //bench_reduce("reduce sum on tensor",n_iters,shapes,axes,[](auto&& t){return t;},reducer_reduce_sum);
 
 }
 

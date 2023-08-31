@@ -283,6 +283,31 @@ inline auto& get_pool(){
     return pool_;
 }
 
+//side effect: first2 pass by ref
+template<typename DstIt, typename It, typename F>
+ALWAYS_INLINE void transform(DstIt first1, DstIt last1, It& first2, F f){
+    for (;first1!=last1; ++first1,++first2){
+        *first1 = f(*first1,*first2);
+    }
+}
+
+template<typename It, typename IdxT, typename Initial, typename F>
+ALWAYS_INLINE auto accumulate_n(It& first, IdxT n, Initial initial, F f){
+    for (;n!=0; --n,++first){
+        initial = f(initial,*first);
+    }
+    return initial;
+}
+
+template<typename It, typename IdxT, typename F>
+ALWAYS_INLINE auto accumulate_n(It& first, IdxT n, F f){
+    auto initial = *first;
+    for (--n,++first; n!=0; --n,++first){
+        initial = f(initial,*first);
+    }
+    return initial;
+}
+
 }   //end of namespace detail
 
 class reducer
@@ -356,67 +381,69 @@ class reducer
             using walker_type = cursor_walker<config_type,index_type,order>;
             using traverser_type = walker_forward_traverser<config_type,walker_type>;
             traverser_type traverser{traverse_index_shape,walker_type{traverse_index_strides,traverse_index_reset_strides,0}};
-            auto it = a_parent.begin();
-            const auto res_first = a_res.begin();
-            auto res_it = res_first;
-            bool init = true;
-            auto offset = *traverser;
-            if (inner_size == 1){
-                do{
-                    auto& e = *res_it;
-                    if (init){
-                        if constexpr (has_initial){
-                            e = std::accumulate(it,it+outer_size,initial,reduce_f);
-                        }else{  //no initial
-                            e = std::accumulate(it+1,it+outer_size,*it,reduce_f);
-                        }
-                    }else{  //e initialized
-                        e = std::accumulate(it,it+outer_size,e,reduce_f);
-                    }
-                    it+=outer_size;
 
-                    if (traverser.template next<order>()){
-                        const auto new_offset = *traverser;
-                        if (new_offset > offset){   //reach uninitialized
-                            init=true;
-                            offset = new_offset;
-                        }else{
-                            init=false;
+            auto reduce_binary_helper_ = [&traverser,&reduce_f,inner_size,outer_size,initial](auto it, auto res_it){
+                (void)initial;
+                const auto res_first = res_it;
+                bool init = true;
+                auto offset = *traverser;
+                if (inner_size == 1){
+                    do{
+                        auto& e = *res_it;
+                        if (init){
+                            if constexpr (has_initial){
+                                e = detail::accumulate_n(it,outer_size,initial,reduce_f);
+                            }else{  //no initial
+                                e = detail::accumulate_n(it,outer_size,reduce_f);
+                            }
+                        }else{  //e initialized
+                            e = detail::accumulate_n(it,outer_size,e,reduce_f);
                         }
-                        res_it=res_first + new_offset;
-                    }else{
-                        break;
-                    }
-                }while(true);
+                        if (traverser.template next<order>()){
+                            const auto new_offset = *traverser;
+                            if (new_offset > offset){   //reach uninitialized
+                                init=true;
+                                offset = new_offset;
+                            }else{
+                                init=false;
+                            }
+                            res_it=res_first + new_offset;
+                        }else{
+                            break;
+                        }
+                    }while(true);
+                }else{
+                    do{
+                        if (init){
+                            if constexpr (has_initial){
+                                detail::transform(res_it,res_it+inner_size,it,[&reduce_f,&initial](auto&&, auto&& r){return reduce_f(initial,r);});
+                            }else{  //no initial
+                                detail::transform(res_it,res_it+inner_size,it,[](auto&&, auto&& r){return static_cast<const res_value_type&>(r);});
+                            }
+                        }
+                        const auto i_stop=init?1:0;
+                        for (auto i=outer_size; i!=i_stop; --i){
+                            detail::transform(res_it,res_it+inner_size,it,reduce_f);
+                        }
+                        if (traverser.template next<order>()){
+                            const auto new_offset = *traverser;
+                            if (new_offset > offset){   //reach uninitialized
+                                init=true;
+                                offset = new_offset;
+                            }else{
+                                init=false;
+                            }
+                            res_it=res_first + new_offset;
+                        }else{
+                            break;
+                        }
+                    }while(true);
+                }
+            };
+            if (parent.is_trivial()){
+                reduce_binary_helper_(a_parent.begin_trivial(),a_res.begin());
             }else{
-                do{
-                    if (init){
-                        if constexpr (has_initial){
-                            std::transform(res_it,res_it+inner_size,it,res_it,[&reduce_f,&initial](auto&&, auto&& r){return reduce_f(initial,r);});
-                        }else{  //no initial
-                            std::transform(res_it,res_it+inner_size,it,res_it,[](auto&&, auto&& r){return static_cast<const res_value_type&>(r);});
-                        }
-                        it+=inner_size;
-                    }
-                    const auto i_stop=init?1:0;
-                    for (auto i=outer_size; i!=i_stop; --i){
-                        std::transform(res_it,res_it+inner_size,it,res_it,reduce_f);
-                        it+=inner_size;
-                    }
-
-                    if (traverser.template next<order>()){
-                        const auto new_offset = *traverser;
-                        if (new_offset > offset){   //reach uninitialized
-                            init=true;
-                            offset = new_offset;
-                        }else{
-                            init=false;
-                        }
-                        res_it=res_first + new_offset;
-                    }else{
-                        break;
-                    }
-                }while(true);
+                reduce_binary_helper_(a_parent.begin(),a_res.begin());
             }
         }
         return res;
