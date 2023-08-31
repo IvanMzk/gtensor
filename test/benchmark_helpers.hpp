@@ -172,8 +172,21 @@ inline const std::vector<std::vector<int>> small_shapes_2{
     std::vector<int>{20,20,20,20}
 };
 
-
-
+inline const auto axes = std::vector<std::vector<int>>{
+    std::vector<int>{0},
+    std::vector<int>{1},
+    std::vector<int>{2},
+    std::vector<int>{3},
+    std::vector<int>{0,1},
+    std::vector<int>{0,2},
+    std::vector<int>{0,3},
+    std::vector<int>{1,2},
+    std::vector<int>{1,3},
+    std::vector<int>{2,3},
+    std::vector<int>{0,1,2},
+    std::vector<int>{1,2,3},
+    std::vector<int>{0,1,2,3}
+};
 
 
 }   //end of namespace benchmark_helpers
