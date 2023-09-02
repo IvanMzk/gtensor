@@ -278,8 +278,6 @@ public:
     const_reverse_iterator rend()const{return  std::make_reverse_iterator(begin());}
     reference operator[](const difference_type& i){return *(begin_+i);}
     const_reference operator[](const difference_type& i)const{return *(begin_+i);}
-    //reference operator[](const size_type& i){return *(begin_+i);}
-    //const_reference operator[](const size_type& i)const{return *(begin_+i);}
     allocator_type get_allocator()const{return allocator_;}
 
 private:

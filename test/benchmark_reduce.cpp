@@ -6,6 +6,7 @@
 
 namespace benchmark_reduce_{
 
+using gtensor::tensor;
 using gtensor::basic_tensor;
 using gtensor::reduce_binary;
 using gtensor::detail::shape_to_str;
@@ -22,6 +23,106 @@ auto reduce_binary_sum(const basic_tensor<Ts...>& t, const Axes& axes, bool keep
     return reduce_binary(t,axes,f_type{},keep_dims,initial);
 }
 
+template<typename Axes, typename...Ts>
+auto ptp(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims=false){
+    return (t.max(axes,keep_dims) - t.min(axes,keep_dims)).copy();
+}
+
+template<typename Axes, typename...Ts>
+auto ptp1(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims=false){
+    using tensor_type = basic_tensor<Ts...>;
+    using order = typename tensor_type::order;
+    using value_type = typename tensor_type::value_type;
+    using config_type = typename tensor_type::config_type;
+    if (t.empty()){
+        //throw no initial
+    }else{
+        auto init = *t.begin();
+        auto tmp = reduce_binary(t,axes,
+            [](const auto& r, const auto& e){
+                return std::make_pair(std::min(r.first,e),std::min(r.second,e));
+            },
+            keep_dims,std::make_pair(init,init)
+        );
+        tensor<value_type,order,config_type> res(tmp.shape());
+        std::transform(tmp.begin(),tmp.end(),res.begin(),[](const auto& min_max_pair){return min_max_pair.second-min_max_pair.first;});
+        return res;
+    }
+}
+
+template<typename Axes, typename...Ts>
+auto mean(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims=false){
+    using value_type = typename basic_tensor<Ts...>::value_type;
+    using res_type = gtensor::math::make_floating_point_t<value_type>;
+    using f_type = gtensor::math_reduce_operations::nan_propagate_operation<std::plus<res_type>>;
+    auto tmp = reduce_binary(t,axes,f_type{},keep_dims);
+    const auto axes_size = t.size() / tmp.size();
+    return (tmp/axes_size).copy();
+}
+
+template<typename Axes, typename...Ts>
+auto mean_inplace(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims=false){
+    using value_type = typename basic_tensor<Ts...>::value_type;
+    using res_type = gtensor::math::make_floating_point_t<value_type>;
+    using f_type = gtensor::math_reduce_operations::nan_propagate_operation<std::plus<res_type>>;
+    auto tmp = reduce_binary(t,axes,f_type{},keep_dims);
+    const auto axes_size = t.size() / tmp.size();
+    return tmp/=axes_size;
+}
+
+template<typename Axes, typename...Ts>
+auto var_temp_pair(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims=false){
+    using value_type = typename basic_tensor<Ts...>::value_type;
+    using order = typename basic_tensor<Ts...>::order;
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    using res_type = gtensor::math::make_floating_point_t<value_type>;
+    using res_config_type = gtensor::config::extend_config_t<config_type,res_type>;
+    auto initial = std::make_pair(res_type{0},res_type{0}); //e,e^2
+    auto f = [](const auto& l, const auto& r){
+        using l_type = std::remove_cv_t<std::remove_reference_t<decltype(l)>>;
+        return l_type{l.first+r, l.second+r*r};
+    };
+    auto tmp = gtensor::reduce_binary(t,axes,f,keep_dims,initial);
+    const auto axes_size = t.size() / tmp.size();
+    const auto axes_size_2 = axes_size*axes_size;
+    gtensor::tensor<res_type,order,res_config_type> res(tmp.shape());
+    std::transform(tmp.begin(),tmp.end(),res.begin(),
+        [axes_size,axes_size_2](const auto& e){
+            return (axes_size*e.second - e.first*e.first)/(axes_size_2);
+        }
+    );
+    return res;
+}
+
+template<typename Axes, typename...Ts>
+auto var_temp_mean(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims=false){
+    auto square = [](const auto& e){return e*e;};
+    auto mean_ = mean_inplace(t,axes,true);
+    auto tmp = gtensor::n_operator(square,t-std::move(mean_));
+    return mean_inplace(tmp,axes,keep_dims);
+}
+
+template<typename Axes, typename...Ts>
+auto var_temp_mean_copy(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims=false){
+    auto square = [](const auto& e){return e*e;};
+    auto mean_ = mean_inplace(t,axes,true);
+    auto tmp = gtensor::n_operator(square,t-std::move(mean_)).copy();
+    return mean_inplace(tmp,axes,keep_dims);
+}
+
+// template<typename Axes, typename...Ts>
+// auto var(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims=false){
+//     using value_type = typename basic_tensor<Ts...>::value_type;
+//     using res_type = gtensor::math::make_floating_point_t<value_type>;
+//     using f_type = gtensor::math_reduce_operations::nan_propagate_operation<std::plus<res_type>>;
+//     auto square = [](const auto& e){return e*e;};
+//     auto sum = reduce_binary(t,axes,f_type{},keep_dims);
+//     auto sum_of_squared = reduce_binary(gtensor::n_operator(square,t).copy(),axes,f_type{},keep_dims);
+//     const auto axes_size = t.size() / sum.size();
+//     const auto axes_size_2 = axes_size*axes_size;
+//     auto res = ((axes_size*std::move(sum_of_squared) - gtensor::n_operator(square,std::move(sum)))/axes_size_2);
+//     return res.copy();
+// }
 
 
 template<typename Tensor>
@@ -63,7 +164,6 @@ struct bench_reduce_helper{
         std::cout<<std::endl<<"TOTAL "<<statistic(total_intervals);
     }
 };
-
 
 template<typename Shapes, typename Axes, typename Builder, typename Reducer>
 auto bench_reduce(std::string mes, std::size_t n_iters, Shapes shapes, Axes axes, Builder builder, Reducer reducer){
@@ -114,6 +214,56 @@ TEST_CASE("benchmark_reduce","[benchmark_tensor]")
         return *r.begin();
     };
 
+    auto reducer_reduce_ptp = [](const auto& t, const auto& axes){
+        auto r = benchmark_reduce_::ptp(t,axes);
+        return *r.begin();
+    };
+
+    auto reducer_reduce_ptp1 = [](const auto& t, const auto& axes){
+        auto r = benchmark_reduce_::ptp1(t,axes);
+        return *r.begin();
+    };
+
+    auto reducer_reduce_range_ptp = [](const auto& t, const auto& axes){
+        auto r = gtensor::ptp(t,axes);
+        return *r.begin();
+    };
+
+    auto reducer_reduce_range_mean = [](const auto& t, const auto& axes){
+        auto r = gtensor::mean(t,axes);
+        return *r.begin();
+    };
+
+    auto reducer_reduce_binary_mean = [](const auto& t, const auto& axes){
+        auto r = benchmark_reduce_::mean(t,axes);
+        return *r.begin();
+    };
+
+    auto reducer_reduce_binary_mean_div_inplace = [](const auto& t, const auto& axes){
+        auto r = benchmark_reduce_::mean(t,axes);
+        return *r.begin();
+    };
+
+
+    auto reducer_reduce_binary_var_temp_pair = [](const auto& t, const auto& axes){
+        auto r = benchmark_reduce_::var_temp_pair(t,axes);
+        return *r.begin();
+    };
+    auto reducer_reduce_binary_var_temp_mean = [](const auto& t, const auto& axes){
+        auto r = benchmark_reduce_::var_temp_mean(t,axes);
+        return *r.begin();
+    };
+    auto reducer_reduce_binary_var_temp_mean_copy = [](const auto& t, const auto& axes){
+        auto r = benchmark_reduce_::var_temp_mean_copy(t,axes);
+        return *r.begin();
+    };
+    auto reducer_reduce_range_var = [](const auto& t, const auto& axes){
+        auto r = gtensor::var(t,axes);
+        return *r.begin();
+    };
+
+
+
     const auto axes = benchmark_helpers::axes;
 
     // const auto n_iters = 100;
@@ -122,7 +272,20 @@ TEST_CASE("benchmark_reduce","[benchmark_tensor]")
     const auto n_iters = 1;
     const auto shapes = benchmark_helpers::shapes;
 
-    bench_reduce("reduce sum on tensor",n_iters,shapes,axes,[](auto&& t){return t;},reducer_reduce_sum);
+    //bench_reduce("reduce range var",n_iters,shapes,axes,[](auto&& t){return t;},reducer_reduce_range_var);
+    bench_reduce("reduce binary var on tensor temp pair",n_iters,shapes,axes,[](auto&& t){return t;},reducer_reduce_binary_var_temp_pair);
+    //bench_reduce("reduce binary var on tensor temp mean copy",n_iters,shapes,axes,[](auto&& t){return t;},reducer_reduce_binary_var_temp_mean_copy);
+    //bench_reduce("reduce binary var on tensor temp mean",n_iters,shapes,axes,[](auto&& t){return t;},reducer_reduce_binary_var_temp_mean);
+
+
+    //bench_reduce("reduce range mean on tensor",n_iters,shapes,axes,[](auto&& t){return t;},reducer_reduce_range_mean);
+    //bench_reduce("reduce binary mean on tensor div inplace",n_iters,shapes,axes,[](auto&& t){return t;},reducer_reduce_binary_mean_div_inplace);
+    //bench_reduce("reduce binary mean on tensor",n_iters,shapes,axes,[](auto&& t){return t;},reducer_reduce_binary_mean);
+
+    //bench_reduce("reduce range ptp on tensor",n_iters,shapes,axes,[](auto&& t){return t;},reducer_reduce_range_ptp);
+    //bench_reduce("reduce binary ptp1 on tensor, single reduction for min max",n_iters,shapes,axes,[](auto&& t){return t;},reducer_reduce_ptp1);
+    //bench_reduce("reduce ptp on tensor",n_iters,shapes,axes,[](auto&& t){return t;},reducer_reduce_ptp);
+    //bench_reduce("reduce sum on tensor",n_iters,shapes,axes,[](auto&& t){return t;},reducer_reduce_sum);
     //bench_reduce("reduce_binary sum on tensor",n_iters,shapes,axes,[](auto&& t){return t;},reducer_reduce_binary_sum);
     //bench_reduce("reduce_binary sum on expression view t+t+t+t+t+t+t+t+t+t",n_iters,shapes,axes,[](auto&& t){return t+t+t+t+t+t+t+t+t+t;},reducer_reduce_binary_sum);
 

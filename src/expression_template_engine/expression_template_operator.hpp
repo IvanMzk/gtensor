@@ -101,9 +101,17 @@ public:
     template<typename F_, typename Rhs, typename...Ts>
     static basic_tensor<Ts...>& a_operator(F_&& f, basic_tensor<Ts...>& lhs, Rhs&& rhs){
         static_assert(std::is_same_v<F,std::decay_t<F_>>);
+        using order = typename basic_tensor<Ts...>::order;
         auto tmp = n_operator(std::forward<F_>(f),lhs,std::forward<Rhs>(rhs));
-        for (auto it = tmp.begin(), last = tmp.end(); it!=last; ++it){
-            (void)*it;
+        auto a = tmp.traverse_order_adapter(order{});
+        if (tmp.is_trivial()){
+            for (auto it = a.begin_trivial(), last = a.end_trivial(); it!=last; ++it){
+                (void)*it;
+            }
+        }else{
+            for (auto it = a.begin(), last = a.end(); it!=last; ++it){
+                (void)*it;
+            }
         }
         return lhs;
     }

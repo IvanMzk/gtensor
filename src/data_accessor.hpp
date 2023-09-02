@@ -767,7 +767,6 @@ private:
 template<typename Config, typename Walker>
 class walker_forward_traverser
 {
-    //using result_type = decltype(*std::declval<Walker>());
 public:
     using config_type = Config;
     using shape_type = typename config_type::shape_type;
