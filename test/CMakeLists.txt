@@ -22,7 +22,7 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_traverser.cpp
 
     #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_iterator.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/benchmark_reduce.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_reduce.cpp
 
     #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_iterator_old.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_reduce_binary.cpp
@@ -30,7 +30,7 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_trivial_iterator.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_copy.cpp
 
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_storage.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_storage.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_common.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_libdivide_helper.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_init_list_helper.cpp

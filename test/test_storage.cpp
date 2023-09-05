@@ -1,12 +1,13 @@
 #include <vector>
 #include <list>
 #include <tuple>
+#include <iostream>
 #include "catch.hpp"
 #include "storage.hpp"
 #include "helpers_for_testing.hpp"
 
 
-TEST_CASE("test_default_constructor","[test_basic_storage]")
+TEST_CASE("test_basic_storage_default_constructor","[test_basic_storage]")
 {
     using value_type = double;
     using storage_type = gtensor::basic_storage<value_type>;
@@ -19,7 +20,7 @@ TEST_CASE("test_default_constructor","[test_basic_storage]")
     REQUIRE(static_cast<const storage_type&>(s).rbegin() == static_cast<const storage_type&>(s).rend());
 }
 
-TEMPLATE_TEST_CASE("test_n_constructor_size","[test_basic_storage]",
+TEMPLATE_TEST_CASE("test_basic_storage_n_constructor_size","[test_basic_storage]",
     double,
     std::string
 )
@@ -114,11 +115,14 @@ struct test_allocator : public std::allocator<T>
     bool operator==(const test_allocator& other){
         return state_==other.state_;
     }
+    bool operator!=(const test_allocator& other){
+        return state_!=other.state_;
+    }
 };
 
 }
 
-TEST_CASE("test_n_constructor_elements","[test_basic_storage]")
+TEST_CASE("test_basic_storage_n_constructor_elements","[test_basic_storage]")
 {
     using value_type = test_basic_storage::not_trivial<double>;
     using storage_type = gtensor::basic_storage<value_type>;
@@ -142,7 +146,7 @@ TEST_CASE("test_n_constructor_elements","[test_basic_storage]")
     apply_by_element(test,test_data);
 }
 
-TEMPLATE_TEST_CASE("test_n_value_constructor","[test_basic_storage]",
+TEMPLATE_TEST_CASE("test_basic_storage_n_value_constructor","[test_basic_storage]",
     double,
     test_basic_storage::not_trivial<double>
 )
@@ -175,7 +179,7 @@ TEMPLATE_TEST_CASE("test_n_value_constructor","[test_basic_storage]",
     apply_by_element(test,test_data);
 }
 
-TEMPLATE_TEST_CASE("test_iterators_range_constructor","[test_basic_storage]",
+TEMPLATE_TEST_CASE("test_basic_storage_iterators_range_constructor","[test_basic_storage]",
     double,
     test_basic_storage::not_trivial<double>
 )
@@ -218,7 +222,7 @@ TEMPLATE_TEST_CASE("test_iterators_range_constructor","[test_basic_storage]",
     apply_by_element(test,test_data);
 }
 
-TEMPLATE_TEST_CASE("test_initializer_list_constructor","[test_basic_storage]",
+TEMPLATE_TEST_CASE("test_basic_storage_initializer_list_constructor","[test_basic_storage]",
     double,
     test_basic_storage::not_trivial<double>
 )
@@ -234,7 +238,7 @@ TEMPLATE_TEST_CASE("test_initializer_list_constructor","[test_basic_storage]",
     REQUIRE(std::equal(stor.rbegin(),stor.rend(),expected_elements.rbegin(),expected_elements.rend()));
 }
 
-TEMPLATE_TEST_CASE("test_copy_constructor","[test_basic_storage]",
+TEMPLATE_TEST_CASE("test_basic_storage_copy_constructor","[test_basic_storage]",
     double,
     test_basic_storage::not_trivial<double>
 )
@@ -253,7 +257,7 @@ TEMPLATE_TEST_CASE("test_copy_constructor","[test_basic_storage]",
     REQUIRE(std::equal(stor.rbegin(),stor.rend(),stor_copy.rbegin(),stor_copy.rend()));
 }
 
-TEMPLATE_TEST_CASE("test_move_constructor","[test_basic_storage]",
+TEMPLATE_TEST_CASE("test_basic_storage_move_constructor","[test_basic_storage]",
     double,
     test_basic_storage::not_trivial<double>
 )
@@ -273,7 +277,7 @@ TEMPLATE_TEST_CASE("test_move_constructor","[test_basic_storage]",
     REQUIRE(std::equal(stor_move.rbegin(),stor_move.rend(),stor_copy.rbegin(),stor_copy.rend()));
 }
 
-TEST_CASE("test_operator==","[test_basic_storage]")
+TEST_CASE("test_basic_storage_operator==","[test_basic_storage]")
 {
     using value_type = double;
     using storage_type = gtensor::basic_storage<value_type>;
@@ -302,7 +306,7 @@ TEST_CASE("test_operator==","[test_basic_storage]")
     apply_by_element(test,test_data);
 }
 
-TEMPLATE_TEST_CASE("test_copy_assign","[test_basic_storage]",
+TEMPLATE_TEST_CASE("test_basic_storage_copy_assign","[test_basic_storage]",
     double,
     test_basic_storage::not_trivial<double>
 )
@@ -336,7 +340,7 @@ TEMPLATE_TEST_CASE("test_copy_assign","[test_basic_storage]",
     apply_by_element(test,test_data);
 }
 
-TEMPLATE_TEST_CASE("test_copy_assign_propagate_allocator","[test_basic_storage]",
+TEMPLATE_TEST_CASE("test_basic_storage_copy_assign_propagate_allocator","[test_basic_storage]",
     double,
     test_basic_storage::not_trivial<double>
 )
@@ -374,7 +378,7 @@ TEMPLATE_TEST_CASE("test_copy_assign_propagate_allocator","[test_basic_storage]"
     apply_by_element(test,test_data);
 }
 
-TEMPLATE_TEST_CASE("test_move_assign","[test_basic_storage]",
+TEMPLATE_TEST_CASE("test_basic_storage_move_assign","[test_basic_storage]",
     double,
     test_basic_storage::not_trivial<double>
 )
@@ -409,7 +413,7 @@ TEMPLATE_TEST_CASE("test_move_assign","[test_basic_storage]",
     apply_by_element(test,test_data);
 }
 
-TEMPLATE_TEST_CASE("test_move_assign_not_propagate_allocator","[test_basic_storage]",
+TEMPLATE_TEST_CASE("test_basic_storage_move_assign_not_propagate_allocator","[test_basic_storage]",
     double,
     test_basic_storage::not_trivial<double>
 )
@@ -446,7 +450,7 @@ TEMPLATE_TEST_CASE("test_move_assign_not_propagate_allocator","[test_basic_stora
     apply_by_element(test,test_data);
 }
 
-TEMPLATE_TEST_CASE("test_swap","[test_basic_storage]",
+TEMPLATE_TEST_CASE("test_basic_storage_swap","[test_basic_storage]",
     double,
     test_basic_storage::not_trivial<double>
 )
@@ -476,7 +480,7 @@ TEMPLATE_TEST_CASE("test_swap","[test_basic_storage]",
     apply_by_element(test,test_data);
 }
 
-TEST_CASE("test_destructor","[test_basic_storage]")
+TEST_CASE("test_basic_storage_destructor","[test_basic_storage]")
 {
     using value_type = test_basic_storage::not_trivial<double>;
     using allocator_type = test_basic_storage::test_allocator<value_type>;
@@ -500,4 +504,57 @@ TEST_CASE("test_destructor","[test_basic_storage]")
     REQUIRE(value_type::ctr_counter == value_type::dtr_counter);
     REQUIRE(allocator_type::alloc_counter == 1);
     REQUIRE(allocator_type::dealloc_counter == 1);
+}
+
+
+
+// TEST_CASE("test_std_vector_alloc_propagating","[test_std_vector_alloc_propagating]")
+// {
+//     using test_basic_storage::test_allocator;
+//     using test_basic_storage::test_allocator1;
+//     using vector_type = std::vector<int,test_allocator<int>>;
+
+//     vector_type vec{1,2,3,4,5,6,7,8,9,10};
+//     std::cout<<std::endl<<vec.size()<<" "<<vec.capacity()<<" "<<vec.data()<<" "<<vec.get_allocator().state_;
+//     vector_type vec1(3,0,test_allocator<int>{1});
+//     std::cout<<std::endl<<vec1.size()<<" "<<vec1.capacity()<<" "<<vec1.data()<<" "<<vec1.get_allocator().state_;
+//     //vec=vec1;
+//     vec=std::move(vec1);
+//     std::cout<<std::endl<<vec.size()<<" "<<vec.capacity()<<" "<<vec.data()<<" "<<vec.get_allocator().state_;
+//     std::cout<<std::endl<<vec1.size()<<" "<<vec1.capacity()<<" "<<vec1.data()<<" "<<vec1.get_allocator().state_;
+// }
+
+
+TEST_CASE("test_stack_prealloc_vector_default_constructor","[test_stack_prealloc_vector]")
+{
+    using value_type = double;
+    using gtensor::stack_prealloc_vector;
+    using helpers_for_testing::apply_by_element;
+
+    //0vec,1expected_size,2expected_capacity,3expected_empty
+    auto test_data = std::make_tuple(
+        std::make_tuple(stack_prealloc_vector<value_type,1>{},0,1,true),
+        std::make_tuple(stack_prealloc_vector<value_type,8>{},0,8,true)
+    );
+
+    auto test = [](const auto& t){
+        auto vec = std::get<0>(t);
+        auto expected_size = std::get<1>(t);
+        auto expected_capacity = std::get<2>(t);
+        auto expected_empty = std::get<3>(t);
+
+        auto result_size = vec.size();
+        auto result_capacity = vec.capacity();
+        auto result_empty = vec.empty();
+
+        REQUIRE(result_size == expected_size);
+        REQUIRE(result_capacity == expected_capacity);
+        REQUIRE(result_empty == expected_empty);
+        REQUIRE(vec.begin() == vec.end());
+        REQUIRE(vec.rbegin() == vec.rend());
+        using vec_type = decltype(vec);
+        REQUIRE(static_cast<const vec_type&>(vec).begin() == static_cast<const vec_type&>(vec).end());
+        REQUIRE(static_cast<const vec_type&>(vec).rbegin() == static_cast<const vec_type&>(vec).rend());
+    };
+    apply_by_element(test,test_data);
 }
