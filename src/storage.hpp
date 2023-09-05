@@ -452,7 +452,11 @@ public:
     //reallocate if not equal sizes or not equal allocators
     stack_prealloc_vector& operator=(const stack_prealloc_vector& other){
         if (this != &other){
-            copy_assign(other, typename std::allocator_traits<allocator_type>::propagate_on_container_copy_assignment{});
+            if constexpr (std::allocator_traits<allocator_type>::propagate_on_container_copy_assignment::value){
+                copy_assign(other.begin(),other.end(),other.get_allocator());
+            }else{
+                copy_assign(other.begin(),other.end());
+            }
         }
         return *this;
     }
@@ -584,8 +588,8 @@ private:
 
     //allocate new storage and copy construct elements from range first,last to it, free old storage, set new allocator if any
     //new capacity must be >= last-first, n must be equal to last-first
-    template<typename NewAlloc=std::true_type, typename It>
-    void reallocate(It first, It last, const difference_type& n, const difference_type& cap, allocator_type&& alloc){
+    template<typename NewAlloc=std::true_type, typename It, typename A>
+    void reallocate(It first, It last, const difference_type& n, const difference_type& cap, A&& alloc){
         auto new_buffer = allocate_buffer(cap,alloc);
         detail::uninitialized_copy(first,last,new_buffer.get(),new_buffer.get_allocator());
         if constexpr (NewAlloc::value){
@@ -713,26 +717,28 @@ private:
     }
 
     //no copy assign other's allocator
-    void copy_assign(const stack_prealloc_vector& other, std::false_type){
-        const auto other_size = other.size();
+    template<typename It>
+    void copy_assign(It other_first, It other_last){
+        const auto other_size = other_last-other_first;
         if (capacity()<other_size){
-            reallocate(other.begin(),other.end(),other_size,other_size);
+            reallocate(other_first,other_last,other_size,other_size);
         }else{
-            assign_(other.begin(),other.end(),other_size);
+            assign_(other_first,other_last,other_size);
         }
     }
 
     //copy assign other's allocator
-    void copy_assign(const stack_prealloc_vector& other, std::true_type){
-        if (std::allocator_traits<allocator_type>::is_always_equal::value || allocator_ ==  other.allocator_){
-            copy_assign(other,std::false_type{});
+    template<typename It>
+    void copy_assign(It other_first, It other_last, allocator_type other_alloc){
+        if (std::allocator_traits<allocator_type>::is_always_equal::value || allocator_ ==  other_alloc){
+            copy_assign(other_first,other_last);
         }else{
-            auto other_size = other.size();
+            const auto other_size = other_last-other_first;
             if(is_on_stack() && capacity()>=other_size){    //stay on stack
-                assign_(other.begin(),other.end(),other_size);
-                allocator_ = std::move(other.allocator_);
+                assign_(other_first,other_last,other_size);
+                allocator_ = std::move(other_alloc);
             }else{  //reallocate, new allocator
-                reallocate(other.begin(),other.end(),other_size,other_size,other.allocator_);
+                reallocate(other_first,other_last,other_size,other_size,other_alloc);
             }
         }
     }
@@ -741,14 +747,14 @@ private:
     void move_assign(stack_prealloc_vector&& other, std::false_type){
         if (std::allocator_traits<allocator_type>::is_always_equal::value || allocator_ ==  other.allocator_){
             if (other.is_on_stack()){
-                copy_assign(std::make_move_iterator(other.begin()),std::make_move_iterator(other.end()),std::false_type{});
+                copy_assign(std::make_move_iterator(other.begin()),std::make_move_iterator(other.end()));
             }else{  //free and steal
                 free();
                 steal(std::move(other));
                 return;
             }
         }else{
-            copy_assign(std::make_move_iterator(other.begin()),std::make_move_iterator(other.end()),std::false_type{});
+            copy_assign(std::make_move_iterator(other.begin()),std::make_move_iterator(other.end()));
         }
         other.free();
         other.init();
@@ -771,15 +777,17 @@ private:
                 other.init();
             }else{  //move alloc, free and steal
                 auto old_alloc = std::move(allocator_);
-                allocator_ = std::move(other.allocator_);
+                allocator_ = other.get_allocator();
                 free(old_alloc);
                 steal(std::move(other));
             }
         }
     }
 
-    auto allocate_buffer(const difference_type& n, allocator_type& alloc){
-        return detail::row_buffer<allocator_type>{alloc,n,alloc.allocate(n)};
+    template<typename A>
+    auto allocate_buffer(const difference_type& n, A&& alloc){
+        using A_ = std::remove_cv_t<std::remove_reference_t<A>>;
+        return detail::row_buffer<A_>{alloc,n,alloc.allocate(n)};
     }
     auto allocate_buffer(const difference_type& n){
         return allocate_buffer(n,allocator_);
@@ -804,6 +812,22 @@ private:
     pointer end_{elements_};
     pointer capacity_end_{elements_+Size};
 };
+
+template<typename T, std::size_t Size, typename Alloc>
+bool operator==(const stack_prealloc_vector<T,Size,Alloc>& lhs, const stack_prealloc_vector<T,Size,Alloc>& rhs){
+    if (&lhs == &rhs){
+        return true;
+    }else if (lhs.size()==rhs.size()){
+        return std::equal(lhs.begin(),lhs.end(),rhs.begin());
+    }else{
+        return false;
+    }
+}
+
+template<typename T, std::size_t Size, typename Alloc>
+bool operator!=(const stack_prealloc_vector<T,Size,Alloc>& lhs, const stack_prealloc_vector<T,Size,Alloc>& rhs){
+    return !(lhs==rhs);
+}
 
 
 
