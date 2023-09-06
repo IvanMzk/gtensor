@@ -511,7 +511,7 @@ TEST_CASE("test_basic_storage_destructor","[test_basic_storage]")
 // TEST_CASE("test_std_vector_alloc_propagating","[test_std_vector_alloc_propagating]")
 // {
 //     using test_basic_storage::test_allocator;
-//     using test_basic_storage::test_allocator1;
+//     //using test_basic_storage::test_allocator1;
 //     using vector_type = std::vector<int,test_allocator<int>>;
 
 //     vector_type vec{1,2,3,4,5,6,7,8,9,10};
@@ -519,7 +519,8 @@ TEST_CASE("test_basic_storage_destructor","[test_basic_storage]")
 //     vector_type vec1(3,0,test_allocator<int>{1});
 //     std::cout<<std::endl<<vec1.size()<<" "<<vec1.capacity()<<" "<<vec1.data()<<" "<<vec1.get_allocator().state_;
 //     //vec=vec1;
-//     vec=std::move(vec1);
+//     //vec=std::move(vec1);
+//     vec.swap(vec1);
 //     std::cout<<std::endl<<vec.size()<<" "<<vec.capacity()<<" "<<vec.data()<<" "<<vec.get_allocator().state_;
 //     std::cout<<std::endl<<vec1.size()<<" "<<vec1.capacity()<<" "<<vec1.data()<<" "<<vec1.get_allocator().state_;
 // }
@@ -1074,6 +1075,69 @@ TEMPLATE_TEST_CASE("test_stack_prealloc_vector_move_assign_not_propagate_allocat
         REQUIRE(rhs.size()==0);
         REQUIRE(rhs.begin()==rhs.end());
         REQUIRE(rhs.rbegin()==rhs.rend());
+    };
+    apply_by_element(test,test_data);
+}
+
+TEMPLATE_TEST_CASE("test_stack_prealloc_vector_swap","[test_stack_prealloc_vector]",
+    double,
+    test_basic_storage::not_trivial<double>
+)
+{
+    using value_type = TestType;
+    using gtensor::stack_prealloc_vector;
+    using vector_type = stack_prealloc_vector<value_type,4>;
+    using helpers_for_testing::apply_by_element;
+
+    //0lhs,1rhs,2expected_lhs_size,3expected_lhs_capacity,4expected_rhs_size,5expected_rhs_capacity,6expected_lhs_elements,7expected_rhs_elements
+    auto test_data = std::make_tuple(
+        //some on stack
+        //lhs.size()==rhs.size()
+        std::make_tuple(vector_type{},vector_type{},0,4,0,4,std::vector<value_type>{},std::vector<value_type>{}),
+        std::make_tuple(vector_type{4,5,6},vector_type{1,2,3},3,4,3,4,std::vector<value_type>{1,2,3},std::vector<value_type>{4,5,6}),
+        //lhs.capacity()<rhs.size()
+        std::make_tuple(vector_type{},vector_type{4,5,6,7,8,9},6,6,0,6,std::vector<value_type>{4,5,6,7,8,9},std::vector<value_type>{}),
+        std::make_tuple(vector_type{1,2,3},vector_type{4,5,6,7,8,9},6,6,3,6,std::vector<value_type>{4,5,6,7,8,9},std::vector<value_type>{1,2,3}),
+        //rhs.capacity()<lhs.size()
+        std::make_tuple(vector_type{4,5,6,7,8,9},vector_type{},0,6,6,6,std::vector<value_type>{},std::vector<value_type>{4,5,6,7,8,9}),
+        std::make_tuple(vector_type{4,5,6,7,8,9},vector_type{1,2,3},3,6,6,6,std::vector<value_type>{1,2,3},std::vector<value_type>{4,5,6,7,8,9}),
+        //lhs.size()<rhs.size()
+        std::make_tuple(vector_type{},vector_type{1,2,3},3,4,0,4,std::vector<value_type>{1,2,3},std::vector<value_type>{}),
+        std::make_tuple(vector_type{1,2},vector_type{3,4,5,6},4,4,2,4,std::vector<value_type>{3,4,5,6},std::vector<value_type>{1,2}),
+        std::make_tuple(vector_type{},vector_type{1,2,3,4,5,6},6,6,0,6,std::vector<value_type>{1,2,3,4,5,6},std::vector<value_type>{}),
+        std::make_tuple(vector_type{1,2,3},vector_type{4,5,6,7,8,9},6,6,3,6,std::vector<value_type>{4,5,6,7,8,9},std::vector<value_type>{1,2,3}),
+        //rhs.size()<lhs.size()
+        std::make_tuple(vector_type{1,2,3},vector_type{},0,4,3,4,std::vector<value_type>{},std::vector<value_type>{1,2,3}),
+        std::make_tuple(vector_type{3,4,5,6},vector_type{1,2},2,4,4,4,std::vector<value_type>{1,2},std::vector<value_type>{3,4,5,6}),
+        std::make_tuple(vector_type{1,2,3,4,5,6},vector_type{},0,6,6,6,std::vector<value_type>{},std::vector<value_type>{1,2,3,4,5,6}),
+        std::make_tuple(vector_type{4,5,6,7,8,9},vector_type{1,2,3},3,6,6,6,std::vector<value_type>{1,2,3},std::vector<value_type>{4,5,6,7,8,9}),
+        //not on stack
+        std::make_tuple(vector_type{7,8,9,10,11,12},vector_type{1,2,3,4,5,6},6,6,6,6,std::vector<value_type>{1,2,3,4,5,6},std::vector<value_type>{7,8,9,10,11,12}),
+        std::make_tuple(vector_type{1,2,3,4,5,6},vector_type{7,8,9,10,11,12,13,14,15},9,9,6,6,std::vector<value_type>{7,8,9,10,11,12,13,14,15},std::vector<value_type>{1,2,3,4,5,6}),
+        std::make_tuple(vector_type{7,8,9,10,11,12,13,14,15},vector_type{1,2,3,4,5,6},6,6,9,9,std::vector<value_type>{1,2,3,4,5,6},std::vector<value_type>{7,8,9,10,11,12,13,14,15})
+    );
+
+    auto test = [](const auto& t){
+        auto lhs = std::get<0>(t);
+        auto rhs = std::get<1>(t);
+        auto expected_lhs_size = std::get<2>(t);
+        auto expected_lhs_capacity = std::get<3>(t);
+        auto expected_rhs_size = std::get<4>(t);
+        auto expected_rhs_capacity = std::get<5>(t);
+        auto expected_lhs_elements = std::get<6>(t);
+        auto expected_rhs_elements = std::get<7>(t);
+
+        lhs.swap(rhs);
+        auto result_lhs_size = lhs.size();
+        auto result_lhs_capacity = lhs.capacity();
+        auto result_rhs_size = rhs.size();
+        auto result_rhs_capacity = rhs.capacity();
+        REQUIRE(result_lhs_size == expected_lhs_size);
+        REQUIRE(result_lhs_capacity == expected_lhs_capacity);
+        REQUIRE(result_rhs_size == expected_rhs_size);
+        REQUIRE(result_rhs_capacity == expected_rhs_capacity);
+        REQUIRE(std::equal(lhs.begin(),lhs.end(),expected_lhs_elements.begin(),expected_lhs_elements.end()));
+        REQUIRE(std::equal(rhs.begin(),rhs.end(),expected_rhs_elements.begin(),expected_rhs_elements.end()));
     };
     apply_by_element(test,test_data);
 }

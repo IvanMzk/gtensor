@@ -508,26 +508,37 @@ public:
         init(init_list.begin(),init_list.end());
     }
 
-    // void swap(stack_prealloc_vector& other){
-    //     using std::swap;
-    //     if constexpr (std::allocator_traits<allocator_type>::propagate_on_container_swap::value){
-    //         swap(allocator_,other.allocator_);
-    //     }
-    //     if (is_on_stack() || other.is_on_stack()){
-    //         //auto& smaller = size() <= other.size() ? *this : other;
-    //         //auto& bigger = size() >= other.size() ? *this : other;
-    //         if (size() < other.size()){
-    //             std::swap_ranges(begin(),end(),other.begin());
-    //         }else{
-
-    //         }
-
-    //     }else{
-    //         swap(begin_,other.begin_);
-    //         swap(end_,other.end_);
-    //         swap(capacity_end_,other.capacity_end_);
-    //     }
-    // }
+    void swap(stack_prealloc_vector& other){
+        using std::swap;
+        // if constexpr (std::allocator_traits<allocator_type>::propagate_on_container_swap::value){
+        //     swap(allocator_,other.allocator_);
+        // }
+        if (std::allocator_traits<allocator_type>::is_always_equal::value || allocator_ ==  other.allocator_){
+            if (!is_on_stack() && !other.is_on_stack()){    //UB if allocators not swapped and not equal
+                swap(begin_,other.begin_);
+                swap(end_,other.end_);
+                swap(capacity_end_,other.capacity_end_);
+            }else{  //UB if allocators swapped and not equal
+                const auto size_ = size();
+                const auto other_size = other.size();
+                if (size_==other_size){
+                    std::swap_ranges(begin(),end(),other.begin());
+                }else if (capacity() < other_size){
+                    swap_realloc_(*this,other);
+                }else if (other.capacity() < size_){
+                    swap_realloc_(other,*this);
+                }else if (size_<other_size){
+                    swap_copy_(*this,other);
+                }else{
+                    swap_copy_(other,*this);
+                }
+            }
+        }else{
+            //throw or can use move or copy assign if propagate_on_container_swap same as propagate_on_container_move_assignment or propagate_on_container_copy_assignment,
+            //which may degrade performance
+            throw std::runtime_error("swap on stack_prealloc_vector requires equal allocators");
+        }
+    }
 
     void reserve(const difference_type& cap){
         if (cap>capacity()){
@@ -653,13 +664,53 @@ private:
     }
 
     void init(stack_prealloc_vector&& other){
-        if (other.is_on_stack()){   //move construct
+        if (other.is_on_stack()){   //move elements
             init(std::make_move_iterator(other.begin()),std::make_move_iterator(other.end()));
             other.free();
             other.init();
         }else{  //steal
             steal(std::move(other));
         }
+    }
+
+    //swap in case not enough capacity
+    //allocators must be equal
+    //smaller.capacity()<bigger.size() must hold
+    void swap_realloc_(stack_prealloc_vector& smaller, stack_prealloc_vector& bigger){
+        auto new_buffer = allocate_buffer(bigger.size(),smaller.allocator_);
+        detail::uninitialized_copy(bigger.begin(),bigger.end(),new_buffer.get(),new_buffer.get_allocator());
+        std::copy(smaller.begin(),smaller.end(),bigger.begin());
+        const auto smaller_size = smaller.size();
+        if (bigger.is_on_stack()){
+            std::destroy(bigger.begin()+smaller_size,bigger.end());
+        }else{
+            detail::destroy(bigger.begin()+smaller_size,bigger.end(),bigger.allocator_);
+        }
+        smaller.free();
+        smaller.begin_ = new_buffer.release();
+        smaller.end_ = smaller.begin_+bigger.size();
+        smaller.capacity_end_ = smaller.end_;
+        bigger.end_ = bigger.begin_+smaller_size;
+    }
+
+    //swap in case enough capacity
+    //allocators must be equal
+    //smaller.size()<bigger.size() must hold
+    void swap_copy_(stack_prealloc_vector& smaller, stack_prealloc_vector& bigger){
+        std::swap_ranges(smaller.begin(),smaller.end(),bigger.begin());
+        const auto smaller_size = smaller.size();
+        if (smaller.is_on_stack()){
+            std::uninitialized_copy(bigger.begin()+smaller_size,bigger.end(),smaller.end());
+        }else{
+            detail::uninitialized_copy(bigger.begin()+smaller_size,bigger.end(),smaller.end(),smaller.allocator_);
+        }
+        if (bigger.is_on_stack()){
+            std::destroy(bigger.begin()+smaller_size,bigger.end());
+        }else{
+            detail::destroy(bigger.begin()+smaller_size,bigger.end(),bigger.allocator_);
+        }
+        smaller.end_=smaller.begin_+bigger.size();
+        bigger.end_=bigger.begin_+smaller_size;
     }
 
     void assign_(const difference_type& n, const value_type& v, bool init_trivial){
@@ -812,6 +863,11 @@ private:
     pointer end_{elements_};
     pointer capacity_end_{elements_+Size};
 };
+
+template<typename T, std::size_t Size, typename Alloc>
+void swap(stack_prealloc_vector<T,Size,Alloc>& lhs, stack_prealloc_vector<T,Size,Alloc>& rhs){
+    lhs.swap(rhs);
+}
 
 template<typename T, std::size_t Size, typename Alloc>
 bool operator==(const stack_prealloc_vector<T,Size,Alloc>& lhs, const stack_prealloc_vector<T,Size,Alloc>& rhs){
