@@ -68,6 +68,10 @@ struct counter{
     {++ctr_counter;}
     counter& operator=(const counter&) = default;
     counter& operator=(counter&&) = default;
+    static void reset(){
+        ctr_counter=0;
+        dtr_counter=0;
+    }
 };
 
 template<typename T>
@@ -82,15 +86,15 @@ struct not_trivial : counter<not_trivial<T>>{
     }
 };
 
-template<typename T>
+template<typename T, typename AlwaysEqual=std::false_type, typename PropOnCopyAssign=std::true_type, typename PropOnMoveAssign=std::false_type>
 struct test_allocator : public std::allocator<T>
 {
     using base_type = std::allocator<T>;
     using pointer = typename std::allocator_traits<base_type>::pointer;
     using typename base_type::size_type;
-    using is_always_equal = std::false_type;
-    using propagate_on_container_copy_assignment = std::true_type;
-    using propagate_on_container_move_assignment = std::false_type;
+    using is_always_equal = AlwaysEqual;
+    using propagate_on_container_copy_assignment = PropOnCopyAssign;
+    using propagate_on_container_move_assignment = PropOnMoveAssign;
 
     inline static int alloc_counter{0};
     inline static int dealloc_counter{0};
@@ -117,6 +121,11 @@ struct test_allocator : public std::allocator<T>
     }
     bool operator!=(const test_allocator& other){
         return state_!=other.state_;
+    }
+
+    static void reset(){
+        alloc_counter=0;
+        dealloc_counter=0;
     }
 };
 
@@ -1140,4 +1149,206 @@ TEMPLATE_TEST_CASE("test_stack_prealloc_vector_swap","[test_stack_prealloc_vecto
         REQUIRE(std::equal(rhs.begin(),rhs.end(),expected_rhs_elements.begin(),expected_rhs_elements.end()));
     };
     apply_by_element(test,test_data);
+}
+
+TEMPLATE_TEST_CASE("test_stack_prealloc_vector_reserve","[test_stack_prealloc_vector]",
+    double,
+    test_basic_storage::not_trivial<double>
+)
+{
+    using value_type = TestType;
+    using gtensor::stack_prealloc_vector;
+    using vector_type = stack_prealloc_vector<value_type,4>;
+    using helpers_for_testing::apply_by_element;
+
+    //0vec,1command,2expected_size,3expected_capacity,4expected_elements
+    auto test_data = std::make_tuple(
+        //empty
+        std::make_tuple(vector_type{},[](auto& v){v.reserve(0);},0,4,std::vector<value_type>{}),
+        std::make_tuple(vector_type{},[](auto& v){v.reserve(3);},0,4,std::vector<value_type>{}),
+        std::make_tuple(vector_type{},[](auto& v){v.reserve(2); v.reserve(3);},0,4,std::vector<value_type>{}),
+        std::make_tuple(vector_type{},[](auto& v){v.reserve(10);},0,10,std::vector<value_type>{}),
+        std::make_tuple(vector_type{},[](auto& v){v.reserve(10); v.reserve(8);},0,10,std::vector<value_type>{}),
+        std::make_tuple(vector_type{},[](auto& v){v.reserve(10); v.reserve(18);},0,18,std::vector<value_type>{}),
+        //on stack
+        std::make_tuple(vector_type{1,2,3},[](auto& v){v.reserve(0);},3,4,std::vector<value_type>{1,2,3}),
+        std::make_tuple(vector_type{1,2,3},[](auto& v){v.reserve(3);},3,4,std::vector<value_type>{1,2,3}),
+        std::make_tuple(vector_type{1,2,3},[](auto& v){v.reserve(2); v.reserve(3);},3,4,std::vector<value_type>{1,2,3}),
+        std::make_tuple(vector_type{1,2,3},[](auto& v){v.reserve(10);},3,10,std::vector<value_type>{1,2,3}),
+        std::make_tuple(vector_type{1,2,3},[](auto& v){v.reserve(10); v.reserve(8);},3,10,std::vector<value_type>{1,2,3}),
+        std::make_tuple(vector_type{1,2,3},[](auto& v){v.reserve(10); v.reserve(18);},3,18,std::vector<value_type>{1,2,3}),
+        //allocated
+        std::make_tuple(vector_type{1,2,3,4,5,6},[](auto& v){v.reserve(0);},6,6,std::vector<value_type>{1,2,3,4,5,6}),
+        std::make_tuple(vector_type{1,2,3,4,5,6},[](auto& v){v.reserve(3);},6,6,std::vector<value_type>{1,2,3,4,5,6}),
+        std::make_tuple(vector_type{1,2,3,4,5,6},[](auto& v){v.reserve(2); v.reserve(3);},6,6,std::vector<value_type>{1,2,3,4,5,6}),
+        std::make_tuple(vector_type{1,2,3,4,5,6},[](auto& v){v.reserve(10);},6,10,std::vector<value_type>{1,2,3,4,5,6}),
+        std::make_tuple(vector_type{1,2,3,4,5,6},[](auto& v){v.reserve(10); v.reserve(8);},6,10,std::vector<value_type>{1,2,3,4,5,6}),
+        std::make_tuple(vector_type{1,2,3,4,5,6},[](auto& v){v.reserve(10); v.reserve(18);},6,18,std::vector<value_type>{1,2,3,4,5,6})
+    );
+
+    auto test = [](const auto& t){
+        auto vec = std::get<0>(t);
+        auto command = std::get<1>(t);
+        auto expected_size = std::get<2>(t);
+        auto expected_capacity = std::get<3>(t);
+        auto expected_elements = std::get<4>(t);
+
+        command(vec);
+        auto result_size = vec.size();
+        auto result_capacity = vec.capacity();
+        REQUIRE(result_size == expected_size);
+        REQUIRE(result_capacity == expected_capacity);
+        REQUIRE(std::equal(vec.begin(),vec.end(),expected_elements.begin(),expected_elements.end()));
+    };
+    apply_by_element(test,test_data);
+}
+
+TEMPLATE_TEST_CASE("test_stack_prealloc_vector_push_back","[test_stack_prealloc_vector]",
+    double,
+    test_basic_storage::not_trivial<double>
+)
+{
+    using value_type = TestType;
+    using gtensor::stack_prealloc_vector;
+    using vector_type = stack_prealloc_vector<value_type,4>;
+    using helpers_for_testing::apply_by_element;
+
+    //0vec,1command,2expected_size,3expected_capacity,4expected_elements
+    auto test_data = std::make_tuple(
+
+        std::make_tuple(vector_type{},[](auto& v){v.push_back(1);},1,4,std::vector<value_type>{1}),
+        std::make_tuple(vector_type{},[](auto& v){v.push_back(1); v.push_back(2);},2,4,std::vector<value_type>{1,2}),
+        std::make_tuple(vector_type{},[](auto& v){v.push_back(1); v.push_back(2);},2,4,std::vector<value_type>{1,2}),
+        std::make_tuple(vector_type{},[](auto& v){v.push_back(1); v.push_back(2); v.push_back(3); v.push_back(4);},4,4,std::vector<value_type>{1,2,3,4}),
+        std::make_tuple(vector_type{},[](auto& v){v.push_back(1); v.push_back(2); v.push_back(3); v.push_back(4); v.push_back(5); v.push_back(6);},6,8,std::vector<value_type>{1,2,3,4,5,6}),
+        std::make_tuple(vector_type{},
+            [](auto& v){v.push_back(1); v.push_back(2); v.push_back(3); v.push_back(4); v.push_back(5); v.push_back(6); v.push_back(7); v.push_back(8); v.push_back(9); v.push_back(10);},
+            10,16,std::vector<value_type>{1,2,3,4,5,6,7,8,9,10}
+        ),
+        std::make_tuple(vector_type{1,2,3},[](auto& v){v.push_back(1); v.push_back(2); v.push_back(3); v.push_back(4);},7,8,std::vector<value_type>{1,2,3,1,2,3,4}),
+        std::make_tuple(vector_type{1,2,3,4,5,6},[](auto& v){v.push_back(1); v.push_back(2); v.push_back(3); v.push_back(4);},10,12,std::vector<value_type>{1,2,3,4,5,6,1,2,3,4})
+    );
+
+    auto test = [](const auto& t){
+        auto vec = std::get<0>(t);
+        auto command = std::get<1>(t);
+        auto expected_size = std::get<2>(t);
+        auto expected_capacity = std::get<3>(t);
+        auto expected_elements = std::get<4>(t);
+
+        command(vec);
+        auto result_size = vec.size();
+        auto result_capacity = vec.capacity();
+        REQUIRE(result_size == expected_size);
+        REQUIRE(result_capacity == expected_capacity);
+        REQUIRE(std::equal(vec.begin(),vec.end(),expected_elements.begin(),expected_elements.end()));
+    };
+    apply_by_element(test,test_data);
+}
+
+TEST_CASE("test_stack_prealloc_vector_destructor","[test_stack_prealloc_vector]")
+{
+    using value_type = test_basic_storage::not_trivial<double>;
+    using AlwaysEqual = std::true_type;
+    using PropOnCopyAssign = std::false_type;
+    using PropOnMoveAssign = std::true_type;
+    using allocator_type = test_basic_storage::test_allocator<value_type,AlwaysEqual,PropOnCopyAssign,PropOnMoveAssign>;
+    static constexpr std::size_t Size=4;
+    using vector_type = gtensor::stack_prealloc_vector<value_type,Size,allocator_type>;
+    value_type::reset();
+    allocator_type::reset();
+    SECTION("on_stack_default")
+    {
+        {
+            vector_type vec{};
+        }
+        REQUIRE(value_type::ctr_counter == Size);
+        REQUIRE(value_type::dtr_counter == Size);
+        REQUIRE(allocator_type::alloc_counter == 0);
+        REQUIRE(allocator_type::dealloc_counter == 0);
+    }
+    SECTION("on_stack_from_range")
+    {
+        std::vector<value_type> v{2,3};
+        value_type::reset();
+        {
+            vector_type vec(v.begin(),v.end());
+        }
+        REQUIRE(value_type::ctr_counter == Size+2);
+        REQUIRE(value_type::dtr_counter == value_type::ctr_counter);
+        REQUIRE(allocator_type::alloc_counter == 0);
+        REQUIRE(allocator_type::dealloc_counter == 0);
+    }
+    SECTION("on_stack_n_value")
+    {
+        value_type v{2};
+        value_type::reset();
+        {
+            vector_type vec(3,v);
+        }
+        REQUIRE(value_type::ctr_counter == Size+3);
+        REQUIRE(value_type::dtr_counter == value_type::ctr_counter);
+        REQUIRE(allocator_type::alloc_counter == 0);
+        REQUIRE(allocator_type::dealloc_counter == 0);
+    }
+    SECTION("allocate_from_range")
+    {
+        std::vector<value_type> v(Size+10,value_type{4});
+        value_type::reset();
+        {
+            vector_type vec(v.begin(),v.end());
+        }
+        REQUIRE(value_type::ctr_counter == Size+Size+10);
+        REQUIRE(value_type::dtr_counter == value_type::ctr_counter);
+        REQUIRE(allocator_type::alloc_counter == 1);
+        REQUIRE(allocator_type::dealloc_counter == 1);
+    }
+    SECTION("allocate_n_value")
+    {
+        value_type v{2};
+        value_type::reset();
+        {
+            vector_type vec(Size+5,v);
+        }
+        REQUIRE(value_type::ctr_counter == Size+Size+5);
+        REQUIRE(value_type::dtr_counter == value_type::ctr_counter);
+        REQUIRE(allocator_type::alloc_counter == 1);
+        REQUIRE(allocator_type::dealloc_counter == 1);
+    }
+    SECTION("on_stack_reserve")
+    {
+        {
+            vector_type vec{};
+            vec.reserve(Size-1);
+            vec.reserve(Size);
+        }
+        REQUIRE(value_type::ctr_counter == Size);
+        REQUIRE(value_type::dtr_counter == Size);
+        REQUIRE(allocator_type::alloc_counter == 0);
+        REQUIRE(allocator_type::dealloc_counter == 0);
+    }
+    SECTION("allocate_reserve")
+    {
+        {
+            vector_type vec{};
+            vec.reserve(Size+10);
+        }
+        REQUIRE(value_type::ctr_counter == Size);
+        REQUIRE(value_type::dtr_counter == Size);
+        REQUIRE(allocator_type::alloc_counter == 1);
+        REQUIRE(allocator_type::dealloc_counter == 1);
+    }
+    // SECTION("on_stack_push_back")
+    // {
+    //     value_type v{2};
+    //     value_type::reset();
+    //     {
+    //         vector_type vec{};
+    //         vec.push_back(v);
+    //     }
+    //     REQUIRE(value_type::ctr_counter == Size);
+    //     REQUIRE(value_type::dtr_counter == Size);
+    //     REQUIRE(allocator_type::alloc_counter == 0);
+    //     REQUIRE(allocator_type::dealloc_counter == 0);
+    // }
 }

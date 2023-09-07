@@ -553,7 +553,7 @@ public:
             const auto cap = size_==0 ? 1 : 2*size_;
             reallocate(begin_,end_,size_,cap);
         }
-        construct_at_end(std::forward<args>(args)...);
+        construct_at_end(std::forward<Args>(args)...);
         return *end_++;
     }
 
