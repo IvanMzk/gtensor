@@ -79,10 +79,10 @@ struct row_buffer
 {
     using allocator_type = Alloc;
     using pointer = typename std::allocator_traits<Alloc>::pointer;
-    using difference_type = typename std::allocator_traits<Alloc>::difference_type;
+    using size_type = typename std::allocator_traits<Alloc>::size_type;
 
     allocator_type& allocator_;
-    difference_type size_;
+    size_type size_;
     pointer ptr_;
     ~row_buffer(){
         if (ptr_){
@@ -93,7 +93,7 @@ struct row_buffer
     row_buffer() = default;
     row_buffer(const row_buffer&) = delete;
     row_buffer(row_buffer&&) = delete;
-    row_buffer(allocator_type& allocator__, difference_type size__, pointer ptr__):
+    row_buffer(allocator_type& allocator__, size_type size__, pointer ptr__):
         allocator_{allocator__},
         size_{size__},
         ptr_{ptr__}
@@ -149,7 +149,7 @@ public:
     }
 
     //construct storage of n elements, no initialization is performed for trivially copyable value_type
-    explicit minimal_storage(const difference_type& n, const allocator_type& alloc = allocator_type()):
+    explicit minimal_storage(const size_type& n, const allocator_type& alloc = allocator_type()):
         allocator_{alloc}
     {
         init(n,value_type{},false);
@@ -157,12 +157,12 @@ public:
 
     pointer data(){return begin_;}
     const_pointer data()const{return begin_;}
-    reference operator[](const difference_type& i){return *(begin_+i);}
-    const_reference operator[](const difference_type& i)const{return *(begin_+i);}
+    reference operator[](const size_type& i){return *(begin_+i);}
+    const_reference operator[](const size_type& i)const{return *(begin_+i);}
 
 private:
 
-    void init(const difference_type& n, const value_type& v, bool init_trivial){
+    void init(const size_type& n, const value_type& v, bool init_trivial){
         auto new_buffer = allocate_buffer(n);
         if (!std::is_trivially_copyable_v<value_type> || init_trivial){
             detail::uninitialized_fill(new_buffer.get(),new_buffer.get()+n,v,new_buffer.get_allocator());
@@ -171,10 +171,10 @@ private:
         end_=begin_+n;
     }
 
-    auto allocate_buffer(const difference_type& n, allocator_type& alloc){
+    auto allocate_buffer(const size_type& n, allocator_type& alloc){
         return detail::row_buffer<allocator_type>{alloc,n,alloc.allocate(n)};
     }
-    auto allocate_buffer(const difference_type& n){
+    auto allocate_buffer(const size_type& n){
         return allocate_buffer(n,allocator_);
     }
 
@@ -250,13 +250,13 @@ public:
         other.end_ = nullptr;
     }
     //construct storage of n elements, no initialization is performed for trivially copyable value_type
-    explicit basic_storage(const difference_type& n, const allocator_type& alloc = allocator_type()):
+    explicit basic_storage(const size_type& n, const allocator_type& alloc = allocator_type()):
         allocator_{alloc}
     {
         init(n,value_type{},false);
     }
     //construct storage of n elements initialized to v
-    basic_storage(const difference_type& n, const value_type& v, const allocator_type& alloc = allocator_type()):
+    basic_storage(const size_type& n, const value_type& v, const allocator_type& alloc = allocator_type()):
         allocator_{alloc}
     {
         init(n,v,true);
@@ -286,7 +286,7 @@ public:
         std::swap(begin_,other.begin_);
         std::swap(end_,other.end_);
     }
-    difference_type size()const{return end_-begin_;}
+    size_type size()const{return end_-begin_;}
     bool empty()const{return begin()==end();}
     pointer data(){return begin_;}
     const_pointer data()const{return begin_;}
@@ -298,8 +298,8 @@ public:
     const_iterator end()const{return end_;}
     const_reverse_iterator rbegin()const{return std::make_reverse_iterator(end());}
     const_reverse_iterator rend()const{return  std::make_reverse_iterator(begin());}
-    reference operator[](const difference_type& i){return *(begin_+i);}
-    const_reference operator[](const difference_type& i)const{return *(begin_+i);}
+    reference operator[](const size_type& i){return *(begin_+i);}
+    const_reference operator[](const size_type& i)const{return *(begin_+i);}
     allocator_type get_allocator()const{return allocator_;}
 
 private:
@@ -359,7 +359,7 @@ private:
         other.end_ = nullptr;
     }
 
-    void init(const difference_type& n, const value_type& v, bool init_trivial){
+    void init(const size_type& n, const value_type& v, bool init_trivial){
         auto new_buffer = allocate_buffer(n);
         if (!std::is_trivially_copyable_v<value_type> || init_trivial){
             detail::uninitialized_fill(new_buffer.get(),new_buffer.get()+n,v,new_buffer.get_allocator());
@@ -369,17 +369,17 @@ private:
     }
     template<typename It>
     void init(It first, It last){
-        const auto n = static_cast<const difference_type&>(std::distance(first,last));
+        const auto n = static_cast<const size_type&>(std::distance(first,last));
         auto new_buffer = allocate_buffer(n);
         detail::uninitialized_copy(first,last,new_buffer.get(),new_buffer.get_allocator());
         begin_=new_buffer.release();
         end_=begin_+n;
     }
 
-    auto allocate_buffer(const difference_type& n, allocator_type& alloc){
+    auto allocate_buffer(const size_type& n, allocator_type& alloc){
         return detail::row_buffer<allocator_type>{alloc,n,alloc.allocate(n)};
     }
-    auto allocate_buffer(const difference_type& n){
+    auto allocate_buffer(const size_type& n){
         return allocate_buffer(n,allocator_);
     }
 
@@ -479,13 +479,13 @@ public:
         init(std::move(other));
     }
     //construct n elements, no initialization is performed for trivially copyable value_type
-    explicit stack_prealloc_vector(const difference_type& n, const allocator_type& alloc = allocator_type()):
+    explicit stack_prealloc_vector(const size_type& n, const allocator_type& alloc = allocator_type()):
         allocator_{alloc}
     {
         init(n,value_type{},false);
     }
     //construct n elements initialized to v
-    stack_prealloc_vector(const difference_type& n, const value_type& v, const allocator_type& alloc = allocator_type()):
+    stack_prealloc_vector(const size_type& n, const value_type& v, const allocator_type& alloc = allocator_type()):
         allocator_{alloc}
     {
         init(n,v,true);
@@ -540,7 +540,7 @@ public:
         }
     }
 
-    void reserve(const difference_type& cap){
+    void reserve(const size_type& cap){
         if (cap>capacity()){
             reallocate(begin_,end_,size(),cap);
         }
@@ -565,8 +565,8 @@ public:
         emplace_back(std::move(v));
     }
 
-    difference_type size()const{return end_-begin_;}
-    difference_type capacity()const{return capacity_end_-begin_;}
+    size_type size()const{return end_-begin_;}
+    size_type capacity()const{return capacity_end_-begin_;}
     bool empty()const{return begin()==end();}
     pointer data(){return begin_;}
     const_pointer data()const{return begin_;}
@@ -578,8 +578,8 @@ public:
     const_iterator end()const{return end_;}
     const_reverse_iterator rbegin()const{return std::make_reverse_iterator(end());}
     const_reverse_iterator rend()const{return  std::make_reverse_iterator(begin());}
-    reference operator[](const difference_type& i){return *(begin_+i);}
-    const_reference operator[](const difference_type& i)const{return *(begin_+i);}
+    reference operator[](const size_type& i){return *(begin_+i);}
+    const_reference operator[](const size_type& i)const{return *(begin_+i);}
     allocator_type get_allocator()const{return allocator_;}
 
 private:
@@ -645,7 +645,7 @@ private:
     //allocate new storage and copy construct elements from range first,last to it, free old storage, set new allocator if any
     //new capacity must be >= last-first, n must be equal to last-first
     template<typename NewAlloc=std::true_type, typename It, typename A>
-    void reallocate(It first, It last, const difference_type& n, const difference_type& cap, A&& alloc){
+    void reallocate(It first, It last, const size_type& n, const size_type& cap, A&& alloc){
         auto new_buffer = allocate_buffer(cap,alloc);
         detail::uninitialized_copy(first,last,new_buffer.get(),new_buffer.get_allocator());
         if constexpr (NewAlloc::value){
@@ -660,7 +660,7 @@ private:
         capacity_end_ = begin_+cap;
     }
     template<typename It>
-    void reallocate(It first, It last, const difference_type& n, const difference_type& cap){
+    void reallocate(It first, It last, const size_type& n, const size_type& cap){
         reallocate<std::false_type>(first,last,n,cap,allocator_);
     }
 
@@ -678,7 +678,7 @@ private:
         other.init();
     }
 
-    void init(const difference_type& n, const value_type& v, bool init_trivial){
+    void init(const size_type& n, const value_type& v, bool init_trivial){
         init_trivial = init_trivial || !std::is_trivially_copyable_v<value_type>;
         if (Size<n){//exceeds stack preallocated size
             auto new_buffer = allocate_buffer(n);
@@ -697,7 +697,7 @@ private:
 
     template<typename It>
     void init(It first, It last){
-        const auto n = static_cast<const difference_type&>(std::distance(first,last));
+        const auto n = static_cast<const size_type&>(std::distance(first,last));
         if (Size<n){//exceeds stack preallocated size
             auto new_buffer = allocate_buffer(n);
             detail::uninitialized_copy(first,last,new_buffer.get(),new_buffer.get_allocator());
@@ -747,7 +747,7 @@ private:
         bigger.end_=bigger.begin_+smaller_size;
     }
 
-    void assign_(const difference_type& n, const value_type& v, bool init_trivial){
+    void assign_(const size_type& n, const value_type& v, bool init_trivial){
         init_trivial = init_trivial || !std::is_trivially_copyable_v<value_type>;
         if (capacity()<n){  //reallocate
             auto new_buffer = allocate_buffer(n);
@@ -773,7 +773,7 @@ private:
     }
 
     template<typename It>
-    void assign_(It first, It last, const difference_type& n){
+    void assign_(It first, It last, const size_type& n){
         const auto size_ = size();
         if (size_<n){
             std::copy(first,first+size_,begin_);
@@ -854,11 +854,11 @@ private:
     }
 
     template<typename A>
-    auto allocate_buffer(const difference_type& n, A&& alloc){
+    auto allocate_buffer(const size_type& n, A&& alloc){
         using A_ = std::remove_cv_t<std::remove_reference_t<A>>;
         return detail::row_buffer<A_>{alloc,n,alloc.allocate(n)};
     }
-    auto allocate_buffer(const difference_type& n){
+    auto allocate_buffer(const size_type& n){
         return allocate_buffer(n,allocator_);
     }
 

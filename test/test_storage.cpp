@@ -687,12 +687,9 @@ TEMPLATE_TEST_CASE("test_stack_prealloc_vector_n_value_constructor","[test_stack
     apply_by_element(test,test_data);
 }
 
-TEMPLATE_TEST_CASE("test_stack_prealloc_vector_iterators_range_constructor","[test_stack_prealloc_vector]",
-    double,
-    test_basic_storage::not_trivial<double>
-)
+TEST_CASE("test_stack_prealloc_vector_iterators_range_constructor","[test_stack_prealloc_vector]")
 {
-    using value_type = TestType;
+    using value_type = test_basic_storage::not_trivial<double>;
     using gtensor::stack_prealloc_vector;
     using helpers_for_testing::apply_by_element;
     //0size_constant,1elements,2expected_size,3expected_capacity,4expected_empty
@@ -728,12 +725,9 @@ TEMPLATE_TEST_CASE("test_stack_prealloc_vector_iterators_range_constructor","[te
     apply_by_element(test,test_data);
 }
 
-TEMPLATE_TEST_CASE("test_stack_prealloc_vector_initializer_list_constructor","[test_stack_prealloc_vector]",
-    double,
-    test_basic_storage::not_trivial<double>
-)
+TEST_CASE("test_stack_prealloc_vector_initializer_list_constructor","[test_stack_prealloc_vector]")
 {
-    using value_type = TestType;
+    using value_type = test_basic_storage::not_trivial<double>;
     using gtensor::stack_prealloc_vector;
     using helpers_for_testing::apply_by_element;
 
@@ -756,12 +750,9 @@ TEMPLATE_TEST_CASE("test_stack_prealloc_vector_initializer_list_constructor","[t
     apply_by_element(test,test_data);
 }
 
-TEMPLATE_TEST_CASE("test_stack_prealloc_vector_copy_constructor","[test_stack_prealloc_vector]",
-    double,
-    test_basic_storage::not_trivial<double>
-)
+TEST_CASE("test_stack_prealloc_vector_copy_constructor","[test_stack_prealloc_vector]")
 {
-    using value_type = TestType;
+    using value_type = test_basic_storage::not_trivial<double>;
     using gtensor::stack_prealloc_vector;
     using helpers_for_testing::apply_by_element;
 
@@ -801,12 +792,9 @@ TEMPLATE_TEST_CASE("test_stack_prealloc_vector_copy_constructor","[test_stack_pr
     apply_by_element(test,test_data);
 }
 
-TEMPLATE_TEST_CASE("test_stack_prealloc_vector_move_constructor","[test_stack_prealloc_vector]",
-    double,
-    test_basic_storage::not_trivial<double>
-)
+TEST_CASE("test_stack_prealloc_vector_move_constructor","[test_stack_prealloc_vector]")
 {
-    using value_type = TestType;
+    using value_type = test_basic_storage::not_trivial<double>;
     using gtensor::stack_prealloc_vector;
     using helpers_for_testing::apply_by_element;
 
@@ -880,12 +868,9 @@ TEST_CASE("test_stack_prealloc_vector_operator==","[test_stack_prealloc_vector]"
     apply_by_element(test,test_data);
 }
 
-TEMPLATE_TEST_CASE("test_stack_prealloc_vector_copy_assign","[test_stack_prealloc_vector]",
-    double,
-    test_basic_storage::not_trivial<double>
-)
+TEST_CASE("test_stack_prealloc_vector_copy_assign","[test_stack_prealloc_vector]")
 {
-    using value_type = TestType;
+    using value_type = test_basic_storage::not_trivial<double>;
     using gtensor::stack_prealloc_vector;
     using vector_type = stack_prealloc_vector<value_type,4>;
     using helpers_for_testing::apply_by_element;
@@ -923,12 +908,9 @@ TEMPLATE_TEST_CASE("test_stack_prealloc_vector_copy_assign","[test_stack_preallo
     apply_by_element(test,test_data);
 }
 
-TEMPLATE_TEST_CASE("test_stack_prealloc_vector_copy_assign_propagate_allocator","[test_stack_prealloc_vector]",
-    double,
-    test_basic_storage::not_trivial<double>
-)
+TEST_CASE("test_stack_prealloc_vector_copy_assign_propagate_allocator","[test_stack_prealloc_vector]")
 {
-    using value_type = TestType;
+    using value_type = test_basic_storage::not_trivial<double>;
     using allocator_type = test_basic_storage::test_allocator<value_type>;
     using gtensor::stack_prealloc_vector;
     using vector_type = stack_prealloc_vector<value_type,4,allocator_type>;
@@ -980,12 +962,9 @@ TEMPLATE_TEST_CASE("test_stack_prealloc_vector_copy_assign_propagate_allocator",
     apply_by_element(test,test_data);
 }
 
-TEMPLATE_TEST_CASE("test_stack_prealloc_vector_move_assign","[test_stack_prealloc_vector]",
-    double,
-    test_basic_storage::not_trivial<double>
-)
+TEST_CASE("test_stack_prealloc_vector_move_assign","[test_stack_prealloc_vector]")
 {
-    using value_type = TestType;
+    using value_type = test_basic_storage::not_trivial<double>;
     using gtensor::stack_prealloc_vector;
     using vector_type = stack_prealloc_vector<value_type,4>;
     using helpers_for_testing::apply_by_element;
@@ -1028,12 +1007,9 @@ TEMPLATE_TEST_CASE("test_stack_prealloc_vector_move_assign","[test_stack_preallo
     apply_by_element(test,test_data);
 }
 
-TEMPLATE_TEST_CASE("test_stack_prealloc_vector_move_assign_not_propagate_allocator","[test_stack_prealloc_vector]",
-    double,
-    test_basic_storage::not_trivial<double>
-)
+TEST_CASE("test_stack_prealloc_vector_move_assign_not_propagate_allocator","[test_stack_prealloc_vector]")
 {
-    using value_type = TestType;
+    using value_type = test_basic_storage::not_trivial<double>;
     using allocator_type = test_basic_storage::test_allocator<value_type>;
     using gtensor::stack_prealloc_vector;
     using vector_type = stack_prealloc_vector<value_type,4,allocator_type>;
@@ -1090,12 +1066,9 @@ TEMPLATE_TEST_CASE("test_stack_prealloc_vector_move_assign_not_propagate_allocat
     apply_by_element(test,test_data);
 }
 
-TEMPLATE_TEST_CASE("test_stack_prealloc_vector_swap","[test_stack_prealloc_vector]",
-    double,
-    test_basic_storage::not_trivial<double>
-)
+TEST_CASE("test_stack_prealloc_vector_swap","[test_stack_prealloc_vector]")
 {
-    using value_type = TestType;
+    using value_type = test_basic_storage::not_trivial<double>;
     using gtensor::stack_prealloc_vector;
     using vector_type = stack_prealloc_vector<value_type,4>;
     using helpers_for_testing::apply_by_element;
@@ -1153,12 +1126,9 @@ TEMPLATE_TEST_CASE("test_stack_prealloc_vector_swap","[test_stack_prealloc_vecto
     apply_by_element(test,test_data);
 }
 
-TEMPLATE_TEST_CASE("test_stack_prealloc_vector_reserve","[test_stack_prealloc_vector]",
-    double,
-    test_basic_storage::not_trivial<double>
-)
+TEST_CASE("test_stack_prealloc_vector_reserve","[test_stack_prealloc_vector]")
 {
-    using value_type = TestType;
+    using value_type = test_basic_storage::not_trivial<double>;
     using gtensor::stack_prealloc_vector;
     using vector_type = stack_prealloc_vector<value_type,4>;
     using helpers_for_testing::apply_by_element;
@@ -1205,12 +1175,9 @@ TEMPLATE_TEST_CASE("test_stack_prealloc_vector_reserve","[test_stack_prealloc_ve
     apply_by_element(test,test_data);
 }
 
-TEMPLATE_TEST_CASE("test_stack_prealloc_vector_push_back","[test_stack_prealloc_vector]",
-    double,
-    test_basic_storage::not_trivial<double>
-)
+TEST_CASE("test_stack_prealloc_vector_push_back","[test_stack_prealloc_vector]")
 {
-    using value_type = TestType;
+    using value_type = test_basic_storage::not_trivial<double>;
     using gtensor::stack_prealloc_vector;
     using vector_type = stack_prealloc_vector<value_type,4>;
     using helpers_for_testing::apply_by_element;
@@ -1315,6 +1282,60 @@ TEST_CASE("test_stack_prealloc_vector_destructor","[test_stack_prealloc_vector]"
         REQUIRE(value_type::ctr_counter == Size+5);
         REQUIRE(value_type::dtr_counter == value_type::ctr_counter);
         REQUIRE(allocator_type::alloc_counter == 1);
+        REQUIRE(allocator_type::dealloc_counter == 1);
+    }
+    SECTION("on_stack_copy")
+    {
+        vector_type v{1,2,3,4};
+        value_type::reset();
+        allocator_type::reset();
+        {
+            vector_type vec(v);
+        }
+        REQUIRE(value_type::ctr_counter == 4);
+        REQUIRE(value_type::dtr_counter == value_type::ctr_counter);
+        REQUIRE(allocator_type::alloc_counter == 0);
+        REQUIRE(allocator_type::dealloc_counter == 0);
+    }
+    SECTION("allocate_copy")
+    {
+        vector_type v{1,2,3,4,5,6};
+        value_type::reset();
+        allocator_type::reset();
+        {
+            vector_type vec(v);
+        }
+        REQUIRE(value_type::ctr_counter == 6);
+        REQUIRE(value_type::dtr_counter == value_type::ctr_counter);
+        REQUIRE(allocator_type::alloc_counter == 1);
+        REQUIRE(allocator_type::dealloc_counter == 1);
+    }
+    SECTION("on_stack_move")
+    {
+        vector_type v{1,2,3,4};
+        value_type::reset();
+        allocator_type::reset();
+        {
+            vector_type vec(std::move(v));
+            REQUIRE(value_type::dtr_counter == 4);
+        }
+        REQUIRE(value_type::ctr_counter == 4);
+        REQUIRE(value_type::dtr_counter == 8);
+        REQUIRE(allocator_type::alloc_counter == 0);
+        REQUIRE(allocator_type::dealloc_counter == 0);
+    }
+    SECTION("allocate_move")
+    {
+        vector_type v{1,2,3,4,5,6};
+        value_type::reset();
+        allocator_type::reset();
+        {
+            vector_type vec(std::move(v));
+            REQUIRE(value_type::dtr_counter == 0);
+        }
+        REQUIRE(value_type::ctr_counter == 0);
+        REQUIRE(value_type::dtr_counter == 6);
+        REQUIRE(allocator_type::alloc_counter == 0);
         REQUIRE(allocator_type::dealloc_counter == 1);
     }
     SECTION("on_stack_reserve")
