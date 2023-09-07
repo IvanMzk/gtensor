@@ -553,7 +553,7 @@ public:
             const auto cap = size_==0 ? 1 : 2*size_;
             reallocate(begin_,end_,size_,cap);
         }
-        construct_at_end(std::forward<Args>(args)...);
+        emplace_at_end(std::forward<Args>(args)...);
         return *end_++;
     }
 
@@ -599,12 +599,47 @@ private:
     }
 
     template<typename...Args>
-    void construct_at_end(Args&&...args){
+    void emplace_at_end(Args&&...args){
         if (is_on_stack()){
             detail::construct_at(end_,std::forward<Args>(args)...);
         }else{
             std::allocator_traits<allocator_type>::construct(allocator_,end_,std::forward<Args>(args)...);
         }
+    }
+
+    template<typename It, typename DstIt>
+    void construct(It first, It last, DstIt dfirst, stack_prealloc_vector& dv){
+        if (dv.is_on_stack()){
+            std::uninitialized_copy(first,last,dfirst);
+        }else{
+            detail::uninitialized_copy(first,last,dfirst,dv.allocator_);
+        }
+    }
+    template<typename It, typename DstIt>
+    void construct(It first, It last, DstIt dfirst){
+        construct(first,last,dfirst,*this);
+    }
+
+    template<typename It>
+    void construct_fill(It first, It last, const value_type& v){
+        if (is_on_stack()){
+            std::uninitialized_fill(first,last,v);
+        }else{
+            detail::uninitialized_fill(first,last,v,allocator_);
+        }
+    }
+
+    template<typename It>
+    void destroy(It first, It last, stack_prealloc_vector& v){
+        if (v.is_on_stack()){
+            std::destroy(first,last);
+        }else{
+            detail::destroy(first,last,v.allocator_);
+        }
+    }
+    template<typename It>
+    void destroy(It first, It last){
+        destroy(first,last,*this);
     }
 
     //allocate new storage and copy construct elements from range first,last to it, free old storage, set new allocator if any
@@ -628,6 +663,7 @@ private:
     void reallocate(It first, It last, const difference_type& n, const difference_type& cap){
         reallocate<std::false_type>(first,last,n,cap,allocator_);
     }
+
 
     void init(){
         begin_= buffer_array_begin();
@@ -691,11 +727,7 @@ private:
         detail::uninitialized_copy(bigger.begin(),bigger.end(),new_buffer.get(),new_buffer.get_allocator());
         std::copy(smaller.begin(),smaller.end(),bigger.begin());
         const auto smaller_size = smaller.size();
-        if (bigger.is_on_stack()){
-            std::destroy(bigger.begin()+smaller_size,bigger.end());
-        }else{
-            detail::destroy(bigger.begin()+smaller_size,bigger.end(),bigger.allocator_);
-        }
+        destroy(bigger.begin()+smaller_size,bigger.end(),bigger);
         smaller.free();
         smaller.begin_ = new_buffer.release();
         smaller.end_ = smaller.begin_+bigger.size();
@@ -709,16 +741,8 @@ private:
     void swap_copy_(stack_prealloc_vector& smaller, stack_prealloc_vector& bigger){
         std::swap_ranges(smaller.begin(),smaller.end(),bigger.begin());
         const auto smaller_size = smaller.size();
-        if (smaller.is_on_stack()){
-            std::uninitialized_copy(bigger.begin()+smaller_size,bigger.end(),smaller.end());
-        }else{
-            detail::uninitialized_copy(bigger.begin()+smaller_size,bigger.end(),smaller.end(),smaller.allocator_);
-        }
-        if (bigger.is_on_stack()){
-            std::destroy(bigger.begin()+smaller_size,bigger.end());
-        }else{
-            detail::destroy(bigger.begin()+smaller_size,bigger.end(),bigger.allocator_);
-        }
+        construct(bigger.begin()+smaller_size,bigger.end(),smaller.end(),smaller);
+        destroy(bigger.begin()+smaller_size,bigger.end(),bigger);
         smaller.end_=smaller.begin_+bigger.size();
         bigger.end_=bigger.begin_+smaller_size;
     }
@@ -738,18 +762,10 @@ private:
                 const auto size_ = size();
                 if (size_<n){
                     std::fill(begin_,begin_+size_,v);
-                    if (is_on_stack()){
-                        std::uninitialized_fill(begin_+size_,begin_+n,v);
-                    }else{
-                        detail::uninitialized_fill(begin_+size_,begin_+n,v,allocator_);
-                    }
+                    construct_fill(begin_+size_,begin_+n,v);
                 }else{
                     std::fill(begin_,begin_+n,v);
-                    if (is_on_stack()){
-                        std::destroy(begin_+n,end_);
-                    }else{
-                        detail::destroy(begin_+n,end_,allocator_);
-                    }
+                    destroy(begin_+n,end_);
                 }
             }
         }
@@ -761,18 +777,10 @@ private:
         const auto size_ = size();
         if (size_<n){
             std::copy(first,first+size_,begin_);
-            if (is_on_stack()){
-                std::uninitialized_copy(first+size_,last,end_);
-            }else{
-                detail::uninitialized_copy(first+size_,last,end_,allocator_);
-            }
+            construct(first+size_,last,end_);
         }else{
             std::copy(first,last,begin_);
-            if (is_on_stack()){
-                std::destroy(begin_+n,end_);
-            }else{
-                detail::destroy(begin_+n,end_,allocator_);
-            }
+            destroy(begin_+n,end_);
         }
         end_ = begin_+n;
     }
@@ -856,10 +864,8 @@ private:
 
     //destroy and deallocate
     void free(allocator_type& alloc){
-        if (is_on_stack()){
-            std::destroy(begin_,end_);
-        }else{
-            detail::destroy(begin(),end(),alloc);
+        destroy(begin_,end_);
+        if (!is_on_stack()){
             alloc.deallocate(begin_,size());
         }
     }
