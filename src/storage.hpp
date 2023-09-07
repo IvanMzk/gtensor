@@ -584,8 +584,18 @@ public:
 
 private:
 
+    const_pointer buffer_array_begin()const{
+        return std::launder(reinterpret_cast<const value_type*>(buffer_));
+    }
+    pointer buffer_array_begin(){
+        return std::launder(reinterpret_cast<value_type*>(buffer_));
+    }
+    pointer buffer_array_end(){
+        return std::launder(reinterpret_cast<value_type*>(buffer_+Size*sizeof(value_type)));
+    }
+
     bool is_on_stack()const{
-        return begin_==elements_;
+        return begin_== buffer_array_begin();
     }
 
     template<typename...Args>
@@ -620,9 +630,9 @@ private:
     }
 
     void init(){
-        begin_=elements_;
-        end_=elements_;
-        capacity_end_=elements_+Size;
+        begin_= buffer_array_begin();
+        end_= buffer_array_begin();
+        capacity_end_= buffer_array_end();
     }
 
     void steal(stack_prealloc_vector&& other){
@@ -857,11 +867,11 @@ private:
         free(allocator_);
     }
 
-    value_type elements_[Size];
+    std::byte buffer_[Size*sizeof(value_type)];
     allocator_type allocator_;
-    pointer begin_{elements_};
-    pointer end_{elements_};
-    pointer capacity_end_{elements_+Size};
+    pointer begin_{buffer_array_begin()};
+    pointer end_{buffer_array_begin()};
+    pointer capacity_end_{buffer_array_end()};
 };
 
 template<typename T, std::size_t Size, typename Alloc>
@@ -884,9 +894,6 @@ template<typename T, std::size_t Size, typename Alloc>
 bool operator!=(const stack_prealloc_vector<T,Size,Alloc>& lhs, const stack_prealloc_vector<T,Size,Alloc>& rhs){
     return !(lhs==rhs);
 }
-
-
-
 
 
 }   //end of namespace gtensor

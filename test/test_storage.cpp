@@ -77,12 +77,14 @@ struct counter{
 template<typename T>
 struct not_trivial : counter<not_trivial<T>>{
     T t;
+    std::vector<T> vec_t;
     not_trivial() = default;
     not_trivial(T t_):
-        t{t_}
+        t{t_},
+        vec_t(static_cast<std::size_t>(t_),t_)
     {}
     bool operator==(const not_trivial& other)const{
-        return t==other.t;
+        return t==other.t && vec_t==other.vec_t;
     }
 };
 
@@ -1262,8 +1264,8 @@ TEST_CASE("test_stack_prealloc_vector_destructor","[test_stack_prealloc_vector]"
         {
             vector_type vec{};
         }
-        REQUIRE(value_type::ctr_counter == Size);
-        REQUIRE(value_type::dtr_counter == Size);
+        REQUIRE(value_type::ctr_counter == 0);
+        REQUIRE(value_type::dtr_counter == 0);
         REQUIRE(allocator_type::alloc_counter == 0);
         REQUIRE(allocator_type::dealloc_counter == 0);
     }
@@ -1274,7 +1276,7 @@ TEST_CASE("test_stack_prealloc_vector_destructor","[test_stack_prealloc_vector]"
         {
             vector_type vec(v.begin(),v.end());
         }
-        REQUIRE(value_type::ctr_counter == Size+2);
+        REQUIRE(value_type::ctr_counter == 2);
         REQUIRE(value_type::dtr_counter == value_type::ctr_counter);
         REQUIRE(allocator_type::alloc_counter == 0);
         REQUIRE(allocator_type::dealloc_counter == 0);
@@ -1286,7 +1288,7 @@ TEST_CASE("test_stack_prealloc_vector_destructor","[test_stack_prealloc_vector]"
         {
             vector_type vec(3,v);
         }
-        REQUIRE(value_type::ctr_counter == Size+3);
+        REQUIRE(value_type::ctr_counter == 3);
         REQUIRE(value_type::dtr_counter == value_type::ctr_counter);
         REQUIRE(allocator_type::alloc_counter == 0);
         REQUIRE(allocator_type::dealloc_counter == 0);
@@ -1298,7 +1300,7 @@ TEST_CASE("test_stack_prealloc_vector_destructor","[test_stack_prealloc_vector]"
         {
             vector_type vec(v.begin(),v.end());
         }
-        REQUIRE(value_type::ctr_counter == Size+Size+10);
+        REQUIRE(value_type::ctr_counter == Size+10);
         REQUIRE(value_type::dtr_counter == value_type::ctr_counter);
         REQUIRE(allocator_type::alloc_counter == 1);
         REQUIRE(allocator_type::dealloc_counter == 1);
@@ -1310,7 +1312,7 @@ TEST_CASE("test_stack_prealloc_vector_destructor","[test_stack_prealloc_vector]"
         {
             vector_type vec(Size+5,v);
         }
-        REQUIRE(value_type::ctr_counter == Size+Size+5);
+        REQUIRE(value_type::ctr_counter == Size+5);
         REQUIRE(value_type::dtr_counter == value_type::ctr_counter);
         REQUIRE(allocator_type::alloc_counter == 1);
         REQUIRE(allocator_type::dealloc_counter == 1);
@@ -1322,8 +1324,8 @@ TEST_CASE("test_stack_prealloc_vector_destructor","[test_stack_prealloc_vector]"
             vec.reserve(Size-1);
             vec.reserve(Size);
         }
-        REQUIRE(value_type::ctr_counter == Size);
-        REQUIRE(value_type::dtr_counter == Size);
+        REQUIRE(value_type::ctr_counter == 0);
+        REQUIRE(value_type::dtr_counter == 0);
         REQUIRE(allocator_type::alloc_counter == 0);
         REQUIRE(allocator_type::dealloc_counter == 0);
     }
@@ -1333,22 +1335,68 @@ TEST_CASE("test_stack_prealloc_vector_destructor","[test_stack_prealloc_vector]"
             vector_type vec{};
             vec.reserve(Size+10);
         }
-        REQUIRE(value_type::ctr_counter == Size);
-        REQUIRE(value_type::dtr_counter == Size);
+        REQUIRE(value_type::ctr_counter == 0);
+        REQUIRE(value_type::dtr_counter == 0);
         REQUIRE(allocator_type::alloc_counter == 1);
         REQUIRE(allocator_type::dealloc_counter == 1);
     }
-    // SECTION("on_stack_push_back")
-    // {
-    //     value_type v{2};
-    //     value_type::reset();
-    //     {
-    //         vector_type vec{};
-    //         vec.push_back(v);
-    //     }
-    //     REQUIRE(value_type::ctr_counter == Size);
-    //     REQUIRE(value_type::dtr_counter == Size);
-    //     REQUIRE(allocator_type::alloc_counter == 0);
-    //     REQUIRE(allocator_type::dealloc_counter == 0);
-    // }
+    SECTION("on_stack_push_back_1")
+    {
+        value_type v{2};
+        value_type::reset();
+        {
+            vector_type vec{};
+            vec.push_back(v);
+        }
+        REQUIRE(value_type::ctr_counter == 1);
+        REQUIRE(value_type::dtr_counter == 1);
+        REQUIRE(allocator_type::alloc_counter == 0);
+        REQUIRE(allocator_type::dealloc_counter == 0);
+    }
+    SECTION("on_stack_push_back_2")
+    {
+        value_type v{2};
+        value_type::reset();
+        {
+            vector_type vec{};
+            vec.push_back(v);
+            vec.push_back(v);
+            vec.push_back(v);
+        }
+        REQUIRE(value_type::ctr_counter == 3);
+        REQUIRE(value_type::dtr_counter == 3);
+        REQUIRE(allocator_type::alloc_counter == 0);
+        REQUIRE(allocator_type::dealloc_counter == 0);
+    }
+    SECTION("on_stack_push_back_3")
+    {
+        std::vector<value_type> v1{1,2};
+        value_type v2{3};
+        value_type::reset();
+        {
+            vector_type vec(v1.begin(),v1.end());
+            vec.push_back(v2);
+            vec.push_back(v2);
+        }
+        REQUIRE(value_type::ctr_counter == 4);
+        REQUIRE(value_type::dtr_counter == 4);
+        REQUIRE(allocator_type::alloc_counter == 0);
+        REQUIRE(allocator_type::dealloc_counter == 0);
+    }
+    SECTION("allocate_push_back")
+    {
+        std::vector<value_type> v1{1,2,3};
+        value_type v2{4};
+        value_type::reset();
+        {
+            vector_type vec(v1.begin(),v1.end());
+            vec.push_back(v2);
+            vec.push_back(v2);
+            vec.push_back(v2);
+        }
+        REQUIRE(value_type::ctr_counter == 10); //init 3, push_back 1, reallocate 3+1, push_back 2
+        REQUIRE(value_type::dtr_counter == 10);
+        REQUIRE(allocator_type::alloc_counter == 1);
+        REQUIRE(allocator_type::dealloc_counter == 1);
+    }
 }
