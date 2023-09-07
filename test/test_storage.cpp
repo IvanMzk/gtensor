@@ -1215,6 +1215,122 @@ TEST_CASE("test_stack_prealloc_vector_push_back","[test_stack_prealloc_vector]")
     apply_by_element(test,test_data);
 }
 
+TEST_CASE("test_stack_prealloc_vector_assign_from_range","[test_stack_prealloc_vector]")
+{
+    using value_type = test_basic_storage::not_trivial<double>;
+    using gtensor::stack_prealloc_vector;
+    using vector_type = stack_prealloc_vector<value_type,4>;
+    using helpers_for_testing::apply_by_element;
+
+    //0vec,1input,2expected_size,3expected_capacity,4expected_elements
+    auto test_data = std::make_tuple(
+        std::make_tuple(vector_type{},std::vector<value_type>{},0,4,std::vector<value_type>{}),
+        std::make_tuple(vector_type{},std::vector<value_type>{1,2,3},3,4,std::vector<value_type>{1,2,3}),
+        std::make_tuple(vector_type{},std::vector<value_type>{1,2,3,4,5,6},6,6,std::vector<value_type>{1,2,3,4,5,6}),
+        std::make_tuple(vector_type{1,2,3},std::vector<value_type>{},0,4,std::vector<value_type>{}),
+        std::make_tuple(vector_type{1,2,3},std::vector<value_type>{4,5,6},3,4,std::vector<value_type>{4,5,6}),
+        std::make_tuple(vector_type{1,2,3},std::vector<value_type>{4,5,6,7,8,9},6,6,std::vector<value_type>{4,5,6,7,8,9}),
+        std::make_tuple(vector_type{1,2,3,4,5,6},std::vector<value_type>{},0,6,std::vector<value_type>{}),
+        std::make_tuple(vector_type{1,2,3,4,5,6},std::vector<value_type>{4,5,6},3,6,std::vector<value_type>{4,5,6}),
+        std::make_tuple(vector_type{1,2,3,4,5,6},std::list<value_type>{4,5,6,7,8,9},6,6,std::vector<value_type>{4,5,6,7,8,9})
+    );
+
+    auto test = [](const auto& t){
+        auto vec = std::get<0>(t);
+        auto input = std::get<1>(t);
+        auto expected_size = std::get<2>(t);
+        auto expected_capacity = std::get<3>(t);
+        auto expected_elements = std::get<4>(t);
+
+        vec.assign(input.begin(),input.end());
+        auto result_size = vec.size();
+        auto result_capacity = vec.capacity();
+        REQUIRE(result_size == expected_size);
+        REQUIRE(result_capacity == expected_capacity);
+        REQUIRE(std::equal(vec.begin(),vec.end(),expected_elements.begin(),expected_elements.end()));
+    };
+    apply_by_element(test,test_data);
+}
+
+TEST_CASE("test_stack_prealloc_vector_assign_n_value","[test_stack_prealloc_vector]")
+{
+    using value_type = test_basic_storage::not_trivial<double>;
+    using gtensor::stack_prealloc_vector;
+    using vector_type = stack_prealloc_vector<value_type,4>;
+    using helpers_for_testing::apply_by_element;
+
+    //0vec,1n,2value,3expected_size,4expected_capacity,5expected_elements
+    auto test_data = std::make_tuple(
+        std::make_tuple(vector_type{},0,value_type{1},0,4,std::vector<value_type>{}),
+        std::make_tuple(vector_type{},3,value_type{2},3,4,std::vector<value_type>{2,2,2}),
+        std::make_tuple(vector_type{},6,value_type{3},6,6,std::vector<value_type>{3,3,3,3,3,3}),
+        std::make_tuple(vector_type{1,2,3},0,value_type{1},0,4,std::vector<value_type>{}),
+        std::make_tuple(vector_type{1,2,3},3,value_type{2},3,4,std::vector<value_type>{2,2,2}),
+        std::make_tuple(vector_type{1,2,3},6,value_type{3},6,6,std::vector<value_type>{3,3,3,3,3,3}),
+        std::make_tuple(vector_type{1,2,3,4,5,6},0,value_type{1},0,6,std::vector<value_type>{}),
+        std::make_tuple(vector_type{1,2,3,4,5,6},3,value_type{2},3,6,std::vector<value_type>{2,2,2}),
+        std::make_tuple(vector_type{1,2,3,4,5,6},9,value_type{3},9,9,std::vector<value_type>{3,3,3,3,3,3,3,3,3})
+    );
+
+    auto test = [](const auto& t){
+        auto vec = std::get<0>(t);
+        auto n = std::get<1>(t);
+        auto value = std::get<2>(t);
+        auto expected_size = std::get<3>(t);
+        auto expected_capacity = std::get<4>(t);
+        auto expected_elements = std::get<5>(t);
+
+        vec.assign(n,value);
+        auto result_size = vec.size();
+        auto result_capacity = vec.capacity();
+        REQUIRE(result_size == expected_size);
+        REQUIRE(result_capacity == expected_capacity);
+        REQUIRE(std::equal(vec.begin(),vec.end(),expected_elements.begin(),expected_elements.end()));
+    };
+    apply_by_element(test,test_data);
+}
+
+TEST_CASE("test_stack_prealloc_vector_assign_init_list","[test_stack_prealloc_vector]")
+{
+    using value_type = test_basic_storage::not_trivial<double>;
+    using gtensor::stack_prealloc_vector;
+    using vector_type = stack_prealloc_vector<value_type,4>;
+    using helpers_for_testing::apply_by_element;
+
+    //0vec,1command,2expected_size,3expected_capacity,4expected_elements
+    auto test_data = std::make_tuple(
+        std::make_tuple(vector_type{},[](auto& v){v.assign({});},0,4,std::vector<value_type>{}),
+        std::make_tuple(vector_type{},[](auto& v){v.assign({1,2,3});},3,4,std::vector<value_type>{1,2,3}),
+        std::make_tuple(vector_type{},[](auto& v){v.assign({1,2,3,4,5,6});},6,6,std::vector<value_type>{1,2,3,4,5,6}),
+        std::make_tuple(vector_type{1,2,3},[](auto& v){v.assign({});},0,4,std::vector<value_type>{}),
+        std::make_tuple(vector_type{1,2,3},[](auto& v){v.assign({4,5});},2,4,std::vector<value_type>{4,5}),
+        std::make_tuple(vector_type{1,2,3},[](auto& v){v.assign({4,5,6});},3,4,std::vector<value_type>{4,5,6}),
+        std::make_tuple(vector_type{1,2,3},[](auto& v){v.assign({4,5,6,7});},4,4,std::vector<value_type>{4,5,6,7}),
+        std::make_tuple(vector_type{1,2,3},[](auto& v){v.assign({1,2,3,4,5,6});},6,6,std::vector<value_type>{1,2,3,4,5,6}),
+        std::make_tuple(vector_type{1,2,3,4,5,6},[](auto& v){v.assign({});},0,6,std::vector<value_type>{}),
+        std::make_tuple(vector_type{1,2,3,4,5,6},[](auto& v){v.assign({7,8,9});},3,6,std::vector<value_type>{7,8,9}),
+        std::make_tuple(vector_type{1,2,3,4,5,6},[](auto& v){v.assign({7,8,9,10,11,12});},6,6,std::vector<value_type>{7,8,9,10,11,12}),
+        std::make_tuple(vector_type{1,2,3,4,5,6},[](auto& v){v.assign({7,8,9,10,11,12,13,14,15});},9,9,std::vector<value_type>{7,8,9,10,11,12,13,14,15})
+    );
+
+    auto test = [](const auto& t){
+        auto vec = std::get<0>(t);
+        auto command = std::get<1>(t);
+        auto expected_size = std::get<2>(t);
+        auto expected_capacity = std::get<3>(t);
+        auto expected_elements = std::get<4>(t);
+
+        command(vec);
+        auto result_size = vec.size();
+        auto result_capacity = vec.capacity();
+        REQUIRE(result_size == expected_size);
+        REQUIRE(result_capacity == expected_capacity);
+        REQUIRE(std::equal(vec.begin(),vec.end(),expected_elements.begin(),expected_elements.end()));
+    };
+    apply_by_element(test,test_data);
+}
+
+
 TEST_CASE("test_stack_prealloc_vector_destructor","[test_stack_prealloc_vector]")
 {
     using value_type = test_basic_storage::not_trivial<double>;

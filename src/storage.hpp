@@ -263,7 +263,7 @@ public:
     }
 
     template<typename, typename = void> struct is_input_iterator : std::false_type{};
-    template<typename U> struct is_input_iterator<U,std::void_t<typename std::iterator_traits<U>::iterator_category>> : std::is_convertible<typename std::iterator_traits<U>::iterator_category*,std::input_iterator_tag*>{};
+    template<typename U> struct is_input_iterator<U,std::void_t<typename std::iterator_traits<U>::iterator_category>> : std::is_convertible<typename std::iterator_traits<U>::iterator_category,std::input_iterator_tag>{};
 
     //construct storage from iterators range
     template<typename It, std::enable_if_t<is_input_iterator<It>::value,int> =0 >
@@ -492,7 +492,7 @@ public:
     }
 
     template<typename, typename = void> struct is_input_iterator : std::false_type{};
-    template<typename U> struct is_input_iterator<U,std::void_t<typename std::iterator_traits<U>::iterator_category>> : std::is_convertible<typename std::iterator_traits<U>::iterator_category*,std::input_iterator_tag*>{};
+    template<typename U> struct is_input_iterator<U,std::void_t<typename std::iterator_traits<U>::iterator_category>> : std::is_convertible<typename std::iterator_traits<U>::iterator_category,std::input_iterator_tag>{};
 
     //copy construct from iterators range
     template<typename It, std::enable_if_t<is_input_iterator<It>::value,int> =0 >
@@ -506,6 +506,24 @@ public:
         allocator_{alloc}
     {
         init(init_list.begin(),init_list.end());
+    }
+
+    template<typename It, std::enable_if_t<is_input_iterator<It>::value,int> =0>
+    void assign(It first, It last){
+        if constexpr (std::is_same_v<typename std::iterator_traits<It>::iterator_category,std::input_iterator_tag>){
+            free();
+            for(; first!=last; ++first){
+                emplace_back(*first);
+            }
+        }else{
+            copy_assign(first,last);
+        }
+    }
+    void assign(std::initializer_list<value_type> init_list){
+        assign(init_list.begin(),init_list.end());
+    }
+    void assign(size_type n, const value_type& v){
+        assign_(n,v);
     }
 
     void swap(stack_prealloc_vector& other){
@@ -747,26 +765,21 @@ private:
         bigger.end_=bigger.begin_+smaller_size;
     }
 
-    void assign_(const size_type& n, const value_type& v, bool init_trivial){
-        init_trivial = init_trivial || !std::is_trivially_copyable_v<value_type>;
+    void assign_(const size_type& n, const value_type& v){
         if (capacity()<n){  //reallocate
             auto new_buffer = allocate_buffer(n);
-            if (init_trivial){
-                detail::uninitialized_fill(new_buffer.get(),new_buffer.get()+n,v,new_buffer.get_allocator());
-            }
+            detail::uninitialized_fill(new_buffer.get(),new_buffer.get()+n,v,new_buffer.get_allocator());
             free();
             begin_=new_buffer.release();
             capacity_end_=begin_+n;
         }else{
-            if (init_trivial){
-                const auto size_ = size();
-                if (size_<n){
-                    std::fill(begin_,begin_+size_,v);
-                    construct_fill(begin_+size_,begin_+n,v);
-                }else{
-                    std::fill(begin_,begin_+n,v);
-                    destroy(begin_+n,end_);
-                }
+            const auto size_ = size();
+            if (size_<n){
+                std::fill(begin_,begin_+size_,v);
+                construct_fill(begin_+size_,begin_+n,v);
+            }else{
+                std::fill(begin_,begin_+n,v);
+                destroy(begin_+n,end_);
             }
         }
         end_=begin_+n;
@@ -774,13 +787,18 @@ private:
 
     template<typename It>
     void assign_(It first, It last, const size_type& n){
-        const auto size_ = size();
+        auto size_ = size();
+        auto dst = begin();
         if (size_<n){
-            std::copy(first,first+size_,begin_);
-            construct(first+size_,last,end_);
+            for (;size_!=0; --size_,(void)++first,(void)++dst){
+                *dst=*first;
+            }
+            construct(first,last,dst);
         }else{
-            std::copy(first,last,begin_);
-            destroy(begin_+n,end_);
+            for (;first!=last; ++first,(void)++dst){
+                *dst=*first;
+            }
+            destroy(dst,end_);
         }
         end_ = begin_+n;
     }
@@ -788,7 +806,7 @@ private:
     //no copy assign other's allocator
     template<typename It>
     void copy_assign(It other_first, It other_last){
-        const auto other_size = other_last-other_first;
+        const auto other_size = std::distance(other_first,other_last);
         if (capacity()<other_size){
             reallocate(other_first,other_last,other_size,other_size);
         }else{
