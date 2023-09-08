@@ -423,10 +423,10 @@ bool operator!=(const basic_storage<T,Alloc>& lhs, const basic_storage<T,Alloc>&
 }
 
 
-template<typename T, std::size_t Size=8, typename Alloc = std::allocator<T>>
+template<typename T, std::size_t Capacity=8, typename Alloc = std::allocator<T>>
 class stack_prealloc_vector
 {
-    static_assert(Size!=0,"stack preallocated size should be > 0");
+    static_assert(Capacity!=0,"stack preallocated capacity should be > 0");
 public:
     using allocator_type = Alloc;
     using value_type = T;
@@ -526,6 +526,92 @@ public:
         assign_(n,v);
     }
 
+    allocator_type get_allocator()const{
+        return allocator_;
+    }
+
+    //element access
+    pointer data(){
+        return begin_;
+    }
+    const_pointer data()const{
+        return begin_;
+    }
+    reference operator[](const size_type& i){
+        return *(begin_+i);
+    }
+    const_reference operator[](const size_type& i)const{
+        return *(begin_+i);
+    }
+    reference front(){
+        return *begin_;
+    }
+    const_reference front()const{
+        return *begin_;
+    }
+    reference back(){
+        return *(end_-1);
+    }
+    const_reference back()const{
+        return *(end_-1);
+    }
+    //iterators
+    iterator begin(){
+        return begin_;
+    }
+    iterator end(){
+        return  end_;
+    }
+    reverse_iterator rbegin(){
+        return std::make_reverse_iterator(end());
+    }
+    reverse_iterator rend(){
+        return  std::make_reverse_iterator(begin());
+    }
+    const_iterator begin()const{
+        return begin_;
+    }
+    const_iterator end()const{
+        return end_;
+    }
+    const_reverse_iterator rbegin()const{
+        return std::make_reverse_iterator(end());
+    }
+    const_reverse_iterator rend()const{
+        return  std::make_reverse_iterator(begin());
+    }
+    //capacity
+    size_type size()const{
+        return end_-begin_;
+    }
+    size_type capacity()const{
+        return capacity_end_-begin_;
+    }
+    bool empty()const{
+        return begin()==end();
+    }
+    void reserve(const size_type& cap){
+        if (cap>capacity()){
+            reallocate(begin_,end_,size(),cap);
+        }
+    }
+    void shrink_to_fit(){
+        if (!is_on_stack()){    //do nothing if on stack
+            const auto size_ = size();
+            if (size_<=Capacity){  //always replace to stack if enough Capacity
+                auto begin__ = buffer_array_begin();
+                std::uninitialized_copy(begin(),end(),begin__);
+                free();
+                begin_ = begin__;
+                end_ = begin_+size_;
+                capacity_end_ = begin_+Capacity;
+            }else if (size_<capacity()){    //always reallocate to shrink capacity
+                reallocate(begin(),end(),size_,size_);
+            }
+        }
+    }
+
+    //modifiers
     void swap(stack_prealloc_vector& other){
         using std::swap;
         // if constexpr (std::allocator_traits<allocator_type>::propagate_on_container_swap::value){
@@ -557,13 +643,6 @@ public:
             throw std::runtime_error("swap on stack_prealloc_vector requires equal allocators");
         }
     }
-
-    void reserve(const size_type& cap){
-        if (cap>capacity()){
-            reallocate(begin_,end_,size(),cap);
-        }
-    }
-
     template<typename...Args>
     reference emplace_back(Args&&...args){
         if (end_==capacity_end_){//size()==capacity()
@@ -574,31 +653,13 @@ public:
         emplace_at_end(std::forward<Args>(args)...);
         return *end_++;
     }
-
     void push_back(const value_type& v){
         emplace_back(v);
     }
-
     void push_back(value_type&& v){
         emplace_back(std::move(v));
     }
 
-    size_type size()const{return end_-begin_;}
-    size_type capacity()const{return capacity_end_-begin_;}
-    bool empty()const{return begin()==end();}
-    pointer data(){return begin_;}
-    const_pointer data()const{return begin_;}
-    iterator begin(){return begin_;}
-    iterator end(){return  end_;}
-    reverse_iterator rbegin(){return std::make_reverse_iterator(end());}
-    reverse_iterator rend(){return  std::make_reverse_iterator(begin());}
-    const_iterator begin()const{return begin_;}
-    const_iterator end()const{return end_;}
-    const_reverse_iterator rbegin()const{return std::make_reverse_iterator(end());}
-    const_reverse_iterator rend()const{return  std::make_reverse_iterator(begin());}
-    reference operator[](const size_type& i){return *(begin_+i);}
-    const_reference operator[](const size_type& i)const{return *(begin_+i);}
-    allocator_type get_allocator()const{return allocator_;}
 
 private:
 
@@ -607,9 +668,6 @@ private:
     }
     pointer buffer_array_begin(){
         return std::launder(reinterpret_cast<value_type*>(buffer_));
-    }
-    pointer buffer_array_end(){
-        return std::launder(reinterpret_cast<value_type*>(buffer_+Size*sizeof(value_type)));
     }
 
     bool is_on_stack()const{
@@ -685,8 +743,8 @@ private:
 
     void init(){
         begin_= buffer_array_begin();
-        end_= buffer_array_begin();
-        capacity_end_= buffer_array_end();
+        end_= begin_;
+        capacity_end_= begin_+Capacity;
     }
 
     void steal(stack_prealloc_vector&& other){
@@ -698,7 +756,7 @@ private:
 
     void init(const size_type& n, const value_type& v, bool init_trivial){
         init_trivial = init_trivial || !std::is_trivially_copyable_v<value_type>;
-        if (Size<n){//exceeds stack preallocated size
+        if (Capacity<n){//exceeds stack preallocated size
             auto new_buffer = allocate_buffer(n);
             if (init_trivial){
                 detail::uninitialized_fill(new_buffer.get(),new_buffer.get()+n,v,new_buffer.get_allocator());
@@ -716,7 +774,7 @@ private:
     template<typename It>
     void init(It first, It last){
         const auto n = static_cast<const size_type&>(std::distance(first,last));
-        if (Size<n){//exceeds stack preallocated size
+        if (Capacity<n){//exceeds stack preallocated size
             auto new_buffer = allocate_buffer(n);
             detail::uninitialized_copy(first,last,new_buffer.get(),new_buffer.get_allocator());
             begin_=new_buffer.release();
@@ -891,20 +949,20 @@ private:
         free(allocator_);
     }
 
-    std::byte buffer_[Size*sizeof(value_type)];
+    std::byte buffer_[Capacity*sizeof(value_type)];
     allocator_type allocator_;
     pointer begin_{buffer_array_begin()};
-    pointer end_{buffer_array_begin()};
-    pointer capacity_end_{buffer_array_end()};
+    pointer end_{begin_};
+    pointer capacity_end_{begin_+Capacity};
 };
 
-template<typename T, std::size_t Size, typename Alloc>
-void swap(stack_prealloc_vector<T,Size,Alloc>& lhs, stack_prealloc_vector<T,Size,Alloc>& rhs){
+template<typename T, std::size_t Capacity, typename Alloc>
+void swap(stack_prealloc_vector<T,Capacity,Alloc>& lhs, stack_prealloc_vector<T,Capacity,Alloc>& rhs){
     lhs.swap(rhs);
 }
 
-template<typename T, std::size_t Size, typename Alloc>
-bool operator==(const stack_prealloc_vector<T,Size,Alloc>& lhs, const stack_prealloc_vector<T,Size,Alloc>& rhs){
+template<typename T, std::size_t Capacity, typename Alloc>
+bool operator==(const stack_prealloc_vector<T,Capacity,Alloc>& lhs, const stack_prealloc_vector<T,Capacity,Alloc>& rhs){
     if (&lhs == &rhs){
         return true;
     }else if (lhs.size()==rhs.size()){
@@ -914,8 +972,8 @@ bool operator==(const stack_prealloc_vector<T,Size,Alloc>& lhs, const stack_prea
     }
 }
 
-template<typename T, std::size_t Size, typename Alloc>
-bool operator!=(const stack_prealloc_vector<T,Size,Alloc>& lhs, const stack_prealloc_vector<T,Size,Alloc>& rhs){
+template<typename T, std::size_t Capacity, typename Alloc>
+bool operator!=(const stack_prealloc_vector<T,Capacity,Alloc>& lhs, const stack_prealloc_vector<T,Capacity,Alloc>& rhs){
     return !(lhs==rhs);
 }
 
