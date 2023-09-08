@@ -610,7 +610,9 @@ public:
             }
         }
     }
-
+    size_type max_size()const{
+        return std::numeric_limits<difference_type>::max();
+    }
     //modifiers
     void swap(stack_prealloc_vector& other){
         using std::swap;
@@ -659,7 +661,27 @@ public:
     void push_back(value_type&& v){
         emplace_back(std::move(v));
     }
-
+    void pop_back(){
+        destroy(end_-1,end_);
+        --end_;
+    }
+    void resize(size_type n, const value_type& v = value_type{}){
+        const auto size_ = size();
+        if (size_>n){
+            destroy(begin()+n,end());
+            end_=begin_+n;
+        }else if (size_<n){
+            if (capacity()<n){  //reallocate
+                reallocate(begin(),end(),size_,n);
+            }
+            construct_fill(end(),begin()+n,v);
+            end_=begin_+n;
+        }
+    }
+    void clear(){
+        destroy(begin(),end());
+        end_=begin_;
+    }
 
 private:
 
