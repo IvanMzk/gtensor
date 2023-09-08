@@ -580,29 +580,62 @@ class reducer
         detail::check_slide_args(psize, pshape, axis, window_size, window_step);
         auto res = tensor<res_value_type,order,res_config_type>{detail::make_slide_shape(psize, pshape, axis, window_size, window_step)};
         if (!res.empty()){
-            const auto pdim = parent.dim();
-            if (pdim == dim_type{1}){
-                auto parent_a = parent.traverse_order_adapter(order{});
-                auto res_a = res.traverse_order_adapter(order{});
-                slide_f(parent_a.begin(), parent_a.end(), res_a.begin(), res_a.end(), std::forward<Args>(args)...);
+
+            auto slide_helper = [&parent,&slide_f,&pshape,&axis,&res](auto walker_maker, auto begin_maker, auto end_maker, auto&&...args_){
+                const auto pdim = parent.dim();
+                if (pdim == dim_type{1}){
+                    auto parent_a = parent.traverse_order_adapter(order{});
+                    auto res_a = res.traverse_order_adapter(order{});
+                    slide_f(begin_maker(parent_a), end_maker(parent_a), res_a.begin(), res_a.end(), std::forward<decltype(args_)>(args_)...);
+                }else{
+                    const auto& res_shape = res.shape();
+                    auto parent_axes_iterator_maker = detail::make_axes_iterator_maker<config_type>(pshape,axis,order{});
+                    auto res_axes_iterator_maker = detail::make_axes_iterator_maker<config_type>(res_shape,axis,order{});
+                    auto parent_traverser = parent_axes_iterator_maker.create_forward_traverser(walker_maker(parent),std::true_type{});
+                    auto res_traverser = res_axes_iterator_maker.create_forward_traverser(res.create_walker(),std::true_type{});
+                    do{
+                        //0first,1last,2dst_first,3dst_last,4args
+                        slide_f(
+                            parent_axes_iterator_maker.begin_complement(parent_traverser.walker(),std::false_type{}),
+                            parent_axes_iterator_maker.end_complement(parent_traverser.walker(),std::false_type{}),
+                            res_axes_iterator_maker.begin_complement(res_traverser.walker(),std::false_type{}),
+                            res_axes_iterator_maker.end_complement(res_traverser.walker(),std::false_type{}),
+                            std::forward<decltype(args_)>(args_)...
+                        );
+                        res_traverser.template next<order>();
+                    }while(parent_traverser.template next<order>());
+                }
+            };
+            if (parent.is_trivial()){
+                slide_helper([](auto& p){return p.create_trivial_walker();},[](auto& a){return a.begin_trivial();},[](auto& a){return a.end_trivial();},std::forward<Args>(args)...);
             }else{
-                const auto& res_shape = res.shape();
-                auto parent_axes_iterator_maker = detail::make_axes_iterator_maker<config_type>(pshape,axis,order{});
-                auto res_axes_iterator_maker = detail::make_axes_iterator_maker<config_type>(res_shape,axis,order{});
-                auto parent_traverser = parent_axes_iterator_maker.create_forward_traverser(parent.create_walker(),std::true_type{});
-                auto res_traverser = res_axes_iterator_maker.create_forward_traverser(res.create_walker(),std::true_type{});
-                do{
-                    //0first,1last,2dst_first,3dst_last,4args
-                    slide_f(
-                        parent_axes_iterator_maker.begin_complement(parent_traverser.walker(),std::false_type{}),
-                        parent_axes_iterator_maker.end_complement(parent_traverser.walker(),std::false_type{}),
-                        res_axes_iterator_maker.begin_complement(res_traverser.walker(),std::false_type{}),
-                        res_axes_iterator_maker.end_complement(res_traverser.walker(),std::false_type{}),
-                        std::forward<Args>(args)...
-                    );
-                    res_traverser.template next<order>();
-                }while(parent_traverser.template next<order>());
+                slide_helper([](auto& p){return p.create_walker();},[](auto& a){return a.begin();},[](auto& a){return a.end();},std::forward<Args>(args)...);
             }
+
+            // const auto pdim = parent.dim();
+            // if (pdim == dim_type{1}){
+            //     auto parent_a = parent.traverse_order_adapter(order{});
+            //     auto res_a = res.traverse_order_adapter(order{});
+            //     slide_f(parent_a.begin(), parent_a.end(), res_a.begin(), res_a.end(), std::forward<Args>(args)...);
+            // }else{
+            //     const auto& res_shape = res.shape();
+            //     auto parent_axes_iterator_maker = detail::make_axes_iterator_maker<config_type>(pshape,axis,order{});
+            //     auto res_axes_iterator_maker = detail::make_axes_iterator_maker<config_type>(res_shape,axis,order{});
+            //     auto parent_traverser = parent_axes_iterator_maker.create_forward_traverser(parent.create_walker(),std::true_type{});
+            //     auto res_traverser = res_axes_iterator_maker.create_forward_traverser(res.create_walker(),std::true_type{});
+            //     do{
+            //         //0first,1last,2dst_first,3dst_last,4args
+            //         slide_f(
+            //             parent_axes_iterator_maker.begin_complement(parent_traverser.walker(),std::false_type{}),
+            //             parent_axes_iterator_maker.end_complement(parent_traverser.walker(),std::false_type{}),
+            //             res_axes_iterator_maker.begin_complement(res_traverser.walker(),std::false_type{}),
+            //             res_axes_iterator_maker.end_complement(res_traverser.walker(),std::false_type{}),
+            //             std::forward<Args>(args)...
+            //         );
+            //         res_traverser.template next<order>();
+            //     }while(parent_traverser.template next<order>());
+            // }
+
         }
         return res;
     }
@@ -625,15 +658,33 @@ class reducer
         detail::check_slide_args(psize, window_size, window_step);
         auto res = tensor<res_value_type,order,res_config_type>{shape_type{detail::make_slide_size(psize, window_size, window_step)}};
         if (!res.empty()){
-            const auto pdim = parent.dim();
-            auto res_a = res.traverse_order_adapter(order{});
-            if (pdim == dim_type{1}){
-                auto parent_a = parent.traverse_order_adapter(order{});
-                slide_f(parent_a.begin(), parent_a.end(), res_a.begin(), res_a.end(), std::forward<Args>(args)...);
+            auto slide_flatten_helper = [&parent,&slide_f,&res](auto begin_maker, auto end_maker, auto&&...args_){
+                const auto pdim = parent.dim();
+                auto res_a = res.traverse_order_adapter(order{});
+                if (pdim == dim_type{1}){
+                    auto parent_a = parent.traverse_order_adapter(order{});
+                    slide_f(begin_maker(parent_a), end_maker(parent_a), res_a.begin(), res_a.end(), std::forward<decltype(args_)>(args_)...);
+                }else{
+                    auto parent_a = parent.traverse_order_adapter(config::c_order{});
+                    slide_f(begin_maker(parent_a), end_maker(parent_a), res_a.begin(), res_a.end(), std::forward<decltype(args_)>(args_)...);
+                }
+            };
+
+            if (parent.is_trivial()){
+                slide_flatten_helper([](auto& a){return a.begin_trivial();},[](auto& a){return a.end_trivial();},std::forward<Args>(args)...);
             }else{
-                auto parent_a = parent.traverse_order_adapter(config::c_order{});
-                slide_f(parent_a.begin(), parent_a.end(), res_a.begin(), res_a.end(), std::forward<Args>(args)...);
+                slide_flatten_helper([](auto& a){return a.begin();},[](auto& a){return a.end();},std::forward<Args>(args)...);
             }
+
+            // const auto pdim = parent.dim();
+            // auto res_a = res.traverse_order_adapter(order{});
+            // if (pdim == dim_type{1}){
+            //     auto parent_a = parent.traverse_order_adapter(order{});
+            //     slide_f(parent_a.begin(), parent_a.end(), res_a.begin(), res_a.end(), std::forward<Args>(args)...);
+            // }else{
+            //     auto parent_a = parent.traverse_order_adapter(config::c_order{});
+            //     slide_f(parent_a.begin(), parent_a.end(), res_a.begin(), res_a.end(), std::forward<Args>(args)...);
+            // }
         }
         return res;
     }

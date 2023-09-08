@@ -1355,6 +1355,8 @@ TEST_CASE("test_slide","[test_reduce]")
     using gtensor::slide;
     using helpers_for_testing::apply_by_element;
 
+    const auto test_ten = tensor_type{{{2,2,7,5,5},{0,0,3,7,1},{8,2,5,0,1},{0,7,7,5,8}},{{1,5,6,7,0},{6,4,1,4,2},{2,1,0,1,1},{6,6,3,6,7}},{{7,6,1,3,7},{2,3,8,0,3},{3,8,6,3,7},{5,8,4,8,5}}};
+
     //0tensor,1axis,2functor,3window_size,4window_step,5expected
     auto test_data = std::make_tuple(
         std::make_tuple(tensor_type{}, dim_type{0}, cumsum{}, index_type{0}, index_type{1}, tensor_type{}),
@@ -1370,7 +1372,13 @@ TEST_CASE("test_slide","[test_reduce]")
         std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9}}, dim_type{0}, cumprod_reverse{}, index_type{1}, index_type{1}, tensor_type{{28,80,162},{28,40,54},{7,8,9}}),
         std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9}}, dim_type{1}, cumprod_reverse{}, index_type{1}, index_type{1}, tensor_type{{6,6,3},{120,30,6},{504,72,9}}),
         std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9}}, dim_type{-2}, cumprod_reverse{}, index_type{1}, index_type{1}, tensor_type{{28,80,162},{28,40,54},{7,8,9}}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9}}, dim_type{-1}, cumprod_reverse{}, index_type{1}, index_type{1}, tensor_type{{6,6,3},{120,30,6},{504,72,9}})
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9}}, dim_type{-1}, cumprod_reverse{}, index_type{1}, index_type{1}, tensor_type{{6,6,3},{120,30,6},{504,72,9}}),
+        //trivial view input
+        std::make_tuple(test_ten+test_ten+test_ten+test_ten, dim_type{0}, cumsum{}, index_type{1}, index_type{1}, tensor_type{{{8,8,28,20,20},{0,0,12,28,4},{32,8,20,0,4},{0,28,28,20,32}},{{12,28,52,48,20},{24,16,16,44,12},{40,12,20,4,8},{24,52,40,44,60}},{{40,52,56,60,48},{32,28,48,44,24},{52,44,44,16,36},{44,84,56,76,80}}}),
+        std::make_tuple((test_ten+1)*(test_ten-1), dim_type{1}, cumsum{}, index_type{1}, index_type{1}, tensor_type{{{3,3,48,24,24},{2,2,56,72,24},{65,5,80,71,24},{64,53,128,95,87}},{{0,24,35,48,-1},{35,39,35,63,2},{38,39,34,63,2},{73,74,42,98,50}},{{48,35,0,8,48},{51,43,63,7,56},{59,106,98,15,104},{83,169,113,78,128}}}),
+        //non trivial view input
+        std::make_tuple(test_ten+test_ten(0)+test_ten(1,2)+test_ten(2,3), dim_type{0}, cumsum{}, index_type{1}, index_type{1}, tensor_type{{{11,13,18,19,16},{7,9,10,23,8},{23,13,14,9,8},{7,23,18,19,22}},{{21,29,35,40,27},{20,22,18,43,17},{40,25,23,19,16},{20,45,32,39,43}},{{37,46,47,57,45},{29,34,33,59,27},{58,44,38,31,30},{32,69,47,61,62}}}),
+        std::make_tuple((test_ten-test_ten(0))*(test_ten(1,2)+test_ten(2,3)), dim_type{2}, cumsum{}, index_type{1}, index_type{1}, tensor_type{{{0,0,0,0,0},{0,0,0,0,0},{0,0,0,0,0},{0,0,0,0,0}},{{-7,20,16,34,4},{42,78,70,43,49},{-42,-51,-71,-62,-62},{42,33,17,26,20}},{{35,71,47,29,41},{14,41,61,-2,10},{-35,19,23,50,86},{35,44,32,59,41}}})
     );
     auto test = [](const auto& t){
         auto tensor = std::get<0>(t);
@@ -1401,6 +1409,8 @@ TEMPLATE_TEST_CASE("test_slide_flatten","[test_reduce]",
     using gtensor::slide_flatten;
     using helpers_for_testing::apply_by_element;
 
+    const auto test_ten = tensor_type{{{2,2,7,5,5},{0,0,3,7,1},{8,2,5,0,1},{0,7,7,5,8}},{{1,5,6,7,0},{6,4,1,4,2},{2,1,0,1,1},{6,6,3,6,7}},{{7,6,1,3,7},{2,3,8,0,3},{3,8,6,3,7},{5,8,4,8,5}}};
+
     //0tensor,1functor,2window_size,3window_step,4expected
     auto test_data = std::make_tuple(
         std::make_tuple(tensor_type{1}, cumsum{}, index_type{1}, index_type{1}, tensor_type{1}),
@@ -1410,7 +1420,13 @@ TEMPLATE_TEST_CASE("test_slide_flatten","[test_reduce]",
         std::make_tuple(tensor_type{1,3,2,5,7,4,6,7,8}, diff_2{}, index_type{3}, index_type{1}, tensor_type{-3,4,-1,-5,5,-1,0}),
         std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9}}, cumsum{}, index_type{1}, index_type{1}, tensor_type{1,3,6,10,15,21,28,36,45}),
         std::make_tuple(tensor_type{{1,3,2},{5,7,4},{6,7,8}}, diff_1{}, index_type{2}, index_type{1}, tensor_type{2,-1,3,2,-3,2,1,1}),
-        std::make_tuple(tensor_type{{1,3,2},{5,7,4},{6,7,8}}, diff_2{}, index_type{3}, index_type{1}, tensor_type{-3,4,-1,-5,5,-1,0})
+        std::make_tuple(tensor_type{{1,3,2},{5,7,4},{6,7,8}}, diff_2{}, index_type{3}, index_type{1}, tensor_type{-3,4,-1,-5,5,-1,0}),
+        //trivial view input
+        std::make_tuple(test_ten+test_ten+test_ten+test_ten, cumsum{}, index_type{1}, index_type{1}, tensor_type{8,16,44,64,84,84,84,96,124,128,160,168,188,188,192,192,220,248,268,300,304,324,348,376,376,400,416,420,436,444,452,456,456,460,464,488,512,524,548,576,604,628,632,644,672,680,692,724,724,736,748,780,804,816,844,864,896,912,944,964}),
+        std::make_tuple((test_ten+1)*(test_ten-1), cumsum{}, index_type{1}, index_type{1}, tensor_type{3,6,54,78,102,101,100,108,156,156,219,222,246,245,245,244,292,340,364,427,427,451,486,534,533,568,583,583,598,601,604,604,603,603,603,638,673,681,716,764,812,847,847,855,903,906,914,977,976,984,992,1055,1090,1098,1146,1170,1233,1248,1311,1335}),
+        //non trivial view input
+        std::make_tuple(test_ten+test_ten(0)+test_ten(1,2)+test_ten(2,3), cumsum{}, index_type{1}, index_type{1}, tensor_type{11,24,42,61,77,84,93,103,126,134,157,170,184,193,201,208,231,249,268,290,300,316,333,354,365,378,391,399,419,428,445,457,466,476,484,497,519,533,553,574,590,607,619,636,654,663,675,690,706,716,734,753,768,780,794,806,830,845,867,886}),
+        std::make_tuple((test_ten-test_ten(0))*(test_ten(1,2)+test_ten(2,3)), cumsum{}, index_type{1}, index_type{1}, tensor_type{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-7,20,16,34,4,46,82,74,47,53,11,2,-18,-9,-9,33,24,8,17,11,46,82,58,40,52,66,93,113,50,62,27,81,85,112,148,183,192,180,207,189})
     );
     auto test = [](const auto& t){
         auto tensor = std::get<0>(t);
