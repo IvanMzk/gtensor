@@ -619,7 +619,13 @@ TEMPLATE_TEST_CASE("test_reduce_binary","[test_reduce]",
         //empty result
         std::make_tuple(tensor_type{}.reshape(2,0,3),std::vector<int>{0},std::plus<void>{},false,no_value{},tensor_type{}.reshape(0,3)),
         std::make_tuple(tensor_type{}.reshape(2,0,3),std::vector<int>{0},std::plus<void>{},true,0,tensor_type{}.reshape(1,0,3)),
-        std::make_tuple(tensor_type{}.reshape(0,2,0,3),std::vector<int>{0,1},std::plus<void>{},false,0,tensor_type{}.reshape(0,3))
+        std::make_tuple(tensor_type{}.reshape(0,2,0,3),std::vector<int>{0,1},std::plus<void>{},false,0,tensor_type{}.reshape(0,3)),
+        //trivial view input
+        std::make_tuple(test_ten+test_ten+test_ten+test_ten,std::vector<int>{0,1,2},std::plus<void>{},false,0,tensor_type{{360,400,304,508,412},{312,384,332,460,420},{412,384,408,376,328},{396,436,336,352,376}}),
+        std::make_tuple((test_ten-1)*(test_ten+1),std::vector<int>{1,2,3},std::plus<void>{},false,0,tensor_type{{491,613,533,540,639},{465,590,322,550,530},{497,532,368,728,438},{537,446,490,628,513}}),
+        //non trivial view input
+        std::make_tuple(test_ten+test_ten(0)+test_ten(1,1)+test_ten(2,0,2),std::vector<int>{0,1,2},std::plus<void>{},false,0,tensor_type{{430,324,312,539,399},{266,388,331,579,325},{471,472,346,322,210},{487,429,240,312,486}}),
+        std::make_tuple((test_ten+test_ten(0))*(test_ten(1,1)-test_ten(2,0,2)),std::vector<int>{1,2,3},std::plus<void>{},false,0,tensor_type{{-422,194,-6,-98,176},{-388,206,51,-79,284},{-329,169,26,-155,179},{-383,129,6,-87,220}})
     );
 
     auto test = [](const auto& t){
@@ -689,6 +695,18 @@ TEMPLATE_TEST_CASE("test_reduce_binary_flatten","[test_reduce]",
     using gtensor::detail::no_value;
     using gtensor::reduce_binary_flatten;
     using helpers_for_testing::apply_by_element;
+
+    const auto test_ten = tensor_type{
+        {{{{7,4,6,5,7},{3,1,3,3,8},{3,5,6,7,6},{5,7,1,1,6}},{{6,4,0,3,8},{5,3,3,8,7},{0,1,7,2,3},{5,5,0,2,5}},{{8,7,7,4,5},{1,8,6,8,4},{2,7,1,6,2},{6,5,6,0,3}}},
+        {{{2,2,7,5,5},{0,0,3,7,1},{8,2,5,0,1},{0,7,7,5,8}},{{1,5,6,7,0},{6,4,1,4,2},{2,1,0,1,1},{6,6,3,6,7}},{{7,6,1,3,7},{2,3,8,0,3},{3,8,6,3,7},{5,8,4,8,5}}}},
+        {{{{1,7,2,7,8},{1,7,1,8,1},{2,3,4,2,0},{7,5,8,5,0}},{{5,5,1,3,8},{0,8,0,0,2},{5,1,2,3,0},{6,7,3,7,4}},{{8,0,7,0,0},{2,4,1,5,8},{5,6,8,4,8},{4,1,3,2,7}}},
+        {{{0,6,2,7,3},{6,4,2,6,4},{7,0,3,3,1},{2,1,3,0,4}},{{7,4,4,7,6},{3,3,6,7,4},{1,7,4,0,1},{2,3,0,6,8}},{{2,4,1,6,0},{3,5,2,6,7},{5,7,5,4,4},{7,8,0,2,2}}}},
+        {{{{0,7,1,1,0},{2,7,5,3,3},{6,5,4,8,6},{4,8,0,6,4}},{{0,0,5,8,0},{8,1,6,4,7},{2,5,4,6,3},{0,4,0,2,7}},{{6,0,3,6,4},{1,5,3,8,0},{8,7,2,4,0},{8,3,2,3,6}}},
+        {{{2,8,5,4,4},{0,0,3,8,5},{4,1,4,2,1},{4,1,8,1,1}},{{7,2,8,8,3},{3,4,3,3,6},{1,6,2,7,7},{0,5,4,6,1}},{{1,4,0,7,6},{8,7,6,8,2},{6,4,0,5,8},{6,4,2,4,0}}}},
+        {{{{0,5,0,8,6},{5,5,3,8,1},{8,3,7,8,5},{1,4,3,4,4}},{{4,0,0,6,8},{4,8,0,1,7},{6,2,6,4,2},{4,7,5,8,1}},{{3,3,1,5,5},{2,4,6,0,5},{3,1,7,6,5},{6,2,8,1,2}}},
+        {{{4,7,5,2,1},{6,5,3,1,5},{8,8,5,5,4},{3,3,4,1,5}},{{7,8,2,8,1},{6,0,2,4,5},{8,4,5,0,3},{7,2,5,0,0}},{{2,2,2,7,8},{1,0,7,5,8},{0,2,5,4,4},{1,3,5,8,4}}}}
+    };  //(4,2,3,4,5)
+
     //0tensor,1functor,2keep_dims,3initial,4expected
     auto test_data = std::make_tuple(
         //keep_dims is false
@@ -716,7 +734,13 @@ TEMPLATE_TEST_CASE("test_reduce_binary_flatten","[test_reduce]",
         std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, std::multiplies<void>{}, true, no_value{}, tensor_type{{720}}),
         std::make_tuple(tensor_type{{1,6,7,9},{4,5,7,0}}, max{}, true, no_value{}, tensor_type{{9}}),
         std::make_tuple(tensor_type{{1,6,7,9},{4,5,7,0}}, min{}, true, no_value{}, tensor_type{{0}}),
-        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::plus<void>{}, true, no_value{}, tensor_type{{{28}}})
+        std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::plus<void>{}, true, no_value{}, tensor_type{{{28}}}),
+        //trivial view input
+        std::make_tuple(test_ten+test_ten+test_ten+test_ten,std::plus<void>{},false,0,tensor_type(7696)),
+        std::make_tuple((test_ten-1)*(test_ten+1),std::plus<void>{},false,0,tensor_type(10450)),
+        //non trivial view input
+        std::make_tuple(test_ten+test_ten(0)+test_ten(1,1)+test_ten(2,0,2),std::plus<void>{},false,0,tensor_type(7668)),
+        std::make_tuple((test_ten+test_ten(0))*(test_ten(1,1)-test_ten(2,0,2)),std::plus<void>{},false,0,tensor_type(-307))
     );
     auto test = [](const auto& t){
         auto tensor = std::get<0>(t);
@@ -946,6 +970,18 @@ TEMPLATE_TEST_CASE("test_reduce","[test_reduce]",
     using test_reduce_::center;
     using gtensor::reduce;
     using helpers_for_testing::apply_by_element;
+
+    const auto test_ten = tensor_type{
+        {{{{7,4,6,5,7},{3,1,3,3,8},{3,5,6,7,6},{5,7,1,1,6}},{{6,4,0,3,8},{5,3,3,8,7},{0,1,7,2,3},{5,5,0,2,5}},{{8,7,7,4,5},{1,8,6,8,4},{2,7,1,6,2},{6,5,6,0,3}}},
+        {{{2,2,7,5,5},{0,0,3,7,1},{8,2,5,0,1},{0,7,7,5,8}},{{1,5,6,7,0},{6,4,1,4,2},{2,1,0,1,1},{6,6,3,6,7}},{{7,6,1,3,7},{2,3,8,0,3},{3,8,6,3,7},{5,8,4,8,5}}}},
+        {{{{1,7,2,7,8},{1,7,1,8,1},{2,3,4,2,0},{7,5,8,5,0}},{{5,5,1,3,8},{0,8,0,0,2},{5,1,2,3,0},{6,7,3,7,4}},{{8,0,7,0,0},{2,4,1,5,8},{5,6,8,4,8},{4,1,3,2,7}}},
+        {{{0,6,2,7,3},{6,4,2,6,4},{7,0,3,3,1},{2,1,3,0,4}},{{7,4,4,7,6},{3,3,6,7,4},{1,7,4,0,1},{2,3,0,6,8}},{{2,4,1,6,0},{3,5,2,6,7},{5,7,5,4,4},{7,8,0,2,2}}}},
+        {{{{0,7,1,1,0},{2,7,5,3,3},{6,5,4,8,6},{4,8,0,6,4}},{{0,0,5,8,0},{8,1,6,4,7},{2,5,4,6,3},{0,4,0,2,7}},{{6,0,3,6,4},{1,5,3,8,0},{8,7,2,4,0},{8,3,2,3,6}}},
+        {{{2,8,5,4,4},{0,0,3,8,5},{4,1,4,2,1},{4,1,8,1,1}},{{7,2,8,8,3},{3,4,3,3,6},{1,6,2,7,7},{0,5,4,6,1}},{{1,4,0,7,6},{8,7,6,8,2},{6,4,0,5,8},{6,4,2,4,0}}}},
+        {{{{0,5,0,8,6},{5,5,3,8,1},{8,3,7,8,5},{1,4,3,4,4}},{{4,0,0,6,8},{4,8,0,1,7},{6,2,6,4,2},{4,7,5,8,1}},{{3,3,1,5,5},{2,4,6,0,5},{3,1,7,6,5},{6,2,8,1,2}}},
+        {{{4,7,5,2,1},{6,5,3,1,5},{8,8,5,5,4},{3,3,4,1,5}},{{7,8,2,8,1},{6,0,2,4,5},{8,4,5,0,3},{7,2,5,0,0}},{{2,2,2,7,8},{1,0,7,5,8},{0,2,5,4,4},{1,3,5,8,4}}}}
+    };  //(4,2,3,4,5)
+
     //0tensor,1axes,2functor,3keep_dims,4any_order,5expected
     auto test_data = std::make_tuple(
         //single axis
@@ -1098,7 +1134,13 @@ TEMPLATE_TEST_CASE("test_reduce","[test_reduce]",
         //any_order false, c_order traverse along axes
         std::make_tuple(tensor_type{{{7,4,8,8},{3,4,5,6},{4,0,0,0}},{{0,1,4,7},{0,1,2,7},{2,8,3,4}}}, std::vector<dim_type>{0,1}, center{}, false, false, tensor_type{2.0,0.5,2.0,3.5}),
         std::make_tuple(tensor_type{{{7,4,8,8},{3,4,5,6},{4,0,0,0}},{{0,1,4,7},{0,1,2,7},{2,8,3,4}}}, std::vector<dim_type>{1,2}, center{}, false, false, tensor_type{4.5,1.5}),
-        std::make_tuple(tensor_type{{{7,4,8,8},{3,4,5,6},{4,0,0,0}},{{0,1,4,7},{0,1,2,7},{2,8,3,4}}}, std::vector<dim_type>{0,1,2}, center{}, false, false, tensor_type(0))
+        std::make_tuple(tensor_type{{{7,4,8,8},{3,4,5,6},{4,0,0,0}},{{0,1,4,7},{0,1,2,7},{2,8,3,4}}}, std::vector<dim_type>{0,1,2}, center{}, false, false, tensor_type(0)),
+        //trivial view input
+        std::make_tuple(test_ten+test_ten+test_ten+test_ten,std::vector<int>{0,1,2},sum{},false,false,tensor_type{{360,400,304,508,412},{312,384,332,460,420},{412,384,408,376,328},{396,436,336,352,376}}),
+        std::make_tuple((test_ten-1)*(test_ten+1),std::vector<int>{1,2,3},sum{},false,false,tensor_type{{491,613,533,540,639},{465,590,322,550,530},{497,532,368,728,438},{537,446,490,628,513}}),
+        //non trivial view input
+        std::make_tuple(test_ten+test_ten(0)+test_ten(1,1)+test_ten(2,0,2),std::vector<int>{0,1,2},sum{},false,false,tensor_type{{430,324,312,539,399},{266,388,331,579,325},{471,472,346,322,210},{487,429,240,312,486}}),
+        std::make_tuple((test_ten+test_ten(0))*(test_ten(1,1)-test_ten(2,0,2)),std::vector<int>{1,2,3},sum{},false,false,tensor_type{{-422,194,-6,-98,176},{-388,206,51,-79,284},{-329,169,26,-155,179},{-383,129,6,-87,220}})
     );
     auto test = [](const auto& t){
         auto tensor = std::get<0>(t);
@@ -1205,6 +1247,18 @@ TEMPLATE_TEST_CASE("test_reduce_flatten","[test_reduce]",
     using test_reduce_::center;
     using gtensor::reduce_flatten;
     using helpers_for_testing::apply_by_element;
+
+    const auto test_ten = tensor_type{
+        {{{{7,4,6,5,7},{3,1,3,3,8},{3,5,6,7,6},{5,7,1,1,6}},{{6,4,0,3,8},{5,3,3,8,7},{0,1,7,2,3},{5,5,0,2,5}},{{8,7,7,4,5},{1,8,6,8,4},{2,7,1,6,2},{6,5,6,0,3}}},
+        {{{2,2,7,5,5},{0,0,3,7,1},{8,2,5,0,1},{0,7,7,5,8}},{{1,5,6,7,0},{6,4,1,4,2},{2,1,0,1,1},{6,6,3,6,7}},{{7,6,1,3,7},{2,3,8,0,3},{3,8,6,3,7},{5,8,4,8,5}}}},
+        {{{{1,7,2,7,8},{1,7,1,8,1},{2,3,4,2,0},{7,5,8,5,0}},{{5,5,1,3,8},{0,8,0,0,2},{5,1,2,3,0},{6,7,3,7,4}},{{8,0,7,0,0},{2,4,1,5,8},{5,6,8,4,8},{4,1,3,2,7}}},
+        {{{0,6,2,7,3},{6,4,2,6,4},{7,0,3,3,1},{2,1,3,0,4}},{{7,4,4,7,6},{3,3,6,7,4},{1,7,4,0,1},{2,3,0,6,8}},{{2,4,1,6,0},{3,5,2,6,7},{5,7,5,4,4},{7,8,0,2,2}}}},
+        {{{{0,7,1,1,0},{2,7,5,3,3},{6,5,4,8,6},{4,8,0,6,4}},{{0,0,5,8,0},{8,1,6,4,7},{2,5,4,6,3},{0,4,0,2,7}},{{6,0,3,6,4},{1,5,3,8,0},{8,7,2,4,0},{8,3,2,3,6}}},
+        {{{2,8,5,4,4},{0,0,3,8,5},{4,1,4,2,1},{4,1,8,1,1}},{{7,2,8,8,3},{3,4,3,3,6},{1,6,2,7,7},{0,5,4,6,1}},{{1,4,0,7,6},{8,7,6,8,2},{6,4,0,5,8},{6,4,2,4,0}}}},
+        {{{{0,5,0,8,6},{5,5,3,8,1},{8,3,7,8,5},{1,4,3,4,4}},{{4,0,0,6,8},{4,8,0,1,7},{6,2,6,4,2},{4,7,5,8,1}},{{3,3,1,5,5},{2,4,6,0,5},{3,1,7,6,5},{6,2,8,1,2}}},
+        {{{4,7,5,2,1},{6,5,3,1,5},{8,8,5,5,4},{3,3,4,1,5}},{{7,8,2,8,1},{6,0,2,4,5},{8,4,5,0,3},{7,2,5,0,0}},{{2,2,2,7,8},{1,0,7,5,8},{0,2,5,4,4},{1,3,5,8,4}}}}
+    };  //(4,2,3,4,5)
+
     //0tensor,1functor,2keep_dims,3any_order,4expected
     auto test_data = std::make_tuple(
         //keep_dims is false
@@ -1234,7 +1288,13 @@ TEMPLATE_TEST_CASE("test_reduce_flatten","[test_reduce]",
         std::make_tuple(tensor_type{{1,6,7,9},{4,5,7,0}}, min{}, true, true, tensor_type{{0}}),
         std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, sum{}, true, true, tensor_type{{{28}}}),
         //any_order
-        std::make_tuple(tensor_type{{1,6,7,9},{4,5,7,0}}, center{}, false, false, tensor_type(6.5))
+        std::make_tuple(tensor_type{{1,6,7,9},{4,5,7,0}}, center{}, false, false, tensor_type(6.5)),
+        //trivial view input
+        std::make_tuple(test_ten+test_ten+test_ten+test_ten,sum{},false,false,tensor_type(7696)),
+        std::make_tuple((test_ten-1)*(test_ten+1),sum{},false,false,tensor_type(10450)),
+        //non trivial view input
+        std::make_tuple(test_ten+test_ten(0)+test_ten(1,1)+test_ten(2,0,2),sum{},false,false,tensor_type(7668)),
+        std::make_tuple((test_ten+test_ten(0))*(test_ten(1,1)-test_ten(2,0,2)),sum{},false,false,tensor_type(-307))
     );
     auto test = [](const auto& t){
         auto tensor = std::get<0>(t);

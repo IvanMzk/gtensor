@@ -37,7 +37,6 @@ struct any
     }
 };
 
-
 //test if initial argument contain valid initial value
 template<typename Initial, typename T> constexpr bool is_initial_v = !std::is_same_v<Initial,gtensor::detail::no_value> && detail::is_static_castable_v<Initial,T>;
 //test if functor F has initial value

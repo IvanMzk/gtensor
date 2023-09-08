@@ -451,17 +451,23 @@ class reducer
         using res_value_type = std::remove_cv_t<std::remove_reference_t<result_type>>;
         using res_config_type = config::extend_config_t<config_type,res_value_type>;
         using res_type = tensor<res_value_type,order,res_config_type>;
-        auto a_parent = parent.traverse_order_adapter(order{});
-        res_type res(detail::make_reduce_shape(parent.shape(),keep_dims));
-        if constexpr (has_initial){
-            *res.begin() = std::accumulate(a_parent.begin(),a_parent.end(),initial,reduce_f);
-        }else{
-            if (parent.empty()){
-                throw value_error("cant reduce zero size dimension without initial value");
+        if (!has_initial && parent.empty()){
+            throw value_error("cant reduce zero size dimension without initial value");
+        }
+        auto reduce_binary_flatten_helper = [&initial,&reduce_f](auto first, auto last){
+            (void)initial;
+            if constexpr (has_initial){
+                return std::accumulate(first,last,initial,reduce_f);
             }else{
-                auto it=a_parent.begin();
-                *res.begin() = std::accumulate(it+1,a_parent.end(),*it,reduce_f);
+                return std::accumulate(first+1,last,*first,reduce_f);
             }
+        };
+        auto a = parent.traverse_order_adapter(order{});
+        res_type res(detail::make_reduce_shape(parent.shape(),keep_dims));
+        if (parent.is_trivial()){
+            *res.begin() = reduce_binary_flatten_helper(a.begin_trivial(),a.end_trivial());
+        }else{
+            *res.begin() = reduce_binary_flatten_helper(a.begin(),a.end());
         }
         return res;
     }
@@ -493,29 +499,36 @@ class reducer
                 const auto e = reduce_f(a.begin(), a.end(), std::forward<Args>(args)...);
                 std::fill(res.begin(), res.end(), e);
             }else{
-                if (res.size() == index_type{1}){
-                    if (pdim == dim_type{1} || any_order){   //1d or any_order, can use native order
-                        auto a = parent.traverse_order_adapter(order{});
-                        *res.begin() = reduce_f(a.begin(), a.end(), std::forward<Args>(args)...);
-                    }else{  //traverse like over flatten
-                        auto a = parent.traverse_order_adapter(traverse_order{});
-                        *res.begin() = reduce_f(a.begin(), a.end(), std::forward<Args>(args)...);
+                auto reduce_helper = [&parent,&reduce_f,&any_order,&res,&pdim,&pshape,&axes](auto walker_maker, auto begin_maker, auto end_maker,auto&&...args_){
+                    if (res.size() == index_type{1}){
+                        if (pdim == dim_type{1} || any_order){   //1d or any_order, can use native order
+                            auto a = parent.traverse_order_adapter(order{});
+                            *res.begin() = reduce_f(begin_maker(a), end_maker(a), std::forward<decltype(args_)>(args_)...);
+                        }else{  //traverse like over flatten
+                            auto a = parent.traverse_order_adapter(traverse_order{});
+                            *res.begin() = reduce_f(begin_maker(a), end_maker(a), std::forward<decltype(args_)>(args_)...);
+                        }
+                    }else{
+                        auto axes_iterator_maker = detail::make_axes_iterator_maker<config_type>(pshape,axes,traverse_order{});
+                        auto traverser = axes_iterator_maker.create_forward_traverser(walker_maker(parent),std::true_type{});
+                        auto a = res.traverse_order_adapter(order{});
+                        auto res_it = a.begin();
+                        do{
+
+                            *res_it = reduce_f(
+                                axes_iterator_maker.begin_complement(traverser.walker(),std::false_type{}),
+                                axes_iterator_maker.end_complement(traverser.walker(),std::false_type{}),
+                                std::forward<decltype(args_)>(args_)...
+                            );
+                            ++res_it;
+
+                        }while(traverser.template next<order>());
                     }
+                };
+                if (parent.is_trivial()){
+                    reduce_helper([](auto& p){return p.create_trivial_walker();},[](auto& a){return a.begin_trivial();},[](auto& a){return a.end_trivial();},std::forward<Args>(args)...);
                 }else{
-                    auto axes_iterator_maker = detail::make_axes_iterator_maker<config_type>(pshape,axes,traverse_order{});
-                    auto traverser = axes_iterator_maker.create_forward_traverser(parent.create_walker(),std::true_type{});
-                    auto a = res.traverse_order_adapter(order{});
-                    auto res_it = a.begin();
-                    do{
-
-                        *res_it = reduce_f(
-                            axes_iterator_maker.begin_complement(traverser.walker(),std::false_type{}),
-                            axes_iterator_maker.end_complement(traverser.walker(),std::false_type{}),
-                            std::forward<Args>(args)...
-                        );
-                        ++res_it;
-
-                    }while(traverser.template next<order>());
+                    reduce_helper([](auto& p){return p.create_walker();},[](auto& a){return a.begin();},[](auto& a){return a.end();},std::forward<Args>(args)...);
                 }
             }
         }
@@ -531,12 +544,20 @@ class reducer
         using res_value_type = std::remove_cv_t<std::remove_reference_t<result_type>>;
         using res_config_type = config::extend_config_t<config_type,res_value_type>;
         using res_type = tensor<res_value_type,order,res_config_type>;
-        if (t.dim()==1 || any_order){   //1d or any_order, can use native order
-            auto a = t.traverse_order_adapter(order{});
-            return  res_type(detail::make_reduce_shape(t.shape(),keep_dims), reduce_f(a.begin(), a.end(), std::forward<Args>(args)...));
-        }else{  //traverse like over flatten
-            auto a = t.traverse_order_adapter(config::c_order{});
-            return  res_type(detail::make_reduce_shape(t.shape(),keep_dims), reduce_f(a.begin(), a.end(), std::forward<Args>(args)...));
+        auto reduce_flatten_helper = [&t,&reduce_f,&any_order](auto begin_maker, auto end_maker, auto&&...args_){
+            if (t.dim()==1 || any_order){   //1d or any_order, can use native order
+                auto a = t.traverse_order_adapter(order{});
+                return  reduce_f(begin_maker(a), end_maker(a), std::forward<decltype(args_)>(args_)...);
+            }else{  //traverse like over flatten
+                auto a = t.traverse_order_adapter(config::c_order{});
+                return  reduce_f(begin_maker(a), end_maker(a), std::forward<decltype(args_)>(args_)...);
+            }
+        };
+        auto res_shape = detail::make_reduce_shape(t.shape(),keep_dims);
+        if (t.is_trivial()){
+            return res_type(std::move(res_shape),reduce_flatten_helper([](auto& a){return a.begin_trivial();},[](auto& a){return a.end_trivial();},std::forward<Args>(args)...));
+        }else{
+            return res_type(std::move(res_shape),reduce_flatten_helper([](auto& a){return a.begin();},[](auto& a){return a.end();},std::forward<Args>(args)...));
         }
     }
 
