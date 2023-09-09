@@ -3,9 +3,7 @@ target_include_directories(expression_template INTERFACE
     ${${project_name}_SOURCE_DIR}\\src
     ${${project_name}_SOURCE_DIR}\\src\\expression_template_engine
 )
-target_link_libraries(expression_template INTERFACE
-    multithreading
-)
+
 target_compile_features(expression_template INTERFACE cxx_std_17)
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     target_compile_options(expression_template INTERFACE /W4 /arch:AVX2 /Zc:__cplusplus "$<$<CONFIG:RELEASE>:/O2>")

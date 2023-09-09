@@ -7,7 +7,7 @@
 #include "math.hpp"
 #include "iterator.hpp"
 #include "indexing.hpp"
-#include "thread_pool.hpp"
+#include "multithreading.hpp"
 
 namespace gtensor{
 
@@ -298,15 +298,9 @@ ALWAYS_INLINE auto accumulate_n(It& first, IdxT n, F f){
     return initial;
 }
 
-inline constexpr std::size_t pool_workers_n = 10;
-inline constexpr std::size_t pool_queue_size = 64;
-inline auto& get_pool(){
-    static thread_pool::thread_pool_v3 pool_{pool_workers_n, pool_queue_size};
-    return pool_;
-}
-
-
 }   //end of namespace detail
+
+template<std::size_t N_ParTasks> struct par{};
 
 class reducer
 {
@@ -541,8 +535,7 @@ class reducer
                         auto a = res.traverse_order_adapter(traverse_order{});
                         auto res_it = a.begin();
                         auto n_tasks = res.size();
-                        constexpr std::size_t max_par_tasks = detail::pool_workers_n;
-                        //constexpr std::size_t max_par_tasks = 4;
+                        constexpr std::size_t max_par_tasks = multithreading::pool_workers_n;
                         const std::size_t n_par_tasks = max_par_tasks < n_tasks ? max_par_tasks : n_tasks;
                         const index_type par_task_size = n_tasks/n_par_tasks;
                         const index_type last_par_task_size = par_task_size + n_tasks%n_par_tasks;
@@ -558,7 +551,7 @@ class reducer
                         };
 
                         using future_type = decltype(
-                            std::declval<decltype(detail::get_pool())>().push(
+                            std::declval<decltype(multithreading::get_pool())>().push(
                                 worker_f,
                                 reduce_f,
                                 res_it,
@@ -571,7 +564,7 @@ class reducer
                         std::array<future_type,max_par_tasks-1> futures{};
 
                         for (std::size_t i{0}; i!=n_par_tasks-1; ++i,res_it+=par_task_size,traverser.advance(i*par_task_size)){
-                            futures[i] = detail::get_pool().push(
+                            futures[i] = multithreading::get_pool().push(
                                 worker_f,
                                 reduce_f,
                                 res_it,
