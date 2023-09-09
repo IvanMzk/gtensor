@@ -7,6 +7,7 @@
 #include "math.hpp"
 #include "iterator.hpp"
 #include "indexing.hpp"
+#include "thread_pool.hpp"
 
 namespace gtensor{
 
@@ -297,6 +298,14 @@ ALWAYS_INLINE auto accumulate_n(It& first, IdxT n, F f){
     return initial;
 }
 
+inline constexpr std::size_t pool_workers_n = 10;
+inline constexpr std::size_t pool_queue_size = 64;
+inline auto& get_pool(){
+    static thread_pool::thread_pool_v3 pool_{pool_workers_n, pool_queue_size};
+    return pool_;
+}
+
+
 }   //end of namespace detail
 
 class reducer
@@ -510,21 +519,80 @@ class reducer
                         }
                     }else{
                         auto axes_iterator_maker = detail::make_axes_iterator_maker<config_type>(pshape,axes,traverse_order{});
-                        auto traverser = axes_iterator_maker.create_forward_traverser(walker_maker(parent),std::true_type{});
-                        auto a = res.traverse_order_adapter(order{});
+                        auto traverser = axes_iterator_maker.create_random_access_traverser(walker_maker(parent),std::true_type{});
+                        auto a = res.traverse_order_adapter(traverse_order{});
                         auto res_it = a.begin();
-                        do{
+                        auto n_tasks = res.size();
+                        constexpr std::size_t max_par_tasks = detail::pool_workers_n;
+                        const std::size_t n_par_tasks = max_par_tasks < n_tasks ? max_par_tasks : n_tasks;
+                        const index_type par_task_size = n_tasks/n_par_tasks;
+                        const index_type last_par_task_size = par_task_size + n_tasks%n_par_tasks;
 
-                            *res_it = reduce_f(
-                                axes_iterator_maker.begin_complement(traverser.walker(),std::false_type{}),
-                                axes_iterator_maker.end_complement(traverser.walker(),std::false_type{}),
+                        auto worker_f = [&axes_iterator_maker](auto f, auto res_first, auto res_last, auto traverser, auto&&...args__){
+                            for (;res_first!=res_last; ++res_first,traverser.next()){
+                                *res_first = f(
+                                    axes_iterator_maker.begin_complement(traverser.walker(),std::false_type{}),
+                                    axes_iterator_maker.end_complement(traverser.walker(),std::false_type{}),
+                                    std::forward<decltype(args__)>(args__)...
+                                );
+                            }
+                        };
+
+                        using future_type = decltype(
+                            std::declval<decltype(detail::get_pool())>().push(
+                                worker_f,
+                                reduce_f,
+                                res_it,
+                                res_it+par_task_size,
+                                traverser,
+                                std::forward<decltype(args_)>(args_)...
+                            )
+                        );
+
+                        std::array<future_type,max_par_tasks-1> futures{};
+
+                        for (std::size_t i{0}; i!=n_par_tasks-1; ++i,res_it+=par_task_size,traverser.advance(i*par_task_size)){
+                            futures[i] = detail::get_pool().push(
+                                worker_f,
+                                reduce_f,
+                                res_it,
+                                res_it+par_task_size,
+                                traverser,
                                 std::forward<decltype(args_)>(args_)...
                             );
-                            ++res_it;
-
-                        }while(traverser.template next<order>());
+                        }
+                        worker_f(reduce_f,res_it,res_it+last_par_task_size,traverser,std::forward<decltype(args_)>(args_)...);
                     }
                 };
+                // auto reduce_helper = [&parent,&reduce_f,&any_order,&res,&pdim,&pshape,&axes](auto walker_maker, auto begin_maker, auto end_maker,auto&&...args_){
+                //     if (res.size() == index_type{1}){
+                //         if (pdim == dim_type{1} || any_order){   //1d or any_order, can use native order
+                //             auto a = parent.traverse_order_adapter(order{});
+                //             *res.begin() = reduce_f(begin_maker(a), end_maker(a), std::forward<decltype(args_)>(args_)...);
+                //         }else{  //traverse like over flatten
+                //             auto a = parent.traverse_order_adapter(traverse_order{});
+                //             *res.begin() = reduce_f(begin_maker(a), end_maker(a), std::forward<decltype(args_)>(args_)...);
+                //         }
+                //     }else{
+                //         //auto axes_iterator_maker = detail::make_axes_iterator_maker<config_type>(pshape,axes,traverse_order{});
+                //         //auto traverser = axes_iterator_maker.create_forward_traverser(walker_maker(parent),std::true_type{});
+                //         auto axes_iterator_maker = detail::make_axes_iterator_maker<config_type>(pshape,axes,traverse_order{});
+                //         auto traverser = axes_iterator_maker.create_random_access_traverser(walker_maker(parent),std::true_type{});
+                //         auto a = res.traverse_order_adapter(traverse_order{});
+                //         auto res_it = a.begin();
+                //         do{
+
+                //             *res_it = reduce_f(
+                //                 axes_iterator_maker.begin_complement(traverser.walker(),std::false_type{}),
+                //                 axes_iterator_maker.end_complement(traverser.walker(),std::false_type{}),
+                //                 std::forward<decltype(args_)>(args_)...
+                //             );
+                //             ++res_it;
+
+                //         }while(traverser.next());
+                //         //}while(traverser.template next<order>());
+                //     }
+                // };
                 if (parent.is_trivial()){
                     reduce_helper([](auto& p){return p.create_trivial_walker();},[](auto& a){return a.begin_trivial();},[](auto& a){return a.end_trivial();},std::forward<Args>(args)...);
                 }else{

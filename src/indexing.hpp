@@ -110,6 +110,18 @@ public:
     }
 
     template<typename Walker, typename Inverse=std::false_type>
+    auto create_random_access_traverser(Walker&& walker, Inverse inverse=Inverse{})const{
+        using Walker_ = std::remove_cv_t<std::remove_reference_t<Walker>>;
+        using walker_type = gtensor::mapping_axes_walker<Walker_>;
+        using traverser_type = gtensor::walker_random_access_traverser<gtensor::walker_bidirectional_traverser<gtensor::walker_forward_range_traverser<config_type,walker_type>>,Order>;
+        if constexpr (inverse.value){   //traverse all but axes
+            return traverser_type{traverse_shape_,traverse_strides_,walker_type{axes_map_,std::forward<Walker>(walker)},axes_number(),make_dim(*shape_)};
+        }else{  //traverse axes
+            return traverser_type{traverse_shape_,traverse_strides_,walker_type{axes_map_,std::forward<Walker>(walker)},0,axes_number()};
+        }
+    }
+
+    template<typename Walker, typename Inverse=std::false_type>
     auto begin(Walker&& walker, Inverse inverse=Inverse{})const{
         return create_walker_iterator(std::forward<Walker>(walker),0,inverse,std::false_type{});
     }

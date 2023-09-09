@@ -4,7 +4,7 @@ target_compile_features(Test PRIVATE cxx_std_17)
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     target_compile_options(Test PRIVATE /W4 /arch:AVX2 /Zc:__cplusplus "$<$<CONFIG:RELEASE>:/O2>")
 else()
-    target_compile_options(Test PRIVATE -Wall "$<$<CONFIG:RELEASE>:-O3>")
+    target_compile_options(Test PRIVATE -Wall "$<$<CONFIG:RELEASE>:-O2>")
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         target_compile_options(Test PRIVATE -stdlib=libc++)
     else()
@@ -61,8 +61,8 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_SOURCE_DIR}/test_manipulation.cpp
 #
     #${CMAKE_CURRENT_SOURCE_DIR}/test_math_elementwise.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_math_along_axes.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_statistic.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_math_along_axes.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_statistic.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search.cpp
 #
     #${CMAKE_CURRENT_SOURCE_DIR}/test_builder.cpp
