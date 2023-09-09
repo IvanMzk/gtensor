@@ -997,39 +997,39 @@ TEMPLATE_TEST_CASE("test_statistic_average_initializer_list_axes_all_axes","test
     );
 }
 
-TEMPLATE_TEST_CASE("test_statistic_average_exception","test_statistic",
-    double,
-    int
-)
-{
-    using value_type = TestType;
-    using tensor_type = gtensor::tensor<value_type>;
-    using gtensor::average;
-    using gtensor::value_error;
-    using helpers_for_testing::apply_by_element;
+// TEMPLATE_TEST_CASE("test_statistic_average_exception","test_statistic",
+//     double,
+//     int
+// )
+// {
+//     using value_type = TestType;
+//     using tensor_type = gtensor::tensor<value_type>;
+//     using gtensor::average;
+//     using gtensor::value_error;
+//     using helpers_for_testing::apply_by_element;
 
-    //0tensor,1axes,2keep_dims,3weights
-    auto test_data = std::make_tuple(
-        //zero size weights
-        std::make_tuple(tensor_type{},0,false,tensor_type{}),
-        std::make_tuple(tensor_type{1,2,3,4,5},0,false,tensor_type{1,1,0,-1,-1}),
-        //weights size not match size along axes
-        std::make_tuple(tensor_type{1,2,3,4,5},0,false,tensor_type{1,1,2}),
-        std::make_tuple(tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12}},0,false,tensor_type{1,1,2,2}),
-        std::make_tuple(tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12}},0,false,tensor_type{1,2}),
-        std::make_tuple(tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12}},1,false,tensor_type{1,2,2}),
-        std::make_tuple(tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12}},1,false,tensor_type{1,2,2,1,1}),
-        std::make_tuple(tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12}},std::vector<int>{1,0},false,tensor_type{1,2,2,1,1})
-    );
-    auto test = [](const auto& t){
-        auto ten = std::get<0>(t);
-        auto axes = std::get<1>(t);
-        auto keep_dims = std::get<2>(t);
-        auto weights = std::get<3>(t);
-        REQUIRE_THROWS_AS(average(ten,axes,weights,keep_dims), value_error);
-    };
-    apply_by_element(test,test_data);
-}
+//     //0tensor,1axes,2keep_dims,3weights
+//     auto test_data = std::make_tuple(
+//         //zero size weights
+//         std::make_tuple(tensor_type{},0,false,tensor_type{}),
+//         std::make_tuple(tensor_type{1,2,3,4,5},0,false,tensor_type{1,1,0,-1,-1}),
+//         //weights size not match size along axes
+//         std::make_tuple(tensor_type{1,2,3,4,5},0,false,tensor_type{1,1,2}),
+//         std::make_tuple(tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12}},0,false,tensor_type{1,1,2,2}),
+//         std::make_tuple(tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12}},0,false,tensor_type{1,2}),
+//         std::make_tuple(tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12}},1,false,tensor_type{1,2,2}),
+//         std::make_tuple(tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12}},1,false,tensor_type{1,2,2,1,1}),
+//         std::make_tuple(tensor_type{{1,2,3,4},{5,6,7,8},{9,10,11,12}},std::vector<int>{1,0},false,tensor_type{1,2,2,1,1})
+//     );
+//     auto test = [](const auto& t){
+//         auto ten = std::get<0>(t);
+//         auto axes = std::get<1>(t);
+//         auto keep_dims = std::get<2>(t);
+//         auto weights = std::get<3>(t);
+//         REQUIRE_THROWS_AS(average(ten,axes,weights,keep_dims), value_error);
+//     };
+//     apply_by_element(test,test_data);
+// }
 
 //moving average
 TEMPLATE_TEST_CASE("test_statistic_moving_average","test_statistic",

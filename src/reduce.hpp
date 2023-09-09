@@ -331,40 +331,58 @@ class reducer
         const auto& pshape = parent.shape();
         auto axes = detail::make_axes<config_type>(pdim,axes_);
         detail::check_reduce_args(pshape, axes);
-        auto res = tensor<res_value_type,order,res_config_type>{detail::make_reduce_shape(pshape, axes, keep_dims)};
+        auto res = tensor<res_value_type,order,res_config_type>(detail::make_reduce_shape(pshape, axes, keep_dims));
         if (!res.empty()){
             auto a_parent = parent.traverse_order_adapter(order{});
             auto a_res = res.traverse_order_adapter(order{});
-            //empty axes container
-            if constexpr (detail::is_container_v<Axes>){
-                if (axes.empty()){
-                    if constexpr (has_initial){
-                        std::transform(a_res.begin(),a_res.end(),a_parent.begin(),a_res.begin(),[&reduce_f,&initial](auto&&, auto&& r){return reduce_f(initial,r);});
-                    }else{
-                        //assuming reduction of scalar without initial is identity - nothing to reduce
-                        std::transform(a_res.begin(),a_res.end(),a_parent.begin(),a_res.begin(),[](auto&&, auto&& r){return static_cast<const res_value_type&>(r);});
+
+            auto reduce_binary_corner_case_helper = [&parent,&reduce_f,&initial,&axes,&res,&a_res](auto parent_first, auto parent_last){
+                (void)reduce_f;
+                (void)initial;
+                (void)axes;
+                (void)a_res;
+                //empty axes container
+                if constexpr (detail::is_container_v<Axes>){
+                    if (axes.empty()){
+                        if constexpr (has_initial){
+                            std::transform(a_res.begin(),a_res.end(),parent_first,a_res.begin(),[&reduce_f,&initial](auto&&, auto&& r){return reduce_f(initial,r);});
+                        }else{
+                            //assuming reduction of scalar without initial is identity - nothing to reduce
+                            std::transform(a_res.begin(),a_res.end(),parent_first,a_res.begin(),[](auto&&, auto&& r){return static_cast<const res_value_type&>(r);});
+                        }
+                        return true;
                     }
-                    return res;
                 }
+                //reduce zero size
+                if (parent.empty()){
+                    if constexpr (has_initial){
+                        std::fill(a_res.begin(),a_res.end(),initial);
+                        return true;
+                    }else{
+                        throw value_error("cant reduce zero size dimension without initial value");
+                    }
+                }
+                //0dim result
+                if (res.size() == index_type{1}){
+                    if constexpr (has_initial){
+                        *a_res.begin() = std::accumulate(parent_first,parent_last,initial,reduce_f);
+                    }else{
+                        auto it=parent_first;
+                        const auto& initial_ = *it;
+                        *a_res.begin() = std::accumulate(++it,parent_last,initial_,reduce_f);
+                    }
+                    return true;
+                }
+                return false;
+            };
+
+            bool is_corner_case{false};
+            if (parent.is_trivial()){
+                is_corner_case = reduce_binary_corner_case_helper(a_parent.begin_trivial(),a_parent.end_trivial());
+            }else{
+                is_corner_case = reduce_binary_corner_case_helper(a_parent.begin(),a_parent.end());
             }
-            //reduce zero size
-            if (parent.empty()){
-                if constexpr (has_initial){
-                    std::fill(a_res.begin(),a_res.end(),initial);
-                    return res;
-                }else{
-                    throw value_error("cant reduce zero size dimension without initial value");
-                }
-            }
-            //0dim result
-            if (res.size() == index_type{1}){
-                if constexpr (has_initial){
-                    *a_res.begin() = std::accumulate(a_parent.begin(),a_parent.end(),initial,reduce_f);
-                }else{
-                    auto it=a_parent.begin();
-                    const auto& initial_ = *it;
-                    *a_res.begin() = std::accumulate(++it,a_parent.end(),initial_,reduce_f);
-                }
+            if (is_corner_case){
                 return res;
             }
 
@@ -524,6 +542,7 @@ class reducer
                         auto res_it = a.begin();
                         auto n_tasks = res.size();
                         constexpr std::size_t max_par_tasks = detail::pool_workers_n;
+                        //constexpr std::size_t max_par_tasks = 4;
                         const std::size_t n_par_tasks = max_par_tasks < n_tasks ? max_par_tasks : n_tasks;
                         const index_type par_task_size = n_tasks/n_par_tasks;
                         const index_type last_par_task_size = par_task_size + n_tasks%n_par_tasks;
