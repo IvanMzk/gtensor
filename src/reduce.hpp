@@ -301,10 +301,51 @@ ALWAYS_INLINE auto accumulate_n(It& first, IdxT n, F f){
 
 }   //end of namespace detail
 
-template<std::size_t N_ParTasks> struct par{};
-
 class reducer
 {
+
+    //reduce like over flatten helper, binary functor
+    //return scalar result
+    template<typename Policy, typename BinaryF, typename...Ts, typename Initial>
+    static auto reduce_binary_flatten_helper(Policy policy, const basic_tensor<Ts...>& parent, BinaryF reduce_f, const Initial& initial){
+        using order = typename basic_tensor<Ts...>::order;
+        static constexpr bool has_initial = !std::is_same_v<Initial,detail::no_value>;
+        if (!has_initial && parent.empty()){
+            throw value_error("cant reduce zero size dimension without initial value");
+        }
+        auto reduce_binary_flatten_helper_ = [&policy,&reduce_f,&initial](auto first, auto last){
+            (void)initial;
+            if constexpr (has_initial){
+                return multithreading::reduce(policy,first,last,initial,reduce_f);
+            }else{
+                const auto& initial_ = *first;
+                return multithreading::reduce(policy,++first,last,initial_,reduce_f);
+            }
+        };
+        auto a = parent.traverse_order_adapter(order{});
+        if (parent.is_trivial()){
+            return reduce_binary_flatten_helper_(a.begin_trivial(),a.end_trivial());
+        }else{
+            return reduce_binary_flatten_helper_(a.begin(),a.end());
+        }
+    }
+
+    //reduce like over flatten
+    template<typename BinaryF, typename...Ts, typename Initial>
+    static auto reduce_binary_flatten_(const basic_tensor<Ts...>& parent, BinaryF reduce_f, bool keep_dims, const Initial& initial){
+        auto policy = multithreading::exec_pol<4>{};
+        using parent_type = basic_tensor<Ts...>;
+        using order = typename parent_type::order;
+        using config_type = typename parent_type::config_type;
+        using res_value_type = decltype(reduce_binary_flatten_helper(policy,parent,reduce_f,initial));
+        using res_config_type = config::extend_config_t<config_type,res_value_type>;
+        using res_type = tensor<res_value_type,order,res_config_type>;
+        return res_type(
+            detail::make_reduce_shape(parent.shape(),keep_dims),
+            reduce_binary_flatten_helper(policy,parent,reduce_f,initial)
+        );
+    }
+
     //axes can be container or scalar
     //F is binary functor, takes elements, return reduce result, like std::plus
     //initial must be such that expression reduce_f(initial,element) be valid or no_value
@@ -331,7 +372,14 @@ class reducer
             auto a_parent = parent.traverse_order_adapter(order{});
             auto a_res = res.traverse_order_adapter(order{});
 
-            auto reduce_binary_corner_case_helper = [&parent,&reduce_f,&initial,&axes,&res,&a_res](auto parent_first, auto parent_last){
+            //like tensor-scalar result
+            if (res.size() == index_type{1}){
+                auto policy = multithreading::exec_pol<1>{};
+                *a_res.begin() = reduce_binary_flatten_helper(policy,parent,reduce_f,initial);
+                return res;
+            }
+
+            auto reduce_binary_corner_case_helper = [&parent,&reduce_f,&initial,&axes,&a_res](auto parent_first, auto parent_last){
                 (void)reduce_f;
                 (void)initial;
                 (void)axes;
@@ -356,17 +404,6 @@ class reducer
                     }else{
                         throw value_error("cant reduce zero size dimension without initial value");
                     }
-                }
-                //0dim result
-                if (res.size() == index_type{1}){
-                    if constexpr (has_initial){
-                        *a_res.begin() = std::accumulate(parent_first,parent_last,initial,reduce_f);
-                    }else{
-                        auto it=parent_first;
-                        const auto& initial_ = *it;
-                        *a_res.begin() = std::accumulate(++it,parent_last,initial_,reduce_f);
-                    }
-                    return true;
                 }
                 return false;
             };
@@ -460,38 +497,40 @@ class reducer
         return res;
     }
 
-    //reduce like over flatten
-    template<typename F, typename...Ts, typename Initial>
-    static auto reduce_binary_flatten_(const basic_tensor<Ts...>& parent, F reduce_f, bool keep_dims, const Initial& initial){
-        using parent_type = basic_tensor<Ts...>;
-        using order = typename parent_type::order;
-        using config_type = typename parent_type::config_type;
-        using value_type = typename parent_type::value_type;
-        static constexpr bool has_initial = !std::is_same_v<Initial,detail::no_value>;
-        using initial_type = std::conditional_t<has_initial, Initial, value_type>;
-        using result_type =  decltype(reduce_f(std::declval<initial_type>(),std::declval<value_type>()));
-        using res_value_type = std::remove_cv_t<std::remove_reference_t<result_type>>;
-        using res_config_type = config::extend_config_t<config_type,res_value_type>;
-        using res_type = tensor<res_value_type,order,res_config_type>;
-        if (!has_initial && parent.empty()){
-            throw value_error("cant reduce zero size dimension without initial value");
-        }
-        auto reduce_binary_flatten_helper = [&initial,&reduce_f](auto first, auto last){
-            (void)initial;
-            if constexpr (has_initial){
-                return std::accumulate(first,last,initial,reduce_f);
-            }else{
-                return std::accumulate(first+1,last,*first,reduce_f);
+    //reduce like over flatten helper, iterators range functor
+    //return scalar result
+    template<typename RangeF, typename...Ts, typename...Args>
+    static auto reduce_flatten_helper(const basic_tensor<Ts...>& t, RangeF reduce_f, bool any_order, const Args&...args){
+        using order = typename basic_tensor<Ts...>::order;
+        auto reduce_flatten_helper_ = [&t,&reduce_f,&any_order](auto begin_maker, auto end_maker, const auto&...args_){
+            if (t.dim()==1 || any_order){   //1d or any_order, can use native order
+                auto a = t.traverse_order_adapter(order{});
+                return  reduce_f(begin_maker(a), end_maker(a), args_...);
+            }else{  //traverse like over flatten
+                auto a = t.traverse_order_adapter(config::c_order{});
+                return  reduce_f(begin_maker(a), end_maker(a), args_...);
             }
         };
-        auto a = parent.traverse_order_adapter(order{});
-        res_type res(detail::make_reduce_shape(parent.shape(),keep_dims));
-        if (parent.is_trivial()){
-            *res.begin() = reduce_binary_flatten_helper(a.begin_trivial(),a.end_trivial());
+        if (t.is_trivial()){
+            return reduce_flatten_helper_([](auto& a){return a.begin_trivial();},[](auto& a){return a.end_trivial();},args...);
         }else{
-            *res.begin() = reduce_binary_flatten_helper(a.begin(),a.end());
+            return reduce_flatten_helper_([](auto& a){return a.begin();},[](auto& a){return a.end();},args...);
         }
-        return res;
+    }
+
+    //reduce like over flatten
+    template<typename RangeF, typename...Ts, typename...Args>
+    static auto reduce_flatten_(const basic_tensor<Ts...>& t, RangeF reduce_f, bool keep_dims, bool any_order, const Args&...args){
+        using tensor_type = basic_tensor<Ts...>;
+        using order = typename tensor_type::order;
+        using config_type = typename tensor_type::config_type;
+        using res_value_type = decltype(reduce_flatten_helper(t,reduce_f,any_order,args...));
+        using res_config_type = config::extend_config_t<config_type,res_value_type>;
+        using res_type = tensor<res_value_type,order,res_config_type>;
+        return res_type(
+            detail::make_reduce_shape(t.shape(),keep_dims),
+            reduce_flatten_helper(t,reduce_f,any_order,args...)
+        );
     }
 
     //F takes iterators range to be reduces and additional args
@@ -501,7 +540,6 @@ class reducer
         using order = typename parent_type::order;
         using config_type = typename parent_type::config_type;
         using traverse_order = config::c_order; //order to traverse along axes
-        using dim_type = typename config_type::dim_type;
         using index_type = typename config_type::index_type;
         using shape_type = typename config_type::shape_type;
         using axes_iterator_maker_type = decltype(detail::make_axes_iterator_maker<config_type>(std::declval<shape_type>(),axes_,traverse_order{}));
@@ -516,130 +554,99 @@ class reducer
         detail::check_reduce_args(pshape, axes);
         auto res = tensor<res_value_type,order,res_config_type>{detail::make_reduce_shape(pshape, axes, keep_dims)};
         if (!res.empty()){
-            if (parent.empty()){    //zero size axis is reduced
+            auto a = res.traverse_order_adapter(traverse_order{});
+            //zero size axis is reduced
+            if (parent.empty()){
                 auto a = parent.traverse_order_adapter(order{});
                 const auto e = reduce_f(a.begin(), a.end(), args...);
                 std::fill(res.begin(), res.end(), e);
-            }else{
-                auto reduce_helper = [&parent,&reduce_f,&any_order,&res,&pdim,&pshape,&axes](auto walker_maker, auto begin_maker, auto end_maker,const auto&...args_){
-                    if (res.size() == index_type{1}){
-                        if (pdim == dim_type{1} || any_order){   //1d or any_order, can use native order
-                            auto a = parent.traverse_order_adapter(order{});
-                            *res.begin() = reduce_f(begin_maker(a), end_maker(a), args_...);
-                        }else{  //traverse like over flatten
-                            auto a = parent.traverse_order_adapter(traverse_order{});
-                            *res.begin() = reduce_f(begin_maker(a), end_maker(a), args_...);
-                        }
-                    }else{
-                        auto axes_iterator_maker = detail::make_axes_iterator_maker<config_type>(pshape,axes,traverse_order{});
-                        auto traverser = axes_iterator_maker.create_random_access_traverser(walker_maker(parent),std::true_type{});
-                        auto a = res.traverse_order_adapter(traverse_order{});
-                        auto res_it = a.begin();
-                        auto n_tasks = res.size();
-                        constexpr std::size_t max_par_tasks = multithreading::pool_workers_n;
-                        const std::size_t n_par_tasks = max_par_tasks < n_tasks ? max_par_tasks : n_tasks;
-                        const index_type par_task_size = n_tasks/n_par_tasks;
-                        const index_type last_par_task_size = par_task_size + n_tasks%n_par_tasks;
-
-                        auto worker_f = [&axes_iterator_maker](auto f, auto res_first, auto res_last, auto traverser, const auto&...args__){
-                            for (;res_first!=res_last; ++res_first,traverser.next()){
-                                *res_first = f(
-                                    axes_iterator_maker.begin_complement(traverser.walker(),std::false_type{}),
-                                    axes_iterator_maker.end_complement(traverser.walker(),std::false_type{}),
-                                    args__...
-                                );
-                            }
-                        };
-
-                        using future_type = decltype(
-                            std::declval<decltype(multithreading::get_pool())>().push(
-                                worker_f,
-                                reduce_f,
-                                res_it,
-                                res_it+par_task_size,
-                                traverser,
-                                std::cref(args_)...
-                            )
+                return res;
+            }
+            const auto res_size = res.size();
+            //like tensor-scalar result
+            if (res_size == index_type{1}){
+                *res.begin() = reduce_flatten_helper(parent,reduce_f,any_order,args...);
+                return res;
+            }
+            auto axes_iterator_maker = detail::make_axes_iterator_maker<config_type>(pshape,axes,traverse_order{});
+            auto reduce_helper = [&reduce_f,&res_size,&axes_iterator_maker](auto walker, auto res_it, const auto&...args_){
+                auto body = [&axes_iterator_maker](auto f, auto res_first, auto res_last, auto traverser, const auto&...args__){
+                    for (;res_first!=res_last; ++res_first,traverser.next()){
+                        *res_first = f(
+                            axes_iterator_maker.begin_complement(traverser.walker(),std::false_type{}),
+                            axes_iterator_maker.end_complement(traverser.walker(),std::false_type{}),
+                            args__...
                         );
-
-                        std::array<future_type,max_par_tasks-1> futures{};
-
-                        for (std::size_t i{0}; i!=n_par_tasks-1; ++i,res_it+=par_task_size,traverser.advance(i*par_task_size)){
-                            futures[i] = multithreading::get_pool().push(
-                                worker_f,
-                                reduce_f,
-                                res_it,
-                                res_it+par_task_size,
-                                traverser,
-                                std::cref(args_)...
-                            );
-                        }
-                        worker_f(reduce_f,res_it,res_it+last_par_task_size,traverser,args_...);
                     }
                 };
-                // auto reduce_helper = [&parent,&reduce_f,&any_order,&res,&pdim,&pshape,&axes](auto walker_maker, auto begin_maker, auto end_maker,auto&&...args_){
-                //     if (res.size() == index_type{1}){
-                //         if (pdim == dim_type{1} || any_order){   //1d or any_order, can use native order
-                //             auto a = parent.traverse_order_adapter(order{});
-                //             *res.begin() = reduce_f(begin_maker(a), end_maker(a), std::forward<decltype(args_)>(args_)...);
-                //         }else{  //traverse like over flatten
-                //             auto a = parent.traverse_order_adapter(traverse_order{});
-                //             *res.begin() = reduce_f(begin_maker(a), end_maker(a), std::forward<decltype(args_)>(args_)...);
-                //         }
-                //     }else{
-                //         //auto axes_iterator_maker = detail::make_axes_iterator_maker<config_type>(pshape,axes,traverse_order{});
-                //         //auto traverser = axes_iterator_maker.create_forward_traverser(walker_maker(parent),std::true_type{});
-                //         auto axes_iterator_maker = detail::make_axes_iterator_maker<config_type>(pshape,axes,traverse_order{});
-                //         auto traverser = axes_iterator_maker.create_random_access_traverser(walker_maker(parent),std::true_type{});
-                //         auto a = res.traverse_order_adapter(traverse_order{});
-                //         auto res_it = a.begin();
-                //         do{
-
-                //             *res_it = reduce_f(
-                //                 axes_iterator_maker.begin_complement(traverser.walker(),std::false_type{}),
-                //                 axes_iterator_maker.end_complement(traverser.walker(),std::false_type{}),
-                //                 std::forward<decltype(args_)>(args_)...
-                //             );
-                //             ++res_it;
-
-                //         }while(traverser.next());
-                //         //}while(traverser.template next<order>());
-                //     }
-                // };
-                if (parent.is_trivial()){
-                    reduce_helper([](auto& p){return p.create_trivial_walker();},[](auto& a){return a.begin_trivial();},[](auto& a){return a.end_trivial();},args...);
-                }else{
-                    reduce_helper([](auto& p){return p.create_walker();},[](auto& a){return a.begin();},[](auto& a){return a.end();},args...);
+                auto traverser = axes_iterator_maker.create_random_access_traverser(walker,std::true_type{});
+                auto n_tasks = res_size;
+                constexpr std::size_t max_par_tasks = multithreading::pool_workers_n;
+                const std::size_t n_par_tasks = max_par_tasks < n_tasks ? max_par_tasks : n_tasks;
+                const index_type par_task_size = n_tasks/n_par_tasks;
+                const index_type last_par_task_size = par_task_size + n_tasks%n_par_tasks;
+                using future_type = decltype(
+                    std::declval<decltype(multithreading::get_pool())>().push(
+                        body,
+                        reduce_f,
+                        res_it,
+                        res_it+par_task_size,
+                        traverser,
+                        std::cref(args_)...
+                    )
+                );
+                std::array<future_type,max_par_tasks-1> futures{};
+                for (std::size_t i{0}; i!=n_par_tasks-1; ++i,res_it+=par_task_size,traverser.advance(i*par_task_size)){
+                    futures[i] = multithreading::get_pool().push(
+                        body,
+                        reduce_f,
+                        res_it,
+                        res_it+par_task_size,
+                        traverser,
+                        std::cref(args_)...
+                    );
                 }
+                body(reduce_f,res_it,res_it+last_par_task_size,traverser,args_...);
+            };
+            // auto reduce_helper = [&parent,&reduce_f,&any_order,&res,&pdim,&pshape,&axes](auto walker_maker, auto begin_maker, auto end_maker,auto&&...args_){
+            //     if (res.size() == index_type{1}){
+            //         if (pdim == dim_type{1} || any_order){   //1d or any_order, can use native order
+            //             auto a = parent.traverse_order_adapter(order{});
+            //             *res.begin() = reduce_f(begin_maker(a), end_maker(a), std::forward<decltype(args_)>(args_)...);
+            //         }else{  //traverse like over flatten
+            //             auto a = parent.traverse_order_adapter(traverse_order{});
+            //             *res.begin() = reduce_f(begin_maker(a), end_maker(a), std::forward<decltype(args_)>(args_)...);
+            //         }
+            //     }else{
+            //         //auto axes_iterator_maker = detail::make_axes_iterator_maker<config_type>(pshape,axes,traverse_order{});
+            //         //auto traverser = axes_iterator_maker.create_forward_traverser(walker_maker(parent),std::true_type{});
+            //         auto axes_iterator_maker = detail::make_axes_iterator_maker<config_type>(pshape,axes,traverse_order{});
+            //         auto traverser = axes_iterator_maker.create_random_access_traverser(walker_maker(parent),std::true_type{});
+            //         auto a = res.traverse_order_adapter(traverse_order{});
+            //         auto res_it = a.begin();
+            //         do{
+            //             *res_it = reduce_f(
+            //                 axes_iterator_maker.begin_complement(traverser.walker(),std::false_type{}),
+            //                 axes_iterator_maker.end_complement(traverser.walker(),std::false_type{}),
+            //                 std::forward<decltype(args_)>(args_)...
+            //             );
+            //             ++res_it;
+            //         }while(traverser.next());
+            //         //}while(traverser.template next<order>());
+            //     }
+            // };
+            // if (parent.is_trivial()){
+            //     reduce_helper([](auto& p){return p.create_trivial_walker();},[](auto& a){return a.begin_trivial();},[](auto& a){return a.end_trivial();},args...);
+            // }else{
+            //     reduce_helper([](auto& p){return p.create_walker();},[](auto& a){return a.begin();},[](auto& a){return a.end();},args...);
+            // }
+            if (parent.is_trivial()){
+                reduce_helper(parent.create_trivial_walker(),a.begin(),args...);
+            }else{
+                reduce_helper(parent.create_walker(),a.begin(),args...);
             }
         }
         return res;
-    }
-
-    template<typename F, typename...Ts, typename...Args>
-    static auto reduce_flatten_(const basic_tensor<Ts...>& t, F reduce_f, bool keep_dims, bool any_order, const Args&...args){
-        using tensor_type = basic_tensor<Ts...>;
-        using order = typename tensor_type::order;
-        using config_type = typename tensor_type::config_type;
-        using result_type = decltype(reduce_f(t.begin(),t.end(),std::declval<Args>()...));  //assuming traverse order not affected result type
-        using res_value_type = std::remove_cv_t<std::remove_reference_t<result_type>>;
-        using res_config_type = config::extend_config_t<config_type,res_value_type>;
-        using res_type = tensor<res_value_type,order,res_config_type>;
-        auto reduce_flatten_helper = [&t,&reduce_f,&any_order](auto begin_maker, auto end_maker, const auto&...args_){
-            if (t.dim()==1 || any_order){   //1d or any_order, can use native order
-                auto a = t.traverse_order_adapter(order{});
-                return  reduce_f(begin_maker(a), end_maker(a), args_...);
-            }else{  //traverse like over flatten
-                auto a = t.traverse_order_adapter(config::c_order{});
-                return  reduce_f(begin_maker(a), end_maker(a), args_...);
-            }
-        };
-        auto res_shape = detail::make_reduce_shape(t.shape(),keep_dims);
-        if (t.is_trivial()){
-            return res_type(std::move(res_shape),reduce_flatten_helper([](auto& a){return a.begin_trivial();},[](auto& a){return a.end_trivial();},args...));
-        }else{
-            return res_type(std::move(res_shape),reduce_flatten_helper([](auto& a){return a.begin();},[](auto& a){return a.end();},args...));
-        }
     }
 
     template<typename ResultT, typename...Ts, typename DimT, typename F, typename IdxT, typename...Args>

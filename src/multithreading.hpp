@@ -185,11 +185,10 @@ template<typename T, typename Allocator = std::allocator<detail::element_<T>>>
 class st_bounded_queue
 {
     using element_type = typename std::allocator_traits<Allocator>::value_type;
-    using size_type = std::size_t;
-    static_assert(std::is_unsigned_v<size_type>);
 public:
     using value_type = T;
     using allocator_type = Allocator;
+    using size_type = typename std::allocator_traits<Allocator>::size_type;
 
     st_bounded_queue(size_type capacity__, const allocator_type& alloc = allocator_type()):
         capacity_{capacity__},
@@ -372,6 +371,46 @@ inline constexpr std::size_t pool_queue_size = 64;
 inline auto& get_pool(){
     static thread_pool_v3 pool_{pool_workers_n, pool_queue_size};
     return pool_;
+}
+
+template<typename...> struct exec_policy_traits;
+template<template<typename U,U> typename P, typename T, T V>
+struct exec_policy_traits<P<T,V>>{
+    using par_tasks = std::conditional_t<V==0, std::integral_constant<std::size_t,pool_workers_n>, std::integral_constant<std::size_t,V>>;
+    using is_seq = std::bool_constant<par_tasks::value==1>;
+};
+
+template<std::size_t N> using exec_pol = std::integral_constant<std::size_t,N>;
+
+template<typename Policy, typename It, typename Initial, typename BinaryF>
+auto reduce(Policy, It first, It last, Initial initial, BinaryF f){
+    if constexpr (std::is_convertible_v<typename std::iterator_traits<It>::iterator_category,std::random_access_iterator_tag> && exec_policy_traits<Policy>::is_seq::value){ //can parallelize
+        constexpr std::size_t max_par_tasks_n = exec_policy_traits<Policy>::par_tasks::value;
+        using difference_type = typename std::iterator_traits<It>::difference_type;
+        const std::size_t n_tasks = static_cast<const std::size_t&>(std::distance(first,last));
+        const std::size_t par_tasks_n = std::min(max_par_tasks_n, n_tasks/std::size_t{2});
+        if (par_tasks_n<2){
+            return std::accumulate(first,last,initial,f);
+        }
+        const difference_type par_task_size = static_cast<const difference_type&>(n_tasks/par_tasks_n);
+        const difference_type last_par_task_size = static_cast<const difference_type&>(par_task_size + n_tasks%par_tasks_n);
+
+        auto body = [](auto first_, auto last_, auto f_){ //last-fist>=2 guaranteed by par_tasks_n selection
+            const auto& e0 = *first_;
+            ++first_;
+            const auto& e1 = *first_;
+            return std::accumulate(++first_,last_,Initial(f_(e0,e1)),f_);
+        };
+        using future_type = decltype(get_pool().push(body,first,last,f));
+        std::array<future_type, max_par_tasks_n-1> futures{};
+        for (std::size_t i=0; i!=par_tasks_n-1; ++i,first+=par_task_size){
+            futures[i] = get_pool().push(body,first,first+par_task_size,f);
+        }
+        initial = f(initial, body(first,first+last_par_task_size,f));
+        return std::accumulate(futures.begin(),futures.begin()+(par_tasks_n-1),initial,[&f](const auto& init, auto& future){return f(init,future.get());});
+    }else{
+        return std::accumulate(first,last,initial,f);
+    }
 }
 
 }   //end of namespace multithreading
