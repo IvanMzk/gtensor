@@ -795,6 +795,8 @@ TEST_CASE("test_math_sum_nansum_nan_values","test_math")
     auto test = [](const auto& t){
         auto result = std::get<0>(t);
         auto expected = std::get<1>(t);
+        std::cout<<std::endl<<result;
+        std::cout<<std::endl<<expected;
         REQUIRE(tensor_equal(result,expected,true));
     };
     apply_by_element(test,test_data);

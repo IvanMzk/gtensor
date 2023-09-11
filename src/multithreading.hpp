@@ -7,6 +7,8 @@
 #include <future>
 #include <condition_variable>
 #include <vector>
+#include <numeric>
+#include <iostream>
 
 namespace multithreading{
 
@@ -366,7 +368,7 @@ private:
 };
 
 
-inline constexpr std::size_t pool_workers_n = 10;
+inline constexpr std::size_t pool_workers_n = 16;
 inline constexpr std::size_t pool_queue_size = 64;
 inline auto& get_pool(){
     static thread_pool_v3 pool_{pool_workers_n, pool_queue_size};
@@ -384,23 +386,28 @@ template<std::size_t N> using exec_pol = std::integral_constant<std::size_t,N>;
 
 template<typename Policy, typename It, typename Initial, typename BinaryF>
 auto reduce(Policy, It first, It last, Initial initial, BinaryF f){
-    if constexpr (std::is_convertible_v<typename std::iterator_traits<It>::iterator_category,std::random_access_iterator_tag> && exec_policy_traits<Policy>::is_seq::value){ //can parallelize
-        constexpr std::size_t max_par_tasks_n = exec_policy_traits<Policy>::par_tasks::value;
+    if constexpr (std::is_convertible_v<typename std::iterator_traits<It>::iterator_category,std::random_access_iterator_tag> && !exec_policy_traits<Policy>::is_seq::value){ //parallelize
         using difference_type = typename std::iterator_traits<It>::difference_type;
+        static constexpr std::size_t max_par_tasks_n = exec_policy_traits<Policy>::par_tasks::value;
+        static constexpr std::size_t min_tasks_per_par_task = 2;
         const std::size_t n_tasks = static_cast<const std::size_t&>(std::distance(first,last));
-        const std::size_t par_tasks_n = std::min(max_par_tasks_n, n_tasks/std::size_t{2});
+        const std::size_t par_tasks_n = std::min(max_par_tasks_n, n_tasks/min_tasks_per_par_task);
         if (par_tasks_n<2){
+            //std::cout<<std::endl<<"if (par_tasks_n<2){";
             return std::accumulate(first,last,initial,f);
         }
         const difference_type par_task_size = static_cast<const difference_type&>(n_tasks/par_tasks_n);
         const difference_type last_par_task_size = static_cast<const difference_type&>(par_task_size + n_tasks%par_tasks_n);
 
-        auto body = [](auto first_, auto last_, auto f_){ //last-fist>=2 guaranteed by par_tasks_n selection
+        auto body = [](auto first_, auto last_, auto f_){ //last-fist>=2 guaranteed by min_tasks_per_par_task = 2
             const auto& e0 = *first_;
             ++first_;
             const auto& e1 = *first_;
             return std::accumulate(++first_,last_,Initial(f_(e0,e1)),f_);
         };
+
+        //std::cout<<std::endl<<"n_tasks "<<n_tasks<<" par_tasks_n "<<par_tasks_n<<" par_task_size "<<par_task_size<<" last_par_task_size "<<last_par_task_size;
+
         using future_type = decltype(get_pool().push(body,first,last,f));
         std::array<future_type, max_par_tasks_n-1> futures{};
         for (std::size_t i=0; i!=par_tasks_n-1; ++i,first+=par_task_size){
@@ -409,7 +416,51 @@ auto reduce(Policy, It first, It last, Initial initial, BinaryF f){
         initial = f(initial, body(first,first+last_par_task_size,f));
         return std::accumulate(futures.begin(),futures.begin()+(par_tasks_n-1),initial,[&f](const auto& init, auto& future){return f(init,future.get());});
     }else{
+        //std::cout<<std::endl<<"}else{";
         return std::accumulate(first,last,initial,f);
+    }
+}
+
+template<typename Policy, typename It1, typename It2, typename DstIt, typename BinaryF>
+auto transform(Policy, It1 first1, It1 last1, It2 first2, DstIt dfirst, BinaryF f){
+    if constexpr (
+        std::is_convertible_v<typename std::iterator_traits<It1>::iterator_category,std::random_access_iterator_tag> &&
+        std::is_convertible_v<typename std::iterator_traits<It2>::iterator_category,std::random_access_iterator_tag> &&
+        std::is_convertible_v<typename std::iterator_traits<DstIt>::iterator_category,std::random_access_iterator_tag> &&
+        !exec_policy_traits<Policy>::is_seq::value)
+    { //parallelize
+        using difference_type1 = typename std::iterator_traits<It1>::difference_type;
+        using difference_type2 = typename std::iterator_traits<It2>::difference_type;
+        using difference_type3 = typename std::iterator_traits<DstIt>::difference_type;
+        static constexpr std::size_t max_par_tasks_n = exec_policy_traits<Policy>::par_tasks::value;
+        static constexpr std::size_t min_tasks_per_par_task = 1;
+        const std::size_t n_tasks = static_cast<const std::size_t&>(std::distance(first1,last1));
+        const std::size_t par_tasks_n = std::min(max_par_tasks_n, n_tasks/min_tasks_per_par_task);
+        if (par_tasks_n<2){
+            //std::cout<<std::endl<<"if (par_tasks_n<2){";
+            return std::transform(first1,last1,first2,dfirst,f);
+        }
+        const difference_type1 par_task_size = static_cast<const difference_type1&>(n_tasks/par_tasks_n);
+        const difference_type1 last_par_task_size = static_cast<const difference_type1&>(par_task_size + n_tasks%par_tasks_n);
+
+        auto body = [](auto first1_, auto last1_, auto first2_, auto dfirst_, auto f_){
+            for(;first1_!=last1_; ++first1_,++first2_,++dfirst_){
+                *dfirst_ = f_(*first1_,*first2_);
+            }
+        };
+
+        //std::cout<<std::endl<<"n_tasks "<<n_tasks<<" par_tasks_n "<<par_tasks_n<<" par_task_size "<<par_task_size<<" last_par_task_size "<<last_par_task_size;
+
+        using future_type = decltype(get_pool().push(body,first1,last1,first2,dfirst,f));
+        std::array<future_type, max_par_tasks_n-1> futures{};
+        for (std::size_t i=0; i!=par_tasks_n-1; ++i,first1+=par_task_size,first2+=static_cast<const difference_type2&>(par_task_size),dfirst+=static_cast<const difference_type3&>(par_task_size)){
+            futures[i] = get_pool().push(body,first1,first1+par_task_size,first2,dfirst,f);
+        }
+        body(first1,first1+last_par_task_size,first2,dfirst,f);
+        return dfirst+static_cast<const difference_type3&>(last_par_task_size);
+    }else{
+        //std::cout<<std::endl<<"}else{";
+        return std::transform(first1,last1,first2,dfirst,f);
     }
 }
 

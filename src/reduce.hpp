@@ -374,7 +374,7 @@ class reducer
 
             //like tensor-scalar result
             if (res.size() == index_type{1}){
-                auto policy = multithreading::exec_pol<1>{};
+                auto policy = multithreading::exec_pol<4>{};
                 *a_res.begin() = reduce_binary_flatten_helper(policy,parent,reduce_f,initial);
                 return res;
             }
