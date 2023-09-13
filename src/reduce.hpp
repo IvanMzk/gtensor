@@ -609,7 +609,6 @@ class reducer
                     res_it+=par_task_size;
                     traverser.advance(pos+=par_task_size);
                 }
-                //body(reduce_f,res_it,res_it+last_par_task_size,traverser,args_...);
             };
             // auto reduce_helper = [&parent,&reduce_f,&any_order,&res,&pdim,&pshape,&axes](auto walker_maker, auto begin_maker, auto end_maker,auto&&...args_){
             //     if (res.size() == index_type{1}){

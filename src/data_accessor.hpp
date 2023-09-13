@@ -209,7 +209,7 @@ ALWAYS_INLINE void to_last(Walker& walker, const IdxIt index_first, const ShIt s
 
 #undef TO_LAST_ON_AXIS
 
-#define ADVANCE_ON_AXIS(axis)\
+#define TO_ON_AXIS(axis)\
 if(n==0){\
     break;\
 }else{\
@@ -223,7 +223,7 @@ if(n==0){\
     }\
 }
 
-#define ADVANCE_ON_AXIS_NO_INDEX(axis)\
+#define TO_ON_AXIS_NO_INDEX(axis)\
 if(n==0){\
     break;\
 }else{\
@@ -234,37 +234,37 @@ if(n==0){\
     }\
 }
 
-//move on axes range
+//to on axes range
 template<typename Walker, typename IdxIt,  typename StIt, typename DimT, typename IdxT>
-ALWAYS_INLINE void advance_c(Walker& walker, IdxIt index_first, StIt strides_first, DimT axis_min, const DimT& axis_max, IdxT n){
+ALWAYS_INLINE void to_c(Walker& walker, IdxIt index_first, StIt strides_first, DimT axis_min, const DimT& axis_max, IdxT n){
     for (;axis_min!=axis_max; ++axis_min){
-        ADVANCE_ON_AXIS(axis_min);
+        TO_ON_AXIS(axis_min);
     }
 }
 template<typename Walker, typename IdxIt,  typename StIt, typename DimT, typename IdxT>
-ALWAYS_INLINE void advance_f(Walker& walker, IdxIt index_first, StIt strides_first, const DimT& axis_min, DimT axis_max, IdxT n){
+ALWAYS_INLINE void to_f(Walker& walker, IdxIt index_first, StIt strides_first, const DimT& axis_min, DimT axis_max, IdxT n){
     while(axis_max!=axis_min){
         --axis_max;
-        ADVANCE_ON_AXIS(axis_max);
+        TO_ON_AXIS(axis_max);
     }
 }
-//move on all axes without index state
+//to on all axes without index state
 template<typename Walker, typename StIt, typename DimT, typename IdxT>
-ALWAYS_INLINE void advance_c(Walker& walker, StIt strides_first, const DimT& dim, IdxT n){
+ALWAYS_INLINE void to_c(Walker& walker, StIt strides_first, const DimT& dim, IdxT n){
     for (DimT a=0; a!=dim; ++a){
-        ADVANCE_ON_AXIS_NO_INDEX(a);
+        TO_ON_AXIS_NO_INDEX(a);
     }
 }
 template<typename Walker, typename StIt, typename DimT, typename IdxT>
-ALWAYS_INLINE void advance_f(Walker& walker, StIt strides_first, DimT dim, IdxT n){
+ALWAYS_INLINE void to_f(Walker& walker, StIt strides_first, DimT dim, IdxT n){
     while(dim!=0){
         --dim;
-        ADVANCE_ON_AXIS_NO_INDEX(dim);
+        TO_ON_AXIS_NO_INDEX(dim);
     }
 }
 
-#undef ADVANCE_ON_AXIS
-#undef ADVANCE_ON_AXIS_NO_INDEX
+#undef TO_ON_AXIS
+#undef TO_ON_AXIS_NO_INDEX
 
 template<typename T, typename=void> inline constexpr bool is_range_traverser_v = false;
 template<typename T> inline constexpr bool is_range_traverser_v<T,std::void_t<decltype(std::declval<T>().axis_min()),decltype(std::declval<T>().axis_max())>> = true;
@@ -393,9 +393,9 @@ public:
     ALWAYS_INLINE decltype(auto) operator[](const index_type& n)const{
         walker_.reset_back();
         if constexpr (std::is_same_v<gtensor::config::c_order,Order>){
-            detail::advance_c(walker_,strides_->begin(),dim_,n);
+            detail::to_c(walker_,strides_->begin(),dim_,n);
         }else{
-            detail::advance_f(walker_,strides_->begin(),dim_,n);
+            detail::to_f(walker_,strides_->begin(),dim_,n);
         }
         return *walker_;
     }
@@ -923,19 +923,19 @@ public:
     ALWAYS_INLINE bool next(){return base_type::template next<Order>();}
     ALWAYS_INLINE bool prev(){return base_type::template prev<Order>();}
     //n must be in range [0,size-1], where size = make_size(shape__)
-    ALWAYS_INLINE void advance(index_type n){
+    ALWAYS_INLINE void to(index_type n){
         to_first();
         if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
             if constexpr (is_range_traverser){
-                return detail::advance_c(walker_,index_.begin(),strides_->begin(),base_type::axis_min(),base_type::axis_max(),n);
+                return detail::to_c(walker_,index_.begin(),strides_->begin(),base_type::axis_min(),base_type::axis_max(),n);
             }else{
-                return detail::advance_c(walker_,index_.begin(),strides_->begin(),dim_type{0},dim_,n);
+                return detail::to_c(walker_,index_.begin(),strides_->begin(),dim_type{0},dim_,n);
             }
         }else{
             if constexpr (is_range_traverser){
-                return detail::advance_f(walker_,index_.begin(),strides_->begin(),base_type::axis_min(),base_type::axis_max(),n);
+                return detail::to_f(walker_,index_.begin(),strides_->begin(),base_type::axis_min(),base_type::axis_max(),n);
             }else{
-                return detail::advance_f(walker_,index_.begin(),strides_->begin(),dim_type{0},dim_,n);
+                return detail::to_f(walker_,index_.begin(),strides_->begin(),dim_type{0},dim_,n);
             }
         }
     }

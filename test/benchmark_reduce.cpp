@@ -316,7 +316,7 @@ TEST_CASE("benchmark_reduce","[benchmark_tensor]")
     };
 
 
-    // const auto axes = benchmark_helpers::axes;
+    //const auto axes = benchmark_helpers::axes;
     const auto axes = benchmark_helpers::axes_scalar;
     //const auto axes = benchmark_helpers::axes_container;
 
@@ -324,8 +324,8 @@ TEST_CASE("benchmark_reduce","[benchmark_tensor]")
     // const auto shapes = benchmark_helpers::small_shapes;
 
     const auto n_iters = 1;
-    //const auto shapes = benchmark_helpers::shapes;
-    const auto shapes = std::vector<std::vector<int>>{{100000000,3,1,2}};
+    const auto shapes = benchmark_helpers::shapes;
+    //const auto shapes = std::vector<std::vector<int>>{{100000000,3,1,2}};
 
 
     bench_reduce("reduce range sum on tensor",n_iters,std::vector<std::vector<int>>{{1000000000,2}},std::vector<int>{0},[](auto&& t){return t;},reducer_reduce_range_sum);

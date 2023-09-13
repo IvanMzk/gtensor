@@ -39,9 +39,9 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_SOURCE_DIR}/test_slice.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_descriptor.cpp
 #
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_data_accessor_indexer.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_data_accessor_walker.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_data_accessor_traverser.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_data_accessor_indexer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_data_accessor_walker.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_data_accessor_traverser.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_iterator.cpp
 #
     #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_core.cpp
@@ -59,7 +59,7 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_application_specific.cpp
 #
     #${CMAKE_CURRENT_SOURCE_DIR}/test_indexing.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_reduce.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_reduce.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_manipulation.cpp
 #
     #${CMAKE_CURRENT_SOURCE_DIR}/test_math_elementwise.cpp
