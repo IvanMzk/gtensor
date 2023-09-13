@@ -607,7 +607,7 @@ class reducer
                         std::cref(args_)...
                     );
                     res_it+=par_task_size;
-                    traverser.advance(pos+=par_task_size);
+                    traverser.to(pos+=par_task_size);
                 }
             };
             // auto reduce_helper = [&parent,&reduce_f,&any_order,&res,&pdim,&pshape,&axes](auto walker_maker, auto begin_maker, auto end_maker,auto&&...args_){
