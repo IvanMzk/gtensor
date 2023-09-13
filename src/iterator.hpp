@@ -162,7 +162,7 @@ public:
     }
     walker_iterator& operator+=(difference_type n){
         flat_index+=n;
-        traverser.advance(flat_index);
+        traverser.to(flat_index);
         return *this;
     }
     reference operator[](difference_type n)const{
