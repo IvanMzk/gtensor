@@ -8,6 +8,7 @@
 #include <condition_variable>
 #include <vector>
 #include <numeric>
+#include <algorithm>
 #include <iostream>
 
 namespace multithreading{
@@ -367,6 +368,32 @@ private:
     std::condition_variable has_slot;
 };
 
+template<typename ParSize>
+class par_task_size
+{
+    using size_type = std::size_t;
+    ParSize par_task_size_{0};
+    std::size_t rem_{0};
+    std::size_t size_{0};
+public:
+    template<typename Size>
+    par_task_size(const ParSize& tasks_number, const Size& max_par_tasks_number, const Size& min_tasks_per_par_task)
+    {
+        const ParSize par_tasks_number = std::min(static_cast<const ParSize&>(max_par_tasks_number), tasks_number/static_cast<const ParSize&>(min_tasks_per_par_task));
+        if (par_tasks_number!=0){
+            par_task_size_ = tasks_number/par_tasks_number;
+            rem_ = static_cast<const size_type&>(tasks_number%par_tasks_number);
+            size_ = static_cast<const size_type&>(par_tasks_number);
+        }
+    }
+    size_type size()const{
+        return size_;
+    }
+    ParSize operator[](size_type i)const{
+        return i<rem_ ? par_task_size_+ParSize{1} : par_task_size_;
+    }
+};
+
 
 inline constexpr std::size_t pool_workers_n = 16;
 inline constexpr std::size_t pool_queue_size = 64;
@@ -390,14 +417,12 @@ auto reduce(Policy, It first, It last, Initial initial, BinaryF f){
         using difference_type = typename std::iterator_traits<It>::difference_type;
         static constexpr std::size_t max_par_tasks_n = exec_policy_traits<Policy>::par_tasks::value;
         static constexpr std::size_t min_tasks_per_par_task = 2;
-        const std::size_t n_tasks = static_cast<const std::size_t&>(std::distance(first,last));
-        const std::size_t par_tasks_n = std::min(max_par_tasks_n, n_tasks/min_tasks_per_par_task);
-        if (par_tasks_n<2){
-            //std::cout<<std::endl<<"if (par_tasks_n<2){";
+
+        par_task_size<difference_type> par_sizes{last-first,max_par_tasks_n,min_tasks_per_par_task};
+
+        if (par_sizes.size()<2){
             return std::accumulate(first,last,initial,f);
         }
-        const difference_type par_task_size = static_cast<const difference_type&>(n_tasks/par_tasks_n);
-        const difference_type last_par_task_size = static_cast<const difference_type&>(par_task_size + n_tasks%par_tasks_n);
 
         auto body = [](auto first_, auto last_, auto f_){ //last-fist>=2 guaranteed by min_tasks_per_par_task = 2
             const auto& e0 = *first_;
@@ -406,17 +431,15 @@ auto reduce(Policy, It first, It last, Initial initial, BinaryF f){
             return std::accumulate(++first_,last_,Initial(f_(e0,e1)),f_);
         };
 
-        //std::cout<<std::endl<<"n_tasks "<<n_tasks<<" par_tasks_n "<<par_tasks_n<<" par_task_size "<<par_task_size<<" last_par_task_size "<<last_par_task_size;
-
         using future_type = decltype(get_pool().push(body,first,last,f));
-        std::array<future_type, max_par_tasks_n-1> futures{};
-        for (std::size_t i=0; i!=par_tasks_n-1; ++i,first+=par_task_size){
+        std::array<future_type, max_par_tasks_n> futures{};
+        for (std::size_t i=0; i!=par_sizes.size(); ++i){
+            const auto par_task_size = par_sizes[i];
             futures[i] = get_pool().push(body,first,first+par_task_size,f);
+            first+=par_task_size;
         }
-        initial = f(initial, body(first,first+last_par_task_size,f));
-        return std::accumulate(futures.begin(),futures.begin()+(par_tasks_n-1),initial,[&f](const auto& init, auto& future){return f(init,future.get());});
+        return std::accumulate(futures.begin(),futures.begin()+par_sizes.size(),initial,[&f](const auto& init, auto& future){return f(init,future.get());});
     }else{
-        //std::cout<<std::endl<<"}else{";
         return std::accumulate(first,last,initial,f);
     }
 }
@@ -434,35 +457,125 @@ auto transform(Policy, It1 first1, It1 last1, It2 first2, DstIt dfirst, BinaryF 
         using difference_type3 = typename std::iterator_traits<DstIt>::difference_type;
         static constexpr std::size_t max_par_tasks_n = exec_policy_traits<Policy>::par_tasks::value;
         static constexpr std::size_t min_tasks_per_par_task = 1;
-        const std::size_t n_tasks = static_cast<const std::size_t&>(std::distance(first1,last1));
-        const std::size_t par_tasks_n = std::min(max_par_tasks_n, n_tasks/min_tasks_per_par_task);
-        if (par_tasks_n<2){
-            //std::cout<<std::endl<<"if (par_tasks_n<2){";
+
+        par_task_size<difference_type1> par_sizes{last1-first1,max_par_tasks_n,min_tasks_per_par_task};
+        if (par_sizes.size()<2){
             return std::transform(first1,last1,first2,dfirst,f);
         }
-        const difference_type1 par_task_size = static_cast<const difference_type1&>(n_tasks/par_tasks_n);
-        const difference_type1 last_par_task_size = static_cast<const difference_type1&>(par_task_size + n_tasks%par_tasks_n);
-
         auto body = [](auto first1_, auto last1_, auto first2_, auto dfirst_, auto f_){
             for(;first1_!=last1_; ++first1_,++first2_,++dfirst_){
                 *dfirst_ = f_(*first1_,*first2_);
             }
         };
-
-        //std::cout<<std::endl<<"n_tasks "<<n_tasks<<" par_tasks_n "<<par_tasks_n<<" par_task_size "<<par_task_size<<" last_par_task_size "<<last_par_task_size;
-
         using future_type = decltype(get_pool().push(body,first1,last1,first2,dfirst,f));
-        std::array<future_type, max_par_tasks_n-1> futures{};
-        for (std::size_t i=0; i!=par_tasks_n-1; ++i,first1+=par_task_size,first2+=static_cast<const difference_type2&>(par_task_size),dfirst+=static_cast<const difference_type3&>(par_task_size)){
+        std::array<future_type, max_par_tasks_n> futures{};
+        for (std::size_t i=0; i!=par_sizes.size(); ++i){
+            const auto par_task_size = par_sizes[i];
             futures[i] = get_pool().push(body,first1,first1+par_task_size,first2,dfirst,f);
+            first1+=par_task_size;
+            first2+=static_cast<const difference_type2&>(par_task_size);
+            dfirst+=static_cast<const difference_type3&>(par_task_size);
         }
-        body(first1,first1+last_par_task_size,first2,dfirst,f);
-        return dfirst+static_cast<const difference_type3&>(last_par_task_size);
+        return dfirst;
     }else{
-        //std::cout<<std::endl<<"}else{";
         return std::transform(first1,last1,first2,dfirst,f);
+    }
+}
+
+template<typename Policy, typename DstIt, typename It, typename BinaryF>
+void transform(Policy, DstIt first1, DstIt last1, It first2, BinaryF f){
+
+    auto body = [](auto first1_, auto last1_, auto first2_, auto f_){
+        for(;first1_!=last1_; ++first1_,++first2_){
+            *first1_ = f_(*first1_,*first2_);
+        }
+    };
+
+    if constexpr (
+        std::is_convertible_v<typename std::iterator_traits<DstIt>::iterator_category,std::random_access_iterator_tag> &&
+        std::is_convertible_v<typename std::iterator_traits<It>::iterator_category,std::random_access_iterator_tag> &&
+        !exec_policy_traits<Policy>::is_seq::value)
+    { //parallelize
+        using difference_type1 = typename std::iterator_traits<DstIt>::difference_type;
+        using difference_type2 = typename std::iterator_traits<It>::difference_type;
+        static constexpr std::size_t max_par_tasks_n = exec_policy_traits<Policy>::par_tasks::value;
+        static constexpr std::size_t min_tasks_per_par_task = 1;
+        par_task_size<difference_type1> par_sizes{last1-first1,max_par_tasks_n,min_tasks_per_par_task};
+        if (par_sizes.size()<2){
+            body(first1,last1,first2,f);
+            return;
+        }
+        using future_type = decltype(get_pool().push(body,first1,last1,first2,f));
+        std::array<future_type, max_par_tasks_n> futures{};
+        for (std::size_t i=0; i!=par_sizes.size(); ++i){
+            const auto par_task_size = par_sizes[i];
+            futures[i] = get_pool().push(body,first1,first1+par_task_size,first2,f);
+            first1+=par_task_size;
+            first2+=static_cast<const difference_type2&>(par_task_size);
+        }
+    }else{
+        body(first1,last1,first2,f);
     }
 }
 
 }   //end of namespace multithreading
 #endif
+
+
+// template<typename _InputIterator1, typename _InputIterator2, typename _Tp,
+//    typename _BinaryOperation1, typename _BinaryOperation2>
+// _GLIBCXX20_CONSTEXPR
+// _Tp
+// transform_reduce(_InputIterator1 __first1, _InputIterator1 __last1,
+// 	     _InputIterator2 __first2, _Tp __init,
+// 	     _BinaryOperation1 __binary_op1,
+// 	     _BinaryOperation2 __binary_op2)
+// {
+//   if constexpr (__and_v<__is_random_access_iter<_InputIterator1>,
+// 		    __is_random_access_iter<_InputIterator2>>)
+// {
+//   while ((__last1 - __first1) >= 4)
+//     {
+//       _Tp __v1 = __binary_op1(__binary_op2(__first1[0], __first2[0]),
+// 			      __binary_op2(__first1[1], __first2[1]));
+//       _Tp __v2 = __binary_op1(__binary_op2(__first1[2], __first2[2]),
+// 			      __binary_op2(__first1[3], __first2[3]));
+//       _Tp __v3 = __binary_op1(__v1, __v2);
+//       __init = __binary_op1(__init, __v3);
+//       __first1 += 4;
+//       __first2 += 4;
+//     }
+// }
+//   for (; __first1 != __last1; ++__first1, (void) ++__first2)
+// __init = __binary_op1(__init, __binary_op2(*__first1, *__first2));
+//   return __init;
+// }
+
+
+
+// template<typename _InputIterator, typename _Tp, typename _BinaryOperation>
+// _GLIBCXX20_CONSTEXPR
+// _Tp
+// reduce(_InputIterator __first, _InputIterator __last, _Tp __init,
+//    _BinaryOperation __binary_op)
+// {
+//   using __ref = typename iterator_traits<_InputIterator>::reference;
+//   static_assert(is_invocable_r_v<_Tp, _BinaryOperation&, _Tp&, __ref>);
+//   static_assert(is_invocable_r_v<_Tp, _BinaryOperation&, __ref, _Tp&>);
+//   static_assert(is_invocable_r_v<_Tp, _BinaryOperation&, _Tp&, _Tp&>);
+//   static_assert(is_invocable_r_v<_Tp, _BinaryOperation&, __ref, __ref>);
+//   if constexpr (__is_random_access_iter<_InputIterator>::value)
+// {
+//   while ((__last - __first) >= 4)
+//     {
+//       _Tp __v1 = __binary_op(__first[0], __first[1]);
+//       _Tp __v2 = __binary_op(__first[2], __first[3]);
+//       _Tp __v3 = __binary_op(__v1, __v2);
+//       __init = __binary_op(__init, __v3);
+//       __first += 4;
+//     }
+// }
+//   for (; __first != __last; ++__first)
+// __init = __binary_op(__init, *__first);
+//   return __init;
+// }

@@ -188,6 +188,27 @@ inline const auto axes = std::vector<std::vector<int>>{
     std::vector<int>{0,1,2,3}
 };
 
+inline const auto axes_container = std::vector<std::vector<int>>{
+    std::vector<int>{0,1},
+    std::vector<int>{0,2},
+    std::vector<int>{0,3},
+    std::vector<int>{1,2},
+    std::vector<int>{1,3},
+    std::vector<int>{2,3},
+    std::vector<int>{0,1,2},
+    std::vector<int>{1,2,3}
+};
+
+inline const auto axes_scalar = std::vector<int>{0,1,2,3};
+
+
+// inline const auto axes_scalar = std::vector<std::vector<int>>{
+//     std::vector<int>{0},
+//     std::vector<int>{1},
+//     std::vector<int>{2},
+//     std::vector<int>{3}
+// };
+
 
 }   //end of namespace benchmark_helpers
 

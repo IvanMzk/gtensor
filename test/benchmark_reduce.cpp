@@ -191,7 +191,7 @@ template<typename Shapes, typename Axes, typename Builder, typename Reducer>
 auto bench_reduce(std::string mes, std::size_t n_iters, Shapes shapes, Axes axes, Builder builder, Reducer reducer){
     using value_type = double;
     bench_reduce_helper<gtensor::tensor<value_type,c_order>>{}(mes,n_iters,shapes,axes,builder,reducer);
-    bench_reduce_helper<gtensor::tensor<value_type,f_order>>{}(mes,n_iters,shapes,axes,builder,reducer);
+    //bench_reduce_helper<gtensor::tensor<value_type,f_order>>{}(mes,n_iters,shapes,axes,builder,reducer);
 }
 
 }   //end of namespace benchmark_reduce_
@@ -316,13 +316,30 @@ TEST_CASE("benchmark_reduce","[benchmark_tensor]")
     };
 
 
-    const auto axes = benchmark_helpers::axes;
+    // const auto axes = benchmark_helpers::axes;
+    const auto axes = benchmark_helpers::axes_scalar;
+    //const auto axes = benchmark_helpers::axes_container;
 
     // const auto n_iters = 100;
     // const auto shapes = benchmark_helpers::small_shapes;
 
     const auto n_iters = 1;
-    const auto shapes = benchmark_helpers::shapes;
+    //const auto shapes = benchmark_helpers::shapes;
+    const auto shapes = std::vector<std::vector<int>>{{100000000,3,1,2}};
+
+
+    bench_reduce("reduce range sum on tensor",n_iters,std::vector<std::vector<int>>{{1000000000,2}},std::vector<int>{0},[](auto&& t){return t;},reducer_reduce_range_sum);
+    bench_reduce("reduce range sum on tensor",n_iters,std::vector<std::vector<int>>{{500000000,4}},std::vector<int>{0},[](auto&& t){return t;},reducer_reduce_range_sum);
+    bench_reduce("reduce range sum on tensor",n_iters,std::vector<std::vector<int>>{{250000000,8}},std::vector<int>{0},[](auto&& t){return t;},reducer_reduce_range_sum);
+    bench_reduce("reduce range sum on tensor",n_iters,std::vector<std::vector<int>>{{125000000,16}},std::vector<int>{0},[](auto&& t){return t;},reducer_reduce_range_sum);
+    bench_reduce("reduce range sum on tensor",n_iters,std::vector<std::vector<int>>{{62500000,32}},std::vector<int>{0},[](auto&& t){return t;},reducer_reduce_range_sum);
+    bench_reduce("reduce range sum on tensor",n_iters,std::vector<std::vector<int>>{{31250000,64}},std::vector<int>{0},[](auto&& t){return t;},reducer_reduce_range_sum);
+    bench_reduce("reduce range sum on tensor",n_iters,std::vector<std::vector<int>>{{15625000,128}},std::vector<int>{0},[](auto&& t){return t;},reducer_reduce_range_sum);
+    bench_reduce("reduce range sum on tensor",n_iters,std::vector<std::vector<int>>{{7812500,256}},std::vector<int>{0},[](auto&& t){return t;},reducer_reduce_range_sum);
+    bench_reduce("reduce range sum on tensor",n_iters,std::vector<std::vector<int>>{{3906250,512}},std::vector<int>{0},[](auto&& t){return t;},reducer_reduce_range_sum);
+    bench_reduce("reduce range sum on tensor",n_iters,std::vector<std::vector<int>>{{1953125,1024}},std::vector<int>{0},[](auto&& t){return t;},reducer_reduce_range_sum);
+
+
 
     //bench_reduce("reduce range var tmp mean",n_iters,shapes,axes,[](auto&& t){return t;},reducer_reduce_range_var_tmp_mean);
     //bench_reduce("reduce range var",n_iters,shapes,axes,[](auto&& t){return t;},reducer_reduce_range_var);
@@ -341,7 +358,7 @@ TEST_CASE("benchmark_reduce","[benchmark_tensor]")
 
     //bench_reduce("reduce range sum on tensor",n_iters,shapes,axes,[](auto&& t){return t;},reducer_reduce_range_sum);
     //bench_reduce("reduce range sum on expression view t+t+t+t+t+t+t+t+t+t",n_iters,shapes,axes,[](auto&& t){return t+t+t+t+t+t+t+t+t+t;},reducer_reduce_range_sum);
-    bench_reduce("reduce range sum on not trivial expression view t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(5,2)+t+t+t",n_iters,shapes,axes,[](auto&& t){return t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(5,2)+t+t+t;},reducer_reduce_range_sum);
+    //bench_reduce("reduce range sum on not trivial expression view t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(5,2)+t+t+t",n_iters,shapes,axes,[](auto&& t){return t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(5,2)+t+t+t;},reducer_reduce_range_sum);
 
     //bench_reduce("reduce_binary sum on tensor",n_iters,shapes,axes,[](auto&& t){return t;},reducer_reduce_binary_sum);
     //bench_reduce("reduce_binary sum on expression view t+t+t+t+t+t+t+t+t+t",n_iters,shapes,axes,[](auto&& t){return t+t+t+t+t+t+t+t+t+t;},reducer_reduce_binary_sum);

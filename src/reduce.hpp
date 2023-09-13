@@ -580,8 +580,8 @@ class reducer
                     }
                 };
                 auto traverser = axes_iterator_maker.create_random_access_traverser(walker,std::true_type{});
-                auto n_tasks = res_size;
-                constexpr std::size_t max_par_tasks = multithreading::pool_workers_n;
+                const index_type n_tasks = res_size;
+                constexpr std::size_t max_par_tasks = 4;
                 const std::size_t n_par_tasks = max_par_tasks < n_tasks ? max_par_tasks : n_tasks;
                 const index_type par_task_size = n_tasks/n_par_tasks;
                 const index_type last_par_task_size = par_task_size + n_tasks%n_par_tasks;
