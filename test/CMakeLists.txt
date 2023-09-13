@@ -31,7 +31,7 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_trivial_iterator.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_copy.cpp
 
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_multithreading.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_multithreading.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_storage.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_common.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_libdivide_helper.cpp
@@ -59,7 +59,7 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_application_specific.cpp
 #
     #${CMAKE_CURRENT_SOURCE_DIR}/test_indexing.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_reduce.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_reduce.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_manipulation.cpp
 #
     #${CMAKE_CURRENT_SOURCE_DIR}/test_math_elementwise.cpp

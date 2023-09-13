@@ -580,23 +580,24 @@ class reducer
                     }
                 };
                 auto traverser = axes_iterator_maker.create_random_access_traverser(walker,std::true_type{});
-                const index_type n_tasks = res_size;
                 constexpr std::size_t max_par_tasks = 4;
-                const std::size_t n_par_tasks = max_par_tasks < n_tasks ? max_par_tasks : n_tasks;
-                const index_type par_task_size = n_tasks/n_par_tasks;
-                const index_type last_par_task_size = par_task_size + n_tasks%n_par_tasks;
+                constexpr std::size_t min_tasks_per_par_task = 1;
+                multithreading::par_task_size<index_type> par_sizes{res_size,max_par_tasks,min_tasks_per_par_task};
+
                 using future_type = decltype(
                     std::declval<decltype(multithreading::get_pool())>().push(
                         body,
                         reduce_f,
                         res_it,
-                        res_it+par_task_size,
+                        res_it,
                         traverser,
                         std::cref(args_)...
                     )
                 );
-                std::array<future_type,max_par_tasks-1> futures{};
-                for (std::size_t i{0}; i!=n_par_tasks-1; ++i,res_it+=par_task_size,traverser.advance(i*par_task_size)){
+                std::array<future_type,max_par_tasks> futures{};
+                index_type pos{0};
+                for (std::size_t i{0}; i!=par_sizes.size(); ++i){
+                    const auto par_task_size = par_sizes[i];
                     futures[i] = multithreading::get_pool().push(
                         body,
                         reduce_f,
@@ -605,8 +606,10 @@ class reducer
                         traverser,
                         std::cref(args_)...
                     );
+                    res_it+=par_task_size;
+                    traverser.advance(pos+=par_task_size);
                 }
-                body(reduce_f,res_it,res_it+last_par_task_size,traverser,args_...);
+                //body(reduce_f,res_it,res_it+last_par_task_size,traverser,args_...);
             };
             // auto reduce_helper = [&parent,&reduce_f,&any_order,&res,&pdim,&pshape,&axes](auto walker_maker, auto begin_maker, auto end_maker,auto&&...args_){
             //     if (res.size() == index_type{1}){
