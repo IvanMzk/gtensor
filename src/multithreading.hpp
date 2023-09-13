@@ -372,22 +372,25 @@ template<typename ParSize>
 class par_task_size
 {
     using size_type = std::size_t;
+    ParSize par_tasks_number_{0};
     ParSize par_task_size_{0};
     std::size_t rem_{0};
-    std::size_t size_{0};
 public:
     template<typename Size>
     par_task_size(const ParSize& tasks_number, const Size& max_par_tasks_number, const Size& min_tasks_per_par_task)
     {
         const ParSize par_tasks_number = std::min(static_cast<const ParSize&>(max_par_tasks_number), tasks_number/static_cast<const ParSize&>(min_tasks_per_par_task));
         if (par_tasks_number!=0){
+            par_tasks_number_ = par_tasks_number;
             par_task_size_ = tasks_number/par_tasks_number;
             rem_ = static_cast<const size_type&>(tasks_number%par_tasks_number);
-            size_ = static_cast<const size_type&>(par_tasks_number);
         }
     }
     size_type size()const{
-        return size_;
+        return static_cast<const size_type&>(par_tasks_number_);
+    }
+    ParSize par_size()const{
+        return par_tasks_number_;
     }
     ParSize operator[](size_type i)const{
         return i<rem_ ? par_task_size_+ParSize{1} : par_task_size_;

@@ -172,6 +172,19 @@ inline const std::vector<std::vector<int>> small_shapes_2{
     std::vector<int>{20,20,20,20}
 };
 
+inline const std::vector<std::vector<int>> shapes_2d{
+    {{1000000000,2}},
+    {{500000000,4}},
+    {{250000000,8}},
+    {{125000000,16}},
+    {{62500000,32}},
+    {{31250000,64}},
+    {{15625000,128}},
+    {{7812500,256}},
+    {{3906250,512}},
+    {{1953125,1024}}
+};
+
 inline const auto axes = std::vector<std::vector<int>>{
     std::vector<int>{0},
     std::vector<int>{1},

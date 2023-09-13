@@ -569,6 +569,49 @@ class reducer
                 return res;
             }
             auto axes_iterator_maker = detail::make_axes_iterator_maker<config_type>(pshape,axes,traverse_order{});
+
+            // auto reduce_helper = [&reduce_f,&res_size,&axes_iterator_maker](auto walker, auto res_it, const auto&...args_){
+            //     auto body = [&axes_iterator_maker](auto f, auto res_first, auto traverser, auto offset, auto par_task_size, auto par_tasks_number, const auto&...args__){
+            //         for (offset += par_tasks_number; par_task_size!=0; --par_task_size,res_first+=par_tasks_number,traverser.to(offset),offset+=par_tasks_number){
+            //             *res_first = f(
+            //                 axes_iterator_maker.begin_complement(traverser.walker(),std::false_type{}),
+            //                 axes_iterator_maker.end_complement(traverser.walker(),std::false_type{}),
+            //                 args__...
+            //             );
+            //         }
+            //     };
+            //     auto traverser = axes_iterator_maker.create_random_access_traverser(walker,std::true_type{});
+            //     constexpr std::size_t max_par_tasks = 8;
+            //     constexpr std::size_t min_tasks_per_par_task = 1;
+            //     multithreading::par_task_size<index_type> par_sizes{res_size,max_par_tasks,min_tasks_per_par_task};
+
+            //     using future_type = decltype(
+            //         std::declval<decltype(multithreading::get_pool())>().push(
+            //             body,
+            //             reduce_f,
+            //             res_it,
+            //             traverser,
+            //             std::declval<index_type>(),
+            //             std::declval<index_type>(),
+            //             std::declval<index_type>(),
+            //             std::cref(args_)...
+            //         )
+            //     );
+            //     std::array<future_type,max_par_tasks> futures{};
+            //     for (std::size_t i{0}; i!=par_sizes.size(); ++i,++res_it,traverser.next()){
+            //         futures[i] = multithreading::get_pool().push(
+            //             body,
+            //             reduce_f,
+            //             res_it,
+            //             traverser,
+            //             static_cast<const index_type&>(i),
+            //             par_sizes[i],
+            //             par_sizes.par_size(),
+            //             std::cref(args_)...
+            //         );
+            //     }
+            // };
+
             auto reduce_helper = [&reduce_f,&res_size,&axes_iterator_maker](auto walker, auto res_it, const auto&...args_){
                 auto body = [&axes_iterator_maker](auto f, auto res_first, auto res_last, auto traverser, const auto&...args__){
                     for (;res_first!=res_last; ++res_first,traverser.next()){
@@ -580,7 +623,7 @@ class reducer
                     }
                 };
                 auto traverser = axes_iterator_maker.create_random_access_traverser(walker,std::true_type{});
-                constexpr std::size_t max_par_tasks = 4;
+                constexpr std::size_t max_par_tasks = 8;
                 constexpr std::size_t min_tasks_per_par_task = 1;
                 multithreading::par_task_size<index_type> par_sizes{res_size,max_par_tasks,min_tasks_per_par_task};
 
@@ -610,6 +653,7 @@ class reducer
                     traverser.to(pos+=par_task_size);
                 }
             };
+
             // auto reduce_helper = [&parent,&reduce_f,&any_order,&res,&pdim,&pshape,&axes](auto walker_maker, auto begin_maker, auto end_maker,auto&&...args_){
             //     if (res.size() == index_type{1}){
             //         if (pdim == dim_type{1} || any_order){   //1d or any_order, can use native order
