@@ -22,7 +22,7 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_traverser.cpp
 
     #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_iterator.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/benchmark_reduce.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_reduce.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_multithreading.cpp
 
     #${CMAKE_CURRENT_SOURCE_DIR}/benchmark_iterator_old.cpp
