@@ -71,6 +71,8 @@ template<typename T> using has_callable_random_access_iterator = has_callable_ra
 
 template<typename...> inline constexpr bool always_false = false;
 
+struct unused_args{template<typename...Args> unused_args(const Args&...){}};
+
 template<typename T, typename = void> inline constexpr bool is_container_v = false;
 template<typename T> inline constexpr bool is_container_v<T, std::void_t<decltype(std::begin(std::declval<T&>())), decltype(std::size(std::declval<T&>())), typename T::value_type>> = true;
 
