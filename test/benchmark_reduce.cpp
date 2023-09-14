@@ -317,6 +317,7 @@ TEST_CASE("benchmark_reduce","[benchmark_tensor]")
 
 
     const auto axes = benchmark_helpers::axes;
+    //const auto axes = benchmark_helpers::axes_scalar_2d;
     //const auto axes = benchmark_helpers::axes_scalar;
     //const auto axes = benchmark_helpers::axes_container;
 
@@ -325,7 +326,7 @@ TEST_CASE("benchmark_reduce","[benchmark_tensor]")
 
     const auto n_iters = 1;
     const auto shapes = benchmark_helpers::shapes;
-    //const auto shapes = std::vector<std::vector<int>>{{100000000,3,1,2}};
+    //const auto shapes = benchmark_helpers::shapes_2d;
 
 
     //bench_reduce("reduce range sum on tensor",n_iters,benchmark_helpers::shapes_2d,std::vector<int>{0},[](auto&& t){return t;},reducer_reduce_range_sum);
@@ -347,13 +348,13 @@ TEST_CASE("benchmark_reduce","[benchmark_tensor]")
     //bench_reduce("reduce binary ptp1 on tensor, single reduction for min max",n_iters,shapes,axes,[](auto&& t){return t;},reducer_reduce_binary_ptp_pair);
     //bench_reduce("reduce ptp on tensor",n_iters,shapes,axes,[](auto&& t){return t;},reducer_reduce_binary_ptp);
 
-    bench_reduce("reduce range sum on tensor",n_iters,shapes,axes,[](auto&& t){return t;},reducer_reduce_range_sum);
-    //bench_reduce("reduce range sum on expression view t+t+t+t+t+t+t+t+t+t",n_iters,shapes,axes,[](auto&& t){return t+t+t+t+t+t+t+t+t+t;},reducer_reduce_range_sum);
-    //bench_reduce("reduce range sum on not trivial expression view t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(5,2)+t+t+t",n_iters,shapes,axes,[](auto&& t){return t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(5,2)+t+t+t;},reducer_reduce_range_sum);
+    //bench_reduce("reduce range sum on tensor",n_iters,shapes,axes,[](auto&& t){return t;},reducer_reduce_range_sum);
+    //bench_reduce("reduce range sum on trivial expression view t+t+t+t+t+t+t+t+t+t",n_iters,shapes,axes,[](auto&& t){return t+t+t+t+t+t+t+t+t+t;},reducer_reduce_range_sum);
+    bench_reduce("reduce range sum on not trivial expression view t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(1,2)+t+t+t",n_iters,shapes,axes,[](auto&& t){return t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(1,2)+t+t+t;},reducer_reduce_range_sum);
 
     //bench_reduce("reduce_binary sum on tensor",n_iters,shapes,axes,[](auto&& t){return t;},reducer_reduce_binary_sum);
-    //bench_reduce("reduce_binary sum on expression view t+t+t+t+t+t+t+t+t+t",n_iters,shapes,axes,[](auto&& t){return t+t+t+t+t+t+t+t+t+t;},reducer_reduce_binary_sum);
-    //bench_reduce("reduce binary sum on not trivial expression view t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(5,2)+t+t+t",n_iters,shapes,axes,[](auto&& t){return t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(5,2)+t+t+t;},reducer_reduce_binary_sum);
+    //bench_reduce("reduce_binary sum on trivial expression view t+t+t+t+t+t+t+t+t+t",n_iters,shapes,axes,[](auto&& t){return t+t+t+t+t+t+t+t+t+t;},reducer_reduce_binary_sum);
+    //bench_reduce("reduce binary sum on not trivial expression view t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(1,2)+t+t+t",n_iters,shapes,axes,[](auto&& t){return t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(1,2)+t+t+t;},reducer_reduce_binary_sum);
 
 }
 

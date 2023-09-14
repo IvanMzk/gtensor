@@ -389,9 +389,6 @@ public:
     size_type size()const{
         return static_cast<const size_type&>(par_tasks_number_);
     }
-    ParSize par_size()const{
-        return par_tasks_number_;
-    }
     ParSize operator[](size_type i)const{
         return i<rem_ ? par_task_size_+ParSize{1} : par_task_size_;
     }

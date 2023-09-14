@@ -140,6 +140,18 @@ inline const std::vector<std::vector<int>> shapes{
     std::vector<int>{50,6,1000,2000}
 };
 
+inline const std::vector<std::vector<int>> shapes_2d{
+    std::vector<int>{100000000,6},
+    std::vector<int>{10000000,60},
+    std::vector<int>{1000000,600},
+    std::vector<int>{100000,6000},
+    std::vector<int>{10000,60000},
+    std::vector<int>{1000,600000},
+    std::vector<int>{100,6000000},
+    std::vector<int>{10,60000000},
+    std::vector<int>{5,120000000},
+};
+
 inline const std::vector<std::vector<int>> small_shapes{
     std::vector<int>{1000000,3,1,2},
     std::vector<int>{100000,3,1,20},
@@ -172,18 +184,18 @@ inline const std::vector<std::vector<int>> small_shapes_2{
     std::vector<int>{20,20,20,20}
 };
 
-inline const std::vector<std::vector<int>> shapes_2d{
-    {{1000000000,2}},
-    {{500000000,4}},
-    {{250000000,8}},
-    {{125000000,16}},
-    {{62500000,32}},
-    {{31250000,64}},
-    {{15625000,128}},
-    {{7812500,256}},
-    {{3906250,512}},
-    {{1953125,1024}}
-};
+// inline const std::vector<std::vector<int>> shapes_2d{
+//     {{1000000000,2}},
+//     {{500000000,4}},
+//     {{250000000,8}},
+//     {{125000000,16}},
+//     {{62500000,32}},
+//     {{31250000,64}},
+//     {{15625000,128}},
+//     {{7812500,256}},
+//     {{3906250,512}},
+//     {{1953125,1024}}
+// };
 
 inline const auto axes = std::vector<std::vector<int>>{
     std::vector<int>{0},
@@ -213,6 +225,7 @@ inline const auto axes_container = std::vector<std::vector<int>>{
 };
 
 inline const auto axes_scalar = std::vector<int>{0,1,2,3};
+inline const auto axes_scalar_2d = std::vector<int>{0,1};
 
 
 // inline const auto axes_scalar = std::vector<std::vector<int>>{
