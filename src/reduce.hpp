@@ -307,10 +307,10 @@ template<std::size_t N> struct reduce_bin : std::integral_constant<std::size_t,N
 template<std::size_t N> struct reduce_rng : std::integral_constant<std::size_t,N>{};
 
 template<typename...> struct reduce_policy_traits;
-template<template<typename U,U> typename P, typename T, T V>
-struct reduce_policy_traits<P<T,V>>{
-    using policy_type = P<T,V>;
-    using exec_policy = policy_type;
+template<template<std::size_t> typename P, std::size_t V>
+struct reduce_policy_traits<P<V>>{
+    using policy_type = P<V>;
+    using exec_policy = multithreading::exec_pol<V>;
     using is_reduce_auto = std::is_same<policy_type,reduce_auto<V>>;
     using is_reduce_bin = std::is_same<policy_type,reduce_bin<V>>;
     using is_reduce_rng = std::is_same<policy_type,reduce_rng<V>>;

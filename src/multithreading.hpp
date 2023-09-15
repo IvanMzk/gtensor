@@ -403,13 +403,22 @@ inline auto& get_pool(){
 }
 
 template<typename...> struct exec_policy_traits;
-template<template<typename U,U> typename P, typename T, T V>
-struct exec_policy_traits<P<T,V>>{
+template<template<std::size_t> typename P, std::size_t V>
+struct exec_policy_traits<P<V>>{
     using par_tasks = std::conditional_t<V==0, std::integral_constant<std::size_t,pool_workers_n>, std::integral_constant<std::size_t,V>>;
     using is_seq = std::bool_constant<par_tasks::value==1>;
 };
 
-template<std::size_t N> using exec_pol = std::integral_constant<std::size_t,N>;
+template<std::size_t N> struct exec_pol : std::integral_constant<std::size_t,N>{};
+
+// template<typename...> struct exec_policy_traits;
+// template<template<typename U,U> typename P, typename T, T V>
+// struct exec_policy_traits<P<T,V>>{
+//     using par_tasks = std::conditional_t<V==0, std::integral_constant<std::size_t,pool_workers_n>, std::integral_constant<std::size_t,V>>;
+//     using is_seq = std::bool_constant<par_tasks::value==1>;
+// };
+
+// template<std::size_t N> using exec_pol = std::integral_constant<std::size_t,N>;
 
 template<typename Policy, typename It, typename Initial, typename BinaryF>
 auto reduce(Policy, It first, It last, Initial initial, BinaryF f){
