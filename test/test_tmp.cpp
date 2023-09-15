@@ -19,6 +19,18 @@ struct sum
     }
 };
 
+struct cumsum{
+    template<typename It, typename DstIt>
+    void operator()(It first, It, DstIt dfirst, DstIt dlast){
+        auto cumsum_ = *first;
+        *dfirst = cumsum_;
+        for(++dfirst,++first; dfirst!=dlast; ++dfirst,++first){
+            cumsum_+=*first;
+            *dfirst = cumsum_;
+        }
+    }
+};
+
 
 }
 
@@ -41,9 +53,10 @@ TEST_CASE("test_tmp","[test_tmp]")
 
 
     //auto t = tensor<double,c_order>{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}};
-    auto t = tensor<double,c_order>{{1},{2},{3},{4},{5},{6}};
+    //auto t = tensor<double,c_order>{{1},{2},{3},{4},{5},{6}};
+    auto t = tensor<double,c_order>{{1,2,3},{4,5,6},{7,8,9},{10,11,12}};
 
-    auto r = gtensor::reduce(t,std::vector<int>{1},test_tmp::sum{},false,true);
+    auto r = gtensor::slide<double>(multithreading::exec_pol<4>{},t,1,test_tmp::cumsum{},1,1);
 
     std::cout<<std::endl<<r;
 

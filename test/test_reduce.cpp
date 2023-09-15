@@ -1538,17 +1538,48 @@ TEST_CASE("test_slide","[test_reduce]")
         std::make_tuple(test_ten+test_ten(0)+test_ten(1,2)+test_ten(2,3), dim_type{0}, cumsum{}, index_type{1}, index_type{1}, tensor_type{{{11,13,18,19,16},{7,9,10,23,8},{23,13,14,9,8},{7,23,18,19,22}},{{21,29,35,40,27},{20,22,18,43,17},{40,25,23,19,16},{20,45,32,39,43}},{{37,46,47,57,45},{29,34,33,59,27},{58,44,38,31,30},{32,69,47,61,62}}}),
         std::make_tuple((test_ten-test_ten(0))*(test_ten(1,2)+test_ten(2,3)), dim_type{2}, cumsum{}, index_type{1}, index_type{1}, tensor_type{{{0,0,0,0,0},{0,0,0,0,0},{0,0,0,0,0},{0,0,0,0,0}},{{-7,20,16,34,4},{42,78,70,43,49},{-42,-51,-71,-62,-62},{42,33,17,26,20}},{{35,71,47,29,41},{14,41,61,-2,10},{-35,19,23,50,86},{35,44,32,59,41}}})
     );
-    auto test = [](const auto& t){
-        auto tensor = std::get<0>(t);
-        auto axis = std::get<1>(t);
-        auto functor = std::get<2>(t);
-        auto window_size = std::get<3>(t);
-        auto window_step = std::get<4>(t);
-        auto expected = std::get<5>(t);
-        auto result = slide<value_type>(tensor, axis, functor, window_size, window_step);
-        REQUIRE(result == expected);
-    };
-    apply_by_element(test, test_data);
+    SECTION("exec_pol<1>")
+    {
+        auto test = [](const auto& t){
+            auto tensor = std::get<0>(t);
+            auto axis = std::get<1>(t);
+            auto functor = std::get<2>(t);
+            auto window_size = std::get<3>(t);
+            auto window_step = std::get<4>(t);
+            auto expected = std::get<5>(t);
+            auto result = slide<value_type>(multithreading::exec_pol<1>{}, tensor, axis, functor, window_size, window_step);
+            REQUIRE(result == expected);
+        };
+        apply_by_element(test, test_data);
+    }
+    SECTION("exec_pol<4>")
+    {
+        auto test = [](const auto& t){
+            auto tensor = std::get<0>(t);
+            auto axis = std::get<1>(t);
+            auto functor = std::get<2>(t);
+            auto window_size = std::get<3>(t);
+            auto window_step = std::get<4>(t);
+            auto expected = std::get<5>(t);
+            auto result = slide<value_type>(multithreading::exec_pol<4>{}, tensor, axis, functor, window_size, window_step);
+            REQUIRE(result == expected);
+        };
+        apply_by_element(test, test_data);
+    }
+    SECTION("exec_pol<0>")
+    {
+        auto test = [](const auto& t){
+            auto tensor = std::get<0>(t);
+            auto axis = std::get<1>(t);
+            auto functor = std::get<2>(t);
+            auto window_size = std::get<3>(t);
+            auto window_step = std::get<4>(t);
+            auto expected = std::get<5>(t);
+            auto result = slide<value_type>(multithreading::exec_pol<0>{}, tensor, axis, functor, window_size, window_step);
+            REQUIRE(result == expected);
+        };
+        apply_by_element(test, test_data);
+    }
 }
 
 TEMPLATE_TEST_CASE("test_slide_flatten","[test_reduce]",
@@ -1617,18 +1648,51 @@ TEST_CASE("test_slide_custom_arg","[test_reduce]")
         std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9}}, dim_type{0}, moving_avarage{}, index_type{2}, index_type{1}, value_type{2}, tensor_type{{2,3,4},{5,6,7}}),
         std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9}}, dim_type{1}, moving_avarage{}, index_type{2}, index_type{1}, value_type{2}, tensor_type{{1,2},{4,5},{7,8}})
     );
-    auto test = [](const auto& t){
-        auto tensor = std::get<0>(t);
-        auto axis = std::get<1>(t);
-        auto functor = std::get<2>(t);
-        auto window_size = std::get<3>(t);
-        auto window_step = std::get<4>(t);
-        auto denom = std::get<5>(t);
-        auto expected = std::get<6>(t);
-        auto result = slide<value_type>(tensor, axis, functor, window_size, window_step, window_size, window_step, denom);
-        REQUIRE(result == expected);
-    };
-    apply_by_element(test, test_data);
+    SECTION("exec_pol<1>")
+    {
+        auto test = [](const auto& t){
+            auto tensor = std::get<0>(t);
+            auto axis = std::get<1>(t);
+            auto functor = std::get<2>(t);
+            auto window_size = std::get<3>(t);
+            auto window_step = std::get<4>(t);
+            auto denom = std::get<5>(t);
+            auto expected = std::get<6>(t);
+            auto result = slide<value_type>(multithreading::exec_pol<1>{}, tensor, axis, functor, window_size, window_step, window_size, window_step, denom);
+            REQUIRE(result == expected);
+        };
+        apply_by_element(test, test_data);
+    }
+    SECTION("exec_pol<4>")
+    {
+        auto test = [](const auto& t){
+            auto tensor = std::get<0>(t);
+            auto axis = std::get<1>(t);
+            auto functor = std::get<2>(t);
+            auto window_size = std::get<3>(t);
+            auto window_step = std::get<4>(t);
+            auto denom = std::get<5>(t);
+            auto expected = std::get<6>(t);
+            auto result = slide<value_type>(multithreading::exec_pol<4>{}, tensor, axis, functor, window_size, window_step, window_size, window_step, denom);
+            REQUIRE(result == expected);
+        };
+        apply_by_element(test, test_data);
+    }
+    SECTION("exec_pol<0>")
+    {
+        auto test = [](const auto& t){
+            auto tensor = std::get<0>(t);
+            auto axis = std::get<1>(t);
+            auto functor = std::get<2>(t);
+            auto window_size = std::get<3>(t);
+            auto window_step = std::get<4>(t);
+            auto denom = std::get<5>(t);
+            auto expected = std::get<6>(t);
+            auto result = slide<value_type>(multithreading::exec_pol<0>{}, tensor, axis, functor, window_size, window_step, window_size, window_step, denom);
+            REQUIRE(result == expected);
+        };
+        apply_by_element(test, test_data);
+    }
 }
 
 TEST_CASE("test_slide_exception","[test_reduce]")
@@ -1660,7 +1724,7 @@ TEST_CASE("test_slide_exception","[test_reduce]")
         auto functor = std::get<2>(t);
         auto window_size = std::get<3>(t);
         auto window_step = std::get<4>(t);
-        REQUIRE_THROWS_AS(slide<value_type>(tensor, axis, functor, window_size, window_step), value_error);
+        REQUIRE_THROWS_AS(slide<value_type>(multithreading::exec_pol<1>{}, tensor, axis, functor, window_size, window_step), value_error);
     };
     apply_by_element(test, test_data);
 }
