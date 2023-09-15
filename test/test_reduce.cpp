@@ -1775,14 +1775,41 @@ TEST_CASE("test_transform","[test_reduce]")
         std::make_tuple(tensor_type{{{2,1,3},{3,0,1}},{{0,2,1},{3,0,1}}}, dim_type{1}, sort{}, tensor_type{{{2,0,1},{3,1,3}},{{0,0,1},{3,2,1}}}),
         std::make_tuple(tensor_type{{{2,1,3},{3,0,1}},{{0,2,1},{3,0,1}}}, dim_type{2}, sort{}, tensor_type{{{1,2,3},{0,1,3}},{{0,1,2},{0,1,3}}})
     );
-    auto test = [](const auto& t){
-        auto tensor = std::get<0>(t);
-        auto axis = std::get<1>(t);
-        auto functor = std::get<2>(t);
-        auto expected = std::get<3>(t);
-        transform(tensor, axis, functor);
-        REQUIRE(tensor == expected);
-    };
-    apply_by_element(test, test_data);
+    SECTION("exec_policy<1>")
+    {
+        auto test = [](const auto& t){
+            auto tensor = std::get<0>(t);
+            auto axis = std::get<1>(t);
+            auto functor = std::get<2>(t);
+            auto expected = std::get<3>(t);
+            transform(multithreading::exec_pol<1>{}, tensor, axis, functor);
+            REQUIRE(tensor == expected);
+        };
+        apply_by_element(test, test_data);
+    }
+    SECTION("exec_policy<4>")
+    {
+        auto test = [](const auto& t){
+            auto tensor = std::get<0>(t);
+            auto axis = std::get<1>(t);
+            auto functor = std::get<2>(t);
+            auto expected = std::get<3>(t);
+            transform(multithreading::exec_pol<4>{}, tensor, axis, functor);
+            REQUIRE(tensor == expected);
+        };
+        apply_by_element(test, test_data);
+    }
+    SECTION("exec_policy<0>")
+    {
+        auto test = [](const auto& t){
+            auto tensor = std::get<0>(t);
+            auto axis = std::get<1>(t);
+            auto functor = std::get<2>(t);
+            auto expected = std::get<3>(t);
+            transform(multithreading::exec_pol<0>{}, tensor, axis, functor);
+            REQUIRE(tensor == expected);
+        };
+        apply_by_element(test, test_data);
+    }
 }
 

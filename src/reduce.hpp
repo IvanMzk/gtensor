@@ -821,31 +821,65 @@ class reducer
         return res;
     }
 
-    template<typename F, typename DimT, typename...Ts, typename...Args>
-    static void transform_(basic_tensor<Ts...>& parent, const DimT& axis_, F transform_f, const Args&...args){
+    template<typename Policy, typename F, typename DimT, typename...Ts, typename...Args>
+    static void transform_(Policy, basic_tensor<Ts...>& parent, const DimT& axis_, F transform_f, const Args&...args){
         using parent_type = basic_tensor<Ts...>;
         using order = typename parent_type::order;
         using config_type = typename parent_type::config_type;
         using dim_type = typename config_type::dim_type;
+        using index_type = typename config_type::index_type;
 
         const auto& pshape = parent.shape();
         const dim_type axis = detail::make_axis(pshape,axis_);
         detail::check_transform_args(pshape, axis);
-        const auto pdim = parent.dim();
-        if (pdim == dim_type{1}){
+
+        if (parent.dim() == dim_type{1}){
             auto a = parent.traverse_order_adapter(order{});
             transform_f(a.begin(), a.end(), args...);
         }else{
             auto axes_iterator_maker = detail::make_axes_iterator_maker<config_type>(pshape,axis,order{});
-            auto traverser = axes_iterator_maker.create_forward_traverser(parent.create_walker(),std::true_type{});
-            do{
-                //0first,1last,2args
-                transform_f(
-                    axes_iterator_maker.begin_complement(traverser.walker(),std::false_type{}),
-                    axes_iterator_maker.end_complement(traverser.walker(),std::false_type{}),
-                    args...
+            auto body = [&axes_iterator_maker](auto f, auto traverser, auto n, const auto&...args){
+                for (;n!=0; --n,traverser.next()){
+                    f(
+                        axes_iterator_maker.begin_complement(traverser.walker(),std::false_type{}),
+                        axes_iterator_maker.end_complement(traverser.walker(),std::false_type{}),
+                        args...
+                    );
+                }
+            };
+
+            auto traverser = axes_iterator_maker.create_random_access_traverser(parent.create_walker(),std::true_type{});
+            const auto axis_size = pshape[axis];
+            const auto tasks_number = parent.size()/axis_size;
+            if constexpr (multithreading::exec_policy_traits<Policy>::is_seq::value){
+                body(transform_f,traverser,tasks_number,args...);
+            }else{  //parallelize
+                constexpr std::size_t max_par_tasks = multithreading::exec_policy_traits<Policy>::par_tasks::value;
+                constexpr std::size_t min_tasks_per_par_task = 1;
+                multithreading::par_task_size<index_type> par_sizes{tasks_number,max_par_tasks,min_tasks_per_par_task};
+                using future_type = decltype(
+                    std::declval<decltype(multithreading::get_pool())>().push(
+                        body,
+                        transform_f,
+                        traverser,
+                        tasks_number,
+                        std::cref(args)...
+                    )
                 );
-            }while(traverser.template next<order>());
+                std::array<future_type,max_par_tasks> futures{};
+                index_type pos{0};
+                for (std::size_t i{0}; i!=par_sizes.size(); ++i){
+                    const auto par_task_size = par_sizes[i];
+                    futures[i] = multithreading::get_pool().push(
+                        body,
+                        transform_f,
+                        traverser,
+                        par_task_size,
+                        std::cref(args)...
+                    );
+                    traverser.to(pos+=par_task_size);
+                }
+            }
         }
     }
 
@@ -891,9 +925,9 @@ public:
         return slide_flatten_<ResultT>(t,f,window_size,window_step,args...);
     }
 
-    template<typename...Ts, typename DimT, typename F, typename...Args>
-    static void transform(basic_tensor<Ts...>& t, const DimT& axis, F f, const Args&...args){
-        transform_(t,axis,f,args...);
+    template<typename Policy, typename...Ts, typename DimT, typename F, typename...Args>
+    static void transform(Policy policy, basic_tensor<Ts...>& t, const DimT& axis, F f, const Args&...args){
+        transform_(policy,t,axis,f,args...);
     }
 
 };
@@ -969,10 +1003,10 @@ auto slide_flatten(const basic_tensor<Ts...>& t, F f, const IdxT& window_size, c
 //transform tensor inplace along specified axis
 //F is transform functor that takes iterators range of data to be transformed
 //F call operator must be defined like this: template<typename It, typename...Args> void operator()(It first, It last, Args..){...} Args is optional parameters
-template<typename...Ts, typename DimT, typename F, typename...Args>
-void transform(basic_tensor<Ts...>& t, const DimT& axis, F f, const Args&...args){
+template<typename Policy, typename...Ts, typename DimT, typename F, typename...Args>
+void transform(Policy policy, basic_tensor<Ts...>& t, const DimT& axis, F f, const Args&...args){
     using config_type = typename basic_tensor<Ts...>::config_type;
-    reducer_selector_t<config_type>::transform(t, axis, f, args...);
+    reducer_selector_t<config_type>::transform(policy, t, axis, f, args...);
 }
 
 }   //end of namespace gtensor
