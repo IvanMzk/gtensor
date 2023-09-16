@@ -52,19 +52,19 @@ static auto NAME(const basic_tensor<Ts...>& t, bool keep_dims){\
 #define GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(NAME,POLICY,BINARY_F,RANGE_F,ANY_ORDER,INITIAL)\
 template<typename Policy, typename...Ts, typename Axes, typename Initial>\
 static auto NAME(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims, const Initial& initial){\
-    return reduce(policy,t,axes,BINARY_F{},RANGE_F{},keep_dims,ANY_ORDER,detail::make_initial(INITIAL,initial));\
+    return reduce(policy,t,axes,BINARY_F{},RANGE_F{},keep_dims,ANY_ORDER,detail::make_initial(INITIAL,initial),detail::make_initial(INITIAL,initial));\
 }\
 template<typename Policy, typename...Ts, typename Initial>\
 static auto NAME(Policy policy, const basic_tensor<Ts...>& t, bool keep_dims, const Initial& initial){\
-    return reduce_flatten(policy,t,BINARY_F{},RANGE_F{},keep_dims,ANY_ORDER,detail::make_initial(INITIAL,initial));\
+    return reduce_flatten(policy,t,BINARY_F{},RANGE_F{},keep_dims,ANY_ORDER,detail::make_initial(INITIAL,initial),detail::make_initial(INITIAL,initial));\
 }\
 template<typename...Ts, typename Axes, typename Initial>\
 static auto NAME(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims, const Initial& initial){\
-    return reduce(POLICY{},t,axes,BINARY_F{},RANGE_F{},keep_dims,ANY_ORDER,detail::make_initial(INITIAL,initial));\
+    return reduce(POLICY{},t,axes,BINARY_F{},RANGE_F{},keep_dims,ANY_ORDER,detail::make_initial(INITIAL,initial),detail::make_initial(INITIAL,initial));\
 }\
 template<typename...Ts, typename Initial>\
 static auto NAME(const basic_tensor<Ts...>& t, bool keep_dims, const Initial& initial){\
-    return reduce_flatten(POLICY{},t,BINARY_F{},RANGE_F{},keep_dims,ANY_ORDER,detail::make_initial(INITIAL,initial));\
+    return reduce_flatten(POLICY{},t,BINARY_F{},RANGE_F{},keep_dims,ANY_ORDER,detail::make_initial(INITIAL,initial),detail::make_initial(INITIAL,initial));\
 }
 
 #define GTENSOR_TENSOR_MATH_CUMULATE_FUNCTION(NAME,POLICY,F)\
@@ -378,6 +378,21 @@ GTENSOR_TENSOR_MATH_ROUTINE(lcm,lcm);
 //axes may be scalar or container if multiple axes permitted
 
 #define GTENSOR_TENSOR_MATH_REDUCE_ROUTINE(NAME,F)\
+template<typename Policy, typename...Ts, typename Axes>\
+auto NAME(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){\
+    using config_type = typename basic_tensor<Ts...>::config_type;\
+    return tensor_math_selector_t<config_type>::F(policy,t,axes,keep_dims);\
+}\
+template<typename Policy, typename...Ts, typename DimT>\
+auto NAME(Policy policy, const basic_tensor<Ts...>& t, std::initializer_list<DimT> axes, bool keep_dims = false){\
+    using config_type = typename basic_tensor<Ts...>::config_type;\
+    return tensor_math_selector_t<config_type>::F(policy,t,axes,keep_dims);\
+}\
+template<typename Policy, typename...Ts>\
+auto NAME(Policy policy, const basic_tensor<Ts...>& t, bool keep_dims = false){\
+    using config_type = typename basic_tensor<Ts...>::config_type;\
+    return tensor_math_selector_t<config_type>::F(policy,t,keep_dims);\
+}\
 template<typename...Ts, typename Axes>\
 auto NAME(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){\
     using config_type = typename basic_tensor<Ts...>::config_type;\
@@ -395,6 +410,21 @@ auto NAME(const basic_tensor<Ts...>& t, bool keep_dims = false){\
 }
 
 #define GTENSOR_TENSOR_MATH_REDUCE_INITIAL_ROUTINE(NAME,F)\
+template<typename Policy, typename...Ts, typename Axes, typename Initial = gtensor::detail::no_value>\
+auto NAME(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false, const Initial& initial = Initial{}){\
+    using config_type = typename basic_tensor<Ts...>::config_type;\
+    return tensor_math_selector_t<config_type>::F(policy,t,axes,keep_dims,initial);\
+}\
+template<typename Policy, typename...Ts, typename DimT, typename Initial = gtensor::detail::no_value>\
+auto NAME(Policy policy, const basic_tensor<Ts...>& t, std::initializer_list<DimT> axes, bool keep_dims = false, const Initial& initial = Initial{}){\
+    using config_type = typename basic_tensor<Ts...>::config_type;\
+    return tensor_math_selector_t<config_type>::F(policy,t,axes,keep_dims,initial);\
+}\
+template<typename Policy, typename...Ts, typename Initial = gtensor::detail::no_value>\
+auto NAME(Policy policy, const basic_tensor<Ts...>& t, bool keep_dims = false, const Initial& initial = Initial{}){\
+    using config_type = typename basic_tensor<Ts...>::config_type;\
+    return tensor_math_selector_t<config_type>::F(policy,t,keep_dims,initial);\
+}\
 template<typename...Ts, typename Axes, typename Initial = gtensor::detail::no_value>\
 auto NAME(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false, const Initial& initial = Initial{}){\
     using config_type = typename basic_tensor<Ts...>::config_type;\
