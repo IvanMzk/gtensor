@@ -63,7 +63,7 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_SOURCE_DIR}/test_manipulation.cpp
 #
     #${CMAKE_CURRENT_SOURCE_DIR}/test_math_elementwise.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_math_along_axes.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_math_along_axes.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_statistic.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search.cpp
 #

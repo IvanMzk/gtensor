@@ -9,6 +9,19 @@
 
 namespace gtensor{
 
+namespace detail{
+
+template<typename DefaultInitial, typename Initial>
+auto make_initial(const DefaultInitial& default_initial, const Initial& initial){
+    if constexpr (std::is_same_v<gtensor::detail::no_value,Initial>){
+        return default_initial;
+    }else{
+        return initial;
+    }
+}
+
+}   //end of namespace detail
+
 //tensor math implementation
 
 #define GTENSOR_TENSOR_MATH_FUNCTION(NAME,F)\
@@ -18,42 +31,50 @@ static auto NAME(Args&&...args){\
     return n_operator(F{},std::forward<Args>(args)...);\
 }
 
-#define GTENSOR_TENSOR_MATH_REDUCE_FUNCTION(NAME,F,INITIAL)\
+#define GTENSOR_TENSOR_MATH_REDUCE_FUNCTION(NAME,POLICY,BINARY_F,RANGE_F,ANY_ORDER,INITIAL)\
+template<typename Policy, typename...Ts, typename Axes>\
+static auto NAME(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims){\
+    return reduce(policy,t,axes,BINARY_F{},RANGE_F{},keep_dims,ANY_ORDER,INITIAL);\
+}\
+template<typename Policy, typename...Ts>\
+static auto NAME(Policy policy, const basic_tensor<Ts...>& t, bool keep_dims){\
+    return reduce_flatten(policy,t,BINARY_F{},RANGE_F{},keep_dims,ANY_ORDER,INITIAL);\
+}\
 template<typename...Ts, typename Axes>\
 static auto NAME(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims){\
-    return reduce_binary(t,axes,F{},keep_dims,INITIAL);\
+    return reduce(POLICY{},t,axes,BINARY_F{},RANGE_F{},keep_dims,ANY_ORDER,INITIAL);\
 }\
 template<typename...Ts>\
 static auto NAME(const basic_tensor<Ts...>& t, bool keep_dims){\
-    return reduce_binary_flatten(t,F{},keep_dims,INITIAL);\
+    return reduce_flatten(POLICY{},t,BINARY_F{},RANGE_F{},keep_dims,ANY_ORDER,INITIAL);\
 }
 
-#define GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(NAME,F,INITIAL)\
+#define GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(NAME,POLICY,BINARY_F,RANGE_F,ANY_ORDER,INITIAL)\
+template<typename Policy, typename...Ts, typename Axes, typename Initial>\
+static auto NAME(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims, const Initial& initial){\
+    return reduce(policy,t,axes,BINARY_F{},RANGE_F{},keep_dims,ANY_ORDER,detail::make_initial(INITIAL,initial));\
+}\
+template<typename Policy, typename...Ts, typename Initial>\
+static auto NAME(Policy policy, const basic_tensor<Ts...>& t, bool keep_dims, const Initial& initial){\
+    return reduce_flatten(policy,t,BINARY_F{},RANGE_F{},keep_dims,ANY_ORDER,detail::make_initial(INITIAL,initial));\
+}\
 template<typename...Ts, typename Axes, typename Initial>\
 static auto NAME(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims, const Initial& initial){\
-    if constexpr (std::is_same_v<gtensor::detail::no_value,Initial>){\
-        return reduce_binary(t,axes,F{},keep_dims,INITIAL);\
-    }else{\
-        return reduce_binary(t,axes,F{},keep_dims,initial);\
-    }\
+    return reduce(POLICY{},t,axes,BINARY_F{},RANGE_F{},keep_dims,ANY_ORDER,detail::make_initial(INITIAL,initial));\
 }\
 template<typename...Ts, typename Initial>\
 static auto NAME(const basic_tensor<Ts...>& t, bool keep_dims, const Initial& initial){\
-    if constexpr (std::is_same_v<gtensor::detail::no_value,Initial>){\
-        return reduce_binary_flatten(t,F{},keep_dims,INITIAL);\
-    }else{\
-        return reduce_binary_flatten(t,F{},keep_dims,initial);\
-    }\
+    return reduce_flatten(POLICY{},t,BINARY_F{},RANGE_F{},keep_dims,ANY_ORDER,detail::make_initial(INITIAL,initial));\
 }
 
-#define GTENSOR_TENSOR_MATH_CUMULATE_FUNCTION(NAME,F)\
-template<typename...Ts, typename DimT>\
-static auto NAME(const basic_tensor<Ts...>& t, const DimT& axis){\
+#define GTENSOR_TENSOR_MATH_CUMULATE_FUNCTION(NAME,POLICY,F)\
+template<typename Policy, typename...Ts, typename DimT>\
+static auto NAME(Policy policy, const basic_tensor<Ts...>& t, const DimT& axis){\
     using index_type = typename basic_tensor<Ts...>::index_type;\
     using value_type = typename basic_tensor<Ts...>::value_type;\
     const index_type window_size = 1;\
     const index_type window_step = 1;\
-    return slide<value_type>(t,axis,F{}, window_size, window_step);\
+    return slide<value_type>(policy,t,axis,F{}, window_size, window_step);\
 }\
 template<typename...Ts>\
 static auto NAME(const basic_tensor<Ts...>& t){\
@@ -62,6 +83,14 @@ static auto NAME(const basic_tensor<Ts...>& t){\
     const index_type window_size = 1;\
     const index_type window_step = 1;\
     return slide_flatten<value_type>(t,F{}, window_size, window_step);\
+}\
+template<typename...Ts, typename DimT>\
+static auto NAME(const basic_tensor<Ts...>& t, const DimT& axis){\
+    using index_type = typename basic_tensor<Ts...>::index_type;\
+    using value_type = typename basic_tensor<Ts...>::value_type;\
+    const index_type window_size = 1;\
+    const index_type window_step = 1;\
+    return slide<value_type>(POLICY{},t,axis,F{}, window_size, window_step);\
 }
 
 struct tensor_math
@@ -149,67 +178,75 @@ struct tensor_math
     //axes may be scalar or container if multiple axes permitted
     //empty container means apply function along all axes
 
+    using default_policy = reduce_auto<1>;
+
     //test if all elements along given axes evaluate to true
     //axes may be scalar or container
-    GTENSOR_TENSOR_MATH_REDUCE_FUNCTION(all,math_reduce_operations::logical_binary_operation<std::logical_and<void>>,true);
+    GTENSOR_TENSOR_MATH_REDUCE_FUNCTION(all,default_policy,math_reduce_operations::logical_binary_operation<std::logical_and<void>>,math_reduce_operations::all,true,true);
 
     //test if any of elements along given axes evaluate to true
     //axes may be scalar or container
-    GTENSOR_TENSOR_MATH_REDUCE_FUNCTION(any,math_reduce_operations::logical_binary_operation<std::logical_or<void>>,false);
+    GTENSOR_TENSOR_MATH_REDUCE_FUNCTION(any,default_policy,math_reduce_operations::logical_binary_operation<std::logical_or<void>>,math_reduce_operations::any,true,false);
 
     //min element along given axes
     //axes may be scalar or container
-    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(amin,math_reduce_operations::nan_propagate_comparator<std::less<void>>,gtensor::detail::no_value{});
+    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(amin,default_policy,math_reduce_operations::nan_propagate_comparator<std::less<void>>,math_reduce_operations::amin,true,detail::no_value{});
 
-    // //max element along given axes
+    //max element along given axes
     // //axes may be scalar or container
-    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(amax,math_reduce_operations::nan_propagate_comparator<std::greater<void>>,gtensor::detail::no_value{});
+    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(amax,default_policy,math_reduce_operations::nan_propagate_comparator<std::greater<void>>,math_reduce_operations::amax,true,detail::no_value{});
 
     //sum elements along given axes
     //axes may be scalar or container
-    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(sum,math_reduce_operations::nan_propagate_operation<std::plus<void>>,typename basic_tensor<Ts...>::value_type{0});
+    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(sum,default_policy,math_reduce_operations::nan_propagate_operation<std::plus<void>>,math_reduce_operations::sum,true,typename basic_tensor<Ts...>::value_type{0});
 
     //multiply elements along given axes
     //axes may be scalar or container
-    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(prod,math_reduce_operations::nan_propagate_operation<std::multiplies<void>>,typename basic_tensor<Ts...>::value_type{1});
+    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(prod,default_policy,math_reduce_operations::nan_propagate_operation<std::multiplies<void>>,math_reduce_operations::prod,true,typename basic_tensor<Ts...>::value_type{1});
 
     //cumulative sum along given axis
     //axis is scalar
-    GTENSOR_TENSOR_MATH_CUMULATE_FUNCTION(cumsum,math_reduce_operations::cumsum);
+    GTENSOR_TENSOR_MATH_CUMULATE_FUNCTION(cumsum,default_policy,math_reduce_operations::cumsum);
 
     //cumulative product along given axis
     //axis is scalar
-    GTENSOR_TENSOR_MATH_CUMULATE_FUNCTION(cumprod,math_reduce_operations::cumprod);
+    GTENSOR_TENSOR_MATH_CUMULATE_FUNCTION(cumprod,default_policy,math_reduce_operations::cumprod);
 
     //nan versions
     //min element along given axes ignoring nan
     //axes may be scalar or container
-    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(nanmin,math_reduce_operations::nan_ignore_comparator<std::less<void>>,gtensor::detail::no_value{});
+    //GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(nanmin,math_reduce_operations::nan_ignore_comparator<std::less<void>>,gtensor::detail::no_value{});
+    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(nanmin,default_policy,math_reduce_operations::nan_ignore_comparator<std::less<void>>,math_reduce_operations::nanmin,true,detail::no_value{});
 
     //max element along given axes ignoring nan
     //axes may be scalar or container
-    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(nanmax,math_reduce_operations::nan_ignore_comparator<std::greater<void>>,gtensor::detail::no_value{});
+    //GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(nanmax,math_reduce_operations::nan_ignore_comparator<std::greater<void>>,gtensor::detail::no_value{});
+    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(nanmax,default_policy,math_reduce_operations::nan_ignore_comparator<std::greater<void>>,math_reduce_operations::nanmax,true,detail::no_value{});
 
     //sum elements along given axes, treating nan as zero
     //axes may be scalar or container
-    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(nansum,math_reduce_operations::nan_ignoring_operation<std::plus<void>>,typename basic_tensor<Ts...>::value_type{0});
+    //GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(nansum,math_reduce_operations::nan_ignoring_operation<std::plus<void>>,typename basic_tensor<Ts...>::value_type{0});
+    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(nansum,default_policy,math_reduce_operations::nan_ignoring_operation<std::plus<void>>,math_reduce_operations::nansum,true,typename basic_tensor<Ts...>::value_type{0});
 
     //multiply elements along given axes, treating nan as one
     //axes may be scalar or container
-    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(nanprod,math_reduce_operations::nan_ignoring_operation<std::multiplies<void>>,typename basic_tensor<Ts...>::value_type{1});
+    //GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(nanprod,math_reduce_operations::nan_ignoring_operation<std::multiplies<void>>,typename basic_tensor<Ts...>::value_type{1});
+    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(nanprod,default_policy,math_reduce_operations::nan_ignoring_operation<std::multiplies<void>>,math_reduce_operations::nanprod,true,typename basic_tensor<Ts...>::value_type{1});
 
     //cumulative sum along given axis, treating nan as zero
     //axis is scalar
-    GTENSOR_TENSOR_MATH_CUMULATE_FUNCTION(nancumsum,math_reduce_operations::nancumsum);
+    //GTENSOR_TENSOR_MATH_CUMULATE_FUNCTION(nancumsum,math_reduce_operations::nancumsum);
+    GTENSOR_TENSOR_MATH_CUMULATE_FUNCTION(nancumsum,default_policy,math_reduce_operations::nancumsum);
 
     //cumulative product along given axis, treating nan as one
     //axis is scalar
-    GTENSOR_TENSOR_MATH_CUMULATE_FUNCTION(nancumprod,math_reduce_operations::nancumprod);
+    //GTENSOR_TENSOR_MATH_CUMULATE_FUNCTION(nancumprod,math_reduce_operations::nancumprod);
+    GTENSOR_TENSOR_MATH_CUMULATE_FUNCTION(nancumprod,default_policy,math_reduce_operations::nancumprod);
 
     //n-th difference along given axis
     //axis is scalar, default is last axis
-    template<typename...Ts, typename DimT>
-    static auto diff(const basic_tensor<Ts...>& t, std::size_t n, const DimT& axis){
+    template<typename Policy, typename...Ts, typename DimT>
+    static auto diff(Policy policy, const basic_tensor<Ts...>& t, std::size_t n, const DimT& axis){
         using index_type = typename basic_tensor<Ts...>::index_type;
         using value_type = typename basic_tensor<Ts...>::value_type;
         const index_type window_size = 2;
@@ -217,32 +254,44 @@ struct tensor_math
         if (n==0){
             return t;
         }else{
-            auto res = slide<value_type>(t, axis, math_reduce_operations::diff_1{}, window_size, window_step);
-            return diff(res, --n, axis);
+            auto res = slide<value_type>(policy, t, axis, math_reduce_operations::diff_1{}, window_size, window_step);
+            return diff(policy, res, --n, axis);
         }
     }
     //none recursive implementation of second differences, more efficient than diff with n=2
-    template<typename...Ts, typename DimT>
-    static auto diff2(const basic_tensor<Ts...>& t, const DimT& axis){
+    template<typename Policy, typename...Ts, typename DimT>
+    static auto diff2(Policy policy, const basic_tensor<Ts...>& t, const DimT& axis){
         using index_type = typename basic_tensor<Ts...>::index_type;
         using value_type = typename basic_tensor<Ts...>::value_type;
         const index_type window_size = 3;
         const index_type window_step = 1;
-        return slide<value_type>(t, axis, math_reduce_operations::diff_2{}, window_size, window_step);
+        return slide<value_type>(policy, t, axis, math_reduce_operations::diff_2{}, window_size, window_step);
+    }
+    template<typename...Ts, typename DimT>
+    static auto diff(const basic_tensor<Ts...>& t, std::size_t n, const DimT& axis){
+        return diff(default_policy{},t,n,axis);
+    }
+    template<typename...Ts, typename DimT>
+    static auto diff2(const basic_tensor<Ts...>& t, const DimT& axis){
+        return diff2(default_policy{},t,axis);
     }
 
     //gradient along given axis, interior points has 2-nd order accuracy approximation using central difference, boundary points has 1-st order accuracy approximation
     //axis is scalar
     //spacing is scalar or container, scalar means uniform sample distance, container specifies coordinates along dimension
     //container must be the same size as size along axis
-    template<typename...Ts, typename DimT, typename Spacing>
-    static auto gradient(const basic_tensor<Ts...>& t, const DimT& axis, const Spacing& spacing){
+    template<typename Policy, typename...Ts, typename DimT, typename Spacing>
+    static auto gradient(Policy policy, const basic_tensor<Ts...>& t, const DimT& axis, const Spacing& spacing){
         using index_type = typename basic_tensor<Ts...>::index_type;
         using value_type = typename basic_tensor<Ts...>::value_type;
         using res_type = gtensor::math::make_floating_point_t<value_type>;
         const index_type window_size = 1;
         const index_type window_step = 1;
-        return gtensor::slide<res_type>(t, axis, math_reduce_operations::gradient{}, window_size, window_step, spacing);
+        return gtensor::slide<res_type>(policy, t, axis, math_reduce_operations::gradient{}, window_size, window_step, spacing);
+    }
+    template<typename...Ts, typename DimT, typename Spacing>
+    static auto gradient(const basic_tensor<Ts...>& t, const DimT& axis, const Spacing& spacing){
+        return gradient(default_policy{},t,axis,spacing);
     }
 
 };   //end of struct tensor_math
