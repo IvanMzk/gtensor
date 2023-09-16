@@ -519,12 +519,22 @@ GTENSOR_TENSOR_MATH_CUMULATE_ROUTINE(nancumprod,nancumprod);
 
 //n-th difference along given axis
 //axis is scalar, default is last axis
+template<typename Policy, typename...Ts, typename DimT=int>
+auto diff(Policy policy, const basic_tensor<Ts...>& t, std::size_t n = 1, const DimT& axis = -1){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return tensor_math_selector_t<config_type>::diff(policy,t,n,axis);
+}
 template<typename...Ts, typename DimT=int>
 auto diff(const basic_tensor<Ts...>& t, std::size_t n = 1, const DimT& axis = -1){
     using config_type = typename basic_tensor<Ts...>::config_type;
     return tensor_math_selector_t<config_type>::diff(t,n,axis);
 }
 //none recursive implementation of second differences, more efficient than diff with n=2
+template<typename Policy, typename...Ts, typename DimT=int>
+auto diff2(Policy policy, const basic_tensor<Ts...>& t, const DimT& axis = -1){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return tensor_math_selector_t<config_type>::diff2(policy,t,axis);
+}
 template<typename...Ts, typename DimT=int>
 auto diff2(const basic_tensor<Ts...>& t, const DimT& axis = -1){
     using config_type = typename basic_tensor<Ts...>::config_type;
@@ -535,6 +545,17 @@ auto diff2(const basic_tensor<Ts...>& t, const DimT& axis = -1){
 //axis is scalar
 //spacing is scalar or container, scalar means uniform sample distance, container specifies coordinates along dimension
 //container must be the same size as size along axis
+template<typename Policy, typename...Ts, typename DimT, typename Spacing>
+auto gradient(Policy policy, const basic_tensor<Ts...>& t, const DimT& axis, const Spacing& spacing){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return tensor_math_selector_t<config_type>::gradient(policy,t,axis,spacing);
+}
+template<typename Policy, typename...Ts, typename DimT>
+auto gradient(Policy policy, const basic_tensor<Ts...>& t, const DimT& axis){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    using value_type = typename basic_tensor<Ts...>::value_type;
+    return tensor_math_selector_t<config_type>::gradient(policy,t,axis,value_type{1});
+}
 template<typename...Ts, typename DimT, typename Spacing>
 auto gradient(const basic_tensor<Ts...>& t, const DimT& axis, const Spacing& spacing){
     using config_type = typename basic_tensor<Ts...>::config_type;
