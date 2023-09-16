@@ -442,15 +442,20 @@ auto NAME(const basic_tensor<Ts...>& t, bool keep_dims = false, const Initial& i
 }
 
 #define GTENSOR_TENSOR_MATH_CUMULATE_ROUTINE(NAME,F)\
-template<typename...Ts, typename DimT>\
-auto NAME(const basic_tensor<Ts...>& t, const DimT& axis){\
+template<typename Policy, typename...Ts, typename DimT>\
+auto NAME(Policy policy, const basic_tensor<Ts...>& t, const DimT& axis){\
     using config_type = typename basic_tensor<Ts...>::config_type;\
-    return tensor_math_selector_t<config_type>::F(t,axis);\
+    return tensor_math_selector_t<config_type>::F(policy,t,axis);\
 }\
 template<typename...Ts>\
 auto NAME(const basic_tensor<Ts...>& t){\
     using config_type = typename basic_tensor<Ts...>::config_type;\
     return tensor_math_selector_t<config_type>::F(t);\
+}\
+template<typename...Ts, typename DimT>\
+auto NAME(const basic_tensor<Ts...>& t, const DimT& axis){\
+    using config_type = typename basic_tensor<Ts...>::config_type;\
+    return tensor_math_selector_t<config_type>::F(t,axis);\
 }
 
 //test if all elements along given axes evaluate to true

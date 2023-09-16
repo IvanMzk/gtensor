@@ -1,6 +1,6 @@
 #include <iostream>
 #include <vector>
-#include "statistic.hpp"
+#include "tensor_math.hpp"
 #include "tensor.hpp"
 #include "helpers_for_testing.hpp"
 #include "benchmark_helpers.hpp"
@@ -43,21 +43,23 @@ TEST_CASE("test_tmp","[test_tmp]")
     using gtensor::config::c_order;
     using gtensor::config::f_order;
     using gtensor::tensor;
-    using tensor_type = tensor<int,c_order>;
-    using slice_type = tensor_type::slice_type;
-    using config_type = tensor_type::config_type;
-    using shape_type = tensor_type::shape_type;
-    using helpers_for_testing::range_to_str;
-    using gtensor::detail::shape_to_str;
+
+    using value_type = double;
+    static constexpr value_type nan = std::numeric_limits<value_type>::quiet_NaN();
+    static constexpr value_type pos_inf = std::numeric_limits<value_type>::infinity();
+    static constexpr value_type neg_inf = -std::numeric_limits<value_type>::infinity();
+
+    tensor<value_type,c_order> t{1.0,0.0,2.0,neg_inf,3.0,pos_inf};
+
+    auto r = gtensor::nanprod(t);
 
 
-
-    //auto t = tensor<double,c_order>{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}};
-    //auto t = tensor<double,c_order>{{1},{2},{3},{4},{5},{6}};
-    auto t = tensor<double,c_order>{{1,2,3},{4,5,6},{7,8,9},{10,11,12}};
-
-    auto r = gtensor::slide<double>(multithreading::exec_pol<4>{},t,1,test_tmp::cumsum{},1,1);
 
     std::cout<<std::endl<<r;
+
+    std::cout<<std::endl<<gtensor::math::isnan(pos_inf);
+    std::cout<<std::endl<<gtensor::math::isnan(pos_inf*0.0);
+    std::cout<<std::endl<<gtensor::math::isnan(pos_inf*pos_inf);
+    std::cout<<std::endl<<gtensor::math::isnan(pos_inf*neg_inf);
 
 }

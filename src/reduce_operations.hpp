@@ -124,17 +124,30 @@ struct nan_propagate_operation : Operation
 {
     template<typename R, typename E>
     auto operator()(const R& r, const E& e){
-        return Operation::operator()(e,r);
+        return Operation::operator()(r,e);
     }
 };
 
 template<typename Operation>
 struct nan_ignoring_operation : Operation
 {
-    //r must never be nan = initial value must never be nan
+    bool is_r{false};
     template<typename R, typename E>
-    auto operator()(const R& r, const E& e){
-        return gtensor::math::isnan(e) ? r : Operation::operator()(e,r);
+    auto operator()(const R& r, const E& e)->decltype(Operation::operator()(r,e)){
+        if (is_r){
+            return gtensor::math::isnan(e) ? r : Operation::operator()(r,e);
+        }else{
+            if (gtensor::math::isnan(r)){
+                return e;
+            }else{
+                is_r=true;
+                if(gtensor::math::isnan(e)){
+                    return r;
+                }else{
+                    return Operation::operator()(r,e);
+                }
+            }
+        }
     }
 };
 
