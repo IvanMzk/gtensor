@@ -364,8 +364,8 @@ class reducer
     //F is binary functor, takes elements, return reduce result, like std::plus
     //initial must be such that expression reduce_f(initial,element) be valid or no_value
     //traverse input countigous, i.e. traverse order dependes on layout
-    template<typename Policy, typename BinaryF, typename Axes, typename...Ts, typename Initial>
-    static auto reduce_binary_(Policy policy, const basic_tensor<Ts...>& parent, const Axes& axes_, BinaryF reduce_f, bool keep_dims, const Initial& initial){
+    template<typename Policy, typename BinaryF, typename Axes, typename ShT, typename...Ts, typename Initial>
+    static auto reduce_binary_helper(Policy policy, const basic_tensor<Ts...>& parent, Axes& axes, ShT&& res_shape, BinaryF reduce_f, bool keep_dims, const Initial& initial){
         using parent_type = basic_tensor<Ts...>;
         using order = typename parent_type::order;
         using config_type = typename parent_type::config_type;
@@ -379,9 +379,10 @@ class reducer
 
         const auto pdim = parent.dim();
         const auto& pshape = parent.shape();
-        auto axes = detail::make_axes<config_type>(pdim,axes_);
-        detail::check_reduce_args(pshape, axes);
-        auto res = tensor<res_value_type,order,res_config_type>(detail::make_reduce_shape(pshape, axes, keep_dims));
+        //auto axes = detail::make_axes<config_type>(pdim,axes_);
+        //detail::check_reduce_args(pshape, axes);
+        //auto res = tensor<res_value_type,order,res_config_type>(detail::make_reduce_shape(pshape, axes, keep_dims));
+        auto res = tensor<res_value_type,order,res_config_type>(std::forward<ShT>(res_shape));
         if (!res.empty()){
             auto a_parent = parent.traverse_order_adapter(order{});
             auto a_res = res.traverse_order_adapter(order{});
@@ -509,6 +510,161 @@ class reducer
         }
         return res;
     }
+
+    template<typename Policy, typename BinaryF, typename Axes, typename...Ts, typename Initial>
+    static auto reduce_binary_(Policy policy, const basic_tensor<Ts...>& parent, const Axes& axes_, BinaryF reduce_f, bool keep_dims, const Initial& initial){
+        auto axes = detail::make_axes<typename basic_tensor<Ts...>::config_type>(parent.dim(),axes_);
+        const auto& pshape = parent.shape();
+        detail::check_reduce_args(pshape, axes);
+        return reduce_binary_helper(policy,parent,axes,detail::make_reduce_shape(pshape, axes, keep_dims),reduce_f,keep_dims,initial);
+    }
+
+    // template<typename Policy, typename BinaryF, typename Axes, typename...Ts, typename Initial>
+    // static auto reduce_binary_(Policy policy, const basic_tensor<Ts...>& parent, const Axes& axes_, BinaryF reduce_f, bool keep_dims, const Initial& initial){
+    //     using parent_type = basic_tensor<Ts...>;
+    //     using order = typename parent_type::order;
+    //     using config_type = typename parent_type::config_type;
+    //     using value_type = typename parent_type::value_type;
+    //     using index_type = typename config_type::index_type;
+    //     static constexpr bool has_initial = !std::is_same_v<Initial,detail::no_value>;
+    //     using initial_type = std::conditional_t<has_initial, Initial, value_type>;
+    //     using result_type =  decltype(reduce_f(std::declval<initial_type>(),std::declval<value_type>()));
+    //     using res_value_type = std::remove_cv_t<std::remove_reference_t<result_type>>;
+    //     using res_config_type = config::extend_config_t<config_type,res_value_type>;
+
+    //     const auto pdim = parent.dim();
+    //     const auto& pshape = parent.shape();
+    //     auto axes = detail::make_axes<config_type>(pdim,axes_);
+    //     detail::check_reduce_args(pshape, axes);
+    //     auto res = tensor<res_value_type,order,res_config_type>(detail::make_reduce_shape(pshape, axes, keep_dims));
+    //     if (!res.empty()){
+    //         auto a_parent = parent.traverse_order_adapter(order{});
+    //         auto a_res = res.traverse_order_adapter(order{});
+
+    //         //like tensor-scalar result
+    //         if (res.size() == index_type{1}){
+    //             *a_res.begin() = reduce_binary_flatten_helper(policy,parent,reduce_f,initial);
+    //             return res;
+    //         }
+
+    //         auto reduce_binary_corner_case_helper = [&parent,&reduce_f,&initial,&axes,&a_res](auto parent_first, auto parent_last){
+    //             (void)reduce_f;
+    //             (void)initial;
+    //             (void)axes;
+    //             (void)a_res;
+    //             //empty axes container
+    //             if constexpr (detail::is_container_v<Axes>){
+    //                 if (axes.empty()){
+    //                     if constexpr (has_initial){
+    //                         std::transform(a_res.begin(),a_res.end(),parent_first,a_res.begin(),[&reduce_f,&initial](auto&&, auto&& r){return reduce_f(initial,r);});
+    //                     }else{
+    //                         //assuming reduction of scalar without initial is identity - nothing to reduce
+    //                         std::transform(a_res.begin(),a_res.end(),parent_first,a_res.begin(),[](auto&&, auto&& r){return static_cast<const res_value_type&>(r);});
+    //                     }
+    //                     return true;
+    //                 }
+    //             }
+    //             //reduce zero size
+    //             if (parent.empty()){
+    //                 if constexpr (has_initial){
+    //                     std::fill(a_res.begin(),a_res.end(),initial);
+    //                     return true;
+    //                 }else{
+    //                     throw value_error("cant reduce zero size dimension without initial value");
+    //                 }
+    //             }
+    //             return false;
+    //         };
+
+    //         bool is_corner_case{false};
+    //         if (parent.is_trivial()){
+    //             is_corner_case = reduce_binary_corner_case_helper(a_parent.begin_trivial(),a_parent.end_trivial());
+    //         }else{
+    //             is_corner_case = reduce_binary_corner_case_helper(a_parent.begin(),a_parent.end());
+    //         }
+    //         if (is_corner_case){
+    //             return res;
+    //         }
+
+    //         detail::sort_axes(axes);
+    //         const auto leading_axes = detail::make_leading_axes(axes,order{});
+    //         const auto inner_size = detail::make_inner_size(parent.strides(),leading_axes);
+    //         const auto outer_size = detail::make_outer_size(pshape,leading_axes);
+    //         const auto traverse_index_shape = detail::make_traverse_index_shape(pshape,leading_axes,order{});
+    //         const auto axes_map = detail::make_reduce_axes_map<config_type>(pdim,axes,keep_dims);
+    //         const auto traverse_index_strides = detail::make_traverse_index_strides(traverse_index_shape,res.descriptor().adapted_strides(),leading_axes,axes_map,order{});
+    //         const auto traverse_index_reset_strides = detail::make_traverse_index_strides(traverse_index_shape,res.descriptor().reset_strides(),leading_axes,axes_map,order{});
+    //         using walker_type = cursor_walker<config_type,index_type,order>;
+    //         using traverser_type = walker_forward_traverser<config_type,walker_type>;
+    //         traverser_type traverser{traverse_index_shape,walker_type{traverse_index_strides,traverse_index_reset_strides,0}};
+
+    //         auto reduce_binary_helper_ = [&traverser,&reduce_f,inner_size,outer_size,initial](auto it, auto res_it){
+    //             (void)initial;
+    //             const auto res_first = res_it;
+    //             bool init = true;
+    //             auto offset = *traverser;
+    //             if (inner_size == 1){
+    //                 do{
+    //                     auto& e = *res_it;
+    //                     if (init){
+    //                         if constexpr (has_initial){
+    //                             e = detail::accumulate_n(it,outer_size,initial,reduce_f);
+    //                         }else{  //no initial
+    //                             e = detail::accumulate_n(it,outer_size,reduce_f);
+    //                         }
+    //                     }else{  //e initialized
+    //                         e = detail::accumulate_n(it,outer_size,e,reduce_f);
+    //                     }
+    //                     if (traverser.template next<order>()){
+    //                         const auto new_offset = *traverser;
+    //                         if (new_offset > offset){   //reach uninitialized
+    //                             init=true;
+    //                             offset = new_offset;
+    //                         }else{
+    //                             init=false;
+    //                         }
+    //                         res_it=res_first + new_offset;
+    //                     }else{
+    //                         break;
+    //                     }
+    //                 }while(true);
+    //             }else{
+    //                 do{
+    //                     if (init){
+    //                         if constexpr (has_initial){
+    //                             detail::transform(res_it,res_it+inner_size,it,[&reduce_f,&initial](auto&&, auto&& r){return reduce_f(initial,r);});
+    //                         }else{  //no initial
+    //                             detail::transform(res_it,res_it+inner_size,it,[](auto&&, auto&& r){return static_cast<const res_value_type&>(r);});
+    //                         }
+    //                     }
+    //                     const auto i_stop=init?1:0;
+    //                     for (auto i=outer_size; i!=i_stop; --i){
+    //                         detail::transform(res_it,res_it+inner_size,it,reduce_f);
+    //                     }
+    //                     if (traverser.template next<order>()){
+    //                         const auto new_offset = *traverser;
+    //                         if (new_offset > offset){   //reach uninitialized
+    //                             init=true;
+    //                             offset = new_offset;
+    //                         }else{
+    //                             init=false;
+    //                         }
+    //                         res_it=res_first + new_offset;
+    //                     }else{
+    //                         break;
+    //                     }
+    //                 }while(true);
+    //             }
+    //         };
+    //         if (parent.is_trivial()){
+    //             reduce_binary_helper_(a_parent.begin_trivial(),a_res.begin());
+    //         }else{
+    //             reduce_binary_helper_(a_parent.begin(),a_res.begin());
+    //         }
+    //     }
+    //     return res;
+    // }
+
 
     //reduce like over flatten helper, iterators range functor
     //return scalar result
@@ -647,7 +803,55 @@ class reducer
         return reduce_range_helper(policy,t,axes,f,keep_dims,any_order,args...);
     }
 
-    //do reduce according to specified reduce policy
+    //reduce according to specified policy
+    // template<typename Policy, typename BinaryF, typename RangeF, typename Axes, typename Initial, typename...Ts, typename...Args>
+    // static auto reduce_(Policy policy, const basic_tensor<Ts...>& parent, const Axes& axes, BinaryF binary_f, RangeF range_f, bool keep_dims, bool any_order, const Initial initial, const Args&...args){
+    //     detail::unused_args{binary_f,range_f,any_order,initial,args...};
+    //     static constexpr bool has_binary = !std::is_same_v<BinaryF,detail::no_value>;
+    //     static constexpr bool has_range = !std::is_same_v<RangeF,detail::no_value>;
+    //     static_assert(has_binary || has_range, "invalid reduce functor");
+    //     if constexpr (multithreading::exec_policy_traits<Policy>::is_seq){
+    //         if constexpr (has_binary){
+    //             return reduce_binary_(policy,parent,axes,binary_f,keep_dims,initial);
+    //         }else{
+    //             return reduce_range_(policy,parent,axes,range_f,keep_dims,any_order,args...);
+    //         }
+    //     }else{  //parallelize requested
+    //         if constexpr (has_binary){  //consider reduce to scalar - can use multithreading::reduce
+
+    //         }else{  //
+    //             return reduce_range_(policy,parent,axes,range_f,keep_dims,any_order,args...);
+    //         }
+
+    //         if constexpr (detail::is_container_v<Axes>){
+    //         }
+
+    //         if constexpr (has_range){
+    //         }
+    //     }
+
+
+
+    //     using exec_policy = typename reduce_policy_traits<Policy>::exec_policy;
+    //     if constexpr (reduce_policy_traits<Policy>::is_reduce_bin::value){
+    //         static_assert(!std::is_same_v<BinaryF,detail::no_value>,"invalid reduce functor");
+    //         return reduce_binary_(exec_policy{},parent,axes,binary_f,keep_dims,initial);
+    //     }else if constexpr (reduce_policy_traits<Policy>::is_reduce_rng::value){
+    //         static_assert(!std::is_same_v<RangeF,detail::no_value>,"invalid reduce functor");
+    //         return reduce_range_(exec_policy{},parent,axes,range_f,keep_dims,any_order,args...);
+    //     }else if constexpr (reduce_policy_traits<Policy>::is_reduce_auto::value){
+    //         if constexpr (!std::is_same_v<BinaryF,detail::no_value>){
+    //             return reduce_binary_(exec_policy{},parent,axes,binary_f,keep_dims,initial);
+    //         }else if constexpr (!std::is_same_v<RangeF,detail::no_value>){
+    //             return reduce_range_(exec_policy{},parent,axes,range_f,keep_dims,any_order,args...);
+    //         }else{
+    //             static_assert(detail::always_false<Policy>,"invalid reduce functor");
+    //         }
+    //     }else{
+    //         static_assert(detail::always_false<Policy>,"invalid reduce policy");
+    //     }
+    // }
+
     template<typename Policy, typename BinaryF, typename RangeF, typename Axes, typename Initial, typename...Ts, typename...Args>
     static auto reduce_(Policy, const basic_tensor<Ts...>& parent, const Axes& axes, BinaryF binary_f, RangeF range_f, bool keep_dims, bool any_order, const Initial initial, const Args&...args){
         detail::unused_args{binary_f,range_f,any_order,initial,args...};
