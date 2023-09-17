@@ -690,25 +690,15 @@ class reducer
     }
 
     template<typename Policy, typename BinaryF, typename RangeF, typename Initial, typename...Ts, typename...Args>
-    static auto reduce_flatten_(Policy, const basic_tensor<Ts...>& parent, BinaryF binary_f, RangeF range_f, bool keep_dims, bool any_order, const Initial initial, const Args&...args){
-        detail::unused_args{binary_f,range_f,any_order,initial,args...};
-        using exec_policy = typename reduce_policy_traits<Policy>::exec_policy;
-        if constexpr (reduce_policy_traits<Policy>::is_reduce_bin::value){
-            static_assert(!std::is_same_v<BinaryF,detail::no_value>,"invalid reduce functor");
-            return reduce_binary_flatten_(exec_policy{},parent,binary_f,keep_dims,initial);
-        }else if constexpr (reduce_policy_traits<Policy>::is_reduce_rng::value){
-            static_assert(!std::is_same_v<RangeF,detail::no_value>,"invalid reduce functor");
-            return reduce_range_flatten_(parent,range_f,keep_dims,any_order,args...);
-        }else if constexpr (reduce_policy_traits<Policy>::is_reduce_auto::value){
-            if constexpr (!std::is_same_v<BinaryF,detail::no_value>){
-                return reduce_binary_flatten_(exec_policy{},parent,binary_f,keep_dims,initial);
-            }else if constexpr (!std::is_same_v<RangeF,detail::no_value>){
-                return reduce_range_flatten_(parent,range_f,keep_dims,any_order,args...);
-            }else{
-                static_assert(detail::always_false<Policy>,"invalid reduce functor");
-            }
+    static auto reduce_flatten_(Policy policy, const basic_tensor<Ts...>& parent, BinaryF binary_f, RangeF range_f, bool keep_dims, bool any_order, const Initial initial, const Args&...args){
+        detail::unused_args{policy,binary_f,range_f,any_order,initial,args...};
+        static constexpr bool has_binary = !std::is_same_v<BinaryF,detail::no_value>;
+        static constexpr bool has_range = !std::is_same_v<RangeF,detail::no_value>;
+        static_assert(has_binary || has_range, "invalid reduce functor");
+        if constexpr (has_binary){  //prefer binary
+            return reduce_binary_flatten_(policy,parent,binary_f,keep_dims,initial);
         }else{
-            static_assert(detail::always_false<Policy>,"invalid reduce policy");
+            return reduce_range_flatten_(parent,range_f,keep_dims,any_order,args...);
         }
     }
 
