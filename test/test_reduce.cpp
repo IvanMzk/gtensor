@@ -1440,15 +1440,9 @@ TEMPLATE_TEST_CASE("test_reduce_range_flatten","[test_reduce]",
 }
 
 TEMPLATE_TEST_CASE("test_reduce","[test_reduce]",
-    (gtensor::reduce_bin<1>),
-    (gtensor::reduce_bin<4>),
-    (gtensor::reduce_bin<0>),
-    (gtensor::reduce_rng<1>),
-    (gtensor::reduce_rng<4>),
-    (gtensor::reduce_rng<0>),
-    (gtensor::reduce_auto<1>),
-    (gtensor::reduce_auto<4>),
-    (gtensor::reduce_auto<0>)
+    (multithreading::exec_pol<1>),
+    (multithreading::exec_pol<4>),
+    (multithreading::exec_pol<0>)
 )
 {
     using policy = TestType;

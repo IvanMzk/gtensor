@@ -57,50 +57,23 @@ TEMPLATE_TEST_CASE("test_math_cumsum_nancumsum","test_math",
     {
         test_nancumsum();
     }
-    //reduce_auto<4>
-    SECTION("test_cumsum_reduce_auto<4>")
+    //exec_pol<4>
+    SECTION("test_cumsum_exec_pol<4>")
     {
-        test_cumsum(gtensor::reduce_auto<4>{});
+        test_cumsum(multithreading::exec_pol<4>{});
     }
-    SECTION("test_nancumsum_reduce_auto<4>")
+    SECTION("test_nancumsum_exec_pol<4>")
     {
-        test_nancumsum(gtensor::reduce_auto<4>{});
+        test_nancumsum(multithreading::exec_pol<4>{});
     }
-    //reduce_rng<1>
-    SECTION("test_cumsum_reduce_rng<1>")
+    //exec_pol<0>
+    SECTION("test_cumsum_exec_pol<0>")
     {
-        test_cumsum(gtensor::reduce_rng<1>{});
+        test_cumsum(multithreading::exec_pol<0>{});
     }
-    SECTION("test_nancumsum_reduce_rng<1>")
+    SECTION("test_nancumsum_exec_pol<0>")
     {
-        test_nancumsum(gtensor::reduce_rng<1>{});
-    }
-    //reduce_rng<4>
-    SECTION("test_cumsum_reduce_rng<4>")
-    {
-        test_cumsum(gtensor::reduce_rng<4>{});
-    }
-    SECTION("test_nancumsum_reduce_rng<4>")
-    {
-        test_nancumsum(gtensor::reduce_rng<4>{});
-    }
-    //reduce_bin<1>
-    SECTION("test_cumsum_reduce_bin<1>")
-    {
-        test_cumsum(gtensor::reduce_bin<1>{});
-    }
-    SECTION("test_nancumsum_reduce_bin<1>")
-    {
-        test_nancumsum(gtensor::reduce_bin<1>{});
-    }
-    //reduce_bin<4>
-    SECTION("test_cumsum_reduce_bin<4>")
-    {
-        test_cumsum(gtensor::reduce_bin<4>{});
-    }
-    SECTION("test_nancumsum_reduce_bin<4>")
-    {
-        test_nancumsum(gtensor::reduce_bin<4>{});
+        test_nancumsum(multithreading::exec_pol<0>{});
     }
 }
 
@@ -205,11 +178,8 @@ TEST_CASE("test_math_cumsum_nancumsum_nan_values","test_math")
 }
 
 TEMPLATE_TEST_CASE("test_math_cumsum_nancumsum_nan_values_policy","test_math",
-    (gtensor::reduce_auto<4>),
-    (gtensor::reduce_rng<1>),
-    (gtensor::reduce_rng<4>),
-    (gtensor::reduce_bin<1>),
-    (gtensor::reduce_bin<4>)
+    (multithreading::exec_pol<4>),
+    (multithreading::exec_pol<0>)
 )
 {
     using policy = TestType;
@@ -306,50 +276,23 @@ TEMPLATE_TEST_CASE("test_math_cumprod_nancumprod","test_math",
     {
         test_nancumprod();
     }
-    //reduce_auto<4>
-    SECTION("test_cumprod_reduce_auto<4>")
+    //exec_pol<4>
+    SECTION("test_cumprod_exec_pol<4>")
     {
-        test_cumprod(gtensor::reduce_auto<4>{});
+        test_cumprod(multithreading::exec_pol<4>{});
     }
-    SECTION("test_nancumprod_reduce_auto<4>")
+    SECTION("test_nancumprod_exec_pol<4>")
     {
-        test_nancumprod(gtensor::reduce_auto<4>{});
+        test_nancumprod(multithreading::exec_pol<4>{});
     }
-    //reduce_rng<1>
-    SECTION("test_cumprod_reduce_rng<1>")
+    //exec_pol<0>
+    SECTION("test_cumprod_exec_pol<0>")
     {
-        test_cumprod(gtensor::reduce_rng<1>{});
+        test_cumprod(multithreading::exec_pol<0>{});
     }
-    SECTION("test_nancumprod_reduce_rng<1>")
+    SECTION("test_nancumprod_exec_pol<0>")
     {
-        test_nancumprod(gtensor::reduce_rng<1>{});
-    }
-    //reduce_rng<4>
-    SECTION("test_cumprod_reduce_rng<4>")
-    {
-        test_cumprod(gtensor::reduce_rng<4>{});
-    }
-    SECTION("test_nancumprod_reduce_rng<4>")
-    {
-        test_nancumprod(gtensor::reduce_rng<4>{});
-    }
-    //reduce_bin<1>
-    SECTION("test_cumprod_reduce_bin<1>")
-    {
-        test_cumprod(gtensor::reduce_bin<1>{});
-    }
-    SECTION("test_nancumprod_reduce_bin<1>")
-    {
-        test_nancumprod(gtensor::reduce_bin<1>{});
-    }
-    //reduce_bin<4>
-    SECTION("test_cumprod_reduce_bin<4>")
-    {
-        test_cumprod(gtensor::reduce_bin<4>{});
-    }
-    SECTION("test_nancumprod_reduce_bin<4>")
-    {
-        test_nancumprod(gtensor::reduce_bin<4>{});
+        test_nancumprod(multithreading::exec_pol<0>{});
     }
 }
 
@@ -457,11 +400,8 @@ TEST_CASE("test_math_cumprod_nancumprod_nan_values","test_math")
 }
 
 TEMPLATE_TEST_CASE("test_math_cumprod_nancumprod_nan_values_policy","test_math",
-    (gtensor::reduce_auto<4>),
-    (gtensor::reduce_rng<1>),
-    (gtensor::reduce_rng<4>),
-    (gtensor::reduce_bin<1>),
-    (gtensor::reduce_bin<4>)
+    (multithreading::exec_pol<4>),
+    (multithreading::exec_pol<0>)
 )
 {
     using policy = TestType;

@@ -89,50 +89,23 @@ TEMPLATE_TEST_CASE("test_math_sum_nansum","test_math",
     {
         test_nansum();
     }
-    //reduce_auto<4>
-    SECTION("test_sum_reduce_auto<4>")
+    //exec_pol<4>
+    SECTION("test_sum_exec_pol<4>")
     {
-        test_sum(gtensor::reduce_auto<4>{});
+        test_sum(multithreading::exec_pol<4>{});
     }
-    SECTION("test_nansum_reduce_auto<4>")
+    SECTION("test_nansum_exec_pol<4>")
     {
-        test_nansum(gtensor::reduce_auto<4>{});
+        test_nansum(multithreading::exec_pol<4>{});
     }
-    //reduce_rng<1>
-    SECTION("test_sum_reduce_rng<1>")
+    //exec_pol<0>
+    SECTION("test_sum_exec_pol<0>")
     {
-        test_sum(gtensor::reduce_rng<1>{});
+        test_sum(multithreading::exec_pol<0>{});
     }
-    SECTION("test_nansum_reduce_rng<1>")
+    SECTION("test_nansum_exec_pol<0>")
     {
-        test_nansum(gtensor::reduce_rng<1>{});
-    }
-    //reduce_rng<4>
-    SECTION("test_sum_reduce_rng<4>")
-    {
-        test_sum(gtensor::reduce_rng<4>{});
-    }
-    SECTION("test_nansum_reduce_rng<4>")
-    {
-        test_nansum(gtensor::reduce_rng<4>{});
-    }
-    //reduce_bin<1>
-    SECTION("test_sum_reduce_bin<1>")
-    {
-        test_sum(gtensor::reduce_bin<1>{});
-    }
-    SECTION("test_nansum_reduce_bin<1>")
-    {
-        test_nansum(gtensor::reduce_bin<1>{});
-    }
-    //reduce_bin<4>
-    SECTION("test_sum_reduce_bin<4>")
-    {
-        test_sum(gtensor::reduce_bin<4>{});
-    }
-    SECTION("test_nansum_reduce_bin<4>")
-    {
-        test_nansum(gtensor::reduce_bin<4>{});
+        test_nansum(multithreading::exec_pol<0>{});
     }
 }
 
@@ -176,11 +149,8 @@ TEMPLATE_TEST_CASE("test_math_sum_nansum_overloads_default_policy","test_math",
 }
 
 TEMPLATE_TEST_CASE("test_math_sum_nansum_overloads_policy","test_math",
-    (gtensor::reduce_auto<4>),
-    (gtensor::reduce_rng<1>),
-    (gtensor::reduce_rng<4>),
-    (gtensor::reduce_bin<1>),
-    (gtensor::reduce_bin<4>)
+    (multithreading::exec_pol<4>),
+    (multithreading::exec_pol<0>)
 )
 {
     using policy = TestType;
@@ -265,11 +235,8 @@ TEST_CASE("test_math_sum_nansum_nan_values_default_policy","test_math")
 }
 
 TEMPLATE_TEST_CASE("test_math_sum_nansum_nan_values_policy","test_math",
-    (gtensor::reduce_auto<4>),
-    (gtensor::reduce_rng<1>),
-    (gtensor::reduce_rng<4>),
-    (gtensor::reduce_bin<1>),
-    (gtensor::reduce_bin<4>)
+    (multithreading::exec_pol<4>),
+    (multithreading::exec_pol<0>)
 )
 {
     using policy = TestType;
@@ -407,50 +374,23 @@ TEMPLATE_TEST_CASE("test_math_prod_nanprod","test_math",
     {
         test_nanprod();
     }
-    //reduce_auto<4>
-    SECTION("test_prod_reduce_auto<4>")
+    //exec_pol<4>
+    SECTION("test_prod_exec_pol<4>")
     {
-        test_prod(gtensor::reduce_auto<4>{});
+        test_prod(multithreading::exec_pol<4>{});
     }
-    SECTION("test_nanprod_reduce_auto<4>")
+    SECTION("test_nanprod_exec_pol<4>")
     {
-        test_nanprod(gtensor::reduce_auto<4>{});
+        test_nanprod(multithreading::exec_pol<4>{});
     }
-    //reduce_rng<1>
-    SECTION("test_prod_reduce_rng<1>")
+    //exec_pol<0>
+    SECTION("test_prod_exec_pol<0>")
     {
-        test_prod(gtensor::reduce_rng<1>{});
+        test_prod(multithreading::exec_pol<0>{});
     }
-    SECTION("test_nanprod_reduce_rng<1>")
+    SECTION("test_nanprod_exec_pol<0>")
     {
-        test_nanprod(gtensor::reduce_rng<1>{});
-    }
-    //reduce_rng<4>
-    SECTION("test_prod_reduce_rng<4>")
-    {
-        test_prod(gtensor::reduce_rng<4>{});
-    }
-    SECTION("test_nanprod_reduce_rng<4>")
-    {
-        test_nanprod(gtensor::reduce_rng<4>{});
-    }
-    //reduce_bin<1>
-    SECTION("test_prod_reduce_bin<1>")
-    {
-        test_prod(gtensor::reduce_bin<1>{});
-    }
-    SECTION("test_nanprod_reduce_bin<1>")
-    {
-        test_nanprod(gtensor::reduce_bin<1>{});
-    }
-    //reduce_bin<4>
-    SECTION("test_prod_reduce_bin<4>")
-    {
-        test_prod(gtensor::reduce_bin<4>{});
-    }
-    SECTION("test_nanprod_reduce_bin<4>")
-    {
-        test_nanprod(gtensor::reduce_bin<4>{});
+        test_nanprod(multithreading::exec_pol<0>{});
     }
 }
 
@@ -494,11 +434,8 @@ TEMPLATE_TEST_CASE("test_math_prod_nanprod_overloads_default_policy","test_math"
 }
 
 TEMPLATE_TEST_CASE("test_math_prod_nanprod_overloads_policy","test_math",
-    (gtensor::reduce_auto<4>),
-    (gtensor::reduce_rng<1>),
-    (gtensor::reduce_rng<4>),
-    (gtensor::reduce_bin<1>),
-    (gtensor::reduce_bin<4>)
+    (multithreading::exec_pol<4>),
+    (multithreading::exec_pol<0>)
 )
 {
     using policy = TestType;
@@ -585,11 +522,8 @@ TEST_CASE("test_math_prod_nanprod_nan_values_default_policy","test_math")
 }
 
 TEMPLATE_TEST_CASE("test_math_prod_nanprod_nan_values_policy","test_math",
-    (gtensor::reduce_auto<4>),
-    (gtensor::reduce_rng<1>),
-    (gtensor::reduce_rng<4>),
-    (gtensor::reduce_bin<1>),
-    (gtensor::reduce_bin<4>)
+    (multithreading::exec_pol<4>),
+    (multithreading::exec_pol<0>)
 )
 {
     using policy = TestType;

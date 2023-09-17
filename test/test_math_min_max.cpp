@@ -106,70 +106,31 @@ TEMPLATE_TEST_CASE("test_math_amin_nanmin","test_math",
     {
         test_nanmin();
     }
-    //reduce_auto<4>
-    SECTION("test_amin_reduce_auto<4>")
+    //exec_pol<4>
+    SECTION("test_amin_exec_pol<4>")
     {
-        test_amin(gtensor::reduce_auto<4>{});
+        test_amin(multithreading::exec_pol<4>{});
     }
-    SECTION("test_min_reduce_auto<4>")
+    SECTION("test_min_exec_pol<4>")
     {
-        test_min(gtensor::reduce_auto<4>{});
+        test_min(multithreading::exec_pol<4>{});
     }
-    SECTION("test_nanmin_reduce_auto<4>")
+    SECTION("test_nanmin_exec_pol<4>")
     {
-        test_nanmin(gtensor::reduce_auto<4>{});
+        test_nanmin(multithreading::exec_pol<4>{});
     }
-    //reduce_rng<1>
-    SECTION("test_amin_reduce_rng<1>")
+    //exec_pol<0>
+    SECTION("test_amin_exec_pol<0>")
     {
-        test_amin(gtensor::reduce_rng<1>{});
+        test_amin(multithreading::exec_pol<0>{});
     }
-    SECTION("test_min_reduce_rng<1>")
+    SECTION("test_min_exec_pol<0>")
     {
-        test_min(gtensor::reduce_rng<1>{});
+        test_min(multithreading::exec_pol<0>{});
     }
-    SECTION("test_nanmin_reduce_rng<1>")
+    SECTION("test_nanmin_exec_pol<0>")
     {
-        test_nanmin(gtensor::reduce_rng<1>{});
-    }
-    //reduce_rng<4>
-    SECTION("test_amin_reduce_rng<4>")
-    {
-        test_amin(gtensor::reduce_rng<4>{});
-    }
-    SECTION("test_min_reduce_rng<4>")
-    {
-        test_min(gtensor::reduce_rng<4>{});
-    }
-    SECTION("test_nanmin_reduce_rng<4>")
-    {
-        test_nanmin(gtensor::reduce_rng<4>{});
-    }
-    //reduce_bin<1>
-    SECTION("test_amin_reduce_bin<1>")
-    {
-        test_amin(gtensor::reduce_bin<1>{});
-    }
-    SECTION("test_min_reduce_bin<1>")
-    {
-        test_min(gtensor::reduce_bin<1>{});
-    }
-    SECTION("test_nanmin_reduce_bin<1>")
-    {
-        test_nanmin(gtensor::reduce_bin<1>{});
-    }
-    //reduce_bin<4>
-    SECTION("test_amin_reduce_bin<4>")
-    {
-        test_amin(gtensor::reduce_bin<4>{});
-    }
-    SECTION("test_min_reduce_bin<4>")
-    {
-        test_min(gtensor::reduce_bin<4>{});
-    }
-    SECTION("test_nanmin_reduce_bin<4>")
-    {
-        test_nanmin(gtensor::reduce_bin<4>{});
+        test_nanmin(multithreading::exec_pol<0>{});
     }
 }
 
@@ -245,70 +206,31 @@ TEMPLATE_TEST_CASE("test_math_amin_nanmin_flatten","test_math",
     {
         test_nanmin();
     }
-    //reduce_auto<4>
-    SECTION("test_amin_reduce_auto<4>")
+    //exec_pol<4>
+    SECTION("test_amin_exec_pol<4>")
     {
-        test_amin(gtensor::reduce_auto<4>{});
+        test_amin(multithreading::exec_pol<4>{});
     }
-    SECTION("test_min_reduce_auto<4>")
+    SECTION("test_min_exec_pol<4>")
     {
-        test_min(gtensor::reduce_auto<4>{});
+        test_min(multithreading::exec_pol<4>{});
     }
-    SECTION("test_nanmin_reduce_auto<4>")
+    SECTION("test_nanmin_exec_pol<4>")
     {
-        test_nanmin(gtensor::reduce_auto<4>{});
+        test_nanmin(multithreading::exec_pol<4>{});
     }
-    //reduce_rng<1>
-    SECTION("test_amin_reduce_rng<1>")
+    //exec_pol<0>
+    SECTION("test_amin_exec_pol<0>")
     {
-        test_amin(gtensor::reduce_rng<1>{});
+        test_amin(multithreading::exec_pol<0>{});
     }
-    SECTION("test_min_reduce_rng<1>")
+    SECTION("test_min_exec_pol<0>")
     {
-        test_min(gtensor::reduce_rng<1>{});
+        test_min(multithreading::exec_pol<0>{});
     }
-    SECTION("test_nanmin_reduce_rng<1>")
+    SECTION("test_nanmin_exec_pol<0>")
     {
-        test_nanmin(gtensor::reduce_rng<1>{});
-    }
-    //reduce_rng<4>
-    SECTION("test_amin_reduce_rng<4>")
-    {
-        test_amin(gtensor::reduce_rng<4>{});
-    }
-    SECTION("test_min_reduce_rng<4>")
-    {
-        test_min(gtensor::reduce_rng<4>{});
-    }
-    SECTION("test_nanmin_reduce_rng<4>")
-    {
-        test_nanmin(gtensor::reduce_rng<4>{});
-    }
-    //reduce_bin<1>
-    SECTION("test_amin_reduce_bin<1>")
-    {
-        test_amin(gtensor::reduce_bin<1>{});
-    }
-    SECTION("test_min_reduce_bin<1>")
-    {
-        test_min(gtensor::reduce_bin<1>{});
-    }
-    SECTION("test_nanmin_reduce_bin<1>")
-    {
-        test_nanmin(gtensor::reduce_bin<1>{});
-    }
-    //reduce_bin<4>
-    SECTION("test_amin_reduce_bin<4>")
-    {
-        test_amin(gtensor::reduce_bin<4>{});
-    }
-    SECTION("test_min_reduce_bin<4>")
-    {
-        test_min(gtensor::reduce_bin<4>{});
-    }
-    SECTION("test_nanmin_reduce_bin<4>")
-    {
-        test_nanmin(gtensor::reduce_bin<4>{});
+        test_nanmin(multithreading::exec_pol<0>{});
     }
 }
 
@@ -411,11 +333,8 @@ TEST_CASE("test_math_amin_nanmin_nan_values_default_policy","test_math")
 }
 
 TEMPLATE_TEST_CASE("test_math_amin_nanmin_nan_values_policy","test_math",
-    (gtensor::reduce_auto<4>),
-    (gtensor::reduce_rng<1>),
-    (gtensor::reduce_rng<4>),
-    (gtensor::reduce_bin<1>),
-    (gtensor::reduce_bin<4>)
+    (multithreading::exec_pol<4>),
+    (multithreading::exec_pol<0>)
 )
 {
     using policy = TestType;
@@ -561,70 +480,31 @@ TEMPLATE_TEST_CASE("test_math_amax_nanmax","test_math",
     {
         test_nanmax();
     }
-    //reduce_auto<4>
-    SECTION("test_amax_reduce_auto<4>")
+    //exec_pol<4>
+    SECTION("test_amax_exec_pol<4>")
     {
-        test_amax(gtensor::reduce_auto<4>{});
+        test_amax(multithreading::exec_pol<4>{});
     }
-    SECTION("test_max_reduce_auto<4>")
+    SECTION("test_max_exec_pol<4>")
     {
-        test_max(gtensor::reduce_auto<4>{});
+        test_max(multithreading::exec_pol<4>{});
     }
-    SECTION("test_nanmax_reduce_auto<4>")
+    SECTION("test_nanmax_exec_pol<4>")
     {
-        test_nanmax(gtensor::reduce_auto<4>{});
+        test_nanmax(multithreading::exec_pol<4>{});
     }
-    //reduce_rng<1>
-    SECTION("test_amax_reduce_rng<1>")
+    //exec_pol<0>
+    SECTION("test_amax_exec_pol<0>")
     {
-        test_amax(gtensor::reduce_rng<1>{});
+        test_amax(multithreading::exec_pol<0>{});
     }
-    SECTION("test_max_reduce_rng<1>")
+    SECTION("test_max_exec_pol<0>")
     {
-        test_max(gtensor::reduce_rng<1>{});
+        test_max(multithreading::exec_pol<0>{});
     }
-    SECTION("test_nanmax_reduce_rng<1>")
+    SECTION("test_nanmax_exec_pol<0>")
     {
-        test_nanmax(gtensor::reduce_rng<1>{});
-    }
-    //reduce_rng<4>
-    SECTION("test_amax_reduce_rng<4>")
-    {
-        test_amax(gtensor::reduce_rng<4>{});
-    }
-    SECTION("test_max_reduce_rng<4>")
-    {
-        test_max(gtensor::reduce_rng<4>{});
-    }
-    SECTION("test_nanmax_reduce_rng<4>")
-    {
-        test_nanmax(gtensor::reduce_rng<4>{});
-    }
-    //reduce_bin<1>
-    SECTION("test_amax_reduce_bin<1>")
-    {
-        test_amax(gtensor::reduce_bin<1>{});
-    }
-    SECTION("test_max_reduce_bin<1>")
-    {
-        test_max(gtensor::reduce_bin<1>{});
-    }
-    SECTION("test_nanmax_reduce_bin<1>")
-    {
-        test_nanmax(gtensor::reduce_bin<1>{});
-    }
-    //reduce_bin<4>
-    SECTION("test_amax_reduce_bin<4>")
-    {
-        test_amax(gtensor::reduce_bin<4>{});
-    }
-    SECTION("test_max_reduce_bin<4>")
-    {
-        test_max(gtensor::reduce_bin<4>{});
-    }
-    SECTION("test_nanmax_reduce_bin<4>")
-    {
-        test_nanmax(gtensor::reduce_bin<4>{});
+        test_nanmax(multithreading::exec_pol<0>{});
     }
 }
 
@@ -692,70 +572,31 @@ TEMPLATE_TEST_CASE("test_math_amax_nanmax_flatten","test_math",
     {
         test_nanmax();
     }
-    //reduce_auto<4>
-    SECTION("test_amax_reduce_auto<4>")
+    //exec_pol<4>
+    SECTION("test_amax_exec_pol<4>")
     {
-        test_amax(gtensor::reduce_auto<4>{});
+        test_amax(multithreading::exec_pol<4>{});
     }
-    SECTION("test_max_reduce_auto<4>")
+    SECTION("test_max_exec_pol<4>")
     {
-        test_max(gtensor::reduce_auto<4>{});
+        test_max(multithreading::exec_pol<4>{});
     }
-    SECTION("test_nanmax_reduce_auto<4>")
+    SECTION("test_nanmax_exec_pol<4>")
     {
-        test_nanmax(gtensor::reduce_auto<4>{});
+        test_nanmax(multithreading::exec_pol<4>{});
     }
-    //reduce_rng<1>
-    SECTION("test_amax_reduce_rng<1>")
+    //exec_pol<0>
+    SECTION("test_amax_exec_pol<0>")
     {
-        test_amax(gtensor::reduce_rng<1>{});
+        test_amax(multithreading::exec_pol<0>{});
     }
-    SECTION("test_max_reduce_rng<1>")
+    SECTION("test_max_exec_pol<0>")
     {
-        test_max(gtensor::reduce_rng<1>{});
+        test_max(multithreading::exec_pol<0>{});
     }
-    SECTION("test_nanmax_reduce_rng<1>")
+    SECTION("test_nanmax_exec_pol<0>")
     {
-        test_nanmax(gtensor::reduce_rng<1>{});
-    }
-    //reduce_rng<4>
-    SECTION("test_amax_reduce_rng<4>")
-    {
-        test_amax(gtensor::reduce_rng<4>{});
-    }
-    SECTION("test_max_reduce_rng<4>")
-    {
-        test_max(gtensor::reduce_rng<4>{});
-    }
-    SECTION("test_nanmax_reduce_rng<4>")
-    {
-        test_nanmax(gtensor::reduce_rng<4>{});
-    }
-    //reduce_bin<1>
-    SECTION("test_amax_reduce_bin<1>")
-    {
-        test_amax(gtensor::reduce_bin<1>{});
-    }
-    SECTION("test_max_reduce_bin<1>")
-    {
-        test_max(gtensor::reduce_bin<1>{});
-    }
-    SECTION("test_nanmax_reduce_bin<1>")
-    {
-        test_nanmax(gtensor::reduce_bin<1>{});
-    }
-    //reduce_bin<4>
-    SECTION("test_amax_reduce_bin<4>")
-    {
-        test_amax(gtensor::reduce_bin<4>{});
-    }
-    SECTION("test_max_reduce_bin<4>")
-    {
-        test_max(gtensor::reduce_bin<4>{});
-    }
-    SECTION("test_nanmax_reduce_bin<4>")
-    {
-        test_nanmax(gtensor::reduce_bin<4>{});
+        test_nanmax(multithreading::exec_pol<0>{});
     }
 }
 
@@ -857,11 +698,8 @@ TEST_CASE("test_math_amax_nanmax_nan_values_default_policy","test_math")
 }
 
 TEMPLATE_TEST_CASE("test_math_amax_nanmax_nan_values_policy","test_math",
-    (gtensor::reduce_auto<4>),
-    (gtensor::reduce_rng<1>),
-    (gtensor::reduce_rng<4>),
-    (gtensor::reduce_bin<1>),
-    (gtensor::reduce_bin<4>)
+    (multithreading::exec_pol<4>),
+    (multithreading::exec_pol<0>)
 )
 {
     using policy = TestType;

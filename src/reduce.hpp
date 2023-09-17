@@ -301,21 +301,6 @@ ALWAYS_INLINE auto accumulate_n(It& first, IdxT n, F f){
 
 }   //end of namespace detail
 
-//reduce policy
-template<std::size_t N> struct reduce_auto : std::integral_constant<std::size_t,N>{};
-template<std::size_t N> struct reduce_bin : std::integral_constant<std::size_t,N>{};
-template<std::size_t N> struct reduce_rng : std::integral_constant<std::size_t,N>{};
-
-template<typename...> struct reduce_policy_traits;
-template<template<std::size_t> typename P, std::size_t V>
-struct reduce_policy_traits<P<V>>{
-    using policy_type = P<V>;
-    using exec_policy = multithreading::exec_pol<V>;
-    using is_reduce_auto = std::is_same<policy_type,reduce_auto<V>>;
-    using is_reduce_bin = std::is_same<policy_type,reduce_bin<V>>;
-    using is_reduce_rng = std::is_same<policy_type,reduce_rng<V>>;
-};
-
 class reducer
 {
 

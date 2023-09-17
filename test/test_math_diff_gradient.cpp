@@ -44,30 +44,15 @@ TEST_CASE("test_math_diff","test_math")
     {
         test_diff();
     }
-    //reduce_auto<4>
-    SECTION("test_diff_reduce_auto<4>")
+    //exec_pol<4>
+    SECTION("test_diff_exec_pol<4>")
     {
-        test_diff(gtensor::reduce_auto<4>{});
+        test_diff(multithreading::exec_pol<4>{});
     }
-    //reduce_rng<1>
-    SECTION("test_diff_reduce_rng<1>")
+    //exec_pol<0>
+    SECTION("test_diff_exec_pol<0>")
     {
-        test_diff(gtensor::reduce_rng<1>{});
-    }
-    //reduce_rng<4>
-    SECTION("test_diff_reduce_rng<4>")
-    {
-        test_diff(gtensor::reduce_rng<4>{});
-    }
-    //reduce_bin<1>
-    SECTION("test_diff_reduce_bin<1>")
-    {
-        test_diff(gtensor::reduce_bin<1>{});
-    }
-    //reduce_bin<4>
-    SECTION("test_diff_reduce_bin<4>")
-    {
-        test_diff(gtensor::reduce_bin<4>{});
+        test_diff(multithreading::exec_pol<0>{});
     }
 }
 
@@ -100,30 +85,15 @@ TEST_CASE("test_math_diff2","test_math")
     {
         test_diff2();
     }
-    //reduce_auto<4>
-    SECTION("test_diff2_reduce_auto<4>")
+    //exec_pol<4>
+    SECTION("test_diff2_exec_pol<4>")
     {
-        test_diff2(gtensor::reduce_auto<4>{});
+        test_diff2(multithreading::exec_pol<4>{});
     }
-    //reduce_rng<1>
-    SECTION("test_diff2_reduce_rng<1>")
+    //exec_pol<0>
+    SECTION("test_diff2_exec_pol<0>")
     {
-        test_diff2(gtensor::reduce_rng<1>{});
-    }
-    //reduce_rng<4>
-    SECTION("test_diff2_reduce_rng<4>")
-    {
-        test_diff2(gtensor::reduce_rng<4>{});
-    }
-    //reduce_bin<1>
-    SECTION("test_diff2_reduce_bin<1>")
-    {
-        test_diff2(gtensor::reduce_bin<1>{});
-    }
-    //reduce_bin<4>
-    SECTION("test_diff2_reduce_bin<4>")
-    {
-        test_diff2(gtensor::reduce_bin<4>{});
+        test_diff2(multithreading::exec_pol<0>{});
     }
 }
 
@@ -215,30 +185,15 @@ TEMPLATE_TEST_CASE("test_math_gradient","test_math",
     {
         test_gradient();
     }
-    //reduce_auto<4>
-    SECTION("test_gradient_reduce_auto<4>")
+    //exec_pol<4>
+    SECTION("test_gradient_exec_pol<4>")
     {
-        test_gradient(gtensor::reduce_auto<4>{});
+        test_gradient(multithreading::exec_pol<4>{});
     }
-    //reduce_rng<1>
-    SECTION("test_gradient_reduce_rng<1>")
+    //exec_pol<0>
+    SECTION("test_gradient_exec_pol<0>")
     {
-        test_gradient(gtensor::reduce_rng<1>{});
-    }
-    //reduce_rng<4>
-    SECTION("test_gradient_reduce_rng<4>")
-    {
-        test_gradient(gtensor::reduce_rng<4>{});
-    }
-    //reduce_bin<1>
-    SECTION("test_gradient_reduce_bin<1>")
-    {
-        test_gradient(gtensor::reduce_bin<1>{});
-    }
-    //reduce_bin<4>
-    SECTION("test_gradient_reduce_bin<4>")
-    {
-        test_gradient(gtensor::reduce_bin<4>{});
+        test_gradient(multithreading::exec_pol<0>{});
     }
 }
 

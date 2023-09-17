@@ -58,25 +58,13 @@ TEST_CASE("test_math_all","test_math")
     {
         test_all();
     }
-    SECTION("reduce_auto<4>")
+    SECTION("exec_pol<4>")
     {
-        test_all(gtensor::reduce_auto<4>{});
+        test_all(multithreading::exec_pol<4>{});
     }
-    SECTION("reduce_bin<1>")
+    SECTION("exec_pol<0>")
     {
-        test_all(gtensor::reduce_bin<1>{});
-    }
-    SECTION("reduce_bin<4>")
-    {
-        test_all(gtensor::reduce_bin<4>{});
-    }
-    SECTION("reduce_rng<1>")
-    {
-        test_all(gtensor::reduce_rng<1>{});
-    }
-    SECTION("reduce_rng<4>")
-    {
-        test_all(gtensor::reduce_rng<4>{});
+        test_all(multithreading::exec_pol<0>{});
     }
 }
 
@@ -103,11 +91,8 @@ TEST_CASE("test_math_all_overloads","test_math")
 }
 
 TEMPLATE_TEST_CASE("test_math_all_overloads_policy","test_math",
-    (gtensor::reduce_auto<4>),
-    (gtensor::reduce_rng<1>),
-    (gtensor::reduce_rng<4>),
-    (gtensor::reduce_bin<1>),
-    (gtensor::reduce_bin<4>)
+    (multithreading::exec_pol<4>),
+    (multithreading::exec_pol<0>)
 )
 {
     using policy = TestType;
@@ -166,25 +151,13 @@ TEST_CASE("test_math_all_nan_values","test_math")
     {
         test_all();
     }
-    SECTION("reduce_auto<4>")
+    SECTION("exec_pol<4>")
     {
-        test_all(gtensor::reduce_auto<4>{});
+        test_all(multithreading::exec_pol<4>{});
     }
-    SECTION("reduce_bin<1>")
+    SECTION("exec_pol<0>")
     {
-        test_all(gtensor::reduce_bin<1>{});
-    }
-    SECTION("reduce_bin<4>")
-    {
-        test_all(gtensor::reduce_bin<4>{});
-    }
-    SECTION("reduce_rng<1>")
-    {
-        test_all(gtensor::reduce_rng<1>{});
-    }
-    SECTION("reduce_rng<4>")
-    {
-        test_all(gtensor::reduce_rng<4>{});
+        test_all(multithreading::exec_pol<0>{});
     }
 }
 
@@ -250,25 +223,13 @@ TEST_CASE("test_math_any","test_math")
     {
         test_any();
     }
-    SECTION("reduce_auto<4>")
+    SECTION("exec_pol<4>")
     {
-        test_any(gtensor::reduce_auto<4>{});
+        test_any(multithreading::exec_pol<4>{});
     }
-    SECTION("reduce_bin<1>")
+    SECTION("exec_pol<0>")
     {
-        test_any(gtensor::reduce_bin<1>{});
-    }
-    SECTION("reduce_bin<4>")
-    {
-        test_any(gtensor::reduce_bin<4>{});
-    }
-    SECTION("reduce_rng<1>")
-    {
-        test_any(gtensor::reduce_rng<1>{});
-    }
-    SECTION("reduce_rng<4>")
-    {
-        test_any(gtensor::reduce_rng<4>{});
+        test_any(multithreading::exec_pol<0>{});
     }
 }
 
@@ -289,11 +250,8 @@ TEST_CASE("test_math_any_overloads","test_math")
 }
 
 TEMPLATE_TEST_CASE("test_math_any_overloads_policy","test_math",
-    (gtensor::reduce_auto<4>),
-    (gtensor::reduce_rng<1>),
-    (gtensor::reduce_rng<4>),
-    (gtensor::reduce_bin<1>),
-    (gtensor::reduce_bin<4>)
+    (multithreading::exec_pol<4>),
+    (multithreading::exec_pol<0>)
 )
 {
     using policy = TestType;
@@ -348,25 +306,13 @@ TEST_CASE("test_math_any_nan_values","test_math")
     {
         test_any();
     }
-    SECTION("reduce_auto<4>")
+    SECTION("exec_pol<4>")
     {
-        test_any(gtensor::reduce_auto<4>{});
+        test_any(multithreading::exec_pol<4>{});
     }
-    SECTION("reduce_bin<1>")
+    SECTION("exec_pol<0>")
     {
-        test_any(gtensor::reduce_bin<1>{});
-    }
-    SECTION("reduce_bin<4>")
-    {
-        test_any(gtensor::reduce_bin<4>{});
-    }
-    SECTION("reduce_rng<1>")
-    {
-        test_any(gtensor::reduce_rng<1>{});
-    }
-    SECTION("reduce_rng<4>")
-    {
-        test_any(gtensor::reduce_rng<4>{});
+        test_any(multithreading::exec_pol<0>{});
     }
 }
 

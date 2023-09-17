@@ -178,7 +178,7 @@ struct tensor_math
     //axes may be scalar or container if multiple axes permitted
     //empty container means apply function along all axes
 
-    using default_policy = reduce_auto<1>;
+    using default_policy = multithreading::exec_pol<1>;
 
     //test if all elements along given axes evaluate to true
     //axes may be scalar or container
