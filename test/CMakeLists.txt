@@ -59,16 +59,17 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_application_specific.cpp
 #
     #${CMAKE_CURRENT_SOURCE_DIR}/test_indexing.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_reduce.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_reduce.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_manipulation.cpp
 #
     #${CMAKE_CURRENT_SOURCE_DIR}/test_math_elementwise.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_math_along_axes.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_math_diff_gradient.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_math_sum_prod.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_math_cumsum_cumprod.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_math_all_any.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_math_min_max.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_math_diff_gradient.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_math_sum_prod.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_math_cumsum_cumprod.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_math_all_any.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_math_min_max.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_statistic_ptp_mean.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_statistic.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search.cpp
 #

@@ -31,6 +31,29 @@ struct cumsum{
     }
 };
 
+template<typename First, typename Second>
+struct pair{
+    First first;
+    Second second;
+    pair() = default;
+    template<typename First_, typename Second_>
+    pair(First_&& first__, Second_&& second__):
+        first{std::forward<First_>(first__)},
+        second{std::forward<Second_>(second__)}
+    {}
+    friend std::ostream& operator<<(std::ostream& os, const pair& inst){
+        return os<<inst.first<<" "<<inst.second;
+    }
+};
+
+template<typename First, typename Second>
+auto make_pair(First&& first, Second&& second){
+    return pair<std::remove_cv_t<std::remove_reference_t<First>>,std::remove_cv_t<std::remove_reference_t<Second>>>{
+        std::forward<First>(first),
+        std::forward<Second>(second)
+    };
+}
+
 
 }
 
@@ -44,22 +67,23 @@ TEST_CASE("test_tmp","[test_tmp]")
     using gtensor::config::f_order;
     using gtensor::tensor;
 
+    using test_tmp::pair;
+    using test_tmp::make_pair;
+
     using value_type = double;
-    static constexpr value_type nan = std::numeric_limits<value_type>::quiet_NaN();
-    static constexpr value_type pos_inf = std::numeric_limits<value_type>::infinity();
-    static constexpr value_type neg_inf = -std::numeric_limits<value_type>::infinity();
 
-    tensor<value_type,c_order> t{1.0,0.0,2.0,neg_inf,3.0,pos_inf};
+    auto axes = 0;
+    tensor<value_type,c_order> t{{1,2,3},{4,5,6},{7,8,9}};
+    auto init = *t.begin();
+    auto tmp = reduce_binary(t,axes,
+        [](const auto& r, const auto& e){
+            return test_tmp::make_pair(std::min(r.first,e),std::max(r.second,e));
+        },
+        false,test_tmp::make_pair(init,init)
+    );
 
-    auto r = gtensor::nanprod(t);
-
-
-
-    std::cout<<std::endl<<r;
-
-    std::cout<<std::endl<<gtensor::math::isnan(pos_inf);
-    std::cout<<std::endl<<gtensor::math::isnan(pos_inf*0.0);
-    std::cout<<std::endl<<gtensor::math::isnan(pos_inf*pos_inf);
-    std::cout<<std::endl<<gtensor::math::isnan(pos_inf*neg_inf);
+    std::cout<<std::endl<<tmp;
+    std::cout<<std::endl<<t.max(axes)-t.min(axes);
+    //std::cout<<std::endl<<(*tmp.begin()).first<<" "<<(*tmp.begin()).second;
 
 }

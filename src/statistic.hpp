@@ -5,6 +5,7 @@
 #include <algorithm>
 #include "math.hpp"
 #include "reduce.hpp"
+#include "tensor_math.hpp"
 #include "reduce_operations.hpp"
 
 namespace gtensor{
@@ -24,37 +25,150 @@ enum class histogram_algorithm : std::size_t {automatic,fd,scott,rice,sturges,sq
 
 //tensor statistic functions implementation
 
-#define GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(NAME,F)\
+#define GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(NAME,RANGE_F,BINARY_F)\
+template<typename Policy, typename...Ts, typename Axes>\
+static auto NAME(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){\
+    if constexpr (multithreading::exec_policy_traits<Policy>::is_seq::value){\
+        return BINARY_F{}(policy,t,axes,keep_dims);\
+    }else{\
+        return reduce_range(policy,t,axes,RANGE_F{},keep_dims,true);\
+    }\
+}\
+template<typename Policy, typename...Ts>\
+static auto NAME(Policy policy, const basic_tensor<Ts...>& t, bool keep_dims = false){\
+    return BINARY_F{}(policy,t,keep_dims);\
+}\
 template<typename...Ts, typename Axes>\
 static auto NAME(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){\
-    return reduce(t,axes,F{},keep_dims,true);\
+    return NAME(multithreading::exec_pol<1>{},t,axes,keep_dims);\
 }\
 template<typename...Ts>\
 static auto NAME(const basic_tensor<Ts...>& t, bool keep_dims = false){\
-    return reduce_flatten(t,F{},keep_dims,true);\
+    return NAME(multithreading::exec_pol<1>{},t,keep_dims);\
 }
 
 struct statistic
 {
+private:
+    struct ptp_binary{
+        template<typename Policy, typename...Ts,typename Axes>
+        auto operator()(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims){
+            return (max(policy,t,axes,keep_dims) - min(policy,t,axes,keep_dims)).copy();
+        }
+        template<typename Policy, typename...Ts>
+        auto operator()(Policy policy, const basic_tensor<Ts...>& t, bool keep_dims){
+            return (max(policy,t,keep_dims) - min(policy,t,keep_dims)).copy();
+        }
+    };
+    struct mean_binary{
+        template<typename Policy, typename...Ts,typename Axes>
+        auto operator()(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims){
+            using value_type = typename basic_tensor<Ts...>::value_type;
+            using integral_type = gtensor::math::make_integral_t<value_type>;
+            using res_type = gtensor::math::make_floating_point_t<value_type>;
+            using f_type = gtensor::math_reduce_operations::nan_propagate_operation<gtensor::math_reduce_operations::plus<res_type>>;
+            auto tmp = reduce_binary(policy,t,axes,f_type{},keep_dims,res_type{0});
+            if (!tmp.empty()){
+                if (t.empty()){ //reduce zero size dimension
+                    if constexpr (gtensor::math::numeric_traits<res_type>::has_nan()){
+                        auto a = tmp.traverse_order_adapter(typename decltype(tmp)::order{});
+                        std::fill(a.begin(),a.end(),gtensor::math::numeric_traits<res_type>::nan());
+                    }else{
+                        throw value_error("cant reduce zero size dimension without initial value");
+                    }
+                }else{
+                    const auto axes_size = t.size()/tmp.size();
+                    tmp/=static_cast<const res_type&>(static_cast<const integral_type&>(axes_size));
+                }
+            }
+            return tmp;
+        }
+        template<typename Policy, typename...Ts>
+        auto operator()(Policy policy, const basic_tensor<Ts...>& t, bool keep_dims){
+            return this->operator()(policy,t,detail::no_value{},keep_dims);
+        }
+    };
+    struct nanmean_binary{
+        template<typename Policy, typename...Ts,typename Axes>
+        auto operator()(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims){
+            using order = typename basic_tensor<Ts...>::order;
+            using value_type = typename basic_tensor<Ts...>::value_type;
+            using config_type = typename basic_tensor<Ts...>::config_type;
+            using integral_type = gtensor::math::make_integral_t<value_type>;
+            using res_type = gtensor::math::make_floating_point_t<value_type>;
+            using f_type = gtensor::math_reduce_operations::nan_ignoring_counting_operation<gtensor::math_reduce_operations::plus<res_type>,integral_type>;
+            auto tmp = reduce_binary(policy,t,axes,f_type{},keep_dims,std::make_pair(res_type{0},integral_type{0}));
+            tensor<res_type,order,config_type> res(tmp.shape());
+            std::transform(tmp.begin(),tmp.end(),res.begin(),
+                [](const auto& r){
+                    if constexpr (gtensor::math::numeric_traits<res_type>::has_nan()){
+                        return r.first/static_cast<const res_type&>(r.second);
+                    }else{
+                        if (r.second==0){
+                            throw value_error("cant reduce zero size dimension without initial value");
+                        }
+                    }
+                }
+            );
+            return res;
+        }
+        template<typename Policy, typename...Ts>
+        auto operator()(Policy policy, const basic_tensor<Ts...>& t, bool keep_dims){
+            return this->operator()(policy,t,detail::no_value{},keep_dims);
+        }
+    };
+    struct var_binary{
+        template<typename Policy, typename...Ts,typename Axes>
+        auto operator()(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims){
+            auto square = [](const auto& e){return e*e;};
+            auto mean_ = mean_binary(t,axes,true);
+            auto tmp = gtensor::n_operator(square,t-std::move(mean_));
+            return mean_binary(tmp,axes,keep_dims);
+        }
+        template<typename Policy, typename...Ts>
+        auto operator()(Policy policy, const basic_tensor<Ts...>& t, bool keep_dims){
+            return this->operator()(policy,t,detail::no_value{},keep_dims);
+        }
+    };
+    struct nanvar_binary{
+        template<typename Policy, typename...Ts,typename Axes>
+        auto operator()(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims){
+            auto square = [](const auto& e){return e*e;};
+            auto mean_ = nanmean_binary(t,axes,true);
+            auto tmp = gtensor::n_operator(square,t-std::move(mean_));
+            return nanmean_binary(tmp,axes,keep_dims);
+        }
+        template<typename Policy, typename...Ts>
+        auto operator()(Policy policy, const basic_tensor<Ts...>& t, bool keep_dims){
+            return this->operator()(policy,t,detail::no_value{},keep_dims);
+        }
+    };
+
+public:
     //statistic functions along given axis or axes
     //axes may be scalar or container if multiple axes permitted
     //empty container means apply function along all axes
 
+    using default_policy = multithreading::exec_pol<1>;
+
     //peak-to-peak of elements along given axes
     //axes may be scalar or container
-    GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(ptp,statistic_reduce_operations::ptp);
+    //GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(ptp,statistic_reduce_operations::ptp);
+    GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(ptp,statistic_reduce_operations::ptp,ptp_binary);
 
     //mean of elements along given axes
     //axes may be scalar or container
-    GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(mean,statistic_reduce_operations::mean);
+    //GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(mean,statistic_reduce_operations::mean);
+    GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(mean,statistic_reduce_operations::mean,mean_binary);
 
     //variance of elements along given axes
     //axes may be scalar or container
-    GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(var,statistic_reduce_operations::var);
+    //GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(var,statistic_reduce_operations::var);
+    GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(var,statistic_reduce_operations::var,var_binary);
 
     //standart deviation of elements along given axes
     //axes may be scalar or container
-    GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(stdev,statistic_reduce_operations::stdev);
+    //GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(stdev,statistic_reduce_operations::stdev);
 
     //quantile of elements along given axes
     //axes may be scalar or container
@@ -64,9 +178,9 @@ struct statistic
         using config_type = typename basic_tensor<Ts...>::config_type;
         static_assert(math::numeric_traits<Q>::is_floating_point(),"q must be of floating point type");
         if constexpr (std::is_same_v<Axes,detail::no_value>){
-            return reduce_flatten(t,statistic_reduce_operations::quantile{},keep_dims,false,q,config_type{});
+            return reduce_range_flatten(t,statistic_reduce_operations::quantile{},keep_dims,false,q,config_type{});
         }else{
-            return reduce(t,axes,statistic_reduce_operations::quantile{},keep_dims,false,q,config_type{});
+            return reduce_range(t,axes,statistic_reduce_operations::quantile{},keep_dims,false,q,config_type{});
         }
     }
     //like over flatten
@@ -92,15 +206,17 @@ struct statistic
     //nan versions
     //mean of elements along given axes, ignoring nan
     //axes may be scalar or container
-    GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(nanmean,statistic_reduce_operations::nanmean);
+    //GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(nanmean,statistic_reduce_operations::nanmean);
+    GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(nanmean,statistic_reduce_operations::nanmean,nanmean_binary);
 
     //variance of elements along given axes, ignoring nan
     //axes may be scalar or container
-    GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(nanvar,statistic_reduce_operations::nanvar);
+    //GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(nanvar,statistic_reduce_operations::nanvar);
+    GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(nanvar,statistic_reduce_operations::nanvar,nanvar_binary);
 
     //standart deviation of elements along given axes, ignoring nan
     //axes may be scalar or container
-    GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(nanstd,statistic_reduce_operations::nanstdev);
+    //GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(nanstd,statistic_reduce_operations::nanstdev);
 
     //quantile of elements along given axes, ignoring nan
     //axes may be scalar or container
@@ -109,9 +225,9 @@ struct statistic
         using config_type = typename basic_tensor<Ts...>::config_type;
         static_assert(math::numeric_traits<Q>::is_floating_point(),"q must be of floating point type");
         if constexpr (std::is_same_v<Axes,detail::no_value>){
-            return reduce_flatten(t,statistic_reduce_operations::nanquantile{},keep_dims,false,q,config_type{});
+            return reduce_range_flatten(t,statistic_reduce_operations::nanquantile{},keep_dims,false,q,config_type{});
         }else{
-            return reduce(t,axes,statistic_reduce_operations::nanquantile{},keep_dims,false,q,config_type{});
+            return reduce_range(t,axes,statistic_reduce_operations::nanquantile{},keep_dims,false,q,config_type{});
         }
     }
     //like over flatten, ignoring nan
@@ -141,9 +257,9 @@ struct statistic
     static auto average(const basic_tensor<Ts...>& t, const Axes& axes, const Container& weights, bool keep_dims=false){
         using value_type = typename basic_tensor<Ts...>::value_type;
         if constexpr (std::is_same_v<Axes,detail::no_value>){
-            return reduce_flatten(t,statistic_reduce_operations::average<value_type>{},keep_dims,false,weights);
+            return reduce_range_flatten(t,statistic_reduce_operations::average<value_type>{},keep_dims,false,weights);
         }else{
-            return reduce(t,axes,statistic_reduce_operations::average<value_type>{},keep_dims,false,weights);
+            return reduce_range(t,axes,statistic_reduce_operations::average<value_type>{},keep_dims,false,weights);
         }
     }
     template<typename...Ts, typename Container>
@@ -598,6 +714,21 @@ private:
 //frontend uses compile-time dispatch to select implementation, see module_selector.hpp
 
 #define GTENSOR_TENSOR_STATISTIC_REDUCE_ROUTINE(NAME,F)\
+template<typename Policy, typename...Ts, typename Axes>\
+auto NAME(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){\
+    using config_type = typename basic_tensor<Ts...>::config_type;\
+    return statistic_selector_t<config_type>::F(policy,t,axes,keep_dims);\
+}\
+template<typename Policy, typename...Ts, typename DimT>\
+auto NAME(Policy policy, const basic_tensor<Ts...>& t, std::initializer_list<DimT> axes, bool keep_dims = false){\
+    using config_type = typename basic_tensor<Ts...>::config_type;\
+    return statistic_selector_t<config_type>::F(policy,t,axes,keep_dims);\
+}\
+template<typename Policy, typename...Ts>\
+auto NAME(Policy policy, const basic_tensor<Ts...>& t, bool keep_dims = false){\
+    using config_type = typename basic_tensor<Ts...>::config_type;\
+    return statistic_selector_t<config_type>::F(policy,t,keep_dims);\
+}\
 template<typename...Ts, typename Axes>\
 auto NAME(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){\
     using config_type = typename basic_tensor<Ts...>::config_type;\

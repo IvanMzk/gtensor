@@ -151,13 +151,44 @@ struct nan_ignoring_operation : Operation
     }
 };
 
-struct plus : public std::plus<void>{template<typename T> inline static constexpr T value(){return T(0);}};
-struct multiplies : public std::multiplies<void>{template<typename T> inline static constexpr T value(){return T(1);}};
+template<typename Operation, typename Size>
+struct nan_ignoring_counting_operation : Operation
+{
+    template<typename E>
+    auto operator()(const E& e1, const E& e2)->decltype(std::make_pair(Operation::operator()(e1,e2),std::declval<Size>())){
+        const auto e1_not_nan = !gtensor::math::isnan(e1);
+        const auto e2_not_nan = !gtensor::math::isnan(e2);
+        if (e1_not_nan && e2_not_nan){
+            return std::make_pair(Operation::operator()(e1,e2),Size{2});
+        }else if (e1_not_nan){
+            return std::make_pair(e1,Size{1});
+        }else if (e2_not_nan){
+            return std::make_pair(e2,Size{1});
+        }else{
+            return std::make_pair(Operation::template value<E>(),Size{0});
+        }
+    }
+    template<typename R, typename S>
+    auto operator()(const std::pair<R,S>& r1, const std::pair<R,S>& r2)->decltype(std::make_pair(Operation::operator()(r1.first,r2.first),std::declval<Size>())){
+        return std::make_pair(Operation::operator()(r1.first,r2.first),r1.second+r2.second);
+    }
+    template<typename R, typename E, typename S>
+    auto operator()(const std::pair<R,S>& r, const E& e)->decltype(std::make_pair(Operation::operator()(r.first,e),std::declval<Size>())){
+        return gtensor::math::isnan(e) ? r : std::make_pair(Operation::operator()(r.first,e),r.second+Size{1});
+    }
+    template<typename R, typename E, typename S>
+    auto operator()(const E& e, const std::pair<R,S>& r)->decltype(std::make_pair(Operation::operator()(r.first,e),std::declval<Size>())){
+        return this->operator()(r,e);
+    }
+};
 
-using sum = accumulate_nanaccumulate<nan_propagate_operation<plus>>;
-using prod = accumulate_nanaccumulate<nan_propagate_operation<multiplies>>;
-using nansum = accumulate_nanaccumulate<nan_ignoring_operation<plus>>;
-using nanprod = accumulate_nanaccumulate<nan_ignoring_operation<multiplies>>;
+template<typename T> struct plus : public std::plus<T>{template<typename U> inline static constexpr U value(){return U(0);}};
+template<typename T> struct multiplies : public std::multiplies<T>{template<typename U> inline static constexpr U value(){return U(1);}};
+
+using sum = accumulate_nanaccumulate<nan_propagate_operation<plus<void>>>;
+using prod = accumulate_nanaccumulate<nan_propagate_operation<multiplies<void>>>;
+using nansum = accumulate_nanaccumulate<nan_ignoring_operation<plus<void>>>;
+using nanprod = accumulate_nanaccumulate<nan_ignoring_operation<multiplies<void>>>;
 
 template<typename Operation>
 struct cumulate_nancumulate
@@ -175,10 +206,10 @@ struct cumulate_nancumulate
     }
 };
 
-using cumsum = cumulate_nancumulate<nan_propagate_operation<plus>>;
-using cumprod = cumulate_nancumulate<nan_propagate_operation<multiplies>>;
-using nancumsum = cumulate_nancumulate<nan_ignoring_operation<plus>>;
-using nancumprod = cumulate_nancumulate<nan_ignoring_operation<multiplies>>;
+using cumsum = cumulate_nancumulate<nan_propagate_operation<plus<void>>>;
+using cumprod = cumulate_nancumulate<nan_propagate_operation<multiplies<void>>>;
+using nancumsum = cumulate_nancumulate<nan_ignoring_operation<plus<void>>>;
+using nancumprod = cumulate_nancumulate<nan_ignoring_operation<multiplies<void>>>;
 
 //first finite difference
 struct diff_1

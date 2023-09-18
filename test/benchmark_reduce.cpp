@@ -2,7 +2,7 @@
 #include "helpers_for_testing.hpp"
 #include "tensor.hpp"
 #include "tensor_math.hpp"
-#include "statistic.hpp"
+//#include "statistic.hpp"
 
 namespace benchmark_reduce_{
 
@@ -35,12 +35,12 @@ auto ptp_pair(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims=fal
     using value_type = typename tensor_type::value_type;
     using config_type = typename tensor_type::config_type;
     if (t.empty()){
-        //throw no initial
+        throw gtensor::value_error("no initial");
     }else{
         auto init = *t.begin();
         auto tmp = reduce_binary(t,axes,
             [](const auto& r, const auto& e){
-                return std::make_pair(std::min(r.first,e),std::min(r.second,e));
+                return std::make_pair(std::min(r.first,e),std::max(r.second,e));
             },
             keep_dims,std::make_pair(init,init)
         );
@@ -197,6 +197,26 @@ auto bench_reduce(std::string mes, std::size_t n_iters, Shapes shapes, Axes axes
 }   //end of namespace benchmark_reduce_
 
 
+TEMPLATE_TEST_CASE("test_reduce_binary_ptp_pair","[benchmark_tensor]",
+    gtensor::config::c_order,
+    gtensor::config::f_order
+)
+{
+    using value_type = double;
+    using gtensor::tensor;
+    using gtensor::config::c_order;
+    using gtensor::config::f_order;
+    using tensor_type = gtensor::tensor<value_type,TestType>;
+    //using config_type = typename tensor_type::config_type;
+    //using order = typename tensor_type::order;
+
+    auto t = tensor_type{{{{{7,5,8,5},{0,5,5,1},{3,8,0,8}}},{{{0,0,2,5},{1,2,3,0},{6,7,3,7}}}},{{{{4,8,0,7},{0,0,2,4},{1,5,8,5}}},{{{6,8,4,8},{4,1,3,2},{7,0,6,2}}}},{{{{7,3,6,4},{2,6,4,7},{0,3,3,1}}},{{{2,1,3,0},{4,7,4,4},{7,6,3,3}}}}};
+
+    REQUIRE(benchmark_reduce_::ptp(t,std::vector<int>{0}) == tensor_type{{{{3,5,8,3},{2,6,3,6},{3,5,8,7}}},{{{6,8,2,8},{3,6,1,4},{1,7,3,5}}}});
+    REQUIRE(benchmark_reduce_::ptp(t,std::vector<int>{0,1}) == tensor_type{{{7,8,8,8},{4,7,3,7},{7,8,8,7}}});
+    REQUIRE(benchmark_reduce_::ptp(t,std::vector<int>{1,2,3}) == tensor_type{{7,8,8,8},{7,8,8,6},{7,6,3,7}});
+}
+
 TEMPLATE_TEST_CASE("test_reduce_binary_sum","[benchmark_tensor]",
     gtensor::config::c_order,
     gtensor::config::f_order
@@ -233,7 +253,7 @@ TEMPLATE_TEST_CASE("test_var_range_tmp_mean","[benchmark_tensor]",
     using tensor_type = gtensor::tensor<value_type,TestType>;
 
     auto var = [](const auto& t, const auto& axes){
-        return gtensor::reduce(t,axes,benchmark_reduce_::var_range_tmp_mean{},false,true);
+        return gtensor::reduce_range(t,axes,benchmark_reduce_::var_range_tmp_mean{},false,true);
     };
 
     auto t = tensor_type{{{{{7,5,8,5},{0,5,5,1},{3,8,0,8}}},{{{0,0,2,5},{1,2,3,0},{6,7,3,7}}}},{{{{4,8,0,7},{0,0,2,4},{1,5,8,5}}},{{{6,8,4,8},{4,1,3,2},{7,0,6,2}}}},{{{{7,3,6,4},{2,6,4,7},{0,3,3,1}}},{{{2,1,3,0},{4,7,4,4},{7,6,3,3}}}}};
@@ -272,15 +292,15 @@ TEST_CASE("benchmark_reduce","[benchmark_tensor]")
         return *r.begin();
     };
 
-    auto reducer_reduce_range_ptp = [](const auto& t, const auto& axes){
-        auto r = gtensor::ptp(t,axes);
-        return *r.begin();
-    };
+    // auto reducer_reduce_range_ptp = [](const auto& t, const auto& axes){
+    //     auto r = gtensor::ptp(t,axes);
+    //     return *r.begin();
+    // };
 
-    auto reducer_reduce_range_mean = [](const auto& t, const auto& axes){
-        auto r = gtensor::mean(t,axes);
-        return *r.begin();
-    };
+    // auto reducer_reduce_range_mean = [](const auto& t, const auto& axes){
+    //     auto r = gtensor::mean(t,axes);
+    //     return *r.begin();
+    // };
 
     auto reducer_reduce_binary_mean = [](const auto& t, const auto& axes){
         auto r = benchmark_reduce_::mean(t,axes);
@@ -305,10 +325,11 @@ TEST_CASE("benchmark_reduce","[benchmark_tensor]")
         auto r = benchmark_reduce_::var_temp_mean_copy(t,axes);
         return *r.begin();
     };
-    auto reducer_reduce_range_var = [](const auto& t, const auto& axes){
-        auto r = gtensor::var(t,axes);
-        return *r.begin();
-    };
+
+    // auto reducer_reduce_range_var = [](const auto& t, const auto& axes){
+    //     auto r = gtensor::var(t,axes);
+    //     return *r.begin();
+    // };
 
     auto reducer_reduce_range_var_tmp_mean = [](const auto& t, const auto& axes){
         auto r = gtensor::reduce(t,axes,benchmark_reduce_::var_range_tmp_mean{},false,true);
@@ -345,12 +366,12 @@ TEST_CASE("benchmark_reduce","[benchmark_tensor]")
     //bench_reduce("reduce binary mean on tensor",n_iters,shapes,axes,[](auto&& t){return t;},reducer_reduce_binary_mean);
 
     //bench_reduce("reduce range ptp on tensor",n_iters,shapes,axes,[](auto&& t){return t;},reducer_reduce_range_ptp);
-    //bench_reduce("reduce binary ptp1 on tensor, single reduction for min max",n_iters,shapes,axes,[](auto&& t){return t;},reducer_reduce_binary_ptp_pair);
+    //bench_reduce("reduce binary ptp min-max pair on tensor, single reduction for min max",n_iters,shapes,axes,[](auto&& t){return t;},reducer_reduce_binary_ptp_pair);
     //bench_reduce("reduce ptp on tensor",n_iters,shapes,axes,[](auto&& t){return t;},reducer_reduce_binary_ptp);
 
     //bench_reduce("reduce range sum on tensor",n_iters,shapes,axes,[](auto&& t){return t;},reducer_reduce_range_sum);
     //bench_reduce("reduce range sum on trivial expression view t+t+t+t+t+t+t+t+t+t",n_iters,shapes,axes,[](auto&& t){return t+t+t+t+t+t+t+t+t+t;},reducer_reduce_range_sum);
-    bench_reduce("reduce range sum on not trivial expression view t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(1,2)+t+t+t",n_iters,shapes,axes,[](auto&& t){return t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(1,2)+t+t+t;},reducer_reduce_range_sum);
+    //bench_reduce("reduce range sum on not trivial expression view t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(1,2)+t+t+t",n_iters,shapes,axes,[](auto&& t){return t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(1,2)+t+t+t;},reducer_reduce_range_sum);
 
     //bench_reduce("reduce_binary sum on tensor",n_iters,shapes,axes,[](auto&& t){return t;},reducer_reduce_binary_sum);
     //bench_reduce("reduce_binary sum on trivial expression view t+t+t+t+t+t+t+t+t+t",n_iters,shapes,axes,[](auto&& t){return t+t+t+t+t+t+t+t+t+t;},reducer_reduce_binary_sum);
