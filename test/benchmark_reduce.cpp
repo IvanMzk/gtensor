@@ -19,7 +19,7 @@ using benchmark_helpers::statistic;
 
 template<typename Axes, typename...Ts, typename Initial=gtensor::detail::no_value>
 auto reduce_binary_sum(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims=false, const Initial& initial=Initial{}){
-    using f_type = gtensor::math_reduce_operations::nan_propagate_operation<gtensor::math_reduce_operations::plus>;
+    using f_type = gtensor::math_reduce_operations::nan_propagate_operation<gtensor::math_reduce_operations::plus<void>>;
     return reduce_binary(t,axes,f_type{},keep_dims,initial);
 }
 
@@ -27,6 +27,21 @@ template<typename Axes, typename...Ts>
 auto ptp(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims=false){
     return (t.max(axes,keep_dims) - t.min(axes,keep_dims)).copy();
 }
+
+
+struct ptp_binary_operation{
+
+    template<typename E>
+    auto operator()(const E& e1, const E& e2){
+        return std::make_pair(std::min(e1,e2),std::max(e1,e2));
+    }
+
+    template<typename E>
+    auto operator()(const std::pair<E,E>& r, const E& e){
+        return std::make_pair(std::min(r.first,e),std::max(r.second,e));
+    }
+};
+
 
 template<typename Axes, typename...Ts>
 auto ptp_pair(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims=false){
@@ -37,13 +52,7 @@ auto ptp_pair(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims=fal
     if (t.empty()){
         throw gtensor::value_error("no initial");
     }else{
-        auto init = *t.begin();
-        auto tmp = reduce_binary(t,axes,
-            [](const auto& r, const auto& e){
-                return std::make_pair(std::min(r.first,e),std::max(r.second,e));
-            },
-            keep_dims,std::make_pair(init,init)
-        );
+        auto tmp = reduce_binary(t,axes,ptp_binary_operation{},keep_dims,gtensor::detail::no_value{});
         tensor<value_type,order,config_type> res(tmp.shape());
         std::transform(tmp.begin(),tmp.end(),res.begin(),[](const auto& min_max_pair){return min_max_pair.second-min_max_pair.first;});
         return res;
