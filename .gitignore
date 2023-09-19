@@ -1,9 +1,3 @@
 tmp/
 build/
-*.ddd
-*dia*
-*.dia.*
 todo
-project_diagrams.dia~
-project_diagrams.dia.autosave
-walker_benchmark_results

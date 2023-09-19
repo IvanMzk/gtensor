@@ -47,6 +47,46 @@ static auto NAME(const basic_tensor<Ts...>& t, bool keep_dims = false){\
     return NAME(multithreading::exec_pol<1>{},t,keep_dims);\
 }
 
+#define GTENSOR_TENSOR_STATISTIC_QUANTILE_NANQUANTILE_FUNCTION(NAME,RANGE_F)\
+template<typename Policy, typename...Ts, typename Axes, typename Q>\
+static auto NAME(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, const Q& q, bool keep_dims = false){\
+    using config_type = typename basic_tensor<Ts...>::config_type;\
+    static_assert(math::numeric_traits<Q>::is_floating_point(),"q must be of floating point type");\
+    return reduce_range(policy,t,axes,RANGE_F{},keep_dims,false,q,config_type{});\
+}\
+template<typename...Ts, typename Axes, typename Q>\
+static auto NAME(const basic_tensor<Ts...>& t, const Axes& axes, const Q& q, bool keep_dims = false){\
+    return NAME(multithreading::exec_pol<1>{},t,axes,q,keep_dims);\
+}\
+template<typename Policy, typename...Ts, typename Q>\
+static auto NAME(Policy policy, const basic_tensor<Ts...>& t, const Q& q, bool keep_dims = false){\
+    return NAME(policy,t,detail::no_value{},q,keep_dims);\
+}\
+template<typename...Ts, typename Q>\
+static auto NAME(const basic_tensor<Ts...>& t, const Q& q, bool keep_dims = false){\
+    return NAME(multithreading::exec_pol<1>{},t,q,keep_dims);\
+}\
+
+#define GTENSOR_TENSOR_STATISTIC_MEDIAN_NANMEDIAN_FUNCTION(NAME,QUANTILE)\
+template<typename Policy, typename...Ts, typename Axes>\
+static auto NAME(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){\
+    using value_type = typename basic_tensor<Ts...>::value_type;\
+    return QUANTILE(policy,t,axes,gtensor::math::make_floating_point_t<value_type>{0.5},keep_dims);\
+}\
+template<typename...Ts, typename Axes>\
+static auto NAME(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){\
+    return NAME(multithreading::exec_pol<1>{},t,axes,keep_dims);\
+}\
+template<typename Policy, typename...Ts>\
+static auto NAME(Policy policy, const basic_tensor<Ts...>& t, bool keep_dims = false){\
+    return NAME(policy,t,detail::no_value{},keep_dims);\
+}\
+template<typename...Ts>\
+static auto NAME(const basic_tensor<Ts...>& t, bool keep_dims = false){\
+    return NAME(multithreading::exec_pol<1>{},t,keep_dims);\
+}
+
+
 struct statistic
 {
 private:
@@ -235,21 +275,16 @@ public:
     //axes may be scalar or container if multiple axes permitted
     //empty container means apply function along all axes
 
-    using default_policy = multithreading::exec_pol<1>;
-
     //peak-to-peak of elements along given axes
     //axes may be scalar or container
-    //GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(ptp,statistic_reduce_operations::ptp);
     GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(ptp,statistic_reduce_operations::ptp,ptp_binary);
 
     //mean of elements along given axes
     //axes may be scalar or container
-    //GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(mean,statistic_reduce_operations::mean);
     GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(mean,statistic_reduce_operations::mean,mean_binary);
 
     //variance of elements along given axes
     //axes may be scalar or container
-    //GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(var,statistic_reduce_operations::var);
     GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(var,statistic_reduce_operations::var,var_binary);
 
     //standart deviation of elements along given axes
@@ -259,45 +294,19 @@ public:
     //quantile of elements along given axes
     //axes may be scalar or container
     //q must be of floating point type in range [0,1]
-    template<typename...Ts, typename Axes, typename Q>
-    static auto quantile(const basic_tensor<Ts...>& t, const Axes& axes, const Q& q, bool keep_dims = false){
-        using config_type = typename basic_tensor<Ts...>::config_type;
-        static_assert(math::numeric_traits<Q>::is_floating_point(),"q must be of floating point type");
-        if constexpr (std::is_same_v<Axes,detail::no_value>){
-            return reduce_range_flatten(t,statistic_reduce_operations::quantile{},keep_dims,false,q,config_type{});
-        }else{
-            return reduce_range(t,axes,statistic_reduce_operations::quantile{},keep_dims,false,q,config_type{});
-        }
-    }
-    //like over flatten
-    template<typename...Ts, typename Q>
-    static auto quantile(const basic_tensor<Ts...>& t, const Q& q, bool keep_dims = false){
-        return quantile(t,detail::no_value{},q,keep_dims);
-    }
+    GTENSOR_TENSOR_STATISTIC_QUANTILE_NANQUANTILE_FUNCTION(quantile,statistic_reduce_operations::quantile);
 
     //median of elements along given axes
     //axes may be scalar or container
-    template<typename...Ts, typename Axes>
-    static auto median(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
-        using value_type = typename basic_tensor<Ts...>::value_type;
-        return quantile(t,axes,gtensor::math::make_floating_point_t<value_type>{0.5},keep_dims);
-    }
-    //like over flatten
-    template<typename...Ts>
-    static auto median(const basic_tensor<Ts...>& t, bool keep_dims = false){
-        using value_type = typename basic_tensor<Ts...>::value_type;
-        return quantile(t,gtensor::math::make_floating_point_t<value_type>{0.5},keep_dims);
-    }
+    GTENSOR_TENSOR_STATISTIC_MEDIAN_NANMEDIAN_FUNCTION(median,quantile);
 
     //nan versions
     //mean of elements along given axes, ignoring nan
     //axes may be scalar or container
-    //GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(nanmean,statistic_reduce_operations::nanmean);
     GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(nanmean,statistic_reduce_operations::nanmean,nanmean_binary);
 
     //variance of elements along given axes, ignoring nan
     //axes may be scalar or container
-    //GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(nanvar,statistic_reduce_operations::nanvar);
     GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(nanvar,statistic_reduce_operations::nanvar,nanvar_binary);
 
     //standart deviation of elements along given axes, ignoring nan
@@ -306,35 +315,11 @@ public:
 
     //quantile of elements along given axes, ignoring nan
     //axes may be scalar or container
-    template<typename...Ts, typename Axes, typename Q>
-    static auto nanquantile(const basic_tensor<Ts...>& t, const Axes& axes, const Q& q, bool keep_dims = false){
-        using config_type = typename basic_tensor<Ts...>::config_type;
-        static_assert(math::numeric_traits<Q>::is_floating_point(),"q must be of floating point type");
-        if constexpr (std::is_same_v<Axes,detail::no_value>){
-            return reduce_range_flatten(t,statistic_reduce_operations::nanquantile{},keep_dims,false,q,config_type{});
-        }else{
-            return reduce_range(t,axes,statistic_reduce_operations::nanquantile{},keep_dims,false,q,config_type{});
-        }
-    }
-    //like over flatten, ignoring nan
-    template<typename...Ts, typename Q>
-    static auto nanquantile(const basic_tensor<Ts...>& t, const Q& q, bool keep_dims = false){
-        return nanquantile(t,detail::no_value{},q,keep_dims);
-    }
+    GTENSOR_TENSOR_STATISTIC_QUANTILE_NANQUANTILE_FUNCTION(nanquantile,statistic_reduce_operations::nanquantile);
 
     //median of elements along given axes, ignoring nan
     //axes may be scalar or container
-    template<typename...Ts, typename Axes>
-    static auto nanmedian(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){
-        using value_type = typename basic_tensor<Ts...>::value_type;
-        return nanquantile(t,axes,gtensor::math::make_floating_point_t<value_type>{0.5},keep_dims);
-    }
-    //like over flatten, ignoring nan
-    template<typename...Ts>
-    static auto nanmedian(const basic_tensor<Ts...>& t, bool keep_dims = false){
-        using value_type = typename basic_tensor<Ts...>::value_type;
-        return nanquantile(t,gtensor::math::make_floating_point_t<value_type>{0.5},keep_dims);
-    }
+    GTENSOR_TENSOR_STATISTIC_MEDIAN_NANMEDIAN_FUNCTION(nanmedian,nanquantile);
 
     //average along given axes
     //axes may be scalar or container
@@ -831,6 +816,38 @@ auto NAME(const basic_tensor<Ts...>& t, bool keep_dims = false){\
     return statistic_selector_t<config_type>::F(t,keep_dims);\
 }
 
+#define GTENSOR_TENSOR_STATISTIC_QUANTILE_NANQUANTILE_ROUTINE(NAME,F)\
+template<typename Policy, typename...Ts, typename Axes, typename Q>\
+auto NAME(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, const Q& q, bool keep_dims = false){\
+    using config_type = typename basic_tensor<Ts...>::config_type;\
+    return statistic_selector_t<config_type>::F(policy,t,axes,q,keep_dims);\
+}\
+template<typename Policy, typename...Ts, typename DimT, typename Q>\
+auto NAME(Policy policy, const basic_tensor<Ts...>& t, std::initializer_list<DimT> axes, const Q& q, bool keep_dims = false){\
+    using config_type = typename basic_tensor<Ts...>::config_type;\
+    return statistic_selector_t<config_type>::F(policy,t,axes,q,keep_dims);\
+}\
+template<typename Policy, typename...Ts, typename Q>\
+auto NAME(Policy policy, const basic_tensor<Ts...>& t, const Q& q, bool keep_dims = false){\
+    using config_type = typename basic_tensor<Ts...>::config_type;\
+    return statistic_selector_t<config_type>::F(policy,t,q,keep_dims);\
+}\
+template<typename...Ts, typename Axes, typename Q>\
+auto NAME(const basic_tensor<Ts...>& t, const Axes& axes, const Q& q, bool keep_dims = false){\
+    using config_type = typename basic_tensor<Ts...>::config_type;\
+    return statistic_selector_t<config_type>::F(t,axes,q,keep_dims);\
+}\
+template<typename...Ts, typename DimT, typename Q>\
+auto NAME(const basic_tensor<Ts...>& t, std::initializer_list<DimT> axes, const Q& q, bool keep_dims = false){\
+    using config_type = typename basic_tensor<Ts...>::config_type;\
+    return statistic_selector_t<config_type>::F(t,axes,q,keep_dims);\
+}\
+template<typename...Ts, typename Q>\
+auto NAME(const basic_tensor<Ts...>& t, const Q& q, bool keep_dims = false){\
+    using config_type = typename basic_tensor<Ts...>::config_type;\
+    return statistic_selector_t<config_type>::F(t,q,keep_dims);\
+}
+
 //peak-to-peak of elements along given axes
 //axes may be scalar or container
 GTENSOR_TENSOR_STATISTIC_REDUCE_ROUTINE(ptp,ptp);
@@ -854,21 +871,7 @@ GTENSOR_TENSOR_STATISTIC_REDUCE_ROUTINE(median,median);
 //quantile of elements along given axes
 //axes may be scalar or container
 //q must be of floatin point type in range [0,1]
-template<typename...Ts, typename Axes, typename Q>
-auto quantile(const basic_tensor<Ts...>& t, const Axes& axes, const Q& q, bool keep_dims = false){
-    using config_type = typename basic_tensor<Ts...>::config_type;
-    return statistic_selector_t<config_type>::quantile(t,axes,q,keep_dims);
-}
-template<typename...Ts, typename DimT, typename Q>
-auto quantile(const basic_tensor<Ts...>& t, std::initializer_list<DimT> axes, const Q& q, bool keep_dims = false){
-    using config_type = typename basic_tensor<Ts...>::config_type;
-    return statistic_selector_t<config_type>::quantile(t,axes,q,keep_dims);
-}
-template<typename...Ts, typename Q>
-auto quantile(const basic_tensor<Ts...>& t, const Q& q, bool keep_dims = false){
-    using config_type = typename basic_tensor<Ts...>::config_type;
-    return statistic_selector_t<config_type>::quantile(t,q,keep_dims);
-}
+GTENSOR_TENSOR_STATISTIC_QUANTILE_NANQUANTILE_ROUTINE(quantile,quantile);
 
 //nan versions
 //mean of elements along given axes, ignoring nan
@@ -889,21 +892,7 @@ GTENSOR_TENSOR_STATISTIC_REDUCE_ROUTINE(nanmedian,nanmedian);
 
 //quantile of elements along given axes, ignoring nan
 //axes may be scalar or container
-template<typename...Ts, typename Axes, typename Q>
-auto nanquantile(const basic_tensor<Ts...>& t, const Axes& axes, const Q& q, bool keep_dims = false){
-    using config_type = typename basic_tensor<Ts...>::config_type;
-    return statistic_selector_t<config_type>::nanquantile(t,axes,q,keep_dims);
-}
-template<typename...Ts, typename DimT, typename Q>
-auto nanquantile(const basic_tensor<Ts...>& t, std::initializer_list<DimT> axes, const Q& q, bool keep_dims = false){
-    using config_type = typename basic_tensor<Ts...>::config_type;
-    return statistic_selector_t<config_type>::nanquantile(t,axes,q,keep_dims);
-}
-template<typename...Ts, typename Q>
-auto nanquantile(const basic_tensor<Ts...>& t, const Q& q, bool keep_dims = false){
-    using config_type = typename basic_tensor<Ts...>::config_type;
-    return statistic_selector_t<config_type>::nanquantile(t,q,keep_dims);
-}
+GTENSOR_TENSOR_STATISTIC_QUANTILE_NANQUANTILE_ROUTINE(nanquantile,nanquantile);
 
 //average along given axes
 //axes may be scalar or container
@@ -973,7 +962,10 @@ auto histogram(const basic_tensor<Ts...>& t, const Bins& bins=10, bool density=f
 }
 
 #undef GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION
+#undef GTENSOR_TENSOR_STATISTIC_QUANTILE_NANQUANTILE_FUNCTION
+#undef GTENSOR_TENSOR_STATISTIC_MEDIAN_NANMEDIAN_FUNCTION
 #undef GTENSOR_TENSOR_STATISTIC_REDUCE_ROUTINE
+#undef GTENSOR_TENSOR_STATISTIC_QUANTILE_NANQUANTILE_ROUTINE
 
 }   //end of namespace gtensor
 #endif
