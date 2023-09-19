@@ -76,29 +76,25 @@ static auto NAME(const basic_tensor<Ts...>& t, bool keep_dims, const Initial& in
 }
 
 #define GTENSOR_TENSOR_MATH_CUMULATE_FUNCTION(NAME,F)\
-template<typename Policy, typename...Ts, typename DimT>\
-static auto NAME(Policy policy, const basic_tensor<Ts...>& t, const DimT& axis){\
+template<typename Policy, typename...Ts, typename Axis>\
+static auto NAME(Policy policy, const basic_tensor<Ts...>& t, const Axis& axis){\
     using index_type = typename basic_tensor<Ts...>::index_type;\
     using value_type = typename basic_tensor<Ts...>::value_type;\
     const index_type window_size = 1;\
     const index_type window_step = 1;\
     return slide<value_type>(policy,t,axis,F{}, window_size, window_step);\
 }\
+template<typename...Ts, typename Policy>\
+static auto NAME(Policy policy, const basic_tensor<Ts...>& t){\
+    return NAME(policy,t,detail::no_value{});\
+}\
+template<typename...Ts, typename Axis>\
+static auto NAME(const basic_tensor<Ts...>& t, const Axis& axis){\
+    return NAME(multithreading::exec_pol<1>{},t,axis);\
+}\
 template<typename...Ts>\
 static auto NAME(const basic_tensor<Ts...>& t){\
-    using index_type = typename basic_tensor<Ts...>::index_type;\
-    using value_type = typename basic_tensor<Ts...>::value_type;\
-    const index_type window_size = 1;\
-    const index_type window_step = 1;\
-    return slide_flatten<value_type>(t,F{}, window_size, window_step);\
-}\
-template<typename...Ts, typename DimT>\
-static auto NAME(const basic_tensor<Ts...>& t, const DimT& axis){\
-    using index_type = typename basic_tensor<Ts...>::index_type;\
-    using value_type = typename basic_tensor<Ts...>::value_type;\
-    const index_type window_size = 1;\
-    const index_type window_step = 1;\
-    return slide<value_type>(multithreading::exec_pol<1>{},t,axis,F{}, window_size, window_step);\
+    return NAME(multithreading::exec_pol<1>{},t);\
 }
 
 struct tensor_math
