@@ -34,37 +34,45 @@ static auto NAME(Args&&...args){\
 #define GTENSOR_TENSOR_MATH_REDUCE_FUNCTION(NAME,BINARY_F,RANGE_F,INITIAL)\
 template<typename Policy, typename...Ts, typename Axes>\
 static auto NAME(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims){\
-    return reduce(policy,t,axes,BINARY_F{},RANGE_F{},keep_dims,true,INITIAL);\
+    if constexpr (multithreading::exec_policy_traits<Policy>::is_seq::value){\
+        return reduce_binary(policy,t,axes,BINARY_F{},keep_dims,INITIAL);\
+    }else{\
+        return reduce_range(policy,t,axes,RANGE_F{},keep_dims,true);\
+    }\
 }\
 template<typename Policy, typename...Ts>\
 static auto NAME(Policy policy, const basic_tensor<Ts...>& t, bool keep_dims){\
-    return reduce_flatten(policy,t,BINARY_F{},RANGE_F{},keep_dims,true,INITIAL);\
+    return reduce_binary(policy,t,detail::no_value{},BINARY_F{},keep_dims,INITIAL);\
 }\
 template<typename...Ts, typename Axes>\
 static auto NAME(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims){\
-    return reduce(multithreading::exec_pol<1>{},t,axes,BINARY_F{},RANGE_F{},keep_dims,true,INITIAL);\
+    return NAME(multithreading::exec_pol<1>{},t,axes,keep_dims);\
 }\
 template<typename...Ts>\
 static auto NAME(const basic_tensor<Ts...>& t, bool keep_dims){\
-    return reduce_flatten(multithreading::exec_pol<1>{},t,BINARY_F{},RANGE_F{},keep_dims,true,INITIAL);\
+    return NAME(multithreading::exec_pol<1>{},t,keep_dims);\
 }
 
 #define GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(NAME,BINARY_F,RANGE_F,INITIAL)\
 template<typename Policy, typename...Ts, typename Axes, typename Initial>\
 static auto NAME(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims, const Initial& initial){\
-    return reduce(policy,t,axes,BINARY_F{},RANGE_F{},keep_dims,true,detail::make_initial(INITIAL,initial),detail::make_initial(INITIAL,initial));\
+    if constexpr (multithreading::exec_policy_traits<Policy>::is_seq::value){\
+        return reduce_binary(policy,t,axes,BINARY_F{},keep_dims,detail::make_initial(INITIAL,initial));\
+    }else{\
+        return reduce_range(policy,t,axes,RANGE_F{},keep_dims,true,detail::make_initial(INITIAL,initial));\
+    }\
 }\
 template<typename Policy, typename...Ts, typename Initial>\
 static auto NAME(Policy policy, const basic_tensor<Ts...>& t, bool keep_dims, const Initial& initial){\
-    return reduce_flatten(policy,t,BINARY_F{},RANGE_F{},keep_dims,true,detail::make_initial(INITIAL,initial),detail::make_initial(INITIAL,initial));\
+    return reduce_binary(policy,t,detail::no_value{},BINARY_F{},keep_dims,detail::make_initial(INITIAL,initial));\
 }\
 template<typename...Ts, typename Axes, typename Initial>\
 static auto NAME(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims, const Initial& initial){\
-    return reduce(multithreading::exec_pol<1>{},t,axes,BINARY_F{},RANGE_F{},keep_dims,true,detail::make_initial(INITIAL,initial),detail::make_initial(INITIAL,initial));\
+    return NAME(multithreading::exec_pol<1>{},t,axes,keep_dims,initial);\
 }\
 template<typename...Ts, typename Initial>\
 static auto NAME(const basic_tensor<Ts...>& t, bool keep_dims, const Initial& initial){\
-    return reduce_flatten(multithreading::exec_pol<1>{},t,BINARY_F{},RANGE_F{},keep_dims,true,detail::make_initial(INITIAL,initial),detail::make_initial(INITIAL,initial));\
+    return NAME(multithreading::exec_pol<1>{},t,keep_dims,initial);\
 }
 
 #define GTENSOR_TENSOR_MATH_CUMULATE_FUNCTION(NAME,F)\
