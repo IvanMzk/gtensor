@@ -324,41 +324,49 @@ public:
     //average along given axes
     //axes may be scalar or container
     //weights is container, size of weights must be size along given axes, weights must not sum to zero
+    template<typename Policy, typename...Ts, typename Axes, typename Container>
+    static auto average(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, const Container& weights, bool keep_dims=false){
+        using value_type = typename basic_tensor<Ts...>::value_type;
+        return reduce_range(policy,t,axes,statistic_reduce_operations::average<value_type>{},keep_dims,false,weights);
+    }
     template<typename...Ts, typename Axes, typename Container>
     static auto average(const basic_tensor<Ts...>& t, const Axes& axes, const Container& weights, bool keep_dims=false){
-        using value_type = typename basic_tensor<Ts...>::value_type;
-        if constexpr (std::is_same_v<Axes,detail::no_value>){
-            return reduce_range_flatten(t,statistic_reduce_operations::average<value_type>{},keep_dims,false,weights);
-        }else{
-            return reduce_range(t,axes,statistic_reduce_operations::average<value_type>{},keep_dims,false,weights);
-        }
+        return average(multithreading::exec_pol<1>{},t,axes,weights,keep_dims);
+    }
+    //like over flatten
+    template<typename Policy, typename...Ts, typename Container>
+    static auto average(Policy policy, const basic_tensor<Ts...>& t, const Container& weights, bool keep_dims=false){
+        return average(policy,t,detail::no_value{},weights,keep_dims);
     }
     template<typename...Ts, typename Container>
     static auto average(const basic_tensor<Ts...>& t, const Container& weights, bool keep_dims=false){
-        return average(t,detail::no_value{},weights,keep_dims);
+        return average(multithreading::exec_pol<1>{},t,weights,keep_dims);
     }
 
     //moving average along given axis, axis is scalar
     //weights is container, moving window size is weights size, weights must not sum to zero
     //result axis size will be (n - window_size)/step + 1, where n is source axis size
+    template<typename Policy, typename...Ts, typename DimT, typename Container, typename IdxT>
+    static auto moving_average(Policy policy, const basic_tensor<Ts...>& t, const DimT& axis, const Container& weights, const IdxT& step){
+        using index_type = typename basic_tensor<Ts...>::index_type;
+        using value_type = typename basic_tensor<Ts...>::value_type;
+        using res_type = gtensor::math::make_floating_point_t<value_type>;
+        const auto window_size = static_cast<index_type>(weights.size());
+        const auto window_step = static_cast<index_type>(step);
+        return slide<res_type>(policy,t,axis,statistic_reduce_operations::moving_average<value_type>{},window_size,window_step,weights,window_step);
+    }
     template<typename...Ts, typename DimT, typename Container, typename IdxT>
     static auto moving_average(const basic_tensor<Ts...>& t, const DimT& axis, const Container& weights, const IdxT& step){
-        using index_type = typename basic_tensor<Ts...>::index_type;
-        using value_type = typename basic_tensor<Ts...>::value_type;
-        using res_type = gtensor::math::make_floating_point_t<value_type>;
-        const auto window_size = static_cast<index_type>(weights.size());
-        const auto window_step = static_cast<index_type>(step);
-        return slide<res_type>(t,axis,statistic_reduce_operations::moving_average<value_type>{},window_size,window_step,weights,window_step);
+        return moving_average(multithreading::exec_pol<1>{},t,axis,weights,step);
     }
     //like over flatten
+    template<typename Policy, typename...Ts, typename Container, typename IdxT>
+    static auto moving_average(Policy policy, const basic_tensor<Ts...>& t, const Container& weights, const IdxT& step){
+        return moving_average(policy,t,detail::no_value{},weights,step);
+    }
     template<typename...Ts, typename Container, typename IdxT>
     static auto moving_average(const basic_tensor<Ts...>& t, const Container& weights, const IdxT& step){
-        using index_type = typename basic_tensor<Ts...>::index_type;
-        using value_type = typename basic_tensor<Ts...>::value_type;
-        using res_type = gtensor::math::make_floating_point_t<value_type>;
-        const auto window_size = static_cast<index_type>(weights.size());
-        const auto window_step = static_cast<index_type>(step);
-        return slide_flatten<res_type>(t,statistic_reduce_operations::moving_average<value_type>{},window_size,window_step,weights,window_step);
+        return moving_average(multithreading::exec_pol<1>{},t,weights,step);
     }
 
     //moving mean along given axis, axis is scalar
@@ -897,6 +905,21 @@ GTENSOR_TENSOR_STATISTIC_QUANTILE_NANQUANTILE_ROUTINE(nanquantile,nanquantile);
 //average along given axes
 //axes may be scalar or container
 //weights is container, size of weights must be size along given axes, weights must not sum to zero
+template<typename Policy, typename...Ts, typename Axes, typename Container, std::enable_if_t<detail::is_container_v<Container>,int> =0>
+auto average(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, const Container& weights, bool keep_dims=false){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return statistic_selector_t<config_type>::average(policy,t,axes,weights,keep_dims);
+}
+template<typename Policy, typename...Ts, typename DimT, typename Container, std::enable_if_t<detail::is_container_v<Container>,int> =0>
+auto average(Policy policy, const basic_tensor<Ts...>& t, std::initializer_list<DimT> axes, const Container& weights, bool keep_dims=false){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return statistic_selector_t<config_type>::average(policy,t,axes,weights,keep_dims);
+}
+template<typename Policy, typename...Ts, typename Container, std::enable_if_t<detail::is_container_v<Container>,int> =0>
+auto average(Policy policy, const basic_tensor<Ts...>& t, const Container& weights, bool keep_dims=false){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return statistic_selector_t<config_type>::average(policy,t,weights,keep_dims);
+}
 template<typename...Ts, typename Axes, typename Container, std::enable_if_t<detail::is_container_v<Container>,int> =0>
 auto average(const basic_tensor<Ts...>& t, const Axes& axes, const Container& weights, bool keep_dims=false){
     using config_type = typename basic_tensor<Ts...>::config_type;
@@ -907,7 +930,6 @@ auto average(const basic_tensor<Ts...>& t, std::initializer_list<DimT> axes, con
     using config_type = typename basic_tensor<Ts...>::config_type;
     return statistic_selector_t<config_type>::average(t,axes,weights,keep_dims);
 }
-//average over all axes
 template<typename...Ts, typename Container, std::enable_if_t<detail::is_container_v<Container>,int> =0>
 auto average(const basic_tensor<Ts...>& t, const Container& weights, bool keep_dims=false){
     using config_type = typename basic_tensor<Ts...>::config_type;
@@ -917,12 +939,21 @@ auto average(const basic_tensor<Ts...>& t, const Container& weights, bool keep_d
 //moving average along given axis, axis is scalar
 //weights is container, moving window size is weights size, weights must not sum to zero
 //result axis size will be (n - window_size)/step + 1, where n is source axis size
+template<typename Policy, typename...Ts, typename DimT, typename Container, typename IdxT>
+auto moving_average(Policy policy, const basic_tensor<Ts...>& t, const DimT& axis, const Container& weights, const IdxT& step){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return statistic_selector_t<config_type>::moving_average(policy,t,axis,weights,step);
+}
+template<typename Policy, typename...Ts, typename Container, typename IdxT>
+auto moving_average(Policy policy, const basic_tensor<Ts...>& t, const Container& weights, const IdxT& step){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return statistic_selector_t<config_type>::moving_average(policy,t,weights,step);
+}
 template<typename...Ts, typename DimT, typename Container, typename IdxT>
 auto moving_average(const basic_tensor<Ts...>& t, const DimT& axis, const Container& weights, const IdxT& step){
     using config_type = typename basic_tensor<Ts...>::config_type;
     return statistic_selector_t<config_type>::moving_average(t,axis,weights,step);
 }
-//like over flatten
 template<typename...Ts, typename Container, typename IdxT>
 auto moving_average(const basic_tensor<Ts...>& t, const Container& weights, const IdxT& step){
     using config_type = typename basic_tensor<Ts...>::config_type;

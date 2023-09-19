@@ -72,6 +72,7 @@ target_sources(Test PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/test_statistic_ptp_mean.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_statistic_var_std.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_statistic_quantile_median.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_statistic_average_moving_average.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_statistic.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search.cpp
 #
