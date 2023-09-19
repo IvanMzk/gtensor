@@ -121,9 +121,9 @@ private:
         template<typename Policy, typename...Ts,typename Axes>
         auto operator()(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims){
             auto square = [](const auto& e){return e*e;};
-            auto mean_ = mean_binary(t,axes,true);
+            auto mean_ = mean_binary{}(policy,t,axes,true);
             auto tmp = gtensor::n_operator(square,t-std::move(mean_));
-            return mean_binary(tmp,axes,keep_dims);
+            return mean_binary{}(policy,tmp,axes,keep_dims);
         }
         template<typename Policy, typename...Ts>
         auto operator()(Policy policy, const basic_tensor<Ts...>& t, bool keep_dims){
@@ -131,12 +131,98 @@ private:
         }
     };
     struct nanvar_binary{
+        template<typename Size>
+        struct nan_ignoring_counting_plus
+        {
+            template<typename T, typename R>
+            auto operator()(const std::tuple<T,R>& e1, const std::tuple<T,R>& e2){
+                const auto e1_not_nan = gtensor::math::isnan(std::get<0>(e1));
+                const auto e2_not_nan = gtensor::math::isnan(std::get<0>(e2));
+                if (e1_not_nan && e2_not_nan){
+                    return std::make_pair(std::get<1>(e1)+std::get<1>(e2),Size{2});
+                }else if (e1_not_nan){
+                    return std::make_pair(std::get<1>(e1),Size{1});
+                }else if (e2_not_nan){
+                    return std::make_pair(std::get<1>(e2),Size{1});
+                }else{
+                    return std::make_pair(R(0),Size{0});
+                }
+            }
+            template<typename R>
+            auto operator()(const std::pair<R,Size>& r1, const std::pair<R,Size>& r2){
+                return std::make_pair(r1.first+r2.first,r1.second+r2.second);
+            }
+            template<typename R, typename T>
+            auto operator()(const std::pair<R,Size>& r, const std::tuple<T,R>& e){
+                return gtensor::math::isnan(std::get<0>(e)) ? r : std::make_pair(r.first+std::get<1>(e),r.second+Size{1});
+            }
+            template<typename R, typename T>
+            auto operator()(const std::tuple<T,R>& e, const std::pair<R,Size>& r){
+                return this->operator()(r,e);
+            }
+        };
+
         template<typename Policy, typename...Ts,typename Axes>
         auto operator()(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims){
+            using order = typename basic_tensor<Ts...>::order;
+            using value_type = typename basic_tensor<Ts...>::value_type;
+            using config_type = typename basic_tensor<Ts...>::config_type;
+            using integral_type = gtensor::math::make_integral_t<value_type>;
+            using res_type = gtensor::math::make_floating_point_t<value_type>;
+            auto mean_ = nanmean_binary{}(policy,t,axes,true);
             auto square = [](const auto& e){return e*e;};
-            auto mean_ = nanmean_binary(t,axes,true);
-            auto tmp = gtensor::n_operator(square,t-std::move(mean_));
-            return nanmean_binary(tmp,axes,keep_dims);
+            auto make_tuple = [](const auto& e1,const auto& e2){return std::make_tuple(e1,e2);};
+            auto tmp = gtensor::n_operator(make_tuple,t,gtensor::n_operator(square,t-std::move(mean_)));
+            using f_type = nan_ignoring_counting_plus<integral_type>;
+            auto sum = reduce_binary(tmp,axes,f_type{},keep_dims,std::make_pair(res_type{0},integral_type{0}));
+            tensor<res_type,order,config_type> res(sum.shape());
+            std::transform(sum.begin(),sum.end(),res.begin(),
+                [](const auto& r){
+                    if constexpr (gtensor::math::numeric_traits<res_type>::has_nan()){
+                        return r.first/static_cast<const res_type&>(r.second);
+                    }else{
+                        if (r.second==0){
+                            throw value_error("cant reduce zero size dimension without initial value");
+                        }
+                    }
+                }
+            );
+            return res;
+        }
+        template<typename Policy, typename...Ts>
+        auto operator()(Policy policy, const basic_tensor<Ts...>& t, bool keep_dims){
+            return this->operator()(policy,t,detail::no_value{},keep_dims);
+        }
+    };
+
+    // struct nanvar_binary{
+    //     template<typename Policy, typename...Ts,typename Axes>
+    //     auto operator()(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims){
+    //         auto square = [](const auto& e){return e*e;};
+    //         auto mean_ = nanmean_binary{}(policy,t,axes,true);
+    //         auto tmp = gtensor::n_operator(square,t-std::move(mean_));
+    //         return nanmean_binary{}(policy,tmp,axes,keep_dims);
+    //     }
+    //     template<typename Policy, typename...Ts>
+    //     auto operator()(Policy policy, const basic_tensor<Ts...>& t, bool keep_dims){
+    //         return this->operator()(policy,t,detail::no_value{},keep_dims);
+    //     }
+    // };
+
+    struct stdev_binary{
+        template<typename Policy, typename...Ts,typename Axes>
+        auto operator()(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims){
+            return sqrt(var_binary{}(policy,t,axes,keep_dims));
+        }
+        template<typename Policy, typename...Ts>
+        auto operator()(Policy policy, const basic_tensor<Ts...>& t, bool keep_dims){
+            return this->operator()(policy,t,detail::no_value{},keep_dims);
+        }
+    };
+    struct nanstdev_binary{
+        template<typename Policy, typename...Ts,typename Axes>
+        auto operator()(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims){
+            return sqrt(nanvar_binary{}(policy,t,axes,keep_dims));
         }
         template<typename Policy, typename...Ts>
         auto operator()(Policy policy, const basic_tensor<Ts...>& t, bool keep_dims){
@@ -168,7 +254,7 @@ public:
 
     //standart deviation of elements along given axes
     //axes may be scalar or container
-    //GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(stdev,statistic_reduce_operations::stdev);
+    GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(stdev,statistic_reduce_operations::stdev,stdev_binary);
 
     //quantile of elements along given axes
     //axes may be scalar or container
@@ -216,7 +302,7 @@ public:
 
     //standart deviation of elements along given axes, ignoring nan
     //axes may be scalar or container
-    //GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(nanstd,statistic_reduce_operations::nanstdev);
+    GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION(nanstdev,statistic_reduce_operations::nanstdev,nanstdev_binary);
 
     //quantile of elements along given axes, ignoring nan
     //axes may be scalar or container
@@ -795,7 +881,7 @@ GTENSOR_TENSOR_STATISTIC_REDUCE_ROUTINE(nanvar,nanvar);
 
 //standart deviation of elements along given axes, ignoring nan
 //axes may be scalar or container
-GTENSOR_TENSOR_STATISTIC_REDUCE_ROUTINE(nanstd,nanstd);
+GTENSOR_TENSOR_STATISTIC_REDUCE_ROUTINE(nanstdev,nanstdev);
 
 //median of elements along given axes, ignoring nan
 //axes may be scalar or container
