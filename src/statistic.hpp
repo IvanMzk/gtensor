@@ -136,7 +136,7 @@ private:
             using config_type = typename basic_tensor<Ts...>::config_type;
             using integral_type = gtensor::math::make_integral_t<value_type>;
             using res_type = gtensor::math::make_floating_point_t<value_type>;
-            using f_type = gtensor::math_reduce_operations::nan_ignoring_counting_operation<gtensor::math_reduce_operations::plus<res_type>,integral_type>;
+            using f_type = gtensor::statistic_reduce_operations::nan_ignoring_counting_operation<gtensor::math_reduce_operations::plus<res_type>,integral_type>;
             auto tmp = reduce_binary(policy,t,axes,f_type{},keep_dims,std::make_pair(res_type{0},integral_type{0}));
             tensor<res_type,order,config_type> res(tmp.shape());
             std::transform(tmp.begin(),tmp.end(),res.begin(),
