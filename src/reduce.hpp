@@ -345,9 +345,9 @@ class reducer
         );
     }
 
-    //expected valid axes
-    template<typename Policy, typename BinaryF, typename Axes, typename ShT, typename...Ts, typename Initial>
-    static auto reduce_binary_helper(Policy policy, const basic_tensor<Ts...>& parent, Axes& axes, ShT&& res_shape, BinaryF reduce_f, bool keep_dims, const Initial& initial){
+    //expected axes_ no no_value
+    template<typename Policy, typename BinaryF, typename Axes, typename...Ts, typename Initial>
+    static auto reduce_binary_helper(Policy policy, const basic_tensor<Ts...>& parent, const Axes& axes_, BinaryF reduce_f, bool keep_dims, const Initial& initial){
         using parent_type = basic_tensor<Ts...>;
         using order = typename parent_type::order;
         using config_type = typename parent_type::config_type;
@@ -361,7 +361,9 @@ class reducer
 
         const auto pdim = parent.dim();
         const auto& pshape = parent.shape();
-        auto res = tensor<res_value_type,order,res_config_type>(std::forward<ShT>(res_shape));
+        auto axes = detail::make_axes<typename basic_tensor<Ts...>::config_type>(pdim,axes_);
+        detail::check_reduce_args(pshape, axes);
+        auto res = tensor<res_value_type,order,res_config_type>(detail::make_reduce_shape(pshape, axes, keep_dims));
         if (!res.empty()){
             auto a_parent = parent.traverse_order_adapter(order{});
             auto a_res = res.traverse_order_adapter(order{});
@@ -495,15 +497,17 @@ class reducer
     //initial must be such that expression reduce_f(initial,element) be valid or no_value
     //traverse input countigous, i.e. traverse order dependes on layout
     template<typename Policy, typename BinaryF, typename Axes, typename...Ts, typename Initial>
-    static auto reduce_binary_(Policy policy, const basic_tensor<Ts...>& parent, const Axes& axes_, BinaryF reduce_f, bool keep_dims, const Initial& initial){
+    static auto reduce_binary_(Policy policy, const basic_tensor<Ts...>& parent, const Axes& axes, BinaryF reduce_f, bool keep_dims, const Initial& initial){
         if constexpr (std::is_same_v<Axes,detail::no_value>){
-            detail::unused_args{axes_};
+            detail::unused_args{axes};
             return reduce_binary_flatten_(policy,parent,reduce_f,keep_dims,initial);
         }else{
-            auto axes = detail::make_axes<typename basic_tensor<Ts...>::config_type>(parent.dim(),axes_);
-            const auto& pshape = parent.shape();
-            detail::check_reduce_args(pshape, axes);
-            return reduce_binary_helper(policy,parent,axes,detail::make_reduce_shape(pshape, axes, keep_dims),reduce_f,keep_dims,initial);
+            if constexpr (detail::is_container_v<Axes>){
+                if (axes.size() == 1){
+                    return reduce_binary_helper(policy,parent,*axes.begin(),reduce_f,keep_dims,initial);
+                }
+            }
+            return reduce_binary_helper(policy,parent,axes,reduce_f,keep_dims,initial);
         }
     }
 
@@ -543,23 +547,25 @@ class reducer
         );
     }
 
-    //expected valid axes
-    template<typename Policy, typename RangeF, typename Axes, typename ShT, typename...Ts, typename...Args>
-    static auto reduce_range_helper(Policy, const basic_tensor<Ts...>& parent, Axes& axes, ShT&& res_shape, RangeF reduce_f, bool keep_dims, bool any_order, const Args&...args){
+    //expected axes_ not no_value
+    template<typename Policy, typename RangeF, typename Axes, typename...Ts, typename...Args>
+    static auto reduce_range_helper(Policy, const basic_tensor<Ts...>& parent, const Axes& axes_, RangeF reduce_f, bool keep_dims, bool any_order, const Args&...args){
         using parent_type = basic_tensor<Ts...>;
         using order = typename parent_type::order;
         using config_type = typename parent_type::config_type;
         using traverse_order = config::c_order; //order to traverse along axes
         using index_type = typename config_type::index_type;
         using shape_type = typename config_type::shape_type;
-        using axes_iterator_maker_type = decltype(detail::make_axes_iterator_maker<config_type>(std::declval<shape_type>(),axes,traverse_order{}));
+        using axes_iterator_maker_type = decltype(detail::make_axes_iterator_maker<config_type>(std::declval<shape_type>(),axes_,traverse_order{}));
         using axes_iterator_type = decltype(std::declval<axes_iterator_maker_type>().begin(parent.create_walker(),std::false_type{}));
         using result_type = decltype(reduce_f(std::declval<axes_iterator_type>(),std::declval<axes_iterator_type>(),std::declval<const Args&>()...));
         using res_value_type = std::remove_cv_t<std::remove_reference_t<result_type>>;
         using res_config_type = config::extend_config_t<config_type,res_value_type>;
 
         const auto& pshape = parent.shape();
-        auto res = tensor<res_value_type,order,res_config_type>(std::forward<ShT>(res_shape));
+        auto axes = detail::make_axes<typename basic_tensor<Ts...>::config_type>(parent.dim(),axes_);
+        detail::check_reduce_args(pshape, axes);
+        auto res = tensor<res_value_type,order,res_config_type>(detail::make_reduce_shape(pshape, axes, keep_dims));
         if (!res.empty()){
             auto a = res.traverse_order_adapter(traverse_order{});
             //zero size axis is reduced
@@ -630,70 +636,19 @@ class reducer
         return res;
     }
 
-    //expected valid axes
-    template<typename Policy, typename RangeF, typename Axes, typename ShT, typename...Ts, typename...Args>
-    static auto reduce_range_helper1(Policy policy, const basic_tensor<Ts...>& parent, Axes& axes, ShT&& res_shape, RangeF reduce_f, bool keep_dims, bool any_order, const Args&...args){
-        if constexpr (detail::is_container_v<Axes>){
-            if (axes.size() == 1){
-                auto axis = *axes.begin();
-                return reduce_range_helper(policy,parent,axis,std::forward<ShT>(res_shape),reduce_f,keep_dims,any_order,args...);
-            }
-        }
-        return reduce_range_helper(policy,parent,axes,std::forward<ShT>(res_shape),reduce_f,keep_dims,any_order,args...);
-    }
-
     //F takes iterators range to be reduces and optional args
     template<typename Policy, typename RangeF, typename Axes, typename...Ts, typename...Args>
-    static auto reduce_range_(Policy policy, const basic_tensor<Ts...>& parent, const Axes& axes_, RangeF reduce_f, bool keep_dims, bool any_order, const Args&...args){
+    static auto reduce_range_(Policy policy, const basic_tensor<Ts...>& parent, const Axes& axes, RangeF reduce_f, bool keep_dims, bool any_order, const Args&...args){
         if constexpr (std::is_same_v<Axes,detail::no_value>){
-            detail::unused_args{policy,axes_};
+            detail::unused_args{policy,axes};
             return reduce_range_flatten_(parent,reduce_f,keep_dims,any_order,args...);
         }else{
-            auto axes = detail::make_axes<typename basic_tensor<Ts...>::config_type>(parent.dim(),axes_);
-            const auto& pshape = parent.shape();
-            detail::check_reduce_args(pshape, axes);
-            auto res_shape = detail::make_reduce_shape(pshape, axes, keep_dims);
-            return reduce_range_helper1(policy,parent,axes,std::move(res_shape),reduce_f,keep_dims,any_order,args...);
-        }
-    }
-
-    //reduce according to specified policy
-    template<typename Policy, typename BinaryF, typename RangeF, typename Axes, typename Initial, typename...Ts, typename...Args>
-    static auto reduce_(Policy policy, const basic_tensor<Ts...>& parent, const Axes& axes_, BinaryF binary_f, RangeF range_f, bool keep_dims, bool any_order, const Initial initial, const Args&...args){
-        detail::unused_args{binary_f,range_f,any_order,initial,args...};
-        static constexpr bool has_binary = !std::is_same_v<BinaryF,detail::no_value>;
-        static constexpr bool has_range = !std::is_same_v<RangeF,detail::no_value>;
-        static_assert(has_binary || has_range, "invalid reduce functor");
-        if constexpr (multithreading::exec_policy_traits<Policy>::is_seq::value){
-            if constexpr (has_binary){
-                return reduce_binary_(policy,parent,axes_,binary_f,keep_dims,initial);
-            }else{
-                return reduce_range_(policy,parent,axes_,range_f,keep_dims,any_order,args...);
+            if constexpr (detail::is_container_v<Axes>){
+                if (axes.size() == 1){
+                    return reduce_range_helper(policy,parent,*axes.begin(),reduce_f,keep_dims,any_order,args...);
+                }
             }
-        }else{  //parallelize requested
-            auto axes = detail::make_axes<typename basic_tensor<Ts...>::config_type>(parent.dim(),axes_);
-            const auto& pshape = parent.shape();
-            detail::check_reduce_args(pshape, axes);
-            auto res_shape = detail::make_reduce_shape(pshape, axes, keep_dims);
-            const auto res_size = detail::make_size(res_shape);
-            if (has_binary && res_size==1){  //reduce to scalar, use multithreading::reduce
-                return reduce_binary_helper(policy,parent,axes,std::move(res_shape),binary_f,keep_dims,initial);
-            }else{
-                return reduce_range_helper1(policy,parent,axes,std::move(res_shape),range_f,keep_dims,any_order,args...);
-            }
-        }
-    }
-
-    template<typename Policy, typename BinaryF, typename RangeF, typename Initial, typename...Ts, typename...Args>
-    static auto reduce_flatten_(Policy policy, const basic_tensor<Ts...>& parent, BinaryF binary_f, RangeF range_f, bool keep_dims, bool any_order, const Initial initial, const Args&...args){
-        detail::unused_args{policy,binary_f,range_f,any_order,initial,args...};
-        static constexpr bool has_binary = !std::is_same_v<BinaryF,detail::no_value>;
-        static constexpr bool has_range = !std::is_same_v<RangeF,detail::no_value>;
-        static_assert(has_binary || has_range, "invalid reduce functor");
-        if constexpr (has_binary){  //prefer binary
-            return reduce_binary_flatten_(policy,parent,binary_f,keep_dims,initial);
-        }else{
-            return reduce_range_flatten_(parent,range_f,keep_dims,any_order,args...);
+            return reduce_range_helper(policy,parent,axes,reduce_f,keep_dims,any_order,args...);
         }
     }
 
@@ -919,16 +874,6 @@ public:
         return reduce_range_(policy,t,axes,f,keep_dims,any_order,args...);
     }
 
-    template<typename Policy, typename BinaryF, typename RangeF, typename Axes, typename Initial, typename...Ts, typename...Args>
-    static auto reduce(Policy policy, const basic_tensor<Ts...>& parent, const Axes& axes, BinaryF binary_f, RangeF range_f, bool keep_dims, bool any_order, const Initial initial, const Args&...args){
-        return reduce_(policy,parent,axes,binary_f,range_f,keep_dims,any_order,initial,args...);
-    }
-
-    template<typename Policy, typename BinaryF, typename RangeF, typename Initial, typename...Ts, typename...Args>
-    static auto reduce_flatten(Policy policy, const basic_tensor<Ts...>& parent, BinaryF binary_f, RangeF range_f, bool keep_dims, bool any_order, const Initial initial, const Args&...args){
-        return reduce_flatten_(policy,parent,binary_f,range_f,keep_dims,any_order,initial,args...);
-    }
-
     template<typename ResultT, typename Policy, typename...Ts, typename Axis, typename F, typename IdxT, typename...Args>
     static auto slide(Policy policy, const basic_tensor<Ts...>& t, const Axis& axis, F f, const IdxT& window_size, const IdxT& window_step, const Args&...args){
         return slide_<ResultT>(policy,t,axis,f,window_size,window_step,args...);
@@ -999,18 +944,6 @@ template<typename F, typename Axes, typename...Ts, typename...Args>
 auto reduce_range(const basic_tensor<Ts...>& t, const Axes& axes, F f, bool keep_dims, bool any_order, const Args&...args){
     using config_type = typename basic_tensor<Ts...>::config_type;
     return reducer_selector_t<config_type>::reduce_range(multithreading::exec_pol<1>{}, t, axes, f, keep_dims, any_order, args...);
-}
-
-//reduce according to specified policy
-template<typename Policy, typename BinaryF, typename RangeF, typename Axes, typename Initial, typename...Ts, typename...Args>
-auto reduce(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, BinaryF binary_f, RangeF range_f, bool keep_dims, bool any_order, const Initial initial, const Args&...args){
-    using config_type = typename basic_tensor<Ts...>::config_type;
-    return reducer_selector_t<config_type>::reduce(policy, t, axes, binary_f, range_f, keep_dims, any_order, initial, args...);
-}
-template<typename Policy, typename BinaryF, typename RangeF, typename Initial, typename...Ts, typename...Args>
-auto reduce_flatten(Policy policy, const basic_tensor<Ts...>& t, BinaryF binary_f, RangeF range_f, bool keep_dims, bool any_order, const Initial initial, const Args&...args){
-    using config_type = typename basic_tensor<Ts...>::config_type;
-    return reducer_selector_t<config_type>::reduce_flatten(policy, t, binary_f, range_f, keep_dims, any_order, initial, args...);
 }
 
 //make tensor that is result of applying F to sliding window over axis, axis is scalar
