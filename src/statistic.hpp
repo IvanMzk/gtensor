@@ -346,8 +346,8 @@ public:
     //moving average along given axis, axis is scalar
     //weights is container, moving window size is weights size, weights must not sum to zero
     //result axis size will be (n - window_size)/step + 1, where n is source axis size
-    template<typename Policy, typename...Ts, typename DimT, typename Container, typename IdxT>
-    static auto moving_average(Policy policy, const basic_tensor<Ts...>& t, const DimT& axis, const Container& weights, const IdxT& step){
+    template<typename Policy, typename...Ts, typename Axis, typename Container, typename IdxT>
+    static auto moving_average(Policy policy, const basic_tensor<Ts...>& t, const Axis& axis, const Container& weights, const IdxT& step){
         using index_type = typename basic_tensor<Ts...>::index_type;
         using value_type = typename basic_tensor<Ts...>::value_type;
         using res_type = gtensor::math::make_floating_point_t<value_type>;
@@ -355,8 +355,8 @@ public:
         const auto window_step = static_cast<index_type>(step);
         return slide<res_type>(policy,t,axis,statistic_reduce_operations::moving_average<value_type>{},window_size,window_step,weights,window_step);
     }
-    template<typename...Ts, typename DimT, typename Container, typename IdxT>
-    static auto moving_average(const basic_tensor<Ts...>& t, const DimT& axis, const Container& weights, const IdxT& step){
+    template<typename...Ts, typename Axis, typename Container, typename IdxT>
+    static auto moving_average(const basic_tensor<Ts...>& t, const Axis& axis, const Container& weights, const IdxT& step){
         return moving_average(multithreading::exec_pol<1>{},t,axis,weights,step);
     }
     //like over flatten
@@ -372,18 +372,24 @@ public:
     //moving mean along given axis, axis is scalar
     //window_size must be greater zero and less_equal than axis size
     //result axis size will be (n - window_size)/step + 1, where n is source axis size
-    template<typename...Ts, typename DimT, typename IdxT>
-    static auto moving_mean(const basic_tensor<Ts...>& t, const DimT& axis, const IdxT& window_size, const IdxT& step){
+    template<typename Policy, typename...Ts, typename Axis, typename IdxT>
+    static auto moving_mean(Policy policy, const basic_tensor<Ts...>& t, const Axis& axis, const IdxT& window_size, const IdxT& step){
         using value_type = typename basic_tensor<Ts...>::value_type;
         using res_type = gtensor::math::make_floating_point_t<value_type>;
-        return slide<res_type>(t,axis,statistic_reduce_operations::moving_mean{},window_size,step,window_size,step);
+        return slide<res_type>(policy,t,axis,statistic_reduce_operations::moving_mean{},window_size,step,window_size,step);
+    }
+    template<typename...Ts, typename Axis, typename IdxT>
+    static auto moving_mean(const basic_tensor<Ts...>& t, const Axis& axis, const IdxT& window_size, const IdxT& step){
+        return moving_mean(multithreading::exec_pol<1>{},t,axis,window_size,step);
     }
     //like over flatten
+    template<typename Policy, typename...Ts, typename IdxT>
+    static auto moving_mean(Policy policy, const basic_tensor<Ts...>& t, const IdxT& window_size, const IdxT& step){
+        return moving_mean(policy,t,detail::no_value{},window_size,step);
+    }
     template<typename...Ts, typename IdxT>
     static auto moving_mean(const basic_tensor<Ts...>& t, const IdxT& window_size, const IdxT& step){
-        using value_type = typename basic_tensor<Ts...>::value_type;
-        using res_type = gtensor::math::make_floating_point_t<value_type>;
-        return slide_flatten<res_type>(t,statistic_reduce_operations::moving_mean{},window_size,step,window_size,step);
+        return moving_mean(multithreading::exec_pol<1>{},t,window_size,step);
     }
 
     //histogram
@@ -963,6 +969,16 @@ auto moving_average(const basic_tensor<Ts...>& t, const Container& weights, cons
 //moving mean along given axis, axis is scalar
 //window_size must be greater zero and less_equal than axis size
 //result axis size will be (n - window_size)/step + 1, where n is source axis size
+template<typename Policy, typename...Ts, typename DimT, typename IdxT>
+auto moving_mean(Policy policy, const basic_tensor<Ts...>& t, const DimT& axis, const IdxT& window_size, const IdxT& step){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return statistic_selector_t<config_type>::moving_mean(policy,t,axis,window_size,step);
+}
+template<typename Policy, typename...Ts, typename IdxT>
+auto moving_mean(Policy policy, const basic_tensor<Ts...>& t, const IdxT& window_size, const IdxT& step){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return statistic_selector_t<config_type>::moving_mean(policy,t,window_size,step);
+}
 template<typename...Ts, typename DimT, typename IdxT>
 auto moving_mean(const basic_tensor<Ts...>& t, const DimT& axis, const IdxT& window_size, const IdxT& step){
     using config_type = typename basic_tensor<Ts...>::config_type;

@@ -1026,7 +1026,7 @@ auto slide(Policy policy, const basic_tensor<Ts...>& t, const Axis& axis, F f, c
 template<typename ResultT, typename Axis, typename...Ts, typename F, typename IdxT, typename...Args>
 auto slide(const basic_tensor<Ts...>& t, const Axis& axis, F f, const IdxT& window_size, const IdxT& window_step, const Args&...args){
     using config_type = typename basic_tensor<Ts...>::config_type;
-    return reducer_selector_t<config_type>::template slide<ResultT>(t, axis, f, window_size, window_step,args...);
+    return reducer_selector_t<config_type>::template slide<ResultT>(multithreading::exec_pol<1>{}, t, axis, f, window_size, window_step,args...);
 }
 template<typename ResultT, typename F, typename...Ts, typename IdxT, typename...Args>
 auto slide_flatten(const basic_tensor<Ts...>& t, F f, const IdxT& window_size, const IdxT& window_step, const Args&...args){
