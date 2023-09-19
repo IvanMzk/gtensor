@@ -697,8 +697,47 @@ class reducer
         }
     }
 
-    template<typename ResultT, typename Policy, typename...Ts, typename DimT, typename F, typename IdxT, typename...Args>
-    static auto slide_(Policy policy, const basic_tensor<Ts...>& parent, const DimT& axis_, F slide_f, const IdxT& window_size_, const IdxT& window_step_, const Args&...args)
+    template<typename ResultT, typename...Ts, typename F, typename IdxT, typename...Args>
+    static auto slide_flatten_(const basic_tensor<Ts...>& parent, F slide_f, const IdxT& window_size_, const IdxT& window_step_, const Args&...args)
+    {
+        using parent_type = basic_tensor<Ts...>;
+        using order = typename parent_type::order;
+        using config_type = typename parent_type::config_type;
+        using dim_type = typename config_type::dim_type;
+        using index_type = typename config_type::index_type;
+        using shape_type = typename config_type::shape_type;
+        using res_value_type = ResultT;
+        using res_config_type = gtensor::config::extend_config_t<config_type,res_value_type>;
+
+        const auto psize = parent.size();
+        const index_type window_size = static_cast<index_type>(window_size_);
+        const index_type window_step = static_cast<index_type>(window_step_);
+        detail::check_slide_args(psize, window_size, window_step);
+        auto res = tensor<res_value_type,order,res_config_type>{shape_type{detail::make_slide_size(psize, window_size, window_step)}};
+        if (!res.empty()){
+            auto slide_flatten_helper = [&parent,&slide_f,&res](auto begin_maker, auto end_maker, const auto&...args_){
+                const auto pdim = parent.dim();
+                auto res_a = res.traverse_order_adapter(order{});
+                if (pdim == dim_type{1}){
+                    auto parent_a = parent.traverse_order_adapter(order{});
+                    slide_f(begin_maker(parent_a), end_maker(parent_a), res_a.begin(), res_a.end(), args_...);
+                }else{
+                    auto parent_a = parent.traverse_order_adapter(config::c_order{});
+                    slide_f(begin_maker(parent_a), end_maker(parent_a), res_a.begin(), res_a.end(), args_...);
+                }
+            };
+
+            if (parent.is_trivial()){
+                slide_flatten_helper([](auto& a){return a.begin_trivial();},[](auto& a){return a.end_trivial();},args...);
+            }else{
+                slide_flatten_helper([](auto& a){return a.begin();},[](auto& a){return a.end();},args...);
+            }
+        }
+        return res;
+    }
+
+    template<typename ResultT, typename Policy, typename...Ts, typename Axis, typename F, typename IdxT, typename...Args>
+    static auto slide_helper(Policy policy, const basic_tensor<Ts...>& parent, const Axis& axis_, F slide_f, const IdxT& window_size_, const IdxT& window_step_, const Args&...args)
     {
         using parent_type = basic_tensor<Ts...>;
         using order = typename parent_type::order;
@@ -786,43 +825,14 @@ class reducer
         return res;
     }
 
-    template<typename ResultT, typename...Ts, typename F, typename IdxT, typename...Args>
-    static auto slide_flatten_(const basic_tensor<Ts...>& parent, F slide_f, const IdxT& window_size_, const IdxT& window_step_, const Args&...args)
-    {
-        using parent_type = basic_tensor<Ts...>;
-        using order = typename parent_type::order;
-        using config_type = typename parent_type::config_type;
-        using dim_type = typename config_type::dim_type;
-        using index_type = typename config_type::index_type;
-        using shape_type = typename config_type::shape_type;
-        using res_value_type = ResultT;
-        using res_config_type = gtensor::config::extend_config_t<config_type,res_value_type>;
-
-        const auto psize = parent.size();
-        const index_type window_size = static_cast<index_type>(window_size_);
-        const index_type window_step = static_cast<index_type>(window_step_);
-        detail::check_slide_args(psize, window_size, window_step);
-        auto res = tensor<res_value_type,order,res_config_type>{shape_type{detail::make_slide_size(psize, window_size, window_step)}};
-        if (!res.empty()){
-            auto slide_flatten_helper = [&parent,&slide_f,&res](auto begin_maker, auto end_maker, const auto&...args_){
-                const auto pdim = parent.dim();
-                auto res_a = res.traverse_order_adapter(order{});
-                if (pdim == dim_type{1}){
-                    auto parent_a = parent.traverse_order_adapter(order{});
-                    slide_f(begin_maker(parent_a), end_maker(parent_a), res_a.begin(), res_a.end(), args_...);
-                }else{
-                    auto parent_a = parent.traverse_order_adapter(config::c_order{});
-                    slide_f(begin_maker(parent_a), end_maker(parent_a), res_a.begin(), res_a.end(), args_...);
-                }
-            };
-
-            if (parent.is_trivial()){
-                slide_flatten_helper([](auto& a){return a.begin_trivial();},[](auto& a){return a.end_trivial();},args...);
-            }else{
-                slide_flatten_helper([](auto& a){return a.begin();},[](auto& a){return a.end();},args...);
-            }
+    template<typename ResultT, typename Policy, typename...Ts, typename Axis, typename F, typename IdxT, typename...Args>
+    static auto slide_(Policy policy, const basic_tensor<Ts...>& parent, const Axis& axis_, F slide_f, const IdxT& window_size_, const IdxT& window_step_, const Args&...args){
+        if constexpr (std::is_same_v<Axis,detail::no_value>){
+            detail::unused_args{policy,axis_};
+            return slide_flatten_<ResultT>(parent,slide_f,window_size_,window_step_,args...);
+        }else{
+            return slide_helper<ResultT>(policy,parent,axis_,slide_f,window_size_,window_step_,args...);
         }
-        return res;
     }
 
     template<typename Policy, typename F, typename DimT, typename...Ts, typename...Args>
@@ -919,8 +929,8 @@ public:
         return reduce_flatten_(policy,parent,binary_f,range_f,keep_dims,any_order,initial,args...);
     }
 
-    template<typename ResultT, typename Policy, typename...Ts, typename DimT, typename F, typename IdxT, typename...Args>
-    static auto slide(Policy policy, const basic_tensor<Ts...>& t, const DimT& axis, F f, const IdxT& window_size, const IdxT& window_step, const Args&...args){
+    template<typename ResultT, typename Policy, typename...Ts, typename Axis, typename F, typename IdxT, typename...Args>
+    static auto slide(Policy policy, const basic_tensor<Ts...>& t, const Axis& axis, F f, const IdxT& window_size, const IdxT& window_step, const Args&...args){
         return slide_<ResultT>(policy,t,axis,f,window_size,window_step,args...);
     }
 
@@ -1008,13 +1018,13 @@ auto reduce_flatten(Policy policy, const basic_tensor<Ts...>& t, BinaryF binary_
 //F call operator must be defined like this: template<typename It,typename DstIt,typename...Args> void operator()(It first, It last, DstIt dfirst, DstIt dlast, Args...){...}
 //where Args is optional parameters
 //result tensor's has value_type should be specialized explicitly
-template<typename ResultT, typename Policy, typename DimT, typename...Ts, typename F, typename IdxT, typename...Args>
-auto slide(Policy policy, const basic_tensor<Ts...>& t, const DimT& axis, F f, const IdxT& window_size, const IdxT& window_step, const Args&...args){
+template<typename ResultT, typename Policy, typename Axis, typename...Ts, typename F, typename IdxT, typename...Args>
+auto slide(Policy policy, const basic_tensor<Ts...>& t, const Axis& axis, F f, const IdxT& window_size, const IdxT& window_step, const Args&...args){
     using config_type = typename basic_tensor<Ts...>::config_type;
     return reducer_selector_t<config_type>::template slide<ResultT>(policy, t, axis, f, window_size, window_step,args...);
 }
-template<typename ResultT, typename DimT, typename...Ts, typename F, typename IdxT, typename...Args>
-auto slide(const basic_tensor<Ts...>& t, const DimT& axis, F f, const IdxT& window_size, const IdxT& window_step, const Args&...args){
+template<typename ResultT, typename Axis, typename...Ts, typename F, typename IdxT, typename...Args>
+auto slide(const basic_tensor<Ts...>& t, const Axis& axis, F f, const IdxT& window_size, const IdxT& window_step, const Args&...args){
     using config_type = typename basic_tensor<Ts...>::config_type;
     return reducer_selector_t<config_type>::template slide<ResultT>(t, axis, f, window_size, window_step,args...);
 }
