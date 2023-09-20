@@ -521,23 +521,23 @@ TEST_CASE("test_sort_search_argmin_nanargmin_overload","[test_sort_search]")
     REQUIRE(nanargmin(tensor_type{{2.0,1.0,-1.0,6.0,3.0},{nan,2.0,1.0,0.0,5.0},{nan,7.0,0.0,4.0,2.0},{4.0,4.0,2.0,1.0,4.0},{3.0,1.0,6.0,4.0,3.0}},true) == result_tensor_type{{2}});
 }
 
-// TEST_CASE("test_math_argmin_nanargmin_exception","test_math")
-// {
-//     using value_type = double;
-//     using tensor_type = gtensor::tensor<value_type>;
-//     using gtensor::argmin;
-//     using gtensor::nanargmin;
-//     using gtensor::value_error;
-//     static constexpr value_type nan = std::numeric_limits<value_type>::quiet_NaN();
-//     //empty
-//     REQUIRE_THROWS_AS(argmin(tensor_type{}), value_error);
-//     REQUIRE_THROWS_AS(argmin(tensor_type{}.reshape(0,2,3),0), value_error);
-//     REQUIRE_THROWS_AS(nanargmin(tensor_type{}), value_error);
-//     REQUIRE_THROWS_AS(nanargmin(tensor_type{}.reshape(0,2,3),0), value_error);
-//     //all nan
-//     REQUIRE_THROWS_AS(nanargmin(tensor_type{{nan,nan,nan},{nan,nan,nan}},0), value_error);
-//     REQUIRE_THROWS_AS(nanargmin(tensor_type{{nan,nan,nan},{nan,nan,nan}},1), value_error);
-// }
+TEST_CASE("test_math_argmin_nanargmin_exception","test_math")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::argmin;
+    using gtensor::nanargmin;
+    using gtensor::value_error;
+    static constexpr value_type nan = std::numeric_limits<value_type>::quiet_NaN();
+    //empty
+    REQUIRE_THROWS_AS(argmin(tensor_type{}), value_error);
+    REQUIRE_THROWS_AS(argmin(tensor_type{}.reshape(0,2,3),0), value_error);
+    REQUIRE_THROWS_AS(nanargmin(tensor_type{}), value_error);
+    REQUIRE_THROWS_AS(nanargmin(tensor_type{}.reshape(0,2,3),0), value_error);
+    //all nan
+    REQUIRE_THROWS_AS(nanargmin(tensor_type{{nan,nan,nan},{nan,nan,nan}},0), value_error);
+    REQUIRE_THROWS_AS(nanargmin(tensor_type{{nan,nan,nan},{nan,nan,nan}},1), value_error);
+}
 
 //argmax,nanargmax
 TEST_CASE("test_sort_search_argmax_nanargmax","[test_sort_search]")
@@ -658,23 +658,23 @@ TEST_CASE("test_sort_search_argmax_nanargmax_overload","[test_sort_search]")
     REQUIRE(nanargmax(tensor_type{{2.0,1.0,-1.0,6.0,3.0},{nan,2.0,1.0,0.0,5.0},{-1.0,7.0,0.0,4.0,2.0},{4.0,4.0,2.0,1.0,4.0},{3.0,1.0,6.0,4.0,3.0}},true) == result_tensor_type{{11}});
 }
 
-// TEST_CASE("test_math_argmax_nanargmax_exception","test_math")
-// {
-//     using value_type = double;
-//     using tensor_type = gtensor::tensor<value_type>;
-//     using gtensor::argmax;
-//     using gtensor::nanargmax;
-//     using gtensor::value_error;
-//     static constexpr value_type nan = std::numeric_limits<value_type>::quiet_NaN();
-//     //empty
-//     REQUIRE_THROWS_AS(argmax(tensor_type{}), value_error);
-//     REQUIRE_THROWS_AS(argmax(tensor_type{}.reshape(0,2,3),0), value_error);
-//     REQUIRE_THROWS_AS(nanargmax(tensor_type{}), value_error);
-//     REQUIRE_THROWS_AS(nanargmax(tensor_type{}.reshape(0,2,3),0), value_error);
-//     //all nan
-//     REQUIRE_THROWS_AS(nanargmax(tensor_type{{nan,nan,nan},{nan,nan,nan}},0), value_error);
-//     REQUIRE_THROWS_AS(nanargmax(tensor_type{{nan,nan,nan},{nan,nan,nan}},1), value_error);
-// }
+TEST_CASE("test_math_argmax_nanargmax_exception","test_math")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::argmax;
+    using gtensor::nanargmax;
+    using gtensor::value_error;
+    static constexpr value_type nan = std::numeric_limits<value_type>::quiet_NaN();
+    //empty
+    REQUIRE_THROWS_AS(argmax(tensor_type{}), value_error);
+    REQUIRE_THROWS_AS(argmax(tensor_type{}.reshape(0,2,3),0), value_error);
+    REQUIRE_THROWS_AS(nanargmax(tensor_type{}), value_error);
+    REQUIRE_THROWS_AS(nanargmax(tensor_type{}.reshape(0,2,3),0), value_error);
+    //all nan
+    REQUIRE_THROWS_AS(nanargmax(tensor_type{{nan,nan,nan},{nan,nan,nan}},0), value_error);
+    REQUIRE_THROWS_AS(nanargmax(tensor_type{{nan,nan,nan},{nan,nan,nan}},1), value_error);
+}
 
 //count_nonzero
 TEST_CASE("test_sort_search_count_nonzero","[test_sort_search]")

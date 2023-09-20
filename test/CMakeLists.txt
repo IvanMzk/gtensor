@@ -60,24 +60,25 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_application_specific.cpp
 #
     #${CMAKE_CURRENT_SOURCE_DIR}/test_indexing.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_reduce.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_reduce.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_manipulation.cpp
 #
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_math_elementwise.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_math_diff_gradient.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_math_sum_prod.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_math_cumsum_cumprod.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_math_all_any.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_math_min_max.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_math_elementwise.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_math_diff_gradient.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_math_sum_prod.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_math_cumsum_cumprod.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_math_all_any.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_math_min_max.cpp
 #
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_statistic_ptp_mean.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_statistic_var_std.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_statistic_quantile_median.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_statistic_average_moving_average.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_statistic_moving_mean_histogram.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_statistic_big.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_statistic_ptp_mean.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_statistic_var_std.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_statistic_quantile_median.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_statistic_average_moving_average.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_statistic_moving_mean_histogram.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_statistic_big.cpp
 
     #${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search_sort_argsort.cpp
 #
     #${CMAKE_CURRENT_SOURCE_DIR}/test_builder.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_random.cpp

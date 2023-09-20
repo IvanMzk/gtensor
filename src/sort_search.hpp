@@ -53,25 +53,36 @@ void check_searchsorted_args(const DimT& dim, const Sorter& sorter){
 
 }
 
+// #define GTENSOR_TENSOR_SORT_SEARCH_SORT_ARGSORT_FUNCTION(NAME,F,...)\
+// template<typename Policy, typename...Ts, typename DimT, typename Comparator>\
+// static auto NAME(Policy policy, const basic_tensor<Ts...>& t, const DimT& axis, const Comparator& comparator){\
+//     using index_type = typename basic_tensor<Ts...>::index_type;\
+//     using value_type = typename basic_tensor<Ts...>::value_type;\
+//     const index_type window_size = 1;\
+//     const index_type window_step = 1;\
+//     return slide<value_type>(policy,t,axis,F{}, window_size, window_step, comparator __VA_OPT__(,) __VA_ARGS__);\
+// }\
+// template<typename...Ts, typename DimT, typename Comparator>\
+// static auto NAME(const basic_tensor<Ts...>& t, const DimT& axis, const Comparator& comparator){\
+//     return NAME(multithreading::exec_pol<1>{},t,axis,comparator);\
+// }
 
-#define GTENSOR_TENSOR_ARG_SEARCH_REDUCE_FUNCTION(NAME,F)\
-template<typename...Ts, typename Axis>\
-static auto NAME(const basic_tensor<Ts...>& t, const Axis& axis, bool keep_dims = false){\
-    return reduce(t,axis,F{},keep_dims,false);\
+#define GTENSOR_TENSOR_SORT_SEARCH_REDUCE_FUNCTION(NAME,F,ANY_ORDER)\
+template<typename Policy, typename...Ts, typename Axes>\
+static auto NAME(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){\
+    return reduce_range(policy,t,axes,F{},keep_dims,ANY_ORDER);\
 }\
-template<typename...Ts>\
-static auto NAME(const basic_tensor<Ts...>& t, bool keep_dims = false){\
-    return reduce_flatten(t,F{},keep_dims,false);\
-}
-
-#define GTENSOR_TENSOR_SORT_SEARCH_REDUCE_FUNCTION(NAME,F)\
+template<typename Policy, typename...Ts>\
+static auto NAME(Policy policy, const basic_tensor<Ts...>& t, bool keep_dims = false){\
+    return NAME(policy,t,detail::no_value{},keep_dims);\
+}\
 template<typename...Ts, typename Axes>\
 static auto NAME(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){\
-    return reduce(t,axes,F{},keep_dims,true);\
+    return NAME(multithreading::exec_pol<1>{},t,axes,keep_dims);\
 }\
 template<typename...Ts>\
 static auto NAME(const basic_tensor<Ts...>& t, bool keep_dims = false){\
-    return reduce_flatten(t,F{},keep_dims,true);\
+    return NAME(multithreading::exec_pol<1>{},t,keep_dims);\
 }
 
 //tensor sort,search functions implementation
@@ -79,28 +90,37 @@ struct sort_search
 {
     //sort,search functions along given axis or axes
     //axes may be scalar or container if multiple axes permitted
-    //empty container means apply function along all axes
 
     //return sorted copy of tensor, axis is scalar
     //Comparator is binary predicate functor, like std::less<void> or std::greater<void>
-    template<typename...Ts, typename DimT, typename Comparator>
-    static auto sort(const basic_tensor<Ts...>& t, const DimT& axis, const Comparator& comparator){
+    //GTENSOR_TENSOR_SORT_SEARCH_SORT_ARGSORT_FUNCTION(sort,sort_search_reduce_operations::sort);
+    template<typename Policy, typename...Ts, typename DimT, typename Comparator>
+    static auto sort(Policy policy, const basic_tensor<Ts...>& t, const DimT& axis, const Comparator& comparator){
         using index_type = typename basic_tensor<Ts...>::index_type;
         using value_type = typename basic_tensor<Ts...>::value_type;
         const index_type window_size = 1;
         const index_type window_step = 1;
-        return slide<value_type>(t,axis,sort_search_reduce_operations::sort{}, window_size, window_step, comparator);
+        return slide<value_type>(policy,t,axis,sort_search_reduce_operations::sort{}, window_size, window_step, comparator);
+    }
+    template<typename...Ts, typename DimT, typename Comparator>
+    static auto sort(const basic_tensor<Ts...>& t, const DimT& axis, const Comparator& comparator){
+        return sort(multithreading::exec_pol<1>{},t,axis,comparator);
     }
 
     //return indexes that sort tensor along axis, axis is scalar
     //Comparator is binary predicate functor, like std::less<void> or std::greater<void>
-    template<typename...Ts, typename DimT, typename Comparator>
-    static auto argsort(const basic_tensor<Ts...>& t, const DimT& axis, const Comparator& comparator){
+    //GTENSOR_TENSOR_SORT_SEARCH_SORT_ARGSORT_FUNCTION(argsort,sort_search_reduce_operations::argsort,config_type{});
+    template<typename Policy, typename...Ts, typename DimT, typename Comparator>
+    static auto argsort(Policy policy, const basic_tensor<Ts...>& t, const DimT& axis, const Comparator& comparator){
         using config_type = typename basic_tensor<Ts...>::config_type;
         using index_type = typename basic_tensor<Ts...>::index_type;
         const index_type window_size = 1;
         const index_type window_step = 1;
-        return slide<index_type>(t,axis,sort_search_reduce_operations::argsort{}, window_size, window_step, comparator, config_type{});
+        return slide<index_type>(policy,t,axis,sort_search_reduce_operations::argsort{}, window_size, window_step, comparator, config_type{});
+    }
+    template<typename...Ts, typename DimT, typename Comparator>
+    static auto argsort(const basic_tensor<Ts...>& t, const DimT& axis, const Comparator& comparator){
+        return argsort(multithreading::exec_pol<1>{},t,axis,comparator);
     }
 
     //return partially sorted copy of tensor, axis is scalar
@@ -129,12 +149,12 @@ struct sort_search
     }
 
 
-    GTENSOR_TENSOR_ARG_SEARCH_REDUCE_FUNCTION(argmin,sort_search_reduce_operations::argmin);
-    GTENSOR_TENSOR_ARG_SEARCH_REDUCE_FUNCTION(argmax,sort_search_reduce_operations::argmax);
-    GTENSOR_TENSOR_ARG_SEARCH_REDUCE_FUNCTION(nanargmin,sort_search_reduce_operations::nanargmin);
-    GTENSOR_TENSOR_ARG_SEARCH_REDUCE_FUNCTION(nanargmax,sort_search_reduce_operations::nanargmax);
+    GTENSOR_TENSOR_SORT_SEARCH_REDUCE_FUNCTION(argmin,sort_search_reduce_operations::argmin,false);
+    GTENSOR_TENSOR_SORT_SEARCH_REDUCE_FUNCTION(argmax,sort_search_reduce_operations::argmax,false);
+    GTENSOR_TENSOR_SORT_SEARCH_REDUCE_FUNCTION(nanargmin,sort_search_reduce_operations::nanargmin,false);
+    GTENSOR_TENSOR_SORT_SEARCH_REDUCE_FUNCTION(nanargmax,sort_search_reduce_operations::nanargmax,false);
 
-    GTENSOR_TENSOR_SORT_SEARCH_REDUCE_FUNCTION(count_nonzero,sort_search_reduce_operations::count_nonzero);
+    GTENSOR_TENSOR_SORT_SEARCH_REDUCE_FUNCTION(count_nonzero,sort_search_reduce_operations::count_nonzero,true);
 
     template<typename...Ts>
     static auto nonzero(const basic_tensor<Ts...>& t){
@@ -523,6 +543,11 @@ private:
 //frontend uses compile-time dispatch to select implementation, see module_selector.hpp
 
 #define GTENSOR_TENSOR_SORT_ROUTINE(NAME,F)\
+template<typename Policy, typename...Ts, typename DimT=int, typename Comparator=std::less<void>>\
+auto NAME(Policy policy, const basic_tensor<Ts...>& t, const DimT& axis=-1, const Comparator& comparator=Comparator{}){\
+    using config_type = typename basic_tensor<Ts...>::config_type;\
+    return sort_search_selector_t<config_type>::F(policy,t,axis,comparator);\
+}\
 template<typename...Ts, typename DimT=int, typename Comparator=std::less<void>>\
 auto NAME(const basic_tensor<Ts...>& t, const DimT& axis=-1, const Comparator& comparator=Comparator{}){\
     using config_type = typename basic_tensor<Ts...>::config_type;\
@@ -625,7 +650,8 @@ auto searchsorted(const basic_tensor<Ts...>& t, const V& v, Side side=Side{}, co
     return sort_search_selector_t<config_type>::searchsorted(t,v,side,sorter);
 }
 
-#undef GTENSOR_TENSOR_ARG_SEARCH_REDUCE_FUNCTION
+
+//#undef GTENSOR_TENSOR_SORT_SEARCH_SORT_ARGSORT_FUNCTION
 #undef GTENSOR_TENSOR_SORT_SEARCH_REDUCE_FUNCTION
 #undef GTENSOR_TENSOR_SORT_ROUTINE
 #undef GTENSOR_TENSOR_PARTITION_ROUTINE
