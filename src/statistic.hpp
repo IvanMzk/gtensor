@@ -160,9 +160,9 @@ private:
     struct var_binary{
         template<typename Policy, typename...Ts,typename Axes>
         auto operator()(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims){
-            auto square = [](const auto& e){return e*e;};
+            auto squared_diff = [](const auto& e, const auto& m){const auto d=e-m; return d*d;};
             auto mean_ = mean_binary{}(policy,t,axes,true);
-            auto tmp = gtensor::n_operator(square,t-std::move(mean_));
+            auto tmp = gtensor::n_operator(squared_diff,t,std::move(mean_));
             return mean_binary{}(policy,tmp,axes,keep_dims);
         }
         template<typename Policy, typename...Ts>
@@ -210,9 +210,9 @@ private:
             using integral_type = gtensor::math::make_integral_t<value_type>;
             using res_type = gtensor::math::make_floating_point_t<value_type>;
             auto mean_ = nanmean_binary{}(policy,t,axes,true);
-            auto square = [](const auto& e){return e*e;};
+            auto squared_diff = [](const auto& e, const auto& m){const auto d=e-m; return d*d;};
             auto make_tuple = [](const auto& e1,const auto& e2){return std::make_tuple(e1,e2);};
-            auto tmp = gtensor::n_operator(make_tuple,t,gtensor::n_operator(square,t-std::move(mean_)));
+            auto tmp = gtensor::n_operator(make_tuple,t,gtensor::n_operator(squared_diff,t,std::move(mean_)));
             using f_type = nan_ignoring_counting_plus<integral_type>;
             auto sum = reduce_binary(tmp,axes,f_type{},keep_dims,std::make_pair(res_type{0},integral_type{0}));
             tensor<res_type,order,config_type> res(sum.shape());

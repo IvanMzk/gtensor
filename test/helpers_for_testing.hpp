@@ -76,10 +76,22 @@ auto range_to_str(It first, It last){
     return ss.str();
 }
 
+template<std::size_t a=279470273, std::size_t m=0xfffffffb, typename It, typename UnaryF>
+auto generate_lehmer(It first, It last, UnaryF unary_f, std::size_t init){
+    std::for_each(first,last,
+        [unary_f,init](auto& e)mutable{
+            auto e_=init*a%m;
+            init=e_;
+            e=unary_f(e_);
+        }
+    );
+}
+
 template<std::size_t a=279470273, std::size_t m=0xfffffffb, typename It>
 auto generate_lehmer(It first, It last, std::size_t init=1){
-    std::for_each(first,last,[init](auto& e)mutable{e=init*a%m;init=e;});
+    generate_lehmer<a,m>(first,last,[](const auto& e){return e;},init);
 }
+
 
 }   //end of namespace helpers_for_testing
 

@@ -415,15 +415,36 @@ struct var
         if (first == last){
             return reduce_empty<res_type>();
         }
-        const auto res = std::accumulate(first,last,std::make_pair(res_type{0},res_type{0}),
-            [](const auto& r, const auto& e){
-                return std::make_pair(r.first+e,r.second+e*e);
+        const auto mean_ = mean{}(first,last);
+
+        const auto res = std::accumulate(first,last,res_type{0},
+            [mean_](const auto& r, const auto& e){
+                const auto d = e-mean_;
+                return r+d*d;
             }
         );
         const auto n = static_cast<const res_type&>(last-first);
-        return (n*res.second - res.first*res.first)/(n*n);
+        return res / n;
     }
 };
+// struct var
+// {
+//     template<typename It>
+//     auto operator()(It first, It last){
+//         using value_type = typename std::iterator_traits<It>::value_type;
+//         using res_type = gtensor::math::make_floating_point_t<value_type>;
+//         if (first == last){
+//             return reduce_empty<res_type>();
+//         }
+//         const auto res = std::accumulate(first,last,std::make_pair(res_type{0},res_type{0}),
+//             [](const auto& r, const auto& e){
+//                 return std::make_pair(r.first+e,r.second+e*e);
+//             }
+//         );
+//         const auto n = static_cast<const res_type&>(last-first);
+//         return (n*res.second - res.first*res.first)/(n*n);
+//     }
+// };
 
 struct nanvar
 {
@@ -435,25 +456,55 @@ struct nanvar
         if (first == last){
             return reduce_empty<res_type>();
         }
-        auto res = std::accumulate(first,last,std::make_tuple(res_type{0},res_type{0},difference_type{0}),
-            [](const auto& r, const auto& e)
+        const auto nanmean_ = nanmean{}(first,last);
+        auto res = std::accumulate(first,last,std::make_pair(res_type{0},difference_type{0}),
+            [nanmean_](const auto& r, const auto& e)
             {
                 if (gtensor::math::isnan(e)){
                     return r;
                 }else{
-                    return std::make_tuple(std::get<0>(r)+e,std::get<1>(r)+e*e,std::get<2>(r)+1);
+                    const auto d = e-nanmean_;
+                    return std::make_pair(r.first+d*d,r.second+1);
                 }
             }
         );
-        const auto n = std::get<2>(res);
-        if (n==0){
+        if (res.second==0){
             return gtensor::math::numeric_traits<res_type>::nan();
         }else{
-            const auto n_ = static_cast<const res_type&>(n);
-            return (n_*std::get<1>(res) - std::get<0>(res)*std::get<0>(res))/(n_*n_);
+            return res.first / static_cast<const res_type&>(res.second);
         }
     }
 };
+
+// struct nanvar
+// {
+//     template<typename It>
+//     auto operator()(It first, It last){
+//         using value_type = typename std::iterator_traits<It>::value_type;
+//         using difference_type = typename std::iterator_traits<It>::difference_type;
+//         using res_type = gtensor::math::make_floating_point_t<value_type>;
+//         if (first == last){
+//             return reduce_empty<res_type>();
+//         }
+//         auto res = std::accumulate(first,last,std::make_tuple(res_type{0},res_type{0},difference_type{0}),
+//             [](const auto& r, const auto& e)
+//             {
+//                 if (gtensor::math::isnan(e)){
+//                     return r;
+//                 }else{
+//                     return std::make_tuple(std::get<0>(r)+e,std::get<1>(r)+e*e,std::get<2>(r)+1);
+//                 }
+//             }
+//         );
+//         const auto n = std::get<2>(res);
+//         if (n==0){
+//             return gtensor::math::numeric_traits<res_type>::nan();
+//         }else{
+//             const auto n_ = static_cast<const res_type&>(n);
+//             return (n_*std::get<1>(res) - std::get<0>(res)*std::get<0>(res))/(n_*n_);
+//         }
+//     }
+// };
 
 struct stdev
 {
