@@ -627,56 +627,27 @@ TEMPLATE_TEST_CASE("test_reduce_binary","[test_reduce]",
         std::make_tuple(test_ten+test_ten(0)+test_ten(1,1)+test_ten(2,0,2),std::vector<int>{0,1,2},std::plus<void>{},false,0,tensor_type{{430,324,312,539,399},{266,388,331,579,325},{471,472,346,322,210},{487,429,240,312,486}}),
         std::make_tuple((test_ten+test_ten(0))*(test_ten(1,1)-test_ten(2,0,2)),std::vector<int>{1,2,3},std::plus<void>{},false,0,tensor_type{{-422,194,-6,-98,176},{-388,206,51,-79,284},{-329,169,26,-155,179},{-383,129,6,-87,220}})
     );
+    auto test_reduce_binary = [&test_data](auto...policy){
+        auto test = [policy...](const auto& t){
+            auto ten = std::get<0>(t);
+            auto axes = std::get<1>(t);
+            auto functor = std::get<2>(t);
+            auto keep_dims = std::get<3>(t);
+            auto initial = std::get<4>(t);
+            auto expected = std::get<5>(t);
+            auto result = reduce_binary(policy...,ten,axes,functor,keep_dims,initial);
+            REQUIRE(result == expected);
+        };
+        apply_by_element(test,test_data);
+    };
 
-    //seq execution
     SECTION("exec_pol<1>")
     {
-        auto test = [](const auto& t){
-            auto ten = std::get<0>(t);
-            auto axes = std::get<1>(t);
-            auto functor = std::get<2>(t);
-            auto keep_dims = std::get<3>(t);
-            auto initial = std::get<4>(t);
-            auto expected = std::get<5>(t);
-
-            auto result = reduce_binary(multithreading::exec_pol<1>{},ten,axes,functor,keep_dims,initial);
-            REQUIRE(result == expected);
-        };
-        apply_by_element(test,test_data);
+        test_reduce_binary(multithreading::exec_pol<1>{});
     }
-
-    //4 par tasks execution
     SECTION("exec_pol<4>")
     {
-        auto test = [](const auto& t){
-            auto ten = std::get<0>(t);
-            auto axes = std::get<1>(t);
-            auto functor = std::get<2>(t);
-            auto keep_dims = std::get<3>(t);
-            auto initial = std::get<4>(t);
-            auto expected = std::get<5>(t);
-
-            auto result = reduce_binary(multithreading::exec_pol<4>{},ten,axes,functor,keep_dims,initial);
-            REQUIRE(result == expected);
-        };
-        apply_by_element(test,test_data);
-    }
-
-    //auto par tasks execution
-    SECTION("exec_pol<0>")
-    {
-        auto test = [](const auto& t){
-            auto ten = std::get<0>(t);
-            auto axes = std::get<1>(t);
-            auto functor = std::get<2>(t);
-            auto keep_dims = std::get<3>(t);
-            auto initial = std::get<4>(t);
-            auto expected = std::get<5>(t);
-
-            auto result = reduce_binary(multithreading::exec_pol<0>{},ten,axes,functor,keep_dims,initial);
-            REQUIRE(result == expected);
-        };
-        apply_by_element(test,test_data);
+        test_reduce_binary(multithreading::exec_pol<4>{});
     }
 }
 
@@ -731,7 +702,7 @@ TEMPLATE_TEST_CASE("test_reduce_binary_flatten","[test_reduce]",
     using test_reduce_binary_::max;
     using test_reduce_binary_::min;
     using gtensor::detail::no_value;
-    using gtensor::reduce_binary_flatten;
+    using gtensor::reduce_binary;
     using helpers_for_testing::apply_by_element;
 
     const auto test_ten = tensor_type{
@@ -780,44 +751,27 @@ TEMPLATE_TEST_CASE("test_reduce_binary_flatten","[test_reduce]",
         std::make_tuple(test_ten+test_ten(0)+test_ten(1,1)+test_ten(2,0,2),std::plus<void>{},false,0,tensor_type(7668)),
         std::make_tuple((test_ten+test_ten(0))*(test_ten(1,1)-test_ten(2,0,2)),std::plus<void>{},false,0,tensor_type(-307))
     );
-    SECTION("exec_pol<1>")
-    {
-        auto test = [](const auto& t){
-            auto tensor = std::get<0>(t);
+
+    auto test_reduce_binary_flatten = [&test_data](auto...policy){
+        auto test = [policy...](const auto& t){
+            auto ten = std::get<0>(t);
             auto functor = std::get<1>(t);
             auto keep_dims = std::get<2>(t);
             auto initial = std::get<3>(t);
             auto expected = std::get<4>(t);
-            auto result = reduce_binary_flatten(multithreading::exec_pol<1>{},tensor, functor, keep_dims, initial);
+            auto result = reduce_binary(policy...,ten,gtensor::detail::no_value{},functor,keep_dims,initial);
             REQUIRE(result == expected);
         };
-        apply_by_element(test, test_data);
+        apply_by_element(test,test_data);
+    };
+
+    SECTION("exec_pol<1>")
+    {
+        test_reduce_binary_flatten(multithreading::exec_pol<1>{});
     }
     SECTION("exec_pol<4>")
     {
-        auto test = [](const auto& t){
-            auto tensor = std::get<0>(t);
-            auto functor = std::get<1>(t);
-            auto keep_dims = std::get<2>(t);
-            auto initial = std::get<3>(t);
-            auto expected = std::get<4>(t);
-            auto result = reduce_binary_flatten(multithreading::exec_pol<4>{},tensor, functor, keep_dims, initial);
-            REQUIRE(result == expected);
-        };
-        apply_by_element(test, test_data);
-    }
-    SECTION("exec_pol<0>")
-    {
-        auto test = [](const auto& t){
-            auto tensor = std::get<0>(t);
-            auto functor = std::get<1>(t);
-            auto keep_dims = std::get<2>(t);
-            auto initial = std::get<3>(t);
-            auto expected = std::get<4>(t);
-            auto result = reduce_binary_flatten(multithreading::exec_pol<0>{},tensor, functor, keep_dims, initial);
-            REQUIRE(result == expected);
-        };
-        apply_by_element(test, test_data);
+        test_reduce_binary_flatten(multithreading::exec_pol<4>{});
     }
 }
 
@@ -1209,47 +1163,27 @@ TEMPLATE_TEST_CASE("test_reduce_range","[test_reduce]",
         std::make_tuple(test_ten+test_ten(0)+test_ten(1,1)+test_ten(2,0,2),std::vector<int>{0,1,2},sum{},false,false,tensor_type{{430,324,312,539,399},{266,388,331,579,325},{471,472,346,322,210},{487,429,240,312,486}}),
         std::make_tuple((test_ten+test_ten(0))*(test_ten(1,1)-test_ten(2,0,2)),std::vector<int>{1,2,3},sum{},false,false,tensor_type{{-422,194,-6,-98,176},{-388,206,51,-79,284},{-329,169,26,-155,179},{-383,129,6,-87,220}})
     );
-    SECTION("exec_pol<1>")
-    {
-        auto test = [](const auto& t){
+    auto test_reduce_range = [&test_data](auto...policy){
+        auto test = [policy...](const auto& t){
             auto tensor = std::get<0>(t);
             auto axes = std::get<1>(t);
             auto functor = std::get<2>(t);
             auto keep_dims = std::get<3>(t);
             auto any_order = std::get<4>(t);
             auto expected = std::get<5>(t);
-            auto result = reduce_range(multithreading::exec_pol<1>{},tensor, axes, functor, keep_dims, any_order);
+            auto result = reduce_range(policy...,tensor, axes, functor, keep_dims, any_order);
             REQUIRE(result == expected);
         };
         apply_by_element(test, test_data);
+    };
+
+    SECTION("exec_pol<1>")
+    {
+        test_reduce_range(multithreading::exec_pol<1>{});
     }
     SECTION("exec_pol<4>")
     {
-        auto test = [](const auto& t){
-            auto tensor = std::get<0>(t);
-            auto axes = std::get<1>(t);
-            auto functor = std::get<2>(t);
-            auto keep_dims = std::get<3>(t);
-            auto any_order = std::get<4>(t);
-            auto expected = std::get<5>(t);
-            auto result = reduce_range(multithreading::exec_pol<4>{},tensor, axes, functor, keep_dims, any_order);
-            REQUIRE(result == expected);
-        };
-        apply_by_element(test, test_data);
-    }
-    SECTION("exec_pol<0>")
-    {
-        auto test = [](const auto& t){
-            auto tensor = std::get<0>(t);
-            auto axes = std::get<1>(t);
-            auto functor = std::get<2>(t);
-            auto keep_dims = std::get<3>(t);
-            auto any_order = std::get<4>(t);
-            auto expected = std::get<5>(t);
-            auto result = reduce_range(multithreading::exec_pol<0>{},tensor, axes, functor, keep_dims, any_order);
-            REQUIRE(result == expected);
-        };
-        apply_by_element(test, test_data);
+        test_reduce_range(multithreading::exec_pol<4>{});
     }
 }
 
@@ -1268,9 +1202,8 @@ TEST_CASE("test_reduce_range_custom_arg","[test_reduce]")
         std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{0}, sum_init{}, false, true, value_type{-1}, tensor_type{4,6,8}),
         std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, dim_type{1}, sum_init{}, false, true, value_type{1}, tensor_type{7,16})
     );
-    SECTION("exec_pol<1>")
-    {
-        auto test = [](const auto& t){
+    auto test_reduce_range_custom_arg = [&test_data](auto...policy){
+        auto test = [policy...](const auto& t){
             auto tensor = std::get<0>(t);
             auto axes = std::get<1>(t);
             auto functor = std::get<2>(t);
@@ -1278,40 +1211,19 @@ TEST_CASE("test_reduce_range_custom_arg","[test_reduce]")
             auto any_order = std::get<4>(t);
             auto init = std::get<5>(t);
             auto expected = std::get<6>(t);
-            auto result = reduce_range(multithreading::exec_pol<1>{}, tensor, axes, functor, keep_dims, any_order, init);
+            auto result = reduce_range(policy...,tensor, axes, functor, keep_dims, any_order, init);
             REQUIRE(result == expected);
         };
         apply_by_element(test, test_data);
+    };
+
+    SECTION("exec_pol<1>")
+    {
+        test_reduce_range_custom_arg(multithreading::exec_pol<1>{});
     }
     SECTION("exec_pol<4>")
     {
-        auto test = [](const auto& t){
-            auto tensor = std::get<0>(t);
-            auto axes = std::get<1>(t);
-            auto functor = std::get<2>(t);
-            auto keep_dims = std::get<3>(t);
-            auto any_order = std::get<4>(t);
-            auto init = std::get<5>(t);
-            auto expected = std::get<6>(t);
-            auto result = reduce_range(multithreading::exec_pol<4>{}, tensor, axes, functor, keep_dims, any_order, init);
-            REQUIRE(result == expected);
-        };
-        apply_by_element(test, test_data);
-    }
-    SECTION("exec_pol<0>")
-    {
-        auto test = [](const auto& t){
-            auto tensor = std::get<0>(t);
-            auto axes = std::get<1>(t);
-            auto functor = std::get<2>(t);
-            auto keep_dims = std::get<3>(t);
-            auto any_order = std::get<4>(t);
-            auto init = std::get<5>(t);
-            auto expected = std::get<6>(t);
-            auto result = reduce_range(multithreading::exec_pol<0>{}, tensor, axes, functor, keep_dims, any_order, init);
-            REQUIRE(result == expected);
-        };
-        apply_by_element(test, test_data);
+        test_reduce_range_custom_arg(multithreading::exec_pol<4>{});
     }
 }
 
@@ -1376,7 +1288,7 @@ TEMPLATE_TEST_CASE("test_reduce_range_flatten","[test_reduce]",
     using test_reduce_::max;
     using test_reduce_::min;
     using test_reduce_::center;
-    using gtensor::reduce_range_flatten;
+    using gtensor::reduce_range;
     using helpers_for_testing::apply_by_element;
 
     const auto test_ten = tensor_type{
@@ -1427,16 +1339,27 @@ TEMPLATE_TEST_CASE("test_reduce_range_flatten","[test_reduce]",
         std::make_tuple(test_ten+test_ten(0)+test_ten(1,1)+test_ten(2,0,2),sum{},false,false,tensor_type(7668)),
         std::make_tuple((test_ten+test_ten(0))*(test_ten(1,1)-test_ten(2,0,2)),sum{},false,false,tensor_type(-307))
     );
-    auto test = [](const auto& t){
-        auto tensor = std::get<0>(t);
-        auto functor = std::get<1>(t);
-        auto keep_dims = std::get<2>(t);
-        auto any_arder = std::get<3>(t);
-        auto expected = std::get<4>(t);
-        auto result = reduce_range_flatten(tensor, functor, keep_dims, any_arder);
-        REQUIRE(result == expected);
+    auto test_reduce_range_flatten = [&test_data](auto...policy){
+        auto test = [policy...](const auto& t){
+            auto tensor = std::get<0>(t);
+            auto functor = std::get<1>(t);
+            auto keep_dims = std::get<2>(t);
+            auto any_order = std::get<3>(t);
+            auto expected = std::get<4>(t);
+            auto result = reduce_range(policy...,tensor, gtensor::detail::no_value{}, functor, keep_dims, any_order);
+            REQUIRE(result == expected);
+        };
+        apply_by_element(test, test_data);
     };
-    apply_by_element(test, test_data);
+
+    SECTION("exec_pol<1>")
+    {
+        test_reduce_range_flatten(multithreading::exec_pol<1>{});
+    }
+    SECTION("exec_pol<4>")
+    {
+        test_reduce_range_flatten(multithreading::exec_pol<4>{});
+    }
 }
 
 TEMPLATE_TEST_CASE("test_reduce_big","[test_reduce]",
@@ -1533,47 +1456,27 @@ TEST_CASE("test_slide","[test_reduce]")
         std::make_tuple(test_ten+test_ten(0)+test_ten(1,2)+test_ten(2,3), dim_type{0}, cumsum{}, index_type{1}, index_type{1}, tensor_type{{{11,13,18,19,16},{7,9,10,23,8},{23,13,14,9,8},{7,23,18,19,22}},{{21,29,35,40,27},{20,22,18,43,17},{40,25,23,19,16},{20,45,32,39,43}},{{37,46,47,57,45},{29,34,33,59,27},{58,44,38,31,30},{32,69,47,61,62}}}),
         std::make_tuple((test_ten-test_ten(0))*(test_ten(1,2)+test_ten(2,3)), dim_type{2}, cumsum{}, index_type{1}, index_type{1}, tensor_type{{{0,0,0,0,0},{0,0,0,0,0},{0,0,0,0,0},{0,0,0,0,0}},{{-7,20,16,34,4},{42,78,70,43,49},{-42,-51,-71,-62,-62},{42,33,17,26,20}},{{35,71,47,29,41},{14,41,61,-2,10},{-35,19,23,50,86},{35,44,32,59,41}}})
     );
-    SECTION("exec_pol<1>")
-    {
-        auto test = [](const auto& t){
+    auto test_slide = [&test_data](auto...policy){
+        auto test = [policy...](const auto& t){
             auto tensor = std::get<0>(t);
             auto axis = std::get<1>(t);
             auto functor = std::get<2>(t);
             auto window_size = std::get<3>(t);
             auto window_step = std::get<4>(t);
             auto expected = std::get<5>(t);
-            auto result = slide<value_type>(multithreading::exec_pol<1>{}, tensor, axis, functor, window_size, window_step);
+            auto result = slide<value_type>(policy..., tensor, axis, functor, window_size, window_step);
             REQUIRE(result == expected);
         };
         apply_by_element(test, test_data);
+    };
+
+    SECTION("exec_pol<1>")
+    {
+        test_slide(multithreading::exec_pol<1>{});
     }
     SECTION("exec_pol<4>")
     {
-        auto test = [](const auto& t){
-            auto tensor = std::get<0>(t);
-            auto axis = std::get<1>(t);
-            auto functor = std::get<2>(t);
-            auto window_size = std::get<3>(t);
-            auto window_step = std::get<4>(t);
-            auto expected = std::get<5>(t);
-            auto result = slide<value_type>(multithreading::exec_pol<4>{}, tensor, axis, functor, window_size, window_step);
-            REQUIRE(result == expected);
-        };
-        apply_by_element(test, test_data);
-    }
-    SECTION("exec_pol<0>")
-    {
-        auto test = [](const auto& t){
-            auto tensor = std::get<0>(t);
-            auto axis = std::get<1>(t);
-            auto functor = std::get<2>(t);
-            auto window_size = std::get<3>(t);
-            auto window_step = std::get<4>(t);
-            auto expected = std::get<5>(t);
-            auto result = slide<value_type>(multithreading::exec_pol<0>{}, tensor, axis, functor, window_size, window_step);
-            REQUIRE(result == expected);
-        };
-        apply_by_element(test, test_data);
+        test_slide(multithreading::exec_pol<4>{});
     }
 }
 
@@ -1590,7 +1493,7 @@ TEMPLATE_TEST_CASE("test_slide_flatten","[test_reduce]",
     using test_reduce_::cumsum;
     using test_reduce_::diff_1;
     using test_reduce_::diff_2;
-    using gtensor::slide_flatten;
+    using gtensor::slide;
     using helpers_for_testing::apply_by_element;
 
     const auto test_ten = tensor_type{{{2,2,7,5,5},{0,0,3,7,1},{8,2,5,0,1},{0,7,7,5,8}},{{1,5,6,7,0},{6,4,1,4,2},{2,1,0,1,1},{6,6,3,6,7}},{{7,6,1,3,7},{2,3,8,0,3},{3,8,6,3,7},{5,8,4,8,5}}};
@@ -1612,16 +1515,27 @@ TEMPLATE_TEST_CASE("test_slide_flatten","[test_reduce]",
         std::make_tuple(test_ten+test_ten(0)+test_ten(1,2)+test_ten(2,3), cumsum{}, index_type{1}, index_type{1}, tensor_type{11,24,42,61,77,84,93,103,126,134,157,170,184,193,201,208,231,249,268,290,300,316,333,354,365,378,391,399,419,428,445,457,466,476,484,497,519,533,553,574,590,607,619,636,654,663,675,690,706,716,734,753,768,780,794,806,830,845,867,886}),
         std::make_tuple((test_ten-test_ten(0))*(test_ten(1,2)+test_ten(2,3)), cumsum{}, index_type{1}, index_type{1}, tensor_type{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-7,20,16,34,4,46,82,74,47,53,11,2,-18,-9,-9,33,24,8,17,11,46,82,58,40,52,66,93,113,50,62,27,81,85,112,148,183,192,180,207,189})
     );
-    auto test = [](const auto& t){
-        auto tensor = std::get<0>(t);
-        auto functor = std::get<1>(t);
-        auto window_size = std::get<2>(t);
-        auto window_step = std::get<3>(t);
-        auto expected = std::get<4>(t);
-        auto result = slide_flatten<value_type>(tensor, functor, window_size, window_step);
-        REQUIRE(result == expected);
+    auto test_slide_flatten = [&test_data](auto...policy){
+        auto test = [policy...](const auto& t){
+            auto tensor = std::get<0>(t);
+            auto functor = std::get<1>(t);
+            auto window_size = std::get<2>(t);
+            auto window_step = std::get<3>(t);
+            auto expected = std::get<4>(t);
+            auto result = slide<value_type>(policy..., tensor, gtensor::detail::no_value{}, functor, window_size, window_step);
+            REQUIRE(result == expected);
+        };
+        apply_by_element(test, test_data);
     };
-    apply_by_element(test, test_data);
+
+    SECTION("exec_pol<1>")
+    {
+        test_slide_flatten(multithreading::exec_pol<1>{});
+    }
+    SECTION("exec_pol<4>")
+    {
+        test_slide_flatten(multithreading::exec_pol<4>{});
+    }
 }
 
 TEST_CASE("test_slide_custom_arg","[test_reduce]")
@@ -1643,9 +1557,8 @@ TEST_CASE("test_slide_custom_arg","[test_reduce]")
         std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9}}, dim_type{0}, moving_avarage{}, index_type{2}, index_type{1}, value_type{2}, tensor_type{{2,3,4},{5,6,7}}),
         std::make_tuple(tensor_type{{1,2,3},{4,5,6},{7,8,9}}, dim_type{1}, moving_avarage{}, index_type{2}, index_type{1}, value_type{2}, tensor_type{{1,2},{4,5},{7,8}})
     );
-    SECTION("exec_pol<1>")
-    {
-        auto test = [](const auto& t){
+    auto test_slide_custom_arg = [&test_data](auto...policy){
+        auto test = [policy...](const auto& t){
             auto tensor = std::get<0>(t);
             auto axis = std::get<1>(t);
             auto functor = std::get<2>(t);
@@ -1653,40 +1566,19 @@ TEST_CASE("test_slide_custom_arg","[test_reduce]")
             auto window_step = std::get<4>(t);
             auto denom = std::get<5>(t);
             auto expected = std::get<6>(t);
-            auto result = slide<value_type>(multithreading::exec_pol<1>{}, tensor, axis, functor, window_size, window_step, window_size, window_step, denom);
+            auto result = slide<value_type>(policy..., tensor, axis, functor, window_size, window_step, window_size, window_step, denom);
             REQUIRE(result == expected);
         };
         apply_by_element(test, test_data);
+    };
+
+    SECTION("exec_pol<1>")
+    {
+        test_slide_custom_arg(multithreading::exec_pol<1>{});
     }
     SECTION("exec_pol<4>")
     {
-        auto test = [](const auto& t){
-            auto tensor = std::get<0>(t);
-            auto axis = std::get<1>(t);
-            auto functor = std::get<2>(t);
-            auto window_size = std::get<3>(t);
-            auto window_step = std::get<4>(t);
-            auto denom = std::get<5>(t);
-            auto expected = std::get<6>(t);
-            auto result = slide<value_type>(multithreading::exec_pol<4>{}, tensor, axis, functor, window_size, window_step, window_size, window_step, denom);
-            REQUIRE(result == expected);
-        };
-        apply_by_element(test, test_data);
-    }
-    SECTION("exec_pol<0>")
-    {
-        auto test = [](const auto& t){
-            auto tensor = std::get<0>(t);
-            auto axis = std::get<1>(t);
-            auto functor = std::get<2>(t);
-            auto window_size = std::get<3>(t);
-            auto window_step = std::get<4>(t);
-            auto denom = std::get<5>(t);
-            auto expected = std::get<6>(t);
-            auto result = slide<value_type>(multithreading::exec_pol<0>{}, tensor, axis, functor, window_size, window_step, window_size, window_step, denom);
-            REQUIRE(result == expected);
-        };
-        apply_by_element(test, test_data);
+        test_slide_custom_arg(multithreading::exec_pol<4>{});
     }
 }
 
@@ -1731,7 +1623,7 @@ TEST_CASE("test_slide_flatten_exception","[test_reduce]")
     using index_type = typename tensor_type::index_type;
     using gtensor::value_error;
     using test_reduce_::cumsum;
-    using gtensor::slide_flatten;
+    using gtensor::slide;
     using helpers_for_testing::apply_by_element;
 
     //0tensor,1functor,2window_size,3window_step
@@ -1746,7 +1638,7 @@ TEST_CASE("test_slide_flatten_exception","[test_reduce]")
         auto functor = std::get<1>(t);
         auto window_size = std::get<2>(t);
         auto window_step = std::get<3>(t);
-        REQUIRE_THROWS_AS(slide_flatten<value_type>(tensor, functor, window_size, window_step), value_error);
+        REQUIRE_THROWS_AS(slide<value_type>(tensor, gtensor::detail::no_value{}, functor, window_size, window_step), value_error);
     };
     apply_by_element(test, test_data);
 }
@@ -1770,41 +1662,24 @@ TEST_CASE("test_transform","[test_reduce]")
         std::make_tuple(tensor_type{{{2,1,3},{3,0,1}},{{0,2,1},{3,0,1}}}, dim_type{1}, sort{}, tensor_type{{{2,0,1},{3,1,3}},{{0,0,1},{3,2,1}}}),
         std::make_tuple(tensor_type{{{2,1,3},{3,0,1}},{{0,2,1},{3,0,1}}}, dim_type{2}, sort{}, tensor_type{{{1,2,3},{0,1,3}},{{0,1,2},{0,1,3}}})
     );
-    SECTION("exec_policy<1>")
-    {
-        auto test = [](const auto& t){
+    auto test_transform = [&test_data](auto...policy){
+        auto test = [policy...](const auto& t){
             auto tensor = std::get<0>(t);
             auto axis = std::get<1>(t);
             auto functor = std::get<2>(t);
             auto expected = std::get<3>(t);
-            transform(multithreading::exec_pol<1>{}, tensor, axis, functor);
+            transform(policy..., tensor, axis, functor);
             REQUIRE(tensor == expected);
         };
         apply_by_element(test, test_data);
+    };
+    SECTION("exec_policy<1>")
+    {
+        test_transform(multithreading::exec_pol<1>{});
     }
     SECTION("exec_policy<4>")
     {
-        auto test = [](const auto& t){
-            auto tensor = std::get<0>(t);
-            auto axis = std::get<1>(t);
-            auto functor = std::get<2>(t);
-            auto expected = std::get<3>(t);
-            transform(multithreading::exec_pol<4>{}, tensor, axis, functor);
-            REQUIRE(tensor == expected);
-        };
-        apply_by_element(test, test_data);
-    }
-    SECTION("exec_policy<0>")
-    {
-        auto test = [](const auto& t){
-            auto tensor = std::get<0>(t);
-            auto axis = std::get<1>(t);
-            auto functor = std::get<2>(t);
-            auto expected = std::get<3>(t);
-            transform(multithreading::exec_pol<0>{}, tensor, axis, functor);
-            REQUIRE(tensor == expected);
-        };
-        apply_by_element(test, test_data);
+        test_transform(multithreading::exec_pol<4>{});
     }
 }
 

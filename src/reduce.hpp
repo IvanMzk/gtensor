@@ -837,20 +837,9 @@ class reducer
     }
 
 public:
-    //interface
-    template<typename Policy, typename F, typename...Ts, typename Initial>
-    static auto reduce_binary_flatten(Policy policy, const basic_tensor<Ts...>& t, F f, bool keep_dims, const Initial& initial){
-        return reduce_binary_flatten_(policy,t,f,keep_dims,initial);
-    }
-
     template<typename Policy, typename F, typename Axes, typename...Ts, typename Initial>
     static auto reduce_binary(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, F f, bool keep_dims, const Initial& initial){
         return reduce_binary_(policy,t,axes,f,keep_dims,initial);
-    }
-
-    template<typename F, typename...Ts, typename...Args>
-    static auto reduce_range_flatten(const basic_tensor<Ts...>& t, F f, bool keep_dims, bool any_order, const Args&...args){
-        return reduce_range_flatten_(t,f,keep_dims,any_order,args...);
     }
 
     template<typename Policy, typename F, typename Axes, typename...Ts, typename...Args>
@@ -863,31 +852,11 @@ public:
         return slide_<ResultT>(policy,t,axis,f,window_size,window_step,args...);
     }
 
-    template<typename ResultT, typename...Ts, typename F, typename IdxT, typename...Args>
-    static auto slide_flatten(const basic_tensor<Ts...>& t, F f, const IdxT& window_size, const IdxT& window_step, const Args&...args){
-        return slide_flatten_<ResultT>(t,f,window_size,window_step,args...);
-    }
-
     template<typename Policy, typename...Ts, typename DimT, typename F, typename...Args>
     static void transform(Policy policy, basic_tensor<Ts...>& t, const DimT& axis, F f, const Args&...args){
         transform_(policy,t,axis,f,args...);
     }
-
 };
-
-
-//reduce like over flatten, F is binary functor
-//policy is specialization of multithreading::exec_pol
-template<typename Policy, typename F, typename...Ts, typename Initial=detail::no_value>
-auto reduce_binary_flatten(Policy policy, const basic_tensor<Ts...>& t, F f, bool keep_dims, const Initial& initial=Initial{}){
-    using config_type = typename basic_tensor<Ts...>::config_type;
-    return reducer_selector_t<config_type>::reduce_binary_flatten(policy, t, f, keep_dims, initial);
-}
-template<typename F, typename...Ts, typename Initial=detail::no_value>
-auto reduce_binary_flatten(const basic_tensor<Ts...>& t, F f, bool keep_dims, const Initial& initial=Initial{}){
-    using config_type = typename basic_tensor<Ts...>::config_type;
-    return reducer_selector_t<config_type>::reduce_binary_flatten(multithreading::exec_pol<1>{}, t, f, keep_dims, initial);
-}
 
 //make tensor reduction along axes, axes can be scalar or container,
 //F is binary reduce functor that operates on tensor's elements
@@ -903,14 +872,6 @@ template<typename F, typename Axes, typename...Ts, typename Initial=detail::no_v
 auto reduce_binary(const basic_tensor<Ts...>& t, const Axes& axes, F f, bool keep_dims, const Initial& initial=Initial{}){
     using config_type = typename basic_tensor<Ts...>::config_type;
     return reducer_selector_t<config_type>::reduce_binary(multithreading::exec_pol<1>{}, t, axes, f, keep_dims, initial);
-}
-
-//reduce like over flatten, F takes iterators range to be reduced
-//if any_order true traverse order unspecified, c_order otherwise
-template<typename F, typename...Ts, typename...Args>
-auto reduce_range_flatten(const basic_tensor<Ts...>& t, F f, bool keep_dims, bool any_order, const Args&...args){
-    using config_type = typename basic_tensor<Ts...>::config_type;
-    return reducer_selector_t<config_type>::reduce_range_flatten(t, f, keep_dims, any_order, args...);
 }
 
 //make tensor reduction along axes, axes can be scalar or container,
@@ -944,11 +905,6 @@ template<typename ResultT, typename Axis, typename...Ts, typename F, typename Id
 auto slide(const basic_tensor<Ts...>& t, const Axis& axis, F f, const IdxT& window_size, const IdxT& window_step, const Args&...args){
     using config_type = typename basic_tensor<Ts...>::config_type;
     return reducer_selector_t<config_type>::template slide<ResultT>(multithreading::exec_pol<1>{}, t, axis, f, window_size, window_step,args...);
-}
-template<typename ResultT, typename F, typename...Ts, typename IdxT, typename...Args>
-auto slide_flatten(const basic_tensor<Ts...>& t, F f, const IdxT& window_size, const IdxT& window_step, const Args&...args){
-    using config_type = typename basic_tensor<Ts...>::config_type;
-    return reducer_selector_t<config_type>::template slide_flatten<ResultT>(t, f, window_size, window_step,args...);
 }
 
 //transform tensor inplace along specified axis
