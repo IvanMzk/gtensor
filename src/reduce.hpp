@@ -841,20 +841,36 @@ public:
     static auto reduce_binary(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, F f, bool keep_dims, const Initial& initial){
         return reduce_binary_(policy,t,axes,f,keep_dims,initial);
     }
+    template<typename F, typename Axes, typename...Ts, typename Initial>
+    static auto reduce_binary(const basic_tensor<Ts...>& t, const Axes& axes, F f, bool keep_dims, const Initial& initial){
+        return reduce_binary_(multithreading::exec_pol<1>{},t,axes,f,keep_dims,initial);
+    }
 
     template<typename Policy, typename F, typename Axes, typename...Ts, typename...Args>
     static auto reduce_range(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, F f, bool keep_dims, bool any_order, const Args&...args){
         return reduce_range_(policy,t,axes,f,keep_dims,any_order,args...);
+    }
+    template<typename F, typename Axes, typename...Ts, typename...Args>
+    static auto reduce_range(const basic_tensor<Ts...>& t, const Axes& axes, F f, bool keep_dims, bool any_order, const Args&...args){
+        return reduce_range_(multithreading::exec_pol<1>{},t,axes,f,keep_dims,any_order,args...);
     }
 
     template<typename ResultT, typename Policy, typename...Ts, typename Axis, typename F, typename IdxT, typename...Args>
     static auto slide(Policy policy, const basic_tensor<Ts...>& t, const Axis& axis, F f, const IdxT& window_size, const IdxT& window_step, const Args&...args){
         return slide_<ResultT>(policy,t,axis,f,window_size,window_step,args...);
     }
+    template<typename ResultT, typename...Ts, typename Axis, typename F, typename IdxT, typename...Args>
+    static auto slide(const basic_tensor<Ts...>& t, const Axis& axis, F f, const IdxT& window_size, const IdxT& window_step, const Args&...args){
+        return slide_<ResultT>(multithreading::exec_pol<1>{},t,axis,f,window_size,window_step,args...);
+    }
 
     template<typename Policy, typename...Ts, typename DimT, typename F, typename...Args>
     static void transform(Policy policy, basic_tensor<Ts...>& t, const DimT& axis, F f, const Args&...args){
         transform_(policy,t,axis,f,args...);
+    }
+    template<typename...Ts, typename DimT, typename F, typename...Args>
+    static void transform(basic_tensor<Ts...>& t, const DimT& axis, F f, const Args&...args){
+        transform_(multithreading::exec_pol<1>{},t,axis,f,args...);
     }
 };
 
@@ -871,7 +887,7 @@ auto reduce_binary(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes
 template<typename F, typename Axes, typename...Ts, typename Initial=detail::no_value>
 auto reduce_binary(const basic_tensor<Ts...>& t, const Axes& axes, F f, bool keep_dims, const Initial& initial=Initial{}){
     using config_type = typename basic_tensor<Ts...>::config_type;
-    return reducer_selector_t<config_type>::reduce_binary(multithreading::exec_pol<1>{}, t, axes, f, keep_dims, initial);
+    return reducer_selector_t<config_type>::reduce_binary(t, axes, f, keep_dims, initial);
 }
 
 //make tensor reduction along axes, axes can be scalar or container,
@@ -888,7 +904,7 @@ auto reduce_range(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes,
 template<typename F, typename Axes, typename...Ts, typename...Args>
 auto reduce_range(const basic_tensor<Ts...>& t, const Axes& axes, F f, bool keep_dims, bool any_order, const Args&...args){
     using config_type = typename basic_tensor<Ts...>::config_type;
-    return reducer_selector_t<config_type>::reduce_range(multithreading::exec_pol<1>{}, t, axes, f, keep_dims, any_order, args...);
+    return reducer_selector_t<config_type>::reduce_range(t, axes, f, keep_dims, any_order, args...);
 }
 
 //make tensor that is result of applying F to sliding window over axis, axis is scalar
@@ -904,7 +920,7 @@ auto slide(Policy policy, const basic_tensor<Ts...>& t, const Axis& axis, F f, c
 template<typename ResultT, typename Axis, typename...Ts, typename F, typename IdxT, typename...Args>
 auto slide(const basic_tensor<Ts...>& t, const Axis& axis, F f, const IdxT& window_size, const IdxT& window_step, const Args&...args){
     using config_type = typename basic_tensor<Ts...>::config_type;
-    return reducer_selector_t<config_type>::template slide<ResultT>(multithreading::exec_pol<1>{}, t, axis, f, window_size, window_step,args...);
+    return reducer_selector_t<config_type>::template slide<ResultT>(t, axis, f, window_size, window_step,args...);
 }
 
 //transform tensor inplace along specified axis
@@ -914,6 +930,11 @@ template<typename Policy, typename...Ts, typename DimT, typename F, typename...A
 void transform(Policy policy, basic_tensor<Ts...>& t, const DimT& axis, F f, const Args&...args){
     using config_type = typename basic_tensor<Ts...>::config_type;
     reducer_selector_t<config_type>::transform(policy, t, axis, f, args...);
+}
+template<typename...Ts, typename DimT, typename F, typename...Args>
+void transform(basic_tensor<Ts...>& t, const DimT& axis, F f, const Args&...args){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    reducer_selector_t<config_type>::transform(t, axis, f, args...);
 }
 
 }   //end of namespace gtensor
