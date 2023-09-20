@@ -1454,8 +1454,7 @@ TEMPLATE_TEST_CASE("test_reduce_big","[test_reduce]",
     using helpers_for_testing::apply_by_element;
 
     tensor_type t(shape_type{32,16,8,64,4,16}); //1<<24
-    generate_lehmer(t.begin(),t.end(),123);
-    std::for_each(t.begin(),t.end(),[](auto& e){e%=2;});
+    generate_lehmer(t.begin(),t.end(),[](const auto& e){return e%2;},123);
 
     //0ten,1axes,2binary_f,3range_f,4keep_dims,5any_order,6initial,7expected
     auto test_data = std::make_tuple(

@@ -68,21 +68,21 @@ auto make_initial(It& first, const Initial& initial){
     }
 }
 
-template<typename Comparator>
+template<typename Extremum>
 struct extremum_nanextremum
 {
     template<typename It, typename Initial = gtensor::detail::no_value>
     auto operator()(It first, It last, const Initial& initial = Initial{}){
         if (first == last){
-            return reduce_empty<Comparator,It>(initial);
+            return reduce_empty<Extremum,It>(initial);
         }
-        auto init = make_initial<Comparator>(first,initial);
-        return std::accumulate(first,last,init,Comparator{});
+        auto init = make_initial<Extremum>(first,initial);
+        return std::accumulate(first,last,init,Extremum{});
     }
 };
 
 template<typename Comparator>
-struct nan_propagate_comparator
+struct nan_propagate_extremum
 {
     const Comparator comparator{};
     template<typename R, typename E>
@@ -92,7 +92,7 @@ struct nan_propagate_comparator
 };
 
 template<typename Comparator>
-struct nan_ignore_comparator
+struct nan_ignore_extremum
 {
     const Comparator comparator{};
     template<typename R, typename E>
@@ -101,10 +101,10 @@ struct nan_ignore_comparator
     }
 };
 
-using amin = extremum_nanextremum<nan_propagate_comparator<std::less<void>>>;
-using amax = extremum_nanextremum<nan_propagate_comparator<std::greater<void>>>;
-using nanmin = extremum_nanextremum<nan_ignore_comparator<std::less<void>>>;
-using nanmax = extremum_nanextremum<nan_ignore_comparator<std::greater<void>>>;
+using amin = extremum_nanextremum<nan_propagate_extremum<std::less<void>>>;
+using amax = extremum_nanextremum<nan_propagate_extremum<std::greater<void>>>;
+using nanmin = extremum_nanextremum<nan_ignore_extremum<std::less<void>>>;
+using nanmax = extremum_nanextremum<nan_ignore_extremum<std::greater<void>>>;
 
 template<typename Operation>
 struct accumulate_nanaccumulate
@@ -295,21 +295,29 @@ namespace statistic_reduce_operations{
 //peak-to-peak
 struct min_max
 {
+    math_reduce_operations::nan_propagate_extremum<std::less<void>> nan_prop_min{};
+    math_reduce_operations::nan_propagate_extremum<std::greater<void>> nan_prop_max{};
     template<typename It>
     auto operator()(It first, It last){
         if (first==last){
             throw value_error("cant reduce zero size dimension");
         }
+        using value_type = typename std::iterator_traits<It>::value_type;
         auto min = *first;
         auto max = min;
         for (++first; first!=last; ++first){
             const auto& e = *first;
-            if(e<min){
-                min = e;
-                continue;
-            }
-            if(e>max){
-                max = e;
+            if constexpr (gtensor::math::numeric_traits<value_type>::has_nan()){
+                min=nan_prop_min(min,e);
+                max=nan_prop_max(max,e);
+            }else{
+                if (e<min){
+                    min=e;
+                    continue;
+                }
+                if (e>max){
+                    max=e;
+                }
             }
         }
         return std::make_pair(min,max);
@@ -427,24 +435,6 @@ struct var
         return res / n;
     }
 };
-// struct var
-// {
-//     template<typename It>
-//     auto operator()(It first, It last){
-//         using value_type = typename std::iterator_traits<It>::value_type;
-//         using res_type = gtensor::math::make_floating_point_t<value_type>;
-//         if (first == last){
-//             return reduce_empty<res_type>();
-//         }
-//         const auto res = std::accumulate(first,last,std::make_pair(res_type{0},res_type{0}),
-//             [](const auto& r, const auto& e){
-//                 return std::make_pair(r.first+e,r.second+e*e);
-//             }
-//         );
-//         const auto n = static_cast<const res_type&>(last-first);
-//         return (n*res.second - res.first*res.first)/(n*n);
-//     }
-// };
 
 struct nanvar
 {
@@ -475,36 +465,6 @@ struct nanvar
         }
     }
 };
-
-// struct nanvar
-// {
-//     template<typename It>
-//     auto operator()(It first, It last){
-//         using value_type = typename std::iterator_traits<It>::value_type;
-//         using difference_type = typename std::iterator_traits<It>::difference_type;
-//         using res_type = gtensor::math::make_floating_point_t<value_type>;
-//         if (first == last){
-//             return reduce_empty<res_type>();
-//         }
-//         auto res = std::accumulate(first,last,std::make_tuple(res_type{0},res_type{0},difference_type{0}),
-//             [](const auto& r, const auto& e)
-//             {
-//                 if (gtensor::math::isnan(e)){
-//                     return r;
-//                 }else{
-//                     return std::make_tuple(std::get<0>(r)+e,std::get<1>(r)+e*e,std::get<2>(r)+1);
-//                 }
-//             }
-//         );
-//         const auto n = std::get<2>(res);
-//         if (n==0){
-//             return gtensor::math::numeric_traits<res_type>::nan();
-//         }else{
-//             const auto n_ = static_cast<const res_type&>(n);
-//             return (n_*std::get<1>(res) - std::get<0>(res)*std::get<0>(res))/(n_*n_);
-//         }
-//     }
-// };
 
 struct stdev
 {
@@ -937,7 +897,7 @@ struct argextremum_nanargextremum
 };
 
 template<typename Comparator>
-struct nan_propagate_comparator
+struct nan_propagate_extremum
 {
     const Comparator comparator{};
     template<typename R, typename E>
@@ -947,7 +907,7 @@ struct nan_propagate_comparator
 };
 
 template<typename Comparator>
-struct nan_ignore_comparator
+struct nan_ignore_extremum
 {
     const Comparator comparator{};
     template<typename R, typename E>
@@ -956,10 +916,10 @@ struct nan_ignore_comparator
     }
 };
 
-using argmin = argextremum_nanargextremum<nan_propagate_comparator<std::less<void>>>;
-using argmax = argextremum_nanargextremum<nan_propagate_comparator<std::greater<void>>>;
-using nanargmin = argextremum_nanargextremum<nan_ignore_comparator<std::less<void>>,std::true_type>;
-using nanargmax = argextremum_nanargextremum<nan_ignore_comparator<std::greater<void>>,std::true_type>;
+using argmin = argextremum_nanargextremum<nan_propagate_extremum<std::less<void>>>;
+using argmax = argextremum_nanargextremum<nan_propagate_extremum<std::greater<void>>>;
+using nanargmin = argextremum_nanargextremum<nan_ignore_extremum<std::less<void>>,std::true_type>;
+using nanargmax = argextremum_nanargextremum<nan_ignore_extremum<std::greater<void>>,std::true_type>;
 
 struct count_nonzero
 {

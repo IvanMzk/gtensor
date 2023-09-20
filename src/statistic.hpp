@@ -234,21 +234,6 @@ private:
             return this->operator()(policy,t,detail::no_value{},keep_dims);
         }
     };
-
-    // struct nanvar_binary{
-    //     template<typename Policy, typename...Ts,typename Axes>
-    //     auto operator()(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims){
-    //         auto square = [](const auto& e){return e*e;};
-    //         auto mean_ = nanmean_binary{}(policy,t,axes,true);
-    //         auto tmp = gtensor::n_operator(square,t-std::move(mean_));
-    //         return nanmean_binary{}(policy,tmp,axes,keep_dims);
-    //     }
-    //     template<typename Policy, typename...Ts>
-    //     auto operator()(Policy policy, const basic_tensor<Ts...>& t, bool keep_dims){
-    //         return this->operator()(policy,t,detail::no_value{},keep_dims);
-    //     }
-    // };
-
     struct stdev_binary{
         template<typename Policy, typename...Ts,typename Axes>
         auto operator()(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims){

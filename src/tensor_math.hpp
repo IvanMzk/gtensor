@@ -192,11 +192,11 @@ struct tensor_math
 
     //min element along given axes
     //axes may be scalar or container
-    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(amin,math_reduce_operations::nan_propagate_comparator<std::less<void>>,math_reduce_operations::amin,detail::no_value{});
+    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(amin,math_reduce_operations::nan_propagate_extremum<std::less<void>>,math_reduce_operations::amin,detail::no_value{});
 
     //max element along given axes
     // //axes may be scalar or container
-    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(amax,math_reduce_operations::nan_propagate_comparator<std::greater<void>>,math_reduce_operations::amax,detail::no_value{});
+    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(amax,math_reduce_operations::nan_propagate_extremum<std::greater<void>>,math_reduce_operations::amax,detail::no_value{});
 
     //sum elements along given axes
     //axes may be scalar or container
@@ -217,32 +217,26 @@ struct tensor_math
     //nan versions
     //min element along given axes ignoring nan
     //axes may be scalar or container
-    //GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(nanmin,math_reduce_operations::nan_ignore_comparator<std::less<void>>,gtensor::detail::no_value{});
-    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(nanmin,math_reduce_operations::nan_ignore_comparator<std::less<void>>,math_reduce_operations::nanmin,detail::no_value{});
+    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(nanmin,math_reduce_operations::nan_ignore_extremum<std::less<void>>,math_reduce_operations::nanmin,detail::no_value{});
 
     //max element along given axes ignoring nan
     //axes may be scalar or container
-    //GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(nanmax,math_reduce_operations::nan_ignore_comparator<std::greater<void>>,gtensor::detail::no_value{});
-    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(nanmax,math_reduce_operations::nan_ignore_comparator<std::greater<void>>,math_reduce_operations::nanmax,detail::no_value{});
+    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(nanmax,math_reduce_operations::nan_ignore_extremum<std::greater<void>>,math_reduce_operations::nanmax,detail::no_value{});
 
     //sum elements along given axes, treating nan as zero
     //axes may be scalar or container
-    //GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(nansum,math_reduce_operations::nan_ignoring_operation<std::plus<void>>,typename basic_tensor<Ts...>::value_type{0});
     GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(nansum,math_reduce_operations::nan_ignoring_operation<std::plus<void>>,math_reduce_operations::nansum,typename basic_tensor<Ts...>::value_type{0});
 
     //multiply elements along given axes, treating nan as one
     //axes may be scalar or container
-    //GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(nanprod,math_reduce_operations::nan_ignoring_operation<std::multiplies<void>>,typename basic_tensor<Ts...>::value_type{1});
     GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(nanprod,math_reduce_operations::nan_ignoring_operation<std::multiplies<void>>,math_reduce_operations::nanprod,typename basic_tensor<Ts...>::value_type{1});
 
     //cumulative sum along given axis, treating nan as zero
     //axis is scalar
-    //GTENSOR_TENSOR_MATH_CUMULATE_FUNCTION(nancumsum,math_reduce_operations::nancumsum);
     GTENSOR_TENSOR_MATH_CUMULATE_FUNCTION(nancumsum,math_reduce_operations::nancumsum);
 
     //cumulative product along given axis, treating nan as one
     //axis is scalar
-    //GTENSOR_TENSOR_MATH_CUMULATE_FUNCTION(nancumprod,math_reduce_operations::nancumprod);
     GTENSOR_TENSOR_MATH_CUMULATE_FUNCTION(nancumprod,math_reduce_operations::nancumprod);
 
     //n-th difference along given axis
