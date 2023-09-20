@@ -368,49 +368,33 @@ class reducer
             auto a_parent = parent.traverse_order_adapter(order{});
             auto a_res = res.traverse_order_adapter(order{});
 
+            //reduce zero size
+            if (parent.empty()){
+                if constexpr (has_initial){
+                    std::fill(a_res.begin(),a_res.end(),initial);
+                    return res;
+                }else{
+                    throw value_error("cant reduce zero size dimension without initial value");
+                }
+            }
+
             //like tensor-scalar result
             if (res.size() == index_type{1}){
                 *a_res.begin() = reduce_binary_flatten_helper(policy,parent,reduce_f,initial);
                 return res;
             }
 
-            auto reduce_binary_corner_case_helper = [&parent,&reduce_f,&initial,&axes,&a_res](auto parent_first, auto parent_last){
-                (void)reduce_f;
-                (void)initial;
-                (void)axes;
-                (void)a_res;
-                //empty axes container
-                if constexpr (detail::is_container_v<Axes>){
-                    if (axes.empty()){
-                        if constexpr (has_initial){
-                            std::transform(a_res.begin(),a_res.end(),parent_first,a_res.begin(),[&reduce_f,&initial](auto&&, auto&& r){return reduce_f(initial,r);});
-                        }else{
-                            //assuming reduction of scalar without initial is identity - nothing to reduce
-                            std::transform(a_res.begin(),a_res.end(),parent_first,a_res.begin(),[](auto&&, auto&& r){return static_cast<const res_value_type&>(r);});
-                        }
-                        return true;
-                    }
-                }
-                //reduce zero size
-                if (parent.empty()){
+            //empty axes container
+            if constexpr (detail::is_container_v<Axes>){
+                if (axes.empty()){
                     if constexpr (has_initial){
-                        std::fill(a_res.begin(),a_res.end(),initial);
-                        return true;
+                        std::transform(a_res.begin(),a_res.end(),a_parent.begin(),a_res.begin(),[&reduce_f,&initial](auto&&, auto&& r){return reduce_f(initial,r);});
                     }else{
-                        throw value_error("cant reduce zero size dimension without initial value");
+                        //assuming reduction of scalar without initial is identity - nothing to reduce
+                        std::transform(a_res.begin(),a_res.end(),a_parent.begin(),a_res.begin(),[](auto&&, auto&& r){return static_cast<const res_value_type&>(r);});
                     }
+                    return res;
                 }
-                return false;
-            };
-
-            bool is_corner_case{false};
-            if (parent.is_trivial()){
-                is_corner_case = reduce_binary_corner_case_helper(a_parent.begin_trivial(),a_parent.end_trivial());
-            }else{
-                is_corner_case = reduce_binary_corner_case_helper(a_parent.begin(),a_parent.end());
-            }
-            if (is_corner_case){
-                return res;
             }
 
             detail::sort_axes(axes);
