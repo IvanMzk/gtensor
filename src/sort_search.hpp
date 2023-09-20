@@ -540,6 +540,21 @@ auto NAME(const basic_tensor<Ts...>& t, const Nth& nth, const DimT& axis=-1, con
 }
 
 #define GTENSOR_TENSOR_SORT_SEARCH_REDUCE_ROUTINE(NAME,F)\
+template<typename Policy, typename...Ts, typename Axes>\
+auto NAME(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){\
+    using config_type = typename basic_tensor<Ts...>::config_type;\
+    return sort_search_selector_t<config_type>::F(policy,t,axes,keep_dims);\
+}\
+template<typename Policy, typename...Ts, typename DimT>\
+auto NAME(Policy policy, const basic_tensor<Ts...>& t, std::initializer_list<DimT> axes, bool keep_dims = false){\
+    using config_type = typename basic_tensor<Ts...>::config_type;\
+    return sort_search_selector_t<config_type>::F(policy,t,axes,keep_dims);\
+}\
+template<typename Policy, typename...Ts>\
+auto NAME(Policy policy, const basic_tensor<Ts...>& t, bool keep_dims = false){\
+    using config_type = typename basic_tensor<Ts...>::config_type;\
+    return sort_search_selector_t<config_type>::F(policy,t,keep_dims);\
+}\
 template<typename...Ts, typename Axes>\
 auto NAME(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){\
     using config_type = typename basic_tensor<Ts...>::config_type;\
@@ -629,7 +644,8 @@ auto searchsorted(const basic_tensor<Ts...>& t, const V& v, Side side=Side{}, co
 }
 
 
-//#undef GTENSOR_TENSOR_SORT_SEARCH_SORT_ARGSORT_FUNCTION
+#undef GTENSOR_TENSOR_SORT_ARGSORT_FUNCTION
+#undef GTENSOR_TENSOR_PARTITION_ARGPARTITION_FUNCTION
 #undef GTENSOR_TENSOR_SORT_SEARCH_REDUCE_FUNCTION
 #undef GTENSOR_TENSOR_SORT_ROUTINE
 #undef GTENSOR_TENSOR_PARTITION_ROUTINE
