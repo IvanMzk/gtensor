@@ -79,6 +79,7 @@ target_sources(Test PRIVATE
 
     #${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search_sort_argsort.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search_partition_argpartition.cpp
 #
     #${CMAKE_CURRENT_SOURCE_DIR}/test_builder.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_random.cpp
