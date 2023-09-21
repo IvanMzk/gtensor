@@ -48,9 +48,13 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_core.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_implementation.cpp
 #
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_view_factory.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_expression_template_engine.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_operators.cpp
+
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_view_factory_detail.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_view_factory_reshape_transpose_view.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_view_factory_slice_view.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_view_factory_mapping_view.cpp
 #
     #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_construction.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_assign.cpp
