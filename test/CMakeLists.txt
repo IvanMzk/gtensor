@@ -61,8 +61,12 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_application_specific.cpp
 #
     #${CMAKE_CURRENT_SOURCE_DIR}/test_indexing.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_reduce.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_manipulation.cpp
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_reduce_detail.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_reduce_reduce_range.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_reduce_reduce_binary.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_reduce_slide_transform.cpp
 #
     #${CMAKE_CURRENT_SOURCE_DIR}/test_math_elementwise.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_math_diff_gradient.cpp
