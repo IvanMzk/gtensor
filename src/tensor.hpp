@@ -9,7 +9,19 @@
 #include "multithreading.hpp"
 
 #define GTENSOR_TENSOR_REDUCE_METHOD(NAME,F)\
-template<typename Axes>\
+template<typename Policy, typename Axes, std::enable_if_t<multithreading::is_policy_v<Policy>,int> =0>\
+auto NAME(Policy policy, const Axes& axes, bool keep_dims = false)const{\
+    return F(policy,*this,axes,keep_dims);\
+}\
+template<typename Policy, typename DimT, std::enable_if_t<multithreading::is_policy_v<Policy>,int> =0>\
+auto NAME(Policy policy, std::initializer_list<DimT> axes, bool keep_dims = false)const{\
+    return F(policy,*this,axes,keep_dims);\
+}\
+template<typename Policy, std::enable_if_t<multithreading::is_policy_v<Policy>,int> =0>\
+auto NAME(Policy policy, bool keep_dims = false)const{\
+    return F(policy,*this,keep_dims);\
+}\
+template<typename Axes, std::enable_if_t<!multithreading::is_policy_v<Axes>,int> =0>\
 auto NAME(const Axes& axes, bool keep_dims = false)const{\
     return F(*this,axes,keep_dims);\
 }\
@@ -22,7 +34,19 @@ auto NAME(bool keep_dims = false)const{\
 }
 
 #define GTENSOR_TENSOR_REDUCE_INITIAL_METHOD(NAME,F)\
-template<typename Axes, typename Initial = gtensor::detail::no_value>\
+template<typename Policy, typename Axes, typename Initial = gtensor::detail::no_value, std::enable_if_t<multithreading::is_policy_v<Policy>,int> =0>\
+auto NAME(Policy policy, const Axes& axes, bool keep_dims = false, const Initial& initial = Initial{})const{\
+    return F(policy,*this,axes,keep_dims,initial);\
+}\
+template<typename Policy, typename DimT, typename Initial = gtensor::detail::no_value, std::enable_if_t<multithreading::is_policy_v<Policy>,int> =0>\
+auto NAME(Policy policy, std::initializer_list<DimT> axes, bool keep_dims = false, const Initial& initial = Initial{})const{\
+    return F(policy,*this,axes,keep_dims,initial);\
+}\
+template<typename Policy, typename Initial = gtensor::detail::no_value, std::enable_if_t<multithreading::is_policy_v<Policy>,int> =0>\
+auto NAME(Policy policy, bool keep_dims = false, const Initial& initial = Initial{})const{\
+    return F(policy,*this,keep_dims,initial);\
+}\
+template<typename Axes, typename Initial = gtensor::detail::no_value, std::enable_if_t<!multithreading::is_policy_v<Axes>,int> =0>\
 auto NAME(const Axes& axes, bool keep_dims = false, const Initial& initial = Initial{})const{\
     return F(*this,axes,keep_dims,initial);\
 }\
@@ -36,7 +60,15 @@ auto NAME(bool keep_dims = false, const Initial& initial = Initial{})const{\
 }
 
 #define GTENSOR_TENSOR_CUMULATE_METHOD(NAME,F)\
-template<typename DimT>\
+template<typename Policy, typename DimT, std::enable_if_t<multithreading::is_policy_v<Policy>,int> =0>\
+auto NAME(Policy policy, const DimT& axis)const{\
+    return F(policy,*this,axis);\
+}\
+template<typename Policy, std::enable_if_t<multithreading::is_policy_v<Policy>,int> =0>\
+auto NAME(Policy policy)const{\
+    return F(policy,*this);\
+}\
+template<typename DimT, std::enable_if_t<!multithreading::is_policy_v<DimT>,int> =0>\
 auto NAME(const DimT& axis)const{\
     return F(*this,axis);\
 }\
@@ -525,14 +557,22 @@ public:
     GTENSOR_TENSOR_REDUCE_METHOD(var,detail::adl_proxy::var_);
     GTENSOR_TENSOR_REDUCE_METHOD(stdev,detail::adl_proxy::stdev_);
     //sort_search
-    //inplace sort, should use gtensor::sort to sort copy
-    template<typename DimT=dim_type, typename Comparator=std::less<void>>
-    void sort(const DimT& axis=-1, const Comparator& comparator=Comparator{}){
-        return detail::adl_proxy::transform_(*this,axis,[&comparator](auto first, auto last){std::sort(first,last,comparator);});
+    //inplace sort, should use gtensor::sort to get sorted copy
+    template<typename Policy, typename DimT=dim_type, typename Comparator=std::less<void>, std::enable_if_t<multithreading::is_policy_v<Policy>,int> =0>
+    void sort(Policy policy, const DimT& axis=-1, const Comparator& comparator=Comparator{}){
+        return detail::adl_proxy::transform_(policy,*this,axis,[&comparator](auto first, auto last){std::sort(first,last,comparator);});
     }
-    template<typename DimT=dim_type, typename Comparator=std::less<void>>
+    template<typename DimT=dim_type, typename Comparator=std::less<void>, std::enable_if_t<!multithreading::is_policy_v<DimT>,int> =0>
+    void sort(const DimT& axis=-1, const Comparator& comparator=Comparator{}){
+        return this->sort(multithreading::exec_pol<1>{},axis,comparator);
+    }
+    template<typename Policy, typename DimT=dim_type, typename Comparator=std::less<void>, std::enable_if_t<multithreading::is_policy_v<Policy>,int> =0>
+    auto argsort(Policy policy, const DimT& axis=-1, const Comparator& comparator=Comparator{})const{
+        return detail::adl_proxy::argsort_(policy,*this,axis,comparator);
+    }
+    template<typename DimT=dim_type, typename Comparator=std::less<void>, std::enable_if_t<!multithreading::is_policy_v<DimT>,int> =0>
     auto argsort(const DimT& axis=-1, const Comparator& comparator=Comparator{})const{
-        return detail::adl_proxy::argsort_(*this,axis,comparator);
+        return this->argsort(multithreading::exec_pol<1>{},axis,comparator);
     }
     GTENSOR_TENSOR_REDUCE_METHOD(argmax,detail::adl_proxy::argmax_);
     GTENSOR_TENSOR_REDUCE_METHOD(argmin,detail::adl_proxy::argmin_);

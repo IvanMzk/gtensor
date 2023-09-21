@@ -443,15 +443,20 @@ auto NAME(Policy policy, const basic_tensor<Ts...>& t, const DimT& axis){\
     using config_type = typename basic_tensor<Ts...>::config_type;\
     return tensor_math_selector_t<config_type>::F(policy,t,axis);\
 }\
-template<typename...Ts>\
-auto NAME(const basic_tensor<Ts...>& t){\
+template<typename Policy, typename...Ts>\
+auto NAME(Policy policy, const basic_tensor<Ts...>& t){\
     using config_type = typename basic_tensor<Ts...>::config_type;\
-    return tensor_math_selector_t<config_type>::F(t);\
+    return tensor_math_selector_t<config_type>::F(policy,t);\
 }\
 template<typename...Ts, typename DimT>\
 auto NAME(const basic_tensor<Ts...>& t, const DimT& axis){\
     using config_type = typename basic_tensor<Ts...>::config_type;\
     return tensor_math_selector_t<config_type>::F(t,axis);\
+}\
+template<typename...Ts>\
+auto NAME(const basic_tensor<Ts...>& t){\
+    using config_type = typename basic_tensor<Ts...>::config_type;\
+    return tensor_math_selector_t<config_type>::F(t);\
 }
 
 //test if all elements along given axes evaluate to true
