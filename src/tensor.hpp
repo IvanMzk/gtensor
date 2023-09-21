@@ -6,6 +6,7 @@
 #include "tensor_factory.hpp"
 #include "view_factory.hpp"
 #include "tensor_operators.hpp"
+#include "multithreading.hpp"
 
 #define GTENSOR_TENSOR_REDUCE_METHOD(NAME,F)\
 template<typename Axes>\
@@ -116,17 +117,13 @@ public:
 };
 
 template<int> auto slide(); //dummy declaration
-template<int> auto slide_flatten(); //dummy declaration
 struct adl_proxy{
     template<typename ResT, typename...Args>
     static auto slide_(Args&&...args){
         return slide<ResT>(std::forward<Args>(args)...);
     }
-    template<typename ResT, typename...Args>
-    static auto slide_flatten_(Args&&...args){
-        return slide_flatten<ResT>(std::forward<Args>(args)...);
-    }
-    GTENSOR_ADL_PROXY_METHOD(reduce_,reduce);
+    GTENSOR_ADL_PROXY_METHOD(reduce_range_,reduce_range);
+    GTENSOR_ADL_PROXY_METHOD(reduce_binary_,reduce_binary);
     GTENSOR_ADL_PROXY_METHOD(transform_,transform);
     GTENSOR_ADL_PROXY_METHOD(all_,all);
     GTENSOR_ADL_PROXY_METHOD(any_,any);
@@ -414,43 +411,101 @@ public:
     }
 
     //reduce_slide_transform methods to perform along axes using custom functor
-    //reduce along axes, axes may be container or scalar
+    //reduce along axes using range functor, axes may be container or scalar
     //f should be like [](auto first, auto last){...}, where first,last is range along axes
     //f should return scalar - first,last reduction result - that determines result's value_type
-    //if any_order true traverse order along axes unspecified, c_order otherwise
-    template<typename Axes, typename F>
-    auto reduce(const Axes& axes, F f, bool keep_dims=false, bool any_order=false)const{
-        return detail::adl_proxy::reduce_(*this, axes, f, keep_dims, any_order);
+    //policy is specialization of multithreading::exec_pol
+    template<typename Policy, typename Axes, typename RangeF, std::enable_if_t<multithreading::is_policy_v<Policy>,int> =0>
+    auto reduce_range(Policy policy, const Axes& axes, RangeF f, bool keep_dims=false)const{
+        const bool any_order = false;
+        return detail::adl_proxy::reduce_range_(policy,*this,axes,f,keep_dims,any_order);
     }
-    template<typename F>
-    auto reduce(std::initializer_list<dim_type> axes, F f, bool keep_dims=false, bool any_order=false)const{
-        return detail::adl_proxy::reduce_(*this, axes, f, keep_dims, any_order);
+    template<typename Policy, typename RangeF, std::enable_if_t<multithreading::is_policy_v<Policy>,int> =0>
+    auto reduce_range(Policy policy, std::initializer_list<dim_type> axes, RangeF f, bool keep_dims=false)const{
+        const bool any_order = false;
+        return detail::adl_proxy::reduce_range_(policy,*this,axes,f,keep_dims,any_order);
     }
-    //reduce like over flatten
-    //if any_order true traverse order unspecified, c_order otherwise
-    template<typename F>
-    auto reduce(F f, bool keep_dims=false, bool any_order=false)const{
-        return reduce_flatten(*this, f, keep_dims, any_order);
+    template<typename Axes, typename RangeF, std::enable_if_t<!multithreading::is_policy_v<Axes>,int> =0>
+    auto reduce_range(const Axes& axes, RangeF f, bool keep_dims=false)const{
+        return this->reduce_range(multithreading::exec_pol<1>{},axes,f,keep_dims);
     }
+    template<typename RangeF>
+    auto reduce_range(std::initializer_list<dim_type> axes, RangeF f, bool keep_dims=false)const{
+        return this->reduce_range(multithreading::exec_pol<1>{},axes,f,keep_dims);
+    }
+    //reduce like over flatten using range functor
+    template<typename Policy, typename RangeF, std::enable_if_t<multithreading::is_policy_v<Policy>,int> =0>
+    auto reduce_range(Policy policy, RangeF f, bool keep_dims=false)const{
+        return this->reduce_range(policy,detail::no_value{},f,keep_dims);
+    }
+    template<typename RangeF>
+    auto reduce_range(RangeF f, bool keep_dims=false)const{
+        return this->reduce_range(multithreading::exec_pol<1>{},detail::no_value{},f,keep_dims);
+    }
+
+    //reduce along axes using binary functor, axes may be container or scalar
+    //f is binary reduce functor that operates on tensor's elements, like std::plus<void>
+    //result tensor has value_type that is return type of f
+    //initial must be such that expression f(initial,element) be valid or no_value
+    //policy is specialization of multithreading::exec_pol
+    template<typename Policy, typename Axes, typename BinaryF, typename Initial=detail::no_value, std::enable_if_t<multithreading::is_policy_v<Policy>,int> =0>
+    auto reduce_binary(Policy policy, const Axes& axes, BinaryF f, bool keep_dims=false, const Initial& initial=Initial{})const{
+        return detail::adl_proxy::reduce_binary_(policy,*this,axes,f,keep_dims,initial);
+    }
+    template<typename Policy, typename BinaryF, typename Initial=detail::no_value, std::enable_if_t<multithreading::is_policy_v<Policy>,int> =0>
+    auto reduce_binary(Policy policy, std::initializer_list<dim_type> axes, BinaryF f, bool keep_dims=false, const Initial& initial=Initial{})const{
+        return detail::adl_proxy::reduce_binary_(policy,*this,axes,f,keep_dims,initial);
+    }
+    template<typename Axes, typename BinaryF, typename Initial=detail::no_value, std::enable_if_t<!multithreading::is_policy_v<Axes>,int> =0>
+    auto reduce_binary(const Axes& axes, BinaryF f, bool keep_dims=false, const Initial& initial=Initial{})const{
+        return this->reduce_binary(multithreading::exec_pol<1>{},axes,f,keep_dims,initial);
+    }
+    template<typename BinaryF, typename Initial=detail::no_value>
+    auto reduce_binary(std::initializer_list<dim_type> axes, BinaryF f, bool keep_dims=false, const Initial& initial=Initial{})const{
+        return this->reduce_binary(multithreading::exec_pol<1>{},axes,f,keep_dims,initial);
+    }
+    //reduce like over flatten using binary functor
+    template<typename Policy, typename BinaryF, typename Initial=detail::no_value, std::enable_if_t<multithreading::is_policy_v<Policy>,int> =0>
+    auto reduce_binary(Policy policy, BinaryF f, bool keep_dims=false, const Initial& initial=Initial{})const{
+        return this->reduce_binary(policy,detail::no_value{},f,keep_dims,initial);
+    }
+    template<typename BinaryF, typename Initial=detail::no_value>
+    auto reduce_binary(BinaryF f, bool keep_dims=false, const Initial& initial=Initial{})const{
+        return this->reduce_binary(multithreading::exec_pol<1>{},detail::no_value{},f,keep_dims,initial);
+    }
+
     //slide along given axis, axis is scalar
     //as if sliding window of width window_size moves along axis with step window_step and each window reduction result is stored to destination range
     //f should be like [](auto first, auto last, auto dfirst, auto dlast){...} where first,last is range along axis, dfirst,dlast range along corresponding result axis
     //dlast-dfirst equals to (axis_size - window_size)/window_step + 1
     //result's value_type may be specified by explicit specialization of R
+    template<typename R=value_type, typename Policy, typename Axis, typename F>
+    auto slide(Policy policy, const Axis& axis, F f, const index_type& window_size, const index_type& window_step)const{
+        return detail::adl_proxy::slide_<R>(policy,*this,axis,f,window_size,window_step);
+    }
     template<typename R=value_type, typename F>
     auto slide(const dim_type& axis, F f, const index_type& window_size, const index_type& window_step)const{
-        return detail::adl_proxy::slide_<R>(*this, axis, f, window_size, window_step);
+        return this->slide(multithreading::exec_pol<1>{},axis,f,window_size,window_step);
     }
     //slide like over flatten
+    template<typename R=value_type, typename Policy, typename F>
+    auto slide(Policy policy, F f, const index_type& window_size, const index_type& window_step)const{
+        return this->slide(policy,detail::no_value{},f,window_size,window_step);
+    }
     template<typename R=value_type, typename F>
     auto slide(F f, const index_type& window_size, const index_type& window_step)const{
-        return detail::adl_proxy::slide_flatten_<R>(*this, f, window_size, window_step);
+        return this->slide(multithreading::exec_pol<1>{},detail::no_value{},f,window_size,window_step);
     }
-    //inplace tensor transform
+
+    //inplace tensor transform along axes using range functor
     //f should be like [](auto first, auto last){...}, where first,last is range along axes
-    template<typename F>
-    void transform(const dim_type& axis, F f){
-        detail::adl_proxy::transform_(*this, axis, f);
+    template<typename Policy, typename RangeF>
+    void transform(Policy policy, const dim_type& axis, RangeF f){
+        detail::adl_proxy::transform_(policy,*this,axis,f);
+    }
+    template<typename RangeF>
+    void transform(const dim_type& axis, RangeF f){
+        this->transform(multithreading::exec_pol<1>{},axis,f);
     }
 
     //some methods that call corresponding free function of gtensor modules (tensor_math, statistic,...)

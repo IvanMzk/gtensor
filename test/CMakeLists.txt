@@ -57,7 +57,8 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_equality.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_data_accessor.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_view.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_application_specific.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_reduce_slide_transform.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_application_specific.cpp
 #
     #${CMAKE_CURRENT_SOURCE_DIR}/test_indexing.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_reduce.cpp
@@ -77,11 +78,11 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_SOURCE_DIR}/test_statistic_moving_mean_histogram.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_statistic_big.cpp
 
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search_sort_argsort.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search_partition_argpartition.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search_argmin_argmax.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search_nonzero_argwhere_searchsorted.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search_unique.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search_sort_argsort.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search_partition_argpartition.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search_argmin_argmax.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search_nonzero_argwhere_searchsorted.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search_unique.cpp
 #
     #${CMAKE_CURRENT_SOURCE_DIR}/test_builder.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_random.cpp

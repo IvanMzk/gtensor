@@ -410,15 +410,8 @@ struct exec_policy_traits<P<V>>{
 };
 
 template<std::size_t N> struct exec_pol : std::integral_constant<std::size_t,N>{};
-
-// template<typename...> struct exec_policy_traits;
-// template<template<typename U,U> typename P, typename T, T V>
-// struct exec_policy_traits<P<T,V>>{
-//     using par_tasks = std::conditional_t<V==0, std::integral_constant<std::size_t,pool_workers_n>, std::integral_constant<std::size_t,V>>;
-//     using is_seq = std::bool_constant<par_tasks::value==1>;
-// };
-
-// template<std::size_t N> using exec_pol = std::integral_constant<std::size_t,N>;
+template<typename> inline constexpr bool is_policy_v = false;
+template<std::size_t N> inline constexpr bool is_policy_v<exec_pol<N>> = true;
 
 template<typename Policy, typename It, typename Initial, typename BinaryF>
 auto reduce(Policy, It first, It last, Initial initial, BinaryF f){
@@ -529,62 +522,3 @@ void transform(Policy, DstIt first1, DstIt last1, It first2, BinaryF f){
 
 }   //end of namespace multithreading
 #endif
-
-
-// template<typename _InputIterator1, typename _InputIterator2, typename _Tp,
-//    typename _BinaryOperation1, typename _BinaryOperation2>
-// _GLIBCXX20_CONSTEXPR
-// _Tp
-// transform_reduce(_InputIterator1 __first1, _InputIterator1 __last1,
-// 	     _InputIterator2 __first2, _Tp __init,
-// 	     _BinaryOperation1 __binary_op1,
-// 	     _BinaryOperation2 __binary_op2)
-// {
-//   if constexpr (__and_v<__is_random_access_iter<_InputIterator1>,
-// 		    __is_random_access_iter<_InputIterator2>>)
-// {
-//   while ((__last1 - __first1) >= 4)
-//     {
-//       _Tp __v1 = __binary_op1(__binary_op2(__first1[0], __first2[0]),
-// 			      __binary_op2(__first1[1], __first2[1]));
-//       _Tp __v2 = __binary_op1(__binary_op2(__first1[2], __first2[2]),
-// 			      __binary_op2(__first1[3], __first2[3]));
-//       _Tp __v3 = __binary_op1(__v1, __v2);
-//       __init = __binary_op1(__init, __v3);
-//       __first1 += 4;
-//       __first2 += 4;
-//     }
-// }
-//   for (; __first1 != __last1; ++__first1, (void) ++__first2)
-// __init = __binary_op1(__init, __binary_op2(*__first1, *__first2));
-//   return __init;
-// }
-
-
-
-// template<typename _InputIterator, typename _Tp, typename _BinaryOperation>
-// _GLIBCXX20_CONSTEXPR
-// _Tp
-// reduce(_InputIterator __first, _InputIterator __last, _Tp __init,
-//    _BinaryOperation __binary_op)
-// {
-//   using __ref = typename iterator_traits<_InputIterator>::reference;
-//   static_assert(is_invocable_r_v<_Tp, _BinaryOperation&, _Tp&, __ref>);
-//   static_assert(is_invocable_r_v<_Tp, _BinaryOperation&, __ref, _Tp&>);
-//   static_assert(is_invocable_r_v<_Tp, _BinaryOperation&, _Tp&, _Tp&>);
-//   static_assert(is_invocable_r_v<_Tp, _BinaryOperation&, __ref, __ref>);
-//   if constexpr (__is_random_access_iter<_InputIterator>::value)
-// {
-//   while ((__last - __first) >= 4)
-//     {
-//       _Tp __v1 = __binary_op(__first[0], __first[1]);
-//       _Tp __v2 = __binary_op(__first[2], __first[3]);
-//       _Tp __v3 = __binary_op(__v1, __v2);
-//       __init = __binary_op(__init, __v3);
-//       __first += 4;
-//     }
-// }
-//   for (; __first != __last; ++__first)
-// __init = __binary_op(__init, *__first);
-//   return __init;
-// }
