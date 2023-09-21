@@ -1655,6 +1655,7 @@ TEST_CASE("test_transform","[test_reduce]")
     //0tensor,1axis,2functor,3expected
     auto test_data = std::make_tuple(
         std::make_tuple(tensor_type{}, dim_type{0}, sort{}, tensor_type{}),
+        std::make_tuple(tensor_type{}.reshape(0,2,3), dim_type{0}, sort{}, tensor_type{}.reshape(0,2,3)),
         std::make_tuple(tensor_type{1,2,3,3,2,1,0}, dim_type{0}, sort{}, tensor_type{0,1,1,2,2,3,3}),
         std::make_tuple(tensor_type{{2,1,3},{3,0,1}}, dim_type{0}, sort{}, tensor_type{{2,0,1},{3,1,3}}),
         std::make_tuple(tensor_type{{2,1,3},{3,0,1}}, dim_type{1}, sort{}, tensor_type{{1,2,3},{0,1,3}}),

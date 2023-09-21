@@ -789,7 +789,9 @@ class reducer
         if (parent.dim() == dim_type{1}){
             auto a = parent.traverse_order_adapter(order{});
             transform_f(a.begin(), a.end(), args...);
-        }else{
+            return;
+        }
+        if(!parent.empty()){
             auto axes_iterator_maker = detail::make_axes_iterator_maker<config_type>(pshape,axis,order{});
             auto body = [&axes_iterator_maker](auto f, auto traverser, auto n, const auto&...args){
                 for (;n!=0; --n,traverser.next()){

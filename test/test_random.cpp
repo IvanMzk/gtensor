@@ -1,6 +1,5 @@
 #include <tuple>
 #include <vector>
-#include <iomanip>
 #include "catch.hpp"
 #include "random.hpp"
 #include "tensor.hpp"
