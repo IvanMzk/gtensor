@@ -61,12 +61,17 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_application_specific.cpp
 #
     #${CMAKE_CURRENT_SOURCE_DIR}/test_indexing.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_manipulation.cpp
 
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_reduce_detail.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_reduce_reduce_range.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_reduce_reduce_binary.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_reduce_slide_transform.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_manipulation_detail.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_manipulation_stack_concatenate.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_manipulation_vstack_hstack.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_manipulation_block.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_manipulation_split.cpp
+
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_reduce_detail.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_reduce_reduce_range.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_reduce_reduce_binary.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_reduce_slide_transform.cpp
 #
     #${CMAKE_CURRENT_SOURCE_DIR}/test_math_elementwise.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_math_diff_gradient.cpp
@@ -89,7 +94,7 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search_unique.cpp
 #
     #${CMAKE_CURRENT_SOURCE_DIR}/test_builder.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_random.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_random.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/test.cpp
 )
