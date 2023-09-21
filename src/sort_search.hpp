@@ -122,13 +122,18 @@ struct sort_search
     //Comparator is binary predicate functor, like std::less<void> or std::greater<void>
     GTENSOR_TENSOR_PARTITION_ARGPARTITION_FUNCTION(argpartition,sort_search_reduce_operations::nth_element_argpartition,index_type);
 
+    //return tensor of indeces of extremum elements along given axis
     GTENSOR_TENSOR_SORT_SEARCH_REDUCE_FUNCTION(argmin,sort_search_reduce_operations::argmin,false);
     GTENSOR_TENSOR_SORT_SEARCH_REDUCE_FUNCTION(argmax,sort_search_reduce_operations::argmax,false);
+    //return tensor of indeces of extremum elements along given axis, ignoring nan elements
     GTENSOR_TENSOR_SORT_SEARCH_REDUCE_FUNCTION(nanargmin,sort_search_reduce_operations::nanargmin,false);
     GTENSOR_TENSOR_SORT_SEARCH_REDUCE_FUNCTION(nanargmax,sort_search_reduce_operations::nanargmax,false);
 
+    //return tensor of counts of non-zero elements along given axes
     GTENSOR_TENSOR_SORT_SEARCH_REDUCE_FUNCTION(count_nonzero,sort_search_reduce_operations::count_nonzero,true);
 
+    //return container of tensors, one for each dimension of t, containing indeces of non-zero elements
+    //element is non-zero if static_cast<const bool&>(element) evaluates to true
     template<typename...Ts>
     static auto nonzero(const basic_tensor<Ts...>& t){
         using order = typename basic_tensor<Ts...>::order;
@@ -149,15 +154,22 @@ struct sort_search
             return res;
         }else{
             container_type indexes{};
-            const auto n = t.size()*static_cast<index_type>(t.dim());
+            const auto n = t.size()*static_cast<const index_type&>(t.dim());
             detail::reserve(indexes,n);
-            walker_forward_traverser<config_type,decltype(t.create_walker())> traverser{t.shape(),t.create_walker()};
-            do{
-                if (static_cast<bool>(*traverser.walker())){
-                    std::copy(traverser.index().begin(),traverser.index().end(),std::back_inserter(indexes));
-                }
-            }while(traverser.template next<config::c_order>());
-            const auto nonzero_n = static_cast<index_type>(indexes.size() / dim);
+            auto nonzero_helper = [&indexes](const auto& shape, auto walker){
+                walker_forward_traverser<config_type,decltype(walker)> traverser{shape,walker};
+                do{
+                    if (static_cast<const bool&>(*traverser)){
+                        std::copy(traverser.index().begin(),traverser.index().end(),std::back_inserter(indexes));
+                    }
+                }while(traverser.template next<config::c_order>());
+            };
+            if (t.is_trivial()){
+                nonzero_helper(t.shape(),t.create_trivial_walker());
+            }else{
+                nonzero_helper(t.shape(),t.create_walker());
+            }
+            const auto nonzero_n = static_cast<const index_type&>(indexes.size() / dim);
             result_container_type res{};
             detail::reserve(res,dim);
             for (container_difference_type i=0; i!=dim; ++i){
@@ -178,6 +190,7 @@ struct sort_search
         }
     }
 
+    //return tensor of indeces of non-zero elements, result shape is (N,t.dim()) where N is number of non-zero elements
     template<typename...Ts>
     static auto argwhere(const basic_tensor<Ts...>& t){
         using order = typename basic_tensor<Ts...>::order;
@@ -187,26 +200,33 @@ struct sort_search
         using result_tensor_type = tensor<index_type,order,result_config_type>;
         using container_type = typename config_type::template container<index_type>;
         using container_difference_type = typename container_type::difference_type;
-        const auto dim = static_cast<index_type>(t.dim());
+        const auto dim = static_cast<const index_type&>(t.dim());
         if (t.empty()){
             return result_tensor_type({index_type{0},dim},0);
         }else{
             container_type indexes{};
             const auto n = t.size()*dim;
             detail::reserve(indexes,n);
-            walker_forward_traverser<config_type,decltype(t.create_walker())> traverser{t.shape(),t.create_walker()};
-            do{
-                if (static_cast<bool>(*traverser.walker())){
-                    std::copy(traverser.index().begin(),traverser.index().end(),std::back_inserter(indexes));
-                }
-            }while(traverser.template next<config::c_order>());
-            const auto nonzero_n = static_cast<index_type>(indexes.size()) / dim;
+            auto argwhere_helper = [&indexes](const auto& shape, auto walker){
+                walker_forward_traverser<config_type,decltype(walker)> traverser{shape,walker};
+                do{
+                    if (static_cast<const bool&>(*traverser)){
+                        std::copy(traverser.index().begin(),traverser.index().end(),std::back_inserter(indexes));
+                    }
+                }while(traverser.template next<config::c_order>());
+            };
+            if (t.is_trivial()){
+                argwhere_helper(t.shape(),t.create_trivial_walker());
+            }else{
+                argwhere_helper(t.shape(),t.create_walker());
+            }
+            const auto nonzero_n = static_cast<const index_type&>(indexes.size()) / dim;
             if constexpr (std::is_same_v<order,config::c_order>){
                 return result_tensor_type({nonzero_n,dim},indexes.begin(),indexes.end());
             }else{
                 result_tensor_type res({nonzero_n,dim},0);
                 if (!indexes.empty()){
-                    auto dim_ = static_cast<container_difference_type>(dim);
+                    auto dim_ = static_cast<const container_difference_type&>(dim);
                     auto res_it = res.traverse_order_adapter(order{}).begin();
                     auto indexes_first = indexes.begin();
                     for(index_type i=0; i!=dim; ++i,++indexes_first){
@@ -218,6 +238,52 @@ struct sort_search
                 }
                 return res;
             }
+        }
+    }
+
+    //t must be 1d tensor
+    //v may be tensor or scalar
+    //side should be like std::false_type for left side (lower bound)
+    //side should be like std::true_type for right side (upper bound)
+    //sorter may be 1d tensor of indexes to sort t or no_value, if no_value t is considered sorted in ascending order
+    template<typename...Ts, typename V, typename Side=std::false_type, typename Sorter=detail::no_value>
+    static auto searchsorted(const basic_tensor<Ts...>& t, const V& v, Side side=Side{}, const Sorter& sorter=Sorter{}){
+        using tensor_type = basic_tensor<Ts...>;
+        using order = typename tensor_type::order;
+        using value_type = typename tensor_type::value_type;
+        using config_type = typename tensor_type::config_type;
+        using index_type = typename tensor_type::index_type;
+        static constexpr bool is_v_tensor = detail::is_tensor_of_type_v<V,value_type>;
+        static_assert(is_v_tensor || std::is_convertible_v<V,value_type>,"v must be tensor or scalar");
+        static_assert(std::is_same_v<Sorter,detail::no_value> || detail::is_tensor_of_type_v<Sorter,index_type>,"sorter must be tensor or no_value");
+
+        detail::check_searchsorted_args(t.dim(),sorter);
+        auto make_sorted = [&t,&sorter](){
+            (void)sorter;
+            if constexpr (std::is_same_v<Sorter,detail::no_value>){
+                return t;
+            }else{
+                return t(sorter);
+            }
+        };
+
+        auto find_index = [side](auto first, auto last, const auto& val){
+            if constexpr (side.value){
+                return std::upper_bound(first,last,val) - first;
+            }else{
+                return std::lower_bound(first,last,val) - first;
+            }
+        };
+        auto sorted = make_sorted();
+        auto a = sorted.traverse_order_adapter(order{});
+        if constexpr (detail::is_tensor_v<V>){
+            using res_type = tensor<index_type,order,config_type>;
+            res_type res(v.shape());
+            auto a_v = v.traverse_order_adapter(order{});
+            std::transform(a_v.begin(),a_v.end(),res.traverse_order_adapter(order{}).begin(),[&a,&find_index](const auto& val){return find_index(a.begin(),a.end(),val);});
+            return res;
+        }else{
+            return find_index(a.begin(),a.end(),v);
         }
     }
 
@@ -334,52 +400,6 @@ struct sort_search
             }else{
                 return make_unique_return<index_tensor_type>(std::move(res),inverse,counts,return_inverse,return_counts);
             }
-        }
-    }
-
-    //t must be 1d tensor
-    //v may be tensor or scalar
-    //side should be like std::false_type for left side (lower bound)
-    //side should be like std::true_type for right side (upper bound)
-    //sorter may be 1d tensor of indexes to sort t or no_value, if no_value t is considered sorted in ascending order
-    template<typename...Ts, typename V, typename Side=std::false_type, typename Sorter=detail::no_value>
-    static auto searchsorted(const basic_tensor<Ts...>& t, const V& v, Side side=Side{}, const Sorter& sorter=Sorter{}){
-        using tensor_type = basic_tensor<Ts...>;
-        using order = typename tensor_type::order;
-        using value_type = typename tensor_type::value_type;
-        using config_type = typename tensor_type::config_type;
-        using index_type = typename tensor_type::index_type;
-        static constexpr bool is_v_tensor = detail::is_tensor_of_type_v<V,value_type>;
-        static_assert(is_v_tensor || std::is_convertible_v<V,value_type>,"v must be tensor or scalar");
-        static_assert(std::is_same_v<Sorter,detail::no_value> || detail::is_tensor_of_type_v<Sorter,index_type>,"sorter must be tensor or no_value");
-
-        detail::check_searchsorted_args(t.dim(),sorter);
-        auto make_sorted = [&t,&sorter](){
-            (void)sorter;
-            if constexpr (std::is_same_v<Sorter,detail::no_value>){
-                return t;
-            }else{
-                return t(sorter);
-            }
-        };
-
-        auto find_index = [side](auto first, auto last, const auto& val){
-            if constexpr (side.value){
-                return std::upper_bound(first,last,val) - first;
-            }else{
-                return std::lower_bound(first,last,val) - first;
-            }
-        };
-        auto sorted = make_sorted();
-        auto a = sorted.traverse_order_adapter(order{});
-        if constexpr (detail::is_tensor_v<V>){
-            using res_type = tensor<index_type,order,config_type>;
-            res_type res(v.shape());
-            auto a_v = v.traverse_order_adapter(order{});
-            std::transform(a_v.begin(),a_v.end(),res.traverse_order_adapter(order{}).begin(),[&a,&find_index](const auto& val){return find_index(a.begin(),a.end(),val);});
-            return res;
-        }else{
-            return find_index(a.begin(),a.end(),v);
         }
     }
 
@@ -603,32 +623,23 @@ GTENSOR_TENSOR_SORT_SEARCH_REDUCE_ROUTINE(nanargmin,nanargmin);
 //index of max element along given axis, ignoring nan, axes is scalar
 GTENSOR_TENSOR_SORT_SEARCH_REDUCE_ROUTINE(nanargmax,nanargmax);
 
-//count number of values for which static_cast<bool>(e) evaluates to true
+//count number of non zero elements, element is non-zero if static_cast<const bool&>(element) evaluates to true
 //axes can be container or scalar
 GTENSOR_TENSOR_SORT_SEARCH_REDUCE_ROUTINE(count_nonzero,count_nonzero);
 
-//returns a container of tensors, one for each dimension of t, containing the indices of the non-zero elements in that dimension
+//return container of tensors, one for each dimension of t, containing indeces of non-zero elements
+//element is non-zero if static_cast<const bool&>(element) evaluates to true
 template<typename...Ts>
 auto nonzero(const basic_tensor<Ts...>& t){
     using config_type = typename basic_tensor<Ts...>::config_type;
     return sort_search_selector_t<config_type>::nonzero(t);
 }
 
+//return tensor of indeces of non-zero elements, result shape is (N,t.dim()) where N is number of non-zero elements
 template<typename...Ts>
 auto argwhere(const basic_tensor<Ts...>& t){
     using config_type = typename basic_tensor<Ts...>::config_type;
     return sort_search_selector_t<config_type>::argwhere(t);
-}
-
-//returns the sorted unique elements of a tensor.
-//There are three optional outputs in addition to the unique elements:
-//the indices of the input tensor that give the unique values
-//the indices of the unique tensor that reconstruct the input tensor
-//the number of times each unique value comes up in the input tensor
-template<typename...Ts, typename ReturnIndex=std::false_type, typename ReturnInverse=std::false_type, typename ReturnCounts=std::false_type, typename Axis=detail::no_value>
-auto unique(const basic_tensor<Ts...>& t, ReturnIndex return_index=ReturnIndex{}, ReturnInverse return_inverse=ReturnInverse{}, ReturnCounts return_counts=ReturnCounts{}, const Axis& axis=Axis{}){
-    using config_type = typename basic_tensor<Ts...>::config_type;
-    return sort_search_selector_t<config_type>::unique(t,return_index,return_inverse,return_counts,axis);
 }
 
 //find the indices into a sorted tensor t such that, if the corresponding elements in v were inserted before the indices, the order of t would be preserved.
@@ -641,6 +652,17 @@ template<typename...Ts, typename V, typename Side=std::false_type, typename Sort
 auto searchsorted(const basic_tensor<Ts...>& t, const V& v, Side side=Side{}, const Sorter& sorter=Sorter{}){
     using config_type = typename basic_tensor<Ts...>::config_type;
     return sort_search_selector_t<config_type>::searchsorted(t,v,side,sorter);
+}
+
+//returns the sorted unique elements of a tensor.
+//There are three optional outputs in addition to the unique elements:
+//the indices of the input tensor that give the unique values
+//the indices of the unique tensor that reconstruct the input tensor
+//the number of times each unique value comes up in the input tensor
+template<typename...Ts, typename ReturnIndex=std::false_type, typename ReturnInverse=std::false_type, typename ReturnCounts=std::false_type, typename Axis=detail::no_value>
+auto unique(const basic_tensor<Ts...>& t, ReturnIndex return_index=ReturnIndex{}, ReturnInverse return_inverse=ReturnInverse{}, ReturnCounts return_counts=ReturnCounts{}, const Axis& axis=Axis{}){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return sort_search_selector_t<config_type>::unique(t,return_index,return_inverse,return_counts,axis);
 }
 
 
