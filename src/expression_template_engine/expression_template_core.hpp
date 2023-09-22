@@ -93,5 +93,133 @@ private:
     tuple_type<Operands...> operands_;
 };
 
+//single operand specialization
+template<typename Config, typename F, typename Operand>
+class expression_template_core<Config,F,Operand>
+{
+    using descriptor_type = basic_descriptor<Config,typename Operand::order>;
+public:
+    using order = typename Operand::order;
+    using value_type = std::decay_t<decltype(std::declval<F>()(std::declval<typename Operand::value_type&>()))>;
+    using config_type = config::extend_config_t<Config,value_type>;
+    using dim_type = typename config_type::dim_type;
+    using shape_type = typename config_type::shape_type;
+
+    template<typename F_, typename Operand_>
+    explicit expression_template_core(F_&& f__, Operand_&& operand__):
+        descriptor_{operand__.shape()},
+        f_{std::forward<F_>(f__)},
+        operand_{std::forward<Operand_>(operand__)}
+    {}
+    const descriptor_type& descriptor()const{
+        return descriptor_;
+    }
+
+    //data interface
+    auto begin(){
+        return begin_helper(*this);
+    }
+    auto end(){
+        return end_helper(*this);
+    }
+    auto rbegin(){
+        return rbegin_helper(*this);
+    }
+    auto rend(){
+        return rend_helper(*this);
+    }
+    auto create_walker(dim_type max_dim){
+        return create_walker_helper(*this,max_dim);
+    }
+    auto create_walker(){
+        return create_walker(descriptor_.dim());
+    }
+    auto create_trivial_indexer(){
+        return create_trivial_indexer_helper(*this);
+    }
+
+    //const data interface
+    auto begin()const{
+        return begin_helper(*this);
+    }
+    auto end()const{
+        return end_helper(*this);
+    }
+    auto rbegin()const{
+        return rbegin_helper(*this);
+    }
+    auto rend()const{
+        return rend_helper(*this);
+    }
+    auto create_walker(dim_type max_dim)const{
+        return create_walker_helper(*this,max_dim);
+    }
+    auto create_walker()const{
+        return create_walker(descriptor_.dim());
+    }
+    auto create_trivial_indexer()const{
+        return create_trivial_indexer_helper(*this);
+    }
+
+    bool is_trivial()const{
+        return operand_.is_trivial();
+    }
+private:
+    template<typename U>
+    static auto begin_helper(U& instance){
+        using iterator_type = decltype(instance.operand_.traverse_order_adapter(order{}).begin());
+        return iterator_deref_decorator<F,iterator_type,typename std::iterator_traits<iterator_type>::iterator_category>{
+            instance.f_,
+            instance.operand_.traverse_order_adapter(order{}).begin()
+        };
+    }
+    template<typename U>
+    static auto end_helper(U& instance){
+        using iterator_type = decltype(instance.operand_.traverse_order_adapter(order{}).end());
+        return iterator_deref_decorator<F,iterator_type,typename std::iterator_traits<iterator_type>::iterator_category>{
+            instance.f_,
+            instance.operand_.traverse_order_adapter(order{}).end()
+        };
+    }
+    template<typename U>
+    static auto rbegin_helper(U& instance){
+        using iterator_type = decltype(instance.operand_.traverse_order_adapter(order{}).rbegin());
+        return iterator_deref_decorator<F,iterator_type,typename std::iterator_traits<iterator_type>::iterator_category>{
+            instance.f_,
+            instance.operand_.traverse_order_adapter(order{}).rbegin()
+        };
+    }
+    template<typename U>
+    static auto rend_helper(U& instance){
+        using iterator_type = decltype(instance.operand_.traverse_order_adapter(order{}).rend());
+        return iterator_deref_decorator<F,iterator_type,typename std::iterator_traits<iterator_type>::iterator_category>{
+            instance.f_,
+            instance.operand_.traverse_order_adapter(order{}).rend()
+        };
+    }
+    template<typename U>
+    static auto create_walker_helper(U& instance, dim_type max_dim){
+        return expression_template_walker<config_type,std::remove_cv_t<F>,decltype(instance.operand_.create_walker(max_dim))>{
+            instance.f_,
+            instance.operand_.create_walker(max_dim)
+        };
+    }
+    template<typename U>
+    static auto create_trivial_indexer_helper(U& instance){
+        return expression_template_trivial_indexer<
+            config_type,
+            std::remove_cv_t<F>,
+            decltype(instance.operand_.traverse_order_adapter(order{}).create_trivial_indexer())
+        >{
+            instance.f_,
+            instance.operand_.traverse_order_adapter(order{}).create_trivial_indexer()
+        };
+    }
+
+    descriptor_type descriptor_;
+    F f_;
+    Operand operand_;
+};
+
 }   //end of namespace gtensor
 #endif

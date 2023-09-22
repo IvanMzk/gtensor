@@ -118,5 +118,116 @@ private:
     tuple_type<Indexers...> indexers_;
 };
 
+template<typename F, typename It, typename Tag> class iterator_deref_decorator;
+
+template<typename F, typename It>
+class iterator_deref_decorator<F,It,std::bidirectional_iterator_tag>{
+    static_assert(std::is_convertible_v<typename std::iterator_traits<It>::iterator_category,std::bidirectional_iterator_tag>,"bidirectional iterator expected");
+protected:
+    F f;
+    It it;
+public:
+    using iterator_category = std::bidirectional_iterator_tag;
+    using difference_type = typename std::iterator_traits<It>::difference_type;
+    using reference = decltype(std::declval<F>()(*std::declval<It>()));
+    using value_type = std::decay_t<reference>;
+    using pointer = std::add_pointer_t<reference>;
+
+    iterator_deref_decorator(F f_, It it_):
+        f{f_},
+        it{it_}
+    {}
+
+    iterator_deref_decorator& operator++(){
+        ++it;
+        return *this;
+    }
+    iterator_deref_decorator& operator--(){
+        --it;
+        return *this;
+    }
+    iterator_deref_decorator operator++(int){
+        auto tmp=it;
+        ++it;
+        return iterator_deref_decorator{f,tmp};
+    }
+    iterator_deref_decorator operator--(int){
+        auto tmp=it;
+        --it;
+        return iterator_deref_decorator{f,tmp};
+    }
+    bool operator==(const iterator_deref_decorator& rhs)const{
+        return it == rhs.it;
+    }
+    bool operator!=(const iterator_deref_decorator& rhs)const{
+        return it != rhs.it;
+    }
+    reference operator*()const{
+        return f(*it);
+    }
+};
+
+template<typename F, typename It>
+class iterator_deref_decorator<F,It,std::random_access_iterator_tag> : iterator_deref_decorator<F,It,std::bidirectional_iterator_tag>{
+    static_assert(std::is_convertible_v<typename std::iterator_traits<It>::iterator_category,std::random_access_iterator_tag>,"random access iterator expected");
+    using base_type = iterator_deref_decorator<F,It,std::bidirectional_iterator_tag>;
+    using base_type::f;
+    using base_type::it;
+public:
+    using iterator_category = std::random_access_iterator_tag;
+    using typename base_type::difference_type;
+    using typename base_type::reference;
+    using typename base_type::value_type;
+    using typename base_type::pointer;
+
+    using base_type::base_type;
+    using base_type::operator++;
+    using base_type::operator--;
+    using base_type::operator==;
+    using base_type::operator!=;
+    using base_type::operator*;
+
+    iterator_deref_decorator& operator+=(difference_type n){
+        it+=n;
+        return *this;
+    }
+    iterator_deref_decorator& operator-=(difference_type n){
+        it-=n;
+        return *this;
+    }
+    iterator_deref_decorator operator+(difference_type n){
+        return iterator_deref_decorator{f,it+n};
+    }
+    iterator_deref_decorator operator-(difference_type n){
+        return iterator_deref_decorator{f,it-n};
+    }
+    difference_type operator-(const iterator_deref_decorator& rhs)const{
+        return it - rhs.it;
+    }
+    bool operator==(const iterator_deref_decorator& rhs)const{
+        return it == rhs.it;
+    }
+    bool operator!=(const iterator_deref_decorator& rhs)const{
+        return it != rhs.it;
+    }
+    bool operator>(const iterator_deref_decorator& rhs)const{
+        return it > rhs.it;
+    }
+    bool operator>=(const iterator_deref_decorator& rhs)const{
+        return it >= rhs.it;
+    }
+    bool operator<(const iterator_deref_decorator& rhs)const{
+        return it < rhs.it;
+    }
+    bool operator<=(const iterator_deref_decorator& rhs)const{
+        return it <= rhs.it;
+    }
+    reference operator[](difference_type n)const{
+        return it[n];
+    }
+};
+
+
+
 }   //end of namespace gtensor
 #endif
