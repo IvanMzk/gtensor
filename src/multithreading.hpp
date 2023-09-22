@@ -520,5 +520,35 @@ void transform(Policy, DstIt first1, DstIt last1, It first2, BinaryF f){
     }
 }
 
+template<typename Policy, typename It, typename DstIt>
+auto copy(Policy policy, It first, It last, DstIt dfirst){
+    if constexpr (std::is_convertible_v<typename std::iterator_traits<It>::iterator_category,std::random_access_iterator_tag> && !exec_policy_traits<Policy>::is_seq::value){ //parallelize
+        using difference_type = typename std::iterator_traits<It>::difference_type;
+        static constexpr std::size_t max_par_tasks_n = exec_policy_traits<Policy>::par_tasks::value;
+        static constexpr std::size_t min_tasks_per_par_task = 1;
+        par_task_size<difference_type> par_sizes{last-first,max_par_tasks_n,min_tasks_per_par_task};
+
+        if (par_sizes.size()<2){
+            return std::copy(first,last,dfirst);
+        }
+
+        auto body = [](auto first_, auto last_, auto dfirst_){
+            std::copy(first_,last_,dfirst_);
+        };
+
+        using future_type = decltype(get_pool().push(body,first,last,dfirst));
+        std::array<future_type, max_par_tasks_n> futures{};
+        for (std::size_t i=0; i!=par_sizes.size(); ++i){
+            const auto par_task_size = par_sizes[i];
+            futures[i] = get_pool().push(body,first,first+par_task_size,dfirst);
+            first+=par_task_size;
+            dfirst+=par_task_size;
+        }
+        return dfirst;
+    }else{
+        return std::copy(first,last,dfirst);
+    }
+}
+
 }   //end of namespace multithreading
 #endif

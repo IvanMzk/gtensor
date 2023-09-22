@@ -1,6 +1,6 @@
-#include "benchmark_helpers.hpp"
+#include "../benchmark_helpers.hpp"
+#include "../test_config.hpp"
 #include "tensor.hpp"
-#include "test_config.hpp"
 
 
 namespace benchmark_iterator_{

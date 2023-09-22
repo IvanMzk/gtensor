@@ -1,10 +1,10 @@
 #include <algorithm>
 #include <numeric>
 #include <random>
-#include "benchmark_helpers.hpp"
-#include "helpers_for_testing.hpp"
-#include "test_config.hpp"
-#include "gtensor.hpp"
+#include "../benchmark_helpers.hpp"
+#include "../helpers_for_testing.hpp"
+#include "../test_config.hpp"
+#include "tensor.hpp"
 
 
 namespace benchmark_mapping_view{

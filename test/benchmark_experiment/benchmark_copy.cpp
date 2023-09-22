@@ -1,5 +1,5 @@
-#include "benchmark_helpers.hpp"
-#include "helpers_for_testing.hpp"
+#include "../benchmark_helpers.hpp"
+#include "../helpers_for_testing.hpp"
 #include "tensor.hpp"
 
 

@@ -3,8 +3,8 @@
 #include <numeric>
 #include <execution>
 #include <algorithm>
-#include "benchmark_helpers.hpp"
-#include "helpers_for_testing.hpp"
+#include "../benchmark_helpers.hpp"
+#include "../helpers_for_testing.hpp"
 
 namespace benchmark_algorithm{
 

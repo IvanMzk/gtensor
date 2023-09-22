@@ -1,7 +1,7 @@
 #include <vector>
 #include <execution>
 #include "multithreading.hpp"
-#include "benchmark_helpers.hpp"
+#include "../benchmark_helpers.hpp"
 
 namespace benchmark_multithreading_{
 
@@ -76,6 +76,39 @@ auto bench_transform(std::string mes, const std::size_t n_iters, const Sizes& si
     bench_transform_helper{}(mes,exec_pol<0>{},n_iters,sizes,timing_f);
 }
 
+struct bench_copy_helper{
+    using value_type = double;
+
+    template<typename Policy, typename Sizes, typename TimingF>
+    auto operator()(std::string mes, Policy policy, const std::size_t n_iters, const Sizes& sizes, TimingF timing_f){
+        std::cout<<std::endl<<"par_tasks "<<exec_policy_traits<Policy>::par_tasks::value<<" "<<mes;
+        std::vector<double> total_intervals{};
+        for (auto it=sizes.begin(),last=sizes.end(); it!=last; ++it){
+            const auto size = *it;
+            std::vector<double> intervals{};
+            for (auto n=n_iters; n!=0; --n){
+                std::vector<value_type> vec(size,22);
+                std::vector<value_type> dvec(size);
+                double dt = timing(timing_f,vec,dvec,policy);
+                intervals.push_back(dt);
+                total_intervals.push_back(dt);
+            }
+            std::cout<<std::endl<<"input size "<<size<<" "<<statistic(intervals);
+        }
+        std::cout<<std::endl<<"TOTAL "<<statistic(total_intervals);
+    }
+};
+
+template<typename Sizes, typename TimingF>
+auto bench_copy(std::string mes, const std::size_t n_iters, const Sizes& sizes, TimingF timing_f){
+    using multithreading::exec_pol;
+    bench_copy_helper{}(mes,exec_pol<1>{},n_iters,sizes,timing_f);
+    bench_copy_helper{}(mes,exec_pol<2>{},n_iters,sizes,timing_f);
+    bench_copy_helper{}(mes,exec_pol<4>{},n_iters,sizes,timing_f);
+    bench_copy_helper{}(mes,exec_pol<8>{},n_iters,sizes,timing_f);
+    bench_copy_helper{}(mes,exec_pol<0>{},n_iters,sizes,timing_f);
+}
+
 const std::vector<std::size_t> sizes{10,100,1000,10000,100000,1000000,10000000};
 
 }   //end of namespace benchmark_multithreading_
@@ -85,6 +118,7 @@ TEST_CASE("benchmark_multithreading_reduce","benchmark_multithreading")
 
     using benchmark_multithreading_::bench_reduce;
     using benchmark_multithreading_::bench_transform;
+    using benchmark_multithreading_::bench_copy;
 
     auto reduce_sum = [](const auto& v, auto pol){
         using value_type = typename std::iterator_traits<decltype(v.begin())>::value_type;
@@ -136,6 +170,11 @@ TEST_CASE("benchmark_multithreading_reduce","benchmark_multithreading")
         return std::transform(v1.begin(),v1.end(),v2.begin(),dv.begin(),std::plus<void>{});
     };
 
+    auto copy = [](const auto& v, auto& dv, auto pol){
+        multithreading::copy(pol,v.begin(),v.end(),dv.begin());
+        return *dv.begin();
+    };
+
     const auto n_iters = 100;
     const auto sizes = benchmark_multithreading_::sizes;
 
@@ -149,20 +188,11 @@ TEST_CASE("benchmark_multithreading_reduce","benchmark_multithreading")
 
     //bench_transform("transform sum",n_iters,sizes,transform_sum);
     //bench_transform("transform sum dst first",n_iters,sizes,transform_sum_dst_first);
-    bench_transform("transform sum overload",n_iters,sizes,transform_sum_overload);
+    //bench_transform("transform sum overload",n_iters,sizes,transform_sum_overload);
     //bench_transform("std_transform sum",n_iters,sizes,std_transform_sum);
     //bench_transform("std_transform sum dst first",n_iters,sizes,std_transform_sum_dst_first);
 
+    bench_copy("copy",n_iters,sizes,copy);
 
-    //const std::size_t size = 100'000'007;
-    // const std::size_t size = 123'456'789;
-    // const double value = 0.1;
-    // const std::vector<double> vec1(size,value);
-    // auto dt1 = benchmark_helpers::timing(reduce_sum,vec1,multithreading::exec_pol<1>{});
-    // std::cout<<std::endl<<dt1;
-
-    // //const std::vector<double> vec2(size,value);
-    // auto dt2 = benchmark_helpers::timing(reduce_sum,vec1,multithreading::exec_pol<0>{});
-    // std::cout<<std::endl<<dt2;
 }
 

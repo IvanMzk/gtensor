@@ -6,8 +6,8 @@
 #include "tensor.hpp"
 #include "reduce.hpp"
 #include "sort_search.hpp"
-#include "benchmark_helpers.hpp"
-#include "helpers_for_testing.hpp"
+#include "../benchmark_helpers.hpp"
+#include "../helpers_for_testing.hpp"
 
 namespace benchmark_sort_search{
 
