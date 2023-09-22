@@ -350,6 +350,7 @@ TEST_CASE("test_concatenate_exception","[test_manipulation]")
     using tensor_type = gtensor::tensor<value_type>;
     using dim_type = typename tensor_type::dim_type;
     using shape_type = typename tensor_type::shape_type;
+    using gtensor::config::c_order;
     using gtensor::value_error;
     using helpers_for_testing::apply_by_element;
     using gtensor::concatenate;
@@ -384,11 +385,11 @@ TEST_CASE("test_concatenate_exception","[test_manipulation]")
     }
     SECTION("test_concatenate_container")
     {
-        using container_type = std::vector<decltype(std::declval<tensor_type>().copy())>;
+        using container_type = std::vector<decltype(std::declval<tensor_type>().copy(c_order{}))>;
         auto test_concatenate_container = [](const auto& t){
             auto axis = std::get<0>(t);
             auto tensors = std::get<1>(t);
-            auto container = std::apply([](const auto&...ts){return container_type{ts.copy()...};}, tensors);
+            auto container = std::apply([](const auto&...ts){return container_type{ts.copy(c_order{})...};}, tensors);
             REQUIRE_THROWS_AS(concatenate(axis, container), value_error);
         };
         apply_by_element(test_concatenate_container, test_data);

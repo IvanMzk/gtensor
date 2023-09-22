@@ -154,6 +154,7 @@ TEST_CASE("test_hstack_exception","[test_manipulation]")
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
     using helpers_for_testing::apply_by_element;
+    using gtensor::config::c_order;
     using gtensor::value_error;
     using gtensor::hstack;
     //0tensors
@@ -176,10 +177,10 @@ TEST_CASE("test_hstack_exception","[test_manipulation]")
     }
     SECTION("test_hstack_container_exception")
     {
-        using container_type = std::vector<decltype(std::declval<tensor_type>().copy())>;
+        using container_type = std::vector<decltype(std::declval<tensor_type>().copy(c_order{}))>;
         auto test = [](const auto& t){
             auto tensors = std::get<0>(t);
-            auto container = std::apply([](const auto&...ts){return container_type{ts.copy()...};}, tensors);
+            auto container = std::apply([](const auto&...ts){return container_type{ts.copy(c_order{})...};}, tensors);
             REQUIRE_THROWS_AS(hstack(container), value_error);
         };
         apply_by_element(test, test_data);
