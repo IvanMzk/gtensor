@@ -273,9 +273,21 @@ public:
         }
         return res;
     }
-    template<typename T=value_type, typename Config=config_type, typename Order = order>
+    template<typename T=value_type, typename Config=config_type, typename Order = order, std::enable_if_t<!multithreading::is_policy_v<Order>,int> =0>
     auto copy(Order order_=Order{})const{
         return this->copy<T,Config,Order>(multithreading::exec_pol<1>{},order_);
+    }
+    //if this is view returns its copy, otherwise returns same tensor
+    template<typename Policy>
+    auto eval(Policy policy)const{
+        if constexpr (std::is_convertible_v<tensor<value_type,order,config_type>*,basic_tensor*>){  //nothing to eval
+            return *this;
+        }else{
+            return copy(policy);
+        }
+    }
+    auto eval()const{
+        return this->eval(multithreading::exec_pol<1>{});
     }
     //makes 1d tensor in specified layout by copying elements from this
     //this element's traverse order the same as specified layout

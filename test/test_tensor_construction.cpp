@@ -368,17 +368,25 @@ TEST_CASE("test_tensor_swap","[test_tensor]")
 }
 
 TEMPLATE_TEST_CASE("test_tensor_copy","[test_tensor]",
-    gtensor::config::c_order,
-    gtensor::config::f_order
+    (std::tuple<gtensor::config::c_order,gtensor::config::c_order>),
+    (std::tuple<gtensor::config::c_order,gtensor::config::f_order>),
+    (std::tuple<gtensor::config::f_order,gtensor::config::c_order>),
+    (std::tuple<gtensor::config::f_order,gtensor::config::f_order>)
 )
 {
-    using order = TestType;
+    using layout = std::tuple_element_t<0,TestType>;
+    using copy_order = std::tuple_element_t<1,TestType>;
     using value_type = double;
-    using tensor_type = gtensor::tensor<value_type>;
+    using tensor_type = gtensor::tensor<value_type,layout>;
     using helpers_for_testing::apply_by_element;
     //0tensor,1expected
     auto test_data = std::make_tuple(
+        std::make_tuple(tensor_type(2),tensor_type(2)),
+        std::make_tuple(tensor_type{},tensor_type{}),
+        std::make_tuple(tensor_type{1},tensor_type{1}),
+        std::make_tuple(tensor_type{1,2,3,4,3,2,1},tensor_type{1,2,3,4,3,2,1}),
         std::make_tuple(tensor_type{{1,2,3},{4,5,6}}, tensor_type{{1,2,3},{4,5,6}}),
+        std::make_tuple(tensor_type(-1) + tensor_type(1) + tensor_type(2) + tensor_type(3), tensor_type(5)),
         std::make_tuple(tensor_type{-1} + tensor_type{{1,2,3},{4,5,6}} + tensor_type{1} + tensor_type{0,1,2}, tensor_type{{1,3,5},{4,6,8}}),
         std::make_tuple(tensor_type{{1,2,3},{4,5,6}}({{{},{},-1},{1}}), tensor_type{{5,6},{2,3}}),
         std::make_tuple(tensor_type{{1,2,3},{4,5,6}}({{{},{},-1},{1}}).transpose(), tensor_type{{5,2},{6,3}}),
@@ -390,10 +398,11 @@ TEMPLATE_TEST_CASE("test_tensor_copy","[test_tensor]",
         auto test = [policy...](const auto& t){
             auto ten = std::get<0>(t);
             auto expected = std::get<1>(t);
-            auto result = ten.copy(policy...,order{});
+            auto result = ten.copy(policy...,copy_order{});
             using result_order = typename decltype(result)::order;
-            REQUIRE(std::is_same_v<result_order,order>);
+            REQUIRE(std::is_same_v<result_order,copy_order>);
             REQUIRE(result == expected);
+            REQUIRE(!ten.is_same(result));
         };
         apply_by_element(test, test_data);
     };
@@ -408,6 +417,96 @@ TEMPLATE_TEST_CASE("test_tensor_copy","[test_tensor]",
     SECTION("exec_pol<0>")
     {
         test_copy(multithreading::exec_pol<0>{});
+    }
+}
+
+TEMPLATE_TEST_CASE("test_tensor_eval_of_view","[test_tensor]",
+    gtensor::config::c_order,
+    gtensor::config::f_order
+)
+{
+    using order = TestType;
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type,order>;
+    using helpers_for_testing::apply_by_element;
+    //0tensor,1expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(tensor_type(-1) + tensor_type(1) + tensor_type(2) + tensor_type(3), tensor_type(5)),
+        std::make_tuple(tensor_type{-1} + tensor_type{{1,2,3},{4,5,6}} + tensor_type{1} + tensor_type{0,1,2}, tensor_type{{1,3,5},{4,6,8}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}({{{},{},-1},{1}}), tensor_type{{5,6},{2,3}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}({{{},{},-1},{1}}).transpose(), tensor_type{{5,2},{6,3}}),
+        std::make_tuple((tensor_type{-1} + tensor_type{{1,2,3},{4,5,6}} + tensor_type{1})({{{},{},-1},{1}}).transpose(), tensor_type{{5,2},{6,3}}),
+        std::make_tuple(tensor_type{-1} + tensor_type{{1,2,3},{4,5,6}}({{{},{},-1},{1}}).transpose() + tensor_type{1}, tensor_type{{5,2},{6,3}}),
+        std::make_tuple(((tensor_type{-1} + tensor_type{{1,2,3},{4,5,6}}({{{},{},-1},{1}}).transpose() + tensor_type{1})).reshape(4),tensor_type{5,2,6,3})
+    );
+    auto test_eval = [&test_data](auto...policy){
+        auto test = [policy...](const auto& t){
+            auto ten = std::get<0>(t);
+            auto expected = std::get<1>(t);
+            auto result = ten.eval(policy...);
+            using ten_order = typename decltype(ten)::order;
+            using result_order = typename decltype(result)::order;
+            REQUIRE(std::is_same_v<result_order,ten_order>);
+            REQUIRE(result == expected);
+            REQUIRE(!ten.is_same(result));
+        };
+        apply_by_element(test, test_data);
+    };
+    SECTION("default_policy")
+    {
+        test_eval();
+    }
+    SECTION("exec_pol<4>")
+    {
+        test_eval(multithreading::exec_pol<4>{});
+    }
+    SECTION("exec_pol<0>")
+    {
+        test_eval(multithreading::exec_pol<0>{});
+    }
+}
+
+TEMPLATE_TEST_CASE("test_tensor_eval_of_tensor","[test_tensor]",
+    gtensor::config::c_order,
+    gtensor::config::f_order
+)
+{
+    using order = TestType;
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type,order>;
+    using helpers_for_testing::apply_by_element;
+    //0tensor,1expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(tensor_type(2),tensor_type(2)),
+        std::make_tuple(tensor_type{},tensor_type{}),
+        std::make_tuple(tensor_type{1},tensor_type{1}),
+        std::make_tuple(tensor_type{1,2,3,4,3,2,1},tensor_type{1,2,3,4,3,2,1}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},tensor_type{{1,2,3},{4,5,6}})
+    );
+    auto test_eval = [&test_data](auto...policy){
+        auto test = [policy...](const auto& t){
+            auto ten = std::get<0>(t);
+            auto expected = std::get<1>(t);
+            auto result = ten.eval(policy...);
+            using ten_order = typename decltype(ten)::order;
+            using result_order = typename decltype(result)::order;
+            REQUIRE(std::is_same_v<result_order,ten_order>);
+            REQUIRE(result == expected);
+            REQUIRE(ten.is_same(result));
+        };
+        apply_by_element(test, test_data);
+    };
+    SECTION("default_policy")
+    {
+        test_eval();
+    }
+    SECTION("exec_pol<4>")
+    {
+        test_eval(multithreading::exec_pol<4>{});
+    }
+    SECTION("exec_pol<0>")
+    {
+        test_eval(multithreading::exec_pol<0>{});
     }
 }
 
