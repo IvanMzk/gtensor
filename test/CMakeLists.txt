@@ -29,7 +29,7 @@ target_sources(Test PRIVATE
 
     #${CMAKE_CURRENT_SOURCE_DIR}/test_helpers_for_testing.cpp
 
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_multithreading.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_multithreading.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_storage.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_common.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_libdivide_helper.cpp
@@ -53,7 +53,7 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_SOURCE_DIR}/test_view_factory_slice_view.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_view_factory_mapping_view.cpp
 #
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_construction.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_construction.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_assign.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_equality.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_tensor_data_accessor.cpp

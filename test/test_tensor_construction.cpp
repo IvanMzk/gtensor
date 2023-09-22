@@ -386,15 +386,29 @@ TEMPLATE_TEST_CASE("test_tensor_copy","[test_tensor]",
         std::make_tuple(tensor_type{-1} + tensor_type{{1,2,3},{4,5,6}}({{{},{},-1},{1}}).transpose() + tensor_type{1}, tensor_type{{5,2},{6,3}}),
         std::make_tuple(((tensor_type{-1} + tensor_type{{1,2,3},{4,5,6}}({{{},{},-1},{1}}).transpose() + tensor_type{1})).reshape(4),tensor_type{5,2,6,3})
     );
-    auto test = [](const auto& t){
-        auto ten = std::get<0>(t);
-        auto expected = std::get<1>(t);
-        auto result = ten.copy(order{});
-        using result_order = typename decltype(result)::order;
-        REQUIRE(std::is_same_v<result_order,order>);
-        REQUIRE(result == expected);
+    auto test_copy = [&test_data](auto...policy){
+        auto test = [policy...](const auto& t){
+            auto ten = std::get<0>(t);
+            auto expected = std::get<1>(t);
+            auto result = ten.copy(policy...,order{});
+            using result_order = typename decltype(result)::order;
+            REQUIRE(std::is_same_v<result_order,order>);
+            REQUIRE(result == expected);
+        };
+        apply_by_element(test, test_data);
     };
-    apply_by_element(test, test_data);
+    SECTION("default_policy")
+    {
+        test_copy();
+    }
+    SECTION("exec_pol<4>")
+    {
+        test_copy(multithreading::exec_pol<4>{});
+    }
+    SECTION("exec_pol<0>")
+    {
+        test_copy(multithreading::exec_pol<0>{});
+    }
 }
 
 TEST_CASE("test_tensor_resize","[test_tensor]")

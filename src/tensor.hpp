@@ -260,16 +260,22 @@ public:
         swap(other);
     }
     //makes tensor in specified layout by copying shape and elements from this
-    template<typename T=value_type, typename Config=config_type, typename Order = config::c_order>
-    auto copy(Order order_=Order{})const{
+    template<typename T=value_type, typename Config=config_type, typename Order = order, typename Policy, std::enable_if_t<multithreading::is_policy_v<Policy>,int> =0>
+    auto copy(Policy policy, Order order_=Order{})const{
         ASSERT_ORDER(Order);
-        (void)order_;
-        auto a = traverse_order_adapter(Order{});
+        tensor<T,Order,Config> res(shape());
+        auto a = traverse_order_adapter(order_);
+        auto a_res = res.traverse_order_adapter(order_);
         if (is_trivial()){
-            return tensor<T,Order,Config>(shape(),a.begin_trivial(),a.end_trivial());
+            multithreading::copy(policy,a.begin_trivial(),a.end_trivial(),a_res.begin());
         }else{
-            return tensor<T,Order,Config>(shape(),a.begin(),a.end());
+            multithreading::copy(policy,a.begin(),a.end(),a_res.begin());
         }
+        return res;
+    }
+    template<typename T=value_type, typename Config=config_type, typename Order = order>
+    auto copy(Order order_=Order{})const{
+        return this->copy<T,Config,Order>(multithreading::exec_pol<1>{},order_);
     }
     //makes 1d tensor in specified layout by copying elements from this
     //this element's traverse order the same as specified layout
