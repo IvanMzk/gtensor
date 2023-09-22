@@ -76,9 +76,15 @@ struct unused_args{template<typename...Args> unused_args(const Args&...){}};
 template<typename T, typename = void> inline constexpr bool is_container_v = false;
 template<typename T> inline constexpr bool is_container_v<T, std::void_t<decltype(std::begin(std::declval<T&>())), decltype(std::size(std::declval<T&>())), typename T::value_type>> = true;
 
-template<typename T> inline constexpr bool is_tensor_v = false;
-template<typename...Ts> inline constexpr bool is_tensor_v<gtensor::tensor<Ts...>> = true;
-template<typename...Ts> inline constexpr bool is_tensor_v<gtensor::basic_tensor<Ts...>> = true;
+template<typename T>
+struct is_tensor{
+    static std::false_type selector_(...);
+    template<typename...Ts> static std::true_type selector_(basic_tensor<Ts...>);
+    using type = decltype(selector_(std::declval<T>()));
+    static constexpr bool value = type::value;
+};
+template<typename T> inline constexpr bool is_tensor_v = is_tensor<T>::value;
+
 template<typename...Ts> inline constexpr bool has_tensor_arg_v = (is_tensor_v<Ts>||...);
 
 template<typename T, typename IdxT, typename = void> inline constexpr bool is_container_of_type_v = false;
