@@ -91,9 +91,9 @@ template<typename Shapes, typename Builder, typename Traverser>
 auto bench_iterator(std::string mes, std::size_t n_iters, Shapes shapes, Builder builder, Traverser traverser, bool reverse_iterator=false, bool trivial_iterator=false){
     using value_type = double;
     bench_iterator_helper<gtensor::tensor<value_type,c_order>,c_order>{}(mes,n_iters,shapes,builder,traverser,reverse_iterator,trivial_iterator);
-    bench_iterator_helper<gtensor::tensor<value_type,c_order>,f_order>{}(mes,n_iters,shapes,builder,traverser,reverse_iterator,trivial_iterator);
-    bench_iterator_helper<gtensor::tensor<value_type,f_order>,c_order>{}(mes,n_iters,shapes,builder,traverser,reverse_iterator,trivial_iterator);
-    bench_iterator_helper<gtensor::tensor<value_type,f_order>,f_order>{}(mes,n_iters,shapes,builder,traverser,reverse_iterator,trivial_iterator);
+    // bench_iterator_helper<gtensor::tensor<value_type,c_order>,f_order>{}(mes,n_iters,shapes,builder,traverser,reverse_iterator,trivial_iterator);
+    // bench_iterator_helper<gtensor::tensor<value_type,f_order>,c_order>{}(mes,n_iters,shapes,builder,traverser,reverse_iterator,trivial_iterator);
+    // bench_iterator_helper<gtensor::tensor<value_type,f_order>,f_order>{}(mes,n_iters,shapes,builder,traverser,reverse_iterator,trivial_iterator);
 }
 
 }
@@ -105,37 +105,33 @@ TEST_CASE("benchmark_iterator","[benchmark_tensor]")
     using slice_type = typename tensor_type::slice_type;
     using benchmark_helpers::opposite_order_t;
     using benchmark_iterator_::bench_iterator;
-    using benchmark_iterator_::traverse_forward;
-    using benchmark_iterator_::traverse_backward;
-    using benchmark_iterator_::traverse_no_deref;
     using gtensor::config::c_order;
     using gtensor::config::f_order;
 
-    bool trivial_iterator = false;
-    bool reverse_iterator = false;
 
-    // const auto n_iters = 1;
-    // const auto shapes = benchmark_helpers::shapes;
+    const auto n_iters = 1;
+    const auto shapes = benchmark_helpers::shapes;
+    auto traverser = benchmark_iterator_::traverse_forward;
+    const bool reverse_iterator = false;
 
-    const auto n_iters = 100;
-    const auto shapes = benchmark_helpers::small_shapes;
-
-    //tensor
-    bench_iterator("tensor traverse forward",n_iters,shapes,[](auto&& t){return t;},traverse_forward,reverse_iterator,trivial_iterator);
-    //expression view
-    bench_iterator("expression t+t+t+t+t+t+t+t+t+t traverse forward",n_iters,shapes,[](auto&& t){return t+t+t+t+t+t+t+t+t+t;},traverse_forward,reverse_iterator,trivial_iterator);
-    //transpose view
-    bench_iterator("transpose view traverse forward",n_iters,shapes,[](auto&& t){return t.transpose();},traverse_forward,reverse_iterator,trivial_iterator);
-    //slice view
-    bench_iterator("slice view t[0:-1,:,:,::-1] traverse forward",n_iters,shapes,[](auto&& t){return t({{0,-1,1},{},{},{{},{},-1}});},traverse_forward,reverse_iterator,trivial_iterator);
-    bench_iterator("slice view t[:,1,:,:] traverse forward",n_iters,shapes,[](auto&& t){return t(slice_type{},1,slice_type{},slice_type{});},traverse_forward,reverse_iterator,trivial_iterator);
-    bench_iterator("slice view t[0:-1,1,:,::-1] traverse forward",n_iters,shapes,[](auto&& t){return t(slice_type{0,-1,1},1,slice_type{},slice_type{{},{},-1});},traverse_forward,reverse_iterator,trivial_iterator);
-    //reshape_view
-    bench_iterator("reshape view t.reshape((-1,3000)), c_order, traverse forward",n_iters,shapes,[](auto&& t){return t.reshape({-1,3000},c_order{});},traverse_forward,reverse_iterator,trivial_iterator);
-    bench_iterator("reshape view t.reshape((-1,3000)), f_order, traverse forward",n_iters,shapes,[](auto&& t){return t.reshape({-1,3000},f_order{});},traverse_forward,reverse_iterator,trivial_iterator);
-    //mapping view
-    bench_iterator("mapping view t(t>0), traverse forward",n_iters,shapes,[](auto&& t){return t(t>0);},traverse_forward,reverse_iterator,trivial_iterator);
-    //view of view
-    bench_iterator("transpose of expression t+t+t+t+t+t+t+t+t+t traverse forward",n_iters,shapes,[](auto&& t){return (t+t+t+t+t+t+t+t+t+t).transpose();},traverse_forward,reverse_iterator,trivial_iterator);
-    bench_iterator("transpose of slice view t[0:-1,:,:,::-1] traverse forward",n_iters,shapes,[](auto&& t){return t({{0,-1,1},{},{},{{},{},-1}}).transpose();},traverse_forward,reverse_iterator,trivial_iterator);
+    // //tensor
+    // bench_iterator("tensor traverse forward",n_iters,shapes,[](auto&& t){return t;},traverser,reverse_iterator,false);
+    // //expression view
+    bench_iterator("trivial expression t+t+t+t+t+t+t+t+t+t traverse forward",n_iters,shapes,[](auto&& t){return t+t+t+t+t+t+t+t+t+t;},traverser,reverse_iterator,false);
+    // bench_iterator("trivial expression t+t+t+t+t+t+t+t+t+t traverse forward",n_iters,shapes,[](auto&& t){return t+t+t+t+t+t+t+t+t+t;},traverser,reverse_iterator,true);
+    // bench_iterator("non trivial expression t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(1,2)+t+t+t traverse forward",n_iters,shapes,[](auto&& t){return t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(1,2)+t+t+t;},traverser,reverse_iterator,false);
+    // //transpose view
+    // bench_iterator("transpose view traverse forward",n_iters,shapes,[](auto&& t){return t.transpose();},traverser,reverse_iterator,false);
+    // //slice view
+    // bench_iterator("slice view t[0:-1,:,:,::-1] traverse forward",n_iters,shapes,[](auto&& t){return t({{0,-1,1},{},{},{{},{},-1}});},traverser,reverse_iterator,false);
+    // bench_iterator("slice view t[:,1,:,:] traverse forward",n_iters,shapes,[](auto&& t){return t(slice_type{},1,slice_type{},slice_type{});},traverser,reverse_iterator,false);
+    // bench_iterator("slice view t[0:-1,1,:,::-1] traverse forward",n_iters,shapes,[](auto&& t){return t(slice_type{0,-1,1},1,slice_type{},slice_type{{},{},-1});},traverser,reverse_iterator,false);
+    // //reshape_view
+    // bench_iterator("reshape view t.reshape((-1,3000)), c_order, traverse forward",n_iters,shapes,[](auto&& t){return t.reshape({-1,3000},c_order{});},traverser,reverse_iterator,false);
+    // bench_iterator("reshape view t.reshape((-1,3000)), f_order, traverse forward",n_iters,shapes,[](auto&& t){return t.reshape({-1,3000},f_order{});},traverser,reverse_iterator,false);
+    // //mapping view
+    // bench_iterator("mapping view t(t>0), traverse forward",n_iters,shapes,[](auto&& t){return t(t>0);},traverser,reverse_iterator,false);
+    // //view of view
+    // bench_iterator("transpose of trivial expression t+t+t+t+t+t+t+t+t+t traverse forward",n_iters,shapes,[](auto&& t){return (t+t+t+t+t+t+t+t+t+t).transpose();},traverser,reverse_iterator,false);
+    // bench_iterator("transpose of slice view t[0:-1,:,:,::-1] traverse forward",n_iters,shapes,[](auto&& t){return t({{0,-1,1},{},{},{{},{},-1}}).transpose();},traverser,reverse_iterator,false);
 }
