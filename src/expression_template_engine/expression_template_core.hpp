@@ -11,10 +11,10 @@ namespace detail{
 template<typename F, typename It>
 auto make_iterator_deref_decorator(F f, It it){
     using it_category = typename std::iterator_traits<It>::iterator_category;
-    if constexpr (std::is_convertible_v<it_category,std::bidirectional_iterator_tag>){
-        return iterator_deref_decorator<F,It,std::bidirectional_iterator_tag>{f,it};
-    }else if constexpr (std::is_convertible_v<it_category,std::random_access_iterator_tag>){
+    if constexpr (std::is_convertible_v<it_category,std::random_access_iterator_tag>){
         return iterator_deref_decorator<F,It,std::random_access_iterator_tag>{f,it};
+    }else if constexpr (std::is_convertible_v<it_category,std::bidirectional_iterator_tag>){
+        return iterator_deref_decorator<F,It,std::bidirectional_iterator_tag>{f,it};
     }else{
         static_assert(detail::always_false<It>,"at least bidirectional iterator expected");
     }
@@ -150,6 +150,19 @@ public:
     auto create_walker(){
         return create_walker(descriptor_.dim());
     }
+    //trivial data interface
+    auto begin_trivial(){
+        return begin_trivial_helper(*this);
+    }
+    auto end_trivial(){
+        return end_trivial_helper(*this);
+    }
+    auto rbegin_trivial(){
+        return rbegin_trivial_helper(*this);
+    }
+    auto rend_trivial(){
+        return rend_trivial_helper(*this);
+    }
     auto create_trivial_indexer(){
         return create_trivial_indexer_helper(*this);
     }
@@ -172,6 +185,19 @@ public:
     }
     auto create_walker()const{
         return create_walker(descriptor_.dim());
+    }
+    //trivial const data interface
+    auto begin_trivial()const{
+        return begin_trivial_helper(*this);
+    }
+    auto end_trivial()const{
+        return end_trivial_helper(*this);
+    }
+    auto rbegin_trivial()const{
+        return rbegin_trivial_helper(*this);
+    }
+    auto rend_trivial()const{
+        return rend_trivial_helper(*this);
     }
     auto create_trivial_indexer()const{
         return create_trivial_indexer_helper(*this);
@@ -196,6 +222,22 @@ private:
     template<typename U>
     static auto rend_helper(U& instance){
         return detail::make_iterator_deref_decorator(instance.f_,instance.operand_.traverse_order_adapter(order{}).rend());
+    }
+    template<typename U>
+    static auto begin_trivial_helper(U& instance){
+        return detail::make_iterator_deref_decorator(instance.f_,instance.operand_.traverse_order_adapter(order{}).begin_trivial());
+    }
+    template<typename U>
+    static auto end_trivial_helper(U& instance){
+        return detail::make_iterator_deref_decorator(instance.f_,instance.operand_.traverse_order_adapter(order{}).end_trivial());
+    }
+    template<typename U>
+    static auto rbegin_trivial_helper(U& instance){
+        return detail::make_iterator_deref_decorator(instance.f_,instance.operand_.traverse_order_adapter(order{}).rbegin_trivial());
+    }
+    template<typename U>
+    static auto rend_trivial_helper(U& instance){
+        return detail::make_iterator_deref_decorator(instance.f_,instance.operand_.traverse_order_adapter(order{}).rend_trivial());
     }
     template<typename U>
     static auto create_walker_helper(U& instance, dim_type max_dim){

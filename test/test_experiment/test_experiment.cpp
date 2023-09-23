@@ -2,8 +2,9 @@
 #include <vector>
 #include "tensor_math.hpp"
 #include "tensor.hpp"
-#include "helpers_for_testing.hpp"
-#include "benchmark_helpers.hpp"
+#include "../helpers_for_testing.hpp"
+#include "../benchmark_helpers.hpp"
+#include "../test_config.hpp"
 
 namespace test_tmp{
 
@@ -72,18 +73,19 @@ TEST_CASE("test_tmp","[test_tmp]")
 
     using value_type = double;
 
-    auto axes = 0;
-    tensor<value_type,c_order> t{{1,2,3},{4,5,6},{7,8,9}};
-    auto init = *t.begin();
-    auto tmp = reduce_binary(t,axes,
-        [](const auto& r, const auto& e){
-            return test_tmp::make_pair(std::min(r.first,e),std::max(r.second,e));
-        },
-        false,test_tmp::make_pair(init,init)
-    );
+    //using tensor_type = tensor<value_type,c_order>;
+    using tensor_type = gtensor::tensor<double, gtensor::config::c_order, gtensor::config::extend_config_t<test_config::config_order_selector_t<gtensor::config::c_order>,double>>;
 
-    std::cout<<std::endl<<tmp;
-    std::cout<<std::endl<<t.max(axes)-t.min(axes);
-    //std::cout<<std::endl<<(*tmp.begin()).first<<" "<<(*tmp.begin()).second;
+    //auto e1 = tensor_type(1)+tensor_type(2)+3;
+    //e1.rbegin_trivial()+1;
+    //std::cout<<std::endl<<*e1.rbegin_trivial();
+
+    auto e2 = tensor_type(1)+tensor_type(2);
+    auto it = e2.rbegin_trivial();
+    auto itt{it};
+    //auto itt1 = it;
+    std::cout<<std::endl<<*it;
+    std::cout<<std::endl<<*itt;
+    //std::cout<<std::endl<<*itt1;
 
 }

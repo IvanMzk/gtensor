@@ -366,16 +366,10 @@ public:
     using typename iterator_base::reference;
     using iterator_base::operator*;
 
-    explicit reverse_iterator_generic(Iterator it):
-        iterator_base{std::move(it)}
-    {
-        ++(*this);
-    }
-
     template<typename...> struct forward_args : std::true_type{};
-    template<typename U> struct forward_args<U> : std::bool_constant<!std::is_same_v<U,Iterator>&&!std::is_same_v<U,reverse_iterator_generic>>{};
+    template<typename U> struct forward_args<U> : std::bool_constant<!std::is_same_v<U,reverse_iterator_generic>>{};
 
-    template<typename...Args, std::enable_if_t<forward_args<Args...>::value ,int> =0>
+    template<typename...Args, std::enable_if_t<forward_args<std::remove_cv_t<std::remove_reference_t<Args>>...>::value ,int> =0>
     explicit reverse_iterator_generic(Args&&...args):
         iterator_base{std::forward<Args>(args)...}
     {

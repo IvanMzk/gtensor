@@ -48,6 +48,10 @@ GENERATE_HAS_CALLABLE_METHOD(begin(), has_callable_begin);
 GENERATE_HAS_CALLABLE_METHOD(end(), has_callable_end);
 GENERATE_HAS_CALLABLE_METHOD(rbegin(), has_callable_rbegin);
 GENERATE_HAS_CALLABLE_METHOD(rend(), has_callable_rend);
+GENERATE_HAS_CALLABLE_METHOD(begin_trivial(), has_callable_begin_trivial);
+GENERATE_HAS_CALLABLE_METHOD(end_trivial(), has_callable_end_trivial);
+GENERATE_HAS_CALLABLE_METHOD(rbegin_trivial(), has_callable_rbegin_trivial);
+GENERATE_HAS_CALLABLE_METHOD(rend_trivial(), has_callable_rend_trivial);
 GENERATE_HAS_CALLABLE_METHOD(create_trivial_indexer(), has_callable_create_trivial_indexer);
 GENERATE_HAS_CALLABLE_METHOD(is_trivial(), has_callable_is_trivial);
 
@@ -64,6 +68,8 @@ template<typename T> inline constexpr bool is_random_access_iterator_v<T,std::vo
 
 template<typename T> using has_callable_iterator = std::conjunction<has_callable_begin<T>,has_callable_end<T>>;
 template<typename T> using has_callable_reverse_iterator = std::conjunction<has_callable_rbegin<T>,has_callable_rend<T>>;
+template<typename T> using has_callable_iterator_trivial = std::conjunction<has_callable_begin_trivial<T>,has_callable_end_trivial<T>>;
+template<typename T> using has_callable_reverse_iterator_trivial = std::conjunction<has_callable_rbegin_trivial<T>,has_callable_rend_trivial<T>>;
 
 template<typename,typename> struct has_callable_random_access_iterator_helper : std::false_type{};
 template<typename T> struct has_callable_random_access_iterator_helper<T,std::true_type> : std::bool_constant<is_random_access_iterator_v<decltype(std::declval<T>().begin())>>{};

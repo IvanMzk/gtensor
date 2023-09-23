@@ -223,8 +223,8 @@ template<typename Core, typename Descriptor>
 inline auto begin_trivial(Core& t, const Descriptor& descriptor){
     using config_type = typename Core::config_type;
     using index_type = typename config_type::index_type;
-    if constexpr (has_callable_iterator<Core>::value){  //always use native iterator if any
-        return t.begin();
+    if constexpr (has_callable_iterator_trivial<Core>::value){
+        return t.begin_trivial();
     }else if constexpr (has_callable_create_trivial_indexer<Core>::value){
         return gtensor::indexer_iterator<config_type, decltype(t.create_trivial_indexer())>{t.create_trivial_indexer(), index_type{0}};
     }else{
@@ -234,8 +234,8 @@ inline auto begin_trivial(Core& t, const Descriptor& descriptor){
 template<typename Core, typename Descriptor>
 inline auto end_trivial(Core& t, const Descriptor& descriptor){
     using config_type = typename Core::config_type;
-    if constexpr (has_callable_iterator<Core>::value){  //always use native iterator if any
-        return t.end();
+    if constexpr (has_callable_iterator_trivial<Core>::value){
+        return t.end_trivial();
     }else if constexpr (has_callable_create_trivial_indexer<Core>::value){
         return gtensor::indexer_iterator<config_type, decltype(t.create_trivial_indexer())>{t.create_trivial_indexer(), descriptor.size()};
     }else{
@@ -364,10 +364,8 @@ inline auto create_reverse_trivial_walker_iterator(Core& t, const Descriptor& de
 template<typename Core, typename Descriptor>
 inline auto rbegin_trivial(Core& t, const Descriptor& descriptor){
     using config_type = typename Core::config_type;
-    if constexpr (has_callable_reverse_iterator<Core>::value){  //always use native iterator if any
-        return t.rbegin();
-    }else if constexpr (has_callable_iterator<Core>::value){
-        return create_reverse_iterator(t.end());
+    if constexpr (has_callable_reverse_iterator_trivial<Core>::value){
+        return t.rbegin_trivial();
     }else if constexpr (has_callable_create_trivial_indexer<Core>::value){
         return gtensor::reverse_indexer_iterator<config_type, decltype(t.create_trivial_indexer())>{t.create_trivial_indexer(), descriptor.size()};
     }else{
@@ -378,10 +376,8 @@ template<typename Core, typename Descriptor>
 inline auto rend_trivial(Core& t, const Descriptor& descriptor){
     using config_type = typename Core::config_type;
     using index_type = typename config_type::index_type;
-    if constexpr (has_callable_reverse_iterator<Core>::value){  //always use native iterator if any
-        return t.rend();
-    }else if constexpr (has_callable_iterator<Core>::value){
-        return create_reverse_iterator(t.begin());
+    if constexpr (has_callable_reverse_iterator_trivial<Core>::value){
+        return t.rend_trivial();
     }else if constexpr (has_callable_create_trivial_indexer<Core>::value){
         return gtensor::reverse_indexer_iterator<config_type, decltype(t.create_trivial_indexer())>{t.create_trivial_indexer(), index_type{0}};
     }else{

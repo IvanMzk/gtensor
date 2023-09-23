@@ -80,6 +80,7 @@ TEMPLATE_TEST_CASE("test_tensor_data_interface","[test_tensor]",
         std::make_tuple(tensor_type{1,2,3,4,5,6},std::vector<value_type>{1,2,3,4,5,6},std::vector<value_type>{1,2,3,4,5,6}),
         std::make_tuple(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},std::vector<value_type>{1,2,3,4,5,6,7,8,9,10,11,12},std::vector<value_type>{1,7,4,10,2,8,5,11,3,9,6,12}),
         //trivial view
+        std::make_tuple(tensor_type(1)+tensor_type(2)+tensor_type(3),std::vector<value_type>{6},std::vector<value_type>{6}),
         std::make_tuple((tensor_type(1)+tensor_type(2)+tensor_type(3))*4,std::vector<value_type>{24},std::vector<value_type>{24}),
         std::make_tuple((tensor_type{1}+tensor_type{2}+tensor_type{3})*4,std::vector<value_type>{24},std::vector<value_type>{24}),
         std::make_tuple((tensor_type{1,2,3,4,5,6} + 1)*tensor_type{2,3,4,5,6,7},std::vector<value_type>{4,9,16,25,36,49},std::vector<value_type>{4,9,16,25,36,49}),
@@ -95,11 +96,15 @@ TEMPLATE_TEST_CASE("test_tensor_data_interface","[test_tensor]",
             auto elements_f_traverse = std::get<2>(t);
             auto first = ten.begin();
             auto last = ten.end();
+            auto first_trivial = ten.begin_trivial();
+            auto last_trivial = ten.end_trivial();
             REQUIRE(std::is_same_v<decltype(first),decltype(last)>);
             if constexpr (std::is_same_v<traverse_order,c_order>){
                 REQUIRE(std::equal(first,last,elements_c_traverse.begin(),elements_c_traverse.end()));
+                REQUIRE(std::equal(first_trivial,last_trivial,elements_c_traverse.begin(),elements_c_traverse.end()));
             }else{
                 REQUIRE(std::equal(first,last,elements_f_traverse.begin(),elements_f_traverse.end()));
+                REQUIRE(std::equal(first_trivial,last_trivial,elements_f_traverse.begin(),elements_f_traverse.end()));
             }
         };
         apply_by_element(test,test_data);
