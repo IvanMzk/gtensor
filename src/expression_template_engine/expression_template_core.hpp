@@ -6,6 +6,22 @@
 
 namespace gtensor{
 
+namespace detail{
+
+template<typename F, typename It>
+auto make_iterator_deref_decorator(F f, It it){
+    using it_category = typename std::iterator_traits<It>::iterator_category;
+    if constexpr (std::is_convertible_v<it_category,std::bidirectional_iterator_tag>){
+        return iterator_deref_decorator<F,It,std::bidirectional_iterator_tag>{f,it};
+    }else if constexpr (std::is_convertible_v<it_category,std::random_access_iterator_tag>){
+        return iterator_deref_decorator<F,It,std::random_access_iterator_tag>{f,it};
+    }else{
+        static_assert(detail::always_false<It>,"at least bidirectional iterator expected");
+    }
+}
+
+}   //end of namespace detail
+
 //expression_template_core represents expression on basic_tensor operands
 //F is expression operation, must provide operator()() on arguments that are operands elements
 //Operands are specializations of basic_tensor
@@ -167,35 +183,19 @@ public:
 private:
     template<typename U>
     static auto begin_helper(U& instance){
-        using iterator_type = decltype(instance.operand_.traverse_order_adapter(order{}).begin());
-        return iterator_deref_decorator<F,iterator_type,typename std::iterator_traits<iterator_type>::iterator_category>{
-            instance.f_,
-            instance.operand_.traverse_order_adapter(order{}).begin()
-        };
+        return detail::make_iterator_deref_decorator(instance.f_,instance.operand_.traverse_order_adapter(order{}).begin());
     }
     template<typename U>
     static auto end_helper(U& instance){
-        using iterator_type = decltype(instance.operand_.traverse_order_adapter(order{}).end());
-        return iterator_deref_decorator<F,iterator_type,typename std::iterator_traits<iterator_type>::iterator_category>{
-            instance.f_,
-            instance.operand_.traverse_order_adapter(order{}).end()
-        };
+        return detail::make_iterator_deref_decorator(instance.f_,instance.operand_.traverse_order_adapter(order{}).end());
     }
     template<typename U>
     static auto rbegin_helper(U& instance){
-        using iterator_type = decltype(instance.operand_.traverse_order_adapter(order{}).rbegin());
-        return iterator_deref_decorator<F,iterator_type,typename std::iterator_traits<iterator_type>::iterator_category>{
-            instance.f_,
-            instance.operand_.traverse_order_adapter(order{}).rbegin()
-        };
+        return detail::make_iterator_deref_decorator(instance.f_,instance.operand_.traverse_order_adapter(order{}).rbegin());
     }
     template<typename U>
     static auto rend_helper(U& instance){
-        using iterator_type = decltype(instance.operand_.traverse_order_adapter(order{}).rend());
-        return iterator_deref_decorator<F,iterator_type,typename std::iterator_traits<iterator_type>::iterator_category>{
-            instance.f_,
-            instance.operand_.traverse_order_adapter(order{}).rend()
-        };
+        return detail::make_iterator_deref_decorator(instance.f_,instance.operand_.traverse_order_adapter(order{}).rend());
     }
     template<typename U>
     static auto create_walker_helper(U& instance, dim_type max_dim){

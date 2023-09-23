@@ -16,6 +16,8 @@ ALWAYS_INLINE void apply_per_element(const F& f, std::tuple<Ts...>& t){
     apply_per_element<I+1>(f,t);
 }
 
+
+
 }
 
 //expression template evaluator
@@ -226,8 +228,6 @@ public:
         return it[n];
     }
 };
-
-
 
 }   //end of namespace gtensor
 #endif
