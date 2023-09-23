@@ -6,17 +6,15 @@ namespace benchmark_copy_{
 
 using gtensor::tensor;
 using gtensor::basic_tensor;
-using gtensor::reduce_binary;
 using gtensor::detail::shape_to_str;
 using benchmark_helpers::order_to_str;
-using benchmark_helpers::axes_to_str;
 using gtensor::config::c_order;
 using gtensor::config::f_order;
 using benchmark_helpers::timing;
 using benchmark_helpers::statistic;
 
 template<typename Tensor>
-struct bench_statistic_helper{
+struct bench_copy_helper{
 
     using tensor_type = Tensor;
     using shape_type = typename tensor_type::shape_type;
@@ -54,19 +52,19 @@ struct bench_statistic_helper{
 template<typename Shapes, typename Builder, typename Command>
 auto bench_copy(std::string mes, std::size_t n_iters, Shapes shapes, Builder builder, Command command){
     using value_type = double;
-    bench_statistic_helper<gtensor::tensor<value_type,c_order>>{}(mes,n_iters,shapes,builder,command);
-    bench_statistic_helper<gtensor::tensor<value_type,f_order>>{}(mes,n_iters,shapes,builder,command);
+    bench_copy_helper<gtensor::tensor<value_type,c_order>>{}(mes,n_iters,shapes,builder,command);
+    bench_copy_helper<gtensor::tensor<value_type,f_order>>{}(mes,n_iters,shapes,builder,command);
 }
 
 }   //end of namespace benchmark_statistic_
 
 TEST_CASE("benchmark_copy","[benchmark_copy]")
 {
-    using benchmark_statistic_::bench_copy;
+    using benchmark_copy_::bench_copy;
     using helpers_for_testing::generate_lehmer;
 
     auto builder = [](auto& t_){
-        std::fill(t_.begin(),t_end(),2);
+        std::fill(t_.begin(),t_.end(),2);
         return t_;
     };
     auto builder_lehmer = [](auto& t_){
@@ -92,8 +90,8 @@ TEST_CASE("benchmark_copy","[benchmark_copy]")
     const auto n_iters = 1;
     const auto shapes = benchmark_helpers::shapes;
 
-    bench_copy("copy tensor seq",n_iters,shapes,axes,builder,make_copy_seq);
-    bench_copy("copy tensor par 4",n_iters,shapes,axes,builder,make_copy_par_4);
-    bench_copy("copy tensor par 8",n_iters,shapes,axes,builder,make_copy_par_8);
+    bench_copy("copy tensor seq",n_iters,shapes,builder,make_copy_seq);
+    bench_copy("copy tensor par 4",n_iters,shapes,builder,make_copy_par_4);
+    bench_copy("copy tensor par 8",n_iters,shapes,builder,make_copy_par_8);
 }
 
