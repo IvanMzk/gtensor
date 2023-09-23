@@ -72,7 +72,6 @@ TEST_CASE("benchmark_copy","[benchmark_copy]")
         return t_;
     };
 
-
     auto make_copy_seq = [](const auto& t){
         auto res = t.copy();
         return *res.begin();
@@ -90,8 +89,21 @@ TEST_CASE("benchmark_copy","[benchmark_copy]")
     const auto n_iters = 1;
     const auto shapes = benchmark_helpers::shapes;
 
-    bench_copy("copy tensor seq",n_iters,shapes,builder,make_copy_seq);
-    bench_copy("copy tensor par 4",n_iters,shapes,builder,make_copy_par_4);
-    bench_copy("copy tensor par 8",n_iters,shapes,builder,make_copy_par_8);
+    // bench_copy("copy tensor seq",n_iters,shapes,builder,make_copy_seq);
+    // bench_copy("copy tensor par 4",n_iters,shapes,builder,make_copy_par_4);
+    // bench_copy("copy tensor par 8",n_iters,shapes,builder,make_copy_par_8);
+
+    bench_copy("copy trivial expression (((((((((t+1)+2)+3)+4)+5)+6)+7)+8)+9) seq",n_iters,shapes,[](auto&& t){return (((((((((t+1)+2)+3)+4)+5)+6)+7)+8)+9);},make_copy_seq);
+    bench_copy("copy trivial expression (((((((((t+1)+2)+3)+4)+5)+6)+7)+8)+9) par 4",n_iters,shapes,[](auto&& t){return (((((((((t+1)+2)+3)+4)+5)+6)+7)+8)+9);},make_copy_par_4);
+    bench_copy("copy trivial expression (((((((((t+1)+2)+3)+4)+5)+6)+7)+8)+9) par 8",n_iters,shapes,[](auto&& t){return (((((((((t+1)+2)+3)+4)+5)+6)+7)+8)+9);},make_copy_par_8);
+
+    // bench_copy("copy trivial expression t+t+t+t+t+t+t+t+t+t seq",n_iters,shapes,[](auto&& t){return t+t+t+t+t+t+t+t+t+t;},make_copy_seq);
+    // bench_copy("copy trivial expression t+t+t+t+t+t+t+t+t+t par 4",n_iters,shapes,[](auto&& t){return t+t+t+t+t+t+t+t+t+t;},make_copy_par_4);
+    // bench_copy("copy trivial expression t+t+t+t+t+t+t+t+t+t par 8",n_iters,shapes,[](auto&& t){return t+t+t+t+t+t+t+t+t+t;},make_copy_par_8);
+
+    // bench_copy("copy non trivial expression t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(1,2)+t+t+t seq",n_iters,shapes,[](auto&& t){return t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(1,2)+t+t+t;},make_copy_seq);
+    // bench_copy("copy non trivial expression t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(1,2)+t+t+t par 4",n_iters,shapes,[](auto&& t){return t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(1,2)+t+t+t;},make_copy_par_4);
+    // bench_copy("copy non trivial expression t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(1,2)+t+t+t par 8",n_iters,shapes,[](auto&& t){return t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(1,2)+t+t+t;},make_copy_par_8);
+
 }
 

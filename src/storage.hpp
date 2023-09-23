@@ -4,6 +4,7 @@
 #include <type_traits>
 #include <memory>
 #include <iterator>
+#include "common.hpp"
 
 namespace gtensor{
 
@@ -112,6 +113,83 @@ struct row_buffer
         auto res = ptr_;
         ptr_ = nullptr;
         return res;
+    }
+};
+
+template<typename Pointer>
+class pointer_iterator{
+    using pointer_type = Pointer;
+    pointer_type ptr_;
+public:
+    using iterator_category = typename std::iterator_traits<pointer_type>::iterator_category;
+    using difference_type = typename std::iterator_traits<pointer_type>::difference_type;
+    using reference = typename std::iterator_traits<pointer_type>::reference;
+    using value_type = typename std::iterator_traits<pointer_type>::value_type;
+    using pointer = typename std::iterator_traits<pointer_type>::pointer;
+
+    explicit pointer_iterator(pointer_type ptr__):
+        ptr_{ptr__}
+    {}
+
+    ALWAYS_INLINE pointer_iterator& operator++(){
+        ++ptr_;
+        return *this;
+    }
+    ALWAYS_INLINE pointer_iterator& operator--(){
+        --ptr_;
+        return *this;
+    }
+    ALWAYS_INLINE pointer_iterator operator++(int){
+        const auto tmp=ptr_;
+        ++ptr_;
+        return pointer_iterator{tmp};
+    }
+    ALWAYS_INLINE pointer_iterator operator--(int){
+        auto tmp=ptr_;
+        --ptr_;
+        return pointer_iterator{tmp};
+    }
+    ALWAYS_INLINE pointer_iterator& operator+=(difference_type n){
+        ptr_+=n;
+        return *this;
+    }
+    ALWAYS_INLINE pointer_iterator& operator-=(difference_type n){
+        ptr_-=n;
+        return *this;
+    }
+    ALWAYS_INLINE pointer_iterator operator+(difference_type n){
+        return pointer_iterator{ptr_+n};
+    }
+    ALWAYS_INLINE pointer_iterator operator-(difference_type n){
+        return pointer_iterator{ptr_-n};
+    }
+    ALWAYS_INLINE difference_type operator-(const pointer_iterator& rhs)const{
+        return ptr_ - rhs.ptr_;
+    }
+
+    ALWAYS_INLINE bool operator==(const pointer_iterator& rhs)const{
+        return ptr_ == rhs.ptr_;
+    }
+    ALWAYS_INLINE bool operator!=(const pointer_iterator& rhs)const{
+        return ptr_ != rhs.ptr_;
+    }
+    ALWAYS_INLINE bool operator>(const pointer_iterator& rhs)const{
+        return ptr_ > rhs.ptr_;
+    }
+    ALWAYS_INLINE bool operator>=(const pointer_iterator& rhs)const{
+        return ptr_ >= rhs.ptr_;
+    }
+    ALWAYS_INLINE bool operator<(const pointer_iterator& rhs)const{
+        return ptr_ < rhs.ptr_;
+    }
+    ALWAYS_INLINE bool operator<=(const pointer_iterator& rhs)const{
+        return ptr_ <= rhs.ptr_;
+    }
+    ALWAYS_INLINE reference operator[](difference_type n)const{
+        return ptr_[n];
+    }
+    ALWAYS_INLINE reference operator*()const{
+        return *ptr_;
     }
 };
 
