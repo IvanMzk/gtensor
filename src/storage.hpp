@@ -283,8 +283,8 @@ public:
     using const_pointer = typename std::allocator_traits<Alloc>::const_pointer;
     using reference = T&;
     using const_reference = const T&;
-    using iterator = detail::pointer_iterator<pointer>;
-    using const_iterator = detail::pointer_iterator<const_pointer>;
+    using iterator = pointer;
+    using const_iterator = const_pointer;
     using reverse_iterator = std::reverse_iterator<iterator>;
     using const_reverse_iterator = std::reverse_iterator<const_iterator>;
     using difference_type = typename std::allocator_traits<Alloc>::difference_type;
@@ -367,12 +367,12 @@ public:
     bool empty()const{return begin()==end();}
     pointer data(){return begin_;}
     const_pointer data()const{return begin_;}
-    iterator begin(){return iterator{begin_};}
-    iterator end(){return  iterator{end_};}
+    iterator begin(){return begin_;}
+    iterator end(){return  end_;}
     reverse_iterator rbegin(){return std::make_reverse_iterator(end());}
     reverse_iterator rend(){return  std::make_reverse_iterator(begin());}
-    const_iterator begin()const{return const_iterator{begin_};}
-    const_iterator end()const{return const_iterator{end_};}
+    const_iterator begin()const{return begin_;}
+    const_iterator end()const{return end_;}
     const_reverse_iterator rbegin()const{return std::make_reverse_iterator(end());}
     const_reverse_iterator rend()const{return  std::make_reverse_iterator(begin());}
     reference operator[](const size_type& i){return *(begin_+i);}
@@ -511,8 +511,8 @@ public:
     using const_pointer = typename std::allocator_traits<Alloc>::const_pointer;
     using reference = T&;
     using const_reference = const T&;
-    using iterator = detail::pointer_iterator<pointer>;
-    using const_iterator = detail::pointer_iterator<const_pointer>;
+    using iterator = pointer;
+    using const_iterator = const_pointer;
     using reverse_iterator = std::reverse_iterator<iterator>;
     using const_reverse_iterator = std::reverse_iterator<const_iterator>;
     using difference_type = typename std::allocator_traits<Alloc>::difference_type;
@@ -609,10 +609,10 @@ public:
 
     //element access
     value_type* data(){
-        return this->begin_;
+        return begin_;
     }
     const value_type* data()const{
-        return this->begin_;
+        return begin_;
     }
     reference operator[](const size_type& i){
         return *(begin_+i);
@@ -634,10 +634,10 @@ public:
     }
     //iterators
     iterator begin(){
-        return iterator{begin_};
+        return begin_;
     }
     iterator end(){
-        return  iterator{end_};
+        return  end_;
     }
     reverse_iterator rbegin(){
         return std::make_reverse_iterator(end());
@@ -646,10 +646,10 @@ public:
         return  std::make_reverse_iterator(begin());
     }
     const_iterator begin()const{
-        return const_iterator{begin_};
+        return begin_;
     }
     const_iterator end()const{
-        return const_iterator{end_};
+        return end_;
     }
     const_reverse_iterator rbegin()const{
         return std::make_reverse_iterator(end());
