@@ -115,90 +115,7 @@ struct row_buffer
     }
 };
 
-#ifdef __cpp_lib_hardware_interference_size
-    inline constexpr std::size_t hardware_destructive_interference_size = std::hardware_destructive_interference_size;
-#else
-    inline constexpr std::size_t hardware_destructive_interference_size = 64;
-#endif
-
-// template<typename Pointer>
-// class pointer_iterator{
-//     using pointer_type = Pointer;
-//     pointer_type ptr_;
-// public:
-//     using iterator_category = typename std::iterator_traits<pointer_type>::iterator_category;
-//     using difference_type = typename std::iterator_traits<pointer_type>::difference_type;
-//     using reference = typename std::iterator_traits<pointer_type>::reference;
-//     using value_type = typename std::iterator_traits<pointer_type>::value_type;
-//     using pointer = typename std::iterator_traits<pointer_type>::pointer;
-
-//     explicit pointer_iterator(pointer_type ptr__):
-//         ptr_{ptr__}
-//     {}
-
-//     pointer_iterator& operator++(){
-//         ++ptr_;
-//         return *this;
-//     }
-//     pointer_iterator& operator--(){
-//         --ptr_;
-//         return *this;
-//     }
-//     pointer_iterator operator++(int){
-//         const auto tmp=ptr_;
-//         ++ptr_;
-//         return pointer_iterator{tmp};
-//     }
-//     pointer_iterator operator--(int){
-//         auto tmp=ptr_;
-//         --ptr_;
-//         return pointer_iterator{tmp};
-//     }
-//     pointer_iterator& operator+=(difference_type n){
-//         ptr_+=n;
-//         return *this;
-//     }
-//     pointer_iterator& operator-=(difference_type n){
-//         ptr_-=n;
-//         return *this;
-//     }
-//     pointer_iterator operator+(difference_type n)const{
-//         return pointer_iterator{ptr_+n};
-//     }
-//     pointer_iterator operator-(difference_type n)const{
-//         return pointer_iterator{ptr_-n};
-//     }
-//     difference_type operator-(const pointer_iterator& rhs)const{
-//         return ptr_ - rhs.ptr_;
-//     }
-
-//     bool operator==(const pointer_iterator& rhs)const{
-//         return ptr_ == rhs.ptr_;
-//     }
-//     bool operator!=(const pointer_iterator& rhs)const{
-//         return ptr_ != rhs.ptr_;
-//     }
-//     bool operator>(const pointer_iterator& rhs)const{
-//         return ptr_ > rhs.ptr_;
-//     }
-//     bool operator>=(const pointer_iterator& rhs)const{
-//         return ptr_ >= rhs.ptr_;
-//     }
-//     bool operator<(const pointer_iterator& rhs)const{
-//         return ptr_ < rhs.ptr_;
-//     }
-//     bool operator<=(const pointer_iterator& rhs)const{
-//         return ptr_ <= rhs.ptr_;
-//     }
-//     reference operator[](difference_type n)const{
-//         return ptr_[n];
-//     }
-//     reference operator*()const{
-//         return *ptr_;
-//     }
-// };
-
-}
+}   //end of namespace detail
 
 template<typename T, typename Alloc = std::allocator<T>>
 class minimal_storage
@@ -1054,8 +971,7 @@ private:
         free(allocator_);
     }
 
-    //alignas(alignof(value_type)) std::byte buffer_[Capacity*sizeof(value_type)];
-    alignas(detail::hardware_destructive_interference_size) std::byte buffer_[Capacity*sizeof(value_type)];
+    alignas(alignof(value_type)) std::byte buffer_[Capacity*sizeof(value_type)];
     allocator_type allocator_;
     pointer begin_{buffer_array_begin()};
     pointer end_{begin_};

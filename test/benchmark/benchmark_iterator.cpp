@@ -29,9 +29,9 @@ struct bench_iterator_helper{
             std::vector<double> intervals{};
             shape_type t_shape{};
             bool is_t_shape{false};
+            auto t_ = tensor_type(shape,2);
+            auto t=builder(t_);
             for (auto n=n_iters; n!=0; --n){
-                auto t_ = tensor_type(shape,2);
-                auto t=builder(t_);
                 if (!is_t_shape){
                     t_shape=t.shape();
                     is_t_shape=true;
