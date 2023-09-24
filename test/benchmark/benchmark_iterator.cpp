@@ -117,9 +117,10 @@ TEST_CASE("benchmark_iterator","[benchmark_tensor]")
     const bool reverse_iterator = false;
 
     // //tensor
-    // bench_iterator("tensor traverse forward",n_iters,shapes,[](auto&& t){return t;},traverser,reverse_iterator,false);
+    bench_iterator("tensor traverse forward",n_iters,shapes,[](auto&& t){return t;},traverser,reverse_iterator,false);
     // //expression view
-    bench_iterator("trivial expression t+t+t+t+t+t+t+t+t+t traverse forward",n_iters,shapes,[](auto&& t){return t+t+t+t+t+t+t+t+t+t;},traverser,reverse_iterator,false);
+    bench_iterator("trivial expression t+1 traverse forward",n_iters,shapes,[](auto&& t){return t+1;},traverser,reverse_iterator,false);
+    // bench_iterator("trivial expression t+t+t+t+t+t+t+t+t+t traverse forward",n_iters,shapes,[](auto&& t){return t+t+t+t+t+t+t+t+t+t;},traverser,reverse_iterator,false);
     // bench_iterator("trivial expression t+t+t+t+t+t+t+t+t+t traverse forward",n_iters,shapes,[](auto&& t){return t+t+t+t+t+t+t+t+t+t;},traverser,reverse_iterator,true);
     // bench_iterator("non trivial expression t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(1,2)+t+t+t traverse forward",n_iters,shapes,[](auto&& t){return t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(1,2)+t+t+t;},traverser,reverse_iterator,false);
     // //transpose view
