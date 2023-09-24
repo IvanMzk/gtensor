@@ -441,7 +441,7 @@ public:
     using difference_type = typename std::allocator_traits<Alloc>::difference_type;
     using size_type = typename std::allocator_traits<Alloc>::size_type;
 
-    virtual ~stack_prealloc_vector()
+    ~stack_prealloc_vector()
     {
         free();
     }
