@@ -109,8 +109,10 @@ TEST_CASE("benchmark_iterator","[benchmark_tensor]")
     using gtensor::config::f_order;
 
 
-    const auto n_iters = 1;
-    const auto shapes = benchmark_helpers::shapes;
+    const auto n_iters = 100;
+    const auto shapes = benchmark_helpers::small_shapes;
+    // const auto n_iters = 1;
+    // const auto shapes = benchmark_helpers::shapes;
     auto traverser = benchmark_iterator_::traverse_forward;
     const bool reverse_iterator = false;
 

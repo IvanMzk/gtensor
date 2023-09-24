@@ -115,82 +115,88 @@ struct row_buffer
     }
 };
 
-template<typename Pointer>
-class pointer_iterator{
-    using pointer_type = Pointer;
-    pointer_type ptr_;
-public:
-    using iterator_category = typename std::iterator_traits<pointer_type>::iterator_category;
-    using difference_type = typename std::iterator_traits<pointer_type>::difference_type;
-    using reference = typename std::iterator_traits<pointer_type>::reference;
-    using value_type = typename std::iterator_traits<pointer_type>::value_type;
-    using pointer = typename std::iterator_traits<pointer_type>::pointer;
+#ifdef __cpp_lib_hardware_interference_size
+    inline constexpr std::size_t hardware_destructive_interference_size = std::hardware_destructive_interference_size;
+#else
+    inline constexpr std::size_t hardware_destructive_interference_size = 64;
+#endif
 
-    explicit pointer_iterator(pointer_type ptr__):
-        ptr_{ptr__}
-    {}
+// template<typename Pointer>
+// class pointer_iterator{
+//     using pointer_type = Pointer;
+//     pointer_type ptr_;
+// public:
+//     using iterator_category = typename std::iterator_traits<pointer_type>::iterator_category;
+//     using difference_type = typename std::iterator_traits<pointer_type>::difference_type;
+//     using reference = typename std::iterator_traits<pointer_type>::reference;
+//     using value_type = typename std::iterator_traits<pointer_type>::value_type;
+//     using pointer = typename std::iterator_traits<pointer_type>::pointer;
 
-    pointer_iterator& operator++(){
-        ++ptr_;
-        return *this;
-    }
-    pointer_iterator& operator--(){
-        --ptr_;
-        return *this;
-    }
-    pointer_iterator operator++(int){
-        const auto tmp=ptr_;
-        ++ptr_;
-        return pointer_iterator{tmp};
-    }
-    pointer_iterator operator--(int){
-        auto tmp=ptr_;
-        --ptr_;
-        return pointer_iterator{tmp};
-    }
-    pointer_iterator& operator+=(difference_type n){
-        ptr_+=n;
-        return *this;
-    }
-    pointer_iterator& operator-=(difference_type n){
-        ptr_-=n;
-        return *this;
-    }
-    pointer_iterator operator+(difference_type n)const{
-        return pointer_iterator{ptr_+n};
-    }
-    pointer_iterator operator-(difference_type n)const{
-        return pointer_iterator{ptr_-n};
-    }
-    difference_type operator-(const pointer_iterator& rhs)const{
-        return ptr_ - rhs.ptr_;
-    }
+//     explicit pointer_iterator(pointer_type ptr__):
+//         ptr_{ptr__}
+//     {}
 
-    bool operator==(const pointer_iterator& rhs)const{
-        return ptr_ == rhs.ptr_;
-    }
-    bool operator!=(const pointer_iterator& rhs)const{
-        return ptr_ != rhs.ptr_;
-    }
-    bool operator>(const pointer_iterator& rhs)const{
-        return ptr_ > rhs.ptr_;
-    }
-    bool operator>=(const pointer_iterator& rhs)const{
-        return ptr_ >= rhs.ptr_;
-    }
-    bool operator<(const pointer_iterator& rhs)const{
-        return ptr_ < rhs.ptr_;
-    }
-    bool operator<=(const pointer_iterator& rhs)const{
-        return ptr_ <= rhs.ptr_;
-    }
-    reference operator[](difference_type n)const{
-        return ptr_[n];
-    }
-    reference operator*()const{
-        return *ptr_;
-    }
-};
+//     pointer_iterator& operator++(){
+//         ++ptr_;
+//         return *this;
+//     }
+//     pointer_iterator& operator--(){
+//         --ptr_;
+//         return *this;
+//     }
+//     pointer_iterator operator++(int){
+//         const auto tmp=ptr_;
+//         ++ptr_;
+//         return pointer_iterator{tmp};
+//     }
+//     pointer_iterator operator--(int){
+//         auto tmp=ptr_;
+//         --ptr_;
+//         return pointer_iterator{tmp};
+//     }
+//     pointer_iterator& operator+=(difference_type n){
+//         ptr_+=n;
+//         return *this;
+//     }
+//     pointer_iterator& operator-=(difference_type n){
+//         ptr_-=n;
+//         return *this;
+//     }
+//     pointer_iterator operator+(difference_type n)const{
+//         return pointer_iterator{ptr_+n};
+//     }
+//     pointer_iterator operator-(difference_type n)const{
+//         return pointer_iterator{ptr_-n};
+//     }
+//     difference_type operator-(const pointer_iterator& rhs)const{
+//         return ptr_ - rhs.ptr_;
+//     }
+
+//     bool operator==(const pointer_iterator& rhs)const{
+//         return ptr_ == rhs.ptr_;
+//     }
+//     bool operator!=(const pointer_iterator& rhs)const{
+//         return ptr_ != rhs.ptr_;
+//     }
+//     bool operator>(const pointer_iterator& rhs)const{
+//         return ptr_ > rhs.ptr_;
+//     }
+//     bool operator>=(const pointer_iterator& rhs)const{
+//         return ptr_ >= rhs.ptr_;
+//     }
+//     bool operator<(const pointer_iterator& rhs)const{
+//         return ptr_ < rhs.ptr_;
+//     }
+//     bool operator<=(const pointer_iterator& rhs)const{
+//         return ptr_ <= rhs.ptr_;
+//     }
+//     reference operator[](difference_type n)const{
+//         return ptr_[n];
+//     }
+//     reference operator*()const{
+//         return *ptr_;
+//     }
+// };
 
 }
 
@@ -232,8 +238,8 @@ public:
         init(n,value_type{},false);
     }
 
-    pointer data(){return begin_;}
-    const_pointer data()const{return begin_;}
+    value_type* data(){return begin_;}
+    const value_type* data()const{return begin_;}
     reference operator[](const size_type& i){return *(begin_+i);}
     const_reference operator[](const size_type& i)const{return *(begin_+i);}
 
@@ -365,8 +371,8 @@ public:
     }
     size_type size()const{return end_-begin_;}
     bool empty()const{return begin()==end();}
-    pointer data(){return begin_;}
-    const_pointer data()const{return begin_;}
+    value_type* data(){return begin_;}
+    const value_type* data()const{return begin_;}
     iterator begin(){return begin_;}
     iterator end(){return  end_;}
     reverse_iterator rbegin(){return std::make_reverse_iterator(end());}
@@ -1048,7 +1054,8 @@ private:
         free(allocator_);
     }
 
-    std::byte buffer_[Capacity*sizeof(value_type)];
+    //alignas(alignof(value_type)) std::byte buffer_[Capacity*sizeof(value_type)];
+    alignas(detail::hardware_destructive_interference_size) std::byte buffer_[Capacity*sizeof(value_type)];
     allocator_type allocator_;
     pointer begin_{buffer_array_begin()};
     pointer end_{begin_};
@@ -1075,84 +1082,6 @@ template<typename T, std::size_t Capacity, typename Alloc>
 bool operator!=(const stack_prealloc_vector<T,Capacity,Alloc>& lhs, const stack_prealloc_vector<T,Capacity,Alloc>& rhs){
     return !(lhs==rhs);
 }
-
-
-
-template<typename T> class std_vec : public std::vector<T>{
-    using base_type = std::vector<T>;
-public:
-    using typename base_type::pointer;
-    using typename base_type::const_pointer;
-    using base_type::base_type;
-
-    using iterator = pointer;
-    using const_iterator = const_pointer;
-    using reverse_iterator = std::reverse_iterator<iterator>;
-    using const_reverse_iterator = std::reverse_iterator<const_iterator>;
-
-    iterator begin(){
-        return base_type::data();
-    }
-    iterator end(){
-        return  base_type::data()+base_type::size();
-    }
-    reverse_iterator rbegin(){
-        return std::make_reverse_iterator(end());
-    }
-    reverse_iterator rend(){
-        return  std::make_reverse_iterator(begin());
-    }
-    const_iterator begin()const{
-        return base_type::data();
-    }
-    const_iterator end()const{
-        return  base_type::data()+base_type::size();
-    }
-    const_reverse_iterator rbegin()const{
-        return std::make_reverse_iterator(end());
-    }
-    const_reverse_iterator rend()const{
-        return  std::make_reverse_iterator(begin());
-    }
-};
-
-template<typename T> class prealloc_vec : public stack_prealloc_vector<T,1>{
-    using base_type = stack_prealloc_vector<T,1>;
-public:
-    using typename base_type::pointer;
-    using typename base_type::const_pointer;
-    using base_type::base_type;
-
-    using iterator = pointer;
-    using const_iterator = const_pointer;
-    using reverse_iterator = std::reverse_iterator<iterator>;
-    using const_reverse_iterator = std::reverse_iterator<const_iterator>;
-
-    iterator begin(){
-        return base_type::data();
-    }
-    iterator end(){
-        return  base_type::data()+base_type::size();
-    }
-    reverse_iterator rbegin(){
-        return std::make_reverse_iterator(end());
-    }
-    reverse_iterator rend(){
-        return  std::make_reverse_iterator(begin());
-    }
-    const_iterator begin()const{
-        return base_type::data();
-    }
-    const_iterator end()const{
-        return  base_type::data()+base_type::size();
-    }
-    const_reverse_iterator rbegin()const{
-        return std::make_reverse_iterator(end());
-    }
-    const_reverse_iterator rend()const{
-        return  std::make_reverse_iterator(begin());
-    }
-};
 
 }   //end of namespace gtensor
 #endif
