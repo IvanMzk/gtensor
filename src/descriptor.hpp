@@ -97,7 +97,7 @@ inline T make_shape_element(const T& shape_element){
 template<typename It, typename DstIt, typename Order>
 inline void make_strides(It shape_first, It shape_last, DstIt strides_first, DstIt strides_last, Order, typename std::iterator_traits<It>::value_type min_stride = 1){
     using result_value_type = typename std::iterator_traits<DstIt>::value_type;
-    if (strides_first!=strides_last){
+    if (strides_first<strides_last){
         if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
             *--strides_last = result_value_type(min_stride);
             while(strides_last != strides_first){

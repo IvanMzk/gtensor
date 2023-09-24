@@ -29,13 +29,13 @@ target_sources(Test PRIVATE
 
     #${CMAKE_CURRENT_SOURCE_DIR}/test_helpers_for_testing.cpp
 
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_multithreading.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_storage.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_common.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_libdivide_helper.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_init_list_helper.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_slice.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_descriptor.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_multithreading.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_storage.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_common.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_libdivide_helper.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_init_list_helper.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_slice.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_descriptor.cpp
 #
     #${CMAKE_CURRENT_SOURCE_DIR}/test_data_accessor_indexer.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_data_accessor_walker.cpp
@@ -80,21 +80,21 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_SOURCE_DIR}/test_math_cumsum_cumprod.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_math_all_any.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_math_min_max.cpp
-#
+
     #${CMAKE_CURRENT_SOURCE_DIR}/test_statistic_ptp_mean.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_statistic_var_std.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_statistic_quantile_median.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_statistic_average_moving_average.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_statistic_moving_mean_histogram.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_statistic_big.cpp
-#
+
     #${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search_sort_argsort.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search_partition_argpartition.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search_partition_argpartition.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search_argmin_argmax.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search_nonzero_argwhere_searchsorted.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search_unique.cpp
-#
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_builder.cpp
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_builder.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_random.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/test.cpp
