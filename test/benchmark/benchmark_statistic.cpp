@@ -159,7 +159,6 @@ TEST_CASE("benchmark_statistic","[benchmark_tensor]")
         auto res = gtensor::nanvar(t,axes);
         return *res.begin();
     };
-
     auto make_nanvar_par_8 = [](const auto& t, const auto& axes){
         auto res = gtensor::nanvar(multithreading::exec_pol<8>{},t,axes);
         return *res.begin();
@@ -184,8 +183,8 @@ TEST_CASE("benchmark_statistic","[benchmark_tensor]")
     //bench_statistic("mean default",n_iters,shapes,axes,builder,make_mean_def);
     //bench_statistic("mean exec_pol<8>",n_iters,shapes,axes,builder,make_mean_par_8);
 
-    bench_statistic("mean triv expression default",n_iters,shapes,axes,triv_expression_builder,make_mean_def);
-    bench_statistic("mean triv expression exec_pol<8>",n_iters,shapes,axes,triv_expression_builder,make_mean_par_8);
+    // bench_statistic("mean triv expression default",n_iters,shapes,axes,triv_expression_builder,make_mean_def);
+    // bench_statistic("mean triv expression exec_pol<8>",n_iters,shapes,axes,triv_expression_builder,make_mean_par_8);
 
     //bench_statistic("var default squared diff",n_iters,shapes,axes,builder,make_var_def);
     //bench_statistic("var default",n_iters,shapes,axes,builder,make_var_def);
@@ -198,5 +197,8 @@ TEST_CASE("benchmark_statistic","[benchmark_tensor]")
 
     //bench_statistic_flatten("mean flatten default",n_iters,shapes,builder,[](const auto& t){auto res = gtensor::mean(t); return *res.begin();});
     //bench_statistic_flatten("mean flatten exec_pol<8>",n_iters,shapes,builder,[](const auto& t){auto res = gtensor::mean(multithreading::exec_pol<8>{}, t); return *res.begin();});
+
+    bench_statistic_flatten("stdev flatten default",n_iters,shapes,builder,[](const auto& t){auto res = gtensor::stdev(t); return *res.begin();});
+    bench_statistic_flatten("stdev flatten exec_pol<8>",n_iters,shapes,builder,[](const auto& t){auto res = gtensor::stdev(multithreading::exec_pol<8>{}, t); return *res.begin();});
 }
 
