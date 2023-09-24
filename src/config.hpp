@@ -38,6 +38,8 @@ struct default_config
     //must provide std::vector like interface
     //template<typename T> using shape = std::vector<T>;
     template<typename T> using shape = gtensor::stack_prealloc_vector<T,8>;
+    //template<typename T> using shape = gtensor::std_vec<T>;
+    //template<typename T> using shape = gtensor::prealloc_vec<T>;
 
     //generally when public interface expected container parameter it may be any type providig usual container semantic and interface: iterators, aliases...
     //specialization of config_type::container uses as return type in public interface

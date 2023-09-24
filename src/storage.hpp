@@ -608,11 +608,11 @@ public:
     }
 
     //element access
-    pointer data(){
-        return begin_;
+    value_type* data(){
+        return this->begin_;
     }
-    const_pointer data()const{
-        return begin_;
+    const value_type* data()const{
+        return this->begin_;
     }
     reference operator[](const size_type& i){
         return *(begin_+i);
@@ -1076,6 +1076,83 @@ bool operator!=(const stack_prealloc_vector<T,Capacity,Alloc>& lhs, const stack_
     return !(lhs==rhs);
 }
 
+
+
+template<typename T> class std_vec : public std::vector<T>{
+    using base_type = std::vector<T>;
+public:
+    using typename base_type::pointer;
+    using typename base_type::const_pointer;
+    using base_type::base_type;
+
+    using iterator = pointer;
+    using const_iterator = const_pointer;
+    using reverse_iterator = std::reverse_iterator<iterator>;
+    using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+
+    iterator begin(){
+        return base_type::data();
+    }
+    iterator end(){
+        return  base_type::data()+base_type::size();
+    }
+    reverse_iterator rbegin(){
+        return std::make_reverse_iterator(end());
+    }
+    reverse_iterator rend(){
+        return  std::make_reverse_iterator(begin());
+    }
+    const_iterator begin()const{
+        return base_type::data();
+    }
+    const_iterator end()const{
+        return  base_type::data()+base_type::size();
+    }
+    const_reverse_iterator rbegin()const{
+        return std::make_reverse_iterator(end());
+    }
+    const_reverse_iterator rend()const{
+        return  std::make_reverse_iterator(begin());
+    }
+};
+
+template<typename T> class prealloc_vec : public stack_prealloc_vector<T,1>{
+    using base_type = stack_prealloc_vector<T,1>;
+public:
+    using typename base_type::pointer;
+    using typename base_type::const_pointer;
+    using base_type::base_type;
+
+    using iterator = pointer;
+    using const_iterator = const_pointer;
+    using reverse_iterator = std::reverse_iterator<iterator>;
+    using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+
+    iterator begin(){
+        return base_type::data();
+    }
+    iterator end(){
+        return  base_type::data()+base_type::size();
+    }
+    reverse_iterator rbegin(){
+        return std::make_reverse_iterator(end());
+    }
+    reverse_iterator rend(){
+        return  std::make_reverse_iterator(begin());
+    }
+    const_iterator begin()const{
+        return base_type::data();
+    }
+    const_iterator end()const{
+        return  base_type::data()+base_type::size();
+    }
+    const_reverse_iterator rbegin()const{
+        return std::make_reverse_iterator(end());
+    }
+    const_reverse_iterator rend()const{
+        return  std::make_reverse_iterator(begin());
+    }
+};
 
 }   //end of namespace gtensor
 #endif
