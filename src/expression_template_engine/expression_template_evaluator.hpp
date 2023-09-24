@@ -197,10 +197,10 @@ public:
         it-=n;
         return *this;
     }
-    iterator_deref_decorator operator+(difference_type n){
+    iterator_deref_decorator operator+(difference_type n)const{
         return iterator_deref_decorator{f,it+n};
     }
-    iterator_deref_decorator operator-(difference_type n){
+    iterator_deref_decorator operator-(difference_type n)const{
         return iterator_deref_decorator{f,it-n};
     }
     difference_type operator-(const iterator_deref_decorator& rhs)const{

@@ -4,7 +4,6 @@
 #include <type_traits>
 #include <memory>
 #include <iterator>
-#include "common.hpp"
 
 namespace gtensor{
 
@@ -131,64 +130,64 @@ public:
         ptr_{ptr__}
     {}
 
-    ALWAYS_INLINE pointer_iterator& operator++(){
+    pointer_iterator& operator++(){
         ++ptr_;
         return *this;
     }
-    ALWAYS_INLINE pointer_iterator& operator--(){
+    pointer_iterator& operator--(){
         --ptr_;
         return *this;
     }
-    ALWAYS_INLINE pointer_iterator operator++(int){
+    pointer_iterator operator++(int){
         const auto tmp=ptr_;
         ++ptr_;
         return pointer_iterator{tmp};
     }
-    ALWAYS_INLINE pointer_iterator operator--(int){
+    pointer_iterator operator--(int){
         auto tmp=ptr_;
         --ptr_;
         return pointer_iterator{tmp};
     }
-    ALWAYS_INLINE pointer_iterator& operator+=(difference_type n){
+    pointer_iterator& operator+=(difference_type n){
         ptr_+=n;
         return *this;
     }
-    ALWAYS_INLINE pointer_iterator& operator-=(difference_type n){
+    pointer_iterator& operator-=(difference_type n){
         ptr_-=n;
         return *this;
     }
-    ALWAYS_INLINE pointer_iterator operator+(difference_type n){
+    pointer_iterator operator+(difference_type n)const{
         return pointer_iterator{ptr_+n};
     }
-    ALWAYS_INLINE pointer_iterator operator-(difference_type n){
+    pointer_iterator operator-(difference_type n)const{
         return pointer_iterator{ptr_-n};
     }
-    ALWAYS_INLINE difference_type operator-(const pointer_iterator& rhs)const{
+    difference_type operator-(const pointer_iterator& rhs)const{
         return ptr_ - rhs.ptr_;
     }
 
-    ALWAYS_INLINE bool operator==(const pointer_iterator& rhs)const{
+    bool operator==(const pointer_iterator& rhs)const{
         return ptr_ == rhs.ptr_;
     }
-    ALWAYS_INLINE bool operator!=(const pointer_iterator& rhs)const{
+    bool operator!=(const pointer_iterator& rhs)const{
         return ptr_ != rhs.ptr_;
     }
-    ALWAYS_INLINE bool operator>(const pointer_iterator& rhs)const{
+    bool operator>(const pointer_iterator& rhs)const{
         return ptr_ > rhs.ptr_;
     }
-    ALWAYS_INLINE bool operator>=(const pointer_iterator& rhs)const{
+    bool operator>=(const pointer_iterator& rhs)const{
         return ptr_ >= rhs.ptr_;
     }
-    ALWAYS_INLINE bool operator<(const pointer_iterator& rhs)const{
+    bool operator<(const pointer_iterator& rhs)const{
         return ptr_ < rhs.ptr_;
     }
-    ALWAYS_INLINE bool operator<=(const pointer_iterator& rhs)const{
+    bool operator<=(const pointer_iterator& rhs)const{
         return ptr_ <= rhs.ptr_;
     }
-    ALWAYS_INLINE reference operator[](difference_type n)const{
+    reference operator[](difference_type n)const{
         return ptr_[n];
     }
-    ALWAYS_INLINE reference operator*()const{
+    reference operator*()const{
         return *ptr_;
     }
 };
@@ -284,8 +283,8 @@ public:
     using const_pointer = typename std::allocator_traits<Alloc>::const_pointer;
     using reference = T&;
     using const_reference = const T&;
-    using iterator = pointer;
-    using const_iterator = const_pointer;
+    using iterator = detail::pointer_iterator<pointer>;
+    using const_iterator = detail::pointer_iterator<const_pointer>;
     using reverse_iterator = std::reverse_iterator<iterator>;
     using const_reverse_iterator = std::reverse_iterator<const_iterator>;
     using difference_type = typename std::allocator_traits<Alloc>::difference_type;
@@ -368,12 +367,12 @@ public:
     bool empty()const{return begin()==end();}
     pointer data(){return begin_;}
     const_pointer data()const{return begin_;}
-    iterator begin(){return begin_;}
-    iterator end(){return  end_;}
+    iterator begin(){return iterator{begin_};}
+    iterator end(){return  iterator{end_};}
     reverse_iterator rbegin(){return std::make_reverse_iterator(end());}
     reverse_iterator rend(){return  std::make_reverse_iterator(begin());}
-    const_iterator begin()const{return begin_;}
-    const_iterator end()const{return end_;}
+    const_iterator begin()const{return const_iterator{begin_};}
+    const_iterator end()const{return const_iterator{end_};}
     const_reverse_iterator rbegin()const{return std::make_reverse_iterator(end());}
     const_reverse_iterator rend()const{return  std::make_reverse_iterator(begin());}
     reference operator[](const size_type& i){return *(begin_+i);}
@@ -512,8 +511,8 @@ public:
     using const_pointer = typename std::allocator_traits<Alloc>::const_pointer;
     using reference = T&;
     using const_reference = const T&;
-    using iterator = pointer;
-    using const_iterator = const_pointer;
+    using iterator = detail::pointer_iterator<pointer>;
+    using const_iterator = detail::pointer_iterator<const_pointer>;
     using reverse_iterator = std::reverse_iterator<iterator>;
     using const_reverse_iterator = std::reverse_iterator<const_iterator>;
     using difference_type = typename std::allocator_traits<Alloc>::difference_type;
@@ -635,10 +634,10 @@ public:
     }
     //iterators
     iterator begin(){
-        return begin_;
+        return iterator{begin_};
     }
     iterator end(){
-        return  end_;
+        return  iterator{end_};
     }
     reverse_iterator rbegin(){
         return std::make_reverse_iterator(end());
@@ -647,10 +646,10 @@ public:
         return  std::make_reverse_iterator(begin());
     }
     const_iterator begin()const{
-        return begin_;
+        return const_iterator{begin_};
     }
     const_iterator end()const{
-        return end_;
+        return const_iterator{end_};
     }
     const_reverse_iterator rbegin()const{
         return std::make_reverse_iterator(end());
@@ -946,7 +945,7 @@ private:
     template<typename It>
     void assign_(It first, It last, const size_type& n){
         auto size_ = size();
-        auto dst = begin();
+        auto dst = begin_;
         if (size_<n){
             for (;size_!=0; --size_,(void)++first,(void)++dst){
                 *dst=*first;

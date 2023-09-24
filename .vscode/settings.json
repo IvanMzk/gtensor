@@ -78,6 +78,7 @@
         "any": "cpp",
         "execution": "cpp",
         "queue": "cpp",
-        "bit": "cpp"
+        "bit": "cpp",
+        "__config": "cpp"
     }
 }
