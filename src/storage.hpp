@@ -886,7 +886,7 @@ private:
     //no copy assign other's allocator
     template<typename It>
     void copy_assign(It other_first, It other_last){
-        const auto other_size = std::distance(other_first,other_last);
+        const auto other_size = static_cast<const size_type&>(std::distance(other_first,other_last));
         if (capacity()<other_size){
             reallocate(other_first,other_last,other_size,other_size);
         }else{
@@ -900,7 +900,7 @@ private:
         if (std::allocator_traits<allocator_type>::is_always_equal::value || allocator_ ==  other_alloc){
             copy_assign(other_first,other_last);
         }else{
-            const auto other_size = other_last-other_first;
+            const auto other_size = static_cast<const size_type&>(other_last-other_first);
             if(is_on_stack() && capacity()>=other_size){    //stay on stack
                 assign_(other_first,other_last,other_size);
                 allocator_ = std::move(other_alloc);

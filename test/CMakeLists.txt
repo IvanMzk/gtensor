@@ -25,17 +25,17 @@ target_sources(Test PRIVATE
 
     #${CMAKE_CURRENT_SOURCE_DIR}/benchmark/benchmark_copy_eval.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/benchmark/benchmark_iterator.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/benchmark/benchmark_statistic.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/benchmark/benchmark_statistic.cpp
 
     #${CMAKE_CURRENT_SOURCE_DIR}/test_helpers_for_testing.cpp
 
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_multithreading.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_storage.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_common.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_libdivide_helper.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_init_list_helper.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_slice.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_descriptor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_multithreading.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_storage.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_common.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_libdivide_helper.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_init_list_helper.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_slice.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_descriptor.cpp
 #
     #${CMAKE_CURRENT_SOURCE_DIR}/test_data_accessor_indexer.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_data_accessor_walker.cpp
