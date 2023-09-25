@@ -26,15 +26,9 @@ auto make_tuple_or_add(Tuple&& t, V&& v){
 template<typename DimT, typename Axis>
 void check_unique_args(const DimT& dim, const Axis& axis_){
     if constexpr (!std::is_same_v<Axis,no_value>){
-        auto axis = make_axis(dim,axis_);
-        if (dim==0){
-            if (axis != 0){
-                throw axis_error("axis out of bounds");
-            }
-        }else{
-            if (axis >= dim){
-                throw axis_error("axis out of bounds");
-            }
+        const auto axis = make_axis(dim,axis_);
+        if (axis >= dim){
+            throw axis_error("axis out of bounds");
         }
     }
 }

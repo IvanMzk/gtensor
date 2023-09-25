@@ -89,10 +89,10 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_SOURCE_DIR}/test_statistic_big.cpp
 
     #${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search_sort_argsort.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search_partition_argpartition.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search_partition_argpartition.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search_argmin_argmax.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search_nonzero_argwhere_searchsorted.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search_unique.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search_unique.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/test_builder.cpp
     #${CMAKE_CURRENT_SOURCE_DIR}/test_random.cpp
