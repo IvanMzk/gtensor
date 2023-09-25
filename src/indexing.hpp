@@ -77,8 +77,6 @@ class axes_iterator_maker{
     using shape_type = typename config_type::shape_type;
     using strides_div_type = strides_div_t<config_type>;
     using axes_container_type = typename config_type::template shape<dim_type>;
-    //using axes_type = std::conditional_t<is_container_v<Axes>,axes_container_type,dim_type>;
-    //using axes_type = decltype(make_axes<config_type>(std::declval<dim_type>(),std::declval<Axes>()));
     using axes_type = Axes;
     using axes_map_type = decltype(make_range_traverser_axes_map<config_type>(std::declval<dim_type>(),std::declval<axes_type>()));
 
@@ -153,7 +151,7 @@ private:
         if constexpr (detail::is_container_v<axes_type>){
             return axes_->size();
         }else{
-            return 1;
+            return dim_type{1};
         }
     }
 
