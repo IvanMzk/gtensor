@@ -120,7 +120,7 @@ TEST_CASE("test_tensor_constructor_shape","[test_tensor]")
     apply_by_element(test, test_data);
 }
 
-TEST_CASE("test_tensor_constructor_shape_container_value","[test_tensor]")
+TEST_CASE("test_tensor_constructor_shape_value","[test_tensor]")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
@@ -148,7 +148,7 @@ TEST_CASE("test_tensor_constructor_shape_container_value","[test_tensor]")
         auto shape = std::get<0>(t);
         auto value = std::get<1>(t);
         auto expected = std::get<2>(t);
-        auto result = tensor_type{shape, value};
+        auto result = tensor_type(shape, value);
         REQUIRE(result == expected);
     };
     apply_by_element(test,test_data);
@@ -183,7 +183,7 @@ TEST_CASE("test_tensor_constructor_shape_init_list_value","[test_tensor]")
     apply_by_element(test,test_data);
 }
 
-TEST_CASE("test_tensor_constructor_shape_container_range","[test_tensor]")
+TEST_CASE("test_tensor_constructor_shape_range","[test_tensor]")
 {
     using value_type = int;
     using tensor_type = gtensor::tensor<value_type>;
