@@ -25,6 +25,7 @@ auto check_shuffle_args(const ShT& input_shape, const DimT& axis){
 
 template<typename ShT, typename IdxT, typename Size, typename Probabilities, typename DimT>
 auto check_choice_args(const ShT& input_shape, const IdxT& input_size, const Size& size, bool replace, const Probabilities& p, const DimT& axis){
+    using index_type = typename ShT::value_type;
     const auto input_dim = detail::make_dim(input_shape);
     const auto axis_size = input_shape[axis];
     const auto size_size = detail::make_size<IdxT>(size);
@@ -46,7 +47,7 @@ auto check_choice_args(const ShT& input_shape, const IdxT& input_size, const Siz
         }
         if (!replace){
             const auto p_zeros = std::count(p.begin(),p.end(),0);
-            const auto samplable_axis_size = p_size - p_zeros;
+            const auto samplable_axis_size = static_cast<const index_type&>(p_size - p_zeros);
             if (size_size>samplable_axis_size){
                 throw value_error("cannot take a larger sample than population with non-zero probabilities, without remplacement");
             }
