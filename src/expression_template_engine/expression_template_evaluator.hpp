@@ -32,7 +32,8 @@ public:
     using index_type = typename Config::index_type;
     using shape_type = typename Config::shape_type;
     using size_type = typename shape_type::size_type;
-    using value_type = std::remove_cv_t<std::remove_reference_t<decltype(std::declval<F>()(*std::declval<Walkers>()...))>>;
+    using reference = decltype(std::declval<F>()(*std::declval<Walkers>()...));
+    using value_type = std::remove_cv_t<std::remove_reference_t<reference>>;
 
     template<typename F_> struct forward_args : std::bool_constant<!std::is_same_v<std::remove_cv_t<std::remove_reference_t<F_>>,expression_template_walker>>{};
 

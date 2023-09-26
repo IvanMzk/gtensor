@@ -431,10 +431,12 @@ class cursor_walker
 
     template<typename Cur,typename> struct cursor_traits_helper{
         using value_type = Cur;
+        using reference = const Cur&;
     };
 
     template<typename Cur> struct cursor_traits_helper<Cur,std::true_type>{
         using value_type = typename std::iterator_traits<Cur>::value_type;
+        using reference = typename std::iterator_traits<Cur>::reference;
     };
 
     using cursor_traits = cursor_traits_helper<Cursor,std::bool_constant<is_cursor_iterator>>;
@@ -446,6 +448,7 @@ public:
     using dim_type = typename Config::dim_type;
     using shape_type = typename Config::shape_type;
     using value_type = typename cursor_traits::value_type;
+    using reference = typename cursor_traits::reference;
 
 
     cursor_walker(const shape_type& adapted_strides__, const shape_type& reset_strides__, const cursor_type& offset__):
@@ -479,7 +482,7 @@ public:
     ALWAYS_INLINE void update_offset(){
         offset_+=(cursor_-offset_);
     }
-    ALWAYS_INLINE decltype(auto) operator*()const{
+    ALWAYS_INLINE reference operator*()const{
         if constexpr (is_cursor_iterator){
             return *cursor_;
         }else{
@@ -504,6 +507,7 @@ public:
     using typename base_type::dim_type;
     using typename base_type::shape_type;
     using value_type = typename indexer_type::value_type;
+    using reference = decltype(std::declval<indexer_type>()[std::declval<index_type>()]);
 
     template<typename Indexer_>
     indexer_walker(const shape_type& adapted_strides_, const shape_type& reset_strides_, const index_type& offset_, Indexer_&& indexer_):
@@ -517,7 +521,7 @@ public:
     using base_type::reset;
     using base_type::reset_back;
     using base_type::update_offset;
-    ALWAYS_INLINE decltype(auto) operator*()const{
+    ALWAYS_INLINE reference operator*()const{
         return indexer[base_type::operator*()];
     }
 private:
@@ -535,6 +539,7 @@ public:
     using typename base_walker_type::index_type;
     using typename base_walker_type::dim_type;
     using typename base_walker_type::value_type;
+    using typename base_walker_type::reference;
 
     //offset.size() equals number of subscripts given to make slice view
     template<typename...Args>
@@ -569,6 +574,7 @@ public:
     using typename base_walker_type::index_type;
     using typename base_walker_type::dim_type;
     using typename base_walker_type::value_type;
+    using typename base_walker_type::reference;
 
     //if a is axis of view then axes_map_[a] is corresponding axis of view's parent
     //axes_map_.size() always equals to view dim
@@ -617,6 +623,7 @@ public:
     using typename base_walker_type::index_type;
     using typename base_walker_type::dim_type;
     using typename base_walker_type::value_type;
+    using typename base_walker_type::reference;
 
     //if a is axis of view then step_scale_[a] is steps number along a in parent that corresponds single step along a in view
     //step_scale_.size() always equals to view dim
@@ -659,6 +666,7 @@ public:
     using typename base_walker_type::index_type;
     using typename base_walker_type::dim_type;
     using typename base_walker_type::value_type;
+    using typename base_walker_type::reference;
 
     template<typename...Args>
     resetting_walker(const shape_type& shape_,Args&&...args):
@@ -716,6 +724,7 @@ public:
     using typename base_walker_type::index_type;
     using typename base_walker_type::dim_type;
     using typename base_walker_type::value_type;
+    using typename base_walker_type::reference;
 
     template<typename...Args>
     axes_correction_walker(const dim_type& dim_offset__,Args&&...args):
@@ -773,6 +782,7 @@ public:
     using index_type = typename config_type::index_type;
     using dim_type = typename config_type::dim_type;
     using value_type = typename Walker::value_type;
+    using reference = typename Walker::reference;
 protected:
     using walker_type = Walker;
 
@@ -791,7 +801,7 @@ public:
     const auto& index()const{return index_;}
     const auto& walker()const{return walker_;}
     auto& walker(){return walker_;}
-    ALWAYS_INLINE decltype(auto) operator*()const{return *walker_;}
+    ALWAYS_INLINE reference operator*()const{return *walker_;}
     template<typename Order>
     ALWAYS_INLINE bool next(){
         ASSERT_ORDER(Order);
@@ -814,6 +824,7 @@ public:
     using typename base_type::index_type;
     using typename base_type::dim_type;
     using typename base_type::value_type;
+    using typename base_type::reference;
 protected:
     using base_type::shape_;
     using base_type::dim_;

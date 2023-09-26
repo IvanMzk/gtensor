@@ -155,8 +155,9 @@ bool reserve(Container& container, const T& n){
     if constexpr (is_static_castable_v<T,difference_type>){
         container.reserve(static_cast<const difference_type&>(n));
         return true;
+    }else{
+        return false;
     }
-    return false;
 }
 
 //returns dimension for given shape argument

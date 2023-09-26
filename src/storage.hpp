@@ -287,21 +287,51 @@ public:
         std::swap(begin_,other.begin_);
         std::swap(end_,other.end_);
     }
-    size_type size()const{return end_-begin_;}
-    bool empty()const{return begin()==end();}
-    value_type* data(){return begin_;}
-    const value_type* data()const{return begin_;}
-    iterator begin(){return begin_;}
-    iterator end(){return  end_;}
-    reverse_iterator rbegin(){return std::make_reverse_iterator(end());}
-    reverse_iterator rend(){return  std::make_reverse_iterator(begin());}
-    const_iterator begin()const{return begin_;}
-    const_iterator end()const{return end_;}
-    const_reverse_iterator rbegin()const{return std::make_reverse_iterator(end());}
-    const_reverse_iterator rend()const{return  std::make_reverse_iterator(begin());}
-    reference operator[](const size_type& i){return *(begin_+i);}
-    const_reference operator[](const size_type& i)const{return *(begin_+i);}
-    allocator_type get_allocator()const{return allocator_;}
+    size_type size()const{
+        return end_-begin_;
+    }
+    bool empty()const{
+        return begin()==end();
+    }
+    value_type* data(){
+        return begin_;
+    }
+    const value_type* data()const{
+        return begin_;
+    }
+    iterator begin(){
+        return begin_;
+    }
+    iterator end(){
+        return  end_;
+    }
+    reverse_iterator rbegin(){
+        return std::make_reverse_iterator(end());
+    }
+    reverse_iterator rend(){
+        return  std::make_reverse_iterator(begin());
+    }
+    const_iterator begin()const{
+        return begin_;
+    }
+    const_iterator end()const{
+        return end_;
+    }
+    const_reverse_iterator rbegin()const{
+        return std::make_reverse_iterator(end());
+    }
+    const_reverse_iterator rend()const{
+        return  std::make_reverse_iterator(begin());
+    }
+    reference operator[](const size_type& i){
+        return *(begin_+i);
+    }
+    const_reference operator[](const size_type& i)const{
+        return *(begin_+i);
+    }
+    allocator_type get_allocator()const{
+        return alloc();
+    }
 
 private:
     //no copy assign other's allocator
@@ -321,7 +351,7 @@ private:
 
     //copy assign other's allocator
     void copy_assign(const basic_storage& other, std::true_type){
-        if (std::allocator_traits<allocator_type>::is_always_equal::value || allocator_ ==  other.allocator_){
+        if (alloc() == other.alloc() || std::allocator_traits<allocator_type>::is_always_equal::value){
             copy_assign(other, std::false_type{});
         }else{
             auto other_size = other.size();
@@ -338,7 +368,7 @@ private:
 
     //no move assign other's allocator, if allocators not equal copy are made
     void move_assign(basic_storage&& other, std::false_type){
-        if (std::allocator_traits<allocator_type>::is_always_equal::value || allocator_ ==  other.allocator_){
+        if (alloc() == other.alloc() || std::allocator_traits<allocator_type>::is_always_equal::value){
             free();
             begin_ = other.begin_;
             end_ = other.end_;
@@ -362,7 +392,7 @@ private:
 
     void init(const size_type& n, const value_type& v, bool init_trivial){
         auto new_buffer = allocate_buffer(n);
-        if (!std::is_trivially_copyable_v<value_type> || init_trivial){
+        if (init_trivial || !std::is_trivially_copyable_v<value_type>){
             detail::uninitialized_fill(new_buffer.get(),new_buffer.get()+n,v,new_buffer.get_allocator());
         }
         begin_=new_buffer.release();
@@ -395,6 +425,13 @@ private:
     }
     void free(){
         free(allocator_);
+    }
+
+    allocator_type& alloc(){
+        return allocator_;
+    }
+    const allocator_type& alloc()const{
+        return allocator_;
     }
 
     allocator_type allocator_;
@@ -528,7 +565,7 @@ public:
     }
 
     allocator_type get_allocator()const{
-        return allocator_;
+        return alloc();
     }
 
     //element access
@@ -620,7 +657,7 @@ public:
         // if constexpr (std::allocator_traits<allocator_type>::propagate_on_container_swap::value){
         //     swap(allocator_,other.allocator_);
         // }
-        if (std::allocator_traits<allocator_type>::is_always_equal::value || allocator_ ==  other.allocator_){
+        if (alloc() == other.alloc() || std::allocator_traits<allocator_type>::is_always_equal::value){
             if (!is_on_stack() && !other.is_on_stack()){    //UB if allocators not swapped and not equal
                 swap(begin_,other.begin_);
                 swap(end_,other.end_);
@@ -898,7 +935,7 @@ private:
     //copy assign other's allocator
     template<typename It>
     void copy_assign(It other_first, It other_last, allocator_type other_alloc){
-        if (std::allocator_traits<allocator_type>::is_always_equal::value || allocator_ ==  other_alloc){
+        if (alloc() == other_alloc || std::allocator_traits<allocator_type>::is_always_equal::value){
             copy_assign(other_first,other_last);
         }else{
             const auto other_size = static_cast<const size_type&>(other_last-other_first);
@@ -913,7 +950,7 @@ private:
 
     //no move assign other's allocator, if allocators not equal copy are made
     void move_assign(stack_prealloc_vector&& other, std::false_type){
-        if (std::allocator_traits<allocator_type>::is_always_equal::value || allocator_ ==  other.allocator_){
+        if (alloc() == other.alloc() || std::allocator_traits<allocator_type>::is_always_equal::value){
             if (other.is_on_stack()){
                 copy_assign(std::make_move_iterator(other.begin()),std::make_move_iterator(other.end()));
             }else{  //free and steal
@@ -930,7 +967,7 @@ private:
 
     //move assign other's allocator
     void move_assign(stack_prealloc_vector&& other, std::true_type){
-        if (std::allocator_traits<allocator_type>::is_always_equal::value || allocator_ ==  other.allocator_){
+        if (alloc() == other.alloc() || std::allocator_traits<allocator_type>::is_always_equal::value){
             move_assign(std::move(other),std::false_type{});
         }else{
             if (other.is_on_stack()){   //cant steal, need move by elements
@@ -950,6 +987,13 @@ private:
                 steal(std::move(other));
             }
         }
+    }
+
+    allocator_type& alloc(){
+        return allocator_;
+    }
+    const allocator_type& alloc()const{
+        return allocator_;
     }
 
     template<typename A>

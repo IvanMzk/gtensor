@@ -121,7 +121,7 @@ inline ResT make_strides(const ShT& shape, Order order, typename ShT::value_type
     using result_type = ResT;
     using result_value_type = typename result_type::value_type;
     result_type res(shape.size(), result_value_type(1));
-    make_strides(shape.begin(),shape.end(),res.begin(),res.end(),order);
+    make_strides(shape.begin(),shape.end(),res.begin(),res.end(),order,min_stride);
     return res;
 }
 

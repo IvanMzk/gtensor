@@ -310,7 +310,7 @@ class reducer
     static auto reduce_binary_flatten_helper(Policy policy, const basic_tensor<Ts...>& parent, BinaryF reduce_f, const Initial& initial){
         using order = typename basic_tensor<Ts...>::order;
         static constexpr bool has_initial = !std::is_same_v<Initial,detail::no_value>;
-        if (!has_initial && parent.empty()){
+        if (parent.empty() && !has_initial){
             throw value_error("cant reduce zero size dimension without initial value");
         }
         auto reduce_binary_flatten_helper_ = [&policy,&reduce_f,&initial](auto first, auto last){
@@ -551,7 +551,6 @@ class reducer
         detail::check_reduce_args(pshape, axes);
         auto res = tensor<res_value_type,order,res_config_type>(detail::make_reduce_shape(pshape, axes, keep_dims));
         if (!res.empty()){
-            auto a = res.traverse_order_adapter(traverse_order{});
             //zero size axis is reduced
             if (parent.empty()){
                 auto a = parent.traverse_order_adapter(order{});
@@ -611,6 +610,7 @@ class reducer
                     }
                 }
             };
+            auto a = res.traverse_order_adapter(traverse_order{});
             if (parent.is_trivial()){
                 reduce_helper(parent.create_trivial_walker(),a.begin(),args...);
             }else{
@@ -676,7 +676,7 @@ class reducer
     }
 
     template<typename ResultT, typename Policy, typename...Ts, typename Axis, typename F, typename IdxT, typename...Args>
-    static auto slide_helper(Policy policy, const basic_tensor<Ts...>& parent, const Axis& axis_, F slide_f, const IdxT& window_size_, const IdxT& window_step_, const Args&...args)
+    static auto slide_helper(Policy, const basic_tensor<Ts...>& parent, const Axis& axis_, F slide_f, const IdxT& window_size_, const IdxT& window_step_, const Args&...args)
     {
         using parent_type = basic_tensor<Ts...>;
         using order = typename parent_type::order;

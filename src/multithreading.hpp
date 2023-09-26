@@ -521,7 +521,7 @@ void transform(Policy, DstIt first1, DstIt last1, It first2, BinaryF f){
 }
 
 template<typename Policy, typename It, typename DstIt>
-auto copy(Policy policy, It first, It last, DstIt dfirst){
+auto copy(Policy, It first, It last, DstIt dfirst){
     if constexpr (std::is_convertible_v<typename std::iterator_traits<It>::iterator_category,std::random_access_iterator_tag> && !exec_policy_traits<Policy>::is_seq::value){ //parallelize
         using difference_type = typename std::iterator_traits<It>::difference_type;
         static constexpr std::size_t max_par_tasks_n = exec_policy_traits<Policy>::par_tasks::value;
