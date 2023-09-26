@@ -318,7 +318,7 @@ struct sort_search
                 return make_unique_result(
                     res_tensor_type(std::move(res_shape)),
                     std::make_tuple(
-                        [&res_shape,&res_axis_size](){return index_tensor_type({res_axis_size},index_type{0});},
+                        [&res_axis_size](){return index_tensor_type({res_axis_size},index_type{0});},
                         [&axis_size](){return index_tensor_type({axis_size},index_type{0});},
                         [&axis_size,&res_axis_size](){return index_tensor_type({res_axis_size},axis_size);}
                     ),
@@ -493,6 +493,8 @@ private:
             res,
             std::make_tuple(
                 [&tmp,&n_unique,&unique_last](){
+                    (void)tmp;
+                    (void)unique_last;
                     auto res_index = index_tensor_type(detail::make_shape_of_type<shape_type>(n_unique));
                     if constexpr (need_index){
                         std::transform(tmp.begin(),unique_last,res_index.begin(),[](const auto& e){return e.index();});
