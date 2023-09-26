@@ -10,19 +10,6 @@ namespace gtensor
 
 namespace detail{
 
-template<typename T> inline constexpr bool is_tuple_v = false;
-template<typename...Us> inline constexpr bool is_tuple_v<std::tuple<Us...>> = true;
-
-template<typename Tuple, typename V>
-auto make_tuple_or_add(Tuple&& t, V&& v){
-    using Tuple_ = std::remove_cv_t<std::remove_reference_t<Tuple>>;
-    if constexpr (is_tuple_v<Tuple_>){
-        return std::tuple_cat(std::forward<Tuple>(t),std::make_tuple(std::forward<V>(v)));
-    }else{
-        return std::make_tuple(std::forward<Tuple>(t),std::forward<V>(v));
-    }
-}
-
 template<typename DimT, typename Axis>
 void check_unique_args(const DimT& dim, const Axis& axis_){
     if constexpr (!std::is_same_v<Axis,no_value>){
@@ -44,6 +31,25 @@ void check_searchsorted_args(const DimT& dim, const Sorter& sorter){
         }
     }
 }
+
+//Bs sequence of std::bool_constant
+template<typename...Bs>
+struct bool_seq_to_index_seq{
+    template<std::size_t N=0, std::size_t...I>
+    struct accumulator_{
+        using type = std::index_sequence<I...>;
+        template<typename B>
+        auto operator+(B){
+            if constexpr (B::value){
+                return accumulator_<N+1,I...,N>{};
+            }else{
+                return accumulator_<N+1,I...>{};
+            }
+        }
+    };
+
+    using type = typename decltype((accumulator_{} + ... + Bs{}))::type;
+};
 
 }
 
@@ -289,6 +295,11 @@ struct sort_search
         using config_type = typename tensor_type::config_type;
         using index_type = typename tensor_type::index_type;
         using shape_type = typename tensor_type::shape_type;
+        using res_tensor_type = tensor<value_type,order,config_type>;
+        using index_tensor_type = tensor<index_type,order,config_type>;
+        using index_container_type = typename config_type::template container<index_type>;
+        using index_container_difference_type = typename index_container_type::difference_type;
+
         detail::check_unique_args(t.dim(),axis_);
         if (t.dim() == 0 || t.dim() == 1){
             return unique_flatten<order>(t,return_index,return_inverse,return_counts);
@@ -299,24 +310,47 @@ struct sort_search
             const auto& shape = t.shape();
             const auto axis = detail::make_axis(shape,axis_);
             const auto axis_size = shape[axis];
+            // if (t.empty()){
+            //     shape_type res_shape(shape);
+            //     const auto res_axis_size = axis_size==0 ? index_type{0} : index_type{1};
+            //     res_shape[axis] = res_axis_size;
+            //     if constexpr (return_index.value){
+            //         return make_unique_return<index_tensor_type>(
+            //             std::make_tuple(res_tensor_type(std::move(res_shape)),index_tensor_type(res_axis_size,0)),
+            //             index_container_type(axis_size,0),
+            //             index_container_type(res_axis_size,axis_size),
+            //             return_inverse,
+            //             return_counts
+            //         );
+            //     }else{
+            //         return make_unique_return<index_tensor_type>(
+            //             res_tensor_type(std::move(res_shape)),
+            //             index_container_type(axis_size,0),
+            //             index_container_type(res_axis_size,axis_size),
+            //             return_inverse,
+            //             return_counts
+            //         );
+            //     }
+            // }
+
             const auto chunk_size = axis_size==0 ? index_type{0} : t.size()/axis_size;
             auto axes_iterator_maker = detail::make_axes_iterator_maker<config_type>(shape,axis,config::c_order{});
             auto traverser = axes_iterator_maker.create_forward_traverser(t.create_walker(),std::false_type{});
             using walker_type = std::remove_cv_t<std::remove_reference_t<decltype(traverser.walker())>>;
-            auto make_iterator = [&axes_iterator_maker](const auto& w, const auto& pos){
-                return pos == 0 ? axes_iterator_maker.begin_complement(w,std::true_type{}) : axes_iterator_maker.end_complement(w,std::true_type{});
-            };
-            using make_iterator_type = decltype(make_iterator);
+            using axes_iterator_maker_type = decltype(axes_iterator_maker);
 
             struct range{
                 walker_type walker_;
-                const make_iterator_type* make_iterator_;
-                range(const walker_type& walker__, const make_iterator_type& make_iterator__):
+                const axes_iterator_maker_type* axes_iterator_maker_;
+                index_type idx_;
+                range(const walker_type& walker__, const axes_iterator_maker_type& axes_iterator_maker__, const index_type& idx__):
                     walker_{walker__},
-                    make_iterator_{&make_iterator__}
+                    axes_iterator_maker_{&axes_iterator_maker__},
+                    idx_{idx__}
                 {}
-                auto begin()const{return (*make_iterator_)(walker_,0);}
-                auto end()const{return (*make_iterator_)(walker_,1);}
+                auto index()const{return idx_;}
+                auto begin()const{return axes_iterator_maker_->begin_complement(walker_,std::true_type{});}
+                auto end()const{return axes_iterator_maker_->end_complement(walker_,std::true_type{});}
                 bool operator<(const range& other)const{
                     return std::lexicographical_compare(
                         begin(),
@@ -333,39 +367,22 @@ struct sort_search
                     );
                 }
             };
-            struct range_index : range{
-                index_type idx_;
-                range_index(const walker_type& walker__, const make_iterator_type& make_iterator__, const index_type& idx__):
-                    range(walker__,make_iterator__),
-                    idx_{idx__}
-                {}
-                auto index()const{return idx_;}
-            };
 
-            static constexpr bool need_index = return_index.value || return_inverse.value;
-            using range_type = std::conditional_t<need_index,range_index,range> ;
-            using container_type = typename config_type::template container<range_type>;
-            container_type chunks{};
+            typename config_type::template container<range> chunks{};
             index_type i{0};
             if (chunk_size!=0){
                 detail::reserve(chunks,axis_size);
                 do{
-                    if constexpr (need_index){
-                        chunks.emplace_back(traverser.walker(),make_iterator,i);
-                        ++i;
-                    }else{
-                        chunks.emplace_back(traverser.walker(),make_iterator);
-                    }
+                    chunks.emplace_back(traverser.walker(),axes_iterator_maker,i);
+                    ++i;
                 }while(traverser.template next<order>());
             }
             std::sort(chunks.begin(),chunks.end());
-            using index_container_type = typename config_type::template container<index_type>;
-            using container_difference_type = typename index_container_type::difference_type;
             index_container_type inverse{};
             index_container_type counts{};
             const auto chunks_size = chunks.size();
             if constexpr(return_inverse.value){
-                inverse.assign(static_cast<const container_difference_type&>(chunks_size),0);
+                inverse.assign(static_cast<const index_container_difference_type&>(chunks_size),0);
             }
             if constexpr(return_counts.value){
                 detail::reserve(counts,chunks_size);
@@ -374,7 +391,7 @@ struct sort_search
             const auto n_unique = static_cast<const index_type&>(unique_last - chunks.begin());
             shape_type res_shape_{shape};
             res_shape_[axis] = n_unique;
-            tensor<value_type,order,config_type> res(std::move(res_shape_));
+            res_tensor_type res(std::move(res_shape_));
             const auto& res_shape = res.shape();
             auto res_axes_iterator_maker = detail::make_axes_iterator_maker<config_type>(res_shape,axis,config::c_order{});
             auto res_traverser = res_axes_iterator_maker.create_forward_traverser(res.create_walker(),std::false_type{});
@@ -386,18 +403,38 @@ struct sort_search
                     res_axes_iterator_maker.begin_complement(res_traverser.walker(),std::true_type{})
                 );
             }
-            using index_tensor_type = tensor<index_type,order,config_type>;
-            if constexpr (return_index.value){
-                index_tensor_type unique_index(detail::make_shape_of_type<shape_type>(n_unique));
-                std::transform(chunks.begin(),unique_last,unique_index.begin(),[](const auto& chunk){return chunk.index();});
-                return make_unique_return<index_tensor_type>(std::make_tuple(res,unique_index),inverse,counts,return_inverse,return_counts);
-            }else{
-                return make_unique_return<index_tensor_type>(std::move(res),inverse,counts,return_inverse,return_counts);
-            }
+            return make_unique_result(
+                res,
+                std::make_tuple(
+                    [&chunks,&n_unique,&unique_last](){
+                        auto res_index = index_tensor_type(detail::make_shape_of_type<shape_type>(n_unique));
+                        std::transform(chunks.begin(),unique_last,res_index.begin(),[](const auto& chunk){return chunk.index();});
+                        return res_index;
+                    },
+                    [&inverse](){return index_tensor_type({inverse.size()},inverse.begin(),inverse.end());},
+                    [&counts](){return index_tensor_type({counts.size()},counts.begin(),counts.end());}
+                ),
+                return_index,return_inverse,return_counts
+            );
         }
     }
 
 private:
+
+    template<typename UniqueTensor, typename...Ts, std::size_t...I>
+    static auto make_unique_result_helper(const UniqueTensor& unique_tensor, const std::tuple<Ts...>& makers, std::index_sequence<I...>){
+        return std::make_tuple(unique_tensor,std::get<I>(makers)()...);
+    }
+
+    template<typename UniqueTensor, typename...Ts, typename...Bs>
+    static auto make_unique_result(const UniqueTensor& unique_tensor, const std::tuple<Ts...>& makers, Bs...bs){
+        using index_seq = typename detail::bool_seq_to_index_seq<Bs...>::type;
+        if constexpr (index_seq::size()==0){
+            return unique_tensor;
+        }else{
+            return make_unique_result_helper(unique_tensor,makers,index_seq{});
+        }
+    }
 
     template<typename FlattenOrder, typename...Ts, typename ReturnIndex, typename ReturnInverse, typename ReturnCounts>
     static auto unique_flatten(const basic_tensor<Ts...>& t, ReturnIndex return_index, ReturnInverse return_inverse, ReturnCounts return_counts){
@@ -459,13 +496,21 @@ private:
             std::copy(tmp.begin(),unique_last,res.begin());
         }
         using index_tensor_type = tensor<index_type,order,config_type>;
-        if constexpr (return_index.value){
-            index_tensor_type unique_index(detail::make_shape_of_type<shape_type>(n_unique));
-            std::transform(tmp.begin(),unique_last,unique_index.begin(),[](const auto& e){return e.index();});
-            return make_unique_return<index_tensor_type>(std::make_tuple(std::move(res),unique_index),inverse,counts,return_inverse,return_counts);
-        }else{
-            return make_unique_return<index_tensor_type>(std::move(res),inverse,counts,return_inverse,return_counts);
-        }
+        return make_unique_result(
+            res,
+            std::make_tuple(
+                [&tmp,&n_unique,&unique_last](){
+                    auto res_index = index_tensor_type(detail::make_shape_of_type<shape_type>(n_unique));
+                    if constexpr (need_index){
+                        std::transform(tmp.begin(),unique_last,res_index.begin(),[](const auto& e){return e.index();});
+                    }
+                    return res_index;
+                },
+                [&inverse](){return index_tensor_type({inverse.size()},inverse.begin(),inverse.end());},
+                [&counts](){return index_tensor_type({counts.size()},counts.begin(),counts.end());}
+            ),
+            return_index,return_inverse,return_counts
+        );
     }
 
     //counts should be reserved
@@ -504,24 +549,6 @@ private:
             }
         }
         return ++res;
-    }
-
-    template<typename TenT, std::size_t I=0, typename R, typename Container, typename B, typename...Bs>
-    static auto make_unique_return(R&& r, const Container& inverse, const Container& counts, B b, Bs...bs){
-        if constexpr (b.value){
-            if constexpr (I==0){    //inverse
-                return make_unique_return<TenT,I+1>(detail::make_tuple_or_add(std::forward<R>(r),TenT({inverse.size()},inverse.begin(),inverse.end())),inverse,counts,bs...);
-            }else{  //counts
-                return detail::make_tuple_or_add(std::forward<R>(r),TenT({counts.size()},counts.begin(),counts.end()));
-            }
-        }else{
-            if constexpr (I==0){
-                return make_unique_return<TenT,I+1>(std::forward<R>(r),inverse,counts,bs...);
-            }else{
-                return r;
-            }
-
-        }
     }
 
 };  //end of struct sort_search

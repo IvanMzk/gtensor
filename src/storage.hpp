@@ -2,6 +2,7 @@
 #define STORAGE_HPP_
 
 #include <type_traits>
+#include <limits>
 #include <memory>
 #include <iterator>
 
