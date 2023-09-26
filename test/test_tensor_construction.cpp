@@ -103,6 +103,7 @@ TEST_CASE("test_tensor_constructor_shape","[test_tensor]")
     const value_type any{std::numeric_limits<value_type>::max()};
     //0shape,1expected
     auto test_data = std::make_tuple(
+        //shape container
         std::make_tuple(shape_type{}, tensor_type(any)),
         std::make_tuple(shape_type{0}, tensor_type()),
         std::make_tuple(std::vector<int>{}, tensor_type(any)),
@@ -127,6 +128,12 @@ TEST_CASE("test_tensor_constructor_shape_container_value","[test_tensor]")
     using helpers_for_testing::apply_by_element;
     //0shape,1value,2expected
     auto test_data = std::make_tuple(
+        //shape scalar
+        std::make_tuple(0,value_type{1},tensor_type{}),
+        std::make_tuple(1,value_type{2},tensor_type{2}),
+        std::make_tuple(std::size_t{5},value_type{3},tensor_type{3,3,3,3,3}),
+        std::make_tuple(double{6},value_type{3},tensor_type{3,3,3,3,3,3}),
+        //shape container
         std::make_tuple(shape_type{},value_type{1},tensor_type(1)),
         std::make_tuple(shape_type{},value_type{-1},tensor_type(-1)),
         std::make_tuple(shape_type{0},value_type{1},tensor_type{}),
@@ -188,6 +195,14 @@ TEST_CASE("test_tensor_constructor_shape_container_range","[test_tensor]")
     {
         //0layout,1shape,2elements,3expected
         auto test_data = std::make_tuple(
+            //shape scalar
+            std::make_tuple(c_order{},0, std::vector<value_type>{1,2,3,4,5}, tensor_type{}),
+            std::make_tuple(c_order{},4, std::vector<value_type>{1,2,3,4,5}, tensor_type{1,2,3,4}),
+            std::make_tuple(c_order{},std::size_t{3}, std::vector<value_type>{1,2,3,4,5}, tensor_type{1,2,3}),
+            std::make_tuple(f_order{},0, std::vector<value_type>{1,2,3,4,5}, tensor_type{}),
+            std::make_tuple(f_order{},4, std::vector<value_type>{1,2,3,4,5}, tensor_type{1,2,3,4}),
+            std::make_tuple(f_order{},std::size_t{3}, std::vector<value_type>{1,2,3,4,5}, tensor_type{1,2,3}),
+            //shape container
             //c_order layout
             //0-dim
             std::make_tuple(c_order{},shape_type{}, std::vector<value_type>{1,2,3,4,5}, tensor_type(value_type{1})),
@@ -226,6 +241,12 @@ TEST_CASE("test_tensor_constructor_shape_container_range","[test_tensor]")
 
         //0layout,1shape,2elements,3range_size,4expected
         auto test_data = std::make_tuple(
+            //shape scalar
+            std::make_tuple(c_order{},8, std::vector<value_type>{1,2,3,4,5}, index_type{5}, tensor_type{1,2,3,4,5,any,any,any}),
+            std::make_tuple(c_order{},std::size_t{6}, std::vector<value_type>{1,2,3,4,5}, index_type{5}, tensor_type{1,2,3,4,5,any}),
+            std::make_tuple(f_order{},8, std::vector<value_type>{1,2,3,4,5}, index_type{5}, tensor_type{1,2,3,4,5,any,any,any}),
+            std::make_tuple(f_order{},std::size_t{6}, std::vector<value_type>{1,2,3,4,5}, index_type{5}, tensor_type{1,2,3,4,5,any}),
+            //shape container
             //c_order layout
             //0-dim
             std::make_tuple(c_order{},shape_type{}, std::vector<value_type>{}, index_type{0}, tensor_type(any)),

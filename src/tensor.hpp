@@ -806,6 +806,8 @@ public:
         return *this;
     }
     //nested init_list constructors
+    //construct tensor using shape that inferfed from given (nested) initializer list and using its elements
+    //initializer list elements always considered to be in c_order
     template<typename U, std::enable_if_t<std::is_convertible_v<U,value_type>,int> =0> tensor(std::initializer_list<U> init_data):tensor(forward_tag::tag(), init_data){}
     template<typename U, std::enable_if_t<std::is_convertible_v<U,value_type>,int> =0> tensor(std::initializer_list<std::initializer_list<U>> init_data):tensor(forward_tag::tag(), init_data){}
     template<typename U, std::enable_if_t<std::is_convertible_v<U,value_type>,int> =0> tensor(std::initializer_list<std::initializer_list<std::initializer_list<U>>> init_data):tensor(forward_tag::tag(), init_data){}
@@ -819,35 +821,47 @@ public:
     explicit tensor(const value_type& value__):
         tensor(forward_tag::tag(), shape_type{}, value__)
     {}
-    //init list shape and value
+    //init list shape and value constructor
+    //construct tensor of shape filled with value
     template<typename IdxT>
     tensor(std::initializer_list<IdxT> shape__, const value_type& value__):
         tensor(forward_tag::tag(), shape__, value__)
     {}
-    //init list shape and range
-    template<typename IdxT, typename It>
+    //init list shape and range constructor
+    //construct tensor of shape filled with values from iterator range
+    //if tensor size n is smaller or equal than range - tensor initialized with first n range elements
+    //if tensor size is greater than range - first tensor elements initialized with range, is rest tensor elements initialized dependes on underlaying storage
+    template<typename IdxT, typename It, std::enable_if_t<detail::is_iterator_v<It>,int> =0>
     tensor(std::initializer_list<IdxT> shape__, It begin__, It end__):
         tensor(forward_tag::tag(), shape__, begin__, end__)
     {}
 
-    template<typename Container> struct disable_forward_container : std::disjunction<
-        std::is_convertible<Container,value_type>,
-        std::is_convertible<Container,tensor>
+    template<typename Shape> struct disable_forward_shape : std::disjunction<
+        std::is_convertible<Shape,value_type>,
+        std::is_convertible<Shape,tensor>
     >{};
-    //container shape, disambiguate with 0-dim constructor, copy,move constructor
-    template<typename Container, std::enable_if_t<!disable_forward_container<std::remove_cv_t<std::remove_reference_t<Container>>>::value,int> =0>
-    explicit tensor(Container&& shape__):
-        tensor(forward_tag::tag(), std::forward<Container>(shape__))
+    //shape constructor, disambiguate with 0-dim constructor, copy,move constructor
+    //construct tensor of shape, is it initialized dependes on underlaying storage
+    //shape is container, in case of empty container 0dim tensor (tensor-scalar) is constructed
+    template<typename Shape, std::enable_if_t<!disable_forward_shape<std::remove_cv_t<std::remove_reference_t<Shape>>>::value,int> =0>
+    explicit tensor(Shape&& shape__):
+        tensor(forward_tag::tag(), std::forward<Shape>(shape__))
     {}
-    //container shape and value
-    template<typename Container>
-    tensor(Container&& shape__, const value_type& value__):
-        tensor(forward_tag::tag(), std::forward<Container>(shape__), value__)
+    //shape and value constructor
+    //construct tensor of shape filled with value
+    //shape may be container or scalar, in case of scalar 1d tensor is constructed, in case of empty container 0dim tensor (tensor-scalar) is constructed
+    template<typename Shape>
+    tensor(Shape&& shape__, const value_type& value__):
+        tensor(forward_tag::tag(), std::forward<Shape>(shape__), value__)
     {}
-    //container shape and range
-    template<typename Container, typename It>
-    tensor(Container&& shape__, It begin__, It end__):
-        tensor(forward_tag::tag(), std::forward<Container>(shape__), begin__, end__)
+    //shape and range constructor
+    //construct tensor of shape filled with values from iterator range
+    //if tensor size n is smaller or equal than range - tensor initialized with first n range elements
+    //if tensor size is greater than range - first tensor elements initialized with range, is rest tensor elements initialized dependes on underlaying storage
+    //shape may be container or scalar, in case of scalar 1d tensor is constructed, in case of empty container 0dim tensor (tensor-scalar) is constructed
+    template<typename Shape, typename It, std::enable_if_t<detail::is_iterator_v<It>,int> =0>
+    tensor(Shape&& shape__, It begin__, It end__):
+        tensor(forward_tag::tag(), std::forward<Shape>(shape__), begin__, end__)
     {}
 };
 

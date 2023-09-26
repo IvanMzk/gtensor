@@ -17,33 +17,14 @@ TEST_CASE("test_tmp","[test_tmp]")
 
     using index_tensor_type = tensor<index_type>;
 
-    // index_type n{1};
+    //index_type n{1};
+    //index_tensor_type tt(n,0);
 
-    // //index_tensor_type tt(n,0);
-
-    // value_type v{1};
-    // std::vector<int> ss{1,2,3};
-    // auto tt = tensor_type(10,0);
-    // std::cout<<std::endl<<tt;
-
-    tensor_type t{{1,2},{3,4},{2,1},{3,5},{7,4},{2,3},{1,1},{7,2}};
-
-    // auto uniq = unique(t,);
-    // std::cout<<std::endl<<uniq;
-
-    // auto uniq = unique(t,std::true_type{});
-    // std::cout<<std::endl<<std::get<0>(uniq);
-    // std::cout<<std::endl<<std::get<1>(uniq);
-
-    // auto uniq = unique(t,std::true_type{},std::true_type{});
-    // std::cout<<std::endl<<std::get<0>(uniq);
-    // std::cout<<std::endl<<std::get<1>(uniq);
-    // std::cout<<std::endl<<std::get<2>(uniq);
-
-    auto uniq = unique(t,std::true_type{},std::true_type{},std::true_type{},0);
-    std::cout<<std::endl<<std::get<0>(uniq);
-    std::cout<<std::endl<<std::get<1>(uniq);
-    std::cout<<std::endl<<std::get<2>(uniq);
-    std::cout<<std::endl<<std::get<3>(uniq);
+    value_type v{10};
+    index_type n{10};
+    //auto tt = tensor_type(10,0);
+    //index_tensor_type tt(n,0);
+    //index_tensor_type tt(10.0);
+    std::cout<<std::endl<<tt;
 
 }
