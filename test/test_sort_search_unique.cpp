@@ -284,8 +284,8 @@ TEMPLATE_TEST_CASE("test_sort_search_unique_empty","[test_sort_search]",
     //0ten,1axis,2expected
     auto test_data = std::make_tuple(
         std::make_tuple(tensor_type{},0,std::make_tuple(tensor_type{},tensor<index_type>{},tensor<index_type>{},tensor<index_type>{})),
-        //std::make_tuple(tensor_type{}.reshape(2,3,0),0,std::make_tuple(tensor_type{}.reshape(1,3,0),tensor<index_type>{0},tensor<index_type>{0,0},tensor<index_type>{2})),
-        //std::make_tuple(tensor_type{}.reshape(2,3,0),1,std::make_tuple(tensor_type{}.reshape(2,1,0),tensor<index_type>{0},tensor<index_type>{0,0,0},tensor<index_type>{3}))
+        std::make_tuple(tensor_type{}.reshape(2,3,0),0,std::make_tuple(tensor_type{}.reshape(1,3,0),tensor<index_type>{0},tensor<index_type>{0,0},tensor<index_type>{2})),
+        std::make_tuple(tensor_type{}.reshape(2,3,0),1,std::make_tuple(tensor_type{}.reshape(2,1,0),tensor<index_type>{0},tensor<index_type>{0,0,0},tensor<index_type>{3})),
         std::make_tuple(tensor_type{}.reshape(2,3,0),2,std::make_tuple(tensor_type{}.reshape(2,3,0),tensor<index_type>{},tensor<index_type>{},tensor<index_type>{}))
     );
     auto test = [](const auto& t){

@@ -310,28 +310,21 @@ struct sort_search
             const auto& shape = t.shape();
             const auto axis = detail::make_axis(shape,axis_);
             const auto axis_size = shape[axis];
-            // if (t.empty()){
-            //     shape_type res_shape(shape);
-            //     const auto res_axis_size = axis_size==0 ? index_type{0} : index_type{1};
-            //     res_shape[axis] = res_axis_size;
-            //     if constexpr (return_index.value){
-            //         return make_unique_return<index_tensor_type>(
-            //             std::make_tuple(res_tensor_type(std::move(res_shape)),index_tensor_type(res_axis_size,0)),
-            //             index_container_type(axis_size,0),
-            //             index_container_type(res_axis_size,axis_size),
-            //             return_inverse,
-            //             return_counts
-            //         );
-            //     }else{
-            //         return make_unique_return<index_tensor_type>(
-            //             res_tensor_type(std::move(res_shape)),
-            //             index_container_type(axis_size,0),
-            //             index_container_type(res_axis_size,axis_size),
-            //             return_inverse,
-            //             return_counts
-            //         );
-            //     }
-            // }
+
+            if(t.empty()){
+                shape_type res_shape(shape);
+                const auto res_axis_size = axis_size==0 ? index_type{0} : index_type{1};
+                res_shape[axis] = res_axis_size;
+                return make_unique_result(
+                    res_tensor_type(std::move(res_shape)),
+                    std::make_tuple(
+                        [&res_shape,&res_axis_size](){return index_tensor_type({res_axis_size},index_type{0});},
+                        [&axis_size](){return index_tensor_type({axis_size},index_type{0});},
+                        [&axis_size,&res_axis_size](){return index_tensor_type({res_axis_size},axis_size);}
+                    ),
+                    return_index,return_inverse,return_counts
+                );
+            }
 
             const auto chunk_size = axis_size==0 ? index_type{0} : t.size()/axis_size;
             auto axes_iterator_maker = detail::make_axes_iterator_maker<config_type>(shape,axis,config::c_order{});
