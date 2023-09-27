@@ -86,7 +86,7 @@ target_sources(Test PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/test_statistic_quantile_median.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_statistic_average_moving_average.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_statistic_moving_mean_histogram.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/test_statistic_big.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_statistic_big.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search_sort_argsort.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search_partition_argpartition.cpp

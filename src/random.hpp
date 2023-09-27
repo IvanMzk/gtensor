@@ -207,8 +207,8 @@ private:
         template<typename T=int, typename Order=config::c_order, typename U, typename V, typename Size>
         auto binomial(const U& n_, const V& p_, Size&& size){
             static_assert(math::numeric_traits<T>::is_integral(),"T must be of integral type");
-            const auto n = static_cast<math::make_integral_t<U>>(n_);
-            const auto p = static_cast<math::make_floating_point_t<V>>(p_);
+            const auto n = static_cast<T>(n_);
+            const auto p = static_cast<double>(p_);
             return make_distribution<T,Order,Config>(std::forward<Size>(size), bit_generator_, std::binomial_distribution<T>(n,p));
         }
 
@@ -219,8 +219,8 @@ private:
         template<typename T=int, typename Order=config::c_order, typename U, typename V, typename Size>
         auto negative_binomial(const U& k_, const V& p_, Size&& size){
             static_assert(math::numeric_traits<T>::is_integral(),"T must be of integral type");
-            const auto k = static_cast<math::make_integral_t<U>>(k_);
-            const auto p = static_cast<math::make_floating_point_t<V>>(p_);
+            const auto k = static_cast<T>(k_);
+            const auto p = static_cast<double>(p_);
             return make_distribution<T,Order,Config>(std::forward<Size>(size), bit_generator_, std::negative_binomial_distribution<T>(k,p));
         }
 
@@ -230,7 +230,7 @@ private:
         template<typename T=int, typename Order=config::c_order, typename V, typename Size>
         auto poisson(const V& mean_, Size&& size){
             static_assert(math::numeric_traits<T>::is_integral(),"T must be of integral type");
-            const auto mean = static_cast<math::make_floating_point_t<V>>(mean_);
+            const auto mean = static_cast<double>(mean_);
             return make_distribution<T,Order,Config>(std::forward<Size>(size), bit_generator_, std::poisson_distribution<T>(mean));
         }
 
@@ -240,7 +240,7 @@ private:
         template<typename T=double, typename Order=config::c_order, typename V, typename Size>
         auto exponential(const V& lambda_, Size&& size){
             static_assert(math::numeric_traits<T>::is_floating_point(),"T must be of floating point type");
-            const auto lambda = static_cast<math::make_floating_point_t<V>>(lambda_);
+            const auto lambda = static_cast<T>(lambda_);
             return make_distribution<T,Order,Config>(std::forward<Size>(size), bit_generator_, std::exponential_distribution<T>(lambda));
         }
 
@@ -250,8 +250,8 @@ private:
         template<typename T=double, typename Order=config::c_order, typename U, typename V, typename Size>
         auto gamma(const U& shape_, const V& scale_, Size&& size){
             static_assert(math::numeric_traits<T>::is_floating_point(),"T must be of floating point type");
-            const auto shape = static_cast<math::make_floating_point_t<U>>(shape_);
-            const auto scale = static_cast<math::make_floating_point_t<V>>(scale_);
+            const auto shape = static_cast<T>(shape_);
+            const auto scale = static_cast<T>(scale_);
             return make_distribution<T,Order,Config>(std::forward<Size>(size), bit_generator_, std::gamma_distribution<T>(shape,scale));
         }
 
@@ -261,8 +261,8 @@ private:
         template<typename T=double, typename Order=config::c_order, typename U, typename V, typename Size>
         auto weibull(const U& shape_, const V& scale_, Size&& size){
             static_assert(math::numeric_traits<T>::is_floating_point(),"T must be of floating point type");
-            const auto shape = static_cast<math::make_floating_point_t<U>>(shape_);
-            const auto scale = static_cast<math::make_floating_point_t<V>>(scale_);
+            const auto shape = static_cast<T>(shape_);
+            const auto scale = static_cast<T>(scale_);
             return make_distribution<T,Order,Config>(std::forward<Size>(size), bit_generator_, std::weibull_distribution<T>(shape,scale));
         }
 
@@ -272,8 +272,8 @@ private:
         template<typename T=double, typename Order=config::c_order, typename U, typename V, typename Size>
         auto normal(const U& mean_, const V& stdev_, Size&& size){
             static_assert(math::numeric_traits<T>::is_floating_point(),"T must be of floating point type");
-            const auto mean = static_cast<math::make_floating_point_t<U>>(mean_);
-            const auto stdev = static_cast<math::make_floating_point_t<V>>(stdev_);
+            const auto mean = static_cast<T>(mean_);
+            const auto stdev = static_cast<T>(stdev_);
             return make_distribution<T,Order,Config>(std::forward<Size>(size), bit_generator_, std::normal_distribution<T>(mean,stdev));
         }
 
@@ -283,8 +283,8 @@ private:
         template<typename T=double, typename Order=config::c_order, typename U, typename V, typename Size>
         auto lognormal(const U& mean_, const V& stdev_, Size&& size){
             static_assert(math::numeric_traits<T>::is_floating_point(),"T must be of floating point type");
-            const auto mean = static_cast<math::make_floating_point_t<U>>(mean_);
-            const auto stdev = static_cast<math::make_floating_point_t<V>>(stdev_);
+            const auto mean = static_cast<T>(mean_);
+            const auto stdev = static_cast<T>(stdev_);
             return make_distribution<T,Order,Config>(std::forward<Size>(size), bit_generator_, std::lognormal_distribution<T>(mean,stdev));
         }
 
@@ -293,7 +293,7 @@ private:
         template<typename T=double, typename Order=config::c_order, typename U, typename Size>
         auto chisquare(const U& df_, Size&& size){
             static_assert(math::numeric_traits<T>::is_floating_point(),"T must be of floating point type");
-            const auto df = static_cast<math::make_floating_point_t<U>>(df_);
+            const auto df = static_cast<T>(df_);
             return make_distribution<T,Order,Config>(std::forward<Size>(size), bit_generator_, std::chi_squared_distribution<T>(df));
         }
 
@@ -303,8 +303,8 @@ private:
         template<typename T=double, typename Order=config::c_order, typename U, typename V, typename Size>
         auto cauchy(const U& location_, const V& scale_, Size&& size){
             static_assert(math::numeric_traits<T>::is_floating_point(),"T must be of floating point type");
-            const auto location = static_cast<math::make_floating_point_t<U>>(location_);
-            const auto scale = static_cast<math::make_floating_point_t<V>>(scale_);
+            const auto location = static_cast<T>(location_);
+            const auto scale = static_cast<T>(scale_);
             return make_distribution<T,Order,Config>(std::forward<Size>(size), bit_generator_, std::cauchy_distribution<T>(location,scale));
         }
 
@@ -314,8 +314,8 @@ private:
         template<typename T=double, typename Order=config::c_order, typename U, typename V, typename Size>
         auto f(const U& dfnum_, const V& dfden_, Size&& size){
             static_assert(math::numeric_traits<T>::is_floating_point(),"T must be of floating point type");
-            const auto dfnum = static_cast<math::make_floating_point_t<U>>(dfnum_);
-            const auto dfden = static_cast<math::make_floating_point_t<V>>(dfden_);
+            const auto dfnum = static_cast<T>(dfnum_);
+            const auto dfden = static_cast<T>(dfden_);
             return make_distribution<T,Order,Config>(std::forward<Size>(size), bit_generator_, std::fisher_f_distribution<T>(dfnum,dfden));
         }
 
@@ -324,7 +324,7 @@ private:
         template<typename T=double, typename Order=config::c_order, typename U, typename Size>
         auto t(const U& df_, Size&& size){
             static_assert(math::numeric_traits<T>::is_floating_point(),"T must be of floating point type");
-            const auto df = static_cast<math::make_floating_point_t<U>>(df_);
+            const auto df = static_cast<T>(df_);
             return make_distribution<T,Order,Config>(std::forward<Size>(size), bit_generator_, std::student_t_distribution<T>(df));
         }
 
