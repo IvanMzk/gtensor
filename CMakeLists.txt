@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.2)
-set(project_name expression_template)
+set(project_name gtensor)
 project(${project_name})
-add_subdirectory(${${project_name}_SOURCE_DIR}//..//multithreading multithreading)
 if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     add_subdirectory(test)
 endif()
