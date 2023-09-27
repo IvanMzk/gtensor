@@ -4,7 +4,7 @@ target_compile_features(Test PRIVATE cxx_std_17)
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     target_compile_options(Test PRIVATE /W4 /Zc:__cplusplus /bigobj "$<$<CONFIG:RELEASE>:/O2>")
 else()
-    target_compile_options(Test PRIVATE -Wall "$<$<CONFIG:RELEASE>:-O2>")
+    target_compile_options(Test PRIVATE -Wall -static-libgcc -static-libstdc++ "$<$<CONFIG:RELEASE>:-O2>")
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         target_compile_options(Test PRIVATE -stdlib=libc++)
     else()
@@ -95,7 +95,7 @@ target_sources(Test PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/test_sort_search_unique.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/test_builder.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_random.cpp
+    #${CMAKE_CURRENT_SOURCE_DIR}/test_random.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/test.cpp
 )

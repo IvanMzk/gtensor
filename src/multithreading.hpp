@@ -256,7 +256,7 @@ private:
             return false;
         }else{
             if (v){
-                elements[pop_index].move(*v);   //move construct from elements to v
+                elements[pop_index].move(*v);   //move assign from elements to v
             }
             elements[pop_index].destroy();
             pop_index = index(pop_index+1);
