@@ -20,8 +20,8 @@ using f_order = std::integral_constant<orders, orders::f>;
 struct default_config
 {
     using engine = engine_expression_template;
-    //using div_mode = mode_div_libdivide;
-    using div_mode = mode_div_native;
+    using div_mode = mode_div_libdivide;
+    //using div_mode = mode_div_native;
 
     //specify default traverse order of iterators
     using order = c_order;
