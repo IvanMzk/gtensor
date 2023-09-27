@@ -1,3 +1,4 @@
+#include "../catch.hpp"
 #include "../benchmark_helpers.hpp"
 #include "../helpers_for_testing.hpp"
 #include "tensor.hpp"
@@ -118,21 +119,21 @@ TEST_CASE("benchmark_copy","[benchmark_copy]")
     // bench_copy("copy non trivial expression t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(1,2)+t+t+t par 4",n_iters,shapes,[](auto&& t){return t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(1,2)+t+t+t;},make_copy_par_4);
     // bench_copy("copy non trivial expression t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(1,2)+t+t+t par 8",n_iters,shapes,[](auto&& t){return t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(1,2)+t+t+t;},make_copy_par_8);
 
-    bench_copy("eval tensor seq",n_iters,shapes,builder,make_eval_seq);
-    bench_copy("eval tensor par 4",n_iters,shapes,builder,make_eval_par_4);
-    bench_copy("eval tensor par 8",n_iters,shapes,builder,make_eval_par_8);
+    // bench_copy("eval tensor seq",n_iters,shapes,builder,make_eval_seq);
+    // bench_copy("eval tensor par 4",n_iters,shapes,builder,make_eval_par_4);
+    // bench_copy("eval tensor par 8",n_iters,shapes,builder,make_eval_par_8);
 
-    bench_copy("eval trivial expression (((((((((t+1)+2)+3)+4)+5)+6)+7)+8)+9) seq",n_iters,shapes,[](auto&& t){return (((((((((t+1)+2)+3)+4)+5)+6)+7)+8)+9);},make_eval_seq);
-    bench_copy("eval trivial expression (((((((((t+1)+2)+3)+4)+5)+6)+7)+8)+9) par 4",n_iters,shapes,[](auto&& t){return (((((((((t+1)+2)+3)+4)+5)+6)+7)+8)+9);},make_eval_par_4);
-    bench_copy("eval trivial expression (((((((((t+1)+2)+3)+4)+5)+6)+7)+8)+9) par 8",n_iters,shapes,[](auto&& t){return (((((((((t+1)+2)+3)+4)+5)+6)+7)+8)+9);},make_eval_par_8);
+    // bench_copy("eval trivial expression (((((((((t+1)+2)+3)+4)+5)+6)+7)+8)+9) seq",n_iters,shapes,[](auto&& t){return (((((((((t+1)+2)+3)+4)+5)+6)+7)+8)+9);},make_eval_seq);
+    // bench_copy("eval trivial expression (((((((((t+1)+2)+3)+4)+5)+6)+7)+8)+9) par 4",n_iters,shapes,[](auto&& t){return (((((((((t+1)+2)+3)+4)+5)+6)+7)+8)+9);},make_eval_par_4);
+    // bench_copy("eval trivial expression (((((((((t+1)+2)+3)+4)+5)+6)+7)+8)+9) par 8",n_iters,shapes,[](auto&& t){return (((((((((t+1)+2)+3)+4)+5)+6)+7)+8)+9);},make_eval_par_8);
 
     bench_copy("eval trivial expression t+t+t+t+t+t+t+t+t+t seq",n_iters,shapes,[](auto&& t){return t+t+t+t+t+t+t+t+t+t;},make_eval_seq);
     bench_copy("eval trivial expression t+t+t+t+t+t+t+t+t+t par 4",n_iters,shapes,[](auto&& t){return t+t+t+t+t+t+t+t+t+t;},make_eval_par_4);
     bench_copy("eval trivial expression t+t+t+t+t+t+t+t+t+t par 8",n_iters,shapes,[](auto&& t){return t+t+t+t+t+t+t+t+t+t;},make_eval_par_8);
 
-    bench_copy("eval non trivial expression t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(1,2)+t+t+t seq",n_iters,shapes,[](auto&& t){return t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(1,2)+t+t+t;},make_eval_seq);
-    bench_copy("eval non trivial expression t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(1,2)+t+t+t par 4",n_iters,shapes,[](auto&& t){return t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(1,2)+t+t+t;},make_eval_par_4);
-    bench_copy("eval non trivial expression t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(1,2)+t+t+t par 8",n_iters,shapes,[](auto&& t){return t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(1,2)+t+t+t;},make_eval_par_8);
+    // bench_copy("eval non trivial expression t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(1,2)+t+t+t seq",n_iters,shapes,[](auto&& t){return t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(1,2)+t+t+t;},make_eval_seq);
+    // bench_copy("eval non trivial expression t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(1,2)+t+t+t par 4",n_iters,shapes,[](auto&& t){return t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(1,2)+t+t+t;},make_eval_par_4);
+    // bench_copy("eval non trivial expression t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(1,2)+t+t+t par 8",n_iters,shapes,[](auto&& t){return t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(1,2)+t+t+t;},make_eval_par_8);
 
 }
 
