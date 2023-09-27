@@ -78,11 +78,12 @@ auto range_to_str(It first, It last){
 
 template<std::size_t a=279470273, std::size_t m=0xfffffffb, typename It, typename UnaryF>
 auto generate_lehmer(It first, It last, UnaryF unary_f, std::size_t init){
+    using value_type = typename std::iterator_traits<It>::value_type;
     std::for_each(first,last,
         [unary_f,init](auto& e)mutable{
             auto e_=init*a%m;
             init=e_;
-            e=unary_f(e_);
+            e=static_cast<const value_type&>(unary_f(e_));
         }
     );
 }

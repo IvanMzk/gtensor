@@ -163,7 +163,7 @@ template<typename Operation>
 struct cumulate_nancumulate
 {
     template<typename It, typename DstIt>
-    void operator()(It first, It last, DstIt dfirst, DstIt dlast){
+    void operator()(It first, It last, DstIt dfirst, DstIt){
         using value_type = typename std::iterator_traits<It>::value_type;
         Operation operation{};
         auto res = operation(Operation::template value<value_type>(), *first);
@@ -716,8 +716,8 @@ namespace sort_search_reduce_operations{
 struct sort
 {
     //Comparator can be binary predicate functor or no_value
-    template<typename It, typename DstIt, typename Comparator>
-    void operator()(It first, It last, DstIt dfirst, DstIt dlast, const Comparator& comparator){
+    template<typename It, typename DstIt, typename Comparator, typename Config>
+    void operator()(It first, It last, DstIt dfirst, DstIt dlast, const Comparator& comparator, Config){
         std::copy(first,last,dfirst);
         if constexpr (std::is_same_v<Comparator,detail::no_value>){
             std::sort(dfirst,dlast);

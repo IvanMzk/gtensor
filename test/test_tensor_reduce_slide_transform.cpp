@@ -138,33 +138,33 @@ TEST_CASE("test_tensor_reduce_binary","[test_tensor]")
     //0tensor,1axes,2operation,3keep_dims,4initial,5expected
     auto test_data = std::make_tuple(
         //single axis
-        std::make_tuple(tensor_type{1,2,3,4,5},dim_type{0},std::plus<void>{},false,0,tensor_type(15)),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},dim_type{0},std::plus<void>{},false,0,tensor_type{5,7,9}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},dim_type{1},std::plus<void>{},false,0,tensor_type{6,15}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}.transpose(),dim_type{0},std::plus<void>{},false,0,tensor_type{6,15}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}.transpose(),dim_type{1},std::plus<void>{},false,0,tensor_type{5,7,9}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}+tensor_type{0,1,2}+tensor_type(3),dim_type{0},std::plus<void>{},false,0,tensor_type{11,15,19}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}+tensor_type{0,1,2}+tensor_type(3),dim_type{1},std::plus<void>{},false,0,tensor_type{18,27}),
+        std::make_tuple(tensor_type{1,2,3,4,5},dim_type{0},std::plus<void>{},false,value_type{0},tensor_type(15)),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},dim_type{0},std::plus<void>{},false,value_type{0},tensor_type{5,7,9}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},dim_type{1},std::plus<void>{},false,value_type{0},tensor_type{6,15}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}.transpose(),dim_type{0},std::plus<void>{},false,value_type{0},tensor_type{6,15}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}.transpose(),dim_type{1},std::plus<void>{},false,value_type{0},tensor_type{5,7,9}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}+tensor_type{0,1,2}+tensor_type(3),dim_type{0},std::plus<void>{},false,value_type{0},tensor_type{11,15,19}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}+tensor_type{0,1,2}+tensor_type(3),dim_type{1},std::plus<void>{},false,value_type{0},tensor_type{18,27}),
         //axes container
-        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<dim_type>{0},std::plus<void>{},false,0,tensor_type(15)),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::vector<dim_type>{0},std::plus<void>{},false,0,tensor_type{5,7,9}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::vector<dim_type>{1},std::plus<void>{},false,0,tensor_type{6,15}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::vector<dim_type>{0,1},std::plus<void>{},false,0,tensor_type(21)),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}.transpose(),std::vector<dim_type>{0},std::plus<void>{},false,0,tensor_type{6,15}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}.transpose(),std::vector<dim_type>{1},std::plus<void>{},false,0,tensor_type{5,7,9}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}.transpose(),std::vector<dim_type>{1,0},std::plus<void>{},false,0,tensor_type(21)),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}+tensor_type{0,1,2}+tensor_type(3),std::vector<dim_type>{0},std::plus<void>{},false,0,tensor_type{11,15,19}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}+tensor_type{0,1,2}+tensor_type(3),std::vector<dim_type>{1},std::plus<void>{},false,0,tensor_type{18,27}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}+tensor_type{0,1,2}+tensor_type(3),std::vector<dim_type>{0,1},std::plus<void>{},false,0,tensor_type(45)),
-        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<dim_type>{},std::plus<void>{},false,0,tensor_type{1,2,3,4,5}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::vector<dim_type>{},std::plus<void>{},false,0,tensor_type{{1,2,3},{4,5,6}}),
+        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<dim_type>{0},std::plus<void>{},false,value_type{0},tensor_type(15)),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::vector<dim_type>{0},std::plus<void>{},false,value_type{0},tensor_type{5,7,9}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::vector<dim_type>{1},std::plus<void>{},false,value_type{0},tensor_type{6,15}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::vector<dim_type>{0,1},std::plus<void>{},false,value_type{0},tensor_type(21)),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}.transpose(),std::vector<dim_type>{0},std::plus<void>{},false,value_type{0},tensor_type{6,15}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}.transpose(),std::vector<dim_type>{1},std::plus<void>{},false,value_type{0},tensor_type{5,7,9}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}.transpose(),std::vector<dim_type>{1,0},std::plus<void>{},false,value_type{0},tensor_type(21)),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}+tensor_type{0,1,2}+tensor_type(3),std::vector<dim_type>{0},std::plus<void>{},false,value_type{0},tensor_type{11,15,19}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}+tensor_type{0,1,2}+tensor_type(3),std::vector<dim_type>{1},std::plus<void>{},false,value_type{0},tensor_type{18,27}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}}+tensor_type{0,1,2}+tensor_type(3),std::vector<dim_type>{0,1},std::plus<void>{},false,value_type{0},tensor_type(45)),
+        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<dim_type>{},std::plus<void>{},false,value_type{0},tensor_type{1,2,3,4,5}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::vector<dim_type>{},std::plus<void>{},false,value_type{0},tensor_type{{1,2,3},{4,5,6}}),
         //keep_dims true
-        std::make_tuple(tensor_type{1,2,3,4,5},dim_type{0},std::plus<void>{},true,0,tensor_type{15}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},dim_type{1},std::plus<void>{},true,0,tensor_type{{6},{15}}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},dim_type{0},std::plus<void>{},true,0,tensor_type{{5,7,9}}),
+        std::make_tuple(tensor_type{1,2,3,4,5},dim_type{0},std::plus<void>{},true,value_type{0},tensor_type{15}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},dim_type{1},std::plus<void>{},true,value_type{0},tensor_type{{6},{15}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},dim_type{0},std::plus<void>{},true,value_type{0},tensor_type{{5,7,9}}),
         //initial
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},dim_type{1},std::plus<void>{},true,-1,tensor_type{{5},{14}}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::vector<dim_type>{0,1},std::plus<void>{},false,10,tensor_type(31))
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},dim_type{1},std::plus<void>{},true,value_type{-1},tensor_type{{5},{14}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::vector<dim_type>{0,1},std::plus<void>{},false,value_type{10},tensor_type(31))
     );
     auto test_reduce_binary = [&test_data](auto...policy){
         auto test = [policy...](const auto& t){
@@ -218,12 +218,12 @@ TEST_CASE("test_tensor_reduce_binary_overload_default_policy","[test_tensor]")
     REQUIRE(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reduce_binary(std::plus<void>{},true) == tensor_type{{{36}}});
 
     //axes initializer_list, keep_dims and initial
-    REQUIRE(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reduce_binary({0},std::plus<void>{},true,1) == tensor_type{{{7,9},{11,13}}});
-    REQUIRE(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reduce_binary({0},std::plus<void>{},false,-1) == tensor_type{{5,7},{9,11}});
+    REQUIRE(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reduce_binary({0},std::plus<void>{},true,value_type{1}) == tensor_type{{{7,9},{11,13}}});
+    REQUIRE(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reduce_binary({0},std::plus<void>{},false,value_type{-1}) == tensor_type{{5,7},{9,11}});
 
     //like over flatten, keep_dims and initial
-    REQUIRE(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reduce_binary(std::plus<void>{},true,1) == tensor_type{{{37}}});
-    REQUIRE(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reduce_binary(std::plus<void>{},false,-1) == tensor_type(35));
+    REQUIRE(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reduce_binary(std::plus<void>{},true,value_type{1}) == tensor_type{{{37}}});
+    REQUIRE(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reduce_binary(std::plus<void>{},false,value_type{-1}) == tensor_type(35));
 }
 
 TEST_CASE("test_tensor_reduce_binary_overload_policy","[test_tensor]")
@@ -256,12 +256,12 @@ TEST_CASE("test_tensor_reduce_binary_overload_policy","[test_tensor]")
     REQUIRE(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reduce_binary(policy{},std::plus<void>{},true) == tensor_type{{{36}}});
 
     //axes initializer_list, keep_dims and initial
-    REQUIRE(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reduce_binary(policy{},{0},std::plus<void>{},true,1) == tensor_type{{{7,9},{11,13}}});
-    REQUIRE(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reduce_binary(policy{},{0},std::plus<void>{},false,-1) == tensor_type{{5,7},{9,11}});
+    REQUIRE(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reduce_binary(policy{},{0},std::plus<void>{},true,value_type{1}) == tensor_type{{{7,9},{11,13}}});
+    REQUIRE(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reduce_binary(policy{},{0},std::plus<void>{},false,value_type{-1}) == tensor_type{{5,7},{9,11}});
 
     //like over flatten, keep_dims and initial
-    REQUIRE(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reduce_binary(policy{},std::plus<void>{},true,1) == tensor_type{{{37}}});
-    REQUIRE(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reduce_binary(policy{},std::plus<void>{},false,-1) == tensor_type(35));
+    REQUIRE(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reduce_binary(policy{},std::plus<void>{},true,value_type{1}) == tensor_type{{{37}}});
+    REQUIRE(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}.reduce_binary(policy{},std::plus<void>{},false,value_type{-1}) == tensor_type(35));
 }
 
 //slide

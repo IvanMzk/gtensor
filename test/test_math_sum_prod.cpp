@@ -126,23 +126,23 @@ TEMPLATE_TEST_CASE("test_math_sum_nansum_overloads_default_policy","test_math",
     REQUIRE(std::is_same_v<typename decltype(nansum(std::declval<tensor_type>(),std::declval<std::initializer_list<int>>(),std::declval<bool>()))::value_type,value_type>);
     //sum
     REQUIRE(sum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0},false) == tensor_type{{8,10,12},{14,16,18}});
-    REQUIRE(sum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1},false,1) == tensor_type{23,27,31});
+    REQUIRE(sum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1},false,value_type{1}) == tensor_type{23,27,31});
     REQUIRE(sum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1},false) == tensor_type{22,26,30});
     REQUIRE(sum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1}) == tensor_type{22,26,30});
     REQUIRE(sum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{2,1},true) == tensor_type{{{21}},{{57}}});
     //all axes
-    REQUIRE(sum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},false,1) == tensor_type(79));
+    REQUIRE(sum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},false,value_type{1}) == tensor_type(79));
     REQUIRE(sum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},false) == tensor_type(78));
     REQUIRE(sum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}}) == tensor_type(78));
     REQUIRE(sum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},true) == tensor_type{{{78}}});
     //nansum
     REQUIRE(nansum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0},false) == tensor_type{{8,10,12},{14,16,18}});
-    REQUIRE(nansum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1},false,1) == tensor_type{23,27,31});
+    REQUIRE(nansum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1},false,value_type{1}) == tensor_type{23,27,31});
     REQUIRE(nansum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1},false) == tensor_type{22,26,30});
     REQUIRE(nansum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1}) == tensor_type{22,26,30});
     REQUIRE(nansum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{2,1},true) == tensor_type{{{21}},{{57}}});
     //all axes
-    REQUIRE(nansum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},false,1) == tensor_type(79));
+    REQUIRE(nansum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},false,value_type{1}) == tensor_type(79));
     REQUIRE(nansum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},false) == tensor_type(78));
     REQUIRE(nansum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}}) == tensor_type(78));
     REQUIRE(nansum(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},true) == tensor_type{{{78}}});
@@ -166,23 +166,23 @@ TEMPLATE_TEST_CASE("test_math_sum_nansum_overloads_policy","test_math",
     REQUIRE(std::is_same_v<typename decltype(nansum(policy{},std::declval<tensor_type>(),std::declval<std::initializer_list<int>>(),std::declval<bool>()))::value_type,value_type>);
     //sum
     REQUIRE(sum(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0},false) == tensor_type{{8,10,12},{14,16,18}});
-    REQUIRE(sum(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1},false,1) == tensor_type{23,27,31});
+    REQUIRE(sum(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1},false,value_type{1}) == tensor_type{23,27,31});
     REQUIRE(sum(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1},false) == tensor_type{22,26,30});
     REQUIRE(sum(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1}) == tensor_type{22,26,30});
     REQUIRE(sum(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{2,1},true) == tensor_type{{{21}},{{57}}});
     //all axes
-    REQUIRE(sum(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},false,1) == tensor_type(79));
+    REQUIRE(sum(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},false,value_type{1}) == tensor_type(79));
     REQUIRE(sum(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},false) == tensor_type(78));
     REQUIRE(sum(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}}) == tensor_type(78));
     REQUIRE(sum(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},true) == tensor_type{{{78}}});
     //nansum
     REQUIRE(nansum(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0},false) == tensor_type{{8,10,12},{14,16,18}});
-    REQUIRE(nansum(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1},false,1) == tensor_type{23,27,31});
+    REQUIRE(nansum(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1},false,value_type{1}) == tensor_type{23,27,31});
     REQUIRE(nansum(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1},false) == tensor_type{22,26,30});
     REQUIRE(nansum(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1}) == tensor_type{22,26,30});
     REQUIRE(nansum(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{2,1},true) == tensor_type{{{21}},{{57}}});
     //all axes
-    REQUIRE(nansum(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},false,1) == tensor_type(79));
+    REQUIRE(nansum(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},false,value_type{1}) == tensor_type(79));
     REQUIRE(nansum(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},false) == tensor_type(78));
     REQUIRE(nansum(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}}) == tensor_type(78));
     REQUIRE(nansum(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},true) == tensor_type{{{78}}});
@@ -411,23 +411,23 @@ TEMPLATE_TEST_CASE("test_math_prod_nanprod_overloads_default_policy","test_math"
     REQUIRE(std::is_same_v<typename decltype(nanprod(std::declval<tensor_type>(),std::declval<std::initializer_list<int>>(),std::declval<bool>()))::value_type,value_type>);
     //prod
     REQUIRE(prod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0},false) == tensor_type{{7,16,27},{40,55,72}});
-    REQUIRE(prod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1},false,-2) == tensor_type{-560,-1760,-3888});
+    REQUIRE(prod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1},false,value_type{-2}) == tensor_type{-560,-1760,-3888});
     REQUIRE(prod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1},false) == tensor_type{280,880,1944});
     REQUIRE(prod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1}) == tensor_type{280,880,1944});
     REQUIRE(prod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{2,1},true) == tensor_type{{{720}},{{665280}}});
     //all axes
-    REQUIRE(prod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},false,-2) == tensor_type(-958003200));
+    REQUIRE(prod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},false,value_type{-2}) == tensor_type(-958003200));
     REQUIRE(prod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},false) == tensor_type(479001600));
     REQUIRE(prod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}}) == tensor_type(479001600));
     REQUIRE(prod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},true) == tensor_type{{{479001600}}});
     //nanprod
     REQUIRE(nanprod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0},false) == tensor_type{{7,16,27},{40,55,72}});
-    REQUIRE(nanprod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1},false,-2) == tensor_type{-560,-1760,-3888});
+    REQUIRE(nanprod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1},false,value_type{-2}) == tensor_type{-560,-1760,-3888});
     REQUIRE(nanprod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1},false) == tensor_type{280,880,1944});
     REQUIRE(nanprod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1}) == tensor_type{280,880,1944});
     REQUIRE(nanprod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{2,1},true) == tensor_type{{{720}},{{665280}}});
     //all axes
-    REQUIRE(nanprod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},false,-2) == tensor_type(-958003200));
+    REQUIRE(nanprod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},false,value_type{-2}) == tensor_type(-958003200));
     REQUIRE(nanprod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},false) == tensor_type(479001600));
     REQUIRE(nanprod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}}) == tensor_type(479001600));
     REQUIRE(nanprod(tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},true) == tensor_type{{{479001600}}});
@@ -451,23 +451,23 @@ TEMPLATE_TEST_CASE("test_math_prod_nanprod_overloads_policy","test_math",
     REQUIRE(std::is_same_v<typename decltype(nanprod(policy{},std::declval<tensor_type>(),std::declval<std::initializer_list<int>>(),std::declval<bool>()))::value_type,value_type>);
     //prod
     REQUIRE(prod(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0},false) == tensor_type{{7,16,27},{40,55,72}});
-    REQUIRE(prod(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1},false,-2) == tensor_type{-560,-1760,-3888});
+    REQUIRE(prod(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1},false,value_type{-2}) == tensor_type{-560,-1760,-3888});
     REQUIRE(prod(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1},false) == tensor_type{280,880,1944});
     REQUIRE(prod(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1}) == tensor_type{280,880,1944});
     REQUIRE(prod(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{2,1},true) == tensor_type{{{720}},{{665280}}});
     //all axes
-    REQUIRE(prod(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},false,-2) == tensor_type(-958003200));
+    REQUIRE(prod(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},false,value_type{-2}) == tensor_type(-958003200));
     REQUIRE(prod(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},false) == tensor_type(479001600));
     REQUIRE(prod(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}}) == tensor_type(479001600));
     REQUIRE(prod(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},true) == tensor_type{{{479001600}}});
     //nanprod
     REQUIRE(nanprod(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0},false) == tensor_type{{7,16,27},{40,55,72}});
-    REQUIRE(nanprod(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1},false,-2) == tensor_type{-560,-1760,-3888});
+    REQUIRE(nanprod(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1},false,value_type{-2}) == tensor_type{-560,-1760,-3888});
     REQUIRE(nanprod(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1},false) == tensor_type{280,880,1944});
     REQUIRE(nanprod(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{0,1}) == tensor_type{280,880,1944});
     REQUIRE(nanprod(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},{2,1},true) == tensor_type{{{720}},{{665280}}});
     //all axes
-    REQUIRE(nanprod(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},false,-2) == tensor_type(-958003200));
+    REQUIRE(nanprod(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},false,value_type{-2}) == tensor_type(-958003200));
     REQUIRE(nanprod(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},false) == tensor_type(479001600));
     REQUIRE(nanprod(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}}) == tensor_type(479001600));
     REQUIRE(nanprod(policy{},tensor_type{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}},true) == tensor_type{{{479001600}}});

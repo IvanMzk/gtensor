@@ -390,11 +390,12 @@ private:
 
         //return copy, permuted along given axis
         //if no axis specified flatten tensor is shuffled
-        template<typename DimT=detail::no_value, typename...Ts>
-        auto permuted(const basic_tensor<Ts...>& t, const DimT& axis=DimT{}){
+        template<typename Axis=detail::no_value, typename...Ts>
+        auto permuted(const basic_tensor<Ts...>& t, const Axis& axis=Axis{}){
+            (void) axis;
             using tensor_type = basic_tensor<Ts...>;
             using order = typename tensor_type::order;
-            if constexpr (std::is_same_v<DimT,detail::no_value>){   //shuffle flatten
+            if constexpr (std::is_same_v<Axis,detail::no_value>){   //shuffle flatten
                 auto res = t.flatten();
                 shuffle_range(res.begin(),res.end(),bit_generator_);
                 return res;

@@ -66,71 +66,71 @@ TEMPLATE_TEST_CASE("test_reduce_binary","[test_reduce]",
         std::make_tuple(test_ten,std::vector<int>{1,2,3},std::plus<void>{},false,no_value{},tensor_type{{93,109,97,98,111},{91,106,72,100,90},{87,98,80,122,84},{99,88,96,104,99}}),
         std::make_tuple(test_ten,std::vector<int>{0,1,2,3,4},std::plus<void>{},false,no_value{},tensor_type(1924)),
         //initial
-        std::make_tuple(test_ten,std::vector<int>{0,1,2,3,4},std::plus<void>{},false,-24,tensor_type(1900)),
-        std::make_tuple(test_ten,std::vector<int>{0},std::plus<void>{},false,-5,tensor_type{{{{3,18,4,16,16},{6,15,7,17,8},{14,11,16,20,12},{12,19,7,11,9}},{{10,4,1,15,19},{12,15,4,8,18},{8,4,14,10,3},{10,18,3,14,12}},{{20,5,13,10,9},{1,16,11,16,12},{13,16,13,15,10},{19,6,14,1,13}}},{{{3,18,14,13,8},{7,4,6,17,10},{22,6,12,5,2},{4,7,17,2,13}},{{17,14,15,25,5},{13,6,7,13,12},{7,13,6,3,7},{10,11,7,13,11}},{{7,11,-1,18,16},{9,10,18,14,15},{9,16,11,11,18},{14,18,6,17,6}}}}),
-        std::make_tuple(test_ten,std::vector<int>{4},std::plus<void>{},false,5,tensor_type{{{{34,23,32,25},{26,31,18,22},{36,32,23,25}},{{26,16,21,32},{24,22,10,33},{29,21,32,35}}},{{{30,23,16,30},{27,15,16,32},{20,25,36,22}},{{23,27,19,15},{33,28,18,24},{18,28,30,24}}},{{{14,25,34,27},{18,31,25,18},{24,22,26,27}},{{28,21,17,20},{33,24,28,21},{23,36,28,21}}},{{{24,27,36,21},{23,25,25,30},{22,22,27,24}},{{24,25,35,21},{31,22,25,19},{26,26,20,26}}}}),
-        std::make_tuple(test_ten,std::vector<int>{1,2,4},std::plus<void>{},false,-5,tensor_type{{140,110,101,137},{116,111,100,112},{105,124,123,99},{115,112,133,106}}),
+        std::make_tuple(test_ten,std::vector<int>{0,1,2,3,4},std::plus<void>{},false,value_type{-24},tensor_type(1900)),
+        std::make_tuple(test_ten,std::vector<int>{0},std::plus<void>{},false,value_type{-5},tensor_type{{{{3,18,4,16,16},{6,15,7,17,8},{14,11,16,20,12},{12,19,7,11,9}},{{10,4,1,15,19},{12,15,4,8,18},{8,4,14,10,3},{10,18,3,14,12}},{{20,5,13,10,9},{1,16,11,16,12},{13,16,13,15,10},{19,6,14,1,13}}},{{{3,18,14,13,8},{7,4,6,17,10},{22,6,12,5,2},{4,7,17,2,13}},{{17,14,15,25,5},{13,6,7,13,12},{7,13,6,3,7},{10,11,7,13,11}},{{7,11,-1,18,16},{9,10,18,14,15},{9,16,11,11,18},{14,18,6,17,6}}}}),
+        std::make_tuple(test_ten,std::vector<int>{4},std::plus<void>{},false,value_type{5},tensor_type{{{{34,23,32,25},{26,31,18,22},{36,32,23,25}},{{26,16,21,32},{24,22,10,33},{29,21,32,35}}},{{{30,23,16,30},{27,15,16,32},{20,25,36,22}},{{23,27,19,15},{33,28,18,24},{18,28,30,24}}},{{{14,25,34,27},{18,31,25,18},{24,22,26,27}},{{28,21,17,20},{33,24,28,21},{23,36,28,21}}},{{{24,27,36,21},{23,25,25,30},{22,22,27,24}},{{24,25,35,21},{31,22,25,19},{26,26,20,26}}}}),
+        std::make_tuple(test_ten,std::vector<int>{1,2,4},std::plus<void>{},false,value_type{-5},tensor_type{{140,110,101,137},{116,111,100,112},{105,124,123,99},{115,112,133,106}}),
         //keep_dims
         std::make_tuple(test_ten,std::vector<int>{0,1,2,3,4},std::plus<void>{},true,no_value{},tensor_type{{{{{1924}}}}}),
-        std::make_tuple(test_ten,std::vector<int>{0,1,2,3,4},std::plus<void>{},true,-24,tensor_type{{{{{1900}}}}}),
-        std::make_tuple(test_ten,std::vector<int>{0,1,3},std::plus<void>{},true,-5,tensor_type{{{{{106,133,118,136,113}},{{122,120,92,136,122}},{{127,133,120,137,134}}}}}),
-        std::make_tuple(test_ten,std::vector<int>{1,3,4},std::plus<void>{},true,-5,tensor_type{{{{{164}},{{141}},{{188}}}},{{{{138}},{{148}},{{158}}}},{{{{141}},{{153}},{{162}}}},{{{{168}},{{155}},{{148}}}}}),
-        std::make_tuple(test_ten,0,std::plus<void>{},true,-5,tensor_type{{{{{3,18,4,16,16},{6,15,7,17,8},{14,11,16,20,12},{12,19,7,11,9}},{{10,4,1,15,19},{12,15,4,8,18},{8,4,14,10,3},{10,18,3,14,12}},{{20,5,13,10,9},{1,16,11,16,12},{13,16,13,15,10},{19,6,14,1,13}}},{{{3,18,14,13,8},{7,4,6,17,10},{22,6,12,5,2},{4,7,17,2,13}},{{17,14,15,25,5},{13,6,7,13,12},{7,13,6,3,7},{10,11,7,13,11}},{{7,11,-1,18,16},{9,10,18,14,15},{9,16,11,11,18},{14,18,6,17,6}}}}}),
-        std::make_tuple(test_ten,std::vector<int>{4},std::plus<void>{},true,-5,tensor_type{{{{{24},{13},{22},{15}},{{16},{21},{8},{12}},{{26},{22},{13},{15}}},{{{16},{6},{11},{22}},{{14},{12},{0},{23}},{{19},{11},{22},{25}}}},{{{{20},{13},{6},{20}},{{17},{5},{6},{22}},{{10},{15},{26},{12}}},{{{13},{17},{9},{5}},{{23},{18},{8},{14}},{{8},{18},{20},{14}}}},{{{{4},{15},{24},{17}},{{8},{21},{15},{8}},{{14},{12},{16},{17}}},{{{18},{11},{7},{10}},{{23},{14},{18},{11}},{{13},{26},{18},{11}}}},{{{{14},{17},{26},{11}},{{13},{15},{15},{20}},{{12},{12},{17},{14}}},{{{14},{15},{25},{11}},{{21},{12},{15},{9}},{{16},{16},{10},{16}}}}}),
+        std::make_tuple(test_ten,std::vector<int>{0,1,2,3,4},std::plus<void>{},true,value_type{-24},tensor_type{{{{{1900}}}}}),
+        std::make_tuple(test_ten,std::vector<int>{0,1,3},std::plus<void>{},true,value_type{-5},tensor_type{{{{{106,133,118,136,113}},{{122,120,92,136,122}},{{127,133,120,137,134}}}}}),
+        std::make_tuple(test_ten,std::vector<int>{1,3,4},std::plus<void>{},true,value_type{-5},tensor_type{{{{{164}},{{141}},{{188}}}},{{{{138}},{{148}},{{158}}}},{{{{141}},{{153}},{{162}}}},{{{{168}},{{155}},{{148}}}}}),
+        std::make_tuple(test_ten,0,std::plus<void>{},true,value_type{-5},tensor_type{{{{{3,18,4,16,16},{6,15,7,17,8},{14,11,16,20,12},{12,19,7,11,9}},{{10,4,1,15,19},{12,15,4,8,18},{8,4,14,10,3},{10,18,3,14,12}},{{20,5,13,10,9},{1,16,11,16,12},{13,16,13,15,10},{19,6,14,1,13}}},{{{3,18,14,13,8},{7,4,6,17,10},{22,6,12,5,2},{4,7,17,2,13}},{{17,14,15,25,5},{13,6,7,13,12},{7,13,6,3,7},{10,11,7,13,11}},{{7,11,-1,18,16},{9,10,18,14,15},{9,16,11,11,18},{14,18,6,17,6}}}}}),
+        std::make_tuple(test_ten,std::vector<int>{4},std::plus<void>{},true,value_type{-5},tensor_type{{{{{24},{13},{22},{15}},{{16},{21},{8},{12}},{{26},{22},{13},{15}}},{{{16},{6},{11},{22}},{{14},{12},{0},{23}},{{19},{11},{22},{25}}}},{{{{20},{13},{6},{20}},{{17},{5},{6},{22}},{{10},{15},{26},{12}}},{{{13},{17},{9},{5}},{{23},{18},{8},{14}},{{8},{18},{20},{14}}}},{{{{4},{15},{24},{17}},{{8},{21},{15},{8}},{{14},{12},{16},{17}}},{{{18},{11},{7},{10}},{{23},{14},{18},{11}},{{13},{26},{18},{11}}}},{{{{14},{17},{26},{11}},{{13},{15},{15},{20}},{{12},{12},{17},{14}}},{{{14},{15},{25},{11}},{{21},{12},{15},{9}},{{16},{16},{10},{16}}}}}),
         //functor
         std::make_tuple(test_ten,std::vector<int>{0,1,2,3,4},max{},false,no_value{},tensor_type(8)),
         std::make_tuple(test_ten,std::vector<int>{0,1,2,3,4},min{},false,no_value{},tensor_type(0)),
         std::make_tuple(test_ten,std::vector<int>{1,3},max{},false,no_value{},tensor_type{{{8,7,7,7,8},{6,6,7,8,8},{8,8,8,8,7}},{{7,7,8,8,8},{7,8,6,7,8},{8,8,8,6,8}},{{6,8,8,8,6},{8,6,8,8,7},{8,7,6,8,8}},{{8,8,7,8,6},{8,8,6,8,8},{6,4,8,8,8}}}),
-        std::make_tuple(test_ten,std::vector<int>{1,3},max{},false,7,tensor_type{{{8,7,7,7,8},{7,7,7,8,8},{8,8,8,8,7}},{{7,7,8,8,8},{7,8,7,7,8},{8,8,8,7,8}},{{7,8,8,8,7},{8,7,8,8,7},{8,7,7,8,8}},{{8,8,7,8,7},{8,8,7,8,8},{7,7,8,8,8}}}),
+        std::make_tuple(test_ten,std::vector<int>{1,3},max{},false,value_type{7},tensor_type{{{8,7,7,7,8},{7,7,7,8,8},{8,8,8,8,7}},{{7,7,8,8,8},{7,8,7,7,8},{8,8,8,7,8}},{{7,8,8,8,7},{8,7,8,8,7},{8,7,7,8,8}},{{8,8,7,8,7},{8,8,7,8,8},{7,7,8,8,8}}}),
         std::make_tuple(test_ten,std::vector<int>{0,2},min{},false,no_value{},tensor_type{{{0,0,0,0,0},{0,1,0,0,0},{0,1,1,2,0},{0,1,0,0,0}},{{0,2,0,2,0},{0,0,1,0,1},{0,0,0,0,1},{0,1,0,0,0}}}),
-        std::make_tuple(test_ten,std::vector<int>{0,2},min{},false,1,tensor_type{{{0,0,0,0,0},{0,1,0,0,0},{0,1,1,1,0},{0,1,0,0,0}},{{0,1,0,1,0},{0,0,1,0,1},{0,0,0,0,1},{0,1,0,0,0}}}),
+        std::make_tuple(test_ten,std::vector<int>{0,2},min{},false,value_type{1},tensor_type{{{0,0,0,0,0},{0,1,0,0,0},{0,1,1,1,0},{0,1,0,0,0}},{{0,1,0,1,0},{0,0,1,0,1},{0,0,0,0,1},{0,1,0,0,0}}}),
         //unsorted, negative axes
-        std::make_tuple(test_ten,std::vector<int>{3,0,1},std::plus<void>{},true,-5,tensor_type{{{{{106,133,118,136,113}},{{122,120,92,136,122}},{{127,133,120,137,134}}}}}),
-        std::make_tuple(test_ten,std::vector<int>{1,2,0,3,-1},std::plus<void>{},true,-24,tensor_type{{{{{1900}}}}}),
-        std::make_tuple(test_ten,std::vector<int>{2,-1,-4,},std::plus<void>{},false,-5,tensor_type{{140,110,101,137},{116,111,100,112},{105,124,123,99},{115,112,133,106}}),
+        std::make_tuple(test_ten,std::vector<int>{3,0,1},std::plus<void>{},true,value_type{-5},tensor_type{{{{{106,133,118,136,113}},{{122,120,92,136,122}},{{127,133,120,137,134}}}}}),
+        std::make_tuple(test_ten,std::vector<int>{1,2,0,3,-1},std::plus<void>{},true,value_type{-24},tensor_type{{{{{1900}}}}}),
+        std::make_tuple(test_ten,std::vector<int>{2,-1,-4,},std::plus<void>{},false,value_type{-5},tensor_type{{140,110,101,137},{116,111,100,112},{105,124,123,99},{115,112,133,106}}),
         //input 1d
         std::make_tuple(tensor_type{1,2,3,4,5},0,std::plus<void>{},false,no_value{},tensor_type(15)),
         std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{0},std::plus<void>{},false,no_value{},tensor_type(15)),
-        std::make_tuple(tensor_type{1,2,3,4,5},0,std::plus<void>{},false,4,tensor_type(19)),
-        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{0},std::plus<void>{},false,4,tensor_type(19)),
+        std::make_tuple(tensor_type{1,2,3,4,5},0,std::plus<void>{},false,value_type{4},tensor_type(19)),
+        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{0},std::plus<void>{},false,value_type{4},tensor_type(19)),
         std::make_tuple(tensor_type{1,2,3,4,5},0,std::plus<void>{},true,no_value{},tensor_type{15}),
         std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{0},std::plus<void>{},true,no_value{},tensor_type{15}),
-        std::make_tuple(tensor_type{1,2,3,4,5},0,std::plus<void>{},true,-4,tensor_type{11}),
-        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{0},std::plus<void>{},true,-4,tensor_type{11}),
+        std::make_tuple(tensor_type{1,2,3,4,5},0,std::plus<void>{},true,value_type{-4},tensor_type{11}),
+        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{0},std::plus<void>{},true,value_type{-4},tensor_type{11}),
         //input unit dims
-        std::make_tuple(tensor_type{{{1,2,3,4,5}}},0,std::plus<void>{},false,0,tensor_type{{1,2,3,4,5}}),
-        std::make_tuple(tensor_type{{{1,2,3,4,5}}},std::vector<int>{1},std::plus<void>{},false,0,tensor_type{{1,2,3,4,5}}),
-        std::make_tuple(tensor_type{{{1,2,3,4,5}}},2,std::plus<void>{},true,0,tensor_type{{{15}}}),
-        std::make_tuple(tensor_type{{{1,2,3,4,5}}},std::vector<int>{2},std::plus<void>{},false,0,tensor_type{{15}}),
-        std::make_tuple(tensor_type{{{1,2,3,4,5}}},std::vector<int>{0,1},std::plus<void>{},false,0,tensor_type{1,2,3,4,5}),
-        std::make_tuple(tensor_type{{{1,2,3,4,5}}},std::vector<int>{1,2},std::plus<void>{},true,0,tensor_type{{{15}}}),
-        std::make_tuple(tensor_type{{{1,2,3,4,5}}},std::vector<int>{0,1,2},std::plus<void>{},false,0,tensor_type(15)),
-        std::make_tuple(tensor_type{{{1},{2},{3},{4},{5}}},0,std::plus<void>{},false,0,tensor_type{{1},{2},{3},{4},{5}}),
-        std::make_tuple(tensor_type{{{1},{2},{3},{4},{5}}},1,std::plus<void>{},false,0,tensor_type{{15}}),
-        std::make_tuple(tensor_type{{{1},{2},{3},{4},{5}}},2,std::plus<void>{},true,0,tensor_type{{{1},{2},{3},{4},{5}}}),
-        std::make_tuple(tensor_type{{{1},{2},{3},{4},{5}}},std::vector<int>{0,1},std::plus<void>{},false,0,tensor_type{15}),
-        std::make_tuple(tensor_type{{{1},{2},{3},{4},{5}}},std::vector<int>{0,2},std::plus<void>{},false,0,tensor_type{1,2,3,4,5}),
-        std::make_tuple(tensor_type{{{1},{2},{3},{4},{5}}},std::vector<int>{0,2},std::plus<void>{},true,0,tensor_type{{{1},{2},{3},{4},{5}}}),
+        std::make_tuple(tensor_type{{{1,2,3,4,5}}},0,std::plus<void>{},false,value_type{0},tensor_type{{1,2,3,4,5}}),
+        std::make_tuple(tensor_type{{{1,2,3,4,5}}},std::vector<int>{1},std::plus<void>{},false,value_type{0},tensor_type{{1,2,3,4,5}}),
+        std::make_tuple(tensor_type{{{1,2,3,4,5}}},2,std::plus<void>{},true,value_type{0},tensor_type{{{15}}}),
+        std::make_tuple(tensor_type{{{1,2,3,4,5}}},std::vector<int>{2},std::plus<void>{},false,value_type{0},tensor_type{{15}}),
+        std::make_tuple(tensor_type{{{1,2,3,4,5}}},std::vector<int>{0,1},std::plus<void>{},false,value_type{0},tensor_type{1,2,3,4,5}),
+        std::make_tuple(tensor_type{{{1,2,3,4,5}}},std::vector<int>{1,2},std::plus<void>{},true,value_type{0},tensor_type{{{15}}}),
+        std::make_tuple(tensor_type{{{1,2,3,4,5}}},std::vector<int>{0,1,2},std::plus<void>{},false,value_type{0},tensor_type(15)),
+        std::make_tuple(tensor_type{{{1},{2},{3},{4},{5}}},0,std::plus<void>{},false,value_type{0},tensor_type{{1},{2},{3},{4},{5}}),
+        std::make_tuple(tensor_type{{{1},{2},{3},{4},{5}}},1,std::plus<void>{},false,value_type{0},tensor_type{{15}}),
+        std::make_tuple(tensor_type{{{1},{2},{3},{4},{5}}},2,std::plus<void>{},true,value_type{0},tensor_type{{{1},{2},{3},{4},{5}}}),
+        std::make_tuple(tensor_type{{{1},{2},{3},{4},{5}}},std::vector<int>{0,1},std::plus<void>{},false,value_type{0},tensor_type{15}),
+        std::make_tuple(tensor_type{{{1},{2},{3},{4},{5}}},std::vector<int>{0,2},std::plus<void>{},false,value_type{0},tensor_type{1,2,3,4,5}),
+        std::make_tuple(tensor_type{{{1},{2},{3},{4},{5}}},std::vector<int>{0,2},std::plus<void>{},true,value_type{0},tensor_type{{{1},{2},{3},{4},{5}}}),
         //empty axes container
         std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::vector<int>{},std::plus<void>{},true,no_value{},tensor_type{{1,2,3},{4,5,6}}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::vector<int>{},std::plus<void>{},true,2,tensor_type{{3,4,5},{6,7,8}}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::vector<int>{},std::plus<void>{},true,value_type{2},tensor_type{{3,4,5},{6,7,8}}),
         //reduce zero size axes
-        std::make_tuple(tensor_type{},std::vector<int>{0},std::plus<void>{},false,0,tensor_type(0)),
-        std::make_tuple(tensor_type{},std::vector<int>{0},std::plus<void>{},false,3,tensor_type(3)),
-        std::make_tuple(tensor_type{},std::vector<int>{0},std::plus<void>{},true,2,tensor_type{2}),
-        std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0},std::plus<void>{},false,4,tensor_type{{4,4,4},{4,4,4}}),
-        std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0},std::plus<void>{},true,4,tensor_type{{{4,4,4},{4,4,4}}}),
-        std::make_tuple(tensor_type{}.reshape(0,2,0,3),std::vector<int>{0,2},std::plus<void>{},false,0,tensor_type{{0,0,0},{0,0,0}}),
+        std::make_tuple(tensor_type{},std::vector<int>{0},std::plus<void>{},false,value_type{0},tensor_type(0)),
+        std::make_tuple(tensor_type{},std::vector<int>{0},std::plus<void>{},false,value_type{3},tensor_type(3)),
+        std::make_tuple(tensor_type{},std::vector<int>{0},std::plus<void>{},true,value_type{2},tensor_type{2}),
+        std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0},std::plus<void>{},false,value_type{4},tensor_type{{4,4,4},{4,4,4}}),
+        std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0},std::plus<void>{},true,value_type{4},tensor_type{{{4,4,4},{4,4,4}}}),
+        std::make_tuple(tensor_type{}.reshape(0,2,0,3),std::vector<int>{0,2},std::plus<void>{},false,value_type{0},tensor_type{{0,0,0},{0,0,0}}),
         //empty result
         std::make_tuple(tensor_type{}.reshape(2,0,3),std::vector<int>{0},std::plus<void>{},false,no_value{},tensor_type{}.reshape(0,3)),
-        std::make_tuple(tensor_type{}.reshape(2,0,3),std::vector<int>{0},std::plus<void>{},true,0,tensor_type{}.reshape(1,0,3)),
-        std::make_tuple(tensor_type{}.reshape(0,2,0,3),std::vector<int>{0,1},std::plus<void>{},false,0,tensor_type{}.reshape(0,3)),
+        std::make_tuple(tensor_type{}.reshape(2,0,3),std::vector<int>{0},std::plus<void>{},true,value_type{0},tensor_type{}.reshape(1,0,3)),
+        std::make_tuple(tensor_type{}.reshape(0,2,0,3),std::vector<int>{0,1},std::plus<void>{},false,value_type{0},tensor_type{}.reshape(0,3)),
         //trivial view input
-        std::make_tuple(test_ten+test_ten+test_ten+test_ten,std::vector<int>{0,1,2},std::plus<void>{},false,0,tensor_type{{360,400,304,508,412},{312,384,332,460,420},{412,384,408,376,328},{396,436,336,352,376}}),
-        std::make_tuple((test_ten-1)*(test_ten+1),std::vector<int>{1,2,3},std::plus<void>{},false,0,tensor_type{{491,613,533,540,639},{465,590,322,550,530},{497,532,368,728,438},{537,446,490,628,513}}),
+        std::make_tuple(test_ten+test_ten+test_ten+test_ten,std::vector<int>{0,1,2},std::plus<void>{},false,value_type{0},tensor_type{{360,400,304,508,412},{312,384,332,460,420},{412,384,408,376,328},{396,436,336,352,376}}),
+        std::make_tuple((test_ten-1)*(test_ten+1),std::vector<int>{1,2,3},std::plus<void>{},false,value_type{0},tensor_type{{491,613,533,540,639},{465,590,322,550,530},{497,532,368,728,438},{537,446,490,628,513}}),
         //non trivial view input
-        std::make_tuple(test_ten+test_ten(0)+test_ten(1,1)+test_ten(2,0,2),std::vector<int>{0,1,2},std::plus<void>{},false,0,tensor_type{{430,324,312,539,399},{266,388,331,579,325},{471,472,346,322,210},{487,429,240,312,486}}),
-        std::make_tuple((test_ten+test_ten(0))*(test_ten(1,1)-test_ten(2,0,2)),std::vector<int>{1,2,3},std::plus<void>{},false,0,tensor_type{{-422,194,-6,-98,176},{-388,206,51,-79,284},{-329,169,26,-155,179},{-383,129,6,-87,220}})
+        std::make_tuple(test_ten+test_ten(0)+test_ten(1,1)+test_ten(2,0,2),std::vector<int>{0,1,2},std::plus<void>{},false,value_type{0},tensor_type{{430,324,312,539,399},{266,388,331,579,325},{471,472,346,322,210},{487,429,240,312,486}}),
+        std::make_tuple((test_ten+test_ten(0))*(test_ten(1,1)-test_ten(2,0,2)),std::vector<int>{1,2,3},std::plus<void>{},false,value_type{0},tensor_type{{-422,194,-6,-98,176},{-388,206,51,-79,284},{-329,169,26,-155,179},{-383,129,6,-87,220}})
     );
     auto test_reduce_binary = [&test_data](auto...policy){
         auto test = [policy...](const auto& t){
@@ -176,14 +176,14 @@ TEMPLATE_TEST_CASE("test_reduce_binary_exception","[test_reduce]",
         std::make_tuple(tensor_type{}.reshape(0,2,3),std::vector<int>{0},std::plus<void>{},false,no_value{}),
         std::make_tuple(tensor_type{}.reshape(0,2,0,3),std::vector<int>{0,2},std::plus<void>{},false,no_value{}),
         //axes out of range
-        std::make_tuple(tensor_type{},1,std::plus<void>{},false,0),
-        std::make_tuple(tensor_type{1,2,3,4,5},1,std::plus<void>{},false,0),
-        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{1},std::plus<void>{},false,0),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},2,std::plus<void>{},false,0),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::vector<int>{0,1,2},std::plus<void>{},false,0),
+        std::make_tuple(tensor_type{},1,std::plus<void>{},false,value_type{0}),
+        std::make_tuple(tensor_type{1,2,3,4,5},1,std::plus<void>{},false,value_type{0}),
+        std::make_tuple(tensor_type{1,2,3,4,5},std::vector<int>{1},std::plus<void>{},false,value_type{0}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},2,std::plus<void>{},false,value_type{0}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::vector<int>{0,1,2},std::plus<void>{},false,value_type{0}),
         //repeating axes
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::vector<int>{0,0},std::plus<void>{},false,0),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::vector<int>{2,-1},std::plus<void>{},false,0)
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::vector<int>{0,0},std::plus<void>{},false,value_type{0}),
+        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},std::vector<int>{2,-1},std::plus<void>{},false,value_type{0})
     );
 
     auto test = [](const auto& t){
@@ -250,11 +250,11 @@ TEMPLATE_TEST_CASE("test_reduce_binary_flatten","[test_reduce]",
         std::make_tuple(tensor_type{{1,6,7,9},{4,5,7,0}}, min{}, true, no_value{}, tensor_type{{0}}),
         std::make_tuple(tensor_type{{{0,1},{2,3}},{{4,5},{6,7}}}, std::plus<void>{}, true, no_value{}, tensor_type{{{28}}}),
         //trivial view input
-        std::make_tuple(test_ten+test_ten+test_ten+test_ten,std::plus<void>{},false,0,tensor_type(7696)),
-        std::make_tuple((test_ten-1)*(test_ten+1),std::plus<void>{},false,0,tensor_type(10450)),
+        std::make_tuple(test_ten+test_ten+test_ten+test_ten,std::plus<void>{},false,value_type{0},tensor_type(7696)),
+        std::make_tuple((test_ten-1)*(test_ten+1),std::plus<void>{},false,value_type{0},tensor_type(10450)),
         //non trivial view input
-        std::make_tuple(test_ten+test_ten(0)+test_ten(1,1)+test_ten(2,0,2),std::plus<void>{},false,0,tensor_type(7668)),
-        std::make_tuple((test_ten+test_ten(0))*(test_ten(1,1)-test_ten(2,0,2)),std::plus<void>{},false,0,tensor_type(-307))
+        std::make_tuple(test_ten+test_ten(0)+test_ten(1,1)+test_ten(2,0,2),std::plus<void>{},false,value_type{0},tensor_type(7668)),
+        std::make_tuple((test_ten+test_ten(0))*(test_ten(1,1)-test_ten(2,0,2)),std::plus<void>{},false,value_type{0},tensor_type(-307))
     );
 
     auto test_reduce_binary_flatten = [&test_data](auto...policy){

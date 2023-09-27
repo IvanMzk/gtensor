@@ -53,13 +53,13 @@ struct bool_seq_to_index_seq{
 
 }
 
-#define GTENSOR_TENSOR_SORT_ARGSORT_FUNCTION(NAME,F,RES_TYPE,...)\
+#define GTENSOR_TENSOR_SORT_ARGSORT_FUNCTION(NAME,F,RES_TYPE)\
 template<typename Policy, typename...Ts, typename DimT, typename Comparator>\
 static auto NAME(Policy policy, const basic_tensor<Ts...>& t, const DimT& axis, const Comparator& comparator){\
     using index_type = typename basic_tensor<Ts...>::index_type;\
     const index_type window_size = 1;\
     const index_type window_step = 1;\
-    return slide<RES_TYPE>(policy,t,axis,F{},window_size,window_step,comparator __VA_OPT__(,) __VA_ARGS__);\
+    return slide<RES_TYPE>(policy,t,axis,F{},window_size,window_step,comparator,typename basic_tensor<Ts...>::config_type{});\
 }\
 template<typename...Ts, typename DimT, typename Comparator>\
 static auto NAME(const basic_tensor<Ts...>& t, const DimT& axis, const Comparator& comparator){\
@@ -110,7 +110,7 @@ struct sort_search
 
     //return indexes that sort tensor along axis, axis is scalar
     //Comparator is binary predicate functor, like std::less<void> or std::greater<void>
-    GTENSOR_TENSOR_SORT_ARGSORT_FUNCTION(argsort,sort_search_reduce_operations::argsort,index_type,typename basic_tensor<Ts...>::config_type{});
+    GTENSOR_TENSOR_SORT_ARGSORT_FUNCTION(argsort,sort_search_reduce_operations::argsort,index_type);
 
     //return partially sorted copy of tensor, axis is scalar
     //Nth can be container or scalar
@@ -420,7 +420,7 @@ private:
     }
 
     template<typename UniqueTensor, typename...Ts, typename...Bs>
-    static auto make_unique_result(const UniqueTensor& unique_tensor, const std::tuple<Ts...>& makers, Bs...bs){
+    static auto make_unique_result(const UniqueTensor& unique_tensor, const std::tuple<Ts...>& makers, Bs...){
         using index_seq = typename detail::bool_seq_to_index_seq<Bs...>::type;
         if constexpr (index_seq::size()==0){
             return unique_tensor;

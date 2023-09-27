@@ -258,7 +258,7 @@ TEMPLATE_TEST_CASE("test_math_amin_nanmin_overloads","test_math",
     REQUIRE(amin(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{1},false) == tensor_type{{1,0,-1},{1,4,2}});
     REQUIRE(amin(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{2,1},false) == tensor_type{-1,1});
     REQUIRE(amin(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{0,1},true) == tensor_type{{{1,0,-1}}});
-    REQUIRE(amin(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{0,1},true,0) == tensor_type{{{0,0,-1}}});
+    REQUIRE(amin(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{0,1},true,value_type{0}) == tensor_type{{{0,0,-1}}});
     //nanmin
     REQUIRE(nanmin(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}}) == tensor_type(-1));
     REQUIRE(nanmin(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},false) == tensor_type(-1));
@@ -267,7 +267,7 @@ TEMPLATE_TEST_CASE("test_math_amin_nanmin_overloads","test_math",
     REQUIRE(nanmin(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{2,1},false) == tensor_type{-1,1});
     REQUIRE(nanmin(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{2,1}) == tensor_type{-1,1});
     REQUIRE(nanmin(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{0,1},true) == tensor_type{{{1,0,-1}}});
-    REQUIRE(nanmin(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{0,1},true,0) == tensor_type{{{0,0,-1}}});
+    REQUIRE(nanmin(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{0,1},true,value_type{0}) == tensor_type{{{0,0,-1}}});
 }
 
 TEMPLATE_TEST_CASE("test_math_amin_nanmin_exception","test_math",
@@ -623,7 +623,7 @@ TEMPLATE_TEST_CASE("test_math_amax_nanmax_overloads","test_math",
     REQUIRE(amax(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{1},false) == tensor_type{{2,5,3},{7,11,9}});
     REQUIRE(amax(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{2,1},false) == tensor_type{5,11});
     REQUIRE(amax(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{0,1},true) == tensor_type{{{7,11,9}}});
-    REQUIRE(amax(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{0,1},true,8) == tensor_type{{{8,11,9}}});
+    REQUIRE(amax(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{0,1},true,value_type{8}) == tensor_type{{{8,11,9}}});
     //nanmax
     REQUIRE(nanmax(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}}) == tensor_type(11));
     REQUIRE(nanmax(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},false) == tensor_type(11));
@@ -632,7 +632,7 @@ TEMPLATE_TEST_CASE("test_math_amax_nanmax_overloads","test_math",
     REQUIRE(nanmax(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{1},false) == tensor_type{{2,5,3},{7,11,9}});
     REQUIRE(nanmax(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{2,1},false) == tensor_type{5,11});
     REQUIRE(nanmax(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{0,1},true) == tensor_type{{{7,11,9}}});
-    REQUIRE(nanmax(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{0,1},true,8) == tensor_type{{{8,11,9}}});
+    REQUIRE(nanmax(tensor_type{{{1,5,3},{2,0,-1}},{{7,4,9},{1,11,2}}},{0,1},true,value_type{8}) == tensor_type{{{8,11,9}}});
 }
 
 TEMPLATE_TEST_CASE("test_math_amax_nanmax_exception","test_math",
