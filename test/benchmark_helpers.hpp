@@ -6,6 +6,7 @@
 #include <cmath>
 #include <chrono>
 #include "config.hpp"
+#include "descriptor.hpp"
 
 namespace benchmark_helpers{
 
