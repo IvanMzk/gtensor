@@ -1,6 +1,5 @@
-#include "../catch.hpp"
-#include "../benchmark_helpers.hpp"
-#include "../test_config.hpp"
+#include "catch.hpp"
+#include "benchmark_helpers.hpp"
 #include "tensor.hpp"
 
 

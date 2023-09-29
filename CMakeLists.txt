@@ -1,7 +1,41 @@
 cmake_minimum_required(VERSION 3.2)
-set(project_name gtensor)
-project(${project_name})
+project(gtensor)
+
+set(include_dir ${CMAKE_CURRENT_LIST_DIR}/include)
+
+add_library(gtensor INTERFACE)
+target_include_directories(gtensor INTERFACE
+    $<BUILD_INTERFACE:${include_dir}>
+    $<BUILD_INTERFACE:${include_dir}/expression_template_engine>
+    $<BUILD_INTERFACE:${include_dir}/libdivide>
+)
+target_compile_features(gtensor INTERFACE cxx_std_17)
+add_library(gtensor::gtensor ALIAS gtensor)
+
+option(BUILD_TEST "build gtensor tests" OFF)
+option(BUILD_BENCHMARK "build gtensor benchmark" OFF)
+
 if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
-    add_subdirectory(test)
+    if(BUILD_TEST)
+        add_subdirectory(test)
+    endif()
+    if(BUILD_BENCHMARK)
+        add_subdirectory(benchmark)
+    endif()
 endif()
-add_subdirectory(src)
+
+include(GNUInstallDirs)
+install(TARGETS gtensor
+    EXPORT gtensor_targets
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtensor
+)
+install(EXPORT gtensor_targets
+    FILE gtensor_targets.cmake
+    NAMESPACE gtensor::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/gtensor
+)
+install(DIRECTORY ${include_dir}/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtensor)
+
+export(EXPORT gtensor_targets
+    FILE ${CMAKE_CURRENT_BINARY_DIR}/cmake/gtensor_targets.cmake
+)

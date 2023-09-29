@@ -6,7 +6,7 @@
         {
             "type": "shell",
             "label": "cmake generate",
-            "command": "cmake.exe -DCMAKE_BUILD_TYPE=Release -G \"Ninja\" -S ${workspaceFolder} -B ${workspaceFolder}\\build",
+            "command": "cmake.exe -DCMAKE_BUILD_TYPE=Release -DBUILD_TEST=ON -DBUILD_BENCHMARK=ON -G \"Ninja\" -S ${workspaceFolder} -B ${workspaceFolder}\\build",
             "args": [],
             "options": {
                 "cwd": "${workspaceFolder}"
@@ -22,6 +22,13 @@
         },
         {
             "type": "shell",
+            "label": "cmake build Benchmark",
+            "command": "cmake -E time cmake -E env NINJA_STATUS=[%e/%f/%t] cmake.exe --build ${workspaceFolder}\\build -j 10 --target Benchmark",
+            "args": [],
+            "group": "test"
+        },
+        {
+            "type": "shell",
             "label": "cmake build Test with error filter",
             "command": "cmake.exe --build ${workspaceFolder}\\build -j 10 --target Test | findstr /s /i error",
             "args": [],
@@ -29,15 +36,28 @@
         },
         {
             "type": "shell",
-            "label": "Run tests",
+            "label": "Run Test",
             "command": "${workspaceFolder}\\build\\test\\Test.exe",
             "args": [],
             "group": "test"
         },
         {
-            "label":"Tests build & run",
+            "type": "shell",
+            "label": "Run Benchmark",
+            "command": "${workspaceFolder}\\build\\benchmark\\Benchmark.exe",
+            "args": [],
+            "group": "test"
+        },
+        {
+            "label":"Test build & run",
             "dependsOrder": "sequence",
-            "dependsOn":["cmake generate","cmake build Test","Run tests"],
+            "dependsOn":["cmake generate","cmake build Test","Run Test"],
+            "group": "test"
+        },
+        {
+            "label":"Benchmark build & run",
+            "dependsOrder": "sequence",
+            "dependsOn":["cmake generate","cmake build Benchmark","Run Benchmark"],
             "group": "test"
         },
         {
