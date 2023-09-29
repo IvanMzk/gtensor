@@ -28,6 +28,8 @@ include(GNUInstallDirs)
 install(TARGETS gtensor
     EXPORT gtensor_targets
     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtensor
+        ${CMAKE_INSTALL_INCLUDEDIR}/gtensor/expression_template_engine
+        ${CMAKE_INSTALL_INCLUDEDIR}/gtensor/libdivide
 )
 install(EXPORT gtensor_targets
     FILE gtensor_targets.cmake
@@ -38,4 +40,5 @@ install(DIRECTORY ${include_dir}/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtenso
 
 export(EXPORT gtensor_targets
     FILE ${CMAKE_CURRENT_BINARY_DIR}/cmake/gtensor_targets.cmake
+    NAMESPACE gtensor::
 )
