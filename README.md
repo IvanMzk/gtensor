@@ -57,4 +57,20 @@ target_link_libraries(my_target PRIVATE gtensor::gtensor)
 ...
 ```
 
-## Build test and benchmark
+## Build tests and benchmarks
+
+GTensor uses [Catch](https://github.com/catchorg/Catch2) framework for testing.
+
+To build tests:
+
+```cmake
+cmake -B build_dir -DBUILD_TEST=ON
+cmake --build build_dir
+```
+
+To build benchmarks run:
+
+```cmake
+cmake -B build_dir -DBUILD_BENCHMARK=ON
+cmake --build build_dir
+```
