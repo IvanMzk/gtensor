@@ -127,17 +127,21 @@ TEST_CASE("benchmark_iterator","[benchmark_tensor]")
     // bench_iterator("trivial expression t+t+t+t+t+t+t+t+t+t traverse forward",n_iters,shapes,[](auto&& t){return t+t+t+t+t+t+t+t+t+t;},traverser,reverse_iterator,false);
     // bench_iterator("trivial expression t+t+t+t+t+t+t+t+t+t traverse forward",n_iters,shapes,[](auto&& t){return t+t+t+t+t+t+t+t+t+t;},traverser,reverse_iterator,true);
     // bench_iterator("non trivial expression t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(1,2)+t+t+t traverse forward",n_iters,shapes,[](auto&& t){return t+t(0)+t(1)+t(2)+t(3,0)+t(4,1)+t(1,2)+t+t+t;},traverser,reverse_iterator,false);
+
     // //transpose view
-    // bench_iterator("transpose view traverse forward",n_iters,shapes,[](auto&& t){return t.transpose();},traverser,reverse_iterator,false);
+    bench_iterator("transpose view traverse forward",n_iters,shapes,[](auto&& t){return t.transpose();},traverser,reverse_iterator,false);
+
     // //slice view
     // bench_iterator("slice view t[0:-1,:,:,::-1] traverse forward",n_iters,shapes,[](auto&& t){return t({{0,-1,1},{},{},{{},{},-1}});},traverser,reverse_iterator,false);
     // bench_iterator("slice view t[:,1,:,:] traverse forward",n_iters,shapes,[](auto&& t){return t(slice_type{},1,slice_type{},slice_type{});},traverser,reverse_iterator,false);
     // bench_iterator("slice view t[0:-1,1,:,::-1] traverse forward",n_iters,shapes,[](auto&& t){return t(slice_type{0,-1,1},1,slice_type{},slice_type{{},{},-1});},traverser,reverse_iterator,false);
+
     // //reshape_view
     // bench_iterator("reshape view t.reshape((-1,3000)), c_order, traverse forward",n_iters,shapes,[](auto&& t){return t.reshape({-1,3000},c_order{});},traverser,reverse_iterator,false);
     // bench_iterator("reshape view t.reshape((-1,3000)), f_order, traverse forward",n_iters,shapes,[](auto&& t){return t.reshape({-1,3000},f_order{});},traverser,reverse_iterator,false);
     // //mapping view
     // bench_iterator("mapping view t(t>0), traverse forward",n_iters,shapes,[](auto&& t){return t(t>0);},traverser,reverse_iterator,false);
+
     // //view of view
     // bench_iterator("transpose of trivial expression t+t+t+t+t+t+t+t+t+t traverse forward",n_iters,shapes,[](auto&& t){return (t+t+t+t+t+t+t+t+t+t).transpose();},traverser,reverse_iterator,false);
     // bench_iterator("transpose of slice view t[0:-1,:,:,::-1] traverse forward",n_iters,shapes,[](auto&& t){return t({{0,-1,1},{},{},{{},{},-1}}).transpose();},traverser,reverse_iterator,false);
