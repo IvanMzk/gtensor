@@ -1,3 +1,9 @@
+# GTensor - matrix computation library
+# Copyright (c) 2022 Ivan Malezhyk <ivanmzk@gmail.com>
+#
+# Distributed under the Boost Software License, Version 1.0.
+# The full license is in the file LICENSE.txt, distributed with this software.
+
 add_executable(Test)
 target_link_libraries(Test PRIVATE gtensor)
 target_include_directories(Test PRIVATE ${CMAKE_CURRENT_LIST_DIR}/../qa_common)

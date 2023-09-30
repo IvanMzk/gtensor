@@ -1,3 +1,11 @@
+/*
+* GTensor - matrix computation library
+* Copyright (c) 2022 Ivan Malezhyk <ivanmzk@gmail.com>
+*
+* Distributed under the Boost Software License, Version 1.0.
+* The full license is in the file LICENSE.txt, distributed with this software.
+*/
+
 #ifndef INIT_LIST_HELPER_HPP_
 #define INIT_LIST_HELPER_HPP_
 

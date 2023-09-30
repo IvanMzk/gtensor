@@ -1,10 +1,17 @@
+/*
+* GTensor - matrix computation library
+* Copyright (c) 2022 Ivan Malezhyk <ivanmzk@gmail.com>
+*
+* Distributed under the Boost Software License, Version 1.0.
+* The full license is in the file LICENSE.txt, distributed with this software.
+*/
+
 #include <limits>
 #include <iomanip>
 #include "catch.hpp"
 #include "helpers_for_testing.hpp"
 #include "tensor_math.hpp"
 #include "tensor.hpp"
-
 
 //sum,nansum
 TEMPLATE_TEST_CASE("test_math_sum_nansum","test_math",
