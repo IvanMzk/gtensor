@@ -23,6 +23,10 @@ It is tested with clang 15.0.7, gcc 12.2.0, msvc 19.26 compilers.
 It has no other dependencies apart from standart library.
 Cmake build system is used to build tests, benchmarks and to automate installation.
 
+## Documentation
+
+1. [Getting started](/docs/getting_started.md)
+
 ## Including into project
 
 GTensor is header only library so to use it in project you can include needed header files and everything will work. GTensor doesn't provide any binaries to
@@ -33,7 +37,7 @@ If you use Cmake build system, you can utilize `add_subdirectory(...)` CMake com
 ```cmake
 cmake_minimum_required(VERSION 3.2)
 project(my_project)
-add_subdirectory(path_to_gtensor_dir)
+add_subdirectory(path_to_gtensor_dir gtensor)
 add_executable(my_target)
 target_link_libraries(my_target PRIVATE gtensor::gtensor)
 ...
