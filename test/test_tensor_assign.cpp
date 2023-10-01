@@ -354,6 +354,27 @@ TEST_CASE("test_tensor_assign_to_rvalue_view_or_tensor","[test_tensor]")
     }
 }
 
+TEST_CASE("test_tensor_compaund_assign","[test_tensor]")
+{
+    using gtensor::tensor;
+    tensor<double> t{{7,3,4,6},{1,5,6,2},{1,8,3,5},{0,2,6,2}};
+    SECTION("compaund_assign1")
+    {
+        t(t>3&&t.not_equal(6)) += 1;
+        REQUIRE(t==tensor<double>{{8,3,5,6},{1,6,6,2},{1,9,3,6},{0,2,6,2}});
+    }
+    SECTION("compaund_assign2")
+    {
+        t({{1},{{},{-1}}}) *= 2;
+        REQUIRE(t==tensor<double>{{7,3,4,6},{2,10,12,2},{2,16,6,5},{0,4,12,2}});
+    }
+    SECTION("compaund_assign3")
+    {
+        t({{1},{{},{-1}}}) += tensor<double>{1,0,-1};
+        REQUIRE(t==tensor<double>{{7,3,4,6},{2,5,5,2},{2,8,2,5},{1,2,5,2}});
+    }
+}
+
 namespace test_tensor_assignment_corner_cases{
 
 struct assign_exception{};

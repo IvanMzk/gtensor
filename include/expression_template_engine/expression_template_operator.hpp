@@ -105,12 +105,14 @@ public:
     //generalized broadcast assign
     //shapes of lhs and rhs must be broadcastable, scalar rhs is allowed
     //assign operation is defined by F
-    //not lazys
-    template<typename F_, typename Rhs, typename...Ts>
-    static basic_tensor<Ts...>& a_operator(F_&& f, basic_tensor<Ts...>& lhs, Rhs&& rhs){
+    //not lazy
+    template<typename F_, typename Tensor, typename Rhs>
+    static auto& a_operator(F_&& f, Tensor&& lhs, Rhs&& rhs){
+        using Tensor_ = std::decay_t<Tensor>;
         static_assert(std::is_same_v<F,std::decay_t<F_>>);
-        using order = typename basic_tensor<Ts...>::order;
-        auto tmp = n_operator(std::forward<F_>(f),lhs,std::forward<Rhs>(rhs));
+        static_assert(detail::is_tensor_v<Tensor_>,"lhs must be tensor");
+        using order = typename Tensor_::order;
+        auto tmp = n_operator(std::forward<F_>(f),std::forward<Tensor>(lhs),std::forward<Rhs>(rhs));
         auto a = tmp.traverse_order_adapter(order{});
         if (tmp.is_trivial()){
             for (auto it = a.begin_trivial(), last = a.end_trivial(); it!=last; ++it){

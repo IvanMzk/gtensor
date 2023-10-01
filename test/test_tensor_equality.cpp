@@ -78,6 +78,12 @@ TEST_CASE("test_tensor_equal","[test_tensor]"){
     using helpers_for_testing::apply_by_element;
     //0operand1,1operand2,2expected
     auto test_data = std::make_tuple(
+        //other scalar
+        std::make_tuple(tensor_type{},1,bool_tensor_type{}),
+        std::make_tuple(tensor_type(1),1,bool_tensor_type(true)),
+        std::make_tuple(tensor_type(1),2,bool_tensor_type(false)),
+        std::make_tuple(tensor_type{{1,2},{3,1}},1,bool_tensor_type{{true,false},{false,true}}),
+        //other tensor
         std::make_tuple(tensor_type{},tensor_type{},bool_tensor_type{}),
         std::make_tuple(tensor_type{},tensor_type(1),bool_tensor_type{}),
         std::make_tuple(tensor_type(1),tensor_type{},bool_tensor_type{}),
@@ -94,6 +100,40 @@ TEST_CASE("test_tensor_equal","[test_tensor]"){
         auto operand2 = std::get<1>(t);
         auto expected = std::get<2>(t);
         auto result = operand1.equal(operand2);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test, test_data);
+}
+
+TEST_CASE("test_tensor_not_equal","[test_tensor]"){
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using bool_tensor_type = gtensor::tensor<bool>;
+    using helpers_for_testing::apply_by_element;
+    //0operand1,1operand2,2expected
+    auto test_data = std::make_tuple(
+        //other scalar
+        std::make_tuple(tensor_type{},1,bool_tensor_type{}),
+        std::make_tuple(tensor_type(1),1,bool_tensor_type(false)),
+        std::make_tuple(tensor_type(1),2,bool_tensor_type(true)),
+        std::make_tuple(tensor_type{{1,2},{3,1}},1,bool_tensor_type{{false,true},{true,false}}),
+        //other tensor
+        std::make_tuple(tensor_type{},tensor_type{},bool_tensor_type{}),
+        std::make_tuple(tensor_type{},tensor_type(1),bool_tensor_type{}),
+        std::make_tuple(tensor_type(1),tensor_type{},bool_tensor_type{}),
+        std::make_tuple(tensor_type(1),tensor_type(1),bool_tensor_type(false)),
+        std::make_tuple(tensor_type(1),tensor_type(2),bool_tensor_type(true)),
+        std::make_tuple(tensor_type(1),tensor_type{{1,2},{3,1}},bool_tensor_type{{false,true},{true,false}}),
+        std::make_tuple(tensor_type{{1,2},{3,1}},tensor_type(1),bool_tensor_type{{false,true},{true,false}}),
+        std::make_tuple(tensor_type{{1,2},{3,1}},tensor_type{2},bool_tensor_type{{true,false},{true,true}}),
+        std::make_tuple(tensor_type{2},tensor_type{{1,2},{3,1}},bool_tensor_type{{true,false},{true,true}}),
+        std::make_tuple(tensor_type{{1},{5}},tensor_type{{{1,2},{3,1}},{{4,5},{5,6}}},bool_tensor_type{{{false,true},{true,true}},{{true,true},{false,true}}})
+    );
+    auto test = [](const auto& t){
+        auto operand1 = std::get<0>(t);
+        auto operand2 = std::get<1>(t);
+        auto expected = std::get<2>(t);
+        auto result = operand1.not_equal(operand2);
         REQUIRE(result == expected);
     };
     apply_by_element(test, test_data);

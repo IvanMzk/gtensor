@@ -247,10 +247,15 @@ public:
         gtensor::assign(*this, std::forward<Rhs>(rhs));
         return *this;
     }
-    //broadcast equality, returns basic_tensor of results of broadcast element-wise comparisons, shapes of this and other must be broadcastable
-    template<typename U>
-    auto equal(const basic_tensor<U>& other)const{
-        return gtensor::equal(*this, other);
+    //broadcast equality,inequality returns basic_tensor of results of broadcast element-wise comparisons
+    //other can be tensor or scalar, in case of tensor shapes of this and other must be broadcastable
+    template<typename Other>
+    auto equal(Other&& other)const{
+        return gtensor::equal(*this, std::forward<Other>(other));
+    }
+    template<typename Other>
+    auto not_equal(Other&& other)const{
+        return gtensor::not_equal(*this, std::forward<Other>(other));
     }
     //resize inplace
     template<typename Container>

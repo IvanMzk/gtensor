@@ -78,11 +78,12 @@ inline auto n_operator(F&& f, Operands&&...operands){
 //F's call operator takes reference to lhs and rhs elements and should have assign semantic or compaund assign semantic, return is discarded
 //Lhs is tensor, Rhs tensor or scalar, shapes of lhs and rhs must broadcast
 //result is reference to lhs
-template<typename F, typename Rhs, typename...Ts>
-inline basic_tensor<Ts...>& a_operator(F&& f, basic_tensor<Ts...>& lhs, Rhs&& rhs){
-    using config_type = typename basic_tensor<Ts...>::config_type;
-    using operation_type = std::decay_t<F>;
-    generalized_operator_selector_t<config_type, operation_type>::a_operator(std::forward<F>(f),lhs,std::forward<Rhs>(rhs));
+template<typename F, typename Tensor, typename Rhs>
+inline std::decay_t<Tensor>& a_operator(F&& f, Tensor&& lhs, Rhs&& rhs){
+    using F_ = std::decay_t<F>;
+    using Tensor_ = std::decay_t<Tensor>;
+    using config_type = typename Tensor_::config_type;
+    generalized_operator_selector_t<config_type, F_>::a_operator(std::forward<F>(f),std::forward<Tensor>(lhs),std::forward<Rhs>(rhs));
     return lhs;
 }
 
@@ -96,14 +97,10 @@ static auto NAME(Args&&...args){\
 }
 
 #define GTENSOR_TENSOR_OPERATOR_COMPOUND_ASSIGNMENT_FUNCTION(NAME,F)\
-template<typename...Ts, typename Rhs>\
-static basic_tensor<Ts...>& NAME(basic_tensor<Ts...>& lhs, Rhs&& rhs){\
-    a_operator(F{},lhs,std::forward<Rhs>(rhs));\
-    return lhs;\
-}\
-template<typename...Ts, typename Rhs>\
-static tensor<Ts...>& NAME(tensor<Ts...>& lhs, Rhs&& rhs){\
-    NAME(detail::as_basic_tensor(lhs),std::forward<Rhs>(rhs));\
+template<typename Tensor, typename Rhs>\
+static std::decay_t<Tensor>& NAME(Tensor&& lhs, Rhs&& rhs){\
+    static_assert(detail::is_tensor_v<std::decay_t<Tensor>>,"lhs must be tensor");\
+    a_operator(F{},std::forward<Tensor>(lhs),std::forward<Rhs>(rhs));\
     return lhs;\
 }
 
@@ -382,9 +379,19 @@ basic_tensor<Ts...>& NAME(basic_tensor<Ts...>& lhs, Rhs&& rhs){\
     return gtensor::tensor_operators_selector_t<config_type>::F(lhs,std::forward<Rhs>(rhs));\
 }\
 template<typename...Ts, typename Rhs>\
+basic_tensor<Ts...>& NAME(basic_tensor<Ts...>&& lhs, Rhs&& rhs){\
+    using config_type = typename basic_tensor<Ts...>::config_type;\
+    return gtensor::tensor_operators_selector_t<config_type>::F(std::move(lhs),std::forward<Rhs>(rhs));\
+}\
+template<typename...Ts, typename Rhs>\
 tensor<Ts...>& NAME(tensor<Ts...>& lhs, Rhs&& rhs){\
     using config_type = typename tensor<Ts...>::config_type;\
     return gtensor::tensor_operators_selector_t<config_type>::F(lhs,std::forward<Rhs>(rhs));\
+}\
+template<typename...Ts, typename Rhs>\
+tensor<Ts...>& NAME(tensor<Ts...>&& lhs, Rhs&& rhs){\
+    using config_type = typename tensor<Ts...>::config_type;\
+    return gtensor::tensor_operators_selector_t<config_type>::F(std::move(lhs),std::forward<Rhs>(rhs));\
 }
 
 //cast

@@ -471,6 +471,7 @@ TEST_CASE("test_gtensor_compound_assign_operator_lhs_is_view","[test_tensor_oper
         std::make_tuple(tensor_type(1),[](const auto& t){return t.transpose();},2,tensor_type(3),tensor_type(3),2),
         std::make_tuple(tensor_type{1,2,3,4,5,6},[](const auto& t){return t({{1,-1}});},7,tensor_type{1,9,10,11,12,6},tensor_type{9,10,11,12},7),
         std::make_tuple(tensor_type{1,2,3,4,5,6},[](const auto& t){return t(tensor<int>{1,1,3,0,0});},7,tensor_type{15,16,3,11,5,6},tensor_type{16,16,11,15,15},7),
+        std::make_tuple(tensor_type{1,2,3,4,5,6},[](const auto& t){return t(t>3);},7,tensor_type{1,2,3,11,12,13},tensor_type{11,12,13},7),
         //rhs 0-dim
         std::make_tuple(tensor_type{},[](const auto& t){return t();},tensor_type(1),tensor_type{},tensor_type{},tensor_type(1)),
         std::make_tuple(tensor_type(1),[](const auto& t){return t.transpose();},tensor_type(2),tensor_type(3),tensor_type(3),tensor_type(2)),
@@ -503,21 +504,41 @@ TEST_CASE("test_gtensor_compound_assign_operator_lhs_is_view","[test_tensor_oper
             tensor_type{{0,2},{1,3}}
         )
     );
-    auto test = [](const auto& t){
-        auto parent = std::get<0>(t);
-        auto lhs_view_maker = std::get<1>(t);
-        auto rhs = std::get<2>(t);
-        auto expected_parent = std::get<3>(t);
-        auto expected_lhs = std::get<4>(t);
-        auto expected_rhs = std::get<5>(t);
-        auto lhs = lhs_view_maker(parent);
-        auto& result = lhs+=rhs;
-        REQUIRE(&result == &lhs);
-        REQUIRE(result == expected_lhs);
-        REQUIRE(parent == expected_parent);
-        REQUIRE(rhs == expected_rhs);
-    };
-    apply_by_element(test,test_data);
+    SECTION("lvalue lhs")
+    {
+        auto test = [](const auto& t){
+            auto parent = std::get<0>(t);
+            auto lhs_view_maker = std::get<1>(t);
+            auto rhs = std::get<2>(t);
+            auto expected_parent = std::get<3>(t);
+            auto expected_lhs = std::get<4>(t);
+            auto expected_rhs = std::get<5>(t);
+            auto lhs = lhs_view_maker(parent);
+            auto& result = lhs+=rhs;
+            REQUIRE(&result == &lhs);
+            REQUIRE(result == expected_lhs);
+            REQUIRE(parent == expected_parent);
+            REQUIRE(rhs == expected_rhs);
+        };
+        apply_by_element(test,test_data);
+    }
+    SECTION("rvalue lhs")
+    {
+        auto test = [](const auto& t){
+            auto parent = std::get<0>(t);
+            auto lhs_view_maker = std::get<1>(t);
+            auto rhs = std::get<2>(t);
+            auto expected_parent = std::get<3>(t);
+            auto expected_lhs = std::get<4>(t);
+            auto expected_rhs = std::get<5>(t);
+            auto lhs = lhs_view_maker(parent);
+            auto& result = std::move(lhs)+=rhs;
+            REQUIRE(&result == &lhs);
+            REQUIRE(parent == expected_parent);
+            REQUIRE(rhs == expected_rhs);
+        };
+        apply_by_element(test,test_data);
+    }
 }
 
 namespace test_gtensor_assignment_self_assignment{
@@ -1376,3 +1397,4 @@ TEST_CASE("test_tensor_assign_operators_semantic","[test_tensor_operators]")
         REQUIRE((lhs>>=tensor_type{1,2,3}) == tensor_type{2,1,0});
     }
 }
+
