@@ -91,7 +91,7 @@ When build and run this produces the following output:
 [(4,4){{8,3,5,6},{1,6,6,2},{1,9,3,6},{0,2,6,2}}]
 ```
 
-## Third example: broadcast and lazy
+## Third example: broadcast and lazy evaluation
 
 #### **`third_example.cpp`**
 ```cpp
