@@ -18,7 +18,6 @@
 #include "builder.hpp"
 #include "reduce.hpp"
 
-
 namespace gtensor{
 
 namespace detail{
@@ -148,12 +147,17 @@ private:
     public:
         generator() = default;
 
-        template<typename BitGenerator_, std::enable_if_t<!std::is_same_v<BitGenerator_,generator>,int> =0>
+        template<typename BitGen> struct enable_bitgen : std::conjunction<
+            std::negation<std::is_same<BitGen,generator>>,
+            std::is_same<BitGen,bit_generator_type>
+        >{};
+
+        template<typename BitGenerator_, std::enable_if_t<enable_bitgen<std::decay_t<BitGenerator_>>::value,int> =0>
         explicit generator(BitGenerator_&& bit_generator__):
             bit_generator_{std::forward<BitGenerator_>(bit_generator__)}
         {}
 
-        template<typename Container>
+        template<typename Container, std::enable_if_t<detail::is_container_v<Container>,int> =0>
         explicit generator(const Container& seeds):
             bit_generator_{make_bit_generator(seeds)}
         {}
@@ -600,7 +604,6 @@ template<typename Config=config::default_config>
 auto default_rng(){
     return random_selector_t<Config>::template default_rng<Config>();
 }
-
 
 }   //end of namespace gtensor
 #endif

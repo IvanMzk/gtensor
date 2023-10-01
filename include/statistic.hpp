@@ -995,7 +995,7 @@ auto histogram(const basic_tensor<Ts...>& t, const Bins& bins, const Range& rang
     using config_type = typename basic_tensor<Ts...>::config_type;
     return statistic_selector_t<config_type>::histogram(t,bins,range,density,weights);
 }
-template<typename...Ts, typename Bins>
+template<typename...Ts, typename Bins=int>
 auto histogram(const basic_tensor<Ts...>& t, const Bins& bins=10, bool density=false){
     using config_type = typename basic_tensor<Ts...>::config_type;
     return statistic_selector_t<config_type>::histogram(t,bins,detail::no_value{},density,detail::no_value{});

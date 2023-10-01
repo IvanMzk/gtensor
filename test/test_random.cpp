@@ -799,6 +799,7 @@ TEST_CASE("test_random_rng_default_rng","[test_random]")
     REQUIRE(rng<std::minstd_rand>(1,2,3).normal(0,1,50) == rng<std::minstd_rand>(1,2,3).normal(0,1,50));
 
     //default engine
+    REQUIRE(default_rng(123).integers(0,5,50) == default_rng(123).integers(0,5,50));
     REQUIRE(default_rng(1,2,3).integers(0,5,50) == default_rng(1,2,3).integers(0,5,50));
     REQUIRE(default_rng(3,2,1).normal(0,1,50) == default_rng(3,2,1).normal(0,1,50));
 
