@@ -66,6 +66,63 @@ cmake --build build_dir
 ./build_dir/first_example
 ```
 
-## Second example: fancy indexing
+## Second example: fancy indexing and assignment
 
+#### **`second_example.cpp`**
+```cpp
+#include <iostream>
+#include "tensor.hpp"
+
+int main(int argc, const char*argv[]){
+
+    auto t = gtensor::tensor<double>{{7,3,4,6},{1,5,6,2},{1,8,3,5},{0,2,6,2}};
+    t(t>3 && t.not_equal(6))+=1;
+    std::cout<<std::endl<<t;
+
+    return 0;
+}
+```
+
+Second example creates 2-d tensor and assign-add 1 to elements that greater than 3 and not equal 6.
+
+When build you run this produces the following output:
+
+```bash
+[(4,4){{8,3,5,6},{1,6,6,2},{1,9,3,6},{0,2,6,2}}]
+```
+
+## Third example: broadcast
+
+#### **`third_example.cpp`**
+```cpp
+#include <iostream>
+#include <numeric>
+#include "tensor_math.hpp"
+#include "tensor.hpp"
+
+int main(int argc, const char*argv[]){
+
+    auto t = gtensor::tensor<double>(5,0);
+    std::iota(t.begin(),t.end(),0);
+
+    auto dist = hypot(t.reshape(1,-1),t.reshape(-1,1));
+
+    std::cout<<std::endl<<dist;
+    return 0;
+}
+```
+
+Third example computes distance from origin to each point of 5x5 grid.
+
+Statement
+```cpp
+auto dist = hypot(t.reshape(1,-1),t.reshape(-1,1));
+```
+doesn't perform any computations, it returns special kind of tensor called **expession view**. Actual evaluation take place when `dist` is printed to std::cout.
+
+When build you run this produces the following output:
+
+```bash
+[(5,5){{0,1,2,3,4},{1,1.41,2.24,3.16,4.12},{2,2.24,2.83,3.61,4.47},{3,3.16,3.61,4.24,5},{4,4.12,4.47,5,5.66}}]
+```
 
