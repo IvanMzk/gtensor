@@ -1,6 +1,6 @@
 # Getting started
 
-This section show some examples of simple usage of GTensor library.
+This section shows some examples of simple usage of GTensor library.
 
 ## First example
 
@@ -85,13 +85,13 @@ int main(int argc, const char*argv[]){
 
 Second example creates 2-d tensor and assign-add 1 to elements that greater than 3 and not equal 6.
 
-When build you run this produces the following output:
+When build and run this produces the following output:
 
 ```bash
 [(4,4){{8,3,5,6},{1,6,6,2},{1,9,3,6},{0,2,6,2}}]
 ```
 
-## Third example: broadcast
+## Third example: broadcast and lazy
 
 #### **`third_example.cpp`**
 ```cpp
@@ -120,9 +120,46 @@ auto dist = hypot(t.reshape(1,-1),t.reshape(-1,1));
 ```
 doesn't perform any computations, it returns special kind of tensor called **expession view**. Actual evaluation take place when `dist` is printed to std::cout.
 
-When build you run this produces the following output:
+When build and run this produces the following output:
 
 ```bash
 [(5,5){{0,1,2,3,4},{1,1.41,2.24,3.16,4.12},{2,2.24,2.83,3.61,4.47},{3,3.16,3.61,4.24,5},{4,4.12,4.47,5,5.66}}]
 ```
 
+## Forth example: random numbers
+
+#### **`forth_example.cpp`**
+```cpp
+#include <iostream>
+#include "statistic.hpp"
+#include "random.hpp"
+#include "tensor.hpp"
+
+int main(int argc, const char*argv[]){
+
+    const auto seed = 123;
+    auto rng = gtensor::default_rng(seed);
+
+    auto rnd_sum = gtensor::tensor<double>(1000,0);
+    for (int n=30; n!=0; --n){
+        rnd_sum += rng.random(1000);
+    }
+
+    auto hist = gtensor::histogram(rnd_sum);
+    std::cout<<std::endl<<"hist bins"<<hist.first;
+    std::cout<<std::endl<<"hist edges"<<hist.second;
+
+    return 0;
+}
+```
+
+In Forth example we construct random number generator and make elementwise sum of 30 uniformly distributed in range [0,1) random tensors.
+
+We expected that elements in result tensor will have close to Gauss distribution:
+
+```bash
+hist bins[(10){6,34,102,188,231,225,129,64,18,3}]
+hist edges[(11){10.3,11.2,12.2,13.2,14.2,15.2,16.2,17.2,18.2,19.1,20.1}]
+```
+
+Results look like expected.

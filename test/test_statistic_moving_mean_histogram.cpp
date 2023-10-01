@@ -335,6 +335,22 @@ TEMPLATE_TEST_CASE("test_statistic_histogram_bins_density_parameters_overload","
     };
     apply_by_element(test,test_data);
 }
+TEST_CASE("test_statistic_histogram_overload","test_statistic")
+{
+    using value_type = double;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::tensor_close;
+    using gtensor::histogram;
+
+    const tensor_type gauss_100{-0.154,1.988,-0.454,-0.878,1.902,1.247,-0.843,-0.988,0.562,1.295,0.226,-1.387,-0.099,-0.118,0.226,0.15,-0.158,0.966,1.814,0.122,0.645,-1.309,0.798,
+    -0.13,-0.697,-0.716,-0.245,2.16,0.678,-0.839,-0.335,-1.944,0.864,0.887,-0.318,-1.775,0.542,-0.394,-0.09,-0.454,1.496,0.167,0.906,0.55,0.562,0.101,-0.174,-0.382,-0.269,1.606,
+    -1.981,0.431,0.3,0.311,-2.907,0.697,-1.206,1.924,1.224,1.062,-1.086,-0.08,-0.102,1.021,1.223,1.191,-0.928,-0.252,-0.365,0.01,-0.805,-0.665,0.003,-0.661,0.543,-1.08,0.613,
+    -0.837,0.097,0.216,1.177,0.683,-0.64,-2.341,0.325,1.146,-1.286,0.817,0.768,-0.595,-0.377,0.187,0.811,1.074,0.735,0.009,0.609,-0.445,-1.491,0.985};
+
+    auto hist = histogram(gauss_100);
+    REQUIRE(hist.first == tensor_type{1,3,3,7,17,21,17,18,8,5});
+    REQUIRE(tensor_close(hist.second,tensor_type{-2.907,-2.4003,-1.8936,-1.3869,-0.8802,-0.3735,0.1332,0.6399,1.1466,1.6533,2.16},1E-2,1E-2));
+}
 
 TEMPLATE_TEST_CASE("test_statistic_histogram_exception","test_statistic",
     double,
