@@ -10,7 +10,7 @@
 #define LIBDIVIDE_HELPER_HPP_
 
 #include <type_traits>
-#include "libdivide.h"
+#include "libdivide/libdivide.h"
 #include "config.hpp"
 
 namespace gtensor{

@@ -11,7 +11,7 @@
 
 #include "module_selector.hpp"
 #include "operations.hpp"
-#include "expression_template_operator.hpp"
+#include "expression_template_engine/expression_template_operator.hpp"
 
 namespace gtensor{
 
