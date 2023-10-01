@@ -1,5 +1,5 @@
 /*
-* GTensor - matrix computation library
+* GTensor - computation library
 * Copyright (c) 2022 Ivan Malezhyk <ivanmzk@gmail.com>
 *
 * Distributed under the Boost Software License, Version 1.0.

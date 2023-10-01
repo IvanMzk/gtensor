@@ -2,7 +2,7 @@
 
 ## What is GTensor?
 
-GTensor is C++ library for multidimensional array computation, its name stands for G(eneric)Tensor.
+GTensor is C++ library for multidimensional array computations, its name stands for G(eneric)Tensor.
 Library provides `basic_tensor` class template that represents multidimensional array and various routines
 to operate on it, including mathematical,logical,shape manipulation,sorting,selecting,basic statistical operations,
 random simulation.
@@ -68,9 +68,12 @@ cmake -B build_dir -DBUILD_TEST=ON
 cmake --build build_dir
 ```
 
-To build benchmarks run:
+To build benchmarks:
 
 ```cmake
 cmake -B build_dir -DBUILD_BENCHMARK=ON
 cmake --build build_dir
 ```
+
+## License
+GTensor is licensed under the [BSL 1.0](LICENSE.txt).
