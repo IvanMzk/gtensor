@@ -870,7 +870,7 @@ public:
     //shape and range constructor
     //construct tensor of shape filled with values from iterator range
     //if tensor size n is smaller or equal than range - tensor initialized with first n range elements
-    //if tensor size is greater than range - first tensor elements initialized with range, is rest tensor elements initialized dependes on underlaying storage
+    //if tensor size is greater than range - first tensor elements initialized with range, are rest tensor elements initialized dependes on underlaying storage
     //shape may be container or scalar, in case of scalar 1d tensor is constructed, in case of empty container 0dim tensor (tensor-scalar) is constructed
     template<typename Shape, typename It, std::enable_if_t<detail::is_iterator_v<It>,int> =0>
     tensor(Shape&& shape__, It begin__, It end__):

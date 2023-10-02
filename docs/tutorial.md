@@ -23,7 +23,7 @@ template<typename Impl> class basic_tensor;
 
 It takes single type template parameter `Impl` that is type of array implementation.
 
-You should never create `basic_tensor` objects directly, to construct `basic_tensor` object from values you should use specialization of `tensor` class template.
+You should never create `basic_tensor` objects directly. To construct `basic_tensor` object from value you should use `tensor` class template.
 
 `tensor` class template is intended to make `basic_tensor` with storage implementation, its definition:
 
@@ -46,14 +46,11 @@ It will be covered in more details further.
 Consider example:
 
 ```cpp
-gtensos::tensor<int> t1{{5,5,5,5},{5,5,5,5},{5,5,5,5}};
-gtensos::tensor<int> t2({3,4},5);
-std::vector<int> v(12,5);
-gtensos::tensor<int> t3({3,4},v.begin(),v.end());
+gtensos::tensor<int> t{{5,5,5,5},{5,5,5,5},{5,5,5,5}};
 ```
 
-Here we create three tensors with `int` data element type, default `Layout` and default `Config`.
-All tensors have shape (3,4) and filled with value 5.
+Here we create tensor with `int` data element type, default `Layout` and default `Config`.
+Tensors has shape (3,4) and all its elements initialized with value 5.
 
 Now investigate `gtensos::tensor<int>` base type:
 
@@ -64,7 +61,7 @@ auto as_basic_tensor(const basic_tensor<Impl>& t){
 }
 ```
 
-What is `decltype(as_basic_tensor(t1))`?
+What is `decltype(as_basic_tensor(t))`?
 
 It looks something like this: `gtensor::basic_tensor<gtensor::tensor_implementation<gtensor::storage_core<...>>>`, where `<...>` may be `<T,Layout,Config>`.
 
@@ -74,37 +71,100 @@ In fact `tensor` class template just defines constructors suitable to initialize
 
 ## 3. `basic_tensor` construction and copy-move semantic
 
-As mentioned above
+As mentioned above we should use `tensor` class template to construct `basic_tensor` object from value.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Now consider sum of tensors:
+Next examples shows possible ways to do this:
 
 ```cpp
-auto sum = t1+t2+t3;
+using gtensor::tensor;
+using gtensor::config::c_order;
+using gtensor::config::f_order;
+//initializer list constructor
+tensor<double> t1{1,2,3,4,5};
+tensor<double,c_order> t2{{1,2,3},{4,5,6},{7,8,9}};
+tensor<double,f_order> t3{{{1,2},{3,4}},{{5,6},{7,8}}};
+std::cout<<std::endl<<t1;   //[(5){1,2,3,4,5}]
+std::cout<<std::endl<<t2;   //[(3,3){{1,2,3},{4,5,6},{7,8,9}}]
+std::cout<<std::endl<<t3;   //[(2,2,2){{{1,2},{3,4}},{{5,6},{7,8}}}]
 ```
 
-What is `decltype(sum)` ? It looks like: `gtensor::basic_tensor<gtensor::tensor_implementation<gtensor::expression_template_core<...>>>`.
+Use initializer_list constructor to make three tensors, regardless of tensor's layout elements in initializer_list are always considered to be in c_order.
 
-We see that sum of tensors is also tensor, but with different implementation type. We call such tensors `expression view`.
+```cpp
+//shape constructor
+using gtensor::tensor;
+tensor<double> t4(std::vector<int>{3,4});
+tensor<double> t5(std::list<int>{3,4});
+std::cout<<std::endl<<t4;   //[(3,4){{1.1e-311,6.95e-310,6.95e-310,6.95e-310},{1.1e-311,0,6.95e-310,0},{0,0,6.95e-310,2.07e-236}}]
+std::cout<<std::endl<<t5;   //[(3,4){{1.1e-311,1.1e-311,1.1e-311,1.1e-311},{1.1e-311,1.1e-311,1.1e-311,1.1e-311},{1.1e-311,1.1e-311,4.94e-324,1.1e-311}}]
+```
+
+Use shape constructor to make two tensors of shape (3,4). Shape argument can be any container.
+Are tensor's elements initialized dependes on `storage` alias specified in Config template parameter.
+By default elements are not initialized for trivially-copyable data type, and initialized to default value otherwise.
+
+```cpp
+//default construtor
+gtensor::tensor<double> t6{};
+std::cout<<std::endl<<t6;           //[(0){}]
+std::cout<<std::endl<<t6.dim();     //1
+std::cout<<std::endl<<t6.size();    //0
+```
+
+Default constructor makes 1d empty tensor. It is equivalent to call shape constructor `tensor<double>(std::vector<int>{0})`.
 
 
+```cpp
+//0dim tensor (tensor-scalar) constructor
+gtensor::tensor<double> t7(5);
+std::cout<<std::endl<<t7;           //[(){5}]
+std::cout<<std::endl<<t7.dim();     //0
+std::cout<<std::endl<<t7.size();    //1
+```
 
-Where `<...>` dependes on
+0Dim tensor constructor makes tensor with empty shape and unit size.
+
+
+```cpp
+using gtensor::tensor;
+//shape and value constructor
+tensor<double> t8(10,5);
+tensor<double> t9(std::array<int,2>{3,4},5);
+tensor<double> t10({3,4},5);
+tensor<double> t11(std::vector<int>{},5);
+std::cout<<std::endl<<t8;   //[(10){5,5,5,5,5,5,5,5,5,5}]
+std::cout<<std::endl<<t9;   //[(3,4){{5,5,5,5},{5,5,5,5},{5,5,5,5}}]
+std::cout<<std::endl<<t10;  //[(3,4){{5,5,5,5},{5,5,5,5},{5,5,5,5}}]
+std::cout<<std::endl<<t11;  //[(){5}]
+```
+
+Shape and value constructor makes tensor of specified shape and initialized its elements with value.
+Shape argument can be scalar, container or std::initializer_list.
+In case of scalar 1d tensor is constructed. In case of empty container 0d tensor (tensor-scalar) is constructed.
+
+```cpp
+using gtensor::tensor;
+using gtensor::config::c_order;
+using gtensor::config::f_order;
+//shape and iterators range constructor
+std::vector<double> data{1,2,3,4,5,6,7,8,9,10,11,12};
+tensor<double,c_order> t12(12,data.begin(),data.end());
+tensor<double,c_order> t13(std::vector<int>{},data.begin(),data.end());
+tensor<double,c_order> t14(std::vector<int>{3,3},data.begin(),data.end());
+tensor<double,c_order> t15(std::vector<int>{4,4},data.begin(),data.end());
+tensor<double,f_order> t16({3,4},data.begin(),data.end());
+std::cout<<std::endl<<t12;  //[(12){1,2,3,4,5,6,7,8,9,10,11,12}]
+std::cout<<std::endl<<t13;  //[(){1}]
+std::cout<<std::endl<<t14;  //[(3,3){{1,2,3},{4,5,6},{7,8,9}}]
+std::cout<<std::endl<<t15;  //[(4,4){{1,2,3,4},{5,6,7,8},{9,10,11,12},{1.36e-311,1.36e-311,5,5}}]
+std::cout<<std::endl<<t16;  //[(3,4){{1,4,7,10},{2,5,8,11},{3,6,9,12}}]
+```
+
+Shape and iterators range constructor makes tensor of specified shape and fills it with elements from range.
+Shape argument can be scalar, container or std::initializer_list.
+In case of scalar 1d tensor is constructed. In case of empty container 0d tensor (tensor-scalar) is constructed.
+There are two points here:
+- if tensor size n is smaller or equal than range - tensor initialized with first n range elements
+if tensor size is greater than range - first tensor elements initialized with range, are rest tensor elements initialized dependes on underlaying storage
+- tensor layout matters
+
