@@ -69,7 +69,7 @@ We see that `tensor<int>` is `basic_tensor` parameterized with storage implement
 
 In fact `tensor` class template just defines constructors suitable to initialize storage implementation and nothing more. All of member functions are defined in `basic_tensor`.
 
-## 3. `basic_tensor` construction and copy-move semantic
+## 3. `basic_tensor` construction
 
 As mentioned above we should use `tensor` class template to construct `basic_tensor` object from value.
 
@@ -180,3 +180,64 @@ auto sum = t+t;
 What is `decltype(sum)`? It is not of type `tensor<double>` as you might think.
 It looks like: `gtensor::basic_tensor<gtensor::tensor_implementation<gtensor::expression_template_core<...>>>`. It is also `basic_tensor`, but parameterized with special implementation type.
 We call such tensors **expression view**. Almost all operators on tensor produce expression views. More detailed this topic will be discussed in next sections.
+
+## 4. `basic_tensor` copy and move construction semantic
+
+`basic_tensor` has reference copy-construction semantic. Possible implementation of `basic_tensor` class template:
+
+```cpp
+template<typename Impl>
+class basic_tensor
+{
+    std::shared_ptr<Impl> impl_;
+public:
+
+    basic_tensor(const basic_tensor&) = default;
+    basic_tensor(basic_tensor&&) = default;
+    ...
+};
+```
+
+Consider example:
+
+```cpp
+gtensor::tensor<double> a{{1,2,3},{4,5,6}};
+auto b = a;
+std::cout<<std::endl<<a;    //[(2,3){{1,2,3},{4,5,6}}]
+std::cout<<std::endl<<b;    //[(2,3){{1,2,3},{4,5,6}}]
+a+=1;
+std::cout<<std::endl<<a;    //[(2,3){{2,3,4},{5,6,7}}]
+std::cout<<std::endl<<b;    //[(2,3){{2,3,4},{5,6,7}}]
+```
+
+Here we first construct tensor `a`, than copy construct `b` from `a` and mutate `a`.
+Due to reference semantic `a` and `b` share the same implementation, that is mutating `a` causes mutating `b`.
+
+To make deep copy:
+
+```cpp
+gtensor::tensor<double> a{{1,2,3},{4,5,6}};
+auto b = a.copy();
+a+=1;
+std::cout<<std::endl<<a;    //[(2,3){{2,3,4},{5,6,7}}]
+std::cout<<std::endl<<b;    //[(2,3){{1,2,3},{4,5,6}}]
+```
+
+To test if tensors share the same implementation:
+
+```cpp
+gtensor::tensor<double> a{{1,2,3},{4,5,6}};
+auto b = a;
+auto c = a.copy();
+std::cout<<std::endl<<a.is_same(b); //1
+std::cout<<std::endl<<a.is_same(c); //0
+```
+
+After move tensor refers to no implementation, in this case it is guaranteed `empty()` returns true.
+
+```cpp
+gtensor::tensor<double> a{{1,2,3},{4,5,6}};
+auto b = std::move(a);
+std::cout<<std::endl<<a.empty(); //1
+std::cout<<std::endl<<b.empty(); //0
+```
