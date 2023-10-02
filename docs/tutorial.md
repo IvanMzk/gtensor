@@ -63,7 +63,7 @@ auto as_basic_tensor(const basic_tensor<Impl>& t){
 
 What is `decltype(as_basic_tensor(t))`?
 
-It looks something like this: `gtensor::basic_tensor<gtensor::tensor_implementation<gtensor::storage_core<...>>>`, where `<...>` may be `<T,Layout,Config>`.
+It looks like: `gtensor::basic_tensor<gtensor::tensor_implementation<gtensor::storage_core<...>>>`, where `<...>` may be `<T,Layout,Config>`.
 
 We see that `tensor<int>` is `basic_tensor` parameterized with storage implementation, which is parameterized with `<T,Layout,Config>`.
 
@@ -88,7 +88,7 @@ std::cout<<std::endl<<t2;   //[(3,3){{1,2,3},{4,5,6},{7,8,9}}]
 std::cout<<std::endl<<t3;   //[(2,2,2){{{1,2},{3,4}},{{5,6},{7,8}}}]
 ```
 
-Use initializer_list constructor to make three tensors, regardless of tensor's layout elements in initializer_list are always considered to be in c_order.
+We use initializer_list constructor to make three tensors, regardless of tensor's layout elements in initializer_list are always considered to be in c_order.
 
 ```cpp
 //shape constructor
@@ -99,7 +99,7 @@ std::cout<<std::endl<<t4;   //[(3,4){{1.1e-311,6.95e-310,6.95e-310,6.95e-310},{1
 std::cout<<std::endl<<t5;   //[(3,4){{1.1e-311,1.1e-311,1.1e-311,1.1e-311},{1.1e-311,1.1e-311,1.1e-311,1.1e-311},{1.1e-311,1.1e-311,4.94e-324,1.1e-311}}]
 ```
 
-Use shape constructor to make two tensors of shape (3,4). Shape argument can be any container.
+We use shape constructor to make two tensors of shape (3,4). Shape argument can be any container.
 Are tensor's elements initialized dependes on `storage` alias specified in Config template parameter.
 By default elements are not initialized for trivially-copyable data type, and initialized to default value otherwise.
 
@@ -168,3 +168,15 @@ There are two points here:
 if tensor size is greater than range - first tensor elements initialized with range, are rest tensor elements initialized dependes on underlaying storage
 - tensor layout matters
 
+Explicit call construtor of `tensor` class template is not only way to construct `basic_tensor` object. Another way is to operate on already constructed objects.
+
+Consider example:
+
+```cpp
+gtensor::tensor<double> t{{1,2,3},{4,5,6}};
+auto sum = t+t;
+```
+
+What is `decltype(sum)`? It is not of type `tensor<double>` as you might think.
+It looks like: `gtensor::basic_tensor<gtensor::tensor_implementation<gtensor::expression_template_core<...>>>`. It is also `basic_tensor`, but parameterized with special implementation type.
+We call such tensors **expression view**. Almost all operators on tensor produce expression views. More detailed this topic will be discussed in next sections.
