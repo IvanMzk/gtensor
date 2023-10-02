@@ -21,13 +21,18 @@ It is common practice to use `iterator interface` for data and member functions 
 template<typename Impl> class basic_tensor;
 ```
 
-It takes single type template parameter `Impl` that is type of array implementation. You should never create `basic_tensor` objects directly.
+It takes single type template parameter `Impl` that is type of array implementation.
 
-`tensor` class template is intended to make `basic_tensor` with storage implementation, its declaration:
+You should never create `basic_tensor` objects directly, to construct `basic_tensor` object from values you should use specialization of `tensor` class template.
+
+`tensor` class template is intended to make `basic_tensor` with storage implementation, its definition:
 
 ```cpp
 template<typename T, typename Layout = config::f_order, typename Config = config::extend_config_t<config::default_config,T>>
 class tensor : public basic_tensor<typename tensor_factory_selector_t<Config,T,Layout>::result_type>
+{
+...
+};
 ```
 
 As we see `tensor` is `basic_tensor` and it directly specifies its implementation type using trait.
@@ -67,7 +72,9 @@ We see that `tensor<int>` is `basic_tensor` parameterized with storage implement
 
 In fact `tensor` class template just defines constructors suitable to initialize storage implementation and nothing more. All of member functions are defined in `basic_tensor`.
 
-## 3. `tensor` constructors
+## 3. `basic_tensor` construction and copy-move semantic
+
+As mentioned above
 
 
 
