@@ -260,7 +260,7 @@ And we can operate on this view object as it were true array. And no data copy r
 
 GTensor provides two kinds of views:
 - View based on some index transformations, it can be slice of original tensor, reshape, transpose or selecting elements using tensor of indeces.
-This kind of view always refers to original tensor's elements, using some indexing scheem.
+This kind of view always refers to original tensor's elements, using some indexing scheem. More on this kind of view in nest section.
 - **Expression view** is fundamentally different. It can produce new elements from original tensor or tensors by applying function object to its elements.
 What is important that we can apply function object only when we refers to view element - **computation of values of expression view elements is lazy**.
 
@@ -318,7 +318,7 @@ std::cout<<std::endl<<v.is_same(v.eval());  //0
 ```
 
 There are several important points regarding expression views:
-- there is no any caching, each time you refer to element of view computation is performed
+- there is no any caching, each time you refer to element of view, computation is performed
 - view holds shallow copies of its operands, so if you mutate operands it will affect view values
 - no temporary copies created, evaluation is elementwise
 - evaluation can be easily parallelized
@@ -334,22 +334,21 @@ std::cout<<std::endl<<res;  //[(1000000){0.841,0.479,0.327,...,1e-06,1e-06,1e-06
 
 GTensor provides its own parallel execution subsystem defined in namespace `multithreading`.
 To control level of parallelizm it uses type tags which is specializations of `multithreading::exec_pol` class template.
-Integral constant in specialization means number of tasks original task is diveded to.
+Integral constant in specialization means number of tasks original task is diveded into.
 For example `multithreading::exec_pol<1>` means execute whole task in single thread.
 `multithreading::exec_pol<4>` means divide task into four roughly equal parts and try to run they in parallel.
 Whether these tasks will actually be executed in parallel mostly depends on the target system.
 
+Worth note that parallel execution not always decrease computation time, it dependes on operands shapes, complexity of expression and many other factors.
+For current example we have next mesurements of computation time:
 
+| computation  method | min,ms  | max,ms  | mean,ms | stded,ms |
+|---------------------|---------|---------|---------|----------|
+| for loop            | 41.9813 | 76.4672 | 49.6582 | 7.11313  |
+| eval(exec_pol<1>)   | 42.1112 | 75.4074 | 51.0164 | 6.87647  |
+| eval(exec_pol<2>)   | 27.8526 | 66.9853 | 46.1142 | 7.29578  |
+| eval(exec_pol<4>)   | 14.4759 | 33.8893 | 24.4906 | 7.21768  |
+| eval(exec_pol<8>)   | 7.5464  | 17.6683 | 8.50008 | 1.8831   |
+| eval(exec_pol<16>)  | 4.3118  | 5.7131  | 4.50992 | 0.281551 |
 
-
-GTensor provides means to parallelize eva
-
-each deref cause eval
-
-broadcasting
-
-arbitrary expression comlexity, n_operator
-
-assignment, a_operator
-
-composition with any tensor
+## 6 Slice, reshape, transpose and mapping view
