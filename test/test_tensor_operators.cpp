@@ -292,6 +292,12 @@ TEMPLATE_TEST_CASE("test_tensor_operators_str","[test_tensor_operators]",
     REQUIRE(str(tensor<std::pair<int,int>>{std::make_pair(0,0),std::make_pair(1,1),std::make_pair(2,1)})==std::string("[(3){...}]"));
     REQUIRE(str(tensor<std::pair<int,int>>{{std::make_pair(0,0),std::make_pair(1,1),std::make_pair(2,1)}})==std::string("[(1,3){{...}}]"));
     REQUIRE(str(tensor<std::pair<int,int>>{{std::make_pair(0,0)},{std::make_pair(1,1)},{std::make_pair(2,1)}})==std::string("[(3,1){{...},{...},{...}}]"));
+    //big tensor
+    auto ten = tensor<int>(10000,0);
+    std::iota(ten.begin(),ten.end(),0);
+    REQUIRE(str(ten)==std::string("[(10000){0,1,2,...,9997,9998,9999}]"));
+    REQUIRE(str(ten.reshape(4,-1))==std::string("[(4,2500){{0,1,2,...,2497,2498,2499},{2500,2501,2502,...,4997,4998,4999},{5000,5001,5002,...,7497,7498,7499},{7500,7501,7502,...,9997,9998,9999}}]"));
+    REQUIRE(str(ten.reshape(-1,4))==std::string("[(2500,4){{0,1,2,3},{4,5,6,7},{8,9,10,11},...,{9988,9989,9990,9991},{9992,9993,9994,9995},{9996,9997,9998,9999}}]"));
 }
 
 //test assign operators

@@ -34,24 +34,47 @@ void str_helper(const basic_tensor<Ts...>& t, std::string separator, Stream& str
         if (t.dim()>1){
             auto axis_size = t.shape()[0];
             if (axis_size > 0){
-                index_type i=0;
-                for (--axis_size; i!=axis_size; ++i){
+                if (axis_size > 6){
+                    stream<<"{",str_helper(t(0).copy(),separator,stream),stream<<"}"<<separator;
+                    stream<<"{",str_helper(t(1).copy(),separator,stream),stream<<"}"<<separator;
+                    stream<<"{",str_helper(t(2).copy(),separator,stream),stream<<"}"<<separator;
+                    stream<<"..."<<separator;
+                    stream<<"{",str_helper(t(axis_size-3).copy(),separator,stream),stream<<"}"<<separator;
+                    stream<<"{",str_helper(t(axis_size-2).copy(),separator,stream),stream<<"}"<<separator;
+                    stream<<"{",str_helper(t(axis_size-1).copy(),separator,stream),stream<<"}";
+                }else{
+                    index_type i=0;
+                    for (--axis_size; i!=axis_size; ++i){
+                        stream<<"{";
+                        str_helper(t(i).copy(),separator,stream);
+                        stream<<"}"<<separator;
+                    }
                     stream<<"{";
                     str_helper(t(i).copy(),separator,stream);
-                    stream<<"}"<<separator;
+                    stream<<"}";
                 }
-                stream<<"{";
-                str_helper(t(i).copy(),separator,stream);
-                stream<<"}";
             }
         }else{
             if constexpr (is_printable_v<value_type>){
+                const index_type n_max{1000};
                 auto it = t.begin();
                 auto last = t.end();
-                for (--last; it!=last; ++it){
-                    stream<<*it<<separator;
+                const auto n = last - it;
+                if (n>n_max){
+                        stream<<*it++<<separator;
+                        stream<<*it++<<separator;
+                        stream<<*it++<<separator;
+                        stream<<"..."<<separator;
+                        last-=index_type{3};
+                        stream<<*last++<<separator;
+                        stream<<*last++<<separator;
+                        stream<<*last;
+                }else{
+                    for (--last; it!=last; ++it){
+                        stream<<*it<<separator;
+                    }
+                    stream<<*it;
                 }
-                stream<<*it;
             }else{
                 stream<<"...";
             }
