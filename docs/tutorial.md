@@ -260,7 +260,7 @@ And we can operate on this view object as it were true array. And no data copy r
 
 GTensor provides two kinds of views:
 - View based on some index transformations, it can be slice of original tensor, reshape, transpose or selecting elements using tensor of indeces.
-This kind of view always refers to original tensor's elements, using some indexing scheem. More on this kind of view in nest section.
+This kind of view always refers to original tensor's elements, using some indexing scheem. More on this kind of view in next section.
 - **Expression view** is fundamentally different. It can produce new elements from original tensor or tensors by applying function object to its elements.
 What is important that we can apply function object only when we refers to view element - **computation of values of expression view elements is lazy**.
 
@@ -352,3 +352,127 @@ For current example we have next mesurements of computation time:
 | eval(exec_pol<16>)  | 4.3118  | 5.7131  | 4.50992 | 0.281551 |
 
 ## 6 Slice, reshape, transpose and mapping view
+
+Along with **expression view** GTensor library provides another kind of views which refers to original tensor's elements, but rearrage it in some way.
+As with **expression view**, type of this kind of view is also specialization of `basic_tensor` class template.
+View can be made from any other tensor object regardless of its implementation.
+
+### Reshape view
+
+```cpp
+using gtensor::config::c_order;
+using gtensor::config::f_order;
+gtensor::tensor<double> t{{1,2,3,4,5,6},{7,8,9,10,11,12}};
+auto v1 = t.reshape(std::vector<int>{-1,3});
+auto v2 = (t/(t-1)).reshape({3,4});
+auto v3 = t.reshape({2,-1,3},c_order{});
+auto v4 = t.reshape({6,-1},f_order{});
+std::cout<<std::endl<<v1;   //[(4,3){{1,2,3},{4,5,6},{7,8,9},{10,11,12}}]
+std::cout<<std::endl<<v2;   //[(3,4){{1,2,3,4},{5,6,7,8},{9,10,11,12}}]
+std::cout<<std::endl<<v3;   //[(2,2,3){{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}}]
+std::cout<<std::endl<<v4;   //[(6,2){{1,4},{7,10},{2,5},{8,11},{3,6},{9,12}}]
+```
+
+The first parameter of member function `reshape()` is shape of view, it should be container or std::initializer_list.
+One of dimentions in view shape can be -1, in this case its size calculated automatically, based on other dimentions and tensor size.
+The second argument is reshape order, if no oreder specified `c_order` is used. Effect of reshape order is the same as in `numpy`.
+
+### Slice view
+
+There are two interfaces to create slice view: using `slice_type` objects explicitly and using std::initializer_list.
+
+```cpp
+using tensor_type = gtensor::tensor<double>;
+using slice_type = typename tensor_type::slice_type;
+tensor_type t{1,2,3,4,5,6,7,8,9,10,11,12};
+auto v1 = t(slice_type{1,-1,2});
+auto v2 = t({{1,-1,2}});
+std::cout<<std::endl<<v1;   //[(5){2,4,6,8,10}]
+std::cout<<std::endl<<v2;   //[(5){2,4,6,8,10}]
+```
+
+In both cases `slice_type` object is constructed using three parameters: `start`,`stop`,`step`. Negative values are supported and interpreted as counting from the end.
+Any of three parameters can be missed. To select all from axis, `slice_type` object should be constructed with no arguments.
+
+```cpp
+using tensor_type = gtensor::tensor<double>;
+using slice_type = typename tensor_type::slice_type;
+tensor_type t{{1,2,3,4},{5,6,7,8},{9,10,11,12}};
+auto v1 = t(slice_type{{},{-1}});
+auto v2 = t(slice_type{},slice_type{{},{},2});
+auto v3 = t(slice_type{{},{},-1},slice_type{1,3});
+auto v4 = t(slice_type{5},slice_type{});
+auto v5 = t(slice_type{{},5},slice_type{});
+std::cout<<std::endl<<v1;   //[(2,4){{1,2,3,4},{5,6,7,8}}]
+std::cout<<std::endl<<v2;   //[(3,2){{1,3},{5,7},{9,11}}]
+std::cout<<std::endl<<v3;   //[(3,2){{10,11},{6,7},{2,3}}]
+std::cout<<std::endl<<v4;   //[(0,4){}]
+std::cout<<std::endl<<v5;   //[(3,4){{1,2,3,4},{5,6,7,8},{9,10,11,12}}]
+```
+
+Any view from above example also can be created without using `slice_type` objects explicitly:
+
+```cpp
+using tensor_type = gtensor::tensor<double>;
+tensor_type t{{1,2,3,4},{5,6,7,8},{9,10,11,12}};
+auto v1 = t({{{},{-1}}});
+auto v2 = t({{},{{},{},2}});
+auto v3 = t({{{},{},-1},{1,3}});
+auto v4 = t({{5},{}});
+auto v5 = t({{{},5},{}});
+std::cout<<std::endl<<v1;   //[(2,4){{1,2,3,4},{5,6,7,8}}]
+std::cout<<std::endl<<v2;   //[(3,2){{1,3},{5,7},{9,11}}]
+std::cout<<std::endl<<v3;   //[(3,2){{10,11},{6,7},{2,3}}]
+std::cout<<std::endl<<v4;   //[(0,4){}]
+std::cout<<std::endl<<v5;   //[(3,4){{1,2,3,4},{5,6,7,8},{9,10,11,12}}]
+```
+
+Both interfaces are equivalent and it is matter of taste which one to use.
+
+Making slice view with dimention reduction only possible when using `slice_type` objects explicitly:
+
+```cpp
+using tensor_type = gtensor::tensor<double>;
+using slice_type = typename tensor_type::slice_type;
+tensor_type t{{1,2,3,4},{5,6,7,8},{9,10,11,12}};
+auto v1 = t(1);
+auto v2 = t(2,1);
+auto v3 = t(slice_type{},0);
+auto v4 = t(slice_type{1},2);
+auto v5 = t(1,slice_type{1,-1});
+std::cout<<std::endl<<v1;   //[(4){5,6,7,8}]
+std::cout<<std::endl<<v2;   //[(){10}]
+std::cout<<std::endl<<v3;   //[(3){1,5,9}]
+std::cout<<std::endl<<v4;   //[(2){7,11}]
+std::cout<<std::endl<<v5;   //[(2){6,7}]
+```
+
+To create slice view dynamically at runtime, you can use container of `slice_type` objects:
+
+```cpp
+using tensor_type = gtensor::tensor<double>;
+using slice_type = typename tensor_type::slice_type;
+tensor_type t{{1,2,3,4},{5,6,7,8},{9,10,11,12}};
+std::vector<slice_type> subscripts{};
+subscripts.push_back(slice_type{0,-1});
+subscripts.push_back(slice_type{1,-1});
+auto v = t(subscripts);
+std::cout<<std::endl<<v;    //[(2,2){{2,3},{6,7}}]
+```
+
+To make `slice_type` object which causes dimension reduce, you should use special `reduce_teg_type`:
+
+```cpp
+using tensor_type = gtensor::tensor<double>;
+using slice_type = typename tensor_type::slice_type;
+using reduce_tag_type = typename slice_type::reduce_tag_type;
+tensor_type t{{1,2,3,4},{5,6,7,8},{9,10,11,12}};
+std::vector<slice_type> subscripts{};
+subscripts.push_back(slice_type{});
+subscripts.push_back(slice_type{2,reduce_tag_type{}});
+auto v = t(subscripts);
+std::cout<<std::endl<<v;    //[(3){3,7,11}]
+```
+
+### Transopose view
+
