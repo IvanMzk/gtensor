@@ -209,7 +209,7 @@ std::cout<<std::endl<<a;    //[(2,3){{2,3,4},{5,6,7}}]
 std::cout<<std::endl<<b;    //[(2,3){{2,3,4},{5,6,7}}]
 ```
 
-Here we first construct tensor `a`, than copy construct `b` from `a` and mutate `a`.
+Here we first construct tensor `a`, then copy construct `b` from `a` and mutate `a`.
 Due to reference semantic `a` and `b` share the same implementation, that is mutating `a` causes mutating `b`.
 
 To make deep copy:
@@ -562,3 +562,95 @@ auto v2 = t((t*t)<(t+10));
 std::cout<<std::endl<<v1;   //[(5){7,4,5,8,5}]
 std::cout<<std::endl<<v2;   //[(8){3,1,2,1,3,0,2,2}]
 ```
+
+## 7 `basic_tensor` assign semantic
+
+`basic_tensor` objects can expose different assign semantic, depending on its type and assign expression:
+- value assign semantic
+- elementwise (or broadcast) assign semantic
+
+Consider example:
+
+```cpp
+using tensor_type = gtensor::tensor<double>;
+tensor_type a{1,2,3};
+tensor_type b{{4,5,6},{7,8,9}};
+a = b;
+std::cout<<std::endl<<a;    //[(2,3){{4,5,6},{7,8,9}}]
+a = a + b;
+std::cout<<std::endl<<a;    //[(2,3){{8,10,12},{14,16,18}}]
+a = 0;
+std::cout<<std::endl<<a;    //[(){0}]
+```
+
+As expected after first assign `a` has the same value as `b`.
+After second assign `a` has the same value as `a + b`.
+All assignments expose **value assign semantic**.
+
+In next example assignment has different semantic:
+
+```cpp
+using tensor_type = gtensor::tensor<double>;
+tensor_type a{{1,2,3},{4,5,6}};
+a.assign(tensor_type{7,8,9});
+std::cout<<std::endl<<a;    //[(2,3){{7,8,9},{7,8,9}}]
+a.assign(a+1);
+std::cout<<std::endl<<a;    //[(2,3){{8,9,10},{8,9,10}}]
+a.assign(0);
+std::cout<<std::endl<<a;    //[(2,3){{0,0,0},{0,0,0}}]
+```
+
+Here we use `assign()` member function to assign to `a` - lhs.
+This function has broadcast assign semantic.
+It takes single argument, that can be tensor or scalar - rhs.
+If rhs is tensor it must be broadcastable with lhs.
+
+### Assign to view
+
+In first example `operator=()` exposes value assign semantic, but this is not always the case.
+The point is that definition of `operator=()` in `basic_tensor` class template differs for **lvalue** and **rvalue** objects i.e. operator is **ref-qualified**.
+Being called on **lvalue** object assignment operator has value semantic, on **rvalue** object it has broadcast semantic.
+
+It can be useful when **assigning to view**:
+
+```cpp
+using tensor_type = gtensor::tensor<double>;
+tensor_type a{{7,3,4,6},{1,5,6,2},{1,8,3,5},{0,2,6,2}};
+a(a>6) = 0;
+std::cout<<std::endl<<a;    //[(4,4){{0,3,4,6},{1,5,6,2},{1,0,3,5},{0,2,6,2}}]
+a({{1,-1}}) = tensor_type{-1,-1,-1,-1};
+std::cout<<std::endl<<a;    //[(4,4){{0,3,4,6},{-1,-1,-1,-1},{-1,-1,-1,-1},{0,2,6,2}}]
+auto v = a(0);
+std::move(v) = 11;
+std::cout<<std::endl<<a;    //[(4,4){{11,11,11,11},{-1,-1,-1,-1},{-1,-1,-1,-1},{0,2,6,2}}]
+```
+
+Using member function `assign()` would have the same effect.
+
+```cpp
+using tensor_type = gtensor::tensor<double>;
+tensor_type a{{7,3,4,6},{1,5,6,2},{1,8,3,5},{0,2,6,2}};
+a(a>6).assign(0);
+std::cout<<std::endl<<a;    //[(4,4){{0,3,4,6},{1,5,6,2},{1,0,3,5},{0,2,6,2}}]
+a({{1,-1}}).assign(tensor_type{-1,-1,-1,-1});
+std::cout<<std::endl<<a;    //[(4,4){{0,3,4,6},{-1,-1,-1,-1},{-1,-1,-1,-1},{0,2,6,2}}]
+auto v = a(0);
+v.assign(11);
+std::cout<<std::endl<<a;    //[(4,4){{11,11,11,11},{-1,-1,-1,-1},{-1,-1,-1,-1},{0,2,6,2}}]
+```
+
+As consequence `a=b` and `std::move(a)=b` usually have different effect.
+
+Any assign to **expression view** will not compile. Value assign to ordinary view will not compile.
+In fact we can value assign only to tensor with storage implementation i.e. created using `tensor` class template.
+
+
+|                 | value assign |             broadcast assign            |
+|:---------------:|:------------:|:---------------------------------------:|
+|      tensor     |    lhs=rhs   | lhs.assign(rhs)<br/> std::move(lhs)=rhs |
+|       view      |       X      | lhs.assign(rhs)<br/> std::move(lhs)=rhs |
+| expression view |       X      |                    X                    |
+
+
+## 8 `basic_tensor` equality semantic
+
