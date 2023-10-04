@@ -652,5 +652,68 @@ In fact we can value assign only to tensor with storage implementation i.e. crea
 | expression view |       X      |                    X                    |
 
 
-## 8 `basic_tensor` equality semantic
+## 8 `basic_tensor` equality
+
+Two tensors are considered **equal** if their shapes and elements are equal.
+
+```cpp
+using tensor_type = tensor<double>;
+tensor_type a{{1,2,3},{4,5,6}};
+tensor_type b{1,2,3,4,5,6};
+tensor_type c{{1,2,3},{3,2,1}};
+std::cout<<std::endl<<(a==b);   //0
+std::cout<<std::endl<<(a==b.reshape(2,3));  //1
+std::cout<<std::endl<<(a.flatten()==b);     //1
+std::cout<<std::endl<<(a==c);   //0
+```
+
+If value_type is **IEEE 754** floating-point type, `nan` elements optionaly can be compared as equal:
+
+```cpp
+using tensor_type = tensor<double>;
+constexpr auto nan = std::numeric_limits<double>::quiet_NaN()
+tensor_type a{{1,2,nan},{4,5,6}};
+tensor_type b{{1,2,nan},{4,5,6}};
+std::cout<<std::endl<<tensor_equal(a,b);        //0
+std::cout<<std::endl<<tensor_equal(a,b,true);   //1
+```
+
+`tensor_equal()` free function takes two tensors to compare and optional bool argument, if `true` is passed then `nans` compared as equal. It is `false` by default.
+
+For floating-point value_type strict elements equality is not very useful. More practical approach is to check whether tensors are close within tolerance.
+Two tensors are considered **close** if their shapes are equal and elements are close within tolerance.
+
+```cpp
+using tensor_type = tensor<double>;
+tensor_type a{{1.12345,2.12345,3.12345},{4.12345,5.12345,6.12345}};
+tensor_type b{{1.12345,2.12345,3.12355},{4.12325,5.12345,6.12375}};
+std::cout<<std::endl<<tensor_close(a,b);    //0
+std::cout<<std::endl<<tensor_close(a,b,1E-6,1E-6);  //0
+std::cout<<std::endl<<tensor_close(a,b,1E-3,1E-3);  //1
+```
+
+`tensor_close()` free function takes two tensors to compare and optional absolute and relative tolerance. By default both tolerance are equal to machine epsilon.
+
+`allclose()` free function is similar to `tensor_close()` except tensors may be broadcastable.
+
+```cpp
+using tensor_type = tensor<double>;
+tensor_type a{{1.12345,2.12345,3.12345},{1.12345,2.12345,3.12345}};
+tensor_type b{1.12345,2.12345,3.12355};
+std::cout<<std::endl<<allclose(a,b);    //0
+std::cout<<std::endl<<allclose(a,b,1E-6,1E-6);  //0
+std::cout<<std::endl<<allclose(a,b,1E-3,1E-3);  //1
+```
+
+`basic_tensor` class template also has member functions `equal()` and `not_equal()` which have quite different meaning than functions we just discussed above.
+These functions provide **broadcast equality and inequality** the result is **expression view** of bool value_type.
+
+```cpp
+using tensor_type = tensor<double>;
+tensor_type t{{1,2,3},{3,2,1}};
+std::cout<<std::endl<<t.equal(3);   //[(2,3){{0,0,1},{1,0,0}}]
+std::cout<<std::endl<<t.not_equal(3);   //[(2,3){{1,1,0},{0,1,1}}]
+std::cout<<std::endl<<t.equal(tensor_type{{0,2,1},{3,2,0}});    //[(2,3){{0,1,0},{1,1,0}}]
+std::cout<<std::endl<<t.not_equal(tensor_type{3,2,0});  //[(2,3){{1,0,1},{0,0,1}}]
+```
 
