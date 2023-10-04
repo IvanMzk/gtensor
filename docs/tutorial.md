@@ -476,3 +476,67 @@ std::cout<<std::endl<<v;    //[(3){3,7,11}]
 
 ### Transopose view
 
+In general transpose view rearrange axes of original tensor. By default axes rearranged in reverse order.
+
+```cpp
+gtensor::tensor<double> t{{1,2,3,4},{5,6,7,8},{9,10,11,12}};
+auto v1 = t.transpose();
+auto v2 = t.transpose().transpose();
+std::cout<<std::endl<<v1;   //[(4,3){{1,5,9},{2,6,10},{3,7,11},{4,8,12}}]
+std::cout<<std::endl<<v2;   //[(3,4){{1,2,3,4},{5,6,7,8},{9,10,11,12}}]
+```
+
+We can specify axes order explicitly:
+
+```cpp
+gtensor::tensor<double> t{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}}};
+auto v1 = t.transpose();
+auto v2 = t.transpose(2,1,0);
+auto v3 = t.transpose(std::vector<int>{1,0,2});
+auto v4 = t.transpose(0,1,2);
+std::cout<<std::endl<<v1;   //[(2,2,3){{{1,5,9},{3,7,11}},{{2,6,10},{4,8,12}}}]
+std::cout<<std::endl<<v2;   //[(2,2,3){{{1,5,9},{3,7,11}},{{2,6,10},{4,8,12}}}]
+std::cout<<std::endl<<v3;   //[(2,3,2){{{1,2},{5,6},{9,10}},{{3,4},{7,8},{11,12}}}]
+std::cout<<std::endl<<v4;   //[(3,2,2){{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}}}]
+```
+
+### Mapping view
+
+Mapping view uses another tensor with indexes or bools as subscript to select elements from original tensor.
+Selecting is performed according to rules in `numpy`.
+
+Next example uses tensor of integral indexes to select elements:
+
+```cpp
+using gtensor::tensor;
+tensor<double> t{1,2,3,4,5,6,7,8,9,10,11,12};
+auto v1 = t(tensor<int>{2,1,0,8,9,0});
+auto v2 = t(tensor<int>{{2,1,0},{8,9,0}});
+auto v3 = t.reshape(3,4)(tensor<int>{1,0,1,2});
+auto v4 = t.reshape(3,4)(tensor<int>{0,0,2,2},tensor<int>{0,3,0,3});
+std::cout<<std::endl<<v1;   //[(6){3,2,1,9,10,1}]
+std::cout<<std::endl<<v2;   //[(2,3){{3,2,1},{9,10,1}}]
+std::cout<<std::endl<<v3;   //[(4,4){{5,6,7,8},{1,2,3,4},{5,6,7,8},{9,10,11,12}}]
+std::cout<<std::endl<<v4;   //[(4){1,4,9,12}]
+```
+
+Next example uses tensor of bools to select elements, using `bool` type is mandatory:
+
+```cpp
+using gtensor::tensor;
+tensor<double> t{{1,2,3,4},{5,6,7,8},{9,10,11,12}};
+auto v1 = t(tensor<bool>{false,true,false,true});
+auto v2 = t(tensor<bool>{{false,true,false,true},{true,false,true,false},{false,true,true,false}});
+std::cout<<std::endl<<v1;   //[(2,4){{1,2,3,4},{9,10,11,12}}]
+std::cout<<std::endl<<v2;   //[(6){2,4,5,7,10,11}]
+```
+
+We can use **expression view** of `bool` value_type to select elements by condition:
+
+```cpp
+gtensor::tensor<double> t{{7,3,4,6},{1,5,6,2},{1,8,3,5},{0,2,6,2}};
+auto v1 = t(t>3 && t.not_equal(6));
+auto v2 = t((t*t)<(t+10));
+std::cout<<std::endl<<v1;   //[(5){7,4,5,8,5}]
+std::cout<<std::endl<<v2;   //[(8){3,1,2,1,3,0,2,2}]
+```
