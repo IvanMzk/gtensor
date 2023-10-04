@@ -322,6 +322,16 @@ There are several important points regarding expression views:
 - view holds shallow copies of its operands, so if you mutate operands it will affect view values
 - no temporary copies created, evaluation is elementwise
 - evaluation can be easily parallelized
+- `value_type` of expression veiw is determined by value_types of its operands and expression itself, look at next example
+
+```cpp
+gtensor::tensor<double> t1{{1,2,3},{4,5,6}};
+gtensor::tensor<int> t2{3,8,2};
+auto sum = t1+t2;   //sum is tensor of doubles
+auto cmp = t1>t2;   //cmp is tensor of bools
+std::cout<<std::endl<<std::is_same_v<typename decltype(sum)::value_type,double>;    //1
+std::cout<<std::endl<<std::is_same_v<typename decltype(cmp)::value_type,bool>;      //1
+```
 
 Evaluation can be easily parallelized using overloaded versions of `copy()` and `eval()`:
 
@@ -518,6 +528,18 @@ std::cout<<std::endl<<v1;   //[(6){3,2,1,9,10,1}]
 std::cout<<std::endl<<v2;   //[(2,3){{3,2,1},{9,10,1}}]
 std::cout<<std::endl<<v3;   //[(4,4){{5,6,7,8},{1,2,3,4},{5,6,7,8},{9,10,11,12}}]
 std::cout<<std::endl<<v4;   //[(4){1,4,9,12}]
+```
+
+Using container of tensors of indexes is also supported:
+
+```cpp
+using gtensor::tensor;
+tensor<double> t{{1,2,3,4},{5,6,7,8},{9,10,11,12}};
+std::vector<tensor<int>> subscript{};
+subscript.push_back(tensor<int>{0,0,2,2});
+subscript.push_back(tensor<int>{0,3,0,3});
+auto v = t(subscript);
+std::cout<<std::endl<<v;    //[(4){1,4,9,12}]
 ```
 
 Next example uses tensor of bools to select elements, using `bool` type is mandatory:
