@@ -717,7 +717,7 @@ std::cout<<std::endl<<t.equal(tensor_type{{0,2,1},{3,2,0}});    //[(2,3){{0,1,0}
 std::cout<<std::endl<<t.not_equal(tensor_type{3,2,0});  //[(2,3){{1,0,1},{0,0,1}}]
 ```
 
-## 9 `basic_tensor` data and meta-data inteface
+## 9 `basic_tensor` data and meta-data interface
 
 Next example shows member functions `basic_tensor` provides to access its **meta-data**.
 
@@ -801,7 +801,8 @@ std::cout<<std::endl<<std::is_same_v<typename decltype(t_c)::order,c_order>;    
 std::cout<<std::endl<<std::is_same_v<typename decltype(t_f)::order,f_order>;    //1
 ```
 
-In this example first copy has original layout, next two copies have `c_order` and `f_order` layouts accordingly. Worth mention that `eval()` always use original layout.
+In this example first copy has original layout, next two copies have `c_order` and `f_order` layouts accordingly.
+Worth mention that `eval()` always returns result in original layout.
 
 ```cpp
 using gtensor::config::c_order;
@@ -816,5 +817,53 @@ std::cout<<std::endl<<v_f;  //[(3,2){{1,5},{4,3},{2,6}}]
 ```
 
 `reshape()` has the same effect as in **numpy**, it uses `c_order` by default.
+
+### Trivial iterator
+
+It doesn't matter you traverse view tensor, expression view tensor, or tensor with storage implementation. Everything works the same.
+But for **expression view** important optimization is possible.
+
+Next example explains this:
+
+```cpp
+gtensor::tensor<double> t1{1,2,3};
+gtensor::tensor<double> t2{4,5,6};
+auto v_trivial = t1+t2;
+auto v = t1+t2.reshape(-1,1)
+std::cout<<std::endl<<v_trivial;    //[(3){5,7,9}]
+std::cout<<std::endl<<v_trivial.is_trivial();   //1
+std::cout<<std::endl<<v;    //[(3,3){{5,6,7},{6,7,8},{7,8,9}}]
+std::cout<<std::endl<<v.is_trivial();   //0
+```
+
+The first expression view `v_trivial` is created using two operands of same shape,
+to evaluate it we need go along its operands element by element and apply to each pair of elements `plus` functor. The logic is simple and introduce a little overhead.
+
+On other hand, the second expression view `v` can't be evaluated in that way, due to different operands shapes.
+In this case we need more complex logic to handle with broadcast, whiсh in turn introduces much more overhead.
+
+We call expression views like first **trivial expression view**.
+`basic_tensor` provides `is_trivial()` member function, that returns `true` if trensor is **trivial** and `false` otherwise.
+Tensors with storage implementation is always considered **trivial**, whether **view** is trivial depends on its structure.
+
+GTensor library provides special iterator interface to traverse trivial tensors.
+
+```cpp
+gtensor::tensor<double> t1{1,2,3};
+gtensor::tensor<double> t2{4,5,6};
+auto v_trivial = (t1+t2)*(t1-t2);
+std::cout<<std::endl<<v_trivial;    //[(3){-15,-21,-27}]
+std::cout<<std::endl<<v_trivial.is_trivial();   //1
+std::cout<<std::endl;
+std::copy(v_trivial.begin_trivial(),v_trivial.end_trivial(),std::ostream_iterator<double>(std::cout,","));  //-15,-21,-27,
+std::cout<<std::endl;
+std::copy(v_trivial.rbegin_trivial(),v_trivial.rend_trivial(),std::ostream_iterator<double>(std::cout,","));    //-27,-21,-15,
+```
+
+Using this interface to traverse tensor for which `is_trivial()` returns `false` is **UB**.
+In fact library exploits this to optimize expression view evaluation.
+
+Trivial iterator interface works the same as ordinary i.e. we can change traverse order, use reverse iteration and const iterators.
+
 
 ## 10 GTensor config
