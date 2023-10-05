@@ -859,11 +859,11 @@ std::copy(v_trivial.begin_trivial(),v_trivial.end_trivial(),std::ostream_iterato
 std::cout<<std::endl;
 std::copy(v_trivial.rbegin_trivial(),v_trivial.rend_trivial(),std::ostream_iterator<double>(std::cout,","));    //-27,-21,-15,
 ```
-
-Using this interface to traverse tensor for which `is_trivial()` returns `false` is **UB**.
 In fact library exploits this to optimize expression view evaluation.
-
 Trivial iterator interface works the same as ordinary i.e. we can change traverse order, use reverse iteration and const iterators.
+
+Using trivial iterator interface interface to traverse tensor for which `is_trivial()` returns `false` is **UB**.
+
 
 
 ## 10 GTensor config
