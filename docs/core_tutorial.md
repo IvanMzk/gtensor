@@ -1,8 +1,12 @@
-# Tutorial
+# GTensor core tutorial
+
+**Contents**
+1. [Multidimensional array abstraction, **data** and **meta-data**](#section_1)
+2. [`tensor` and `basic_tensor` class templates](#section_2)
 
 This tutorial describes the main points of using GTensor library, its structure and functions.
 
-## 1. Multidimensional array abstraction, `data` and `meta-data`
+## 1. Multidimensional array abstraction, **data** and **meta-data** {#section_1}
 
 GTensor library is meant for computing over multidimensional arrays. Such an array is abstraction which mainly consists of two parts: meta-data and data as an analogy to form and matter in philosophy.
 
@@ -13,7 +17,7 @@ In most practical implementations data and meta-data are implemented using flat 
 To be useful, array abstraction generally should provide interface to access its data and meta-data elements and hide other implementation details.
 It is common practice to use `iterator interface` for data and member functions like `shape()`, `strides()`, `dim()`, `size()` for meta-data.
 
-## 2. `tensor` and `basic_tensor` class templates
+## 2. `tensor` and `basic_tensor` class templates {#section_2}
 
 `basic_tensor` class template represent multidimensional array abstraction, its declaration:
 

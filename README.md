@@ -26,7 +26,7 @@ Cmake build system is used to build tests, benchmarks and to automate installati
 ## Documentation
 
 1. [Getting started guide](/docs/getting_started.md)
-2. [Tutorial](/docs/tutorial.md)
+2. [GTensor core tutorial](/docs/core_tutorial.md)
 
 ## Including into project
 
