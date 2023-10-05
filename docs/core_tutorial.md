@@ -12,13 +12,13 @@
 9. [`basic_tensor` data and meta-data interface](#section_9)
 10. [GTensor config](#section_10)
 
-This tutorial describes the main points of using GTensor library, its structure and functions.
+This tutorial describes the core points of using GTensor library, its structure and functions.
 
 ## 1. Multidimensional array abstraction <a id=section_1></a>
 
 GTensor library is meant for computing over multidimensional arrays. Such an array is abstraction which mainly consists of two parts: **meta-data** and **data** as an analogy to form and matter in philosophy.
 
-In most practical implementations data and meta-data are implemented using flat arrays of elements but with different meanings.
+In most practical implementations both data and meta-data are implemented using flat arrays of elements but with different meanings.
 - data elements can be of any type, suitable for goals of computation, e.g. integral, floating-point, complex or even some user-defined type
 - meta-data elements usually of integral type due to its purpose: describe multidimensional structure of data elements, index data elements
 
@@ -85,7 +85,7 @@ In fact `tensor` class template just defines constructors suitable to initialize
 
 As mentioned above we should use `tensor` class template to construct `basic_tensor` object from value.
 
-Next examples shows possible ways to do this:
+Next examples show possible ways to do this:
 
 ```cpp
 using gtensor::tensor;
