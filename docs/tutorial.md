@@ -728,13 +728,13 @@ auto size = t.size();
 auto empty = t.empty();
 const auto& shape = t.shape();
 const auto& strides = t.strides();
-std::cout<<std::endl<<dim;
-std::cout<<std::endl<<size;
-std::cout<<std::endl<<empty;
+std::cout<<std::endl<<dim;  //3
+std::cout<<std::endl<<size; //12
+std::cout<<std::endl<<empty;    //0
 std::cout<<std::endl;
-std::copy(shape.begin(),shape.end(),std::ostream_iterator<int>(std::cout,","));
+std::copy(shape.begin(),shape.end(),std::ostream_iterator<int>(std::cout,",")); //2,2,3,
 std::cout<<std::endl;
-std::copy(strides.begin(),strides.end(),std::ostream_iterator<int>(std::cout,","));
+std::copy(strides.begin(),strides.end(),std::ostream_iterator<int>(std::cout,",")); //6,3,1,
 ```
 
 To access its **data** `basic_tensor` provides iterator interface.
