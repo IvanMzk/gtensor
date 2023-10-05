@@ -1,14 +1,22 @@
 # GTensor core tutorial
 
 **Contents**
-1. [Multidimensional array abstraction, **data** and **meta-data**](#section_1)
+1. [Multidimensional array abstraction](#section_1)
 2. [`tensor` and `basic_tensor` class templates](#section_2)
+3. [`basic_tensor` construction](#section_3)
+4. [`basic_tensor` copy and move construction semantic](#section_4)
+5. [Expression view and lazy evaluation](#section_5)
+6. [Slice, reshape, transpose and mapping view](#section_6)
+7. [`basic_tensor` assign semantic](#section_7)
+8. [`basic_tensor` equality](#section_8)
+9. [`basic_tensor` data and meta-data interface](#section_9)
+10. [GTensor config](#section_10)
 
 This tutorial describes the main points of using GTensor library, its structure and functions.
 
-## 1. Multidimensional array abstraction, **data** and **meta-data** <a id=section_1></a>
+## 1. Multidimensional array abstraction <a id=section_1></a>
 
-GTensor library is meant for computing over multidimensional arrays. Such an array is abstraction which mainly consists of two parts: meta-data and data as an analogy to form and matter in philosophy.
+GTensor library is meant for computing over multidimensional arrays. Such an array is abstraction which mainly consists of two parts: **meta-data** and **data** as an analogy to form and matter in philosophy.
 
 In most practical implementations data and meta-data are implemented using flat arrays of elements but with different meanings.
 - data elements can be of any type, suitable for goals of computation, e.g. integral, floating-point, complex or even some user-defined type
@@ -73,7 +81,7 @@ We see that `tensor<int>` is `basic_tensor` parameterized with storage implement
 
 In fact `tensor` class template just defines constructors suitable to initialize storage implementation and nothing more. All of member functions are defined in `basic_tensor`.
 
-## 3. `basic_tensor` construction
+## 3. `basic_tensor` construction <a id=section_3></a>
 
 As mentioned above we should use `tensor` class template to construct `basic_tensor` object from value.
 
@@ -184,7 +192,7 @@ auto sum = t+t;
 What is `decltype(sum)`? It is not of type `tensor<double>` as you might think.
 It looks like: `gtensor::basic_tensor<gtensor::tensor_implementation<gtensor::expression_template_core<...>>>`. It is also `basic_tensor` specialization, but parameterized with special implementation type. We call such tensors **expression view**. Almost all operators on tensor produce expression views. More detailed this topic will be discussed in next sections.
 
-## 4. `basic_tensor` copy and move construction semantic
+## 4. `basic_tensor` copy and move construction semantic <a id=section_4></a>
 
 `basic_tensor` has reference copy-construction semantic. Possible implementation of `basic_tensor` class template:
 
@@ -257,7 +265,7 @@ auto squares = make_squares(7);
 std::cout<<std::endl<<squares;  //[(7){0,1,4,9,16,25,36}]
 ```
 
-## 5 Expression view and lazy evaluation
+## 5 Expression view and lazy evaluation <a id=section_5></a>
 
 In general, given multidimensional array object, view of this array is another object which provides us with some different way to look at original array's data.
 And we can operate on this view object as it were true array. And no data copy required.
@@ -365,7 +373,7 @@ For current example we have next mesurements of computation time:
 | eval(exec_pol<8>)   | 7.5464  | 17.6683 | 8.50008 | 1.8831   |
 | eval(exec_pol<16>)  | 4.3118  | 5.7131  | 4.50992 | 0.281551 |
 
-## 6 Slice, reshape, transpose and mapping view
+## 6 Slice, reshape, transpose and mapping view <a id=section_6></a>
 
 Along with **expression view** GTensor library provides another kind of views which refers to original tensor's elements, but rearrage it in some way.
 As with **expression view**, type of this kind of view is also specialization of `basic_tensor` class template.
@@ -567,7 +575,7 @@ std::cout<<std::endl<<v1;   //[(5){7,4,5,8,5}]
 std::cout<<std::endl<<v2;   //[(8){3,1,2,1,3,0,2,2}]
 ```
 
-## 7 `basic_tensor` assign semantic
+## 7 `basic_tensor` assign semantic <a id=section_7></a>
 
 `basic_tensor` objects can expose different assign semantic, depending on its type and assign expression:
 - value assign semantic
@@ -656,7 +664,7 @@ In fact we can value assign only to tensor with storage implementation i.e. crea
 | expression view |       X      |                    X                    |
 
 
-## 8 `basic_tensor` equality
+## 8 `basic_tensor` equality <a id=section_8></a>
 
 Two tensors are considered **equal** if their shapes and elements are equal.
 
@@ -721,7 +729,7 @@ std::cout<<std::endl<<t.equal(tensor_type{{0,2,1},{3,2,0}});    //[(2,3){{0,1,0}
 std::cout<<std::endl<<t.not_equal(tensor_type{3,2,0});  //[(2,3){{1,0,1},{0,0,1}}]
 ```
 
-## 9 `basic_tensor` data and meta-data interface
+## 9 `basic_tensor` data and meta-data interface <a id=section_9></a>
 
 Next example shows member functions `basic_tensor` provides to access its **meta-data**.
 
@@ -868,7 +876,7 @@ Trivial iterator interface works the same as ordinary i.e. we can change travers
 
 Using trivial iterator interface to traverse tensor for which `is_trivial()` returns `false` is **UB**.
 
-## 10 GTensor config
+## 10 GTensor config <a id=section_10></a>
 
 To make tensor know its configuration, template type parmeter `Config` is used.
 Default config is `gtensor::config::default_config`.
