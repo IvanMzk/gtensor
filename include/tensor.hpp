@@ -276,7 +276,7 @@ public:
     template<typename T=value_type, typename Config=config_type, typename Order = order, typename Policy, std::enable_if_t<multithreading::is_policy_v<Policy>,int> =0>
     auto copy(Policy policy, Order order_=Order{})const{
         ASSERT_ORDER(Order);
-        tensor<T,Order,Config> res(shape());
+        tensor<T,Order,config::extend_config_t<Config,T>> res(shape());
         auto a = traverse_order_adapter(order_);
         auto a_res = res.traverse_order_adapter(order_);
         if (is_trivial()){

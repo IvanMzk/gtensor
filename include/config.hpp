@@ -28,6 +28,8 @@ using f_order = std::integral_constant<orders, orders::f>;
 struct default_config
 {
     using engine = engine_expression_template;
+
+    //specify whether to use optimized division
     using div_mode = mode_div_libdivide;
     //using div_mode = mode_div_native;
 
@@ -36,15 +38,11 @@ struct default_config
     //using order = f_order;
 
     //data elements storage template
-    //must provide at least storage(const difference_type& n) constructor, which constructs storage of size n
-    //must provide at least subscript const operator or const iterator
     template<typename T> using storage = gtensor::basic_storage<T>;
-    //template<typename T> using storage = std::vector<T>;
 
     //meta-data elements storage template i.e. shape, strides are specialization of shape
     //must provide std::vector like interface
     template<typename T> using shape = gtensor::stack_prealloc_vector<T,8>;
-    //template<typename T> using shape = std::vector<T>;
 
     //generally when public interface expected container parameter it may be any type providig usual container semantic and interface: iterators, aliases...
     //specialization of config_type::container uses as return type in public interface
@@ -52,13 +50,8 @@ struct default_config
     //must provide std::vector like interface
     template<typename T> using container = std::vector<T>;
 
-    //must provide at least index_map(const diference_type& n) constructor, which constructs map of size n
-    //must provide subscript interface such that:
-    //T& operator[](const U&), where T is index_type - type used to address data elements, U is index_map<T>::difference_type and static_assert(std::is_convertible_v<T,U>) must hold
-    //index_type is defined in extended_config as storage<T>::difference_type, where T is data element type (value_type)
-    //it means that static_asert(std::is_convertible_v<storage<T>::difference_type, index_map<storage<T>::difference_type>::difference_type>) must hold
     //index_map specialization is used in mapping_descriptor that is descriptor type of mapping_view
-    //it is natural to use storage as index_map in general, but if storage is specific e.g. map to file system, these should differ
+    //it is natural to use storage as index_map in general, but if storage is specific e.g. map to file system or network, these should differ
     template<typename T> using index_map = storage<T>;
 };
 

@@ -28,7 +28,7 @@ You should never create `basic_tensor` objects directly. To construct `basic_ten
 `tensor` class template is intended to make `basic_tensor` with storage implementation, its definition:
 
 ```cpp
-template<typename T, typename Layout = config::f_order, typename Config = config::extend_config_t<config::default_config,T>>
+template<typename T, typename Layout = config::c_order, typename Config = config::extend_config_t<config::default_config,T>>
 class tensor : public basic_tensor<typename tensor_factory_selector_t<Config,T,Layout>::result_type>
 {
 ...
@@ -862,8 +862,83 @@ std::copy(v_trivial.rbegin_trivial(),v_trivial.rend_trivial(),std::ostream_itera
 In fact library exploits this to optimize expression view evaluation.
 Trivial iterator interface works the same as ordinary i.e. we can change traverse order, use reverse iteration and const iterators.
 
-Using trivial iterator interface interface to traverse tensor for which `is_trivial()` returns `false` is **UB**.
-
-
+Using trivial iterator interface to traverse tensor for which `is_trivial()` returns `false` is **UB**.
 
 ## 10 GTensor config
+
+To make tensor know its configuration, template type parmeter `Config` is used.
+Default config is `gtensor::config::default_config`.
+
+```cpp
+enum class div_modes : std::size_t {native, libdivide};
+enum class engines : std::size_t {expression_template};
+enum class orders : std::size_t {c,f};
+
+using mode_div_native = std::integral_constant<div_modes, div_modes::native>;
+using mode_div_libdivide = std::integral_constant<div_modes, div_modes::libdivide>;
+using engine_expression_template = std::integral_constant<engines, engines::expression_template>;
+using c_order = std::integral_constant<orders, orders::c>;
+using f_order = std::integral_constant<orders, orders::f>;
+
+struct default_config
+{
+    using engine = engine_expression_template;
+
+    //specify whether to use optimized division
+    using div_mode = mode_div_libdivide;
+    //using div_mode = mode_div_native;
+
+    //specify default traverse order of iterators
+    using order = c_order;
+    //using order = f_order;
+
+    //data elements storage template
+    template<typename T> using storage = gtensor::basic_storage<T>;
+
+    //meta-data elements storage template i.e. shape, strides are specialization of shape
+    //must provide std::vector like interface
+    template<typename T> using shape = gtensor::stack_prealloc_vector<T,8>;
+
+    //generally when public interface expected container parameter it may be any type providig usual container semantic and interface: iterators, aliases...
+    //specialization of config_type::container uses as return type in public interface
+    //it may be used by implementation as general purpose container
+    //must provide std::vector like interface
+    template<typename T> using container = std::vector<T>;
+
+    //index_map specialization is used in mapping_descriptor that is descriptor type of mapping_view
+    //it is natural to use storage as index_map in general, but if storage is specific e.g. map to file system or network, these should differ
+    template<typename T> using index_map = storage<T>;
+};
+```
+
+As we see `default_config` contain only type and template aliases and no data members.
+`default_config` doesn't provide types for underlaying storage and shape but only aliase templates.
+Motivation for such design is to make it possible to **rebind** to another value_type.
+
+Look at `tensor` class template definition
+
+```cpp
+template<typename T, typename Layout = config::c_order, typename Config = config::extend_config_t<config::default_config,T>>
+class tensor : public basic_tensor<typename tensor_factory_selector_t<Config,T,Layout>::result_type>
+{
+...
+};
+```
+
+Default argument for `Config` parameter is `config::extend_config_t<config::default_config,T>`, result type is like `default_config` struct,
+but with some new aliases defined: `storage_type`, `shape_type` which are **type aliases**.
+We say that `gtensor::config::extend_config_t` trait **rebind** given config to given value_type.
+
+Consider example:
+
+```cpp
+gtensor::tensor<int> t{1,2,3,4,5};
+auto t_double = t.template copy<double>();
+std::cout<<std::endl<<std::is_same_v<typename decltype(t)::value_type, int>;    //1
+std::cout<<std::endl<<std::is_same_v<typename decltype(t_double)::value_type, double>;  //1
+```
+
+Here we explicitly specialize `copy()` to make copy of `t` but with `double` value_type.
+Config of result type will be original config rebinded to `double`.
+
+Worth mention that after **rebind** storage_type may be quiet different, consider `std::vector<bool>`.
