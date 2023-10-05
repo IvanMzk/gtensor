@@ -717,3 +717,104 @@ std::cout<<std::endl<<t.equal(tensor_type{{0,2,1},{3,2,0}});    //[(2,3){{0,1,0}
 std::cout<<std::endl<<t.not_equal(tensor_type{3,2,0});  //[(2,3){{1,0,1},{0,0,1}}]
 ```
 
+## 9 `basic_tensor` data and meta-data inteface
+
+Next example shows member functions `basic_tensor` provides to access its **meta-data**.
+
+```cpp
+gtensor::tensor<double> t{{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}};
+auto dim = t.dim();
+auto size = t.size();
+auto empty = t.empty();
+const auto& shape = t.shape();
+const auto& strides = t.strides();
+std::cout<<std::endl<<dim;
+std::cout<<std::endl<<size;
+std::cout<<std::endl<<empty;
+std::cout<<std::endl;
+std::copy(shape.begin(),shape.end(),std::ostream_iterator<int>(std::cout,","));
+std::cout<<std::endl;
+std::copy(strides.begin(),strides.end(),std::ostream_iterator<int>(std::cout,","));
+```
+
+To access its **data** `basic_tensor` provides iterator interface.
+
+```cpp
+using gtensor::config::c_order;
+using gtensor::config::f_order;
+gtensor::tensor<double,c_order> t_c{{1,2,3},{4,5,6}};
+gtensor::tensor<double,f_order> t_f{{1,2,3},{4,5,6}};
+std::cout<<std::endl;
+std::copy(t_c.begin(),t_c.end(),std::ostream_iterator<double>(std::cout,","));  //1,2,3,4,5,6,
+std::cout<<std::endl;
+std::copy(t_f.begin(),t_f.end(),std::ostream_iterator<double>(std::cout,","));  //1,2,3,4,5,6,
+std::cout<<std::endl;
+std::copy(t_c.rbegin(),t_c.rend(),std::ostream_iterator<double>(std::cout,","));    //6,5,4,3,2,1,
+std::cout<<std::endl;
+std::copy(t_f.rbegin(),t_f.rend(),std::ostream_iterator<double>(std::cout,","));    //6,5,4,3,2,1,
+```
+
+By default iterator traverse order is **c_order** and it doesn't depend on tensor's **layout**.
+Default traverse order can be changed using `Config` template parameter of `tensor` class template.
+More about this in next section.
+
+To specify traverse order explicitly in programm `basic_tensor` provide `traverse_order_adapder` helper.
+
+```cpp
+using gtensor::config::c_order;
+using gtensor::config::f_order;
+gtensor::tensor<double> t{{1,2,3},{4,5,6}};
+auto tr_adapt_c = t.traverse_order_adapter(c_order{});
+std::cout<<std::endl;
+std::copy(tr_adapt_c.begin(),tr_adapt_c.end(),std::ostream_iterator<double>(std::cout,","));    //1,2,3,4,5,6,
+std::cout<<std::endl;
+std::copy(tr_adapt_c.rbegin(),tr_adapt_c.rend(),std::ostream_iterator<double>(std::cout,","));  //6,5,4,3,2,1,
+
+auto tr_adapt_f = t.traverse_order_adapter(f_order{});
+std::cout<<std::endl;
+std::copy(tr_adapt_f.begin(),tr_adapt_f.end(),std::ostream_iterator<double>(std::cout,","));    //1,4,2,5,3,6,
+std::cout<<std::endl;
+std::copy(tr_adapt_f.rbegin(),tr_adapt_f.rend(),std::ostream_iterator<double>(std::cout,","));  //6,3,5,2,4,1,
+```
+
+There are several important points regarding **traverse order** and **tensor layout**:
+- the same `c_order` and `f_order` type tags are used to specify both traverse order and tensor layout
+- although **traverse order** and **tensor layout** are related, they mean different things.
+**Tensor layout** determines order of elements in underlaying storage, whereas **traverse order** determines order of elements when they are accessed using iterator.
+- any combinations of layout and traverse order are possible
+- iterator performs the best when traverse order and layout are the same. Traverse tensor elements in order different than tensor layout comes at some cost.
+
+Most of the GTensor library functions that takes input tensor, and return result tensor doesn't change layout. But some does.
+
+```cpp
+using gtensor::config::c_order;
+using gtensor::config::f_order;
+gtensor::tensor<double> t{{1,2,3},{4,5,6}};
+auto t_original = t.copy();
+auto t_c = t.copy(c_order{});
+auto t_f = t.copy(f_order{});
+std::cout<<std::endl<<t_original;  //[(2,3){{1,2,3},{4,5,6}}]
+std::cout<<std::endl<<t_c;         //[(2,3){{1,2,3},{4,5,6}}]
+std::cout<<std::endl<<t_f;         //[(2,3){{1,2,3},{4,5,6}}]
+std::cout<<std::endl<<std::is_same_v<typename decltype(t_original)::order,typename decltype(t)::order>;    //1
+std::cout<<std::endl<<std::is_same_v<typename decltype(t_c)::order,c_order>;    //1
+std::cout<<std::endl<<std::is_same_v<typename decltype(t_f)::order,f_order>;    //1
+```
+
+In this example first copy has original layout, next two copies have `c_order` and `f_order` layouts accordingly. Worth mention that `eval()` always use original layout.
+
+```cpp
+using gtensor::config::c_order;
+using gtensor::config::f_order;
+gtensor::tensor<double> t{{1,2,3},{4,5,6}};
+auto v = t.reshape({3,2});
+auto v_c = t.reshape({3,2},c_order{});
+auto v_f = t.reshape({3,2},f_order{});
+std::cout<<std::endl<<v;    //[(3,2){{1,2},{3,4},{5,6}}]
+std::cout<<std::endl<<v_c;  //[(3,2){{1,2},{3,4},{5,6}}]
+std::cout<<std::endl<<v_f;  //[(3,2){{1,5},{4,3},{2,6}}]
+```
+
+`reshape()` has the same effect as in **numpy**, it uses `c_order` by default.
+
+## 10 GTensor config

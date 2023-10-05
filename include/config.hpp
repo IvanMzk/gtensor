@@ -60,7 +60,6 @@ struct default_config
     //index_map specialization is used in mapping_descriptor that is descriptor type of mapping_view
     //it is natural to use storage as index_map in general, but if storage is specific e.g. map to file system, these should differ
     template<typename T> using index_map = storage<T>;
-
 };
 
 template<typename Config, typename IdxT>
