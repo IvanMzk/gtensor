@@ -418,11 +418,11 @@ tensor<Ts...>& NAME(tensor<Ts...>&& lhs, Rhs&& rhs){\
 }
 
 //cast
-template<typename To, typename T>
-auto cast(T&& t){
-    using T_ = std::remove_cv_t<std::remove_reference_t<T>>;
-    ASSERT_TENSOR(T_);
-    return gtensor::tensor_operators_selector_t<typename T_::config_type>::template cast<To>(std::forward<T>(t));
+template<typename To, typename Tensor>
+auto cast(Tensor&& t){
+    using Tensor_ = std::remove_cv_t<std::remove_reference_t<Tensor>>;
+    ASSERT_TENSOR(Tensor_);
+    return gtensor::tensor_operators_selector_t<typename Tensor_::config_type>::template cast<To>(std::forward<Tensor>(t));
 }
 
 //elementwise ternary operator, arguments can be tensor or scalar, shapes must broadcast
