@@ -1,4 +1,4 @@
-# Tensor module quick reference
+# `tensor` and `basic_tensor` quick reference
 
 Tensor module resides in **tensor.hpp**.
 It defines `tensor` and `basic_tensor` class templates and also includes tensor operators and routines to make views.
