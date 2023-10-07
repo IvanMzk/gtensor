@@ -381,11 +381,15 @@ public:
     auto create_walker(){
         return impl().create_walker();
     }
+    auto data(){
+        return impl().data();
+    }
     //return data interface adapter with specified traverse order
     template<typename TraverseOrder>
     auto traverse_order_adapter(TraverseOrder){
         return detail::traverse_order_adapter<impl_type,TraverseOrder>{impl()};
     }
+
     //const data interface
     auto begin()const{
         return impl().template begin<traverse_order>();
@@ -423,6 +427,9 @@ public:
     }
     auto create_walker()const{
         return impl().create_walker();
+    }
+    auto data()const{
+        return impl().data();
     }
     template<typename TraverseOrder>
     auto traverse_order_adapter(TraverseOrder)const{

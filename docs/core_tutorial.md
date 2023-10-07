@@ -35,9 +35,9 @@ template<typename Impl> class basic_tensor;
 
 It takes single type template parameter `Impl` that is type of implementation.
 
-You should never create `basic_tensor` objects directly. To construct `basic_tensor` object from value you should use `tensor` class template.
+You should never create `basic_tensor` objects directly. To construct `basic_tensor` object you may use `tensor` class template.
 
-`tensor` class template is intended to make `basic_tensor` with storage implementation, its definition:
+`tensor` class template is intended to construct `basic_tensor` objects with storage implementation, its definition:
 
 ```cpp
 template<typename T, typename Layout = config::c_order, typename Config = config::extend_config_t<config::default_config,T>>
@@ -50,9 +50,9 @@ class tensor : public basic_tensor<typename tensor_factory_selector_t<Config,T,L
 As we see `tensor` is `basic_tensor` and it directly specifies its implementation type using trait.
 
 `tensor` class template takes three type template parameters:
-- T is type of data element
-- Layout can be of type gtensor::config::c_order or gtensor::config::f_order and defines storage scheme of data elements
-- Config is struct that contain `tensor` implementation details: alias templates of containers for data and meta-data elements, default traverse order for iterators and other.
+- **T** is type of data element
+- **Layout** can be of type gtensor::config::c_order or gtensor::config::f_order and defines storage scheme of data elements
+- **Config** is struct that contain `tensor` implementation details: alias templates of containers for data and meta-data elements, default traverse order for iterators and other.
 It will be covered in more details further.
 
 Consider example:
@@ -83,7 +83,7 @@ In fact `tensor` class template just defines constructors suitable to initialize
 
 ## 3. `basic_tensor` construction <a id=section_3></a>
 
-As mentioned above we should use `tensor` class template to construct `basic_tensor` object from value.
+As mentioned above we should use `tensor` class template to construct `basic_tensor` object.
 
 Next examples show possible ways to do this:
 
@@ -414,7 +414,7 @@ using gtensor::config::c_order;
 using gtensor::config::f_order;
 gtensor::tensor<double> t{{1,2,3,4,5,6},{7,8,9,10,11,12}};
 auto v1 = t.reshape(std::vector<int>{-1,3});
-auto v2 = (t/(t-1)).reshape({3,4});
+auto v2 = t.reshape({3,4});
 auto v3 = t.reshape({2,-1,3},c_order{});
 auto v4 = t.reshape({6,-1},f_order{});
 std::cout<<std::endl<<v1;   //[(4,3){{1,2,3},{4,5,6},{7,8,9},{10,11,12}}]
@@ -425,7 +425,7 @@ std::cout<<std::endl<<v4;   //[(6,2){{1,4},{7,10},{2,5},{8,11},{3,6},{9,12}}]
 
 The first parameter of member function `reshape()` is shape of view, it should be container or std::initializer_list.
 One of dimentions in view shape can be -1, in this case its size calculated automatically, based on other dimentions and tensor size.
-The second argument is reshape order, if no oreder specified `c_order` is used. Effect of reshape order is the same as in `numpy`.
+The second argument is reshape order, if no oreder specified `c_order` is used. Effect of reshape order is the same as in **numpy**.
 
 ### Slice view
 
@@ -448,7 +448,7 @@ Any of three parameters can be missed. To select all from axis, `slice_type` obj
 using tensor_type = gtensor::tensor<double>;
 using slice_type = typename tensor_type::slice_type;
 tensor_type t{{1,2,3,4},{5,6,7,8},{9,10,11,12}};
-auto v1 = t(slice_type{{},{-1}});
+auto v1 = t(slice_type{{},-1});
 auto v2 = t(slice_type{},slice_type{{},{},2});
 auto v3 = t(slice_type{{},{},-1},slice_type{1,3});
 auto v4 = t(slice_type{5},slice_type{});
@@ -479,7 +479,7 @@ std::cout<<std::endl<<v5;   //[(3,4){{1,2,3,4},{5,6,7,8},{9,10,11,12}}]
 
 Both interfaces are equivalent and it is matter of taste which one to use.
 
-Making slice view with dimention reduction only possible when using `slice_type` objects explicitly:
+Making slice view with dimension reduction only possible when using `slice_type` objects explicitly:
 
 ```cpp
 using tensor_type = gtensor::tensor<double>;
@@ -510,7 +510,7 @@ auto v = t(subscripts);
 std::cout<<std::endl<<v;    //[(2,2){{2,3},{6,7}}]
 ```
 
-To make `slice_type` object which causes dimension reduce, you should use special `reduce_teg_type`:
+To make `slice_type` object which causes dimension reduce, you should use special `reduce_tag_type`:
 
 ```cpp
 using tensor_type = gtensor::tensor<double>;
@@ -553,7 +553,7 @@ std::cout<<std::endl<<v4;   //[(3,2,2){{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,1
 ### Mapping view
 
 Mapping view uses another tensor with indexes or bools as subscript to select elements from original tensor.
-Selecting is performed according to rules in `numpy`.
+Selecting is performed according to rules in **numpy**.
 
 Next example uses tensor of integral indexes to select elements:
 

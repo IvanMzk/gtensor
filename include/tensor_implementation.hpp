@@ -576,6 +576,9 @@ public:
     auto create_walker(){
         return detail::create_walker(core_,descriptor());
     }
+    auto data(){
+        return core_.data();
+    }
 
     //const data interface
     template<typename Order>
@@ -619,6 +622,9 @@ public:
     }
     auto create_walker()const{
         return detail::create_walker(core_,descriptor());
+    }
+    auto data()const{
+        return core_.data();
     }
 
     //trivial data interface

@@ -167,6 +167,13 @@ public:
     template<typename Storage_ = storage_type, std::enable_if_t<detail::has_callable_subscript_operator<const Storage_>::value,int> =0>
     decltype(auto) operator[](index_type i)const{return elements_[i];}
 
+    value_type* data(){
+        return elements_.data();
+    }
+    const value_type* data()const{
+        return elements_.data();
+    }
+
     constexpr bool is_trivial()const{return true;}
 
 private:
