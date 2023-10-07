@@ -305,6 +305,25 @@ Operands of expression view can be of any tensor type i.e. any specialization of
 Expressions can have any complexity, it is not limited by implementation. Very **deep** expressions may increase compilation time.
 Almost all operators on tensor and math functions produce expression views.
 
+GTensor library provides easy way to create expression views using custom function objects:
+
+```cpp
+gtensor::tensor<double> t1{{1,2,3},{4,5,6}};
+gtensor::tensor<double> t2{7,8,9};
+auto custom_f = [](const auto& a, const auto& b, const auto& c){return (a+b)*c;};
+auto v1 = gtensor::n_operator(custom_f,t1,t2,t2);
+auto v2 = gtensor::n_operator(custom_f,t1,5,3);
+auto v3 = gtensor::n_operator(custom_f,t1,5,t2);
+std::cout<<std::endl<<v1;   //[(2,3){{56,80,108},{77,104,135}}]
+std::cout<<std::endl<<v2;   //[(2,3){{18,21,24},{27,30,33}}]
+std::cout<<std::endl<<v3;   //[(2,3){{42,56,72},{63,80,99}}]
+```
+
+`n_operator()` free function takes function object and expression operands as arguments and returns expression veiw.
+Arity of function object must equal to number of operands.
+Operands can be tensors or scalars, and must be broadcastable. At least one operand must be tensor.
+In fact almost all library funsctions that perform lazy computations use `n_operator()` in their implementation.
+
 As we see **expression view** tensor doesn't perform any computations when constructed. There are two member functions to force evaluation: `copy()` and `eval()`.
 
 ```cpp
