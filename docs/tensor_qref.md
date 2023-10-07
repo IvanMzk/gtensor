@@ -3,8 +3,9 @@
 Tensor module resides in **tensor.hpp**.
 It defines `tensor` and `basic_tensor` class templates and also includes tensor operators and routines to make views.
 
+`basic_tensor` class template represents multidimensional array abstraction, which may have different implementations.
 `basic_tensor` objects should be never constructed directly.
-`tensor` class template is intended to construct `basic_tensor` objects with storage implementation.
+`tensor` class template is intended to construct `basic_tensor` object with storage implementation.
 In fact it just defines constructors suitable to initialize storage implementation and nothing more.
 
 ## Template parameters
@@ -34,7 +35,7 @@ tensor<double> t4(std::vector<int>{2,3});   //2d tensor with shape (2,3), whethe
 tensor<double> t5({2,3},4);   //2d tensor with shape (2,3), all elements are initialized to have value 4
 //shape and iterators range
 std::vector<double> elems{1,2,3,4,5,6}
-tensor<double> t6({2,3},elems.begin(),elemes.end());   //2d tensor with shape (2,3), elements are initialied using values from range
+tensor<double> t6({2,3},elems.begin(),elemes.end());   //2d tensor with shape (2,3), elements are initialized using values from range
 ```
 
 ## Copy and move constructors
