@@ -180,7 +180,6 @@ Makes tensor of numbers spaced evenly on a log scale with endpoints specified di
 template<typename T=detail::no_value, typename Order = config::c_order, typename Config = config::default_config, typename Start, typename Stop, typename Num=int, typename DimT=int>
 auto geomspace(const Start& start, const Stop& stop, const Num& num=50, bool end_point=true, const DimT& axis=0);
 ```
-
 ```cpp
 auto res1 = gtensor::geomspace(1,1000,4);
 auto res2 = gtensor::geomspace(1,gtensor::tensor<double>{2,10,100},6);
@@ -198,7 +197,6 @@ k=0 refers to the main diagonal, k>0 refers to an upper diagonal, k<0 to lower d
 template<typename IdxT=int, typename...Ts>
 auto diag(const basic_tensor<Ts...>& t, const IdxT& k=0);
 ```
-
 ```cpp
 auto res1 = diag(gtensor::tensor<double>{{1,2,3,4},{5,6,7,8},{9,10,11,12}});
 auto res2 = diag(gtensor::tensor<double>{{1,2,3,4},{5,6,7,8},{9,10,11,12}},1);
