@@ -8,6 +8,8 @@ It defines `tensor` and `basic_tensor` class templates and also includes tensor 
 `tensor` class template is intended to construct `basic_tensor` object with storage implementation.
 In fact it just defines constructors suitable to initialize storage implementation and nothing more.
 
+Tensor object is instance of `basic_tensor` class template specialization, regardless of used implementation type.
+
 ## Template parameters
 
 ```cpp
