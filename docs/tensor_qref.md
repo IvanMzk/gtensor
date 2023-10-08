@@ -1,6 +1,6 @@
-# `tensor` and `basic_tensor` quick reference
+# `tensor` and `basic_tensor`
 
-Tensor module resides in **tensor.hpp**.
+**Tensor** module resides in **tensor.hpp** header.
 It defines `tensor` and `basic_tensor` class templates and also includes tensor operators and routines to make views.
 
 `basic_tensor` class template represents multidimensional array abstraction, which may have different implementations.
@@ -76,7 +76,7 @@ a({{},{0,1}}) = 9;  //a is [(2,3){{9,2,3},{9,8,7}}]
 std::move(a) = gtensor::tensor<double>{1,2,3}; //equivalent to a.assign(...), a is [(2,3){{1,2,3},{1,2,3}}]
 ```
 
-## Copy, eval
+## copy, eval
 
 ```cpp
 gtensor::tensor<double> a{{1,2,3},{4,5,6}};
@@ -93,7 +93,7 @@ auto b = (a+a).eval(multithreading::exec_pol<4>{});  //b is tensor constructed f
 auto c = (a+a).copy(multithreading::exec_pol<4>{});  //the same as above
 ```
 
-## Swap
+## swap
 
 ```cpp
 gtensor::tensor<double> a{{1,2,3},{4,5,6}};
@@ -101,7 +101,7 @@ gtensor::tensor<double> b{7,8,9};
 a.swap(b);  //swap implementations, no data copy
 ```
 
-## Resize
+## resize
 
 `resize()` preserves existing elements.
 
@@ -113,7 +113,7 @@ a.resize({2,2});
 std::cout<<std::endl<<a;    //[(2,2){{1,2},{3,4}}]
 ```
 
-## Flatten
+## flatten
 
 `flatten()` always returns copy, not view.
 
@@ -127,7 +127,7 @@ std::cout<<std::endl<<c;    //[(6){1,4,2,5,3,6}]
 std::cout<<std::endl<<d;    //[(6){1,2,3,4,5,6}]
 ```
 
-## Dim, shape, size
+## dim, shape, size
 
 ```cpp
 gtensor::tensor<double> t{{1,2,3},{4,5,6}};
@@ -189,7 +189,7 @@ std::cout<<std::endl<<v3;   //[(2,2,3){{{1,2,3},{4,5,6}},{{7,8,9},{10,11,12}}}]
 std::cout<<std::endl<<v4;   //[(6,2){{1,4},{7,10},{2,5},{8,11},{3,6},{9,12}}]
 ```
 
-## Ravel
+## ravel
 
 `ravel(order)` is equivalent to `reshape({-1},order)`, result is always view.
 

@@ -1,4 +1,4 @@
-# Tensor operators quick reference
+# Tensor operators
 
 Almost all tensor operators produce **expression views** which are specializations of `basic_tensor` class template.
 As `tensor` class template intended to construct `basic_tensor` objects with storage implementation,
@@ -51,7 +51,7 @@ auto& operator+=(basic_tensor<Impl1>& lhs, const basic_tensor<Impl2>& rhs){
 }
 ```
 
-## Str and output
+## str and output
 
 ```cpp
 //returns tensor string representation as std::string object
@@ -136,7 +136,7 @@ All operators and functions described below are lazy and return **expression vie
 Operands may be tensor or scalar, but at least one operand must be tensor.
 Operands must be broadcastable.
 
-### Cast
+### cast
 
 ```cpp
 gtensor::tensor<int> t{1,2,3,4,5};
@@ -145,7 +145,7 @@ std::cout<<std::endl<<t_double; //[(5){1,2,3,4,5}]
 std::cout<<std::endl<<std::is_same_v<typename decltype(t_double)::value_type,double>;   //1
 ```
 
-### Where (broadcast ternary operator)
+### where (broadcast ternary operator)
 
 ```cpp
 gtensor::tensor<int> t{{1,2,3},{4,5,6}};

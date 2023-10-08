@@ -355,11 +355,11 @@ private:
 //make tensor of given shape
 //tensor elements initialization depends on underlaying storage implementation: does storage initialize elements when constructed like this: storage_type(n), n is storage size
 template<typename T, typename Order = config::c_order, typename Config = config::default_config, typename ShT>
-static auto empty(ShT&& shape){
+auto empty(ShT&& shape){
     return builder_selector_t<Config>::template empty<T,Order,Config>(std::forward<ShT>(shape));
 }
 template<typename T, typename Order = config::c_order, typename Config = config::default_config, typename U>
-static auto empty(std::initializer_list<U> shape){
+auto empty(std::initializer_list<U> shape){
     return builder_selector_t<Config>::template empty<T,Order,Config>(shape);
 }
 
