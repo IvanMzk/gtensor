@@ -138,9 +138,11 @@ Operands must be broadcastable.
 
 ### cast
 
+`static_cast` is used underneath.
+
 ```cpp
 gtensor::tensor<int> t{1,2,3,4,5};
-auto t_double = gtensor::cast<double>(t);   //expression view uses static_cast
+auto t_double = gtensor::cast<double>(t);
 std::cout<<std::endl<<t_double; //[(5){1,2,3,4,5}]
 std::cout<<std::endl<<std::is_same_v<typename decltype(t_double)::value_type,double>;   //1
 ```

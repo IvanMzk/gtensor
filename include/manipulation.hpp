@@ -696,7 +696,7 @@ static auto split_by_points(const basic_tensor<Ts...>& t, const IdxContainer& sp
         slices_type slices(static_cast<slices_size_type>(t.dim()));
         auto slices_axis_it = std::next(slices.begin(),static_cast<slices_size_type>(axis));
         do{
-            index_type next_point = *split_points_it;
+            const auto next_point = static_cast<const index_type&>(*split_points_it);
             *slices_axis_it = slice_type{point, next_point};
             res.push_back(t(slices));
             point = next_point;
@@ -723,7 +723,7 @@ static auto split_equal_parts(const basic_tensor<Ts...>& t, const IdxT& parts_nu
 
     detail::check_split_by_equal_parts_args(t,axis_,parts_number_);
     const auto axis = detail::make_axis(t.dim(),axis_);
-    const auto parts_number = static_cast<index_type>(parts_number_);
+    const auto parts_number = static_cast<const index_type&>(parts_number_);
     const index_type axis_size = t.shape()[axis];
     const index_type part_size = axis_size/parts_number;
     index_type stop{part_size};
@@ -836,10 +836,6 @@ static auto split(const basic_tensor<Ts...>& t, const IdxContainer& split_points
     return split_by_points(t, split_points, axis);
 }
 template<typename...Ts, typename DimT>
-static auto split(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::index_type> split_points, const DimT& axis){
-    return split_by_points(t, split_points, axis);
-}
-template<typename...Ts, typename DimT>
 static auto split(const basic_tensor<Ts...>& t, const typename basic_tensor<Ts...>::index_type& parts_number, const DimT& axis){
     return split_equal_parts(t, parts_number, axis);
 }
@@ -864,6 +860,7 @@ static auto hsplit(const basic_tensor<Ts...>& t, const typename basic_tensor<Ts.
 
 //manipulation module frontend
 //stack
+//join tensors along new axis, tensors must have the same shape
 template<typename DimT, typename...Us, typename...Ts>
 auto stack(const DimT& axis, const basic_tensor<Us...>& t, const Ts&...ts){
     static_assert((detail::is_tensor_v<Ts>&&...),"invalid variadic arguments: tensors expected");
@@ -876,6 +873,7 @@ auto stack(const DimT& axis, const Container& ts){
     return manipulation_selector_t<config_type>::stack(axis, ts);
 }
 //concatenate
+//join tensors along existing axis, tensors must have the same shape except concatenate axis
 template<typename DimT, typename...Us, typename...Ts>
 auto concatenate(const DimT& axis, const basic_tensor<Us...>& t, const Ts&...ts){
     static_assert((detail::is_tensor_v<Ts>&&...),"invalid variadic arguments: tensors expected");
@@ -887,6 +885,7 @@ auto concatenate(const DimT& axis, const Container& ts){
     using config_type = typename Container::value_type::config_type;
     return manipulation_selector_t<config_type>::concatenate(axis, ts);
 }
+//concatenate along 0 axis, reshapes 1-d tensors by adding leading 1 (n) -> (1,n)
 template<typename...Us, typename...Ts>
 auto vstack(const basic_tensor<Us...>& t, const Ts&...ts){
     static_assert((detail::is_tensor_v<Ts>&&...),"invalid variadic arguments: tensors expected");
@@ -900,6 +899,7 @@ auto vstack(const Container& ts){
     using config_type = typename tensor_type::config_type;
     return manipulation_selector_t<config_type>::vstack(ts);
 }
+//concatenate along 1 axis, 1-d tensors along 0 axis
 template<typename...Us, typename...Ts>
 auto hstack(const basic_tensor<Us...>& t, const Ts&...ts){
     static_assert((detail::is_tensor_v<Ts>&&...),"invalid variadic arguments: tensors expected");
@@ -914,12 +914,14 @@ auto hstack(const Container& ts){
     return manipulation_selector_t<config_type>::hstack(ts);
 }
 //block
+//assemble tensor from blocks, blocks in nested tuples
 template<typename...Ts>
 auto block(const std::tuple<Ts...>& blocks){
     static_assert(detail::is_tensor_nested_tuple_v<std::tuple<Ts...>>);
     using config_type = detail::tensor_nested_tuple_config_type_t<std::tuple<Ts...>>;
     return manipulation_selector_t<config_type>::block(blocks);
 }
+//blocks in nested initializer_list
 template<typename T>
 auto block(std::initializer_list<T> blocks){
     static_assert(detail::is_tensor_v<T>);
@@ -945,23 +947,32 @@ auto block(std::initializer_list<std::initializer_list<std::initializer_list<std
     return manipulation_selector_t<config_type>::block(blocks);
 }
 //split
-template<typename...Ts, typename IdxContainer, typename DimT, std::enable_if_t<detail::is_container_of_type_v<IdxContainer,typename basic_tensor<Ts...>::index_type>,int> =0>
-auto split(const basic_tensor<Ts...>& t, const IdxContainer& split_points, const DimT& axis){
+//Split tensor along given axis and return container of slice views
+//split points determined using split_points parameter that is container of split points
+template<typename...Ts, typename IdxContainer, typename DimT=int, std::enable_if_t<detail::is_container_of_type_v<IdxContainer,typename basic_tensor<Ts...>::index_type>,int> =0>
+auto split(const basic_tensor<Ts...>& t, const IdxContainer& split_points, const DimT& axis=0){
     using config_type = typename basic_tensor<Ts...>::config_type;
     return manipulation_selector_t<config_type>::split(t, split_points, axis);
 }
-template<typename...Ts, typename DimT>
-auto split(const basic_tensor<Ts...>& t, std::initializer_list<typename basic_tensor<Ts...>::index_type> split_points, const DimT& axis){
+template<typename...Ts, typename IdxT, typename DimT=int>
+auto split(const basic_tensor<Ts...>& t, std::initializer_list<IdxT> split_points, const DimT& axis=0){
     using config_type = typename basic_tensor<Ts...>::config_type;
     return manipulation_selector_t<config_type>::split(t, split_points, axis);
 }
-template<typename...Ts, typename DimT>
-auto split(const basic_tensor<Ts...>& t, const typename basic_tensor<Ts...>::index_type& parts_number, const DimT& axis){
+//split points determined by dividing tensor by equal parts
+template<typename...Ts, typename DimT=int>
+auto split(const basic_tensor<Ts...>& t, const typename basic_tensor<Ts...>::index_type& parts_number, const DimT& axis=0){
     using config_type = typename basic_tensor<Ts...>::config_type;
     return manipulation_selector_t<config_type>::split(t, parts_number, axis);
 }
+//split along first axis
 template<typename...Ts, typename IdxContainer, std::enable_if_t<detail::is_container_of_type_v<IdxContainer,typename basic_tensor<Ts...>::index_type>,int> =0>
 auto vsplit(const basic_tensor<Ts...>& t, const IdxContainer& split_points){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return manipulation_selector_t<config_type>::vsplit(t, split_points);
+}
+template<typename...Ts, typename IdxT>
+auto vsplit(const basic_tensor<Ts...>& t, std::initializer_list<IdxT> split_points){
     using config_type = typename basic_tensor<Ts...>::config_type;
     return manipulation_selector_t<config_type>::vsplit(t, split_points);
 }
@@ -970,8 +981,14 @@ auto vsplit(const basic_tensor<Ts...>& t, const typename basic_tensor<Ts...>::in
     using config_type = typename basic_tensor<Ts...>::config_type;
     return manipulation_selector_t<config_type>::vsplit(t, parts_number);
 }
+//split along the second axis, 1d tensor along first axis
 template<typename...Ts, typename IdxContainer, std::enable_if_t<detail::is_container_of_type_v<IdxContainer,typename basic_tensor<Ts...>::index_type>,int> =0>
 auto hsplit(const basic_tensor<Ts...>& t, const IdxContainer& split_points){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return manipulation_selector_t<config_type>::hsplit(t, split_points);
+}
+template<typename...Ts, typename IdxT>
+auto hsplit(const basic_tensor<Ts...>& t, std::initializer_list<IdxT> split_points){
     using config_type = typename basic_tensor<Ts...>::config_type;
     return manipulation_selector_t<config_type>::hsplit(t, split_points);
 }
