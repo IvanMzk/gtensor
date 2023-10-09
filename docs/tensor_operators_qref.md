@@ -51,85 +51,6 @@ auto& operator+=(basic_tensor<Impl1>& lhs, const basic_tensor<Impl2>& rhs){
 }
 ```
 
-## str and output
-
-```cpp
-//returns tensor string representation as std::string object
-template<typename P=int, typename...Ts> auto str(const basic_tensor<Ts...>& t, const P& precision=3);
-```
-
-`operator<<()` uses `str` with default precision in its implementation.
-
-```cpp
-gtensor::tensor<double> t{1.12355,2.12345,3.12348,4.12345,5.13345};
-std::cout<<std::endl<<str(t);   //[(5){1.12,2.12,3.12,4.12,5.13}]
-std::cout<<std::endl<<str(t,5); //[(5){1.1236,2.1235,3.1235,4.1235,5.1334}]
-std::cout<<std::endl<<t;    //[(5){1.12,2.12,3.12,4.12,5.13}]
-```
-
-## Tensor equality
-
-### Strict equality
-
-Two tensors are considered **equal** if their shapes and elements are equal.
-
-```cpp
-template<typename...Us, typename...Vs>
-bool tensor_equal(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, bool equal_nan = false);
-```
-
-`operator==` and `operator!=` use `tensor_equal` in their implementation.
-
-```cpp
-using tensor_type = tensor<double>;
-tensor_type a{{1,2,3},{4,5,6}};
-tensor_type b{1,2,3,4,5,6};
-tensor_type c{{1,2,3},{3,2,1}};
-std::cout<<std::endl<<(a==b);   //0
-std::cout<<std::endl<<tensor_equal(a,b);   //0
-std::cout<<std::endl<<(a==b.reshape(2,3));  //1
-std::cout<<std::endl<<tensor_equal(a,b.reshape(2,3));  //1
-std::cout<<std::endl<<(a!=c);   //1
-```
-
-### Close equality
-
-```cpp
-//return true if two tensors have same shape and close elements within specified tolerance
-template<typename...Us, typename...Vs, typename Tol>
-bool tensor_close(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, Tol relative_tolerance, Tol absolute_tolerance, bool equal_nan = false);
-
-//use machine epsilon as tolerance
-template<typename...Us, typename...Vs>
-bool tensor_close(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, bool equal_nan = false);
-
-//return true if two tensors have close elements within specified tolerance, shapes may not be equal, but must broadcast
-template<typename...Us, typename...Vs, typename Tol>
-bool allclose(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, Tol relative_tolerance, Tol absolute_tolerance, bool equal_nan = false);
-
-//use machine epsilon as tolerance
-template<typename...Us, typename...Vs>
-bool allclose(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, bool equal_nan = false)
-```
-
-```cpp
-using tensor_type = tensor<double>;
-tensor_type a{{1.12345,2.12345,3.12345},{4.12345,5.12345,6.12345}};
-tensor_type b{{1.12345,2.12345,3.12355},{4.12325,5.12345,6.12375}};
-std::cout<<std::endl<<tensor_close(a,b);    //0
-std::cout<<std::endl<<tensor_close(a,b,1E-6,1E-6);  //0
-std::cout<<std::endl<<tensor_close(a,b,1E-3,1E-3);  //1
-```
-
-```cpp
-using tensor_type = tensor<double>;
-tensor_type a{{1.12345,2.12345,3.12345},{1.12345,2.12345,3.12345}};
-tensor_type b{1.12345,2.12345,3.12355};
-std::cout<<std::endl<<allclose(a,b);    //0
-std::cout<<std::endl<<allclose(a,b,1E-6,1E-6);  //0
-std::cout<<std::endl<<allclose(a,b,1E-3,1E-3);  //1
-```
-
 ## Tensor broadcast operators
 
 All operators and functions described below are lazy and return **expression view** object.
@@ -249,4 +170,83 @@ t1|=t2;
 t1^=t2;
 t1<<=t2;
 t1>>=t2;
+```
+
+## Tensor equality
+
+### Strict equality
+
+Two tensors are considered **equal** if their shapes and elements are equal.
+
+```cpp
+template<typename...Us, typename...Vs>
+bool tensor_equal(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, bool equal_nan = false);
+```
+
+`operator==` and `operator!=` use `tensor_equal` in their implementation.
+
+```cpp
+using tensor_type = tensor<double>;
+tensor_type a{{1,2,3},{4,5,6}};
+tensor_type b{1,2,3,4,5,6};
+tensor_type c{{1,2,3},{3,2,1}};
+std::cout<<std::endl<<(a==b);   //0
+std::cout<<std::endl<<tensor_equal(a,b);   //0
+std::cout<<std::endl<<(a==b.reshape(2,3));  //1
+std::cout<<std::endl<<tensor_equal(a,b.reshape(2,3));  //1
+std::cout<<std::endl<<(a!=c);   //1
+```
+
+### Close equality
+
+```cpp
+//return true if two tensors have same shape and close elements within specified tolerance
+template<typename...Us, typename...Vs, typename Tol>
+bool tensor_close(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, Tol relative_tolerance, Tol absolute_tolerance, bool equal_nan = false);
+
+//use machine epsilon as tolerance
+template<typename...Us, typename...Vs>
+bool tensor_close(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, bool equal_nan = false);
+
+//return true if two tensors have close elements within specified tolerance, shapes may not be equal, but must broadcast
+template<typename...Us, typename...Vs, typename Tol>
+bool allclose(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, Tol relative_tolerance, Tol absolute_tolerance, bool equal_nan = false);
+
+//use machine epsilon as tolerance
+template<typename...Us, typename...Vs>
+bool allclose(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, bool equal_nan = false)
+```
+
+```cpp
+using tensor_type = tensor<double>;
+tensor_type a{{1.12345,2.12345,3.12345},{4.12345,5.12345,6.12345}};
+tensor_type b{{1.12345,2.12345,3.12355},{4.12325,5.12345,6.12375}};
+std::cout<<std::endl<<tensor_close(a,b);    //0
+std::cout<<std::endl<<tensor_close(a,b,1E-6,1E-6);  //0
+std::cout<<std::endl<<tensor_close(a,b,1E-3,1E-3);  //1
+```
+
+```cpp
+using tensor_type = tensor<double>;
+tensor_type a{{1.12345,2.12345,3.12345},{1.12345,2.12345,3.12345}};
+tensor_type b{1.12345,2.12345,3.12355};
+std::cout<<std::endl<<allclose(a,b);    //0
+std::cout<<std::endl<<allclose(a,b,1E-6,1E-6);  //0
+std::cout<<std::endl<<allclose(a,b,1E-3,1E-3);  //1
+```
+
+## str and output
+
+```cpp
+//returns tensor string representation as std::string object
+template<typename P=int, typename...Ts> auto str(const basic_tensor<Ts...>& t, const P& precision=3);
+```
+
+`operator<<()` uses `str` with default precision in its implementation.
+
+```cpp
+gtensor::tensor<double> t{1.12355,2.12345,3.12348,4.12345,5.13345};
+std::cout<<std::endl<<str(t);   //[(5){1.12,2.12,3.12,4.12,5.13}]
+std::cout<<std::endl<<str(t,5); //[(5){1.1236,2.1235,3.1235,4.1235,5.1334}]
+std::cout<<std::endl<<t;    //[(5){1.12,2.12,3.12,4.12,5.13}]
 ```
