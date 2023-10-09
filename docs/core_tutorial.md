@@ -389,6 +389,8 @@ For example `multithreading::exec_pol<1>` means execute whole task in single thr
 `multithreading::exec_pol<4>` means divide task into four roughly equal parts and try to run they in parallel.
 Whether these tasks will actually be executed in parallel mostly depends on the target system.
 
+Almost all library routines that perform reductions have version that takes such tags as their first parameter to run reduction in multiple threads.
+
 Worth note that parallel execution not always decrease computation time, it dependes on operands shapes, complexity of expression and many other factors.
 For current example we have next mesurements of computation time:
 
