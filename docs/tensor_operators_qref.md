@@ -53,7 +53,7 @@ auto& operator+=(basic_tensor<Impl1>& lhs, const basic_tensor<Impl2>& rhs){
 
 ## Tensor broadcast operators
 
-All operators and functions described below are lazy and return **expression view** object.
+All operators and functions described in this section are lazy and return **expression view** object.
 Operands may be tensor or scalar, but at least one operand must be tensor.
 Operands must be broadcastable.
 
