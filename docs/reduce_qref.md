@@ -16,9 +16,13 @@ auto reduce_binary(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes
 ```
 
 Reduction is performed along axes, `axes` can be scalar or container.
+
 `f` is **binary** reduce function object that operates on input tensor's elements.
+
 If `keep_dims` is `true`, the axes which are reduced are left in the result as dimensions with size one.
+
 Optional `initial` value can be specified.
+
 `policy` is specialization of `multithreading::exec_pol`.
 
 ```cpp
@@ -43,7 +47,9 @@ template<typename Policy, typename F, typename Axes, typename...Ts, typename...A
 auto reduce_range(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, F f, bool keep_dims, bool any_order, const Args&...args);
 ```
 
-Reduction is performed along axes, axes can be scalar or container. `f` is reduce function object with signature equivalent to:
+Reduction is performed along axes, `axes` can be scalar or container.
+
+`f` is reduce function object with signature equivalent to:
 
 ```cpp
 template<typename It, typename...Args>
@@ -51,7 +57,9 @@ auto reduce_f(It first, It last, const Args&...args);
 ```
 
 `args` are optional parameters.
+
 If `any_order` is true iterators traverse order unspecified, `c_order` otherwise.
+
 `policy` is specialization of `multithreading::exec_pol`.
 
 ```cpp
