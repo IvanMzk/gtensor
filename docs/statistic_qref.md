@@ -23,9 +23,11 @@ auto NAME(Policy policy, const basic_tensor<Ts...>& t, bool keep_dims = false);
 ```
 
 `axes` can be scalar or container. If no axes specified computations is performed like over flatten input.
-Negative values allowed and mean counting from end.
+Negative values are allowed and mean counting from the end.
 
 `keep_dims` is `false` by default. If `true` is passed, the axes which are reduced are left in the result as dimensions with size one.
+
+`policy` type is specialization of `multithreading::exec_pol`.
 
 ```cpp
 gtensor::tensor<double> t{{{4,1,0,2,3},{1,1,4,7,5}},{{3,6,1,6,2},{4,2,7,4,3}}};

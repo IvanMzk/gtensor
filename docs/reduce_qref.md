@@ -23,7 +23,7 @@ If `keep_dims` is `true`, the axes which are reduced are left in the result as d
 
 Optional `initial` value can be specified.
 
-`policy` is specialization of `multithreading::exec_pol`.
+`policy` type is specialization of `multithreading::exec_pol`.
 
 ```cpp
 gtensor::tensor<double> t{{1,2,3},{4,5,6}};
