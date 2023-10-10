@@ -89,18 +89,18 @@ Returns the indices of the minimum values along an axes.
 
 ```cpp
 template<typename...Ts, typename Axes>
-auto NAME(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false);
+auto argmin(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false);
 template<typename...Ts, typename DimT>
-auto NAME(const basic_tensor<Ts...>& t, std::initializer_list<DimT> axes, bool keep_dims = false);
+auto argmin(const basic_tensor<Ts...>& t, std::initializer_list<DimT> axes, bool keep_dims = false);
 template<typename...Ts>
-auto NAME(const basic_tensor<Ts...>& t, bool keep_dims = false);
+auto argmin(const basic_tensor<Ts...>& t, bool keep_dims = false);
 template<typename Policy, typename...Ts, typename Axes>
 //parallel version
-auto NAME(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false);
+auto argmin(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false);
 template<typename Policy, typename...Ts, typename DimT>
-auto NAME(Policy policy, const basic_tensor<Ts...>& t, std::initializer_list<DimT> axes, bool keep_dims = false);
+auto argmin(Policy policy, const basic_tensor<Ts...>& t, std::initializer_list<DimT> axes, bool keep_dims = false);
 template<typename Policy, typename...Ts>
-auto NAME(Policy policy, const basic_tensor<Ts...>& t, bool keep_dims = false);
+auto argmin(Policy policy, const basic_tensor<Ts...>& t, bool keep_dims = false);
 ```
 
 `axes` along which to find minimum. Can be container or scalar. Negative values are allowed and mean counting from the end.
