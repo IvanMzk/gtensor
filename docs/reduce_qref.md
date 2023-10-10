@@ -58,22 +58,27 @@ auto reduce_f(It first, It last, const Args&...args);
 
 `args` are optional parameters.
 
-If `any_order` is true iterators traverse order unspecified, `c_order` otherwise.
+If `any_order` is `true` iterators traverse order unspecified, `c_order` otherwise.
 
 `policy` is specialization of `multithreading::exec_pol`.
 
+Next example shows possible **median** implementation using `reduce_range`.
+
 ```cpp
-gtensor::tensor<double> t{{1,2,3},{4,5,6}};
-auto sum = [](auto first, auto last, auto init){
-    if (first==last){return init;}
-    return std::accumulate(first,last,init,std::plus<void>{});
+gtensor::tensor<double> t{{4,1,0,2,3},{1,1,4,7,5},{3,6,1,6,2},{4,2,7,4,3}};
+auto median = [](auto first, auto last){
+    if (first==last){throw std::runtime_error("empty range to reduce");}
+    std::vector<double> tmp(first,last);
+    std::sort(tmp.begin(),tmp.end());
+    const auto n = tmp.size();
+    return (n%2 == 0) ? (tmp[n/2] + tmp[n/2-1])/2 : tmp[n/2];
 };
-auto res1 = reduce_range(t,0,sum,false,true,0.0);
-auto res2 = reduce_range(t,std::vector<int>{0,1},sum,false,true,1.0);
-auto res3 = reduce_range(multithreading::exec_pol<4>{},t,1,sum,false,true,0.0);
-std::cout<<std::endl<<res1; //[(3){5,7,9}]
-std::cout<<std::endl<<res2; //[(){22}]
-std::cout<<std::endl<<res3; //[(2){6,15}]
+auto res1 = reduce_range(t,0,median,false,false);
+auto res2 = reduce_range(t,std::vector<int>{0,1},median,false,false);
+auto res3 = reduce_range(multithreading::exec_pol<4>{},t,1,median,false,false);
+std::cout<<std::endl<<res1; //[(5){3.5,1.5,2.5,5,3}]
+std::cout<<std::endl<<res2; //[(){3}]
+std::cout<<std::endl<<res3; //[(4){2,4,3,4}]
 ```
 
 ## slide
