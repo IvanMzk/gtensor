@@ -921,7 +921,7 @@ auto reduce_range(const basic_tensor<Ts...>& t, const Axes& axes, F f, bool keep
 //F is slide functor that takes iterators range of data to be slided, dst iterators range, optional parameters
 //F call operator must be defined like this: template<typename It,typename DstIt,typename...Args> void operator()(It first, It last, DstIt dfirst, DstIt dlast, Args...){...}
 //where Args is optional parameters
-//result tensor's has value_type should be specialized explicitly
+//result tensor's value_type should be specialized explicitly
 template<typename ResultT, typename Policy, typename Axis, typename...Ts, typename F, typename IdxT, typename...Args>
 auto slide(Policy policy, const basic_tensor<Ts...>& t, const Axis& axis, F f, const IdxT& window_size, const IdxT& window_step, const Args&...args){
     using config_type = typename basic_tensor<Ts...>::config_type;
