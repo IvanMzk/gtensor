@@ -41,6 +41,100 @@ std::cout<<std::endl<<prng1.integers(0,5,10);   //[(10){2,3,2,2,1,3,0,3,0,0}]
 std::cout<<std::endl<<prng2.integers(0,5,10);   //[(10){0,0,0,2,2,3,1,1,3,2}]
 ```
 
+## PRNG random permutations member functions
+
+### shuffle
+
+Do shuffle in-place along `axis`, the order of sub-tensors is changed but their contents remains the same.
+
+```cpp
+template<typename DimT=int, typename...Ts>
+void shuffle(basic_tensor<Ts...>& t, const DimT& axis=0);
+```
+
+```cpp
+auto prng = gtensor::default_rng(1,2,3);
+gtensor::tensor<double> a{{1,2,3},{4,5,6},{7,8,9},{10,11,12}};
+prng.shuffle(a);
+std::cout<<std::endl<<a;    //[(4,3){{4,5,6},{1,2,3},{10,11,12},{7,8,9}}]
+prng.shuffle(a,1);
+std::cout<<std::endl<<a;    //[(4,3){{4,6,5},{1,3,2},{10,12,11},{7,9,8}}]
+auto b = a.flatten();
+prng.shuffle(b);
+std::cout<<std::endl<<b;    //[(12){7,10,3,9,2,12,11,4,1,6,8,5}]
+```
+
+### permutation
+
+If `t` is tensor, returns its shuffled copy.
+If `t` is integral, returns shuffled `arange(t)`.
+
+```cpp
+template<typename T, typename DimT=int>
+auto permutation(const T& t, const DimT& axis=0);
+```
+
+```cpp
+auto prng = gtensor::default_rng(1,2,3);
+gtensor::tensor<double> a{{1,2,3},{4,5,6},{7,8,9},{10,11,12}};
+auto res1 = prng.permutation(a,1);
+auto res2 = prng.permutation(7);
+std::cout<<std::endl<<res1; //[(4,3){{2,1,3},{5,4,6},{8,7,9},{11,10,12}}]
+std::cout<<std::endl<<res2; //[(7){0,1,4,2,3,5,6}]
+```
+
+### permuted
+
+Returns copy, permuted along given `axis`.
+If no `axis` specified flatten input tensor is shuffled.
+Each slice along the given `axis` is shuffled independently of the others (which is not the case for `shuffle` and `permutation`).
+
+```cpp
+template<typename Axis=detail::no_value, typename...Ts>
+auto permuted(const basic_tensor<Ts...>& t, const Axis& axis=Axis{});
+```
+
+```cpp
+auto prng = gtensor::default_rng(1,2,3);
+gtensor::tensor<double> a{{1,2,3},{4,5,6},{7,8,9},{10,11,12}};
+auto res1 = prng.permuted(a);
+auto res2 = prng.permuted(a,1);
+std::cout<<std::endl<<res1; //[(12){11,5,8,6,1,10,2,9,12,4,7,3}]
+std::cout<<std::endl<<res2; //[(4,3){{2,3,1},{5,6,4},{7,8,9},{12,11,10}}]
+```
+
+### choice
+
+If `t` is tensor, returns random sample taken from given tensor.
+If `t` is integral, returns random sample taken from `arange(t)`.
+
+```cpp
+template<typename T, typename Size, typename DimT, typename Probabilities=detail::no_value>
+auto choice(const T& t, Size&& size, bool replace=true, const Probabilities& p=Probabilities{}, const DimT& axis=0, bool shuffle=true);
+```
+
+`size` specifies result shape, can be scalar or container.
+
+`replace` whether the sample is with or without replacement. Default is `true`, meaning that a value of `t` can be selected multiple times.
+
+`p` The probabilities associated with each element in `t`. If not given, the sample assumes a uniform distribution over all elements in `t`.
+Must be 1d tensor or container.
+
+`axis` is axis along which selection is performed. Default is 0.
+
+`shuffle` whether the sample is shuffled when sampling without replacement. Default is `true`.
+
+```cpp
+auto prng = gtensor::default_rng(3,4,5);
+gtensor::tensor<double> a{{1,2,3},{4,5,6},{7,8,9},{10,11,12}};
+auto res1 = prng.choice(a,6);
+auto res2 = prng.choice(a,4,false);
+auto res3 = prng.choice(9,std::vector<int>{3,3},true,std::vector<double>{0.05,0.6,0.05,0.05,0.05,0.05,0.05,0.05,0.05});
+std::cout<<std::endl<<res1; //[(6,3){{7,8,9},{10,11,12},{7,8,9},{7,8,9},{1,2,3},{4,5,6}}]
+std::cout<<std::endl<<res2; //[(4,3){{10,11,12},{4,5,6},{7,8,9},{1,2,3}}]
+std::cout<<std::endl<<res3; //[(3,3){{4,2,2},{1,1,1},{2,1,1}}]
+```
+
 ## PRNG member functions to draw from probability distributions
 
 All drawing member functions return tensor of random values with specified `value_type`, `layout` and `shape`.
@@ -91,7 +185,7 @@ auto random(Size&& size);
 ### binomial
 
 Returns tensor of samples drawn from a binomial distribution.
-Drawn sample represents number of successes in sequence of `n` experiments, each of which succeeds with probability `p`
+Drawn sample represents number of successes in sequence of `n` experiments, each of which succeeds with probability `p`.
 
 ```cpp
 template<typename T=int, typename Order=config::c_order, typename U, typename V, typename Size>
@@ -104,7 +198,7 @@ auto binomial(const U& n, const V& p, Size&& size);
 ### negative_binomial
 
 Returns tensor of samples drawn from a negative binomial distribution.
-Drawn sample represents number of failures in a sequence of experiments, each succeeds with probability `p`, before exactly `k` successes occur
+Drawn sample represents number of failures in a sequence of experiments, each succeeds with probability `p`, before exactly `k` successes occur.
 
 ```cpp
 template<typename T=int, typename Order=config::c_order, typename U, typename V, typename Size>

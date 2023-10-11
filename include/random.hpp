@@ -427,7 +427,7 @@ private:
         //if t is of tensor type return random sample taken from given tensor
         //if t is of integral type return random sample taken from arange(t)
         //size can be scalar or container
-        template<typename T, typename Size, typename DimT, typename Probabilities=detail::no_value>
+        template<typename T, typename Size, typename DimT=int, typename Probabilities=detail::no_value>
         auto choice(const T& t, Size&& size, bool replace=true, const Probabilities& p=Probabilities{}, const DimT& axis=0, bool shuffle=true){
             static constexpr bool is_t_tensor = detail::is_tensor_v<T>;
             static_assert(is_t_tensor || math::numeric_traits<T>::is_integral(),"t must be of tensor or integral type");
