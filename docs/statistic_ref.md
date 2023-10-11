@@ -8,18 +8,18 @@ Computes the arithmetic mean along the specified axes.
 
 ```cpp
 template<typename...Ts, typename Axes>
-auto NAME(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false);
+auto mean(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false);
 template<typename...Ts, typename DimT>
-auto NAME(const basic_tensor<Ts...>& t, std::initializer_list<DimT> axes, bool keep_dims = false);
+auto mean(const basic_tensor<Ts...>& t, std::initializer_list<DimT> axes, bool keep_dims = false);
 template<typename...Ts>
-auto NAME(const basic_tensor<Ts...>& t, bool keep_dims = false);
+auto mean(const basic_tensor<Ts...>& t, bool keep_dims = false);
 //parallel version
 template<typename Policy, typename...Ts, typename Axes>
-auto NAME(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false);
+auto mean(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false);
 template<typename Policy, typename...Ts, typename DimT>
-auto NAME(Policy policy, const basic_tensor<Ts...>& t, std::initializer_list<DimT> axes, bool keep_dims = false);
+auto mean(Policy policy, const basic_tensor<Ts...>& t, std::initializer_list<DimT> axes, bool keep_dims = false);
 template<typename Policy, typename...Ts>
-auto NAME(Policy policy, const basic_tensor<Ts...>& t, bool keep_dims = false);
+auto mean(Policy policy, const basic_tensor<Ts...>& t, bool keep_dims = false);
 ```
 
 `axes` can be scalar or container. If no axes specified computations is performed like over flatten input.

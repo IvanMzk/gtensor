@@ -312,3 +312,21 @@ std::cout<<std::endl<<v1;   //[(2,4){{1,5,6,2},{0,2,6,2}}]
 std::cout<<std::endl<<v2;   //[(8){3,6,1,6,8,3,0,2}]
 std::cout<<std::endl<<v3;   //[(5){7,4,5,8,5}]
 ```
+
+## reduce_range, reduce_binary, slide, transform
+
+These member function are shortcuts to routines defined in [reduce module](./reduce_ref.md).
+
+## all, any, min, max, sum, prod, cumsum, cumprod
+
+These member function are shortcuts to routines defined in [tensor_math module](./tensor_math_ref.md).
+
+## mean, var, stdev, median, ptp
+
+These member function are shortcuts to routines defined in [statistic module](./statistic_ref.md).
+
+## sort, argsort, argmin, argmax, nonzero
+
+These member function are shortcuts to routines defined in [sort_search module](./sort_search_ref.md).
+
+`sort` member function sorts tensor in-place, whereas module routine makes sorted copy.
