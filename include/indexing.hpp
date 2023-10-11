@@ -367,7 +367,7 @@ auto take(const basic_tensor<Ts...>& t, const basic_tensor<Us...>& indexes){
     return indexing_selector_t<config_type>::take(t,indexes);
 }
 
-//take values from the input array by matching 1d index and data slices
+//take values from the input tensor by matching 1d index and data slices
 template<typename DimT, typename...Ts, typename...Us>
 auto take_along_axis(const basic_tensor<Ts...>& t, const basic_tensor<Us...>& indexes, const DimT& axis){
     using config_type = typename basic_tensor<Ts...>::config_type;
