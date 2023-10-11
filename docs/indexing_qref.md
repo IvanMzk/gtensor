@@ -31,6 +31,7 @@ std::cout<<std::endl<<res2; //[(2,2,4){{{9,10,11,12},{1,2,3,4}},{{5,6,7,8},{9,10
 
 Takes values from the input tensor by matching 1d index and data slices.
 Functions returning an index along an axis, like `argsort` and `argpartition`, produce suitable indices for this function.
+The effect is same as in **numpy**.
 
 ```cpp
 template<typename DimT, typename...Ts, typename...Us>
