@@ -117,7 +117,7 @@ auto choice(const T& t, Size&& size, bool replace=true, const Probabilities& p=P
 
 `replace` whether the sample is with or without replacement. Default is `true`, meaning that a value of `t` can be selected multiple times.
 
-`p` The probabilities associated with each element in `t`. If not given, the sample assumes a uniform distribution over all elements in `t`.
+`p` the probabilities associated with each element in `t`. If not given, the sample assumes a uniform distribution over all elements in `t`.
 Must be 1d tensor or container.
 
 `axis` is axis along which selection is performed. Default is 0.
@@ -129,10 +129,10 @@ auto prng = gtensor::default_rng(3,4,5);
 gtensor::tensor<double> a{{1,2,3},{4,5,6},{7,8,9},{10,11,12}};
 auto res1 = prng.choice(a,6);
 auto res2 = prng.choice(a,4,false);
-auto res3 = prng.choice(9,std::vector<int>{3,3},true,std::vector<double>{0.05,0.6,0.05,0.05,0.05,0.05,0.05,0.05,0.05});
+auto res3 = prng.choice(9,std::vector<int>{4,4},true,std::vector<double>{0.05,0.6,0.05,0.05,0.05,0.05,0.05,0.05,0.05});
 std::cout<<std::endl<<res1; //[(6,3){{7,8,9},{10,11,12},{7,8,9},{7,8,9},{1,2,3},{4,5,6}}]
 std::cout<<std::endl<<res2; //[(4,3){{10,11,12},{4,5,6},{7,8,9},{1,2,3}}]
-std::cout<<std::endl<<res3; //[(3,3){{4,2,2},{1,1,1},{2,1,1}}]
+std::cout<<std::endl<<res3; //[(4,4){{4,2,2,1},{1,1,2,1},{1,2,8,1},{0,1,1,1}}]
 ```
 
 ## PRNG member functions to draw from probability distributions
