@@ -1,4 +1,4 @@
-# GTensor core tutorial
+# Tutorial
 
 **Contents**
 1. [Multidimensional array abstraction](#section_1)
@@ -11,8 +11,6 @@
 8. [`basic_tensor` equality](#section_8)
 9. [`basic_tensor` data and meta-data interface](#section_9)
 10. [GTensor config](#section_10)
-
-This tutorial describes the core points of using GTensor library, its structure and functions.
 
 ## 1. Multidimensional array abstraction <a id=section_1></a>
 
