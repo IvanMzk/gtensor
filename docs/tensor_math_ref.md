@@ -402,3 +402,28 @@ std::cout<<std::endl<<res1; //[(5,5){{-3,-2,0.5,1.5,1},{0,1.5,3,0.5,-2},{3,-1,0,
 std::cout<<std::endl<<res2; //[(5,5){{-1.5,0,2,2.5,1},{0.833,3.33,-1.33,0.167,-1.67},{1.5,0.5,1.5,-1.5,-1},{0.333,-2.67,2.83,-1.83,0.5},{-1,0,-3.5,-1.5,-0.5}}]
 std::cout<<std::endl<<res3; //[(5,5){{-3,-2,0.5,1.5,1},{0,1.5,3,0.5,-2},{3,-1,0,0.5,-4},{-2,1.5,1,-2,-1},{0,-1,-0.5,1,1}}]
 ```
+
+### matmul
+
+Matrix product of two tensors.
+
+```cpp
+template<typename...Ts,typename...Us>
+auto matmul(const basic_tensor<Ts...>& a, const basic_tensor<Us...>& b);
+```
+The behavior depends on the arguments in the following way:
+- if both arguments are 2d they are multiplied like conventional matrices.
+- if either argument is nd, n>2, it is treated as a stack of matrices residing in the last two indexes and broadcast accordingly.
+- if the first argument is 1d, it is promoted to a matrix by prepending a 1 to its dimensions. After matrix multiplication the prepended 1 is removed.
+- if the second argument is 1d, it is promoted to a matrix by appending a 1 to its dimensions. After matrix multiplication the appended 1 is removed.
+
+```cpp
+gtensor::tensor<double> a{{1,2,3},{4,5,6}};
+gtensor::tensor<double> b{{{1,2},{3,4},{5,6}},{{7,8},{9,10},{11,12}}};
+auto res1 = matmul(a,b);
+auto res2 = matmul(a,b(1));
+auto res3 = matmul(a,b.flatten()({{0,3}}));
+std::cout<<std::endl<<res1; //[(2,2,2){{{22,28},{49,64}},{{58,64},{139,154}}}]
+std::cout<<std::endl<<res2; //[(2,2){{58,64},{139,154}}]
+std::cout<<std::endl<<res3; //[(2){14,32}]
+```
