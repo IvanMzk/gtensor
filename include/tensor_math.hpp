@@ -736,6 +736,10 @@ auto gradient(const basic_tensor<Ts...>& t, const DimT& axis){
 }
 
 //matmul
+//if both arguments are 2d they are multiplied like conventional matrices.
+//if either argument is nd, n>2, it is treated as a stack of matrices residing in the last two indexes and broadcast accordingly.
+//if the first argument is 1d, it is promoted to a matrix by prepending a 1 to its dimensions. After matrix multiplication the prepended 1 is removed.
+//if the second argument is 1d, it is promoted to a matrix by appending a 1 to its dimensions. After matrix multiplication the appended 1 is removed.
 template<typename...Ts,typename...Us>
 auto matmul(const basic_tensor<Ts...>& a, const basic_tensor<Us...>& b){
     using config_type = typename basic_tensor<Ts...>::config_type;
