@@ -56,11 +56,11 @@ target_sources(Test PRIVATE
 #
     #${CMAKE_CURRENT_LIST_DIR}/test_indexing.cpp
 #
-    ${CMAKE_CURRENT_LIST_DIR}/test_manipulation_detail.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/test_manipulation_stack_concatenate.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/test_manipulation_vstack_hstack.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/test_manipulation_block.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/test_manipulation_split.cpp
+    #${CMAKE_CURRENT_LIST_DIR}/test_manipulation_detail.cpp
+    #${CMAKE_CURRENT_LIST_DIR}/test_manipulation_stack_concatenate.cpp
+    #${CMAKE_CURRENT_LIST_DIR}/test_manipulation_vstack_hstack.cpp
+    #${CMAKE_CURRENT_LIST_DIR}/test_manipulation_block.cpp
+    #${CMAKE_CURRENT_LIST_DIR}/test_manipulation_split.cpp
 #
     #${CMAKE_CURRENT_LIST_DIR}/test_reduce_detail.cpp
     #${CMAKE_CURRENT_LIST_DIR}/test_reduce_reduce_range.cpp
@@ -73,6 +73,7 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_LIST_DIR}/test_math_cumsum_cumprod.cpp
     #${CMAKE_CURRENT_LIST_DIR}/test_math_all_any.cpp
     #${CMAKE_CURRENT_LIST_DIR}/test_math_min_max.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_math_matmul.cpp
 #
     #${CMAKE_CURRENT_LIST_DIR}/test_statistic_ptp_mean.cpp
     #${CMAKE_CURRENT_LIST_DIR}/test_statistic_var_std.cpp

@@ -10,6 +10,7 @@
 #define TENSOR_MATH_HPP_
 #include <functional>
 #include <algorithm>
+#include <numeric>
 #include "tensor_operators.hpp"
 #include "reduce.hpp"
 #include "reduce_operations.hpp"
@@ -298,6 +299,163 @@ struct tensor_math
         return gradient(multithreading::exec_pol<1>{},t,axis,spacing);
     }
 
+    //matmul
+    template<typename...Ts,typename...Us>
+    static auto matmul(const basic_tensor<Ts...>& t1, const basic_tensor<Us...>& t2){
+        using tensor_type1 = basic_tensor<Ts...>;
+        using tensor_type2 = basic_tensor<Us...>;
+        using value_type1 = typename tensor_type1::value_type;
+        using value_type2 = typename tensor_type2::value_type;
+        using order1 = typename tensor_type1::order;
+        using order2 = typename tensor_type2::order;
+        using config_type = typename tensor_type1::config_type;
+        using res_value_type = decltype(std::declval<value_type1>()*std::declval<value_type2>() + std::declval<value_type1>()*std::declval<value_type2>());
+        using res_type = tensor<res_value_type,order1,config::extend_config_t<config_type,res_value_type>>;
+        const auto& shape1 = t1.shape();
+        const auto& shape2 = t2.shape();
+        check_matmul_args(shape1,shape2);
+        const auto dim1 = detail::make_dim(shape1);
+        const auto dim2 = detail::make_dim(shape2);
+        if (dim1==1){
+            if (dim2==1){   //(3,) x (3,)
+                auto a1 = t1.traverse_order_adapter(order1{});
+                auto a2 = t2.traverse_order_adapter(order2{});
+                return res_type(std::inner_product(a1.begin(),a1.end(),a2.begin(),res_value_type{0}));
+            }else{  //(3,) x (...,3,4)
+                return matmul_1d_helper<res_type>(t1,t2,true);
+            }
+        }else{
+            if (dim2==1){   //(...,2,3) x (3,)
+                return matmul_1d_helper<res_type>(t2,t1,false);
+            }else{  //(...,2,3) x (...,3,4)
+                return matmul_nd_helper<res_type>(t1,t2);
+            }
+        }
+    }
+private:
+
+    template<typename ShT>
+    static void check_matmul_args(const ShT& shape1, const ShT& shape2){
+        const auto dim1 = detail::make_dim(shape1);
+        const auto dim2 = detail::make_dim(shape2);
+        if (dim1==0 || dim2==0){
+            throw value_error("matmul doesn't support scalar arguments");
+        }
+        const auto k1 = dim1>1 ? shape1[dim1-1] : shape1[0];
+        const auto k2 = dim2>1 ? shape2[dim2-2] : shape2[0];
+        if (k1!=k2){
+            throw value_error("matmul: tensors shapes not compatible");
+        }
+    }
+
+    //t_1d.dim()==1, t_nd.dim()>1
+    template<typename ResT, typename...Ts, typename...Us>
+    static auto matmul_1d_helper(const basic_tensor<Ts...>& t_1d, const basic_tensor<Us...>& t_nd, const bool is_1d_left){
+        using res_type = ResT;
+        using order = typename ResT::order;
+        using config_type = typename ResT::config_type;
+        using shape_type = typename ResT::shape_type;
+
+        const auto& t_nd_shape = t_nd.shape();
+        const auto t_nd_dim = t_nd.dim();
+
+        shape_type res_shape_(t_nd_dim-1);
+        std::copy(t_nd_shape.begin(),t_nd_shape.end()-2,res_shape_.begin());
+        *(res_shape_.end()-1) = is_1d_left ? *(t_nd_shape.end()-1) : *(t_nd_shape.end()-2);
+        res_type res(std::move(res_shape_),0);
+
+        auto nd_tr = walker_forward_range_traverser<config_type,decltype(t_nd.create_walker())>{t_nd_shape,t_nd.create_walker(),0,t_nd_dim-2};
+        auto res_tr = walker_forward_range_traverser<config_type,decltype(res.create_walker())>{res.shape(),res.create_walker(),0,res.dim()-1};
+        auto w_1d = t_1d.create_walker();
+
+        const auto res_axis = res.dim()-1;
+        const auto inner_axis = is_1d_left ? t_nd_dim-2 : t_nd_dim-1;
+        const auto outer_axis = is_1d_left ? t_nd_dim-1 : t_nd_dim-2;
+        const auto inner_size = t_nd_shape[inner_axis];
+        const auto outer_size = t_nd_shape[outer_axis];
+
+        do{
+            auto w_nd = nd_tr.walker();
+            auto w_res = res_tr.walker();
+
+            for (auto i=outer_size;;--i){
+                for (auto j=inner_size;;--j){
+                    *w_res+=*w_nd**w_1d;
+                    if (j==1) break;
+                    w_nd.step(inner_axis);
+                    w_1d.step(0);
+                }
+                w_nd.reset_back(inner_axis);
+                w_1d.reset_back(0);
+                if (i==1) break;
+                w_nd.step(outer_axis);
+                w_res.step(res_axis);
+            }
+
+            nd_tr.template next<order>();
+        }while(res_tr.template next<order>());
+        return res;
+    }
+
+    //t1,t2,res are at least 2d
+    template<typename ResT, typename...Ts, typename...Us>
+    static auto matmul_nd_helper(const basic_tensor<Ts...>& t1, const basic_tensor<Us...>& t2){
+        using res_type = ResT;
+        using config_type = typename res_type::config_type;
+        using shape_type = typename res_type::shape_type;
+        using order = typename res_type::order;
+
+        const auto& shape1 = t1.shape();
+        const auto& shape2 = t2.shape();
+        auto br_shape = detail::make_broadcast_shape<shape_type>(shape_type(shape1.begin(),shape1.end()-2), shape_type(shape2.begin(),shape2.end()-2));
+        shape_type res_shape_(br_shape.size()+2);
+        std::copy(br_shape.begin(),br_shape.end(),res_shape_.begin());
+        *(res_shape_.end()-2) = *(shape1.end()-2);
+        *(res_shape_.end()-1) = *(shape2.end()-1);
+        res_type res(std::move(res_shape_),0);
+
+        const auto& res_shape = res.shape();
+        const auto res_dim = detail::make_dim(res_shape);
+        auto tr1 = walker_forward_range_traverser<config_type,decltype(t1.create_walker(res_dim))>{res_shape,t1.create_walker(res_dim),0,res_dim-2};
+        auto tr2 = walker_forward_range_traverser<config_type,decltype(t2.create_walker(res_dim))>{res_shape,t2.create_walker(res_dim),0,res_dim-2};
+        auto res_tr = walker_forward_range_traverser<config_type,decltype(res.create_walker(res_dim))>{res_shape,res.create_walker(res_dim),0,res_dim-2};
+
+        const auto i_axis = res_dim-2;
+        const auto j_axis = res_dim-1;
+        const auto k = *(shape1.end()-1);
+        const auto m = res_shape[res_dim-2];
+        const auto n = res_shape[res_dim-1];
+
+        do{
+            auto w1 = tr1.walker();
+            auto w2 = tr2.walker();
+            auto res_w = res_tr.walker();
+            for (auto i=m;;--i){
+                for (auto j=n;;--j){
+                    for(auto r=k;;--r){
+                        *res_w+=*w1**w2;
+                        if (r==1) break;
+                        w1.step(j_axis);
+                        w2.step(i_axis);
+                    }
+                    w1.reset_back(j_axis);
+                    w2.reset_back(i_axis);
+                    if (j==1) break;
+                    w2.step(j_axis);
+                    res_w.step(j_axis);
+                }
+                w2.reset_back(j_axis);
+                res_w.reset_back(j_axis);
+                if (i==1) break;
+                w1.step(i_axis);
+                res_w.step(i_axis);
+            }
+            tr1.template next<order>();
+            tr2.template next<order>();
+        }while(res_tr.template next<order>());
+        return res;
+    }
+
 };   //end of struct tensor_math
 
 //tensor math frontend
@@ -575,6 +733,13 @@ auto gradient(const basic_tensor<Ts...>& t, const DimT& axis){
     using config_type = typename basic_tensor<Ts...>::config_type;
     using value_type = typename basic_tensor<Ts...>::value_type;
     return tensor_math_selector_t<config_type>::gradient(t,axis,value_type{1});
+}
+
+//matmul
+template<typename...Ts,typename...Us>
+auto matmul(const basic_tensor<Ts...>& a, const basic_tensor<Us...>& b){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return tensor_math_selector_t<config_type>::matmul(a,b);
 }
 
 #undef GTENSOR_TENSOR_MATH_FUNCTION
