@@ -10,6 +10,7 @@
 #define MATH_HPP_
 
 #include <cmath>
+#include <complex>
 #include <cstdlib>
 #include <limits>
 #include <numeric>
@@ -67,18 +68,73 @@ template<typename T> struct numeric_traits : default_numeric_traits<T,typename s
     using integral_type = long long int;
 };
 
+//make type similar to T, but with floating-point semantic
+//primary template - considers T scalar
+template<typename T> struct make_floating_point_like{
+    using type = std::conditional_t<
+        gtensor::math::numeric_traits<T>::is_floating_point(),
+        T,
+        typename gtensor::math::numeric_traits<T>::floating_point_type
+    >;
+};
+//std::complex specialization - rebind
+template<typename T> struct make_floating_point_like<std::complex<T>>{
+    using type = std::complex<typename make_floating_point_like<T>::type>;
+};
+template<typename T> using make_floating_point_like_t = typename make_floating_point_like<T>::type;
+
+//make type similar to T, but with integral semantic
+//primary template - considers T scalar
+template<typename T> struct make_integral_like{
+    using type = std::conditional_t<
+        gtensor::math::numeric_traits<T>::is_integral(),
+        T,
+        typename gtensor::math::numeric_traits<T>::integral_type
+    >;
+};
+//std::complex specialization - rebind
+template<typename T> struct make_integral_like<std::complex<T>>{
+    using type = std::complex<typename make_integral_like<T>::type>;
+};
+template<typename T> using make_integral_like_t = typename make_integral_like<T>::type;
+
+
 //floating point type corresponding to T
-template<typename T> using make_floating_point_t = std::conditional_t<
-    gtensor::math::numeric_traits<T>::is_floating_point(),
-    T,
-    typename gtensor::math::numeric_traits<T>::floating_point_type
->;
+//primary template - considers T scalar
+template<typename T> struct make_floating_point{
+    using type = make_floating_point_like_t<T>;
+};
+//std::complex specialization - extract underlaying type
+template<typename T> struct make_floating_point<std::complex<T>>{
+    using type = typename make_floating_point<T>::type;
+};
+template<typename T> using make_floating_point_t = typename make_floating_point<T>::type;
+
 //integral type corresponding to T
-template<typename T> using make_integral_t = std::conditional_t<
-    gtensor::math::numeric_traits<T>::is_integral(),
-    T,
-    typename gtensor::math::numeric_traits<T>::integral_type
->;
+//primary template - considers T scalar
+template<typename T> struct make_integral{
+    using type = make_integral_like_t<T>;
+};
+//std::complex specialization - extract underlaying type
+template<typename T> struct make_integral<std::complex<T>>{
+    using type = typename make_integral<T>::type;
+};
+template<typename T> using make_integral_t = typename make_integral<T>::type;
+
+
+
+// //floating point type corresponding to T
+// template<typename T> using make_floating_point_t = std::conditional_t<
+//     gtensor::math::numeric_traits<T>::is_floating_point(),
+//     T,
+//     typename gtensor::math::numeric_traits<T>::floating_point_type
+// >;
+//integral type corresponding to T
+// template<typename T> using make_integral_t = std::conditional_t<
+//     gtensor::math::numeric_traits<T>::is_integral(),
+//     T,
+//     typename gtensor::math::numeric_traits<T>::integral_type
+// >;
 
 template<typename T>
 struct numeric_constants
