@@ -26,7 +26,7 @@ TEMPLATE_TEST_CASE("test_statistic_quantile_nanquantile_normal_values","test_sta
     using gtensor::tensor_close;
     using helpers_for_testing::apply_by_element;
 
-    using result_value_type = typename gtensor::math::numeric_traits<value_type>::floating_point_type;
+    using result_value_type = typename gtensor::math::make_floating_point_like_t<value_type>;
     static constexpr result_value_type nan = gtensor::math::numeric_traits<result_value_type>::nan();
     using result_tensor_type = gtensor::tensor<result_value_type>;
     REQUIRE(std::is_same_v<typename decltype(quantile(std::declval<tensor_type>(),std::declval<int>(),std::declval<result_value_type>(),std::declval<bool>()))::value_type,result_value_type>);
@@ -136,7 +136,7 @@ TEMPLATE_TEST_CASE("test_statistic_quantile_nanquantile_overload_default_policy"
     using gtensor::nanquantile;
     using gtensor::tensor_close;
     using helpers_for_testing::apply_by_element;
-    using result_value_type = typename gtensor::math::numeric_traits<value_type>::floating_point_type;
+    using result_value_type = typename gtensor::math::make_floating_point_like_t<value_type>;
     using result_tensor_type = gtensor::tensor<result_value_type>;
 
     REQUIRE(
@@ -175,7 +175,7 @@ TEMPLATE_TEST_CASE("test_statistic_quantile_nanquantile_overload_policy","test_s
     using gtensor::nanquantile;
     using gtensor::tensor_close;
     using helpers_for_testing::apply_by_element;
-    using result_value_type = typename gtensor::math::numeric_traits<value_type>::floating_point_type;
+    using result_value_type = typename gtensor::math::make_floating_point_like_t<value_type>;
     using result_tensor_type = gtensor::tensor<result_value_type>;
 
     REQUIRE(
@@ -322,7 +322,7 @@ TEMPLATE_TEST_CASE("test_statistic_median_nanmedian_normal_values","test_statist
     using gtensor::tensor_close;
     using helpers_for_testing::apply_by_element;
 
-    using result_value_type = typename gtensor::math::numeric_traits<value_type>::floating_point_type;
+    using result_value_type = typename gtensor::math::make_floating_point_like_t<value_type>;
     static constexpr result_value_type nan = gtensor::math::numeric_traits<result_value_type>::nan();
     using result_tensor_type = gtensor::tensor<result_value_type>;
     REQUIRE(std::is_same_v<typename decltype(median(std::declval<tensor_type>(),std::declval<int>(),std::declval<bool>()))::value_type,result_value_type>);
@@ -420,7 +420,7 @@ TEMPLATE_TEST_CASE("test_statistic_median_nanmedian_overload_default_policy","te
     using gtensor::nanmedian;
     using gtensor::tensor_close;
     using helpers_for_testing::apply_by_element;
-    using result_value_type = typename gtensor::math::numeric_traits<value_type>::floating_point_type;
+    using result_value_type = typename gtensor::math::make_floating_point_like_t<value_type>;
     using result_tensor_type = gtensor::tensor<result_value_type>;
 
     REQUIRE(std::is_same_v<typename decltype(median(std::declval<tensor_type>(),std::declval<std::initializer_list<int>>(),std::declval<bool>()))::value_type,result_value_type>);
@@ -449,7 +449,7 @@ TEMPLATE_TEST_CASE("test_statistic_median_nanmedian_overload_policy","test_stati
     using gtensor::nanmedian;
     using gtensor::tensor_close;
     using helpers_for_testing::apply_by_element;
-    using result_value_type = typename gtensor::math::numeric_traits<value_type>::floating_point_type;
+    using result_value_type = typename gtensor::math::make_floating_point_like_t<value_type>;
     using result_tensor_type = gtensor::tensor<result_value_type>;
 
     REQUIRE(std::is_same_v<typename decltype(median(policy{},std::declval<tensor_type>(),std::declval<std::initializer_list<int>>(),std::declval<bool>()))::value_type,result_value_type>);

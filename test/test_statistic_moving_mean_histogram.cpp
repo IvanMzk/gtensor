@@ -27,7 +27,7 @@ TEMPLATE_TEST_CASE("test_statistic_moving_mean","test_statistic",
     using gtensor::moving_mean;
     using helpers_for_testing::apply_by_element;
 
-    using result_value_type = typename gtensor::math::numeric_traits<value_type>::floating_point_type;
+    using result_value_type = typename gtensor::math::make_floating_point_like_t<value_type>;
     using result_tensor_type = gtensor::tensor<result_value_type>;
 
     REQUIRE(std::is_same_v<
@@ -112,7 +112,7 @@ TEST_CASE("test_statistic_moving_mean_overload_default_policy","test_statistic")
     using tensor_type = gtensor::tensor<value_type>;
     using gtensor::tensor_close;
     using gtensor::moving_mean;
-    using result_value_type = typename gtensor::math::numeric_traits<value_type>::floating_point_type;
+    using result_value_type = typename gtensor::math::make_floating_point_like_t<value_type>;
     using result_tensor_type = gtensor::tensor<result_value_type>;
 
     //like over flatten, window_size=3,step=1
@@ -137,7 +137,7 @@ TEMPLATE_TEST_CASE("test_statistic_moving_mean_overload_policy","test_statistic"
     using tensor_type = gtensor::tensor<value_type>;
     using gtensor::tensor_close;
     using gtensor::moving_mean;
-    using result_value_type = typename gtensor::math::numeric_traits<value_type>::floating_point_type;
+    using result_value_type = typename gtensor::math::make_floating_point_like_t<value_type>;
     using result_tensor_type = gtensor::tensor<result_value_type>;
 
     //like over flatten, window_size=3,step=1

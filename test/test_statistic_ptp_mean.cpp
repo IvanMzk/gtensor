@@ -133,7 +133,7 @@ TEMPLATE_TEST_CASE("test_statistic_mean_nanmean_normal_values","test_statistic",
     using gtensor::nanmean;
     using helpers_for_testing::apply_by_element;
 
-    using result_value_type = typename gtensor::math::numeric_traits<value_type>::floating_point_type;
+    using result_value_type = typename gtensor::math::make_floating_point_like_t<value_type>;
     static constexpr result_value_type nan = gtensor::math::numeric_traits<result_value_type>::nan();
     using result_tensor_type = gtensor::tensor<result_value_type>;
 
@@ -236,7 +236,7 @@ TEMPLATE_TEST_CASE("test_statistic_mean_nanmean_overloads_default_policy","test_
     using tensor_type = gtensor::tensor<value_type>;
     using gtensor::mean;
     using gtensor::nanmean;
-    using result_value_type = typename gtensor::math::numeric_traits<value_type>::floating_point_type;
+    using result_value_type = typename gtensor::math::make_floating_point_like_t<value_type>;
     using result_tensor_type = gtensor::tensor<result_value_type>;
 
     REQUIRE(std::is_same_v<typename decltype(mean(std::declval<tensor_type>(),std::declval<std::initializer_list<int>>(),std::declval<bool>()))::value_type,result_value_type>);
@@ -273,7 +273,7 @@ TEMPLATE_TEST_CASE("test_statistic_mean_nanmean_overloads_policy","test_statisti
     using gtensor::mean;
     using gtensor::nanmean;
     using helpers_for_testing::apply_by_element;
-    using result_value_type = typename gtensor::math::numeric_traits<value_type>::floating_point_type;
+    using result_value_type = typename gtensor::math::make_floating_point_like_t<value_type>;
     using result_tensor_type = gtensor::tensor<result_value_type>;
 
     REQUIRE(std::is_same_v<typename decltype(mean(policy{},std::declval<tensor_type>(),std::declval<std::initializer_list<int>>(),std::declval<bool>()))::value_type,result_value_type>);

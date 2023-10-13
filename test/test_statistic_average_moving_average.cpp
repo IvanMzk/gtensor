@@ -25,7 +25,7 @@ TEMPLATE_TEST_CASE("test_statistic_average","test_statistic",
     using gtensor::average;
     using helpers_for_testing::apply_by_element;
 
-    using result_value_type = typename gtensor::math::numeric_traits<value_type>::floating_point_type;
+    using result_value_type = typename gtensor::math::make_floating_point_like_t<value_type>;
     using result_tensor_type = gtensor::tensor<result_value_type>;
 
     REQUIRE(std::is_same_v<
@@ -105,7 +105,7 @@ TEMPLATE_TEST_CASE("test_statistic_average_overload_default_policy","test_statis
     using gtensor::average;
     using gtensor::tensor_close;
     using helpers_for_testing::apply_by_element;
-    using result_value_type = typename gtensor::math::numeric_traits<value_type>::floating_point_type;
+    using result_value_type = typename gtensor::math::make_floating_point_like_t<value_type>;
     using result_tensor_type = gtensor::tensor<result_value_type>;
 
     REQUIRE(std::is_same_v<
@@ -151,7 +151,7 @@ TEMPLATE_TEST_CASE("test_statistic_average_overload_policy","test_statistic",
     using gtensor::average;
     using gtensor::tensor_close;
     using helpers_for_testing::apply_by_element;
-    using result_value_type = typename gtensor::math::numeric_traits<value_type>::floating_point_type;
+    using result_value_type = typename gtensor::math::make_floating_point_like_t<value_type>;
     using result_tensor_type = gtensor::tensor<result_value_type>;
 
     REQUIRE(std::is_same_v<
@@ -233,7 +233,7 @@ TEMPLATE_TEST_CASE("test_statistic_moving_average","test_statistic",
     using gtensor::moving_average;
     using helpers_for_testing::apply_by_element;
 
-    using result_value_type = typename gtensor::math::numeric_traits<value_type>::floating_point_type;
+    using result_value_type = typename gtensor::math::make_floating_point_like_t<value_type>;
     using result_tensor_type = gtensor::tensor<result_value_type>;
 
     REQUIRE(std::is_same_v<
@@ -321,7 +321,7 @@ TEST_CASE("test_statistic_moving_average_overload_default_policy","test_statisti
     using gtensor::moving_average;
     using helpers_for_testing::apply_by_element;
 
-    using result_value_type = typename gtensor::math::numeric_traits<value_type>::floating_point_type;
+    using result_value_type = typename gtensor::math::make_floating_point_like_t<value_type>;
     using result_tensor_type = gtensor::tensor<result_value_type>;
 
     //like over flatten, step=1
@@ -348,7 +348,7 @@ TEMPLATE_TEST_CASE("test_statistic_moving_average_overload_policy","test_statist
     using gtensor::moving_average;
     using helpers_for_testing::apply_by_element;
 
-    using result_value_type = typename gtensor::math::numeric_traits<value_type>::floating_point_type;
+    using result_value_type = typename gtensor::math::make_floating_point_like_t<value_type>;
     using result_tensor_type = gtensor::tensor<result_value_type>;
 
     //like over flatten, step=1
