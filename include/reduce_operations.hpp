@@ -250,7 +250,7 @@ struct gradient
     auto operator()(It first, It last, DstIt dfirst, DstIt, const Spacing& spacing){
         using value_type = typename std::iterator_traits<It>::value_type;
         using dst_value_type = typename std::iterator_traits<DstIt>::value_type;
-        using res_type = gtensor::math::make_floating_point_t<value_type>;
+        using res_type = gtensor::math::make_floating_point_like_t<value_type>;
         static_assert(std::is_same_v<dst_value_type,res_type>,"invalid DstIt value_type");
         const auto n = last-first;
         if (n<2){
@@ -385,7 +385,7 @@ struct mean
     template<typename It>
     auto operator()(It first, It last){
         using value_type = typename std::iterator_traits<It>::value_type;
-        using res_type = gtensor::math::make_floating_point_t<value_type>;
+        using res_type = gtensor::math::make_floating_point_like_t<value_type>;
         if (first == last){
             return reduce_empty<res_type>();
         }
@@ -401,7 +401,7 @@ struct nanmean
     auto operator()(It first, It last){
         using value_type = typename std::iterator_traits<It>::value_type;
         using difference_type = typename std::iterator_traits<It>::difference_type;
-        using res_type = gtensor::math::make_floating_point_t<value_type>;
+        using res_type = gtensor::math::make_floating_point_like_t<value_type>;
         if (first == last){
             return reduce_empty<res_type>();
         }
@@ -427,7 +427,7 @@ struct var
     template<typename It>
     auto operator()(It first, It last){
         using value_type = typename std::iterator_traits<It>::value_type;
-        using res_type = gtensor::math::make_floating_point_t<value_type>;
+        using res_type = gtensor::math::make_floating_point_like_t<value_type>;
         if (first == last){
             return reduce_empty<res_type>();
         }
@@ -450,7 +450,7 @@ struct nanvar
     auto operator()(It first, It last){
         using value_type = typename std::iterator_traits<It>::value_type;
         using difference_type = typename std::iterator_traits<It>::difference_type;
-        using res_type = gtensor::math::make_floating_point_t<value_type>;
+        using res_type = gtensor::math::make_floating_point_like_t<value_type>;
         if (first == last){
             return reduce_empty<res_type>();
         }
@@ -510,7 +510,7 @@ struct quantile_nanquantile
         using difference_type = typename std::iterator_traits<It>::difference_type;
         using container_type = typename Config::template container<value_type>;
         using container_difference_type = typename container_type::difference_type;
-        using res_type = gtensor::math::make_floating_point_t<value_type>;
+        using res_type = gtensor::math::make_floating_point_like_t<value_type>;
         if (first == last){
             return reduce_empty<res_type>();
         }
@@ -618,7 +618,7 @@ void check_weights_sum(const T& sum){
 template<typename T>
 class average
 {
-    using res_type = gtensor::math::make_floating_point_t<T>;
+    using res_type = gtensor::math::make_floating_point_like_t<T>;
     res_type weights_sum{0};
     res_type normalizer{1};
 public:
@@ -657,7 +657,7 @@ public:
 template<typename T>
 class moving_average
 {
-    using res_type = gtensor::math::make_floating_point_t<T>;
+    using res_type = gtensor::math::make_floating_point_like_t<T>;
     res_type weights_sum{0};
     res_type normalizer{1};
 public:

@@ -129,7 +129,7 @@ struct builder
         using index_type = typename tensor_type::index_type;
         using shape_type = typename tensor_type::shape_type;
         using integral_type = math::make_integral_t<common_value_type>;
-        using fp_type = math::make_floating_point_t<common_value_type>;
+        using fp_type = math::make_floating_point_like_t<common_value_type>;
         auto n = static_cast<index_type>(static_cast<integral_type>(math::ceil((stop-start)/static_cast<fp_type>(step))));
         n = n > 0 ? n : index_type{0};
         tensor_type res(shape_type{n});
@@ -307,7 +307,7 @@ private:
         static_assert(is_start_numeric || detail::is_tensor_v<Start>,"Start must be of numeric or tensor type");
         static_assert(is_stop_numeric || detail::is_tensor_v<Stop>,"Stop must be of numeric or tensor type");
         using common_value_type = detail::tensor_common_value_type_t<Start,Stop,Num>;
-        using res_value_type = std::conditional_t<std::is_same_v<T,detail::no_value>,math::make_floating_point_t<common_value_type>,math::make_floating_point_t<T>>;
+        using res_value_type = std::conditional_t<std::is_same_v<T,detail::no_value>,math::make_floating_point_like_t<common_value_type>,math::make_floating_point_like_t<T>>;
         using tensor_type = tensor<res_value_type,Order,config::extend_config_t<Config,T>>;
         using config_type = typename tensor_type::config_type;
         using index_type = typename tensor_type::index_type;

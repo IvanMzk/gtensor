@@ -289,7 +289,7 @@ struct tensor_math
     static auto gradient(Policy policy, const basic_tensor<Ts...>& t, const DimT& axis, const Spacing& spacing){
         using index_type = typename basic_tensor<Ts...>::index_type;
         using value_type = typename basic_tensor<Ts...>::value_type;
-        using res_type = gtensor::math::make_floating_point_t<value_type>;
+        using res_type = gtensor::math::make_floating_point_like_t<value_type>;
         const index_type window_size = 1;
         const index_type window_step = 1;
         return gtensor::slide<res_type>(policy, t, axis, math_reduce_operations::gradient{}, window_size, window_step, spacing);

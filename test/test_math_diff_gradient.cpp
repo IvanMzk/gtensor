@@ -132,7 +132,7 @@ TEMPLATE_TEST_CASE("test_math_gradient","test_math",
     using gtensor::gradient;
     using gtensor::tensor_close;
     using helpers_for_testing::apply_by_element;
-    using result_value_type = gtensor::math::make_floating_point_t<value_type>;
+    using result_value_type = gtensor::math::make_floating_point_like_t<value_type>;
     using result_tensor_type = gtensor::tensor<result_value_type>;
 
     REQUIRE(std::is_same_v<typename decltype(gradient(std::declval<tensor_type>(),std::declval<dim_type>(),std::declval<value_type>()))::value_type,result_value_type>);

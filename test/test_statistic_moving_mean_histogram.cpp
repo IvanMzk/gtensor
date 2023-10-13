@@ -160,7 +160,7 @@ TEMPLATE_TEST_CASE("test_statistic_uniform_bins_histogram","test_statistic",
 {
     using value_type = TestType;
     using tensor_type = gtensor::tensor<value_type>;
-    using fp_type = gtensor::math::make_floating_point_t<value_type>;
+    using fp_type = gtensor::math::make_floating_point_like_t<value_type>;
     using weights_tensor_type = gtensor::tensor<fp_type>;
     using result_tensor_type = gtensor::tensor<fp_type>;
     using gtensor::detail::no_value;
@@ -244,7 +244,7 @@ TEMPLATE_TEST_CASE("test_statistic_not_uniform_bins_histogram","test_statistic",
 {
     using value_type = TestType;
     using tensor_type = gtensor::tensor<value_type>;
-    using fp_type = gtensor::math::make_floating_point_t<value_type>;
+    using fp_type = gtensor::math::make_floating_point_like_t<value_type>;
     using weights_tensor_type = gtensor::tensor<fp_type>;
     using result_tensor_type = gtensor::tensor<fp_type>;
     using gtensor::detail::no_value;
@@ -306,7 +306,7 @@ TEMPLATE_TEST_CASE("test_statistic_histogram_bins_density_parameters_overload","
 {
     using value_type = TestType;
     using tensor_type = gtensor::tensor<value_type>;
-    using fp_type = gtensor::math::make_floating_point_t<value_type>;
+    using fp_type = gtensor::math::make_floating_point_like_t<value_type>;
     using result_tensor_type = gtensor::tensor<fp_type>;
     using gtensor::detail::no_value;
     using gtensor::tensor_close;
@@ -395,7 +395,7 @@ TEST_CASE("test_statistic_histogram_algorithm","test_statistic")
 {
     using value_type = double;
     using tensor_type = gtensor::tensor<value_type>;
-    using fp_type = gtensor::math::make_floating_point_t<value_type>;
+    using fp_type = gtensor::math::make_floating_point_like_t<value_type>;
     using result_tensor_type = gtensor::tensor<fp_type>;
     using gtensor::detail::no_value;
     using gtensor::tensor_close;

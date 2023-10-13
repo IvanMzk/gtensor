@@ -121,21 +121,6 @@ template<typename T> struct make_integral<std::complex<T>>{
 };
 template<typename T> using make_integral_t = typename make_integral<T>::type;
 
-
-
-// //floating point type corresponding to T
-// template<typename T> using make_floating_point_t = std::conditional_t<
-//     gtensor::math::numeric_traits<T>::is_floating_point(),
-//     T,
-//     typename gtensor::math::numeric_traits<T>::floating_point_type
-// >;
-//integral type corresponding to T
-// template<typename T> using make_integral_t = std::conditional_t<
-//     gtensor::math::numeric_traits<T>::is_integral(),
-//     T,
-//     typename gtensor::math::numeric_traits<T>::integral_type
-// >;
-
 template<typename T>
 struct numeric_constants
 {

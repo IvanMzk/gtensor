@@ -79,7 +79,7 @@ static auto NAME(const basic_tensor<Ts...>& t, const Q& q, bool keep_dims = fals
 template<typename Policy, typename...Ts, typename Axes>\
 static auto NAME(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){\
     using value_type = typename basic_tensor<Ts...>::value_type;\
-    return QUANTILE(policy,t,axes,gtensor::math::make_floating_point_t<value_type>{0.5},keep_dims);\
+    return QUANTILE(policy,t,axes,gtensor::math::make_floating_point_like_t<value_type>{0.5},keep_dims);\
 }\
 template<typename...Ts, typename Axes>\
 static auto NAME(const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims = false){\
@@ -113,7 +113,7 @@ private:
         auto operator()(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims){
             using value_type = typename basic_tensor<Ts...>::value_type;
             using integral_type = gtensor::math::make_integral_t<value_type>;
-            using res_type = gtensor::math::make_floating_point_t<value_type>;
+            using res_type = gtensor::math::make_floating_point_like_t<value_type>;
             using f_type = gtensor::math_reduce_operations::nan_propagate_operation<gtensor::math_reduce_operations::plus<res_type>>;
             auto tmp = reduce_binary(policy,t,axes,f_type{},keep_dims,res_type{0});
             if (!tmp.empty()){
@@ -143,7 +143,7 @@ private:
             using value_type = typename basic_tensor<Ts...>::value_type;
             using config_type = typename basic_tensor<Ts...>::config_type;
             using integral_type = gtensor::math::make_integral_t<value_type>;
-            using res_type = gtensor::math::make_floating_point_t<value_type>;
+            using res_type = gtensor::math::make_floating_point_like_t<value_type>;
             using f_type = gtensor::statistic_reduce_operations::nan_ignoring_counting_operation<gtensor::math_reduce_operations::plus<res_type>,integral_type>;
             auto tmp = reduce_binary(policy,t,axes,f_type{},keep_dims,std::make_pair(res_type{0},integral_type{0}));
             tensor<res_type,order,config_type> res(tmp.shape());
@@ -216,7 +216,7 @@ private:
             using value_type = typename basic_tensor<Ts...>::value_type;
             using config_type = typename basic_tensor<Ts...>::config_type;
             using integral_type = gtensor::math::make_integral_t<value_type>;
-            using res_type = gtensor::math::make_floating_point_t<value_type>;
+            using res_type = gtensor::math::make_floating_point_like_t<value_type>;
             auto mean_ = nanmean_binary{}(policy,t,axes,true);
             auto squared_diff = [](const auto& e, const auto& m){const auto d=e-m; return d*d;};
             auto make_tuple = [](const auto& e1,const auto& e2){return std::make_tuple(e1,e2);};
@@ -343,7 +343,7 @@ public:
     static auto moving_average(Policy policy, const basic_tensor<Ts...>& t, const Axis& axis, const Container& weights, const IdxT& step){
         using index_type = typename basic_tensor<Ts...>::index_type;
         using value_type = typename basic_tensor<Ts...>::value_type;
-        using res_type = gtensor::math::make_floating_point_t<value_type>;
+        using res_type = gtensor::math::make_floating_point_like_t<value_type>;
         const auto window_size = static_cast<index_type>(weights.size());
         const auto window_step = static_cast<index_type>(step);
         return slide<res_type>(policy,t,axis,statistic_reduce_operations::moving_average<value_type>{},window_size,window_step,weights,window_step);
@@ -368,7 +368,7 @@ public:
     template<typename Policy, typename...Ts, typename Axis, typename IdxT>
     static auto moving_mean(Policy policy, const basic_tensor<Ts...>& t, const Axis& axis, const IdxT& window_size, const IdxT& step){
         using value_type = typename basic_tensor<Ts...>::value_type;
-        using res_type = gtensor::math::make_floating_point_t<value_type>;
+        using res_type = gtensor::math::make_floating_point_like_t<value_type>;
         return slide<res_type>(policy,t,axis,statistic_reduce_operations::moving_mean{},window_size,step,window_size,step);
     }
     template<typename...Ts, typename Axis, typename IdxT>
@@ -396,7 +396,7 @@ public:
     static auto histogram(const basic_tensor<Ts...>& t, const Bins& bins, const Range& range, bool density, const Weights& weights){
         using config_type = typename basic_tensor<Ts...>::config_type;
         using value_type = typename basic_tensor<Ts...>::value_type;
-        using fp_type = gtensor::math::make_floating_point_t<value_type>;
+        using fp_type = gtensor::math::make_floating_point_like_t<value_type>;
         using index_type = typename basic_tensor<Ts...>::index_type;
         using order = typename basic_tensor<Ts...>::order;
         using res_value_type = fp_type;
@@ -723,7 +723,7 @@ private:
     template<typename Config, typename It, typename Bins, typename T>
     static auto make_bins(It first, It last, const Bins& bins, const T& min, const T& max, const T& rmin, const T& rmax){
         using value_type = typename std::iterator_traits<It>::value_type;
-        using fp_type = gtensor::math::make_floating_point_t<value_type>;
+        using fp_type = gtensor::math::make_floating_point_like_t<value_type>;
 
         if constexpr (std::is_same_v<Bins,histogram_algorithm>){
             if (first == last){ //cant use bin width estimators
@@ -746,7 +746,7 @@ private:
     static auto make_bin_width(It first, It last, histogram_algorithm bins, const T& min, const T& max){
         using value_type = typename std::iterator_traits<It>::value_type;
         using integral_type = gtensor::math::make_integral_t<value_type>;
-        using fp_type = gtensor::math::make_floating_point_t<value_type>;
+        using fp_type = gtensor::math::make_floating_point_like_t<value_type>;
 
         const auto n = static_cast<fp_type>(static_cast<integral_type>(last - first));
         auto make_sturges = [n,min,max]{return (max-min)/(gtensor::math::log2(n)+1);};
