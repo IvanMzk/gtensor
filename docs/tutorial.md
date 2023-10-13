@@ -25,7 +25,7 @@ It is common practice to use `iterator interface` for data and member functions 
 
 ## 2. `tensor` and `basic_tensor` class templates <a id=section_2></a>
 
-`basic_tensor` class template represent multidimensional array abstraction, its declaration:
+`basic_tensor` class template represents multidimensional array abstraction, its declaration:
 
 ```cpp
 template<typename Impl> class basic_tensor;
