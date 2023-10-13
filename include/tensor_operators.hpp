@@ -169,7 +169,7 @@ struct tensor_operators
     template<typename...Us, typename...Vs>
     static bool tensor_close(const basic_tensor<Us...>& u, const basic_tensor<Vs...>& v, bool equal_nan = false){
         using common_value_type = detail::tensor_common_value_type_t<basic_tensor<Us...>,basic_tensor<Vs...>>;
-        static constexpr common_value_type e = math::numeric_traits<common_value_type>::epsilon();
+        static constexpr auto e = math::numeric_traits<math::make_floating_point_t<common_value_type>>::epsilon();
         return tensor_close(u,v,e,e,equal_nan);
     }
 
@@ -261,7 +261,7 @@ struct tensor_operators
         using T_ = std::remove_cv_t<std::remove_reference_t<T>>;
         using U_ = std::remove_cv_t<std::remove_reference_t<U>>;
         using common_value_type = detail::tensor_common_value_type_t<T_,U_>;
-        static constexpr common_value_type e = math::numeric_traits<common_value_type>::epsilon();
+        static constexpr auto e = math::numeric_traits<math::make_floating_point_t<common_value_type>>::epsilon();
         return isclose(std::forward<T>(t),std::forward<U>(u),e,e,equal_nan);
     }
 

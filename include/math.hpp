@@ -196,9 +196,16 @@ template<typename T> auto modf(T t){
 //classification
 template<typename T> bool isfinite(T t){return std::isfinite(t);}
 template<typename T> bool isinf(T t){return std::isinf(t);}
-template<typename T> bool isnan(T t){
+template<typename T> bool isnan(const T& t){
     if constexpr (numeric_traits<T>::has_nan()){
         return std::isnan(t);
+    }else{
+        return false;
+    }
+}
+template<typename T> bool isnan(const std::complex<T>& t){
+    if constexpr (numeric_traits<T>::has_nan()){
+        return isnan(t.real()) || isnan(t.imag());
     }else{
         return false;
     }
@@ -214,48 +221,33 @@ template<typename T, typename U, typename Tol>
 bool isclose(T t, U u, const Tol relative_tolerance, const Tol absolute_tolerance){
     return t==u ? true : math::abs(t-u) < absolute_tolerance + relative_tolerance*(math::abs(t)+math::abs(u));
 }
+
 template<typename T, typename U>
 bool isclose(T t, U u){
     using common_type = std::common_type_t<T,U>;
-    static constexpr common_type tol = numeric_traits<common_type>::epsilon();
+    static constexpr auto tol = numeric_traits<make_floating_point_t<common_type>>::epsilon();
     return isclose(t,u,tol,tol);
 }
+
 template<typename T, typename U, typename Tol>
 bool isclose_nan_equal(T t, U u, const Tol relative_tolerance, const Tol absolute_tolerance){
-    static constexpr bool t_has_nan = numeric_traits<T>::has_nan();
-    static constexpr bool u_has_nan = numeric_traits<U>::has_nan();
-    if constexpr (t_has_nan && u_has_nan){
-        const bool is_nan_u = math::isnan(u);
-        return math::isnan(t) ? is_nan_u : (is_nan_u ? false : isclose(t,u,relative_tolerance,absolute_tolerance));
-    }else if constexpr (t_has_nan){
-        return math::isnan(t) ? false : isclose(t,u,relative_tolerance,absolute_tolerance);
-    }else if constexpr (u_has_nan){
-        return math::isnan(u) ? false : isclose(t,u,relative_tolerance,absolute_tolerance);
-    }else{
-        return isclose(t,u,relative_tolerance,absolute_tolerance);
-    }
+    const auto is_nan_u = math::isnan(u);
+    return math::isnan(t) ? (is_nan_u ? true : false) : (is_nan_u ? false : isclose(t,u,relative_tolerance,absolute_tolerance));
 }
+
 template<typename T, typename U>
 bool isclose_nan_equal(T t, U u){
     using common_type = std::common_type_t<T,U>;
-    static constexpr common_type tol = numeric_traits<common_type>::epsilon();
+    static constexpr common_type tol = numeric_traits<make_floating_point_t<common_type>>::epsilon();
     return isclose_nan_equal(t,u,tol,tol);
 }
+
 template<typename T, typename U>
 bool isequal_nan_equal(T t, U u){
-    static constexpr bool t_has_nan = numeric_traits<T>::has_nan();
-    static constexpr bool u_has_nan = numeric_traits<U>::has_nan();
-    if constexpr (t_has_nan && u_has_nan){
-        const bool is_nan_u = math::isnan(u);
-        return math::isnan(t) ? is_nan_u : (is_nan_u ? false : t==u);
-    }else if constexpr (t_has_nan){
-        return math::isnan(t) ? false : t==u;
-    }else if constexpr (u_has_nan){
-        return math::isnan(u) ? false : t==u;
-    }else{
-        return t==u;
-    }
+    const auto is_nan_u = math::isnan(u);
+    return math::isnan(t) ? (is_nan_u ? true : false) : (is_nan_u ? false : t==u);
 }
+
 //routines in rational domain
 template<typename T, typename U> auto gcd(T t, U u){return std::gcd(t,u);}
 template<typename T, typename U> auto lcm(T t, U u){return std::lcm(t,u);}
