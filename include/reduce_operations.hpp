@@ -435,8 +435,13 @@ struct var
 
         const auto res = std::accumulate(first,last,res_type{0},
             [mean_](const auto& r, const auto& e){
-                const auto d = e-mean_;
-                return r+d*d;
+                if constexpr (math::is_complex_v<value_type>){
+                    const auto d = math::abs(e-mean_);
+                    return r+d*d;
+                }else{
+                    const auto d = e-mean_;
+                    return r+d*d;
+                }
             }
         );
         const auto n = static_cast<const res_type&>(last-first);
