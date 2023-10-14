@@ -157,7 +157,7 @@ TEST_CASE("test_std_complex_assign","[test_std_complex]")
     }
 }
 
-TEST_CASE("test_std_complex_math_routines","[test_std_complex]")
+TEST_CASE("test_std_complex_broadcast_routines","[test_std_complex]")
 {
     using gtensor::tensor;
     using value_type = std::complex<double>;
@@ -194,7 +194,7 @@ TEST_CASE("test_std_complex_math_routines","[test_std_complex]")
     REQUIRE(tensor_close(arctanh(a),tensor_type{{0.16141121+1.2124347i,0.36585752+1.36537073i},{0.10721352+1.42467596i,0.14470951+1.45983408i}},1E-6,1E-6));
 }
 
-TEST_CASE("test_std_complex_reductions","[test_std_complex]")
+TEST_CASE("test_std_complex_routines","[test_std_complex]")
 {
     using gtensor::tensor;
     using value_type = std::complex<double>;
@@ -226,6 +226,11 @@ TEST_CASE("test_std_complex_reductions","[test_std_complex]")
     REQUIRE(tensor_close(diff(a),tensor_type{{{1.1-1.1i,-0.7-0.8i},{1.1-1.1i,-4.2-2.6i}},{{0.5-1.1i,-0.2-0.9i},{0.9-1.1i,-4.2-1.3i}}}));
     //gradient
     REQUIRE(tensor_close(gradient(a,-1),tensor_type{{{1.1-1.1i,0.2-0.95i,-0.7-0.8i},{1.1-1.1i,-1.55-1.85i,-4.2-2.6i}},{{0.5-1.1i,0.15-1.0i,-0.2-0.9i},{0.9-1.1i,-1.65-1.2i,-4.2-1.3i}}}));
+    //matmul
+    REQUIRE(tensor_close(matmul(a,tensor_type{{1.1+2.2i,2.2+1.1i},{3.3+4.4i,4.4+3.3i},{2.1+2.2i,2.1+1.1i}}),
+        tensor_type{{{1.28+22.08i,8.87+20.43i},{-7.17+44.26i,10.54+44.04i}},{{1.68+24.06i,9.93+21.75i},{-7.17+45.48i,11.2+44.38i}}}
+    ));
+
     //mean
     REQUIRE(tensor_close(a.mean(),tensor_type(2.2+2.05i)));
     REQUIRE(tensor_close(a.mean(-1),tensor_type{{1.6+1.2i,2.63333333+2.8i},{1.86666667+1.26666667i,2.7+2.93333333i}},1E-6,1E-6));
