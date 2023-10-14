@@ -251,6 +251,28 @@ bool isequal_nan_equal(T t, U u){
 //routines in rational domain
 template<typename T, typename U> auto gcd(T t, U u){return std::gcd(t,u);}
 template<typename T, typename U> auto lcm(T t, U u){return std::lcm(t,u);}
+
+//complex numbers
+template<typename T>
+T real(const std::complex<T>& z){
+    return std::real(z);
+}
+
+template<typename T>
+T imag(const std::complex<T>& z){
+    return std::imag(z);
+}
+
+template<typename T>
+std::complex<T> conj(const std::complex<T>& z){
+    return std::conj(z);
+}
+
+template<typename T>
+T angle(const std::complex<T>& z){
+    return std::arg(z);
+}
+
 }   //end of namespace math
 
 }   //end of namespace gtensor

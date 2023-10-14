@@ -79,6 +79,7 @@
         "execution": "cpp",
         "queue": "cpp",
         "bit": "cpp",
-        "__config": "cpp"
+        "__config": "cpp",
+        "complex": "cpp"
     }
 }

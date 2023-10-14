@@ -186,6 +186,11 @@ struct tensor_math
     //functions in rational domain
     GTENSOR_TENSOR_MATH_FUNCTION(gcd,operations::math_gcd);
     GTENSOR_TENSOR_MATH_FUNCTION(lcm,operations::math_lcm);
+    //complex numbers
+    GTENSOR_TENSOR_MATH_FUNCTION(real,operations::math_real);
+    GTENSOR_TENSOR_MATH_FUNCTION(imag,operations::math_imag);
+    GTENSOR_TENSOR_MATH_FUNCTION(conj,operations::math_conj);
+    GTENSOR_TENSOR_MATH_FUNCTION(angle,operations::math_angle);
 
     //math functions along given axis or axes
     //axes may be scalar or container if multiple axes permitted
@@ -489,6 +494,7 @@ GTENSOR_TENSOR_MATH_ROUTINE(log2,log2);
 GTENSOR_TENSOR_MATH_ROUTINE(log1p,log1p);
 //power
 GTENSOR_TENSOR_MATH_ROUTINE(pow,pow);
+GTENSOR_TENSOR_MATH_ROUTINE(power,pow);
 GTENSOR_TENSOR_MATH_ROUTINE(sqrt,sqrt);
 GTENSOR_TENSOR_MATH_ROUTINE(cbrt,cbrt);
 GTENSOR_TENSOR_MATH_ROUTINE(hypot,hypot);
@@ -497,16 +503,23 @@ GTENSOR_TENSOR_MATH_ROUTINE(sin,sin);
 GTENSOR_TENSOR_MATH_ROUTINE(cos,cos);
 GTENSOR_TENSOR_MATH_ROUTINE(tan,tan);
 GTENSOR_TENSOR_MATH_ROUTINE(asin,asin);
+GTENSOR_TENSOR_MATH_ROUTINE(arcsin,asin);
 GTENSOR_TENSOR_MATH_ROUTINE(acos,acos);
+GTENSOR_TENSOR_MATH_ROUTINE(arccos,acos);
 GTENSOR_TENSOR_MATH_ROUTINE(atan,atan);
+GTENSOR_TENSOR_MATH_ROUTINE(arctan,atan);
 GTENSOR_TENSOR_MATH_ROUTINE(atan2,atan2);
+GTENSOR_TENSOR_MATH_ROUTINE(arctan2,atan2);
 //hyperbolic
 GTENSOR_TENSOR_MATH_ROUTINE(sinh,sinh);
 GTENSOR_TENSOR_MATH_ROUTINE(cosh,cosh);
 GTENSOR_TENSOR_MATH_ROUTINE(tanh,tanh);
 GTENSOR_TENSOR_MATH_ROUTINE(asinh,asinh);
+GTENSOR_TENSOR_MATH_ROUTINE(arcsinh,asinh);
 GTENSOR_TENSOR_MATH_ROUTINE(acosh,acosh);
+GTENSOR_TENSOR_MATH_ROUTINE(arccosh,acosh);
 GTENSOR_TENSOR_MATH_ROUTINE(atanh,atanh);
+GTENSOR_TENSOR_MATH_ROUTINE(arctanh,atanh);
 //nearest
 GTENSOR_TENSOR_MATH_ROUTINE(ceil,ceil);
 GTENSOR_TENSOR_MATH_ROUTINE(floor,floor);
@@ -535,6 +548,12 @@ GTENSOR_TENSOR_MATH_ROUTINE(islessgreater,islessgreater);
 //functions in rational domain
 GTENSOR_TENSOR_MATH_ROUTINE(gcd,gcd);
 GTENSOR_TENSOR_MATH_ROUTINE(lcm,lcm);
+//complex numbers
+GTENSOR_TENSOR_MATH_ROUTINE(real,real);
+GTENSOR_TENSOR_MATH_ROUTINE(imag,imag);
+GTENSOR_TENSOR_MATH_ROUTINE(conj,conj);
+GTENSOR_TENSOR_MATH_ROUTINE(conjugate,conj);
+GTENSOR_TENSOR_MATH_ROUTINE(angle,angle);
 
 //tensor math routines along given axis or axes
 //axes may be scalar or container if multiple axes permitted

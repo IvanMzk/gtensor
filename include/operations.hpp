@@ -248,8 +248,15 @@ public:
 
 //routines in rational domain
 GTENSOR_FUNCTION_FUNCTOR(math_gcd,math::gcd);
-GTENSOR_FUNCTION_FUNCTOR(math_lcm,math::lcm);}   //end of nemespace operations
+GTENSOR_FUNCTION_FUNCTOR(math_lcm,math::lcm);
 
+//complex numbers
+GTENSOR_FUNCTION_FUNCTOR(math_real,math::real);
+GTENSOR_FUNCTION_FUNCTOR(math_imag,math::imag);
+GTENSOR_FUNCTION_FUNCTOR(math_conj,math::conj);
+GTENSOR_FUNCTION_FUNCTOR(math_angle,math::angle);
+
+}   //end of nemespace operations
 }   //end of namespace gtensor
 
 #undef GTENSOR_UNARY_OPERATOR_FUNCTOR
