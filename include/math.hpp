@@ -20,6 +20,9 @@ namespace gtensor{
 
 namespace math{
 
+template<typename> inline constexpr bool is_complex_v = false;
+template<typename T> inline constexpr bool is_complex_v<std::complex<T>> = true;
+
 template<typename, typename> struct default_numeric_traits;
 
 //arbitrary type

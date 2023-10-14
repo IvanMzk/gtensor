@@ -12,6 +12,7 @@
 #include "catch.hpp"
 #include "tensor.hpp"
 #include "tensor_math.hpp"
+#include "statistic.hpp"
 #include "helpers_for_testing.hpp"
 
 TEST_CASE("test_std_complex_strict_equality","[test_std_complex]")
@@ -148,6 +149,12 @@ TEST_CASE("test_std_complex_assign","[test_std_complex]")
         c/=b;
         REQUIRE(tensor_close(c,tensor_type{{0.29868115+0.06826998i,0.29868115-0.06826998i},{0.68440652+0.03072149i,0.68440652-0.03072149i}},1E-6,1E-6));
     }
+    SECTION("broadcast_assign_view")
+    {
+        auto c = a.copy();
+        c({{},{1}}) = -1.1;
+        REQUIRE(tensor_close(c,tensor_type{{1.1+2.2i,-1.1+0.0i},{3.3+4.4i,-1.1+0.0i}},1E-6,1E-6));
+    }
 }
 
 TEST_CASE("test_std_complex_math_routines","[test_std_complex]")
@@ -187,3 +194,48 @@ TEST_CASE("test_std_complex_math_routines","[test_std_complex]")
     REQUIRE(tensor_close(arctanh(a),tensor_type{{0.16141121+1.2124347i,0.36585752+1.36537073i},{0.10721352+1.42467596i,0.14470951+1.45983408i}},1E-6,1E-6));
 }
 
+TEST_CASE("test_std_complex_reductions","[test_std_complex]")
+{
+    using gtensor::tensor;
+    using value_type = std::complex<double>;
+    using tensor_type = gtensor::tensor<value_type>;
+    using namespace std::complex_literals;
+
+    const tensor_type a{{{1.1+2.2i,2.2+1.1i,1.5+0.3i},{3.3+4.4i,4.4+3.3i,0.2+0.7i}},{{1.6+2.3i,2.1+1.2i,1.9+0.3i},{3.5+4.1i,4.4+3.0i,0.2+1.7i}}};
+
+    //sum
+    REQUIRE(tensor_close(a.sum(),tensor_type(26.400000000000002+24.6i)));
+    REQUIRE(tensor_close(a.sum(-1),tensor_type{{4.8+3.6i,7.9+8.4i},{5.6+3.8i,8.1+8.8i}}));
+    REQUIRE(tensor_close(a.sum({0,-1}),tensor_type{10.4+7.4i,16.0+17.2i}));
+    //cumsum
+    REQUIRE(tensor_close(a.cumsum(),tensor_type{1.1+2.2i,3.3+3.3i,4.8+3.6i,8.1+8.0i,12.5+11.3i,12.7+12.0i,14.3+14.3i,16.4+15.5i,18.3+15.8i,21.8+19.9i,26.2+22.9i,26.4+24.6i}));
+    REQUIRE(tensor_close(a.cumsum(-1),tensor_type{{{1.1+2.2i,3.3+3.3i,4.8+3.6i},{3.3+4.4i,7.7+7.7i,7.9+8.4i}},{{1.6+2.3i,3.7+3.5i,5.6+3.8i},{3.5+4.1i,7.9+7.1i,8.1+8.8i}}}));
+    //prod
+    REQUIRE(tensor_close(a.prod(),tensor_type(-126861.3528684975+30811.523198692543i)));
+    REQUIRE(tensor_close(a.prod(-1),tensor_type{{-1.815+9.075i,-21.175+6.05i},{-0.885+13.005i,-47.898+10.978i}}));
+    REQUIRE(tensor_close(a.prod({0,-1}),tensor_type{-116.4141-31.63545i,947.82325-522.24205i}));
+    //cumprod
+    REQUIRE(tensor_close(
+        a.cumprod(),
+        tensor_type{1.10000000e+00+2.20000000e+00i,0.00000000e+00+6.05000000e+00i,-1.81500000e+00+9.07500000e+00i,-4.59195000e+01+2.19615000e+01i,-2.74518750e+02-5.49037500e+01i,-1.64711250e+01-2.03143875e+02i,4.40877113e+02-3.62913788e+02i,1.36133848e+03-2.33066419e+02i,2.65646304e+03-3.44246513e+01i,9.43876171e+03+1.07710122e+04i,9.21751497e+03+7.57087387e+04i,-1.26861353e+05+3.08115232e+04i},
+        1E-6,
+        1E-6
+    ));
+    REQUIRE(tensor_close(a.cumprod(-1),tensor_type{{{1.1+2.2i,0.0+6.05i,-1.815+9.075i},{3.3+4.4i,0.0+30.25i,-21.175+6.05i}},{{1.6+2.3i,0.6+6.75i,-0.885+13.005i},{3.5+4.1i,3.1+28.54i,-47.898+10.978i}}}));
+    //diff
+    REQUIRE(tensor_close(diff(a),tensor_type{{{1.1-1.1i,-0.7-0.8i},{1.1-1.1i,-4.2-2.6i}},{{0.5-1.1i,-0.2-0.9i},{0.9-1.1i,-4.2-1.3i}}}));
+    //gradient
+    REQUIRE(tensor_close(gradient(a,-1),tensor_type{{{1.1-1.1i,0.2-0.95i,-0.7-0.8i},{1.1-1.1i,-1.55-1.85i,-4.2-2.6i}},{{0.5-1.1i,0.15-1.0i,-0.2-0.9i},{0.9-1.1i,-1.65-1.2i,-4.2-1.3i}}}));
+    //mean
+    REQUIRE(tensor_close(a.mean(),tensor_type(2.2+2.05i)));
+    REQUIRE(tensor_close(a.mean(-1),tensor_type{{1.6+1.2i,2.63333333+2.8i},{1.86666667+1.26666667i,2.7+2.93333333i}},1E-6,1E-6));
+    REQUIRE(tensor_close(a.mean({0,-1}),tensor_type{1.73333333+1.23333333i,2.66666667+2.86666667i},1E-6,1E-6));
+    //var
+    REQUIRE(tensor_close(a.var(),tensor<double>(3.7258333333333336),1E-6,1E-6));
+    REQUIRE(tensor_close(a.var(-1),tensor<double>{{0.81333333,5.56888889},{0.71111111,4.22222222}},1E-6,1E-6));
+    REQUIRE(tensor_close(a.var({0,-1}),tensor<double>{0.78111111,4.90111111},1E-6,1E-6));
+    //stdev
+    REQUIRE(tensor_close(a.stdev(),tensor<double>(1.9302417810557655),1E-6,1E-6));
+    REQUIRE(tensor_close(a.stdev(-1),tensor<double>{{0.90184995,2.35984934},{0.84327404,2.05480467}},1E-6,1E-6));
+    REQUIRE(tensor_close(a.stdev({0,-1}),tensor<double>{0.88380491,2.21384532},1E-6,1E-6));
+}

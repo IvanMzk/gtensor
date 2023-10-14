@@ -168,7 +168,16 @@ private:
     struct var_binary{
         template<typename Policy, typename...Ts,typename Axes>
         auto operator()(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims){
-            auto squared_diff = [](const auto& e, const auto& m){const auto d=e-m; return d*d;};
+            using value_type = typename basic_tensor<Ts...>::value_type;
+            auto squared_diff = [](const auto& e, const auto& m){
+                if constexpr (math::is_complex_v<value_type>){
+                    const auto d=math::abs(e-m);
+                    return d*d;
+                }else{
+                    const auto d=e-m;
+                    return d*d;
+                }
+            };
             auto mean_ = mean_binary{}(policy,t,axes,true);
             auto tmp = gtensor::n_operator(squared_diff,t,std::move(mean_));
             return mean_binary{}(policy,tmp,axes,keep_dims);
