@@ -134,6 +134,17 @@ auto res1 = gcd(t1,t2);
 auto res2 = lcm(t1,t2);
 ```
 
+### complex numbers
+
+```cpp
+using namespace std::complex_literals;
+gtensor::tensor<std::complex<double>> t{{1.1+2.2i,2.2+3.3i},{3.3+4.4i,4.4+1.1i}};
+auto res1 = real(t);
+auto res2 = imag(t);
+auto res3 = conj(t);
+auto res4 = angle(t);
+```
+
 ## Math reduce routines
 
 Routines described in this section are not lazy. They perform reduction along axes.
