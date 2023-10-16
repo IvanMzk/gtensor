@@ -56,48 +56,48 @@ struct default_config
 };
 
 template<typename Config, typename IdxT>
-struct extended_config{
-
-    using config_type = Config;
-    using engine = typename config_type::engine;
-    using div_mode = typename config_type::div_mode;
-    using order = typename config_type::order;
-    template<typename T> using storage = typename config_type::template storage<T>;
-    template<typename T> using shape = typename config_type::template shape<T>;
-    template<typename T> using container = typename config_type::template container<T>;
-    template<typename T> using index_map = typename config_type::template index_map<T>;
-
+struct extended_config : public Config
+{
     //index_type defines data elements address space:
     //e.g. shape and strides elements are of index_type
     //slice, reshape view subscripts are of index_type
     //must have semantic of signed integral type
     using index_type = IdxT;
-    using shape_type = shape<index_type>;
-    //used in indexed access to meta-data elements:
-    //e.g. index of direction, dimensions number
-    //transpose view subscripts are of dim_type, since they are directions indexes
+
+    //meta-data container type
+    using shape_type = typename Config::template shape<index_type>;
+
+    //dim_type used in indexed access to meta-data elements:
+    //e.g. index of axis, dimensions number
+    //transpose view subscripts are of dim_type, since they are axes indexes
     //must have semantic of signed integral type
     using dim_type = typename shape_type::difference_type;
-    //index_map_type is used in mapping_descriptor that is descriptor type of mapping_view
-    using index_map_type = index_map<index_type>;
 };
-template<typename Config, typename T, typename=void> struct extend_config{
+
+template<typename Config, typename T>
+struct extend_config
+{
     static_assert(!std::is_void_v<T>);
     using type = extended_config<Config, typename Config::template storage<T>::difference_type>;
 };
-template<typename Config, typename T> struct extend_config<Config,T,std::void_t<typename Config::config_type>>{
+
+template<typename Config, typename IdxT, typename T>
+struct extend_config<extended_config<Config,IdxT>,T>
+{
     template<typename, typename> struct selector_;
     template<typename Dummy> struct selector_<std::true_type,Dummy>{
-        using type = Config;
+        using type = extended_config<Config,IdxT>;
     };
     template<typename Dummy> struct selector_<std::false_type,Dummy>{
-        using type = extended_config<typename Config::config_type, typename Config::template storage<T>::difference_type>;
+        using type = extended_config<Config, typename Config::template storage<T>::difference_type>;
     };
     using type = typename selector_<typename std::is_void<T>::type,void>::type;
 };
+
 template<typename Config, typename T> using extend_config_t = typename extend_config<Config,T>::type;
-template<typename T, typename=void> constexpr bool is_extended_config_v = false;
-template<typename T> constexpr bool is_extended_config_v<T,std::void_t<typename T::index_type, typename T::shape_type, typename T::dim_type>> = true;
+
+template<typename T> constexpr bool is_extended_config_v = false;
+template<typename...Ts> constexpr bool is_extended_config_v<extended_config<Ts...>> = true;
 
 }   //end of namespace config
 }   //end of namespace gtensor
