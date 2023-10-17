@@ -185,6 +185,16 @@ struct adl_proxy{
     GTENSOR_ADL_PROXY_METHOD(take_,take);
 };
 
+template<typename T, typename Order, typename Config> struct copy_result{
+
+    template<typename U, typename> struct selector_{using type = tensor<U,Order,Config>;};
+    template<typename U> struct selector_<U,std::true_type>{
+        using type = tensor<typename selector_<typename U::value_type,std::bool_constant<is_tensor_v<typename U::value_type>>>::type,Order,Config>;
+    };
+    using type = typename selector_<T,std::bool_constant<is_tensor_v<T>>>::type;
+};
+template<typename T, typename Order, typename Config> using copy_result_t = typename copy_result<T,Order,Config>::type;
+
 }   //end of namespace detail
 
 template<typename Impl>
@@ -276,7 +286,8 @@ public:
     template<typename T=value_type, typename Config=config_type, typename Order = order, typename Policy, std::enable_if_t<multithreading::is_policy_v<Policy>,int> =0>
     auto copy(Policy policy, Order order_=Order{})const{
         ASSERT_ORDER(Order);
-        tensor<T,Order,config::extend_config_t<Config,T>> res(shape());
+        using res_type = detail::copy_result_t<T,Order,Config>;
+        res_type res(shape());
         auto a = traverse_order_adapter(order_);
         auto a_res = res.traverse_order_adapter(order_);
         if (is_trivial()){
@@ -729,7 +740,6 @@ private:
                 if (shape() == rhs_shape){
                     std::copy(a.begin(),a.end(),traverse_order_adapter(order{}).begin());
                 }else{
-                    //swap(tensor<value_type,order,config_type>(rhs_shape,a.begin(),a.end()));
                     swap(rhs.template copy<value_type,config_type>(order{}));
                 }
             }else if constexpr (std::is_convertible_v<Rhs_,value_type>){
