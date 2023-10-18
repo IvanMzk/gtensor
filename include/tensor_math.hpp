@@ -314,8 +314,9 @@ struct tensor_math
         using order1 = typename tensor_type1::order;
         using order2 = typename tensor_type2::order;
         using config_type = typename tensor_type1::config_type;
-        using res_value_type = decltype(std::declval<value_type1>()*std::declval<value_type2>() + std::declval<value_type1>()*std::declval<value_type2>());
-        using res_type = tensor<res_value_type,order1,config::extend_config_t<config_type,res_value_type>>;
+        using res_type = detail::copy_result_t<decltype(std::declval<value_type1>()*std::declval<value_type2>()),order1,config_type>;
+        using res_value_type = typename res_type::value_type;
+
         const auto& shape1 = t1.shape();
         const auto& shape2 = t2.shape();
         check_matmul_args(shape1,shape2);
@@ -385,7 +386,7 @@ private:
 
             for (auto i=outer_size;;--i){
                 for (auto j=inner_size;;--j){
-                    *w_res+=*w_nd**w_1d;
+                    *w_res=*w_res+*w_nd**w_1d;
                     if (j==1) break;
                     w_nd.step(inner_axis);
                     w_1d.step(0);
@@ -438,7 +439,7 @@ private:
             for (auto i=m;;--i){
                 for (auto j=n;;--j){
                     for(auto r=k;;--r){
-                        *res_w+=*w1**w2;
+                        *res_w=*res_w+*w1**w2;
                         if (r==1) break;
                         w1.step(j_axis);
                         w2.step(i_axis);

@@ -54,95 +54,50 @@ TEST_CASE("test_tmp_copy","[test_tmp]")
     using test_tmp::copy_result_t;
     using test_tmp::copy;
 
-    // tensor<tensor<tensor<double>>> a{
-    //     tensor<tensor<double>>{tensor<double>{1,2,3},tensor<double>{4,5,6},tensor<double>{4,5,6}},
-    //     tensor<tensor<double>>{tensor<double>{7,8,9},tensor<double>{10,11,12}},
-    //     tensor<tensor<double>>{tensor<double>{13,14,15},tensor<double>{16,17,18}}
-    // };
+    tensor<tensor<tensor<double>>> a{
+        {tensor<tensor<double>>{tensor<double>{1,2,1},tensor<double>{4,0,3}},tensor<tensor<double>>{tensor<double>{3,0,2},tensor<double>{1,1,1}}},
+        {tensor<tensor<double>>{tensor<double>{1,4,1},tensor<double>{1,1,0}},tensor<tensor<double>>{tensor<double>{1,0,1},tensor<double>{1,2,0}}}
+    };
+    tensor<tensor<tensor<double>>> b{
+        tensor<tensor<double>>{tensor<double>{1,4,1},tensor<double>{2,1,3}},
+        tensor<tensor<double>>{tensor<double>{1,0,2},tensor<double>{2,3,4}}
+    };
 
-    //tensor<tensor<tensor<double>>> b{tensor<tensor<double>>{tensor<double>{13,14,15},tensor<double>{16,17,18}},tensor<tensor<double>>{tensor<double>{19,20,21},tensor<double>{22,23,24}}};
-//
-    //tensor<tensor<double>> c{tensor<double>{1,2,3},tensor<double>{4,5,6}};
+    tensor<tensor<double>> c{tensor<double>{1,2,3},tensor<double>{4,5,6}};
+    tensor<tensor<double>> d{tensor<double>{7,8,9},tensor<double>{10,11,12}};
+    tensor<tensor<double>> e{{tensor<double>{2,1,0},tensor<double>{1,1,2}},{tensor<double>{1,0,1},tensor<double>{1,3,2}}};
+    tensor<tensor<double>> f{{tensor<double>{2,1,0},tensor<double>{1,1,2}},{tensor<double>{1,0,1},tensor<double>{1,3,2}},{tensor<double>{0,0,1},tensor<double>{1,0,3}}};
 
+    // std::cout<<std::endl<<tensor<double>{};
+    // std::cout<<std::endl<<tensor<double>(1);
+    // std::cout<<std::endl<<tensor<double>(3,2.2);
+    // std::cout<<std::endl<<tensor<double>(std::vector<int>{2,2},3.3);
+    // std::cout<<std::endl<<tensor<double>({2,2},1.1);
+    // std::cout<<std::endl<<tensor<double>{{1,2,3},{4,5,6}};
 
-    // std::vector<tensor<double>> v(3,tensor<double>{1.0});
-    // std::cout<<std::endl<<v[0];
-    // std::cout<<std::endl<<v[1];
-    // std::cout<<std::endl<<v[2];
-    // v[0]+=1;
-    // std::cout<<std::endl<<v[0];
-    // std::cout<<std::endl<<v[1];
-    // std::cout<<std::endl<<v[2];
+    // std::cout<<std::endl<<tensor<tensor<double>>{};
+    // std::cout<<std::endl<<tensor<tensor<double>>(1);
+    // std::cout<<std::endl<<tensor<tensor<double>>(3,2.2);
+    // std::cout<<std::endl<<tensor<tensor<double>>(std::vector<int>{2,2},3.3);
+    // std::cout<<std::endl<<tensor<tensor<double>>({2,2},1.1);
+    // std::cout<<std::endl<<tensor<tensor<double>>{{1,2,3},{4,5,6}};
 
+    // std::cout<<std::endl<<tensor<tensor<tensor<double>>>{};
+    // std::cout<<std::endl<<tensor<tensor<tensor<double>>>(1);
+    // std::cout<<std::endl<<tensor<tensor<tensor<double>>>(3,2.2);
+    // std::cout<<std::endl<<tensor<tensor<tensor<double>>>(std::vector<int>{2,2},0);
+    // std::cout<<std::endl<<tensor<tensor<tensor<double>>>({2,2},0);
 
-    //tensor<tensor<double>> d{tensor<double>{7,8,9},tensor<double>{10,11,12}};
-
-    // tensor<tensor<tensor<double>>> a{
-    //     tensor<tensor<double>>{tensor<double>{1,2,3},tensor<double>{4,5,6}}
-    // };
-
-    //tensor<tensor<double>> dd(std::vector<int>{2});
-
-    //tensor<double> g{1,2,3};
-
-    // auto v = c+d;
-    // std::cout<<std::endl<<v.dim();
-    // std::cout<<std::endl<<v.size();
-
-    //auto c = v.copy();
-
-    // auto a_copy = copy(a);
-    // std::cout<<std::endl<<a_copy.dim();
-    // std::cout<<std::endl<<a_copy.size();
-    // std::cout<<std::endl<<a_copy;
-    // a+=1;
-    // std::cout<<std::endl<<a;
-    // a+=tensor<double>{2,3};
-    // std::cout<<std::endl<<a;
-    // std::cout<<std::endl<<a_copy;
-
-    std::cout<<std::endl<<tensor<double>{};
-    std::cout<<std::endl<<tensor<double>(1);
-    std::cout<<std::endl<<tensor<double>(3,2.2);
-    std::cout<<std::endl<<tensor<double>(std::vector<int>{2,2},3.3);
-    std::cout<<std::endl<<tensor<double>({2,2},1.1);
-    std::cout<<std::endl<<tensor<double>{{1,2,3},{4,5,6}};
-
-    std::cout<<std::endl<<tensor<tensor<double>>{};
-    std::cout<<std::endl<<tensor<tensor<double>>(1);
-    std::cout<<std::endl<<tensor<tensor<double>>(3,2.2);
-    std::cout<<std::endl<<tensor<tensor<double>>(std::vector<int>{2,2},3.3);
-    std::cout<<std::endl<<tensor<tensor<double>>({2,2},1.1);
-    std::cout<<std::endl<<tensor<tensor<double>>{{1,2,3},{4,5,6}};
-
-    std::cout<<std::endl<<tensor<tensor<tensor<double>>>{};
-    std::cout<<std::endl<<tensor<tensor<tensor<double>>>(1);
-    std::cout<<std::endl<<tensor<tensor<tensor<double>>>(3,2.2);
-    std::cout<<std::endl<<tensor<tensor<tensor<double>>>(std::vector<int>{2,2},0);
-    std::cout<<std::endl<<tensor<tensor<tensor<double>>>({2,2},0);
-    //std::cout<<std::endl<<tensor<tensor<tensor<double>>>{{1,2,3},{4,5,6}};
-
-    //std::cout<<std::endl<<g;
-
-    //auto r = copy(c+d);
-    //auto r = copy((a+b)+(a+b)+a+b);
-    //auto r = copy(a*b);
-    //auto r = copy(matmul(c,d));
-    // a+=b;
-    // std::cout<<std::endl<<a.dim();
-    // std::cout<<std::endl<<a.size();
-
-    //std::cout<<std::endl<<(c+d);
-    //auto r = (c+d).copy();
-
-    //auto r = copy(a+b);
-
-    //auto r = copy((a+b)+(a+b)+a+b);
-    //auto r = ((a+b)+(a+b)+a+b).copy();
-
-    //auto r = copy(a*b);
-    // a+=b;
-    //std::cout<<std::endl<<(a.reshape(-1,1)+b.reshape(1,-1));
+    std::cout<<std::endl<<(a.reshape(-1,1)+b.reshape(1,-1));
+    std::cout<<std::endl<<c*d;
+    std::cout<<std::endl<<matmul(c,d);
+    std::cout<<std::endl<<matmul(c,e);
+    std::cout<<std::endl<<matmul(e,c);
+    std::cout<<std::endl<<matmul(f,e);
+    std::cout<<std::endl<<matmul(a,b);
+    std::cout<<std::endl<<matmul(b,a);
+    std::cout<<std::endl<<matmul(a,a);
+    std::cout<<std::endl<<matmul(tensor<double>{1,2,3},tensor<double>{4,5,6});
 }
 
 TEST_CASE("test_element_type","[test_tmp]")

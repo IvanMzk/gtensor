@@ -76,7 +76,7 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_LIST_DIR}/test_math_cumsum_cumprod.cpp
     #${CMAKE_CURRENT_LIST_DIR}/test_math_all_any.cpp
     #${CMAKE_CURRENT_LIST_DIR}/test_math_min_max.cpp
-    #${CMAKE_CURRENT_LIST_DIR}/test_math_matmul.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_math_matmul.cpp
 #
     #${CMAKE_CURRENT_LIST_DIR}/test_statistic_ptp_mean.cpp
     #${CMAKE_CURRENT_LIST_DIR}/test_statistic_var_std.cpp

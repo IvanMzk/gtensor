@@ -186,16 +186,6 @@ struct adl_proxy
     GTENSOR_ADL_PROXY_METHOD(take_,take);
 };
 
-template<typename T, typename Order, typename Config> struct copy_result
-{
-    template<typename U, typename> struct selector_{using type = tensor<U,Order,Config>;};
-    template<typename U> struct selector_<U,std::true_type>{
-        using type = tensor<typename selector_<typename U::value_type,std::bool_constant<is_tensor_v<typename U::value_type>>>::type,Order,Config>;
-    };
-    using type = typename selector_<T,std::bool_constant<is_tensor_v<T>>>::type;
-};
-template<typename T, typename Order, typename Config> using copy_result_t = typename copy_result<T,Order,Config>::type;
-
 template<typename T> struct element_type
 {
     template<typename U, typename> struct selector_{using type = U;};
