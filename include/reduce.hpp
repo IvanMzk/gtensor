@@ -326,7 +326,8 @@ class reducer
             if constexpr (has_initial){
                 return multithreading::reduce(policy,first,last,initial,reduce_f);
             }else{
-                const auto& initial_ = *first;
+                typename detail::tensor_copy_value_type_t<basic_tensor<Ts...>> initial_{};
+                initial_ = *first;
                 return multithreading::reduce(policy,++first,last,initial_,reduce_f);
             }
         };
@@ -363,15 +364,15 @@ class reducer
         using index_type = typename config_type::index_type;
         static constexpr bool has_initial = !std::is_same_v<Initial,detail::no_value>;
         using initial_type = std::conditional_t<has_initial, Initial, value_type>;
-        using result_type =  decltype(reduce_f(std::declval<initial_type>(),std::declval<value_type>()));
-        using res_value_type = std::remove_cv_t<std::remove_reference_t<result_type>>;
-        using res_config_type = config::extend_config_t<config_type,res_value_type>;
+        using res_type = detail::copy_result_t<std::decay_t<decltype(reduce_f(std::declval<initial_type>(),std::declval<value_type>()))>,order,config_type>;
+        using res_value_type = typename res_type::value_type;
 
         const auto pdim = parent.dim();
         const auto& pshape = parent.shape();
         auto axes = detail::make_axes<typename basic_tensor<Ts...>::config_type>(pdim,axes_);
         detail::check_reduce_args(pshape, axes);
-        auto res = tensor<res_value_type,order,res_config_type>(detail::make_reduce_shape(pshape, axes, keep_dims));
+        //auto res = tensor<res_value_type,order,res_config_type>(detail::make_reduce_shape(pshape, axes, keep_dims));
+        res_type res(detail::make_reduce_shape(pshape, axes, keep_dims));
         if (!res.empty()){
             auto a_parent = parent.traverse_order_adapter(order{});
             auto a_res = res.traverse_order_adapter(order{});

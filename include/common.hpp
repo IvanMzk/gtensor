@@ -169,6 +169,18 @@ template<typename T, typename Order, typename Config> struct copy_result
 };
 template<typename T, typename Order, typename Config> using copy_result_t = typename copy_result<T,Order,Config>::type;
 
+//value_type of copy of given tensor type
+template<typename Tensor> struct tensor_copy_value_type
+{
+    static_assert(is_tensor_v<Tensor>,"tensor required");
+    using type = typename copy_result_t<
+        typename Tensor::value_type,
+        typename Tensor::order,
+        typename Tensor::config_type
+    >::value_type;
+};
+template<typename T> using tensor_copy_value_type_t = typename tensor_copy_value_type<T>::type;
+
 //reserve space in arbitrary container, if possible
 template<typename Container, typename T>
 bool reserve(Container& container, const T& n){

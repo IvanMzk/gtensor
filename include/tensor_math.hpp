@@ -214,11 +214,11 @@ struct tensor_math
 
     //sum elements along given axes
     //axes may be scalar or container
-    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(sum,math_reduce_operations::nan_propagate_operation<std::plus<void>>,math_reduce_operations::sum,typename basic_tensor<Ts...>::value_type{0});
+    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(sum,math_reduce_operations::nan_propagate_operation<std::plus<void>>,math_reduce_operations::sum,detail::tensor_copy_value_type_t<basic_tensor<Ts...>>(0));
 
     //multiply elements along given axes
     //axes may be scalar or container
-    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(prod,math_reduce_operations::nan_propagate_operation<std::multiplies<void>>,math_reduce_operations::prod,typename basic_tensor<Ts...>::value_type{1});
+    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(prod,math_reduce_operations::nan_propagate_operation<std::multiplies<void>>,math_reduce_operations::prod,detail::tensor_copy_value_type_t<basic_tensor<Ts...>>(1));
 
     //cumulative sum along given axis
     //axis is scalar
@@ -239,11 +239,11 @@ struct tensor_math
 
     //sum elements along given axes, treating nan as zero
     //axes may be scalar or container
-    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(nansum,math_reduce_operations::nan_ignoring_operation<std::plus<void>>,math_reduce_operations::nansum,typename basic_tensor<Ts...>::value_type{0});
+    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(nansum,math_reduce_operations::nan_ignoring_operation<std::plus<void>>,math_reduce_operations::nansum,detail::tensor_copy_value_type_t<basic_tensor<Ts...>>(0));
 
     //multiply elements along given axes, treating nan as one
     //axes may be scalar or container
-    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(nanprod,math_reduce_operations::nan_ignoring_operation<std::multiplies<void>>,math_reduce_operations::nanprod,typename basic_tensor<Ts...>::value_type{1});
+    GTENSOR_TENSOR_MATH_REDUCE_INITIAL_FUNCTION(nanprod,math_reduce_operations::nan_ignoring_operation<std::multiplies<void>>,math_reduce_operations::nanprod,detail::tensor_copy_value_type_t<basic_tensor<Ts...>>(1));
 
     //cumulative sum along given axis, treating nan as zero
     //axis is scalar
@@ -314,7 +314,7 @@ struct tensor_math
         using order1 = typename tensor_type1::order;
         using order2 = typename tensor_type2::order;
         using config_type = typename tensor_type1::config_type;
-        using res_type = detail::copy_result_t<decltype(std::declval<value_type1>()*std::declval<value_type2>()),order1,config_type>;
+        using res_type = detail::copy_result_t<std::decay_t<decltype(std::declval<value_type1>()*std::declval<value_type2>())>,order1,config_type>;
         using res_value_type = typename res_type::value_type;
 
         const auto& shape1 = t1.shape();

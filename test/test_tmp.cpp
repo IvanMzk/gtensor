@@ -69,21 +69,24 @@ TEST_CASE("test_tmp_copy","[test_tmp]")
     tensor<tensor<double>> f{{tensor<double>{2,1,0},tensor<double>{1,1,2}},{tensor<double>{1,0,1},tensor<double>{1,3,2}},{tensor<double>{0,0,1},tensor<double>{1,0,3}}};
 
     // std::cout<<std::endl<<tensor<double>{};
-    // std::cout<<std::endl<<tensor<double>(1);
+    std::cout<<std::endl<<tensor<double>(1);
+    std::cout<<std::endl<<tensor<double>{1};
     // std::cout<<std::endl<<tensor<double>(3,2.2);
     // std::cout<<std::endl<<tensor<double>(std::vector<int>{2,2},3.3);
     // std::cout<<std::endl<<tensor<double>({2,2},1.1);
     // std::cout<<std::endl<<tensor<double>{{1,2,3},{4,5,6}};
 
     // std::cout<<std::endl<<tensor<tensor<double>>{};
-    // std::cout<<std::endl<<tensor<tensor<double>>(1);
+    std::cout<<std::endl<<tensor<tensor<double>>(1);
+    std::cout<<std::endl<<tensor<tensor<double>>{1};
     // std::cout<<std::endl<<tensor<tensor<double>>(3,2.2);
     // std::cout<<std::endl<<tensor<tensor<double>>(std::vector<int>{2,2},3.3);
     // std::cout<<std::endl<<tensor<tensor<double>>({2,2},1.1);
     // std::cout<<std::endl<<tensor<tensor<double>>{{1,2,3},{4,5,6}};
 
     // std::cout<<std::endl<<tensor<tensor<tensor<double>>>{};
-    // std::cout<<std::endl<<tensor<tensor<tensor<double>>>(1);
+    std::cout<<std::endl<<tensor<tensor<tensor<double>>>(1);
+    std::cout<<std::endl<<tensor<tensor<tensor<double>>>{1};
     // std::cout<<std::endl<<tensor<tensor<tensor<double>>>(3,2.2);
     // std::cout<<std::endl<<tensor<tensor<tensor<double>>>(std::vector<int>{2,2},0);
     // std::cout<<std::endl<<tensor<tensor<tensor<double>>>({2,2},0);
@@ -97,7 +100,29 @@ TEST_CASE("test_tmp_copy","[test_tmp]")
     std::cout<<std::endl<<matmul(a,b);
     std::cout<<std::endl<<matmul(b,a);
     std::cout<<std::endl<<matmul(a,a);
+    std::cout<<std::endl<<matmul(a+b,a-b);
     std::cout<<std::endl<<matmul(tensor<double>{1,2,3},tensor<double>{4,5,6});
+
+    // std::cout<<std::endl<<a.sum();
+    // std::cout<<std::endl<<a.sum(false, tensor<tensor<double>>(-1));
+    // std::cout<<std::endl<<a.sum(0);
+    // std::cout<<std::endl<<a.sum(1);
+    // std::cout<<std::endl<<a.sum({0,1},false, tensor<tensor<double>>(-1));
+
+    std::cout<<std::endl<<(a+b);
+    std::cout<<std::endl<<(a+b).sum();
+    std::cout<<std::endl<<(a+b).sum(false,tensor<tensor<double>>(-1));
+    std::cout<<std::endl<<(a+b).sum(0);
+    std::cout<<std::endl<<(a+b).sum(1);
+    std::cout<<std::endl<<(a+b).sum({0,1},false,tensor<tensor<double>>(-1));
+    std::cout<<std::endl<<(a+b).reduce_binary(std::plus<void>{});
+
+
+
+
+    //std::cout<<std::endl<<a.sum(multithreading::exec_pol<4>{});
+
+    //std::cout<<std::endl<<a.prod();
 }
 
 TEST_CASE("test_element_type","[test_tmp]")
