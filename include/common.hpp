@@ -92,9 +92,11 @@ template<typename T> inline constexpr bool is_container_v<T, std::void_t<decltyp
 
 template<typename T>
 struct is_tensor{
+    template<typename U, typename Dummy=void> struct wrapper_{using type=U;};
+    template<typename Dummy> struct wrapper_<void,Dummy>{using type=wrapper_<void>;};
     static std::false_type selector_(...);
     template<typename...Ts> static std::true_type selector_(basic_tensor<Ts...>);
-    using type = decltype(selector_(std::declval<T>()));
+    using type = decltype(selector_(std::declval<typename wrapper_<T>::type>()));
     static constexpr bool value = type::value;
 };
 template<typename T> inline constexpr bool is_tensor_v = is_tensor<T>::value;

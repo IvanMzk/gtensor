@@ -157,7 +157,8 @@ public:
 };
 
 template<int> auto slide(); //dummy declaration
-struct adl_proxy{
+struct adl_proxy
+{
     template<typename ResT, typename...Args>
     static auto slide_(Args&&...args){
         return slide<ResT>(std::forward<Args>(args)...);
@@ -185,8 +186,8 @@ struct adl_proxy{
     GTENSOR_ADL_PROXY_METHOD(take_,take);
 };
 
-template<typename T, typename Order, typename Config> struct copy_result{
-
+template<typename T, typename Order, typename Config> struct copy_result
+{
     template<typename U, typename> struct selector_{using type = tensor<U,Order,Config>;};
     template<typename U> struct selector_<U,std::true_type>{
         using type = tensor<typename selector_<typename U::value_type,std::bool_constant<is_tensor_v<typename U::value_type>>>::type,Order,Config>;
@@ -194,6 +195,16 @@ template<typename T, typename Order, typename Config> struct copy_result{
     using type = typename selector_<T,std::bool_constant<is_tensor_v<T>>>::type;
 };
 template<typename T, typename Order, typename Config> using copy_result_t = typename copy_result<T,Order,Config>::type;
+
+template<typename T> struct element_type
+{
+    template<typename U, typename> struct selector_{using type = U;};
+    template<typename U> struct selector_<U,std::true_type>{
+        using type = typename selector_<typename U::value_type,std::bool_constant<is_tensor_v<typename U::value_type>>>::type;
+    };
+    using type = typename selector_<T,std::bool_constant<is_tensor_v<T>>>::type;
+};
+template<typename T> using element_type_t = typename element_type<T>::type;
 
 }   //end of namespace detail
 
@@ -215,6 +226,7 @@ public:
     using difference_type = index_type;
     using slice_type = slice<index_type>;
     using slice_item_type = typename slice_type::slice_item_type;
+    using element_type = detail::element_type_t<value_type>;
 
     basic_tensor(const basic_tensor&) = default;
     basic_tensor(basic_tensor&&) = default;
@@ -797,6 +809,7 @@ public:
     using shape_type = typename basic_tensor_base::shape_type;
     using size_type = typename basic_tensor_base::size_type;
     using difference_type = typename basic_tensor_base::difference_type;
+    using element_type = typename basic_tensor_base::element_type;
 
     tensor(const tensor&) = default;
     tensor(tensor&&) = default;
@@ -851,11 +864,19 @@ public:
     explicit tensor(const value_type& value__):
         tensor(forward_tag::tag(), shape_type{}, value__)
     {}
+    template<typename U=element_type, std::enable_if_t<!std::is_same_v<U,value_type>,int> =0>
+    explicit tensor(const element_type& value__):
+        tensor(forward_tag::tag(), shape_type{}, value_type(value__))
+    {}
     //init list shape and value constructor
     //construct tensor of shape filled with value
     template<typename IdxT>
     tensor(std::initializer_list<IdxT> shape__, const value_type& value__):
         tensor(forward_tag::tag(), shape__, value__)
+    {}
+    template<typename U=element_type, typename IdxT, std::enable_if_t<!std::is_same_v<U,value_type>,int> =0>
+    tensor(std::initializer_list<IdxT> shape__, const element_type& value__):
+        tensor(forward_tag::tag(), shape__, value_type(value__))
     {}
     //init list shape and range constructor
     //construct tensor of shape filled with values from iterator range
@@ -868,6 +889,7 @@ public:
 
     template<typename Shape> struct disable_forward_shape : std::disjunction<
         std::is_convertible<Shape,value_type>,
+        std::is_convertible<Shape,element_type>,
         std::is_convertible<Shape,tensor>
     >{};
     //shape constructor, disambiguate with 0-dim constructor, copy,move constructor
@@ -883,6 +905,10 @@ public:
     template<typename Shape>
     tensor(Shape&& shape__, const value_type& value__):
         tensor(forward_tag::tag(), std::forward<Shape>(shape__), value__)
+    {}
+    template<typename U=element_type, typename Shape, std::enable_if_t<!std::is_same_v<U,value_type>,int> =0>
+    tensor(Shape&& shape__, const element_type& value__):
+        tensor(forward_tag::tag(), std::forward<Shape>(shape__), value_type(value__))
     {}
     //shape and range constructor
     //construct tensor of shape filled with values from iterator range

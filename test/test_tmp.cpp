@@ -54,11 +54,36 @@ TEST_CASE("test_tmp_copy","[test_tmp]")
     using test_tmp::copy_result_t;
     using test_tmp::copy;
 
-    tensor<tensor<tensor<double>>> a{tensor<tensor<double>>{tensor<double>{1,2,3},tensor<double>{4,5,6}},tensor<tensor<double>>{tensor<double>{7,8,9},tensor<double>{10,11,12}}};
-    tensor<tensor<tensor<double>>> b{tensor<tensor<double>>{tensor<double>{13,14,15},tensor<double>{16,17,18}},tensor<tensor<double>>{tensor<double>{19,20,21},tensor<double>{22,23,24}}};
+    // tensor<tensor<tensor<double>>> a{
+    //     tensor<tensor<double>>{tensor<double>{1,2,3},tensor<double>{4,5,6},tensor<double>{4,5,6}},
+    //     tensor<tensor<double>>{tensor<double>{7,8,9},tensor<double>{10,11,12}},
+    //     tensor<tensor<double>>{tensor<double>{13,14,15},tensor<double>{16,17,18}}
+    // };
 
-    tensor<tensor<double>> c{tensor<double>{1,2,3},tensor<double>{4,5,6}};
-    tensor<tensor<double>> d{tensor<double>{7,8,9},tensor<double>{10,11,12}};
+    //tensor<tensor<tensor<double>>> b{tensor<tensor<double>>{tensor<double>{13,14,15},tensor<double>{16,17,18}},tensor<tensor<double>>{tensor<double>{19,20,21},tensor<double>{22,23,24}}};
+//
+    //tensor<tensor<double>> c{tensor<double>{1,2,3},tensor<double>{4,5,6}};
+
+
+    // std::vector<tensor<double>> v(3,tensor<double>{1.0});
+    // std::cout<<std::endl<<v[0];
+    // std::cout<<std::endl<<v[1];
+    // std::cout<<std::endl<<v[2];
+    // v[0]+=1;
+    // std::cout<<std::endl<<v[0];
+    // std::cout<<std::endl<<v[1];
+    // std::cout<<std::endl<<v[2];
+
+
+    //tensor<tensor<double>> d{tensor<double>{7,8,9},tensor<double>{10,11,12}};
+
+    // tensor<tensor<tensor<double>>> a{
+    //     tensor<tensor<double>>{tensor<double>{1,2,3},tensor<double>{4,5,6}}
+    // };
+
+    //tensor<tensor<double>> dd(std::vector<int>{2});
+
+    //tensor<double> g{1,2,3};
 
     // auto v = c+d;
     // std::cout<<std::endl<<v.dim();
@@ -76,13 +101,28 @@ TEST_CASE("test_tmp_copy","[test_tmp]")
     // std::cout<<std::endl<<a;
     // std::cout<<std::endl<<a_copy;
 
-    // tensor<double> e(3,11);
-    //tensor<tensor<double>> f(3,11);
-    //tensor<tensor<tensor<double>>> g(3,11);
+    std::cout<<std::endl<<tensor<double>{};
+    std::cout<<std::endl<<tensor<double>(1);
+    std::cout<<std::endl<<tensor<double>(3,2.2);
+    std::cout<<std::endl<<tensor<double>(std::vector<int>{2,2},3.3);
+    std::cout<<std::endl<<tensor<double>({2,2},1.1);
+    std::cout<<std::endl<<tensor<double>{{1,2,3},{4,5,6}};
 
-    // std::cout<<std::endl<<e;
-    // std::cout<<std::endl<<f;
-    // std::cout<<std::endl<<g;
+    std::cout<<std::endl<<tensor<tensor<double>>{};
+    std::cout<<std::endl<<tensor<tensor<double>>(1);
+    std::cout<<std::endl<<tensor<tensor<double>>(3,2.2);
+    std::cout<<std::endl<<tensor<tensor<double>>(std::vector<int>{2,2},3.3);
+    std::cout<<std::endl<<tensor<tensor<double>>({2,2},1.1);
+    std::cout<<std::endl<<tensor<tensor<double>>{{1,2,3},{4,5,6}};
+
+    std::cout<<std::endl<<tensor<tensor<tensor<double>>>{};
+    std::cout<<std::endl<<tensor<tensor<tensor<double>>>(1);
+    std::cout<<std::endl<<tensor<tensor<tensor<double>>>(3,2.2);
+    std::cout<<std::endl<<tensor<tensor<tensor<double>>>(std::vector<int>{2,2},0);
+    std::cout<<std::endl<<tensor<tensor<tensor<double>>>({2,2},0);
+    //std::cout<<std::endl<<tensor<tensor<tensor<double>>>{{1,2,3},{4,5,6}};
+
+    //std::cout<<std::endl<<g;
 
     //auto r = copy(c+d);
     //auto r = copy((a+b)+(a+b)+a+b);
@@ -93,7 +133,7 @@ TEST_CASE("test_tmp_copy","[test_tmp]")
     // std::cout<<std::endl<<a.size();
 
     //std::cout<<std::endl<<(c+d);
-    auto r = (c+d).copy();
+    //auto r = (c+d).copy();
 
     //auto r = copy(a+b);
 
@@ -102,23 +142,43 @@ TEST_CASE("test_tmp_copy","[test_tmp]")
 
     //auto r = copy(a*b);
     // a+=b;
-    std::cout<<std::endl<<(a.reshape(-1,1)+b.reshape(1,-1));
+    //std::cout<<std::endl<<(a.reshape(-1,1)+b.reshape(1,-1));
 }
 
-TEST_CASE("test_copy_result_2","[test_tmp]")
+TEST_CASE("test_element_type","[test_tmp]")
 {
 
     using gtensor::tensor;
-    using test_tmp::copy_result_t;
+    using tensor_type = tensor<double>;
+    using tensor_type_1 = tensor<tensor<double>>;
+    using tensor_type_2 = tensor<tensor<tensor<int>>>;
 
-    tensor<tensor<double>> a{tensor<double>{1,2,3},tensor<double>{4,5,6}};
-    tensor<tensor<double>> b{tensor<double>{7,8,9},tensor<double>{10,11,12}};
+    REQUIRE(std::is_same_v<typename tensor_type::element_type,double>);
+    REQUIRE(std::is_same_v<typename tensor_type::value_type,double>);
 
-    REQUIRE(std::is_same_v<copy_result_t<decltype(a)>,tensor<tensor<double>>>);
-    REQUIRE(std::is_same_v<copy_result_t<decltype(a+b)>,tensor<tensor<double>>>);
-    REQUIRE(std::is_same_v<copy_result_t<decltype(a+b+a+b)>,tensor<tensor<double>>>);
-    REQUIRE(std::is_same_v<copy_result_t<decltype((a+b)+(a+b)+a+b)>,tensor<tensor<double>>>);
+    REQUIRE(std::is_same_v<typename tensor_type_1::element_type,double>);
+    REQUIRE(std::is_same_v<typename tensor_type_1::value_type,tensor<double>>);
+
+    REQUIRE(std::is_same_v<typename tensor_type_2::element_type,int>);
+    REQUIRE(std::is_same_v<typename tensor_type_2::value_type,tensor<tensor<int>>>);
+
+    REQUIRE(std::is_same_v<typename decltype(std::declval<tensor_type_2>()+std::declval<tensor_type_2>()+std::declval<tensor_type_2>())::element_type,int>);
 }
+
+// TEST_CASE("test_copy_result_2","[test_tmp]")
+// {
+
+//     using gtensor::tensor;
+//     using test_tmp::copy_result_t;
+
+//     tensor<tensor<double>> a{tensor<double>{1,2,3},tensor<double>{4,5,6}};
+//     tensor<tensor<double>> b{tensor<double>{7,8,9},tensor<double>{10,11,12}};
+
+//     REQUIRE(std::is_same_v<copy_result_t<decltype(a)>,tensor<tensor<double>>>);
+//     REQUIRE(std::is_same_v<copy_result_t<decltype(a+b)>,tensor<tensor<double>>>);
+//     REQUIRE(std::is_same_v<copy_result_t<decltype(a+b+a+b)>,tensor<tensor<double>>>);
+//     REQUIRE(std::is_same_v<copy_result_t<decltype((a+b)+(a+b)+a+b)>,tensor<tensor<double>>>);
+// }
 
 // TEST_CASE("test_copy_result_3","[test_tmp]")
 // {
