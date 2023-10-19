@@ -32,7 +32,7 @@ public:
         scalar_{std::forward<Scalar_>(scalar__)}
     {}
     template<typename U>
-    std::conditional_t<is_scalar_first, decltype(f_(scalar_,std::declval<U>())), decltype(f_(std::declval<U>(),scalar_))> operator()(U&& u)const{
+    decltype(auto) operator()(U&& u)const{
         if constexpr (is_scalar_first){
             return f_(scalar_,std::forward<U>(u));
         }else{
