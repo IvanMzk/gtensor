@@ -16,8 +16,8 @@
 namespace gtensor{
 
 namespace detail{
+template<typename Other, typename T> inline constexpr bool lhs_other_v = !is_tensor_v<Other> && (std::is_convertible_v<Other,T> || std::is_convertible_v<T,Other>);
 
-template<typename Other, typename T> inline constexpr bool lhs_other_v = std::is_convertible_v<Other,T>||std::is_convertible_v<T,Other>;
 template<typename T, typename U=void> static constexpr bool is_printable_v = false;
 template<typename T> static constexpr bool is_printable_v<T,std::void_t<decltype(std::cout<<std::declval<T>())>> = true;
 
@@ -384,12 +384,12 @@ auto NAME(basic_tensor<Ts...>&& t, Other&& other){\
     using config_type = typename basic_tensor<Ts...>::config_type;\
     return gtensor::tensor_operators_selector_t<config_type>::F(std::move(t), std::forward<Other>(other));\
 }\
-template<typename Other, typename...Ts, std::enable_if_t<detail::lhs_other_v<std::decay_t<Other>,typename basic_tensor<Ts...>::value_type>,int> =0>\
+template<typename Other, typename...Ts, std::enable_if_t<detail::lhs_other_v<std::decay_t<Other>,typename basic_tensor<Ts...>::element_type>,int> =0>\
 auto NAME(Other&& other, const basic_tensor<Ts...>& t){\
     using config_type = typename basic_tensor<Ts...>::config_type;\
     return gtensor::tensor_operators_selector_t<config_type>::F(std::forward<Other>(other),t);\
 }\
-template<typename Other, typename...Ts, std::enable_if_t<detail::lhs_other_v<std::decay_t<Other>,typename basic_tensor<Ts...>::value_type>,int> =0>\
+template<typename Other, typename...Ts, std::enable_if_t<detail::lhs_other_v<std::decay_t<Other>,typename basic_tensor<Ts...>::element_type>,int> =0>\
 auto NAME(Other&& other, basic_tensor<Ts...>&& t){\
     using config_type = typename basic_tensor<Ts...>::config_type;\
     return gtensor::tensor_operators_selector_t<config_type>::F(std::forward<Other>(other),std::move(t));\

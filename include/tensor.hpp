@@ -800,6 +800,7 @@ public:
     using size_type = typename basic_tensor_base::size_type;
     using difference_type = typename basic_tensor_base::difference_type;
     using element_type = typename basic_tensor_base::element_type;
+    using order = typename basic_tensor_base::order;
 
     tensor(const tensor&) = default;
     tensor(tensor&&) = default;
@@ -880,7 +881,9 @@ public:
     template<typename Shape> struct disable_forward_shape : std::disjunction<
         std::is_convertible<Shape,value_type>,
         std::is_convertible<Shape,element_type>,
-        std::is_convertible<Shape,tensor>
+        std::is_convertible<Shape,tensor>,
+        std::bool_constant<detail::is_tensor_v<Shape>>,
+        std::bool_constant<!detail::is_container_of_type_v<Shape,index_type>>
     >{};
     //shape constructor, disambiguate with 0-dim constructor, copy,move constructor
     //construct tensor of shape, is it initialized dependes on underlaying storage
@@ -909,6 +912,23 @@ public:
     tensor(Shape&& shape__, It begin__, It end__):
         tensor(forward_tag::tag(), std::forward<Shape>(shape__), begin__, end__)
     {}
+
+    //evaluating constructor
+    template<typename...Ts>
+    explicit tensor(const basic_tensor<Ts...>& t):
+        tensor(eval_construct(t))
+    {}
+
+private:
+    template<typename...Ts>
+    tensor eval_construct(const basic_tensor<Ts...>& t){
+        auto a = t.traverse_order_adapter(order{});
+        if (t.is_trivial()){
+            return tensor(t.shape(),a.begin_trivial(),a.end_trivial());
+        }else{
+            return tensor(t.shape(),a.begin(),a.end());
+        }
+    }
 };
 
 template<typename T>
