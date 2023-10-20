@@ -102,7 +102,17 @@ GTENSOR_BINARY_OPERATOR_FUNCTOR(logic_and,&&);
 GTENSOR_BINARY_OPERATOR_FUNCTOR(logic_or,||);
 
 //asignment
-GTENSOR_ASSIGN_OPERATOR_FUNCTOR(assign,=);
+struct assign{
+    template<typename T1, typename T2>
+    void operator()(T1&& arg1, T2&& arg2)const{
+        using T1_ = std::remove_cv_t<std::remove_reference_t<T1>>;
+        if constexpr (detail::is_tensor_v<T1_>){
+            std::forward<T1>(arg1).assign(std::forward<T2>(arg2));
+        }else{
+            std::forward<T1>(arg1) = std::forward<T2>(arg2);
+        }
+    }
+};
 GTENSOR_ASSIGN_OPERATOR_FUNCTOR(assign_add,+=);
 GTENSOR_ASSIGN_OPERATOR_FUNCTOR(assign_sub,-=);
 GTENSOR_ASSIGN_OPERATOR_FUNCTOR(assign_mul,*=);

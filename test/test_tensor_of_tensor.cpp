@@ -248,9 +248,9 @@ TEST_CASE("test_tensor_of_tensor_assign","[test_tensor_of_tensor]")
     }
     SECTION("broadcast_assign_scalar")
     {
-        // auto c = a.copy();
-        // c.assign(1.12);
-        // REQUIRE(c == tensor_type_1{{tensor_type_0(3,1.12),tensor_type_0(3,1.12)},{tensor_type_0(3,1.12),tensor_type_0(3,1.12)}});
+        auto c = a.copy();
+        c.assign(1.12);
+        REQUIRE(c == tensor_type_1{{tensor_type_0(3,1.12),tensor_type_0(3,1.12)},{tensor_type_0(3,1.12),tensor_type_0(3,1.12)}});
     }
     SECTION("broadcast_assign_plus_tensor")
     {
@@ -264,11 +264,17 @@ TEST_CASE("test_tensor_of_tensor_assign","[test_tensor_of_tensor]")
         c+=1.1;
         REQUIRE(c == tensor_type_1{{t0+1.1,t1+1.1},{t1+1.1,t2+1.1}});
     }
-    SECTION("broadcast_assign_view")
+    SECTION("broadcast_assign_view_tensor")
     {
-        // auto c = a.copy();
-        // c({{},{1}}) = -1.1;
-        // REQUIRE(tensor_close(c,tensor_type{{1.1+2.2i,-1.1+0.0i},{3.3+4.4i,-1.1+0.0i}},1E-6,1E-6));
+        auto c = a.copy();
+        c.transpose()=b;
+        REQUIRE(c == tensor_type_1{{t2,t2},{t1,t1}});
+    }
+    SECTION("broadcast_assign_view_scalar")
+    {
+        auto c = a.copy();
+        c({{},{1}}) = 1.12;
+        REQUIRE(c == tensor_type_1{{t0,tensor_type_0(3,1.12)},{t1,tensor_type_0(3,1.12)}});
     }
 }
 
