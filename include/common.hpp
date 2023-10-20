@@ -158,7 +158,7 @@ template<typename...Ts> struct tensor_common_value_type<std::void_t<std::common_
 template<typename...Ts> using tensor_common_value_type_t = typename tensor_common_value_type<void,Ts...>::type;
 
 //result type of tensor's copy<T,Config,Order>() call
-template<typename T, typename Order, typename Config> struct copy_result
+template<typename T, typename Order, typename Config> struct tensor_copy_type
 {
     template<typename U, typename> struct selector_{using type = tensor<U,Order,config::extend_config_t<Config,U>>;};
     template<typename U> struct selector_<U,std::true_type>{
@@ -167,19 +167,31 @@ template<typename T, typename Order, typename Config> struct copy_result
     };
     using type = typename selector_<T,std::bool_constant<is_tensor_v<T>>>::type;
 };
-template<typename T, typename Order, typename Config> using copy_result_t = typename copy_result<T,Order,Config>::type;
+template<typename T, typename Order, typename Config> using tensor_copy_type_t = typename tensor_copy_type<T,Order,Config>::type;
+
+//type of object copy
+template<typename T> struct copy_type
+{
+    template<typename,typename Dummy=void> struct selector_{using type = T;};
+    template<typename Dummy> struct selector_<std::true_type,Dummy>{
+        using type = tensor_copy_type_t<
+            typename T::value_type,
+            typename T::order,
+            typename T::config_type
+        >;
+    };
+    using type = typename selector_<std::bool_constant<is_tensor_v<T>>>::type;
+};
+template<typename T> using copy_type_t = typename copy_type<T>::type;
 
 //value_type of copy of given tensor type
 template<typename Tensor> struct tensor_copy_value_type
 {
     static_assert(is_tensor_v<Tensor>,"tensor required");
-    using type = typename copy_result_t<
-        typename Tensor::value_type,
-        typename Tensor::order,
-        typename Tensor::config_type
-    >::value_type;
+    using type = typename copy_type_t<Tensor>::value_type;
 };
 template<typename T> using tensor_copy_value_type_t = typename tensor_copy_value_type<T>::type;
+
 
 //reserve space in arbitrary container, if possible
 template<typename Container, typename T>

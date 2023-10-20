@@ -364,14 +364,13 @@ class reducer
         using index_type = typename config_type::index_type;
         static constexpr bool has_initial = !std::is_same_v<Initial,detail::no_value>;
         using initial_type = std::conditional_t<has_initial, Initial, value_type>;
-        using res_type = detail::copy_result_t<std::decay_t<decltype(reduce_f(std::declval<initial_type>(),std::declval<value_type>()))>,order,config_type>;
+        using res_type = detail::tensor_copy_type_t<std::decay_t<decltype(reduce_f(std::declval<initial_type>(),std::declval<value_type>()))>,order,config_type>;
         using res_value_type = typename res_type::value_type;
 
         const auto pdim = parent.dim();
         const auto& pshape = parent.shape();
         auto axes = detail::make_axes<typename basic_tensor<Ts...>::config_type>(pdim,axes_);
         detail::check_reduce_args(pshape, axes);
-        //auto res = tensor<res_value_type,order,res_config_type>(detail::make_reduce_shape(pshape, axes, keep_dims));
         res_type res(detail::make_reduce_shape(pshape, axes, keep_dims));
         if (!res.empty()){
             auto a_parent = parent.traverse_order_adapter(order{});
@@ -454,7 +453,7 @@ class reducer
                             if constexpr (has_initial){
                                 detail::transform(res_it,res_it+inner_size,it,[&reduce_f,&initial](auto&&, auto&& r){return reduce_f(initial,r);});
                             }else{  //no initial
-                                detail::transform(res_it,res_it+inner_size,it,[](auto&&, auto&& r){return static_cast<const res_value_type&>(r);});
+                                detail::transform(res_it,res_it+inner_size,it,[](auto&&, auto&& r)->const auto&{return static_cast<const res_value_type&>(r);});
                             }
                         }
                         const auto i_stop=init?1:0;

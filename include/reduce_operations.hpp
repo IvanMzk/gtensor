@@ -46,18 +46,18 @@ struct any
 };
 
 //test if initial argument contain valid initial value
-template<typename Initial, typename T> constexpr bool is_initial_v = !std::is_same_v<Initial,gtensor::detail::no_value> && detail::is_static_castable_v<Initial,T>;
+template<typename Initial, typename T> constexpr bool is_initial_v = !std::is_same_v<Initial,gtensor::detail::no_value>;
 //test if functor F has initial value
 template<typename F, typename T, typename=void> constexpr bool has_initial_v = false;
 template<typename F, typename T> constexpr bool has_initial_v<F,T,std::void_t<decltype(F::template value<T>())>> = true;
 
 template<typename Functor, typename It, typename Initial>
-typename std::iterator_traits<It>::value_type reduce_empty(const Initial& initial){
-    using value_type = typename std::iterator_traits<It>::value_type;
-    if constexpr (is_initial_v<Initial,value_type>){
-        return static_cast<value_type>(initial);
-    }else if constexpr(has_initial_v<Functor,value_type>){
-        return Functor::template value<value_type>();
+detail::copy_type_t<typename std::iterator_traits<It>::value_type> reduce_empty(const Initial& initial){
+    using res_value_type = detail::copy_type_t<typename std::iterator_traits<It>::value_type>;
+    if constexpr (is_initial_v<Initial,res_value_type>){
+        return initial;
+    }else if constexpr(has_initial_v<Functor,res_value_type>){
+        return Functor::template value<res_value_type>();
     }else{  //no initial, throw
         throw value_error("cant reduce zero size dimension without initial value");
     }
@@ -66,13 +66,21 @@ typename std::iterator_traits<It>::value_type reduce_empty(const Initial& initia
 template<typename Functor, typename It, typename Initial>
 auto make_initial(It& first, const Initial& initial){
     using value_type = typename std::iterator_traits<It>::value_type;
-    if constexpr (is_initial_v<Initial,value_type>){
-        return static_cast<value_type>(initial);
-    }else if constexpr(has_initial_v<Functor,value_type>){
-        return Functor::template value<value_type>();
+    using res_value_type = detail::copy_type_t<value_type>;
+    if constexpr (is_initial_v<Initial,res_value_type>){
+        return initial;
+    }else if constexpr(has_initial_v<Functor,res_value_type>){
+        return Functor::template value<res_value_type>();
     }else{  //use first element as initial and inc first
-        auto res = *first;
-        return ++first,res;
+        if constexpr (detail::is_tensor_v<value_type>){
+            res_value_type res{(*first).copy()};
+            ++first;
+            return res;
+        }else{
+            res_value_type res{*first};
+            ++first;
+            return res;
+        }
     }
 }
 

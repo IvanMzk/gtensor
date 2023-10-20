@@ -314,7 +314,7 @@ struct tensor_math
         using order1 = typename tensor_type1::order;
         using order2 = typename tensor_type2::order;
         using config_type = typename tensor_type1::config_type;
-        using res_type = detail::copy_result_t<std::decay_t<decltype(std::declval<value_type1>()*std::declval<value_type2>())>,order1,config_type>;
+        using res_type = detail::tensor_copy_type_t<std::decay_t<decltype(std::declval<value_type1>()*std::declval<value_type2>())>,order1,config_type>;
         using res_value_type = typename res_type::value_type;
 
         const auto& shape1 = t1.shape();

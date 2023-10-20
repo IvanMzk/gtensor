@@ -288,7 +288,7 @@ public:
     template<typename T=value_type, typename Config=config_type, typename Order = order, typename Policy, std::enable_if_t<multithreading::is_policy_v<Policy>,int> =0>
     auto copy(Policy policy, Order order_=Order{})const{
         ASSERT_ORDER(Order);
-        using res_type = detail::copy_result_t<T,Order,Config>;
+        using res_type = detail::tensor_copy_type_t<T,Order,Config>;
         res_type res(shape());
         auto a = traverse_order_adapter(order_);
         auto a_res = res.traverse_order_adapter(order_);
@@ -762,7 +762,7 @@ private:
         if (is_same(rhs)){  //self assignment
             return;
         }
-        if constexpr (std::is_convertible_v<tensor<value_type,order,config_type>*,basic_tensor*>){  //value assignment
+        if constexpr (std::is_convertible_v<tensor<value_type,order,config_type>*,basic_tensor*>){  //reference assignment
             swap(rhs);
         }else{
             static_assert(detail::always_false<basic_tensor>,"can't assign value to view");
