@@ -744,11 +744,11 @@ private:
                 }else{
                     swap(rhs.template copy<value_type,config_type>(order{}));
                 }
-            }else if constexpr (std::is_convertible_v<Rhs_,value_type>){
+            }else if constexpr (std::is_convertible_v<Rhs_,element_type>){
                 if (size() == index_type{1}){
                     *begin() = std::forward<Rhs>(rhs);
                 }else{
-                    swap(tensor<value_type,order,config_type>(rhs));
+                    swap(detail::copy_type_t<basic_tensor>(rhs));
                 }
             }else{
                 static_assert(detail::always_false<Rhs>,"can't assign rhs: invalid rhs");

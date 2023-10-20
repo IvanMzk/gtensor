@@ -186,13 +186,13 @@ TEST_CASE("test_tensor_of_tensor_expressions","[test_tensor_of_tensor]")
     const auto t2 = tensor_type_0{2,1,1};
 
 
-    const auto a = tensor_type_1{{t0,t1},{t1,t2}};
-    const auto b = tensor_type_1{{t2,t1},{t1,t0}};
-    const auto c = tensor_type_1{t2,t1};
-    const auto d = tensor_type_1{t0,t2};
+    auto a = tensor_type_1{{t0,t1},{t1,t2}};
+    auto b = tensor_type_1{{t2,t1},{t1,t0}};
+    auto c = tensor_type_1{t2,t1};
+    auto d = tensor_type_1{t0,t2};
 
-    const auto x = tensor_type_2{{a,b},{b,a}};
-    const auto y = tensor_type_2{c,d};
+    auto x = tensor_type_2{{a,b},{b,a}};
+    auto y = tensor_type_2{c,d};
 
     REQUIRE(2.2+a+c-1 == tensor_type_1{{2.2+t0+t2-1,2.2+t1+t1-1},{2.2+t1+t2-1,2.2+t2+t1-1}});
     REQUIRE((a+b)*(c-1) == tensor_type_1{{(t0+t2)*(t2-1),(t1+t1)*(t1-1)},{(t1+t1)*(t2-1),(t2+t0)*(t1-1)}});
@@ -212,58 +212,64 @@ TEST_CASE("test_tensor_of_tensor_assign","[test_tensor_of_tensor]")
     const auto t2 = tensor_type_0{2,1,1};
 
     const auto a = tensor_type_1{{t0,t1},{t1,t2}};
-    const auto b = tensor_type_1{{t2,t1},{t1,t0}};
-    const auto c = tensor_type_1{t2,t1};
-    const auto d = tensor_type_1{t0,t2};
+    const auto b = tensor_type_1{t2,t1};
 
-    const auto x = tensor_type_2{{a,b},{b,a}};
-    const auto y = tensor_type_2{c,d};
+    //const auto x = tensor_type_2{{a,b},{b,a}};
+    //const auto y = tensor_type_2{c,d};
 
 
-    SECTION("value_assign")
+    SECTION("value_assign_tensor")
     {
-        tensor_type c{1,2,3};
+        tensor_type_1 c{};
+        const auto a_copy = a.copy();
         c = a;
         REQUIRE(c==a);
+        c+=1;
+        REQUIRE(c!=a);
+        REQUIRE(a==a_copy);
     }
-    // SECTION("broadcast_assign")
-    // {
-    //     auto c = a.copy();
-    //     c.assign(b);
-    //     REQUIRE(c == tensor_type{{5.1+6.2i,6.2+5.1i},{5.1+6.2i,6.2+5.1i}});
-    // }
-    // SECTION("broadcast_assign_plus")
-    // {
-    //     auto c = a.copy();
-    //     c+=b;
-    //     REQUIRE(tensor_close(c,tensor_type{{6.2+8.4i,8.4+6.2i},{8.4+10.6i,10.6+8.4i}}));
-    // }
-    // SECTION("broadcast_assign_minus")
-    // {
-    //     auto c = a.copy();
-    //     c-=b;
-    //     REQUIRE(tensor_close(c,tensor_type{{-4.0-4.0i,-4.0-4.0i},{-1.8-1.8i,-1.8-1.8i}}));
-    // }
-    // SECTION("broadcast_assign_mul")
-    // {
-    //     auto c = a.copy();
-    //     c*=b;
-    //     REQUIRE(tensor_close(c,tensor_type{{-8.03+18.04i,8.03+18.04i},{-10.45+42.9i,10.45+42.9i}}));
-    // }
-    // SECTION("broadcast_assign_div")
-    // {
-    //     auto c = a.copy();
-    //     c/=b;
-    //     REQUIRE(tensor_close(c,tensor_type{{0.29868115+0.06826998i,0.29868115-0.06826998i},{0.68440652+0.03072149i,0.68440652-0.03072149i}},1E-6,1E-6));
-    // }
-    // SECTION("broadcast_assign_view")
-    // {
-    //     auto c = a.copy();
-    //     c({{},{1}}) = -1.1;
-    //     REQUIRE(tensor_close(c,tensor_type{{1.1+2.2i,-1.1+0.0i},{3.3+4.4i,-1.1+0.0i}},1E-6,1E-6));
-    // }
-
-
+    SECTION("value_assign_scalar")
+    {
+        auto c=a.copy();
+        c = 1.12;
+        REQUIRE(c==tensor_type_1{1.12});
+    }
+    SECTION("value_assign_scalar_to_unit_size")
+    {
+        auto c=tensor_type_2{0.1};
+        c = 1.12;
+        REQUIRE(c==tensor_type_2{1.12});
+    }
+    SECTION("broadcast_assign_tensor")
+    {
+        auto c = a.copy();
+        c.assign(b);
+        REQUIRE(c == tensor_type_1{{t2,t1},{t2,t1}});
+    }
+    SECTION("broadcast_assign_scalar")
+    {
+        // auto c = a.copy();
+        // c.assign(1.12);
+        // REQUIRE(c == tensor_type_1{{tensor_type_0(3,1.12),tensor_type_0(3,1.12)},{tensor_type_0(3,1.12),tensor_type_0(3,1.12)}});
+    }
+    SECTION("broadcast_assign_plus_tensor")
+    {
+        auto c = a.copy();
+        c+=b;
+        REQUIRE(c == tensor_type_1{{t0+t2,t1+t1},{t1+t2,t2+t1}});
+    }
+    SECTION("broadcast_assign_plus_scalar")
+    {
+        auto c = a.copy();
+        c+=1.1;
+        REQUIRE(c == tensor_type_1{{t0+1.1,t1+1.1},{t1+1.1,t2+1.1}});
+    }
+    SECTION("broadcast_assign_view")
+    {
+        // auto c = a.copy();
+        // c({{},{1}}) = -1.1;
+        // REQUIRE(tensor_close(c,tensor_type{{1.1+2.2i,-1.1+0.0i},{3.3+4.4i,-1.1+0.0i}},1E-6,1E-6));
+    }
 }
 
 // TEST_CASE("test_tensor_of_tensor_broadcast_routines","[test_tensor_of_tensor]")

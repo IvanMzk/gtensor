@@ -274,7 +274,7 @@ struct tensor_operators
     template<typename...Ts, typename Rhs>
     static basic_tensor<Ts...>& assign(basic_tensor<Ts...>& lhs, Rhs&& rhs){
         using RhsT = std::remove_cv_t<std::remove_reference_t<Rhs>>;
-        static_assert(detail::is_tensor_v<RhsT>||std::is_convertible_v<RhsT,typename basic_tensor<Ts...>::value_type>);
+        static_assert(detail::is_tensor_v<RhsT>||std::is_convertible_v<RhsT,typename basic_tensor<Ts...>::element_type>);
         if (lhs.is_same(rhs)){
             return lhs;
         }
