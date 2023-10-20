@@ -14,19 +14,37 @@
 #include "statistic.hpp"
 #include "helpers_for_testing.hpp"
 
-// namespace test_tensor_of_tensor{
+TEST_CASE("test_tensor_of_tensor_construction","[test_tensor_of_tensor]")
+{
+    using gtensor::tensor;
+    using tensor_type_0 = tensor<double>;
+    using tensor_type_1 = tensor<tensor_type_0>;
+    using tensor_type_2 = tensor<tensor_type_1>;
 
-// using gtensor::tensor;
-// using tensor_type_0 = tensor<double>;
+    //shape
+    REQUIRE(tensor_type_1(std::vector<int>{2,3}) == tensor_type_1{{tensor_type_0{},tensor_type_0{},tensor_type_0{}},{tensor_type_0{},tensor_type_0{},tensor_type_0{}}});
+    REQUIRE(tensor_type_1{std::vector<int>{2,3}} == tensor_type_1{{tensor_type_0{},tensor_type_0{},tensor_type_0{}},{tensor_type_0{},tensor_type_0{},tensor_type_0{}}});
+    REQUIRE(tensor_type_2(std::vector<int>{2,3}) == tensor_type_2{{tensor_type_1{},tensor_type_1{},tensor_type_1{}},{tensor_type_1{},tensor_type_1{},tensor_type_1{}}});
+    REQUIRE(tensor_type_2{std::vector<int>{2,3}} == tensor_type_2{{tensor_type_1{},tensor_type_1{},tensor_type_1{}},{tensor_type_1{},tensor_type_1{},tensor_type_1{}}});
 
-// const auto t0 = tensor_type_0{1,2,3};
-// const auto t1 = tensor_type_0{3,2,1};
-// const auto t2 = tensor_type_0{0,2,1};
-// const auto t3 = tensor_type_0{1,2,0};
-// const auto t4 = tensor_type_0{2,2,3};
-// const auto t5 = tensor_type_0{1,3,0};
+    //default
+    REQUIRE(tensor_type_1() == tensor_type_1(std::vector<int>{0}));
+    REQUIRE(tensor_type_1{} == tensor_type_1(std::vector<int>{0}));
+    REQUIRE(tensor_type_2() == tensor_type_2(std::vector<int>{0}));
+    REQUIRE(tensor_type_2{} == tensor_type_2(std::vector<int>{0}));
 
-// }   //end of namespace test_tensor_of_tensor
+    //0d
+    REQUIRE(tensor_type_1(2) == tensor_type_1(tensor_type_0(2)));
+    REQUIRE(tensor_type_1{2} == tensor_type_1(tensor_type_0(2)));
+    REQUIRE(tensor_type_2(3) == tensor_type_2(tensor_type_1(tensor_type_0(3))));
+    REQUIRE(tensor_type_2{3} == tensor_type_2(tensor_type_1(tensor_type_0(3))));
+
+    //shape and value
+    REQUIRE(tensor_type_1(std::vector<int>{2,3},1.1) == tensor_type_1{{tensor_type_0(1.1),tensor_type_0(1.1),tensor_type_0(1.1)},{tensor_type_0(1.1),tensor_type_0(1.1),tensor_type_0(1.1)}});
+    REQUIRE(tensor_type_1{std::vector<int>{2,3},2} == tensor_type_1{{tensor_type_0(2),tensor_type_0(2),tensor_type_0(2)},{tensor_type_0(2),tensor_type_0(2),tensor_type_0(2)}});
+    REQUIRE(tensor_type_2(std::vector<int>{2,3},3) == tensor_type_2{{tensor_type_1(3),tensor_type_1(3),tensor_type_1(3)},{tensor_type_1(3),tensor_type_1(3),tensor_type_1(3)}});
+    REQUIRE(tensor_type_2{std::vector<int>{2,3},3} == tensor_type_2{{tensor_type_1(3),tensor_type_1(3),tensor_type_1(3)},{tensor_type_1(3),tensor_type_1(3),tensor_type_1(3)}});
+}
 
 TEST_CASE("test_tensor_of_tensor_strict_equality","[test_tensor_of_tensor]")
 {
@@ -155,74 +173,98 @@ TEST_CASE("test_tensor_of_tensor_close_equality_nan_equal","[test_tensor_of_tens
     REQUIRE(!tensor_close(x,z,1E-3,1E-3,true));
 }
 
-// TEST_CASE("test_tensor_of_tensor_operators","[test_tensor_of_tensor]")
-// {
-//     using value_type = std::complex<double>;
-//     using tensor_type = gtensor::tensor<value_type>;
-//     using namespace std::complex_literals;
+TEST_CASE("test_tensor_of_tensor_expressions","[test_tensor_of_tensor]")
+{
 
-//     const tensor_type a{{1.1+2.2i,2.2+1.1i},{3.3+4.4i,4.4+3.3i}};
-//     const tensor_type b{5.1+6.2i,6.2+5.1i};
+    using gtensor::tensor;
+    using tensor_type_0 = tensor<double>;
+    using tensor_type_1 = tensor<tensor_type_0>;
+    using tensor_type_2 = tensor<tensor_type_1>;
 
-//     REQUIRE(+a == a);
-//     REQUIRE(-a == tensor_type{{-1.1-2.2i,-2.2-1.1i},{-3.3-4.4i,-4.4-3.3i}});
-//     REQUIRE(tensor_close((a+b)*1.1,tensor_type{{6.82+9.24i,9.24+6.82i},{9.24+11.66i,11.66+9.24i}}));
-//     REQUIRE(tensor_close((a+b)*(a-b),tensor_type{{8.8-58.4i,-8.8-58.4i},{3.96-34.2i,-3.96-34.2i}}));
-//     REQUIRE(tensor_close((a+b)/(a-b),tensor_type{{-1.825-0.275i,-1.825+0.275i},{-5.27777778-0.61111111i,-5.27777778+0.61111111i}},1E-3,1E-3));
-// }
+    const auto t0 = tensor_type_0{1,2,3};
+    const auto t1 = tensor_type_0{2,0,1};
+    const auto t2 = tensor_type_0{2,1,1};
 
-// TEST_CASE("test_tensor_of_tensor_assign","[test_tensor_of_tensor]")
-// {
-//     using value_type = std::complex<double>;
-//     using tensor_type = gtensor::tensor<value_type>;
-//     using namespace std::complex_literals;
 
-//     const tensor_type a{{1.1+2.2i,2.2+1.1i},{3.3+4.4i,4.4+3.3i}};
-//     const tensor_type b{5.1+6.2i,6.2+5.1i};
+    const auto a = tensor_type_1{{t0,t1},{t1,t2}};
+    const auto b = tensor_type_1{{t2,t1},{t1,t0}};
+    const auto c = tensor_type_1{t2,t1};
+    const auto d = tensor_type_1{t0,t2};
 
-//     SECTION("value_assign")
-//     {
-//         tensor_type c{1,2,3};
-//         c = a;
-//         REQUIRE(c==a);
-//     }
-//     SECTION("broadcast_assign")
-//     {
-//         auto c = a.copy();
-//         c.assign(b);
-//         REQUIRE(c == tensor_type{{5.1+6.2i,6.2+5.1i},{5.1+6.2i,6.2+5.1i}});
-//     }
-//     SECTION("broadcast_assign_plus")
-//     {
-//         auto c = a.copy();
-//         c+=b;
-//         REQUIRE(tensor_close(c,tensor_type{{6.2+8.4i,8.4+6.2i},{8.4+10.6i,10.6+8.4i}}));
-//     }
-//     SECTION("broadcast_assign_minus")
-//     {
-//         auto c = a.copy();
-//         c-=b;
-//         REQUIRE(tensor_close(c,tensor_type{{-4.0-4.0i,-4.0-4.0i},{-1.8-1.8i,-1.8-1.8i}}));
-//     }
-//     SECTION("broadcast_assign_mul")
-//     {
-//         auto c = a.copy();
-//         c*=b;
-//         REQUIRE(tensor_close(c,tensor_type{{-8.03+18.04i,8.03+18.04i},{-10.45+42.9i,10.45+42.9i}}));
-//     }
-//     SECTION("broadcast_assign_div")
-//     {
-//         auto c = a.copy();
-//         c/=b;
-//         REQUIRE(tensor_close(c,tensor_type{{0.29868115+0.06826998i,0.29868115-0.06826998i},{0.68440652+0.03072149i,0.68440652-0.03072149i}},1E-6,1E-6));
-//     }
-//     SECTION("broadcast_assign_view")
-//     {
-//         auto c = a.copy();
-//         c({{},{1}}) = -1.1;
-//         REQUIRE(tensor_close(c,tensor_type{{1.1+2.2i,-1.1+0.0i},{3.3+4.4i,-1.1+0.0i}},1E-6,1E-6));
-//     }
-// }
+    const auto x = tensor_type_2{{a,b},{b,a}};
+    const auto y = tensor_type_2{c,d};
+
+    REQUIRE(2.2+a+c-1 == tensor_type_1{{2.2+t0+t2-1,2.2+t1+t1-1},{2.2+t1+t2-1,2.2+t2+t1-1}});
+    REQUIRE((a+b)*(c-1) == tensor_type_1{{(t0+t2)*(t2-1),(t1+t1)*(t1-1)},{(t1+t1)*(t2-1),(t2+t0)*(t1-1)}});
+
+    REQUIRE(x+y == tensor_type_2{{a+c,b+d},{b+c,a+d}});
+}
+
+TEST_CASE("test_tensor_of_tensor_assign","[test_tensor_of_tensor]")
+{
+    using gtensor::tensor;
+    using tensor_type_0 = tensor<double>;
+    using tensor_type_1 = tensor<tensor_type_0>;
+    using tensor_type_2 = tensor<tensor_type_1>;
+
+    const auto t0 = tensor_type_0{1,2,3};
+    const auto t1 = tensor_type_0{2,0,1};
+    const auto t2 = tensor_type_0{2,1,1};
+
+    const auto a = tensor_type_1{{t0,t1},{t1,t2}};
+    const auto b = tensor_type_1{{t2,t1},{t1,t0}};
+    const auto c = tensor_type_1{t2,t1};
+    const auto d = tensor_type_1{t0,t2};
+
+    const auto x = tensor_type_2{{a,b},{b,a}};
+    const auto y = tensor_type_2{c,d};
+
+
+    SECTION("value_assign")
+    {
+        tensor_type c{1,2,3};
+        c = a;
+        REQUIRE(c==a);
+    }
+    // SECTION("broadcast_assign")
+    // {
+    //     auto c = a.copy();
+    //     c.assign(b);
+    //     REQUIRE(c == tensor_type{{5.1+6.2i,6.2+5.1i},{5.1+6.2i,6.2+5.1i}});
+    // }
+    // SECTION("broadcast_assign_plus")
+    // {
+    //     auto c = a.copy();
+    //     c+=b;
+    //     REQUIRE(tensor_close(c,tensor_type{{6.2+8.4i,8.4+6.2i},{8.4+10.6i,10.6+8.4i}}));
+    // }
+    // SECTION("broadcast_assign_minus")
+    // {
+    //     auto c = a.copy();
+    //     c-=b;
+    //     REQUIRE(tensor_close(c,tensor_type{{-4.0-4.0i,-4.0-4.0i},{-1.8-1.8i,-1.8-1.8i}}));
+    // }
+    // SECTION("broadcast_assign_mul")
+    // {
+    //     auto c = a.copy();
+    //     c*=b;
+    //     REQUIRE(tensor_close(c,tensor_type{{-8.03+18.04i,8.03+18.04i},{-10.45+42.9i,10.45+42.9i}}));
+    // }
+    // SECTION("broadcast_assign_div")
+    // {
+    //     auto c = a.copy();
+    //     c/=b;
+    //     REQUIRE(tensor_close(c,tensor_type{{0.29868115+0.06826998i,0.29868115-0.06826998i},{0.68440652+0.03072149i,0.68440652-0.03072149i}},1E-6,1E-6));
+    // }
+    // SECTION("broadcast_assign_view")
+    // {
+    //     auto c = a.copy();
+    //     c({{},{1}}) = -1.1;
+    //     REQUIRE(tensor_close(c,tensor_type{{1.1+2.2i,-1.1+0.0i},{3.3+4.4i,-1.1+0.0i}},1E-6,1E-6));
+    // }
+
+
+}
 
 // TEST_CASE("test_tensor_of_tensor_broadcast_routines","[test_tensor_of_tensor]")
 // {

@@ -839,14 +839,20 @@ public:
         basic_tensor_base::assign(std::forward<Rhs>(rhs));
         return *this;
     }
+
+    template<typename U> struct enable_nested : std::bool_constant<
+        !std::is_same_v<tensor,U> &&
+        (std::is_convertible_v<U,value_type> || detail::is_tensor_v<value_type> && detail::is_tensor_v<U>)
+    >{};
+
     //nested init_list constructors
-    //construct tensor using shape that inferfed from given (nested) initializer list and using its elements
+    //construct tensor using shape that infered from given (nested) initializer list and using its elements
     //initializer list elements always considered to be in c_order
-    template<typename U, std::enable_if_t<std::is_convertible_v<U,value_type>,int> =0> tensor(std::initializer_list<U> init_data):tensor(forward_tag::tag(), init_data){}
-    template<typename U, std::enable_if_t<std::is_convertible_v<U,value_type>,int> =0> tensor(std::initializer_list<std::initializer_list<U>> init_data):tensor(forward_tag::tag(), init_data){}
-    template<typename U, std::enable_if_t<std::is_convertible_v<U,value_type>,int> =0> tensor(std::initializer_list<std::initializer_list<std::initializer_list<U>>> init_data):tensor(forward_tag::tag(), init_data){}
-    template<typename U, std::enable_if_t<std::is_convertible_v<U,value_type>,int> =0> tensor(std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<U>>>> init_data):tensor(forward_tag::tag(), init_data){}
-    template<typename U, std::enable_if_t<std::is_convertible_v<U,value_type>,int> =0> tensor(std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<U>>>>> init_data):tensor(forward_tag::tag(), init_data){}
+    template<typename U, std::enable_if_t<enable_nested<U>::value,int> =0> tensor(std::initializer_list<U> init_data):tensor(forward_tag::tag(), init_data){}
+    template<typename U, std::enable_if_t<enable_nested<U>::value,int> =0> tensor(std::initializer_list<std::initializer_list<U>> init_data):tensor(forward_tag::tag(), init_data){}
+    template<typename U, std::enable_if_t<enable_nested<U>::value,int> =0> tensor(std::initializer_list<std::initializer_list<std::initializer_list<U>>> init_data):tensor(forward_tag::tag(), init_data){}
+    template<typename U, std::enable_if_t<enable_nested<U>::value,int> =0> tensor(std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<U>>>> init_data):tensor(forward_tag::tag(), init_data){}
+    template<typename U, std::enable_if_t<enable_nested<U>::value,int> =0> tensor(std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<std::initializer_list<U>>>>> init_data):tensor(forward_tag::tag(), init_data){}
     //default constructor makes empty 1-d tensor
     tensor():
         tensor(forward_tag::tag(), shape_type{0})
