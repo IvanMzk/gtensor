@@ -220,8 +220,9 @@ template<typename T, typename U> bool isgreaterequal(T t, U u){return std::isgre
 template<typename T, typename U> bool isless(T t, U u){return std::isless(t,u);}
 template<typename T, typename U> bool islessequal(T t, U u){return std::islessequal(t,u);}
 template<typename T, typename U> bool islessgreater(T t, U u){return std::islessgreater(t,u);}
+
 template<typename T, typename U, typename Tol>
-bool isclose(T t, U u, const Tol relative_tolerance, const Tol absolute_tolerance){
+bool isclose(const T& t, const U& u, const Tol relative_tolerance, const Tol absolute_tolerance){
     return t==u ? true : math::abs(t-u) < absolute_tolerance + relative_tolerance*(math::abs(t)+math::abs(u));
 }
 

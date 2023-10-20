@@ -209,12 +209,20 @@ class math_isclose
     Tol relative_tolerance_;
     Tol absolute_tolerance_;
     template<typename T, typename U>
-    bool isclose_(std::true_type, T t, U u)const{
-        return math::isclose_nan_equal(t,u,relative_tolerance_,absolute_tolerance_);
-    }
-    template<typename T, typename U>
-    bool isclose_(std::false_type, T t, U u)const{
-        return math::isclose(t,u,relative_tolerance_,absolute_tolerance_);
+    bool isclose_(const T& t, const U& u)const{
+        static constexpr bool is_t_tensor = detail::is_tensor_v<T>;
+        static constexpr bool is_u_tensor = detail::is_tensor_v<U>;
+        if constexpr (is_t_tensor != is_u_tensor){
+            return false;
+        }else{
+            if constexpr (is_t_tensor){
+                return tensor_close(t,u,relative_tolerance_,absolute_tolerance_,NanEqual::value);
+            }else if constexpr (NanEqual::value){
+                return math::isclose_nan_equal(t,u,relative_tolerance_,absolute_tolerance_);
+            }else{
+                return math::isclose(t,u,relative_tolerance_,absolute_tolerance_);
+            }
+        }
     }
 public:
     math_isclose(Tol relative_tolerance__, Tol absolute_tolerance__):
@@ -223,7 +231,7 @@ public:
         {}
     template<typename T, typename U>
     bool operator()(T t, U u)const{
-        return isclose_(typename NanEqual::type{}, t, u);
+        return isclose_(t,u);
     }
 };
 
@@ -232,17 +240,25 @@ template<typename NanEqual = std::false_type>
 class math_isequal
 {
     template<typename T, typename U>
-    bool isequal_(std::true_type, T t, U u)const{
-        return math::isequal_nan_equal(t,u);
-    }
-    template<typename T, typename U>
-    bool isequal_(std::false_type, T t, U u)const{
-        return t==u;
+    bool isequal_(const T& t, const U& u)const{
+        static constexpr bool is_t_tensor = detail::is_tensor_v<T>;
+        static constexpr bool is_u_tensor = detail::is_tensor_v<U>;
+        if constexpr (is_t_tensor != is_u_tensor){
+            return false;
+        }else{
+            if constexpr (is_t_tensor){
+                return tensor_equal(t,u,NanEqual::value);
+            }else if constexpr (NanEqual::value){
+                return math::isequal_nan_equal(t,u);
+            }else{
+                return t==u;
+            }
+        }
     }
 public:
     template<typename T, typename U>
     bool operator()(T t, U u)const{
-        return isequal_(typename NanEqual::type{}, t, u);
+        return isequal_(t,u);
     }
 };
 

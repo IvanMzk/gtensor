@@ -48,6 +48,7 @@ target_sources(Test PRIVATE
 
     ${CMAKE_CURRENT_LIST_DIR}/test_tensor_operators.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_std_complex.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_tensor_of_tensor.cpp
 
     ${CMAKE_CURRENT_LIST_DIR}/test_tensor_construction.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_tensor_assign.cpp
