@@ -192,7 +192,6 @@ template<typename Tensor> struct tensor_copy_value_type
 };
 template<typename T> using tensor_copy_value_type_t = typename tensor_copy_value_type<T>::type;
 
-
 //reserve space in arbitrary container, if possible
 template<typename Container, typename T>
 bool reserve(Container& container, const T& n){

@@ -216,11 +216,11 @@ struct tensor_operators
     template<typename To, typename T>
     static auto cast(T&& t){
         ASSERT_TENSOR(std::remove_cv_t<std::remove_reference_t<T>>);
-        return n_operator(operations::cast<To>{}, std::forward<T>(t));
+        return n_operator(operations::cast_operation<To>{}, std::forward<T>(t));
     }
 
     //like ternary operator
-    GTENSOR_TENSOR_OPERATOR_FUNCTION(where,operations::where);
+    GTENSOR_TENSOR_OPERATOR_FUNCTION(where,operations::where_operation);
 
     //arithmetic
     GTENSOR_TENSOR_OPERATOR_FUNCTION(unary_plus,operations::unary_plus);
