@@ -370,7 +370,6 @@ TEST_CASE("test_tensor_of_tensor_assign_2","[test_tensor_of_tensor]")
 TEST_CASE("test_tensor_of_tensor_broadcast_routines","[test_tensor_of_tensor]")
 {
     using gtensor::tensor;
-    using gtensor::tensor;
     using tensor_type_0 = tensor<double>;
     using tensor_type_1 = tensor<tensor_type_0>;
     using tensor_type_2 = tensor<tensor_type_1>;
@@ -408,18 +407,172 @@ TEST_CASE("test_tensor_of_tensor_broadcast_complex_routines","[test_tensor_of_te
     using gtensor::tensor;
     using tensor_type_0 = tensor<std::complex<double>>;
     using tensor_type_1 = tensor<tensor_type_0>;
+    using tensor_type_2 = tensor<tensor_type_1>;
     using namespace std::complex_literals;
 
     const auto t0 = tensor_type_0{{1.1+2.2i,2.2+1.1i},{3.2+0.1i,0.2+1.3i}};
     const auto t1 = tensor_type_0{{2.1+2.2i,1.2+1.1i},{1.2+0.1i,3.2+1.3i}};
     const auto a = tensor_type_1{{t0,t1},{t1,t0}};
     const auto b = tensor_type_1{{t1,t1},{t0,t1}};
+    const auto c = tensor_type_1{t0,t1};
+    const auto x = tensor_type_2{{a,b},{b,a}};
+    const auto y = tensor_type_2{b,b};
 
     REQUIRE(conj(a) == tensor_type_1{{conj(t0),conj(t1)},{conj(t1),conj(t0)}});
     REQUIRE(real(a) == tensor_type_1{{real(t0),real(t1)},{real(t1),real(t0)}});
     REQUIRE(imag(a) == tensor_type_1{{imag(t0),imag(t1)},{imag(t1),imag(t0)}});
     REQUIRE(sin(a) == tensor_type_1{{sin(t0),sin(t1)},{sin(t1),sin(t0)}});
     REQUIRE(pow(a,conj(b)) == tensor_type_1{{pow(t0,conj(t1)),pow(t1,conj(t1))},{pow(t1,conj(t0)),pow(t0,conj(t1))}});
+    REQUIRE(pow(a,conj(c)) == tensor_type_1{{pow(t0,conj(t0)),pow(t1,conj(t1))},{pow(t1,conj(t0)),pow(t0,conj(t1))}});
+    REQUIRE(conj(x) == tensor_type_2{{conj(a),conj(b)},{conj(b),conj(a)}});
+    REQUIRE(pow(x,conj(y)) == tensor_type_2{{pow(a,conj(b)),pow(b,conj(b))},{pow(b,conj(b)),pow(a,conj(b))}});
+}
+
+TEST_CASE("test_tensor_of_tensor_reduce_binary","[test_tensor_of_tensor]")
+{
+    using gtensor::tensor;
+    using gtensor::detail::no_value;
+    using tensor_type_0 = tensor<double>;
+    using tensor_type_1 = tensor<tensor_type_0>;
+
+    const auto t0 = tensor_type_0{1,2,3};
+    const auto t1 = tensor_type_0{2,0,1};
+    const auto t2 = tensor_type_0{2,1,2};
+    const auto t3 = tensor_type_0{0,3,1};
+
+    const auto a = tensor_type_1{{{t0,t3,t2},{t1,t2,t0}},{{t3,t0,t1},{t2,t0,t3}}};
+    const auto b = tensor_type_1{{{t1,t3,t1},{t2,t1,t0}},{{t3,t2,t0},{t0,t2,t1}}};
+    const auto c = tensor_type_1{t2,t1,t3};
+
+    //ten,axes,intial,expected
+    auto test_data = std::make_tuple(
+        //input tensor
+        //no initial
+        std::make_tuple(a,no_value{},no_value{},tensor_type_1(tensor_type_0{14,20,23})),
+        std::make_tuple(a,0,no_value{},tensor_type_1{{tensor_type_0{1,5,4},tensor_type_0{1,5,4},tensor_type_0{4,1,3}},{tensor_type_0{4,1,3},tensor_type_0{3,3,5},tensor_type_0{1,5,4}}}),
+        std::make_tuple(a,1,no_value{},tensor_type_1{{tensor_type_0{3,2,4},tensor_type_0{2,4,3},tensor_type_0{3,3,5}},{tensor_type_0{2,4,3},tensor_type_0{2,4,6},tensor_type_0{2,3,2}}}),
+        std::make_tuple(a,2,no_value{},tensor_type_1{{tensor_type_0{3,6,6},tensor_type_0{5,3,6}},{tensor_type_0{3,5,5},tensor_type_0{3,6,6}}}),
+        std::make_tuple(a,std::vector<int>{0,1},no_value{},tensor_type_1{tensor_type_0{5,6,7},tensor_type_0{4,8,9},tensor_type_0{5,6,7}}),
+        std::make_tuple(a,std::vector<int>{0,2},no_value{},tensor_type_1{tensor_type_0{6,11,11},tensor_type_0{8,9,12}}),
+        std::make_tuple(a,std::vector<int>{1,2},no_value{},tensor_type_1{tensor_type_0{8,9,12},tensor_type_0{6,11,11}}),
+        std::make_tuple(a,std::vector<int>{0,1,2},no_value{},tensor_type_1(tensor_type_0{14,20,23})),
+        //initial
+        std::make_tuple(a,no_value{},tensor_type_0{1,0,-1},tensor_type_1(tensor_type_0{15,20,22})),
+        std::make_tuple(a,0,tensor_type_0{1,0,-1},tensor_type_1{{tensor_type_0{2,5,3},tensor_type_0{2,5,3},tensor_type_0{5,1,2}},{tensor_type_0{5,1,2},tensor_type_0{4,3,4},tensor_type_0{2,5,3}}}),
+        std::make_tuple(a,1,tensor_type_0{1,0,-1},tensor_type_1{{tensor_type_0{4,2,3},tensor_type_0{3,4,2},tensor_type_0{4,3,4}},{tensor_type_0{3,4,2},tensor_type_0{3,4,5},tensor_type_0{3,3,1}}}),
+        std::make_tuple(a,2,tensor_type_0{1,0,-1},tensor_type_1{{tensor_type_0{4,6,5},tensor_type_0{6,3,5}},{tensor_type_0{4,5,4},tensor_type_0{4,6,5}}}),
+        std::make_tuple(a,std::vector<int>{0,1},tensor_type_0{1,0,-1},tensor_type_1{tensor_type_0{6,6,6},tensor_type_0{5,8,8},tensor_type_0{6,6,6}}),
+        std::make_tuple(a,std::vector<int>{0,2},tensor_type_0{1,0,-1},tensor_type_1{tensor_type_0{7,11,10},tensor_type_0{9,9,11}}),
+        std::make_tuple(a,std::vector<int>{1,2},tensor_type_0{1,0,-1},tensor_type_1{tensor_type_0{9,9,11},tensor_type_0{7,11,10}}),
+        std::make_tuple(a,std::vector<int>{0,1,2},tensor_type_0{1,0,-1},tensor_type_1(tensor_type_0{15,20,22})),
+        //input expression
+        //no initial
+        std::make_tuple(a+b+c,no_value{},no_value{},tensor_type_1(tensor_type_0{47,51,60})),
+        std::make_tuple(a+b+c,0,no_value{},tensor_type_1{{tensor_type_0{7,10,10},tensor_type_0{7,9,9},tensor_type_0{7,9,9}},{tensor_type_0{11,6,12},tensor_type_0{11,4,10},tensor_type_0{4,13,10}}}),
+        std::make_tuple(a+b+c,1,no_value{},tensor_type_1{{tensor_type_0{11,5,11},tensor_type_0{8,7,7},tensor_type_0{6,11,11}},{tensor_type_0{7,11,11},tensor_type_0{10,6,12},tensor_type_0{5,11,8}}}),
+        std::make_tuple(a+b+c,2,no_value{},tensor_type_1{{tensor_type_0{11,13,13},tensor_type_0{14,10,16}},{tensor_type_0{10,15,15},tensor_type_0{12,13,16}}}),
+        std::make_tuple(a+b+c,std::vector<int>{0,1},no_value{},tensor_type_1{tensor_type_0{18,16,22},tensor_type_0{18,13,19},tensor_type_0{11,22,19}}),
+        std::make_tuple(a+b+c,std::vector<int>{0,2},no_value{},tensor_type_1{tensor_type_0{21,28,28},tensor_type_0{26,23,32}}),
+        std::make_tuple(a+b+c,std::vector<int>{1,2},no_value{},tensor_type_1{tensor_type_0{25,23,29},tensor_type_0{22,28,31}}),
+        std::make_tuple(a+b+c,std::vector<int>{0,1,2},no_value{},tensor_type_1(tensor_type_0{47,51,60})),
+        //initial
+        std::make_tuple(a+b+c,no_value{},tensor_type_0{1,0,-1},tensor_type_1(tensor_type_0{48,51,59})),
+        std::make_tuple(a+b+c,0,tensor_type_0{1,0,-1},tensor_type_1{{tensor_type_0{8,10,9},tensor_type_0{8,9,8},tensor_type_0{8,9,8}},{tensor_type_0{12,6,11},tensor_type_0{12,4,9},tensor_type_0{5,13,9}}}),
+        std::make_tuple(a+b+c,1,tensor_type_0{1,0,-1},tensor_type_1{{tensor_type_0{12,5,10},tensor_type_0{9,7,6},tensor_type_0{7,11,10}},{tensor_type_0{8,11,10},tensor_type_0{11,6,11},tensor_type_0{6,11,7}}}),
+        std::make_tuple(a+b+c,2,tensor_type_0{1,0,-1},tensor_type_1{{tensor_type_0{12,13,12},tensor_type_0{15,10,15}},{tensor_type_0{11,15,14},tensor_type_0{13,13,15}}}),
+        std::make_tuple(a+b+c,std::vector<int>{0,1},tensor_type_0{1,0,-1},tensor_type_1{tensor_type_0{19,16,21},tensor_type_0{19,13,18},tensor_type_0{12,22,18}}),
+        std::make_tuple(a+b+c,std::vector<int>{0,2},tensor_type_0{1,0,-1},tensor_type_1{tensor_type_0{22,28,27},tensor_type_0{27,23,31}}),
+        std::make_tuple(a+b+c,std::vector<int>{1,2},tensor_type_0{1,0,-1},tensor_type_1{tensor_type_0{26,23,28},tensor_type_0{23,28,30}}),
+        std::make_tuple(a+b+c,std::vector<int>{0,1,2},tensor_type_0{1,0,-1},tensor_type_1(tensor_type_0{48,51,59}))
+    );
+
+    auto test_reduce_binary = [&test_data](auto...policy){
+        auto test = [policy...](const auto& t){
+            auto ten = std::get<0>(t);
+            auto axes = std::get<1>(t);
+            auto initial = std::get<2>(t);
+            auto expected = std::get<3>(t);
+            auto ten_copy = ten.copy();
+            auto result = reduce_binary(policy...,ten,axes,std::plus<void>{},false,initial);
+            REQUIRE(ten == ten_copy);
+            REQUIRE(result == expected);
+        };
+        helpers_for_testing::apply_by_element(test,test_data);
+    };
+
+    SECTION("default_policy")
+    {
+        test_reduce_binary();
+    }
+    SECTION("exec_pol<4>")
+    {
+        test_reduce_binary(multithreading::exec_pol<4>{});
+    }
+}
+
+TEST_CASE("test_tensor_of_tensor_reduce_range","[test_tensor_of_tensor]")
+{
+    using gtensor::tensor;
+    using gtensor::detail::no_value;
+    using tensor_type_0 = tensor<double>;
+    using tensor_type_1 = tensor<tensor_type_0>;
+
+    const auto t0 = tensor_type_0{1,2,3};
+    const auto t1 = tensor_type_0{2,0,1};
+    const auto t2 = tensor_type_0{2,1,2};
+    const auto t3 = tensor_type_0{0,3,1};
+
+    const auto a = tensor_type_1{{{t0,t3,t2},{t1,t2,t0}},{{t3,t0,t1},{t2,t0,t3}}};
+    const auto b = tensor_type_1{{{t1,t3,t1},{t2,t1,t0}},{{t3,t2,t0},{t0,t2,t1}}};
+    const auto c = tensor_type_1{t2,t1,t3};
+
+    //ten,axes,expected
+    auto test_data = std::make_tuple(
+        //input tensor
+        std::make_tuple(a,no_value{},tensor_type_1(tensor_type_0{14,20,23})),
+        std::make_tuple(a,0,tensor_type_1{{tensor_type_0{1,5,4},tensor_type_0{1,5,4},tensor_type_0{4,1,3}},{tensor_type_0{4,1,3},tensor_type_0{3,3,5},tensor_type_0{1,5,4}}}),
+        std::make_tuple(a,1,tensor_type_1{{tensor_type_0{3,2,4},tensor_type_0{2,4,3},tensor_type_0{3,3,5}},{tensor_type_0{2,4,3},tensor_type_0{2,4,6},tensor_type_0{2,3,2}}}),
+        std::make_tuple(a,2,tensor_type_1{{tensor_type_0{3,6,6},tensor_type_0{5,3,6}},{tensor_type_0{3,5,5},tensor_type_0{3,6,6}}}),
+        std::make_tuple(a,std::vector<int>{0,1},tensor_type_1{tensor_type_0{5,6,7},tensor_type_0{4,8,9},tensor_type_0{5,6,7}}),
+        std::make_tuple(a,std::vector<int>{0,2},tensor_type_1{tensor_type_0{6,11,11},tensor_type_0{8,9,12}}),
+        std::make_tuple(a,std::vector<int>{1,2},tensor_type_1{tensor_type_0{8,9,12},tensor_type_0{6,11,11}}),
+        std::make_tuple(a,std::vector<int>{0,1,2},tensor_type_1(tensor_type_0{14,20,23})),
+        //input expression
+        std::make_tuple(a+b+c,no_value{},tensor_type_1(tensor_type_0{47,51,60})),
+        std::make_tuple(a+b+c,0,tensor_type_1{{tensor_type_0{7,10,10},tensor_type_0{7,9,9},tensor_type_0{7,9,9}},{tensor_type_0{11,6,12},tensor_type_0{11,4,10},tensor_type_0{4,13,10}}}),
+        std::make_tuple(a+b+c,1,tensor_type_1{{tensor_type_0{11,5,11},tensor_type_0{8,7,7},tensor_type_0{6,11,11}},{tensor_type_0{7,11,11},tensor_type_0{10,6,12},tensor_type_0{5,11,8}}}),
+        std::make_tuple(a+b+c,2,tensor_type_1{{tensor_type_0{11,13,13},tensor_type_0{14,10,16}},{tensor_type_0{10,15,15},tensor_type_0{12,13,16}}}),
+        std::make_tuple(a+b+c,std::vector<int>{0,1},tensor_type_1{tensor_type_0{18,16,22},tensor_type_0{18,13,19},tensor_type_0{11,22,19}}),
+        std::make_tuple(a+b+c,std::vector<int>{0,2},tensor_type_1{tensor_type_0{21,28,28},tensor_type_0{26,23,32}}),
+        std::make_tuple(a+b+c,std::vector<int>{1,2},tensor_type_1{tensor_type_0{25,23,29},tensor_type_0{22,28,31}}),
+        std::make_tuple(a+b+c,std::vector<int>{0,1,2},tensor_type_1(tensor_type_0{47,51,60}))
+    );
+
+    auto test_reduce_range = [&test_data](auto...policy){
+        auto test = [policy...](const auto& t){
+            auto ten = std::get<0>(t);
+            auto axes = std::get<1>(t);
+            auto expected = std::get<2>(t);
+            auto ten_copy = ten.copy();
+            auto sum = [](auto first, auto last){
+                auto init = (*first).copy();
+                return std::accumulate(++first,last,init,std::plus<void>{});
+            };
+            auto result = reduce_range(policy...,ten,axes,sum,false,true);
+            REQUIRE(ten == ten_copy);
+            REQUIRE(result == expected);
+        };
+        helpers_for_testing::apply_by_element(test,test_data);
+    };
+
+    SECTION("default_policy")
+    {
+        test_reduce_range();
+    }
+    SECTION("exec_pol<4>")
+    {
+        test_reduce_range(multithreading::exec_pol<4>{});
+    }
 }
 
 // TEST_CASE("test_tensor_of_tensor_routines","[test_tensor_of_tensor]")

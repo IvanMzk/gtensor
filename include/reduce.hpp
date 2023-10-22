@@ -399,7 +399,15 @@ class reducer
                         std::transform(a_res.begin(),a_res.end(),a_parent.begin(),a_res.begin(),[&reduce_f,&initial](auto&&, auto&& r){return reduce_f(initial,r);});
                     }else{
                         //assuming reduction of scalar without initial is identity - nothing to reduce
-                        std::transform(a_res.begin(),a_res.end(),a_parent.begin(),a_res.begin(),[](auto&&, auto&& r){return static_cast<const res_value_type&>(r);});
+                        std::transform(a_res.begin(),a_res.end(),a_parent.begin(),a_res.begin(),
+                            [](auto&&, auto&& r){
+                                if constexpr (detail::is_tensor_v<res_value_type> && std::is_same_v<res_value_type,std::decay_t<decltype(r)>>){
+                                    return r.copy();
+                                }else{
+                                    return static_cast<res_value_type>(r);
+                                }
+                            }
+                        );
                     }
                     return res;
                 }
@@ -427,9 +435,19 @@ class reducer
                         auto& e = *res_it;
                         if (init){
                             if constexpr (has_initial){
-                                e = detail::accumulate_n(it,outer_size,initial,reduce_f);
+                                if constexpr (detail::is_tensor_v<value_type>){
+                                    e = detail::accumulate_n(it,outer_size,initial.copy(),reduce_f);
+                                }else{
+                                    e = detail::accumulate_n(it,outer_size,initial,reduce_f);
+                                }
                             }else{  //no initial
-                                e = detail::accumulate_n(it,outer_size,reduce_f);
+                                if constexpr (detail::is_tensor_v<value_type>){
+                                    auto initial = (*it).copy();
+                                    e = detail::accumulate_n(++it,outer_size-1,initial,reduce_f);
+                                }else{
+                                    auto initial = *it;
+                                    e = detail::accumulate_n(++it,outer_size-1,initial,reduce_f);
+                                }
                             }
                         }else{  //e initialized
                             e = detail::accumulate_n(it,outer_size,e,reduce_f);
@@ -453,7 +471,15 @@ class reducer
                             if constexpr (has_initial){
                                 detail::transform(res_it,res_it+inner_size,it,[&reduce_f,&initial](auto&&, auto&& r){return reduce_f(initial,r);});
                             }else{  //no initial
-                                detail::transform(res_it,res_it+inner_size,it,[](auto&&, auto&& r)->const auto&{return static_cast<const res_value_type&>(r);});
+                                detail::transform(res_it,res_it+inner_size,it,
+                                    [](auto&&, auto&& r){
+                                        if constexpr (detail::is_tensor_v<res_value_type> && std::is_same_v<res_value_type,std::decay_t<decltype(r)>>){
+                                            return r.copy();
+                                        }else{
+                                            return static_cast<res_value_type>(r);
+                                        }
+                                    }
+                                );
                             }
                         }
                         const auto i_stop=init?1:0;

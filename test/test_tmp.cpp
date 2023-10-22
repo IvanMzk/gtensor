@@ -68,6 +68,11 @@ TEST_CASE("test_tmp_copy","[test_tmp]")
     // tensor<tensor<double>> e{{tensor<double>{2,1,0},tensor<double>{1,1,2}},{tensor<double>{1,0,1},tensor<double>{1,3,2}}};
     tensor<tensor<double>> f{{tensor<double>{2,1,0},tensor<double>{1,1,2}},{tensor<double>{1,0,1},tensor<double>{1,3,2}},{tensor<double>{0,0,1},tensor<double>{1,0,3}}};
 
+
+    auto ff = (f+1).copy();
+    std::cout<<std::endl<<ff
+    f = ff;
+
     // std::cout<<std::endl<<tensor<double>{};
     // std::cout<<std::endl<<tensor<double>(1);
     // std::cout<<std::endl<<tensor<double>{1};
@@ -120,10 +125,10 @@ TEST_CASE("test_tmp_copy","[test_tmp]")
     // std::cout<<std::endl<<f;
 
     //auto r1 = gtensor::reduce_range(f,0,sum,false,true);
-    auto r1 = gtensor::reduce_range(f,0,gtensor::math_reduce_operations::accumulate_nanaccumulate<std::plus<void>>{},false,true);
+    //auto r1 = gtensor::reduce_range(f,0,gtensor::math_reduce_operations::accumulate_nanaccumulate<std::plus<void>>{},false,true);
     //auto r1 = gtensor::reduce_range(f,0,gtensor::math_reduce_operations::sum{},false,true);
-    std::cout<<std::endl<<r1;
-    std::cout<<std::endl<<f;
+    //std::cout<<std::endl<<r1;
+    //std::cout<<std::endl<<f;
 
 
     // auto r = gtensor::reduce_binary(f,0,[](auto, auto e){return e;},false,tensor<double>(0));
