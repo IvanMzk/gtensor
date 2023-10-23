@@ -87,11 +87,9 @@ static auto NAME(const basic_tensor<Ts...>& t, bool keep_dims, const Initial& in
 #define GTENSOR_TENSOR_MATH_CUMULATE_FUNCTION(NAME,F)\
 template<typename Policy, typename...Ts, typename Axis>\
 static auto NAME(Policy policy, const basic_tensor<Ts...>& t, const Axis& axis){\
-    using index_type = typename basic_tensor<Ts...>::index_type;\
-    using value_type = typename basic_tensor<Ts...>::value_type;\
-    const index_type window_size = 1;\
-    const index_type window_step = 1;\
-    return slide<value_type>(policy,t,axis,F{}, window_size, window_step);\
+    const auto window_size = 1;\
+    const auto window_step = 1;\
+    return slide<typename gtensor::detail::copy_type_t<basic_tensor<Ts...>>::value_type>(policy,t,axis,F{},window_size,window_step);\
 }\
 template<typename...Ts, typename Policy>\
 static auto NAME(Policy policy, const basic_tensor<Ts...>& t){\
@@ -257,25 +255,21 @@ struct tensor_math
     //axis is scalar, default is last axis
     template<typename Policy, typename...Ts, typename DimT>
     static auto diff(Policy policy, const basic_tensor<Ts...>& t, std::size_t n, const DimT& axis){
-        using index_type = typename basic_tensor<Ts...>::index_type;
-        using value_type = typename basic_tensor<Ts...>::value_type;
-        const index_type window_size = 2;
-        const index_type window_step = 1;
         if (n==0){
-            return t;
+            return t.copy();
         }else{
-            auto res = slide<value_type>(policy, t, axis, math_reduce_operations::diff_1{}, window_size, window_step);
+            const auto window_size = 2;
+            const auto window_step = 1;
+            auto res = slide<typename detail::copy_type_t<basic_tensor<Ts...>>::value_type>(policy, t, axis, math_reduce_operations::diff_1{}, window_size, window_step);
             return diff(policy, res, --n, axis);
         }
     }
     //none recursive implementation of second differences, more efficient than diff with n=2
     template<typename Policy, typename...Ts, typename DimT>
     static auto diff2(Policy policy, const basic_tensor<Ts...>& t, const DimT& axis){
-        using index_type = typename basic_tensor<Ts...>::index_type;
-        using value_type = typename basic_tensor<Ts...>::value_type;
-        const index_type window_size = 3;
-        const index_type window_step = 1;
-        return slide<value_type>(policy, t, axis, math_reduce_operations::diff_2{}, window_size, window_step);
+        const auto window_size = 3;
+        const auto window_step = 1;
+        return slide<typename detail::copy_type_t<basic_tensor<Ts...>>::value_type>(policy, t, axis, math_reduce_operations::diff_2{}, window_size, window_step);
     }
     template<typename...Ts, typename DimT>
     static auto diff(const basic_tensor<Ts...>& t, std::size_t n, const DimT& axis){

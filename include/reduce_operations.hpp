@@ -46,7 +46,7 @@ struct any
 };
 
 //test if initial argument contain valid initial value
-template<typename Initial, typename T> constexpr bool is_initial_v = !std::is_same_v<Initial,gtensor::detail::no_value>;
+template<typename Initial> constexpr bool is_initial_v = !std::is_same_v<Initial,gtensor::detail::no_value>;
 //test if functor F has initial value
 template<typename F, typename T, typename=void> constexpr bool has_initial_v = false;
 template<typename F, typename T> constexpr bool has_initial_v<F,T,std::void_t<decltype(F::template value<T>())>> = true;
@@ -54,7 +54,7 @@ template<typename F, typename T> constexpr bool has_initial_v<F,T,std::void_t<de
 template<typename Functor, typename It, typename Initial>
 detail::copy_type_t<typename std::iterator_traits<It>::value_type> reduce_empty(const Initial& initial){
     using res_value_type = detail::copy_type_t<typename std::iterator_traits<It>::value_type>;
-    if constexpr (is_initial_v<Initial,res_value_type>){
+    if constexpr (is_initial_v<Initial>){
         return initial;
     }else if constexpr(has_initial_v<Functor,res_value_type>){
         return Functor::template value<res_value_type>();
@@ -65,22 +65,15 @@ detail::copy_type_t<typename std::iterator_traits<It>::value_type> reduce_empty(
 
 template<typename Functor, typename It, typename Initial>
 auto make_initial(It& first, const Initial& initial){
-    using value_type = typename std::iterator_traits<It>::value_type;
-    using res_value_type = detail::copy_type_t<value_type>;
-    if constexpr (is_initial_v<Initial,res_value_type>){
+    using res_value_type = detail::copy_type_t<typename std::iterator_traits<It>::value_type>;
+    if constexpr (is_initial_v<Initial>){
         return initial;
     }else if constexpr(has_initial_v<Functor,res_value_type>){
         return Functor::template value<res_value_type>();
     }else{  //use first element as initial and inc first
-        if constexpr (detail::is_tensor_v<value_type>){
-            res_value_type res{(*first).copy()};
-            ++first;
-            return res;
-        }else{
-            res_value_type res{*first};
-            ++first;
-            return res;
-        }
+        auto res = detail::make_copy(*first);
+        ++first;
+        return res;
     }
 }
 
@@ -180,9 +173,9 @@ struct cumulate_nancumulate
 {
     template<typename It, typename DstIt>
     void operator()(It first, It last, DstIt dfirst, DstIt){
-        using value_type = typename std::iterator_traits<It>::value_type;
+        using res_value_type = typename std::iterator_traits<DstIt>::value_type;
         Operation operation{};
-        auto res = operation(Operation::template value<value_type>(), *first);
+        auto res = detail::make_copy(operation(Operation::template value<res_value_type>(), *first));
         *dfirst = res;
         while(++first!=last){
             res = operation(res, *first);

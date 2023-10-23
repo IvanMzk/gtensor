@@ -196,6 +196,17 @@ template<typename T> struct element_type
 };
 template<typename T> using element_type_t = typename element_type<T>::type;
 
+template<typename Policy, typename Order, typename...Ts, typename...Us>
+void copy_tensors(Policy policy, Order order, const basic_tensor<Ts...>& src, basic_tensor<Us...>& dst){
+    auto a_src = src.traverse_order_adapter(order);
+    auto a_dst = dst.traverse_order_adapter(order);
+    if (src.is_trivial()){
+        multithreading::copy(policy,a_src.begin_trivial(),a_src.end_trivial(),a_dst.begin());
+    }else{
+        multithreading::copy(policy,a_src.begin(),a_src.end(),a_dst.begin());
+    }
+}
+
 }   //end of namespace detail
 
 template<typename Impl>
@@ -290,13 +301,7 @@ public:
         ASSERT_ORDER(Order);
         using res_type = detail::tensor_copy_type_t<T,Order,Config>;
         res_type res(shape());
-        auto a = traverse_order_adapter(order_);
-        auto a_res = res.traverse_order_adapter(order_);
-        if (is_trivial()){
-            multithreading::copy(policy,a.begin_trivial(),a.end_trivial(),a_res.begin());
-        }else{
-            multithreading::copy(policy,a.begin(),a.end(),a_res.begin());
-        }
+        detail::copy_tensors(policy,order_,*this,res);
         return res;
     }
     template<typename T=value_type, typename Config=config_type, typename Order = order, std::enable_if_t<!multithreading::is_policy_v<Order>,int> =0>
@@ -738,9 +743,8 @@ private:
         if constexpr (std::is_convertible_v<tensor<value_type,order,config_type>*,basic_tensor*>){  //value assignment
             if constexpr (detail::is_tensor_v<Rhs_>){
                 const auto& rhs_shape = rhs.shape();
-                auto a = rhs.traverse_order_adapter(order{});
                 if (shape() == rhs_shape){
-                    std::copy(a.begin(),a.end(),traverse_order_adapter(order{}).begin());
+                    detail::copy_tensors(multithreading::exec_pol<1>{},order{},rhs,*this);
                 }else{
                     swap(rhs.template copy<value_type,config_type>(order{}));
                 }
@@ -919,22 +923,22 @@ public:
         tensor(forward_tag::tag(), std::forward<Shape>(shape__), begin__, end__)
     {}
 
-    //evaluating constructor
-    template<typename...Ts>
-    explicit tensor(const basic_tensor<Ts...>& t):
-        tensor(eval_construct(t))
-    {}
+    // //evaluating constructor
+    // template<typename...Ts>
+    // explicit tensor(const basic_tensor<Ts...>& t):
+    //     tensor(eval_construct(t))
+    // {}
 
-private:
-    template<typename...Ts>
-    tensor eval_construct(const basic_tensor<Ts...>& t){
-        auto a = t.traverse_order_adapter(order{});
-        if (t.is_trivial()){
-            return tensor(t.shape(),a.begin_trivial(),a.end_trivial());
-        }else{
-            return tensor(t.shape(),a.begin(),a.end());
-        }
-    }
+// private:
+//     template<typename...Ts>
+//     tensor eval_construct(const basic_tensor<Ts...>& t){
+//         auto a = t.traverse_order_adapter(order{});
+//         if (t.is_trivial()){
+//             return tensor(t.shape(),a.begin_trivial(),a.end_trivial());
+//         }else{
+//             return tensor(t.shape(),a.begin(),a.end());
+//         }
+//     }
 };
 
 template<typename T>

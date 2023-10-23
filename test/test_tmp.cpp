@@ -54,10 +54,10 @@ TEST_CASE("test_tmp_copy","[test_tmp]")
     using test_tmp::copy_result_t;
     using test_tmp::copy;
 
-    // tensor<tensor<tensor<double>>> a{
-    //     {tensor<tensor<double>>{tensor<double>{1,2,1},tensor<double>{4,0,3}},tensor<tensor<double>>{tensor<double>{3,0,2},tensor<double>{1,1,1}}},
-    //     {tensor<tensor<double>>{tensor<double>{1,4,1},tensor<double>{1,1,0}},tensor<tensor<double>>{tensor<double>{1,0,1},tensor<double>{1,2,0}}}
-    // };
+    tensor<tensor<tensor<double>>> a{
+        {tensor<tensor<double>>{tensor<double>{1,2,1},tensor<double>{4,0,3}},tensor<tensor<double>>{tensor<double>{3,0,2},tensor<double>{1,1,1}}},
+        {tensor<tensor<double>>{tensor<double>{1,4,1},tensor<double>{1,1,0}},tensor<tensor<double>>{tensor<double>{1,0,1},tensor<double>{1,2,0}}}
+    };
     // tensor<tensor<tensor<double>>> b{
     //     tensor<tensor<double>>{tensor<double>{1,4,1},tensor<double>{2,1,3}},
     //     tensor<tensor<double>>{tensor<double>{1,0,2},tensor<double>{2,3,4}}
@@ -69,9 +69,19 @@ TEST_CASE("test_tmp_copy","[test_tmp]")
     tensor<tensor<double>> f{{tensor<double>{2,1,0},tensor<double>{1,1,2}},{tensor<double>{1,0,1},tensor<double>{1,3,2}},{tensor<double>{0,0,1},tensor<double>{1,0,3}}};
 
 
-    auto ff = (f+1).copy();
-    std::cout<<std::endl<<ff
-    f = ff;
+    auto aa = a.copy();
+    std::cout<<std::endl<<a;
+    std::cout<<std::endl<<aa;
+    aa+=1;
+    std::cout<<std::endl<<a;
+    std::cout<<std::endl<<aa;
+
+    // auto ff = f.copy();
+    // std::cout<<std::endl<<f;
+    // std::cout<<std::endl<<ff;
+    // ff+=1;
+    // std::cout<<std::endl<<f;
+    // std::cout<<std::endl<<ff;
 
     // std::cout<<std::endl<<tensor<double>{};
     // std::cout<<std::endl<<tensor<double>(1);

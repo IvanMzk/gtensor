@@ -158,16 +158,19 @@ template<typename...Ts> struct tensor_common_value_type<std::void_t<std::common_
 template<typename...Ts> using tensor_common_value_type_t = typename tensor_common_value_type<void,Ts...>::type;
 
 //result type of tensor's copy<T,Config,Order>() call
-template<typename T, typename Order, typename Config> struct tensor_copy_type
+//E is element type to rebind, original element type is used by default
+template<typename T, typename Order, typename Config, typename E=void> struct tensor_copy_type
 {
-    template<typename U, typename> struct selector_{using type = tensor<U,Order,config::extend_config_t<Config,U>>;};
+    template<typename U, typename> struct selector_{
+        using type = std::conditional_t<std::is_void_v<E>,U,E>;
+    };
     template<typename U> struct selector_<U,std::true_type>{
         using value_type = typename selector_<typename U::value_type,std::bool_constant<is_tensor_v<typename U::value_type>>>::type;
-        using type = tensor<value_type,Order,config::extend_config_t<Config,value_type>>;
+        using type = tensor<value_type,typename U::order,config::extend_config_t<Config,value_type>>;
     };
-    using type = typename selector_<T,std::bool_constant<is_tensor_v<T>>>::type;
+    using type = tensor<typename selector_<T,std::bool_constant<is_tensor_v<T>>>::type, Order, Config>;
 };
-template<typename T, typename Order, typename Config> using tensor_copy_type_t = typename tensor_copy_type<T,Order,Config>::type;
+template<typename T, typename Order, typename Config, typename E=void> using tensor_copy_type_t = typename tensor_copy_type<T,Order,Config,E>::type;
 
 //type of object copy
 template<typename T> struct copy_type
@@ -191,6 +194,16 @@ template<typename Tensor> struct tensor_copy_value_type
     using type = typename copy_type_t<Tensor>::value_type;
 };
 template<typename T> using tensor_copy_value_type_t = typename tensor_copy_value_type<T>::type;
+
+//make copy
+template<typename T>
+auto make_copy(T&& t){
+    if constexpr (is_tensor_v<std::decay_t<T>>){
+        return t.copy();
+    }else{
+        return t;
+    }
+}
 
 //reserve space in arbitrary container, if possible
 template<typename Container, typename T>
