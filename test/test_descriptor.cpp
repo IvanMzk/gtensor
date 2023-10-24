@@ -10,7 +10,7 @@
 #include <iostream>
 #include "catch.hpp"
 #include "descriptor.hpp"
-#include "test_config.hpp"
+#include "config_for_testing.hpp"
 #include "helpers_for_testing.hpp"
 
 //test helpers

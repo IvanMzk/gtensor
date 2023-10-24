@@ -12,7 +12,7 @@
 #include "reduce.hpp"
 #include "tensor.hpp"
 #include "helpers_for_testing.hpp"
-#include "test_config.hpp"
+#include "config_for_testing.hpp"
 
 //reduce_range
 TEST_CASE("test_tensor_reduce_range","[test_tensor]")

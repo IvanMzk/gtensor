@@ -8,7 +8,7 @@
 
 #include "catch.hpp"
 #include <iostream>
-#include "test_config.hpp"
+#include "config_for_testing.hpp"
 #include "libdivide_helper.hpp"
 
 TEMPLATE_TEST_CASE("test_make_dividers", "[test_libdivide_helper]", std::size_t, std::ptrdiff_t)

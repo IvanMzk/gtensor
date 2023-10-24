@@ -9,7 +9,7 @@
 #include <limits>
 #include "catch.hpp"
 #include "helpers_for_testing.hpp"
-#include "test_config.hpp"
+#include "config_for_testing.hpp"
 #include "sort_search.hpp"
 #include "tensor.hpp"
 

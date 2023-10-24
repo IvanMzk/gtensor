@@ -11,7 +11,7 @@
 #include "data_accessor.hpp"
 #include "iterator.hpp"
 #include "helpers_for_testing.hpp"
-#include "test_config.hpp"
+#include "config_for_testing.hpp"
 
 namespace test_iterator_{
 

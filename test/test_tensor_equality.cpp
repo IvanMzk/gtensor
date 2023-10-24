@@ -11,7 +11,7 @@
 #include "catch.hpp"
 #include "tensor.hpp"
 #include "helpers_for_testing.hpp"
-#include "test_config.hpp"
+#include "config_for_testing.hpp"
 
 //test tensor operator==
 TEST_CASE("test_tensor_operator==","[test_tensor]")

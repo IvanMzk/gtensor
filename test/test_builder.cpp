@@ -12,7 +12,7 @@
 #include "builder.hpp"
 #include "tensor.hpp"
 #include "helpers_for_testing.hpp"
-#include "test_config.hpp"
+#include "config_for_testing.hpp"
 
 TEMPLATE_TEST_CASE("test_builder_empty","[test_builder]",
     //0value_type,1layout

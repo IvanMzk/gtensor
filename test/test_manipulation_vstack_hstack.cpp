@@ -10,7 +10,7 @@
 #include "manipulation.hpp"
 #include "tensor.hpp"
 #include "helpers_for_testing.hpp"
-#include "test_config.hpp"
+#include "config_for_testing.hpp"
 
 TEMPLATE_TEST_CASE("test_vstack","[test_manipulation]",
     gtensor::config::c_order,

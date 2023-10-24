@@ -7,7 +7,7 @@
 */
 
 #include "catch.hpp"
-#include "test_config.hpp"
+#include "config_for_testing.hpp"
 #include "helpers_for_testing.hpp"
 #include "expression_template_operator.hpp"
 #include "tensor.hpp"

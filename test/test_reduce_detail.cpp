@@ -12,7 +12,7 @@
 #include "reduce.hpp"
 #include "tensor.hpp"
 #include "helpers_for_testing.hpp"
-#include "test_config.hpp"
+#include "config_for_testing.hpp"
 
 TEST_CASE("test_check_reduce_args","[test_reduce]")
 {

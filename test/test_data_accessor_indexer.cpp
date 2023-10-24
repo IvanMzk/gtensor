@@ -12,7 +12,7 @@
 #include "descriptor.hpp"
 #include "data_accessor.hpp"
 #include "helpers_for_testing.hpp"
-#include "test_config.hpp"
+#include "config_for_testing.hpp"
 
 TEMPLATE_TEST_CASE("test_basic_indexer","test_data_accessor",
     std::vector<int>,

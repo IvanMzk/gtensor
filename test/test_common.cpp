@@ -298,3 +298,35 @@ TEST_CASE("test_is_static_castable","[test_common]")
     REQUIRE(!is_static_castable_v<int*,int>);
     REQUIRE(!is_static_castable_v<A,B>);
 }
+
+TEST_CASE("test_copy_type","[test_common]")
+{
+    using gtensor::detail::tensor_copy_type_t;
+    using gtensor::detail::copy_type_t;
+    using gtensor::tensor;
+    using gtensor::config::c_order;
+    using gtensor::config::f_order;
+    using gtensor::config::extend_config_t;
+    using gtensor::config::default_config;
+
+    //tensor_copy_type_t
+    REQUIRE(std::is_same_v<tensor_copy_type_t<int,c_order,default_config>,tensor<int,c_order,extend_config_t<default_config,int>>>);
+    REQUIRE(std::is_same_v<tensor_copy_type_t<int,c_order,extend_config_t<default_config,int>>,tensor<int,c_order,extend_config_t<default_config,int>>>);
+    REQUIRE(std::is_same_v<tensor_copy_type_t<double,f_order,default_config>,tensor<double,f_order,extend_config_t<default_config,double>>>);
+    REQUIRE(std::is_same_v<tensor_copy_type_t<double,f_order,default_config>,tensor<double,f_order,extend_config_t<default_config,double>>>);
+    REQUIRE(std::is_same_v<tensor_copy_type_t<tensor<int,f_order>,c_order,default_config>,tensor<tensor<int,f_order>,c_order,extend_config_t<default_config,tensor<int,f_order>>>>);
+    //rebind
+    REQUIRE(std::is_same_v<tensor_copy_type_t<tensor<int,f_order>,c_order,default_config,float>,tensor<tensor<float,f_order>,c_order,extend_config_t<default_config,tensor<float,f_order>>>>);
+    using view_type = decltype(std::declval<tensor<int,f_order>>()+std::declval<tensor<double,f_order>>());
+    REQUIRE(std::is_same_v<tensor_copy_type_t<view_type,c_order,default_config>,tensor<tensor<double,f_order>,c_order,extend_config_t<default_config,tensor<double,f_order>>>>);
+    //rebind
+    REQUIRE(std::is_same_v<tensor_copy_type_t<view_type,c_order,default_config,float>,tensor<tensor<float,f_order>,c_order,extend_config_t<default_config,tensor<float,f_order>>>>);
+    //copy_type_t
+    REQUIRE(std::is_same_v<copy_type_t<int>,int>);
+    REQUIRE(std::is_same_v<copy_type_t<double>,double>);
+    REQUIRE(std::is_same_v<copy_type_t<tensor<int>>,tensor<int>>);
+    REQUIRE(std::is_same_v<copy_type_t<tensor<int,f_order>>,tensor<int,f_order>>);
+    REQUIRE(std::is_same_v<copy_type_t<tensor<int>,double>,tensor<double>>);
+    REQUIRE(std::is_same_v<copy_type_t<tensor<int,f_order>,double>,tensor<double,f_order>>);
+    REQUIRE(std::is_same_v<copy_type_t<tensor<tensor<tensor<int,c_order>,f_order>,c_order>,double>,tensor<tensor<tensor<double,c_order>,f_order>,c_order>>);
+}

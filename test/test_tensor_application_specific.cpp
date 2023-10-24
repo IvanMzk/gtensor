@@ -14,7 +14,7 @@
 #include "sort_search.hpp"
 #include "tensor.hpp"
 #include "helpers_for_testing.hpp"
-#include "test_config.hpp"
+#include "config_for_testing.hpp"
 
 //math
 TEST_CASE("test_tensor_math_member_function_default_policy","[test_tensor]")

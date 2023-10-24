@@ -10,7 +10,7 @@
 #include "descriptor.hpp"
 #include "data_accessor.hpp"
 #include "helpers_for_testing.hpp"
-#include "test_config.hpp"
+#include "config_for_testing.hpp"
 
 TEST_CASE("test_walker","test_data_accessor")
 {

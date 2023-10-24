@@ -11,7 +11,7 @@
 #include <list>
 #include "catch.hpp"
 #include "tensor_implementation.hpp"
-#include "test_config.hpp"
+#include "config_for_testing.hpp"
 #include "helpers_for_testing.hpp"
 
 
