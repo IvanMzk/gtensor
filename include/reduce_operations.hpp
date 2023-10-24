@@ -426,6 +426,24 @@ struct nanmean
     }
 };
 
+template<typename T>
+static auto abs_helper(const T& t){
+    if constexpr (gtensor::detail::is_tensor_v<T>){
+        return abs(t).copy();
+    }else{
+        return gtensor::math::abs(t);
+    }
+}
+
+template<typename T>
+auto sqrt_helper(const T& t){
+    if constexpr (gtensor::detail::is_tensor_v<T>){
+        return sqrt(t).copy();
+    }else{
+        return gtensor::math::sqrt(t);
+    }
+}
+
 struct var
 {
     template<typename It>
@@ -444,7 +462,7 @@ struct var
         auto res = std::accumulate(first,last,res_type{0},
             [mean_](const auto& r, const auto& e){
                 if constexpr (math::is_complex_v<element_type>){
-                    const auto d = math::abs(e-mean_);
+                    const auto d = abs_helper(e-mean_);
                     return r+d*d;
                 }else{
                     const auto d = e-mean_;
@@ -486,15 +504,6 @@ struct nanvar
         }
     }
 };
-
-template<typename T>
-auto sqrt_helper(const T& t){
-    if constexpr (gtensor::detail::is_tensor_v<T>){
-        return sqrt(t).copy();
-    }else{
-        return gtensor::math::sqrt(t);
-    }
-}
 
 struct stdev
 {

@@ -175,7 +175,7 @@ private:
             using element_type = typename basic_tensor<Ts...>::element_type;
             auto squared_diff = [](const auto& e, const auto& m){
                 if constexpr (math::is_complex_v<element_type>){
-                    const auto d=math::abs(e-m);
+                    const auto d=statistic_reduce_operations::abs_helper(e-m);
                     return d*d;
                 }else{
                     const auto d=e-m;
@@ -258,7 +258,7 @@ private:
     struct stdev_binary{
         template<typename Policy, typename...Ts,typename Axes>
         auto operator()(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims){
-            return sqrt(var_binary{}(policy,t,axes,keep_dims));
+            return statistic_reduce_operations::sqrt_helper(var_binary{}(policy,t,axes,keep_dims));
         }
         template<typename Policy, typename...Ts>
         auto operator()(Policy policy, const basic_tensor<Ts...>& t, bool keep_dims){
