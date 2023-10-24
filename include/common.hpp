@@ -166,26 +166,35 @@ template<typename T, typename Order, typename Config, typename E=void> struct te
     };
     template<typename U> struct selector_<U,std::true_type>{
         using value_type = typename selector_<typename U::value_type,std::bool_constant<is_tensor_v<typename U::value_type>>>::type;
-        using type = tensor<value_type,typename U::order,config::extend_config_t<Config,value_type>>;
+        using type = tensor<value_type,typename U::order,config::extend_config_t<typename U::config_type,value_type>>;
     };
-    using type = tensor<typename selector_<T,std::bool_constant<is_tensor_v<T>>>::type, Order, Config>;
+    using value_type_ = typename selector_<T,std::bool_constant<is_tensor_v<T>>>::type;
+    using type = tensor<value_type_, Order, config::extend_config_t<Config,value_type_>>;
 };
 template<typename T, typename Order, typename Config, typename E=void> using tensor_copy_type_t = typename tensor_copy_type<T,Order,Config,E>::type;
 
-//type of object copy
-template<typename T> struct copy_type
+//type of copy of T
+//E is element type to rebind, original element type is used by default
+template<typename T, typename E=void> struct copy_type
 {
-    template<typename,typename Dummy=void> struct selector_{using type = T;};
+    template<typename,typename Dummy=void> struct selector_{using type = std::conditional_t<std::is_void_v<E>,T,E>;};
     template<typename Dummy> struct selector_<std::true_type,Dummy>{
-        using type = tensor_copy_type_t<
-            typename T::value_type,
-            typename T::order,
-            typename T::config_type
-        >;
+        using type = tensor_copy_type_t<typename T::value_type,typename T::order,typename T::config_type,E>;
     };
     using type = typename selector_<std::bool_constant<is_tensor_v<T>>>::type;
 };
-template<typename T> using copy_type_t = typename copy_type<T>::type;
+template<typename T, typename E=void> using copy_type_t = typename copy_type<T,E>::type;
+
+//element type - the most inner value_type of tensor of tensor type or T if it is not tensor type
+template<typename T> struct element_type
+{
+    template<typename U, typename> struct selector_{using type = U;};
+    template<typename U> struct selector_<U,std::true_type>{
+        using type = typename selector_<typename U::value_type,std::bool_constant<is_tensor_v<typename U::value_type>>>::type;
+    };
+    using type = typename selector_<T,std::bool_constant<is_tensor_v<T>>>::type;
+};
+template<typename T> using element_type_t = typename element_type<T>::type;
 
 //value_type of copy of given tensor type
 template<typename Tensor> struct tensor_copy_value_type

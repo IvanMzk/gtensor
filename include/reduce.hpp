@@ -317,8 +317,7 @@ class reducer
             if constexpr (has_initial){
                 return multithreading::reduce(policy,first,last,initial,reduce_f);
             }else{
-                typename detail::tensor_copy_value_type_t<basic_tensor<Ts...>> initial_{};
-                initial_ = *first;
+                auto initial_ = detail::make_copy(*first);
                 return multithreading::reduce(policy,++first,last,initial_,reduce_f);
             }
         };

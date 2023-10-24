@@ -386,13 +386,16 @@ struct mean
     template<typename It>
     auto operator()(It first, It last){
         using value_type = typename std::iterator_traits<It>::value_type;
-        using res_type = gtensor::math::make_floating_point_like_t<value_type>;
+        using element_type = detail::element_type_t<value_type>;
+        using fp_type = gtensor::math::make_floating_point_like_t<element_type>;
+        using res_type = detail::copy_type_t<typename std::iterator_traits<It>::value_type,fp_type>;
         if (first == last){
             return reduce_empty<res_type>();
         }
-        const auto n = static_cast<res_type>(last-first);
-        const auto init = static_cast<res_type>(*first);
-        return std::accumulate(++first,last,init,std::plus<void>{}) / n;
+        const auto n = static_cast<fp_type>(last-first);
+        auto res = std::accumulate(first,last,res_type{0},std::plus<void>{});
+        res/=n;
+        return res;
     }
 };
 
@@ -428,15 +431,19 @@ struct var
     template<typename It>
     auto operator()(It first, It last){
         using value_type = typename std::iterator_traits<It>::value_type;
-        using res_type = gtensor::math::make_floating_point_like_t<value_type>;
+        using element_type = detail::element_type_t<value_type>;
+        using fp_type = gtensor::math::make_floating_point_like_t<element_type>;
+        using res_type = detail::copy_type_t<typename std::iterator_traits<It>::value_type,fp_type>;
+
         if (first == last){
             return reduce_empty<res_type>();
         }
+        const auto n = static_cast<fp_type>(last-first);
         const auto mean_ = mean{}(first,last);
 
-        const auto res = std::accumulate(first,last,res_type{0},
+        auto res = std::accumulate(first,last,res_type{0},
             [mean_](const auto& r, const auto& e){
-                if constexpr (math::is_complex_v<value_type>){
+                if constexpr (math::is_complex_v<element_type>){
                     const auto d = math::abs(e-mean_);
                     return r+d*d;
                 }else{
@@ -445,8 +452,8 @@ struct var
                 }
             }
         );
-        const auto n = static_cast<const res_type&>(last-first);
-        return res / n;
+        res/=n;
+        return res;
     }
 };
 
@@ -480,11 +487,20 @@ struct nanvar
     }
 };
 
+template<typename T>
+auto sqrt_helper(const T& t){
+    if constexpr (gtensor::detail::is_tensor_v<T>){
+        return sqrt(t).copy();
+    }else{
+        return gtensor::math::sqrt(t);
+    }
+}
+
 struct stdev
 {
     template<typename It>
     auto operator()(It first, It last){
-        return gtensor::math::sqrt(var{}(first,last));
+        return sqrt_helper(var{}(first,last));
     }
 };
 

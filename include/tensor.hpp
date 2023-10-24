@@ -186,16 +186,6 @@ struct adl_proxy
     GTENSOR_ADL_PROXY_METHOD(take_,take);
 };
 
-template<typename T> struct element_type
-{
-    template<typename U, typename> struct selector_{using type = U;};
-    template<typename U> struct selector_<U,std::true_type>{
-        using type = typename selector_<typename U::value_type,std::bool_constant<is_tensor_v<typename U::value_type>>>::type;
-    };
-    using type = typename selector_<T,std::bool_constant<is_tensor_v<T>>>::type;
-};
-template<typename T> using element_type_t = typename element_type<T>::type;
-
 template<typename Policy, typename Order, typename...Ts, typename...Us>
 void copy_tensors(Policy policy, Order order, const basic_tensor<Ts...>& src, basic_tensor<Us...>& dst){
     auto a_src = src.traverse_order_adapter(order);
@@ -923,22 +913,22 @@ public:
         tensor(forward_tag::tag(), std::forward<Shape>(shape__), begin__, end__)
     {}
 
-    // //evaluating constructor
-    // template<typename...Ts>
-    // explicit tensor(const basic_tensor<Ts...>& t):
-    //     tensor(eval_construct(t))
-    // {}
+    //evaluating constructor
+    template<typename...Ts>
+    explicit tensor(const basic_tensor<Ts...>& t):
+        tensor(eval_construct(t))
+    {}
 
-// private:
-//     template<typename...Ts>
-//     tensor eval_construct(const basic_tensor<Ts...>& t){
-//         auto a = t.traverse_order_adapter(order{});
-//         if (t.is_trivial()){
-//             return tensor(t.shape(),a.begin_trivial(),a.end_trivial());
-//         }else{
-//             return tensor(t.shape(),a.begin(),a.end());
-//         }
-//     }
+private:
+    template<typename...Ts>
+    tensor eval_construct(const basic_tensor<Ts...>& t){
+        auto a = t.traverse_order_adapter(order{});
+        if (t.is_trivial()){
+            return tensor(t.shape(),a.begin_trivial(),a.end_trivial());
+        }else{
+            return tensor(t.shape(),a.begin(),a.end());
+        }
+    }
 };
 
 template<typename T>

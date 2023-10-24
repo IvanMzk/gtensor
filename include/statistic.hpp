@@ -109,50 +109,28 @@ private:
         }
     };
     struct mean_binary{
-        // template<typename Policy, typename...Ts,typename Axes>
-        // auto operator()(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims){
-        //     using order = typename basic_tensor<Ts...>::order;
-        //     using config_type = typename basic_tensor<Ts...>::config_type;
-        //     using element_type = typename basic_tensor<Ts...>::element_type;
-        //     using value_type = typename basic_tensor<Ts...>::value_type;
-        //     using integral_type = gtensor::math::make_integral_t<element_type>;
-        //     using fp_type = gtensor::math::make_floating_point_like_t<element_type>;
-        //     using res_value_type = typename detail::tensor_copy_type_t<value_type,order,config_type,fp_type>::value_type;
-        //     using f_type = gtensor::math_reduce_operations::nan_propagate_operation<gtensor::math_reduce_operations::plus<res_value_type>>;
-        //     auto tmp = reduce_binary(policy,t,axes,f_type{},keep_dims,res_value_type(0));
-        //     // if (!tmp.empty()){
-        //     //     if (t.empty()){ //reduce zero size dimension
-        //     //         if constexpr (gtensor::math::numeric_traits<res_value_type>::has_nan()){
-        //     //             auto a = tmp.traverse_order_adapter(typename decltype(tmp)::order{});
-        //     //             std::fill(a.begin(),a.end(),gtensor::math::numeric_traits<res_value_type>::nan());
-        //     //         }else{
-        //     //             throw value_error("cant reduce zero size dimension without initial value");
-        //     //         }
-        //     //     }else{
-        //     //         const auto axes_size = t.size()/tmp.size();
-        //     //         tmp/=static_cast<const fp_type&>(static_cast<const integral_type&>(axes_size));
-        //     //     }
-        //     // }
-        //     return tmp;
-        // }
         template<typename Policy, typename...Ts,typename Axes>
         auto operator()(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims){
+            using order = typename basic_tensor<Ts...>::order;
+            using config_type = typename basic_tensor<Ts...>::config_type;
+            using element_type = typename basic_tensor<Ts...>::element_type;
             using value_type = typename basic_tensor<Ts...>::value_type;
-            using integral_type = gtensor::math::make_integral_t<value_type>;
-            using res_type = gtensor::math::make_floating_point_like_t<value_type>;
-            using f_type = gtensor::math_reduce_operations::nan_propagate_operation<gtensor::math_reduce_operations::plus<res_type>>;
-            auto tmp = reduce_binary(policy,t,axes,f_type{},keep_dims,res_type{0});
+            using integral_type = gtensor::math::make_integral_t<element_type>;
+            using fp_type = gtensor::math::make_floating_point_like_t<element_type>;
+            using res_value_type = typename detail::tensor_copy_type_t<value_type,order,config_type,fp_type>::value_type;
+            using f_type = gtensor::math_reduce_operations::nan_propagate_operation<gtensor::math_reduce_operations::plus<void>>;
+            auto tmp = reduce_binary(policy,t,axes,f_type{},keep_dims,res_value_type(0));
             if (!tmp.empty()){
                 if (t.empty()){ //reduce zero size dimension
-                    if constexpr (gtensor::math::numeric_traits<res_type>::has_nan()){
+                    if constexpr (gtensor::math::numeric_traits<res_value_type>::has_nan()){
                         auto a = tmp.traverse_order_adapter(typename decltype(tmp)::order{});
-                        std::fill(a.begin(),a.end(),gtensor::math::numeric_traits<res_type>::nan());
+                        std::fill(a.begin(),a.end(),gtensor::math::numeric_traits<res_value_type>::nan());
                     }else{
                         throw value_error("cant reduce zero size dimension without initial value");
                     }
                 }else{
                     const auto axes_size = t.size()/tmp.size();
-                    tmp/=static_cast<const res_type&>(static_cast<const integral_type&>(axes_size));
+                    tmp/=static_cast<const fp_type&>(static_cast<const integral_type&>(axes_size));
                 }
             }
             return tmp;
@@ -194,9 +172,9 @@ private:
     struct var_binary{
         template<typename Policy, typename...Ts,typename Axes>
         auto operator()(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims){
-            using value_type = typename basic_tensor<Ts...>::value_type;
+            using element_type = typename basic_tensor<Ts...>::element_type;
             auto squared_diff = [](const auto& e, const auto& m){
-                if constexpr (math::is_complex_v<value_type>){
+                if constexpr (math::is_complex_v<element_type>){
                     const auto d=math::abs(e-m);
                     return d*d;
                 }else{
