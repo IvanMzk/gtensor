@@ -173,6 +173,14 @@ public:
     const value_type* data()const{
         return elements_.data();
     }
+    template<typename...IdxT>
+    decltype(auto) element(const IdxT&...idx){
+        return element_helper(*this,idx...);
+    }
+    template<typename...IdxT>
+    decltype(auto) element(const IdxT&...idx)const{
+        return element_helper(*this,idx...);
+    }
 
     constexpr bool is_trivial()const{return true;}
 
@@ -266,6 +274,26 @@ private:
     }
     auto begin_(){return begin_(elements_);}
     auto end_(){return end_(elements_,descriptor_.size());}
+
+    template<std::size_t...I, typename...IdxT>
+    auto element_index(std::index_sequence<I...>, const IdxT&...idx)const{
+        if constexpr (sizeof...(IdxT)==0){
+            return index_type{0};
+        }else{
+            auto st_it = descriptor_.strides().begin();
+            return ((idx**(st_it+I))+...);
+        }
+    }
+
+    template<typename Instance, typename...IdxT>
+    static decltype(auto) element_helper(Instance& instance, const IdxT&...idx){
+        const auto i = instance.element_index(std::make_index_sequence<sizeof...(IdxT)>{},idx...);
+        if constexpr (detail::has_callable_iterator<storage_type>::value){
+            return *(instance.elements_.begin()+i);
+        }else{
+            return instance.elements_[i];
+        }
+    }
 
     descriptor_type descriptor_;
     storage_type elements_;

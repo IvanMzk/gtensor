@@ -112,12 +112,10 @@ private:
         template<typename Policy, typename...Ts,typename Axes>
         auto operator()(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims){
             using order = typename basic_tensor<Ts...>::order;
-            using config_type = typename basic_tensor<Ts...>::config_type;
             using element_type = typename basic_tensor<Ts...>::element_type;
-            using value_type = typename basic_tensor<Ts...>::value_type;
             using integral_type = gtensor::math::make_integral_t<element_type>;
             using fp_type = gtensor::math::make_floating_point_like_t<element_type>;
-            using res_value_type = typename detail::tensor_copy_type_t<value_type,order,config_type,fp_type>::value_type;
+            using res_value_type = typename detail::copy_type_t<basic_tensor<Ts...>,fp_type>::value_type;
             using f_type = gtensor::math_reduce_operations::nan_propagate_operation<gtensor::math_reduce_operations::plus<void>>;
             auto tmp = reduce_binary(policy,t,axes,f_type{},keep_dims,res_value_type(0));
             if (!tmp.empty()){

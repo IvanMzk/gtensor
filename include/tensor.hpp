@@ -392,6 +392,10 @@ public:
     auto data(){
         return impl().data();
     }
+    template<typename...IdxT>
+    decltype(auto) element(const IdxT&...idx){
+        return impl().element(idx...);
+    }
     //return data interface adapter with specified traverse order
     template<typename TraverseOrder>
     auto traverse_order_adapter(TraverseOrder){
@@ -438,6 +442,10 @@ public:
     }
     auto data()const{
         return impl().data();
+    }
+    template<typename...IdxT>
+    decltype(auto) element(const IdxT&...idx)const{
+        return impl().element(idx...);
     }
     template<typename TraverseOrder>
     auto traverse_order_adapter(TraverseOrder)const{

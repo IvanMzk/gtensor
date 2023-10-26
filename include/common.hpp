@@ -62,6 +62,7 @@ GENERATE_HAS_CALLABLE_METHOD(rbegin_trivial(), has_callable_rbegin_trivial);
 GENERATE_HAS_CALLABLE_METHOD(rend_trivial(), has_callable_rend_trivial);
 GENERATE_HAS_CALLABLE_METHOD(create_trivial_indexer(), has_callable_create_trivial_indexer);
 GENERATE_HAS_CALLABLE_METHOD(is_trivial(), has_callable_is_trivial);
+GENERATE_HAS_CALLABLE_METHOD(element(std::declval<typename T::index_type>()), has_callable_element);
 
 template<typename T> using has_callable_subscript_operator = std::disjunction<
     has_callable_subscript_operator_difference_type<T>,
@@ -95,7 +96,8 @@ struct is_tensor{
     template<typename U, typename Dummy=void> struct wrapper_{using type=U;};
     template<typename Dummy> struct wrapper_<void,Dummy>{using type=wrapper_<void>;};
     static std::false_type selector_(...);
-    template<typename...Ts> static std::true_type selector_(basic_tensor<Ts...>);
+    template<typename...Ts, std::enable_if_t<std::is_convertible_v<T*,basic_tensor<Ts...>*>,int> =0>
+    static std::true_type selector_(basic_tensor<Ts...>);
     using type = decltype(selector_(std::declval<typename wrapper_<T>::type>()));
     static constexpr bool value = type::value;
 };

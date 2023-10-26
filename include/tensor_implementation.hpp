@@ -482,6 +482,46 @@ inline bool is_trivial(Core& t){
     }
 }
 
+//element
+template<typename Core, std::size_t...I, typename...IdxT>
+inline auto element_index(Core& t, std::index_sequence<I...>, const IdxT&...idx){
+    if constexpr (sizeof...(IdxT)==0){
+        return 0;
+    }else{
+        auto st_it = t.descriptor().strides().begin();
+        return ((idx**(st_it+I))+...);
+    }
+}
+template<typename Core, std::size_t...I, typename...IdxT>
+inline decltype(auto) element_helper(Core& t, std::index_sequence<I...> seq, const IdxT&...idx){
+    if constexpr (has_callable_create_walker<Core>::value){
+        auto w = t.create_walker();
+        (w.walk(I,idx),...);
+        return *w;
+    }else{
+        const auto i = element_index(t,seq,idx...);
+        if constexpr (has_callable_random_access_iterator<Core>::value){
+            return *(t.begin()+i);
+        }else if constexpr (has_callable_subscript_operator<Core>::value){
+            return t[i];
+        }else if constexpr (has_callable_create_indexer<Core>::value){
+            return t.create_indexer()[i];
+        }else if constexpr (has_callable_iterator<Core>::value){
+            return *std::next(t.begin(),i);
+        }else{
+            static_assert(detail::always_false<Core>,"can't make data accessor");
+        }
+    }
+}
+template<typename Core, typename...IdxT>
+inline decltype(auto) element(Core& t, const IdxT&...idx){
+    if constexpr (has_callable_element<Core>::value){
+        return t.element(idx...);
+    }else{
+        return element_helper(t,std::make_index_sequence<sizeof...(IdxT)>{},idx...);
+    }
+}
+
 }   //end of namespace detail
 
 //Core must provide interface to access data and meta-data:
@@ -579,6 +619,10 @@ public:
     auto data(){
         return core_.data();
     }
+    template<typename...IdxT>
+    decltype(auto) element(const IdxT&...idx){
+        return detail::element(core_,idx...);
+    }
 
     //const data interface
     template<typename Order>
@@ -625,6 +669,10 @@ public:
     }
     auto data()const{
         return core_.data();
+    }
+    template<typename...IdxT>
+    decltype(auto) element(const IdxT&...idx)const{
+        return detail::element(core_,idx...);
     }
 
     //trivial data interface
