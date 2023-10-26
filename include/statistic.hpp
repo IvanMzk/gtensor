@@ -111,7 +111,6 @@ private:
     struct mean_binary{
         template<typename Policy, typename...Ts,typename Axes>
         auto operator()(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims){
-            using order = typename basic_tensor<Ts...>::order;
             using element_type = typename basic_tensor<Ts...>::element_type;
             using integral_type = gtensor::math::make_integral_t<element_type>;
             using fp_type = gtensor::math::make_floating_point_like_t<element_type>;

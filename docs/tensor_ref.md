@@ -164,13 +164,25 @@ std::copy(tr_adapt_f.rbegin(),tr_adapt_f.rend(),std::ostream_iterator<double>(st
 
 ## data()
 
-The underlaying data buffer can be accessed using `data()` member function, not implemented for views.
+The pointer to underlaying data buffer can be accessed using `data()` member function, not implemented for views.
 
 ```cpp
 gtensor::tensor<double> t{{1,2,3},{4,5,6}};
 t.data()[3] = 0;
 std::cout<<std::endl<<t;    //[(2,3){{1,2,3},{0,5,6}}]
 //(t+t).data()  //will not compile, t+t is expression view
+```
+
+## element()
+
+The underlaying data element can be accessed using `element()` member function.
+No bounds checking is performed.
+
+```cpp
+gtensor::tensor<double> t{{1,2,3},{4,5,6},{7,8,9}};
+std::cout<<std::endl<<t.element(1,2);               //6
+std::cout<<std::endl<<t.transpose().element(1,2);   //8
+std::cout<<std::endl<<(t*(t+1)).element(1,2);       //42
 ```
 
 ## Reshape view
