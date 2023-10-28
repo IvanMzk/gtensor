@@ -25,6 +25,8 @@ using mode_div_libdivide = std::integral_constant<div_modes, div_modes::libdivid
 using engine_expression_template = std::integral_constant<engines, engines::expression_template>;
 using c_order = std::integral_constant<orders, orders::c>;
 using f_order = std::integral_constant<orders, orders::f>;
+using deep_semantics = std::integral_constant<cloning_semantics, cloning_semantics::deep>;
+using shallow_semantics = std::integral_constant<cloning_semantics, cloning_semantics::shallow>;
 
 struct default_config
 {
@@ -37,6 +39,9 @@ struct default_config
     //specify default traverse order of iterators
     using order = c_order;
     //using order = f_order;
+
+    //cloning semantics - determines effect of tensor copy construction
+    using semantics = shallow_semantics;
 
     //data elements storage template
     template<typename T> using storage = gtensor::basic_storage<T>;

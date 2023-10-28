@@ -681,7 +681,7 @@ class view_factory
             detail::make_subdim_view_multidim_offset(pshape,subs),
             detail::make_subdim_view_axes_map<config_type>(pshape,subs_number),
             detail::make_subdim_view_shape(pshape,subs_number),
-            parent
+            parent.clone_shallow()
         );
     }
     template<typename...Ts, typename...Subs>
@@ -699,7 +699,7 @@ class view_factory
         detail::check_reshape_args(psize,subs);
         return std::make_shared<view_type>(
             detail::make_reshape_view_shape(parent.shape(),psize,subs),
-            parent
+            parent.clone_shallow()
         );
     }
     template<typename Order, typename...Ts, typename...Subs>
@@ -719,7 +719,7 @@ class view_factory
         return std::make_shared<view_type>(
             detail::make_transpose_view_axes_map<config_type>(pdim,subs),
             detail::make_transpose_view_shape(parent.shape(),subs),
-            parent
+            parent.clone_shallow()
         );
     }
     template<typename...Ts, typename...Subs>
@@ -727,7 +727,7 @@ class view_factory
         using config_type = typename basic_tensor<Ts...>::config_type;
         using dim_type = typename config_type::dim_type;
         detail::check_transpose_args_variadic(subs...);
-        return create_transpose_view_container(parent, typename config_type::template container<dim_type>{static_cast<dim_type>(subs)...});
+        return create_transpose_view_container(parent.clone_shallow(), typename config_type::template container<dim_type>{static_cast<dim_type>(subs)...});
     }
     //slice view
     template<typename...Ts, typename Container>
@@ -746,7 +746,7 @@ class view_factory
             detail::make_slice_view_multidim_offset(pshape,subs),
             detail::make_slice_view_axes_map<config_type>(res_dim,subs),
             detail::make_slice_view_shape(pshape,res_dim,subs),
-            parent
+            parent.clone_shallow()
         );
     }
     template<typename...Ts>
@@ -809,7 +809,7 @@ class view_factory
         return std::make_shared<view_type>(
             std::move(index_map),
             std::move(res_shape),
-            parent
+            parent.clone_shallow()
         );
     }
     template<typename...Ts, typename Container>
@@ -853,7 +853,7 @@ class view_factory
         return std::make_shared<view_type>(
             std::move(index_map),
             std::move(res_shape),
-            parent
+            parent.clone_shallow()
         );
     }
     //bool mapping view
@@ -908,14 +908,14 @@ class view_factory
             return std::make_shared<view_type>(
                 std::move(index_map),
                 std::move(res_shape),
-                parent
+                parent.clone_shallow()
             );
         }else{
             index_type subs_trues_number = std::count(subs.begin(),subs.end(),true);
             return std::make_shared<view_type>(
                 index_map_type(0),
                 detail::make_bool_mapping_view_shape(pshape, subs_trues_number, subs.dim()),
-                parent
+                parent.clone_shallow()
             );
         }
     }

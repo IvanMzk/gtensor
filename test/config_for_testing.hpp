@@ -32,6 +32,12 @@ struct config_order_selector : test_default_config{
 };
 template<typename Order> using config_order_selector_t = config_order_selector<Order>;
 
+template<typename Semantics>
+struct config_semantics_selector : test_default_config{
+    using semantics = Semantics;
+};
+template<typename Semantics> using config_semantics_selector_t = config_semantics_selector<Semantics>;
+
 template<template<typename...> typename Storage>
 struct config_storage_selector : test_default_config{
     template<typename T> using storage = Storage<T>;

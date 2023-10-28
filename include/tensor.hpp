@@ -261,17 +261,13 @@ public:
     }
 
     //clone is made using making_semantics
-    //clone's semantics is result_semantic
+    //result's cloning semantics is result_semantic
     auto clone(config::cloning_semantics making_semantics, config::cloning_semantics result_semantics)const{
         return basic_tensor(clone_impl(making_semantics),result_semantics);
     }
-    // auto clone(config::cloning_semantics making_semantics)const{
-    //     return clone(making_semantics, semantics_);
-    // }
-    // //the same as copy construction
-    // auto clone()const{
-    //     return clone(semantics_,semantics_);
-    // }
+    auto clone_shallow()const{
+        return clone(config::cloning_semantics::shallow,config::cloning_semantics::shallow);
+    }
     //returns cloning semantics of tensor
     auto semantics()const{
         return semantics_;
@@ -325,7 +321,7 @@ public:
     template<typename Policy>
     auto eval(Policy policy)const{
         if constexpr (std::is_convertible_v<tensor<value_type,order,config_type>*,basic_tensor*>){  //nothing to eval
-            return *this;
+            return clone(config::cloning_semantics::shallow,semantics_);
         }else{
             return copy(policy);
         }
@@ -828,7 +824,7 @@ class tensor : public basic_tensor<typename tensor_factory_selector_t<Config,T,L
     //this constructor should be used by all public constructors
     template<typename...Args>
     tensor(forward_tag, Args&&...args):
-        basic_tensor_base(tensor_factory_type::create(std::forward<Args>(args)...))
+        basic_tensor_base(tensor_factory_type::create(std::forward<Args>(args)...),Config::semantics::value)
     {}
 public:
     using config_type = typename basic_tensor_base::config_type;

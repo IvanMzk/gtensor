@@ -48,7 +48,7 @@ inline auto&& forward_as_tensor(T&& t){
 template<typename Config, typename T, std::enable_if_t<!is_tensor_v<std::remove_cv_t<std::remove_reference_t<T>>>,int> =0>
 inline auto forward_as_tensor(T&& t){
     using value_type = std::remove_cv_t<std::remove_reference_t<T>>;
-    return tensor<value_type,gtensor::config::c_order,Config>(t);
+    return tensor<value_type,gtensor::config::c_order,config::extend_config_t<Config,value_type>>(t);
 }
 
 }   //end of namespace detail
@@ -60,13 +60,18 @@ class expression_template_operator{
     static auto n_operator_(F_&& f, Operand&& operand, Operands&&...operands){
         using config_type = typename std::decay_t<Operand>::config_type;
         using implementation_type = tensor_implementation<
-            expression_template_core<config_type, std::remove_reference_t<F_>, std::remove_reference_t<Operand>, std::remove_reference_t<Operands>...>
+            expression_template_core<
+                config_type,
+                std::remove_reference_t<F_>,
+                decltype(std::forward<Operand>(operand).clone_shallow()),
+                decltype(std::forward<Operands>(operands).clone_shallow())...
+            >
         >;
         return basic_tensor<implementation_type>{
             std::make_shared<implementation_type>(
                 std::forward<F_>(f),
-                std::forward<Operand>(operand),
-                std::forward<Operands>(operands)...
+                std::forward<Operand>(operand).clone_shallow(),
+                std::forward<Operands>(operands).clone_shallow()...
             )
         };
     }
