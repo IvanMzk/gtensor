@@ -11,6 +11,7 @@
 
 #include <type_traits>
 #include <iterator>
+#include <memory>
 #include "common.hpp"
 #include "descriptor.hpp"
 #include "data_accessor.hpp"
@@ -552,6 +553,10 @@ public:
     tensor_implementation& operator=(const tensor_implementation&) = delete;
     tensor_implementation(tensor_implementation&&) = delete;
     tensor_implementation& operator=(tensor_implementation&&) = delete;
+
+    auto clone()const{
+        return std::make_shared<tensor_implementation>(core_);
+    }
 
     //meta-data interface
     const auto& descriptor()const{

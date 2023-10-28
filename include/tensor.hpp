@@ -205,6 +205,8 @@ class basic_tensor
     using view_factory_type = view_factory_selector_t<typename Impl::config_type>;
     using impl_type = Impl;
     std::shared_ptr<impl_type> impl_;
+    //assign has no effect on tensor cloning semantics
+    const config::cloning_semantics semantics_;
 public:
     using order = typename impl_type::order;
     using config_type = typename impl_type::config_type;
@@ -219,12 +221,15 @@ public:
     using slice_item_type = typename slice_type::slice_item_type;
     using element_type = detail::element_type_t<value_type>;
 
-    basic_tensor(const basic_tensor&) = default;
-    basic_tensor(basic_tensor&&) = default;
-
-    explicit basic_tensor(std::shared_ptr<impl_type>&& impl__):
-        impl_{std::move(impl__)}
+    explicit basic_tensor(std::shared_ptr<impl_type>&& impl__, config::cloning_semantics semantics__=config::cloning_semantics::shallow):
+        impl_(std::move(impl__)),
+        semantics_(semantics__)
     {}
+
+    basic_tensor(const basic_tensor& other):
+        basic_tensor(other.clone_impl(),other.semantics_)
+    {}
+    basic_tensor(basic_tensor&&) = default;
 
     //value assignment operator=
     basic_tensor& operator=(const basic_tensor& rhs)&{
@@ -254,6 +259,24 @@ public:
         assign(std::forward<Rhs>(rhs));
         return *this;
     }
+
+    //clone is made using making_semantics
+    //clone's semantics is result_semantic
+    auto clone(config::cloning_semantics making_semantics, config::cloning_semantics result_semantics)const{
+        return basic_tensor(clone_impl(making_semantics),result_semantics);
+    }
+    // auto clone(config::cloning_semantics making_semantics)const{
+    //     return clone(making_semantics, semantics_);
+    // }
+    // //the same as copy construction
+    // auto clone()const{
+    //     return clone(semantics_,semantics_);
+    // }
+    //returns cloning semantics of tensor
+    auto semantics()const{
+        return semantics_;
+    }
+
     //elementwise broadcast assignment, impl of this never changes, shapes of this and rhs must be broadcastable, or rhs convertible to value_type
     template<typename Rhs>
     basic_tensor& assign(Rhs&& rhs){
@@ -716,8 +739,22 @@ public:
         return create_view_(view_factory_type::create_bool_mapping_view(*this, subs));
     }
 private:
-    impl_type& impl(){return *impl_.get();}
-    const impl_type& impl()const{return *impl_.get();}
+    impl_type& impl(){
+        return *impl_.get();
+    }
+    const impl_type& impl()const{
+        return *impl_.get();
+    }
+    auto clone_impl(config::cloning_semantics sm)const{
+        if (sm == config::cloning_semantics::deep){
+            return impl().clone();
+        }else{
+            return impl_;
+        }
+    }
+    auto clone_impl()const{
+        return clone_impl(semantics_);
+    }
     template<typename Impl_>
     auto create_view_(std::shared_ptr<Impl_>&& impl__)const{
         return basic_tensor<Impl_>{std::move(impl__)};

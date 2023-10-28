@@ -18,6 +18,7 @@ namespace config{
 enum class div_modes : std::size_t {native, libdivide};
 enum class engines : std::size_t {expression_template};
 enum class orders : std::size_t {c,f};
+enum class cloning_semantics : std::size_t {deep,shallow};
 
 using mode_div_native = std::integral_constant<div_modes, div_modes::native>;
 using mode_div_libdivide = std::integral_constant<div_modes, div_modes::libdivide>;
