@@ -63,8 +63,8 @@ class expression_template_operator{
             expression_template_core<
                 config_type,
                 std::remove_reference_t<F_>,
-                decltype(std::forward<Operand>(operand).clone_shallow()),
-                decltype(std::forward<Operands>(operands).clone_shallow())...
+                detail::cv_like_t<decltype(std::forward<Operand>(operand).clone_shallow()),Operand>,
+                detail::cv_like_t<decltype(std::forward<Operands>(operands).clone_shallow()),Operands>...
             >
         >;
         return basic_tensor<implementation_type>{

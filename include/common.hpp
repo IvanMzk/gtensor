@@ -120,6 +120,19 @@ template<typename T> inline constexpr bool is_bool_tensor_v<T,std::void_t<std::e
 template<typename From, typename To, typename=void> inline constexpr bool is_static_castable_v = false;
 template<typename From, typename To> inline constexpr bool is_static_castable_v<From,To,std::void_t<decltype(static_cast<To>(std::declval<From>()))>> = true;
 
+//result type is the same as T, except it has the same cv-qualifiers as Other
+template<typename T, typename Other>
+struct cv_like{
+    using Other_ = std::remove_reference_t<Other>;
+    template<typename U, typename V> using add_v_like_ = std::conditional_t<std::is_volatile_v<V>,std::add_volatile_t<U>,U>;
+    template<typename U, typename V> using add_cv_like_ = std::conditional_t<std::is_const_v<V>,std::add_const_t<add_v_like_<U,V>>,add_v_like_<U,V>>;
+    template<typename U, typename Dummy=void> struct selector_{using type = add_cv_like_<U,Other_>;};
+    template<typename U, typename Dummy> struct selector_<U&,Dummy>{using type = std::add_lvalue_reference_t<add_cv_like_<U,Other_>>;};
+    template<typename U, typename Dummy> struct selector_<U&&,Dummy>{using type = std::add_rvalue_reference_t<add_cv_like_<U,Other_>>;};
+    using type = typename selector_<T>::type;
+};
+template<typename T, typename Other> using cv_like_t = typename cv_like<T,Other>::type;
+
 //find first type in pack fo which is_tensor_v is true
 template<typename...Ts> struct first_tensor_type;
 template<typename...Ts> struct first_tensor_type_helper;

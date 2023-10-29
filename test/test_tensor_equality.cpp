@@ -140,53 +140,33 @@ TEST_CASE("test_tensor_not_equal","[test_tensor]"){
 }
 
 //same tensor implementation
-TEST_CASE("test_tensor_is_same","[test_tensor]")
+TEMPLATE_TEST_CASE("test_tensor_is_same_deep_cloning","[test_tensor]",
+    gtensor::config::deep_semantics,
+    gtensor::config::shallow_semantics
+)
 {
-    using value_type = int;
-    using tensor_type = gtensor::tensor<value_type>;
+    using value_type = double;
+    using gtensor::config::c_order;
+    using config_type = gtensor::config::extend_config_t<test_config::config_semantics_selector_t<TestType>,value_type>;
+    using tensor_type = gtensor::tensor<value_type,c_order,config_type>;
     using helpers_for_testing::apply_by_element;
 
-    const auto t = tensor_type{1,2,3};
-    const auto e = tensor_type{1,2,3}+tensor_type{0,0,0};
-    const auto v = tensor_type{1,2,3}.transpose().transpose();
-    SECTION("test_not_same_tensor")
-    {
-        auto test_data = std::make_tuple(
-            std::make_tuple(t,e,v),
-            std::make_tuple(e,t,v),
-            std::make_tuple(v,e,t)
-        );
-        auto test = [](const auto& t){
-            auto first = std::get<0>(t);
-            auto second = std::get<1>(t);
-            auto third = std::get<2>(t);
-            REQUIRE(!first.is_same(second));
-            REQUIRE(!first.is_same(third));
-            REQUIRE(!second.is_same(first));
-            REQUIRE(!second.is_same(third));
-            REQUIRE(!third.is_same(first));
-            REQUIRE(!third.is_same(second));
-        };
-        apply_by_element(test,test_data);
-    }
-    SECTION("test_not_same_other"){
-        REQUIRE(!t.is_same(1));
-        REQUIRE(!e.is_same(1.0));
-        REQUIRE(!v.is_same(std::string{}));
-    }
-    SECTION("test_same_tensor")
-    {
-        auto test_data = std::make_tuple(t,e,v);
-        auto test = [](const auto& t){
-            REQUIRE(t.is_same(t));
-            auto t_ref_copy = t;
-            REQUIRE(&t != &t_ref_copy);
-            REQUIRE(t.is_same(t_ref_copy));
-            auto t_ref_move = std::move(t_ref_copy);
-            REQUIRE(t.is_same(t_ref_move));
-            REQUIRE(!t.is_same(t_ref_copy));
-        };
-        apply_by_element(test,test_data);
-    }
+    auto t = tensor_type{1,2,3};
+    auto e = tensor_type{1,2,3}+tensor_type{0,0,0};
+    auto v = tensor_type{1,2,3}.transpose().transpose();
+
+    //true
+    REQUIRE(t.is_same(t));
+    REQUIRE(t.is_same(t.eval()));
+    REQUIRE(e.is_same(e));
+    REQUIRE(v.is_same(v));
+    //false
+    REQUIRE(!t.is_same(t.copy()));
+    REQUIRE(!t.is_same(e));
+    REQUIRE(!t.is_same(v));
+    REQUIRE(!e.is_same(e.copy()));
+    REQUIRE(!e.is_same(e.eval()));
+    REQUIRE(!v.is_same(v.copy()));
+    REQUIRE(!v.is_same(v.eval()));
 }
 

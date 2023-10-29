@@ -330,3 +330,53 @@ TEST_CASE("test_copy_type","[test_common]")
     REQUIRE(std::is_same_v<copy_type_t<tensor<int,f_order>,double>,tensor<double,f_order>>);
     REQUIRE(std::is_same_v<copy_type_t<tensor<tensor<tensor<int,c_order>,f_order>,c_order>,double>,tensor<tensor<tensor<double,c_order>,f_order>,c_order>>);
 }
+
+TEMPLATE_TEST_CASE("test_cv_like","[test_common]",
+    int,
+    double
+)
+{
+    using res_type = TestType;
+    using other_type = int;
+    using gtensor::detail::cv_like_t;
+
+    REQUIRE(std::is_same_v<cv_like_t<res_type,other_type>,res_type>);
+    REQUIRE(std::is_same_v<cv_like_t<res_type,other_type&>,res_type>);
+    REQUIRE(std::is_same_v<cv_like_t<res_type,other_type&&>,res_type>);
+    REQUIRE(std::is_same_v<cv_like_t<res_type&,other_type>,res_type&>);
+    REQUIRE(std::is_same_v<cv_like_t<res_type&,other_type&>,res_type&>);
+    REQUIRE(std::is_same_v<cv_like_t<res_type&,other_type&&>,res_type&>);
+    REQUIRE(std::is_same_v<cv_like_t<res_type&&,other_type>,res_type&&>);
+    REQUIRE(std::is_same_v<cv_like_t<res_type&&,other_type&>,res_type&&>);
+    REQUIRE(std::is_same_v<cv_like_t<res_type&&,other_type&&>,res_type&&>);
+
+    REQUIRE(std::is_same_v<cv_like_t<res_type,const other_type>,const res_type>);
+    REQUIRE(std::is_same_v<cv_like_t<res_type,const other_type&>,const res_type>);
+    REQUIRE(std::is_same_v<cv_like_t<res_type,const other_type&&>,const res_type>);
+    REQUIRE(std::is_same_v<cv_like_t<res_type&,const other_type>,const res_type&>);
+    REQUIRE(std::is_same_v<cv_like_t<res_type&,const other_type&>,const res_type&>);
+    REQUIRE(std::is_same_v<cv_like_t<res_type&,const other_type&&>,const res_type&>);
+    REQUIRE(std::is_same_v<cv_like_t<res_type&&,const other_type>,const res_type&&>);
+    REQUIRE(std::is_same_v<cv_like_t<res_type&&,const other_type&>,const res_type&&>);
+    REQUIRE(std::is_same_v<cv_like_t<res_type&&,const other_type&&>,const res_type&&>);
+
+    REQUIRE(std::is_same_v<cv_like_t<res_type,volatile other_type>,volatile res_type>);
+    REQUIRE(std::is_same_v<cv_like_t<res_type,volatile other_type&>,volatile res_type>);
+    REQUIRE(std::is_same_v<cv_like_t<res_type,volatile other_type&&>,volatile res_type>);
+    REQUIRE(std::is_same_v<cv_like_t<res_type&,volatile other_type>,volatile res_type&>);
+    REQUIRE(std::is_same_v<cv_like_t<res_type&,volatile other_type&>,volatile res_type&>);
+    REQUIRE(std::is_same_v<cv_like_t<res_type&,volatile other_type&&>,volatile res_type&>);
+    REQUIRE(std::is_same_v<cv_like_t<res_type&&,volatile other_type>,volatile res_type&&>);
+    REQUIRE(std::is_same_v<cv_like_t<res_type&&,volatile other_type&>,volatile res_type&&>);
+    REQUIRE(std::is_same_v<cv_like_t<res_type&&,volatile other_type&&>,volatile res_type&&>);
+
+    REQUIRE(std::is_same_v<cv_like_t<res_type,const volatile other_type>,const volatile res_type>);
+    REQUIRE(std::is_same_v<cv_like_t<res_type,const volatile other_type&>,const volatile res_type>);
+    REQUIRE(std::is_same_v<cv_like_t<res_type,const volatile other_type&&>,const volatile res_type>);
+    REQUIRE(std::is_same_v<cv_like_t<res_type&,const volatile other_type>,const volatile res_type&>);
+    REQUIRE(std::is_same_v<cv_like_t<res_type&,const volatile other_type&>,const volatile res_type&>);
+    REQUIRE(std::is_same_v<cv_like_t<res_type&,const volatile other_type&&>,const volatile res_type&>);
+    REQUIRE(std::is_same_v<cv_like_t<res_type&&,const volatile other_type>,const volatile res_type&&>);
+    REQUIRE(std::is_same_v<cv_like_t<res_type&&,const volatile other_type&>,const volatile res_type&&>);
+    REQUIRE(std::is_same_v<cv_like_t<res_type&&,const volatile other_type&&>,const volatile res_type&&>);
+}

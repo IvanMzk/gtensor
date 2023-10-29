@@ -148,7 +148,7 @@ TEST_CASE("test_tensor_cloning_semantics_deep","[test_tensor_cloning_semantics]"
     }
 }
 
-TEMPLATE_TEST_CASE("test_tensor_cloning_semantics_clone","[test_tensor_cloning_semantics]",
+TEMPLATE_TEST_CASE("test_tensor_cloning_semantics_tensor_clone","[test_tensor_cloning_semantics]",
     gtensor::config::deep_semantics,
     gtensor::config::shallow_semantics
 )
@@ -211,6 +211,74 @@ TEMPLATE_TEST_CASE("test_tensor_cloning_semantics_clone","[test_tensor_cloning_s
         auto t2 = t1;
         REQUIRE(storage_type::copy_ctr_counter()==1);
         REQUIRE(!t.is_same(t2));
+        REQUIRE(t1.is_same(t2));
+        REQUIRE(storage_type::move_ctr_counter()==0);
+        REQUIRE(storage_type::custom_ctr_counter()==0);
+    }
+}
+
+TEMPLATE_TEST_CASE("test_tensor_cloning_semantics_rvalue_tensor_clone","[test_tensor_cloning_semantics]",
+    gtensor::config::deep_semantics,
+    gtensor::config::shallow_semantics
+)
+{
+    using value_type = double;
+    using gtensor::config::c_order;
+    using gtensor::config::deep_semantics;
+    using gtensor::config::shallow_semantics;
+    using storage_type = test_tensor_cloning_semantics_::iterable_storage<value_type>;
+    using semantics = TestType;
+    using config_type = gtensor::config::extend_config_t<test_tensor_cloning_semantics_::test_config<semantics>,value_type>;
+    using tensor_type = gtensor::tensor<value_type,c_order,config_type>;
+
+    tensor_type t{1,2,3,4,5};
+    auto t_shallow_clone = t.clone_shallow();
+    storage_type::reset_counters();
+    REQUIRE(storage_type::copy_ctr_counter()==0);
+    REQUIRE(storage_type::move_ctr_counter()==0);
+    REQUIRE(storage_type::custom_ctr_counter()==0);
+
+    SECTION("making_shallow_copy_with_shallow_semantic")
+    {
+        auto t1 = std::move(t).clone(shallow_semantics::value,shallow_semantics::value);
+        REQUIRE(t.empty());
+        REQUIRE(t1.is_same(t_shallow_clone));
+        REQUIRE(storage_type::move_ctr_counter()==0);
+        REQUIRE(storage_type::copy_ctr_counter()==0);
+        REQUIRE(storage_type::custom_ctr_counter()==0);
+    }
+    SECTION("making_deep_copy_with_deep_semantic")
+    {
+        auto t1 = std::move(t).clone(deep_semantics::value,deep_semantics::value);
+        REQUIRE(storage_type::copy_ctr_counter()==0);
+        REQUIRE(t.empty());
+        REQUIRE(t1.is_same(t_shallow_clone));
+        auto t2 = t1;
+        REQUIRE(storage_type::copy_ctr_counter()==1);
+        REQUIRE(!t1.is_same(t2));
+        REQUIRE(storage_type::move_ctr_counter()==0);
+        REQUIRE(storage_type::custom_ctr_counter()==0);
+    }
+    SECTION("making_shallow_copy_with_deep_semantic")
+    {
+        auto t1 = std::move(t).clone(shallow_semantics::value,deep_semantics::value);
+        REQUIRE(storage_type::copy_ctr_counter()==0);
+        REQUIRE(t.empty());
+        REQUIRE(t1.is_same(t_shallow_clone));
+        auto t2 = t1;
+        REQUIRE(storage_type::copy_ctr_counter()==1);
+        REQUIRE(!t1.is_same(t2));
+        REQUIRE(storage_type::move_ctr_counter()==0);
+        REQUIRE(storage_type::custom_ctr_counter()==0);
+    }
+    SECTION("making_deep_copy_with_shallow_semantic")
+    {
+        auto t1 = std::move(t).clone(deep_semantics::value,shallow_semantics::value);
+        REQUIRE(storage_type::copy_ctr_counter()==0);
+        REQUIRE(t.empty());
+        REQUIRE(t1.is_same(t_shallow_clone));
+        auto t2 = t1;
+        REQUIRE(storage_type::copy_ctr_counter()==0);
         REQUIRE(t1.is_same(t2));
         REQUIRE(storage_type::move_ctr_counter()==0);
         REQUIRE(storage_type::custom_ctr_counter()==0);
@@ -421,6 +489,75 @@ TEMPLATE_TEST_CASE("test_tensor_cloning_semantics_view_clone","[test_tensor_clon
         auto v2 = v1;
         REQUIRE(!v.is_same(v1));
         REQUIRE(!v.is_same(v2));
+        REQUIRE(v1.is_same(v2));
+        REQUIRE(storage_type::move_ctr_counter()==0);
+        REQUIRE(storage_type::copy_ctr_counter()==0);
+        REQUIRE(storage_type::custom_ctr_counter()==0);
+    }
+}
+
+TEMPLATE_TEST_CASE("test_tensor_cloning_semantics_rvalue_view_clone","[test_tensor_cloning_semantics]",
+    gtensor::config::deep_semantics,
+    gtensor::config::shallow_semantics
+)
+{
+    using value_type = double;
+    using gtensor::config::c_order;
+    using gtensor::config::deep_semantics;
+    using gtensor::config::shallow_semantics;
+    using storage_type = test_tensor_cloning_semantics_::iterable_storage<value_type>;
+    using semantics = TestType;
+    using config_type = gtensor::config::extend_config_t<test_tensor_cloning_semantics_::test_config<semantics>,value_type>;
+    using tensor_type = gtensor::tensor<value_type,c_order,config_type>;
+
+    tensor_type t1{{1,2,3},{4,5,6}};
+    tensor_type t2{7,8,9};
+    auto v = (t1+t2)*(t1-t2);
+    auto v_shallow_clone = v.clone_shallow();
+    storage_type::reset_counters();
+    REQUIRE(storage_type::copy_ctr_counter()==0);
+    REQUIRE(storage_type::move_ctr_counter()==0);
+    REQUIRE(storage_type::custom_ctr_counter()==0);
+
+    SECTION("making_shallow_copy_with_shallow_semantic")
+    {
+        auto v1 = std::move(v).clone(shallow_semantics::value,shallow_semantics::value);
+        REQUIRE(v.empty());
+        REQUIRE(v1.is_same(v_shallow_clone));
+        auto v2 = v1;
+        REQUIRE(v1.is_same(v2));
+        REQUIRE(storage_type::move_ctr_counter()==0);
+        REQUIRE(storage_type::copy_ctr_counter()==0);
+        REQUIRE(storage_type::custom_ctr_counter()==0);
+    }
+    SECTION("making_deep_copy_with_deep_semantic")
+    {
+        auto v1 = std::move(v).clone(deep_semantics::value,deep_semantics::value);
+        REQUIRE(v.empty());
+        REQUIRE(v1.is_same(v_shallow_clone));
+        auto v2 = v1;
+        REQUIRE(!v1.is_same(v2));
+        REQUIRE(storage_type::move_ctr_counter()==0);
+        REQUIRE(storage_type::copy_ctr_counter()==0);
+        REQUIRE(storage_type::custom_ctr_counter()==0);
+    }
+    SECTION("making_shallow_copy_with_deep_semantic")
+    {
+        auto v1 = std::move(v).clone(shallow_semantics::value,deep_semantics::value);
+        REQUIRE(v.empty());
+        REQUIRE(v1.is_same(v_shallow_clone));
+        auto v2 = v1;
+        REQUIRE(!v1.is_same(v2));
+        REQUIRE(storage_type::move_ctr_counter()==0);
+        REQUIRE(storage_type::copy_ctr_counter()==0);
+        REQUIRE(storage_type::custom_ctr_counter()==0);
+    }
+    SECTION("making_deep_copy_with_shallow_semantic")
+    {
+        auto v1 = std::move(v).clone(deep_semantics::value,shallow_semantics::value);
+        REQUIRE(v.empty());
+        REQUIRE(v1.is_same(v_shallow_clone));
+        auto v2 = v1;
         REQUIRE(v1.is_same(v2));
         REQUIRE(storage_type::move_ctr_counter()==0);
         REQUIRE(storage_type::copy_ctr_counter()==0);

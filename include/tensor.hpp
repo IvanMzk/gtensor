@@ -227,7 +227,7 @@ public:
     {}
 
     basic_tensor(const basic_tensor& other):
-        basic_tensor(other.clone_impl(),other.semantics_)
+        basic_tensor(other.clone_impl(other.semantics_),other.semantics_)
     {}
     basic_tensor(basic_tensor&&) = default;
 
@@ -262,11 +262,17 @@ public:
 
     //clone is made using making_semantics
     //result's cloning semantics is result_semantic
-    auto clone(config::cloning_semantics making_semantics, config::cloning_semantics result_semantics)const{
+    auto clone(config::cloning_semantics making_semantics, config::cloning_semantics result_semantics)const&{
         return basic_tensor(clone_impl(making_semantics),result_semantics);
     }
-    auto clone_shallow()const{
+    auto clone(config::cloning_semantics, config::cloning_semantics result_semantics)&&{
+        return basic_tensor(std::move(impl_),result_semantics);
+    }
+    auto clone_shallow()const&{
         return clone(config::cloning_semantics::shallow,config::cloning_semantics::shallow);
+    }
+    auto clone_shallow()&&{
+        return std::move(*this).clone(config::cloning_semantics::shallow,config::cloning_semantics::shallow);
     }
     //returns cloning semantics of tensor
     auto semantics()const{
@@ -741,15 +747,12 @@ private:
     const impl_type& impl()const{
         return *impl_.get();
     }
-    auto clone_impl(config::cloning_semantics sm)const{
+    auto clone_impl(config::cloning_semantics sm)const&{
         if (sm == config::cloning_semantics::deep){
             return impl().clone();
         }else{
             return impl_;
         }
-    }
-    auto clone_impl()const{
-        return clone_impl(semantics_);
     }
     template<typename Impl_>
     auto create_view_(std::shared_ptr<Impl_>&& impl__)const{

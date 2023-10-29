@@ -41,7 +41,8 @@ struct default_config
     //using order = f_order;
 
     //cloning semantics - determines effect of tensor copy construction
-    using semantics = shallow_semantics;
+    using semantics = deep_semantics;
+    //using semantics = shallow_semantics;
 
     //data elements storage template
     template<typename T> using storage = gtensor::basic_storage<T>;
