@@ -670,7 +670,7 @@ private:
                 edge_min = edge_max;
             }
         }
-        return std::make_pair(res_bins,res_type({edges_number},edges.begin(),edges.end()));
+        return std::make_pair(std::move(res_bins),res_type({edges_number},edges.begin(),edges.end()));
     }
 
     //first,last - elements range that are within histogram range argument, all elements range if histogram range argument is no_value
@@ -727,7 +727,7 @@ private:
             *res_intervals_it = edge;
         }
         *res_intervals_it = rmax;
-        return std::make_pair(res_bins,res_intervals);
+        return std::make_pair(std::move(res_bins),std::move(res_intervals));
     }
 
     template<typename Config, typename It, typename Bins, typename T>

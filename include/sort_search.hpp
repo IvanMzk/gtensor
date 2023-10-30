@@ -424,7 +424,7 @@ private:
 
     template<typename UniqueTensor, typename...Ts, std::size_t...I>
     static auto make_unique_result_helper(const UniqueTensor& unique_tensor, const std::tuple<Ts...>& makers, std::index_sequence<I...>){
-        return std::make_tuple(unique_tensor,std::get<I>(makers)()...);
+        return std::make_tuple(std::move(unique_tensor),std::get<I>(makers)()...);
     }
 
     template<typename UniqueTensor, typename...Ts, typename...Bs>
