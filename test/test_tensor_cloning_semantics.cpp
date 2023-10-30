@@ -148,6 +148,98 @@ TEST_CASE("test_tensor_cloning_semantics_deep","[test_tensor_cloning_semantics]"
     }
 }
 
+TEMPLATE_TEST_CASE("test_tensor_cloning_semantics_assign_to_shallow","[test_tensor_cloning_semantics]",
+    gtensor::config::deep_semantics,
+    gtensor::config::shallow_semantics
+)
+{
+    using value_type = double;
+    using gtensor::config::c_order;
+    using storage_type = test_tensor_cloning_semantics_::iterable_storage<value_type>;
+    using lval_config_type = gtensor::config::extend_config_t<test_tensor_cloning_semantics_::test_config<gtensor::config::shallow_semantics>,value_type>;
+    using rval_config_type = gtensor::config::extend_config_t<test_tensor_cloning_semantics_::test_config<TestType>,value_type>;
+    using lval_tensor_type = gtensor::tensor<value_type,c_order,lval_config_type>;
+    using rval_tensor_type = gtensor::tensor<value_type,c_order,rval_config_type>;
+
+    lval_tensor_type l{1,2,3,4,5};
+    rval_tensor_type r1{1,1,1};
+    rval_tensor_type r2{2,2,2,2,2};
+    storage_type::reset_counters();
+    REQUIRE(storage_type::copy_ctr_counter()==0);
+    REQUIRE(storage_type::move_ctr_counter()==0);
+    REQUIRE(storage_type::custom_ctr_counter()==0);
+    SECTION("not_equal_shapes")
+    {
+        REQUIRE(l.shape()!=r1.shape());
+        l = r1;
+        REQUIRE(storage_type::custom_ctr_counter()==1);
+        REQUIRE(!l.is_same(r1));
+        auto t = l;
+        REQUIRE(t.is_same(l));
+        REQUIRE(storage_type::custom_ctr_counter()==1);
+        REQUIRE(storage_type::move_ctr_counter()==0);
+        REQUIRE(storage_type::copy_ctr_counter()==0);
+    }
+    SECTION("equal_shapes")
+    {
+        REQUIRE(l.shape()==r2.shape());
+        l = r2;
+        REQUIRE(storage_type::custom_ctr_counter()==0);
+        REQUIRE(!l.is_same(r2));
+        auto t = l;
+        REQUIRE(t.is_same(l));
+        REQUIRE(storage_type::custom_ctr_counter()==0);
+        REQUIRE(storage_type::move_ctr_counter()==0);
+        REQUIRE(storage_type::copy_ctr_counter()==0);
+    }
+}
+
+TEMPLATE_TEST_CASE("test_tensor_cloning_semantics_assign_to_deep","[test_tensor_cloning_semantics]",
+    gtensor::config::deep_semantics,
+    gtensor::config::shallow_semantics
+)
+{
+    using value_type = double;
+    using gtensor::config::c_order;
+    using storage_type = test_tensor_cloning_semantics_::iterable_storage<value_type>;
+    using lval_config_type = gtensor::config::extend_config_t<test_tensor_cloning_semantics_::test_config<gtensor::config::deep_semantics>,value_type>;
+    using rval_config_type = gtensor::config::extend_config_t<test_tensor_cloning_semantics_::test_config<TestType>,value_type>;
+    using lval_tensor_type = gtensor::tensor<value_type,c_order,lval_config_type>;
+    using rval_tensor_type = gtensor::tensor<value_type,c_order,rval_config_type>;
+
+    lval_tensor_type l{1,2,3,4,5};
+    rval_tensor_type r1{1,1,1};
+    rval_tensor_type r2{2,2,2,2,2};
+    storage_type::reset_counters();
+    REQUIRE(storage_type::copy_ctr_counter()==0);
+    REQUIRE(storage_type::move_ctr_counter()==0);
+    REQUIRE(storage_type::custom_ctr_counter()==0);
+    SECTION("not_equal_shapes")
+    {
+        REQUIRE(l.shape()!=r1.shape());
+        l = r1;
+        REQUIRE(storage_type::custom_ctr_counter()==1);
+        REQUIRE(!l.is_same(r1));
+        auto t = l;
+        REQUIRE(!t.is_same(l));
+        REQUIRE(storage_type::custom_ctr_counter()==1);
+        REQUIRE(storage_type::move_ctr_counter()==0);
+        REQUIRE(storage_type::copy_ctr_counter()==1);
+    }
+    SECTION("equal_shapes")
+    {
+        REQUIRE(l.shape()==r2.shape());
+        l = r2;
+        REQUIRE(storage_type::custom_ctr_counter()==0);
+        REQUIRE(!l.is_same(r2));
+        auto t = l;
+        REQUIRE(!t.is_same(l));
+        REQUIRE(storage_type::custom_ctr_counter()==0);
+        REQUIRE(storage_type::move_ctr_counter()==0);
+        REQUIRE(storage_type::copy_ctr_counter()==1);
+    }
+}
+
 TEMPLATE_TEST_CASE("test_tensor_cloning_semantics_tensor_clone","[test_tensor_cloning_semantics]",
     gtensor::config::deep_semantics,
     gtensor::config::shallow_semantics
