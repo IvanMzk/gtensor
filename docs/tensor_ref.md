@@ -55,13 +55,13 @@ With `clone()` member function copy semantics can be specified explicitly:
 ```cpp
 gtensor::tensor<double> a{1,2,3,4,5};
 //making deep copy of a, result itself will have shallow copy semantics
-auto b = a.clone(gtensor::config::cloning_semantics::deep,gtensor::config::cloning_semantics::shallow);
+auto b = a.clone(gtensor::config::cloning_semantics::deep, gtensor::config::cloning_semantics::shallow);
 auto c = b; //c is shallow copy of b, b and c share the same implementation, mutating b causes mutating c
 std::cout<<std::endl<<b.is_same(a); //0
 std::cout<<std::endl<<b.is_same(c); //1
 ```
 
-`clone_shallow()` is shortcut for `clone(gtensor::config::cloning_semantics::shallow,gtensor::config::cloning_semantics::shallow)`.
+`clone_shallow()` is shortcut for `clone(gtensor::config::cloning_semantics::shallow, gtensor::config::cloning_semantics::shallow)`.
 
 ```cpp
 gtensor::tensor<double> a{1,2,3,4,5};
