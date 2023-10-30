@@ -51,7 +51,7 @@ As we see `tensor` is `basic_tensor` and it directly specifies its implementatio
 - **T** is type of data element
 - **Layout** can be of type `gtensor::config::c_order` or `gtensor::config::f_order` and defines storage scheme of data elements
 - **Config** is struct that contain `tensor` settings: alias templates of containers for data and meta-data elements, default traverse order for iterators and other.
-It will be covered in more details further.
+It will be covered in more details [further](#section_10).
 
 Consider example:
 
@@ -188,7 +188,8 @@ auto sum = t+t;
 ```
 
 What is `decltype(sum)`? It is not of type `tensor<double>` as you might think.
-It looks like: `gtensor::basic_tensor<gtensor::tensor_implementation<gtensor::expression_template_core<...>>>`. It is also `basic_tensor` specialization, but parameterized with special implementation type. We call such tensors **expression view**. Almost all operators on tensor produce expression views. More detailed this topic will be discussed in next sections.
+It looks like: `gtensor::basic_tensor<gtensor::tensor_implementation<gtensor::expression_template_core<...>>>`. It is also `basic_tensor` specialization, but parameterized with special implementation type. We call such tensors **expression view**. Almost all operators on tensor produce expression views.
+More detailed this topic will be discussed in [section 5](#section_5).
 
 ## 4. `basic_tensor` copy and move construction semantics <a id=section_4></a>
 
