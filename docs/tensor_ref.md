@@ -40,20 +40,41 @@ std::vector<double> elems{1,2,3,4,5,6}
 tensor<double> t6({2,3},elems.begin(),elemes.end());   //2d tensor with shape (2,3), elements are initialized using values from range
 ```
 
-## Copy and move constructors
+## Copy and move construction, `clone()`
 
-Tensor has reference copy semantic.
+By default tensor has value copy semantics.
 
 ```cpp
 gtensor::tensor<double> a{1,2,3,4,5};
-auto b = a; //b refers to same elements as a, mutating a causes mutating b
-auto c = std::move(a);  //c refers to same elements as b, a is empty
+auto b = a; //b is deep copy of a, mutating a doesn't cause mutating b
+auto c = std::move(a);  //c refers to a's elements, a is empty
+```
+
+With `clone()` member function copy semantics can be specified explicitly:
+
+```cpp
+gtensor::tensor<double> a{1,2,3,4,5};
+//making deep copy of a, result itself will have shallow copy semantics
+auto b = a.clone(gtensor::config::cloning_semantics::deep,gtensor::config::cloning_semantics::shallow);
+auto c = b; //c is shallow copy of b, b and c share the same implementation, mutating b causes mutating c
+std::cout<<std::endl<<b.is_same(a); //0
+std::cout<<std::endl<<b.is_same(c); //1
+```
+
+`clone_shallow()` is shortcut for `clone(gtensor::config::cloning_semantics::shallow,gtensor::config::cloning_semantics::shallow)`.
+
+```cpp
+gtensor::tensor<double> a{1,2,3,4,5};
+auto b = a.clone_shallow(); //making shallow copy of a, result itself will have shallow copy semantics
+auto c = b; //a,b,c share the same implementation
+std::cout<<std::endl<<b.is_same(a); //1
+std::cout<<std::endl<<b.is_same(c); //1
 ```
 
 ## Assignment
 
-Tensor exposes two kinds of assign semantic: value assign semantic and broadcast assign semantic.
-Compaund assignment always has broadcast sementic.
+Tensor exposes two kinds of assign semantics: value assign semantics and broadcast assign semantics.
+Compaund assignment always has broadcast sementics.
 
 ```cpp
 gtensor::tensor<double> a{7,8,9};
@@ -66,7 +87,7 @@ b = a;  //value assign, b is [(3){7,8,9}]
 b = 5;  //b is tensor-scalar [(){5}]
 ```
 
-Assignment to rvalue always has broadcast semantic. Motivation is assignment to view.
+Assignment to rvalue always has broadcast semantics. Motivation is assignment to view.
 
 ```cpp
 gtensor::tensor<double> a{{1,2,3},{4,5,6}};
