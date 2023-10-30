@@ -49,8 +49,8 @@ As we see `tensor` is `basic_tensor` and it directly specifies its implementatio
 
 `tensor` class template takes three type template parameters:
 - **T** is type of data element
-- **Layout** can be of type gtensor::config::c_order or gtensor::config::f_order and defines storage scheme of data elements
-- **Config** is struct that contain `tensor` implementation details: alias templates of containers for data and meta-data elements, default traverse order for iterators and other.
+- **Layout** can be of type `gtensor::config::c_order` or `gtensor::config::f_order` and defines storage scheme of data elements
+- **Config** is struct that contain `tensor` settings: alias templates of containers for data and meta-data elements, default traverse order for iterators and other.
 It will be covered in more details further.
 
 Consider example:
@@ -98,7 +98,9 @@ std::cout<<std::endl<<t2;   //[(3,3){{1,2,3},{4,5,6},{7,8,9}}]
 std::cout<<std::endl<<t3;   //[(2,2,2){{{1,2},{3,4}},{{5,6},{7,8}}}]
 ```
 
-We use initializer_list constructor to make three tensors, regardless of tensor's layout elements in initializer_list are always considered to be in c_order.
+We use initializer_list constructor to make three tensors.
+Regardless of tensor's layout, elements in initializer_list are always considered to be row major, i.e.
+`{{1,2,3},{4,5,6}}` means two rows and three columns.
 
 ```cpp
 //shape constructor
@@ -123,7 +125,6 @@ std::cout<<std::endl<<t6.size();    //0
 
 Default constructor makes 1d empty tensor. It is equivalent to call shape constructor `tensor<double>(std::vector<int>{0})`.
 
-
 ```cpp
 //0dim tensor (tensor-scalar) constructor
 gtensor::tensor<double> t7(5);
@@ -133,7 +134,6 @@ std::cout<<std::endl<<t7.size();    //1
 ```
 
 0Dim tensor constructor makes tensor with empty shape and unit size.
-
 
 ```cpp
 using gtensor::tensor;
@@ -190,24 +190,26 @@ auto sum = t+t;
 What is `decltype(sum)`? It is not of type `tensor<double>` as you might think.
 It looks like: `gtensor::basic_tensor<gtensor::tensor_implementation<gtensor::expression_template_core<...>>>`. It is also `basic_tensor` specialization, but parameterized with special implementation type. We call such tensors **expression view**. Almost all operators on tensor produce expression views. More detailed this topic will be discussed in next sections.
 
-## 4. `basic_tensor` copy and move construction semantic <a id=section_4></a>
+## 4. `basic_tensor` copy and move construction semantics <a id=section_4></a>
 
-`basic_tensor` has reference copy-construction semantic. Possible implementation of `basic_tensor` class template:
+`basic_tensor` can have **deep copy-construction semantics** or **shallow copy-construction semantics**.
+
+Possible implementation of `basic_tensor` class template:
 
 ```cpp
 template<typename Impl>
 class basic_tensor
 {
     std::shared_ptr<Impl> impl_;
-public:
-
-    basic_tensor(const basic_tensor&) = default;
-    basic_tensor(basic_tensor&&) = default;
+    const config::cloning_semantics semantics_;
     ...
 };
 ```
 
-Consider example:
+Having **deep copy-construction semantics** copy referes to its own implementation.
+Having **shallow copy-construction semantics** copy shares implementation with original, i.e. refers to the same data and meta-data.
+
+By default `basic_tensor` with storage implementation exposes **deep copy-construction semantics**:
 
 ```cpp
 gtensor::tensor<double> a{{1,2,3},{4,5,6}};
@@ -216,52 +218,83 @@ std::cout<<std::endl<<a;    //[(2,3){{1,2,3},{4,5,6}}]
 std::cout<<std::endl<<b;    //[(2,3){{1,2,3},{4,5,6}}]
 a+=1;
 std::cout<<std::endl<<a;    //[(2,3){{2,3,4},{5,6,7}}]
-std::cout<<std::endl<<b;    //[(2,3){{2,3,4},{5,6,7}}]
+std::cout<<std::endl<<b;    //[(2,3){{1,2,3},{4,5,6}}]
 ```
 
-Here we first construct tensor `a`, then copy construct `b` from `a` and mutate `a`.
-Due to reference semantic `a` and `b` share the same implementation, that is mutating `a` causes mutating `b`.
-
-To make deep copy:
+Semantics can't be changed after `basic_tensor` object is constructed, but there is `clone()` interface to make copies which will expose specified semantics.
 
 ```cpp
 gtensor::tensor<double> a{{1,2,3},{4,5,6}};
-auto b = a.copy();
-a+=1;
-std::cout<<std::endl<<a;    //[(2,3){{2,3,4},{5,6,7}}]
+auto b = a.clone(config::cloning_semantics::shallow,config::cloning_semantics::shallow);
+auto c = b;
+std::cout<<std::endl<<a;    //[(2,3){{1,2,3},{4,5,6}}]
 std::cout<<std::endl<<b;    //[(2,3){{1,2,3},{4,5,6}}]
+std::cout<<std::endl<<c;    //[(2,3){{1,2,3},{4,5,6}}]
+b+=1;
+std::cout<<std::endl<<a;    //[(2,3){{2,3,4},{5,6,7}}]
+std::cout<<std::endl<<b;    //[(2,3){{2,3,4},{5,6,7}}]
+std::cout<<std::endl<<c;    //[(2,3){{2,3,4},{5,6,7}}]
 ```
+
+Here tensor `a` has **deep copy-construction semantics**.
+Tensor `b` is shallow clone of `a` and has **shallow copy-construction semantics**.
+Tensor `c` is copy constructed from `b`.
+The effect is that `a`, `b` and `c` shares the same data elements.
 
 To test if tensors share the same implementation:
 
 ```cpp
 gtensor::tensor<double> a{{1,2,3},{4,5,6}};
 auto b = a;
-auto c = a.copy();
-std::cout<<std::endl<<a.is_same(b); //1
-std::cout<<std::endl<<a.is_same(c); //0
+auto c = b.clone_shallow();
+std::cout<<std::endl<<a.is_same(b); //0
+std::cout<<std::endl<<b.is_same(c); //1
+std::cout<<std::endl<<c.is_same(a); //0
 ```
 
-After move tensor refers to no implementation, in this case it is guaranteed `empty()` returns true.
+**Move construction** always has **shallow semantics**.
+After move new tensor will refer to original's implementation, and original to no implementation. No data is copied.
+Original is guaranteed to be **empty**.
 
 ```cpp
 gtensor::tensor<double> a{{1,2,3},{4,5,6}};
-auto b = std::move(a);
-std::cout<<std::endl<<a.empty(); //1
-std::cout<<std::endl<<b.empty(); //0
+auto b = a.clone_shallow();
+auto c = std::move(a);
+std::cout<<std::endl<<a.empty();    //1
+std::cout<<std::endl<<b.empty();    //0
+std::cout<<std::endl<<c.empty();    //0
+std::cout<<std::endl<<c.is_same(b); //1
 ```
 
-Having reference semantic we can return tensor objects from functions by value without data copying:
+Having such move semantics we can return local tensor objects by value without data copying:
 
 ```cpp
-auto make_squares(std::size_t n){
+auto make_sequence = [](auto n){
     gtensor::tensor<double> t(n,0);
     std::iota(t.begin(),t.end(),0);
-    return t*t;
-}
-auto squares = make_squares(7);
-std::cout<<std::endl<<squares;  //[(7){0,1,4,9,16,25,36}]
+    return t;
+};
+auto seq = make_sequence(7);
+std::cout<<std::endl<<seq;  //[(7){0,1,2,3,4,5,6}]
 ```
+
+To make deep copy, regardless of tensor's copy construction semantics, `copy()` member function is provided.
+It returnes new tensor with shape and elements copied from original.
+
+```cpp
+gtensor::tensor<double> a{{1,2,3},{4,5,6}};
+auto b = a.clone_shallow();
+auto c = b.copy();
+c+=1;
+std::cout<<std::endl<<a;    //[(2,3){{1,2,3},{4,5,6}}]
+std::cout<<std::endl<<b;    //[(2,3){{1,2,3},{4,5,6}}]
+std::cout<<std::endl<<c;    //[(2,3){{2,3,4},{5,6,7}}]
+```
+
+Default copy-construction semantics can be changed to be **shallow** by using custom argument for `Config` template parameter.
+More about this in [GTensor config section](#section_10).
+
+Views are always have shallow copy and move semantics. More about views in [section 5](#section_5) and [section 6](#section_6).
 
 ## 5 Expression view and lazy evaluation <a id=section_5></a>
 
@@ -270,11 +303,11 @@ And we can operate on this view object as it were true array. And no data copy r
 
 GTensor provides two kinds of views:
 - View based on some index transformations, it can be slice of original tensor, reshape, transpose or selecting elements using tensor of indeces.
-This kind of view always refers to original tensor's elements, using some indexing scheem. More on this kind of view in next section.
+This kind of view always refers to original tensor's elements, using some indexing scheem. More on this kind of view in [next section](#section_6).
 - **Expression view** is fundamentally different. It can produce new elements from original tensor or tensors by applying function object to its elements.
 What is important that we can apply function object only when we refers to view element - **computation of values of expression view elements is lazy**.
 
-Going back to last example from section 3 we extend it to show nature of lazy evaluation:
+Going back to last example from [section 3](#section_3) we extend it to show nature of lazy evaluation:
 
 ```cpp
 gtensor::tensor<double> t1{{1,2,3},{4,5,6}};
@@ -288,7 +321,7 @@ std::cout<<std::endl<<sum_sum;  //78
 ```
 
 `sum` here is **expression view**, its type is specialization of `basic_tensor` class template.
-In fact such specialization type holds shallow copies of `t1` and `t2` (thanks to reference copy semantic) and binary functor like std::plus\<void\> as data members.
+In fact such specialization type holds shallow copies of `t1` and `t2` (thanks to shallow copy semantic) and binary functor like std::plus\<void\> as data members.
 It also provide logic to make such lazy evaluation possible.
 
 Operands of expression not necessary to have equal shapes, **broadcasting** is supported:
@@ -358,6 +391,7 @@ std::cout<<std::endl<<v.is_same(v.eval());  //0
 There are several important points regarding expression views:
 - there is no any caching, each time you refer to element of view, computation is performed
 - view holds shallow copies of its operands, so if you mutate operands it will affect view values
+- view itself always exposes shallow copy and move semantics
 - no temporary copies created, evaluation is elementwise
 - evaluation can be easily parallelized
 - `value_type` of expression veiw is determined by value_types of its operands and expression itself, look at next example
@@ -913,12 +947,15 @@ Default config is `gtensor::config::default_config`.
 enum class div_modes : std::size_t {native, libdivide};
 enum class engines : std::size_t {expression_template};
 enum class orders : std::size_t {c,f};
+enum class cloning_semantics : std::size_t {deep,shallow};
 
 using mode_div_native = std::integral_constant<div_modes, div_modes::native>;
 using mode_div_libdivide = std::integral_constant<div_modes, div_modes::libdivide>;
 using engine_expression_template = std::integral_constant<engines, engines::expression_template>;
 using c_order = std::integral_constant<orders, orders::c>;
 using f_order = std::integral_constant<orders, orders::f>;
+using deep_semantics = std::integral_constant<cloning_semantics, cloning_semantics::deep>;
+using shallow_semantics = std::integral_constant<cloning_semantics, cloning_semantics::shallow>;
 
 struct default_config
 {
@@ -931,6 +968,10 @@ struct default_config
     //specify default traverse order of iterators
     using order = c_order;
     //using order = f_order;
+
+    //cloning semantics - determines effect of tensor copy construction
+    using semantics = deep_semantics;
+    //using semantics = shallow_semantics;
 
     //data elements storage template
     template<typename T> using storage = gtensor::basic_storage<T>;
@@ -967,7 +1008,7 @@ class tensor : public basic_tensor<typename tensor_factory_selector_t<Config,T,L
 
 Default argument for `Config` parameter is `config::extend_config_t<config::default_config,T>`, result type is like `default_config` struct,
 but with some new aliases defined: `storage_type`, `shape_type` which are **type aliases**.
-We say that `gtensor::config::extend_config_t` trait **rebind** given config to given value_type.
+We say that `gtensor::config::extend_config_t` trait **rebind** given config to given data element type.
 
 Consider example:
 
