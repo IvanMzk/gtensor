@@ -4,10 +4,10 @@
 1. [Multidimensional array abstraction](#section_1)
 2. [`tensor` and `basic_tensor` class templates](#section_2)
 3. [`basic_tensor` construction](#section_3)
-4. [`basic_tensor` copy and move construction semantic](#section_4)
+4. [`basic_tensor` copy and move construction semantics](#section_4)
 5. [Expression view and lazy evaluation](#section_5)
 6. [Slice, reshape, transpose and mapping view](#section_6)
-7. [`basic_tensor` assign semantic](#section_7)
+7. [`basic_tensor` assign semantics](#section_7)
 8. [`basic_tensor` equality](#section_8)
 9. [`basic_tensor` data and meta-data interface](#section_9)
 10. [GTensor config](#section_10)
@@ -637,11 +637,11 @@ std::cout<<std::endl<<v1;   //[(5){7,4,5,8,5}]
 std::cout<<std::endl<<v2;   //[(8){3,1,2,1,3,0,2,2}]
 ```
 
-## 7 `basic_tensor` assign semantic <a id=section_7></a>
+## 7 `basic_tensor` assign semantics <a id=section_7></a>
 
-`basic_tensor` objects can expose different assign semantic, depending on its type and assign expression:
-- value assign semantic
-- elementwise (or broadcast) assign semantic
+`basic_tensor` objects can expose different assign semantics, depending on its type and assign expression:
+- value assign semantics
+- elementwise (or broadcast) assign semantics
 
 Consider example:
 
@@ -659,9 +659,9 @@ std::cout<<std::endl<<a;    //[(){0}]
 
 As expected after first assign `a` has the same value as `b`.
 After second assign `a` has the same value as `a + b`.
-All assignments expose **value assign semantic**.
+All assignments expose **value assign semantics**.
 
-In next example assignment has different semantic:
+In next example assignment has different semantics:
 
 ```cpp
 using tensor_type = gtensor::tensor<double>;
@@ -675,15 +675,15 @@ std::cout<<std::endl<<a;    //[(2,3){{0,0,0},{0,0,0}}]
 ```
 
 Here we use `assign()` member function to assign to `a` - lhs.
-This function has broadcast assign semantic.
+This function has broadcast assign semantics.
 It takes single argument, that can be tensor or scalar - rhs.
 If rhs is tensor it must be broadcastable with lhs.
 
 ### Assign to view
 
-In first example `operator=()` exposes value assign semantic, but this is not always the case.
+In first example `operator=()` exposes value assign semantics, but this is not always the case.
 The point is that definition of `operator=()` in `basic_tensor` class template differs for **lvalue** and **rvalue** objects i.e. operator is **ref-qualified**.
-Being called on **lvalue** object assignment operator has value semantic, on **rvalue** object it has broadcast semantic.
+Being called on **lvalue** object assignment operator has value semantics, on **rvalue** object it has broadcast semantics.
 
 It can be useful when **assigning to view**:
 
