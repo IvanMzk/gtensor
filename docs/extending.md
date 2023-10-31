@@ -10,7 +10,7 @@ As well as universal way to evaluate such lazy results. For efficient evaluation
 
 ## Containers customization
 
-Next example shows definition of simple storage class template with maximum size predifined at compile time.
+Next example shows implementation of simple storage class template with maximum size predifined at compile time.
 
 ```cpp
 template<typename T, std::size_t N>

@@ -413,7 +413,7 @@ class reducer
                 auto offset = *traverser;
                 if (inner_size == 1){
                     do{
-                        auto& e = *res_it;
+                        typename std::iterator_traits<decltype(res_it)>::reference e = *res_it;
                         if (init){
                             if constexpr (has_initial){
                                 e = detail::accumulate_n(it,outer_size,detail::make_copy(initial),reduce_f);
