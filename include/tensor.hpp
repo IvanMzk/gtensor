@@ -957,15 +957,15 @@ public:
         tensor(forward_tag::tag(), std::forward<Shape>(shape__), begin__, end__)
     {}
 
-    //evaluating constructor
+    //converting constructor
     template<typename...Ts>
     explicit tensor(const basic_tensor<Ts...>& t):
-        tensor(eval_construct(t))
+        tensor(convert_(t))
     {}
 
 private:
     template<typename...Ts>
-    tensor eval_construct(const basic_tensor<Ts...>& t){
+    tensor convert_(const basic_tensor<Ts...>& t){
         auto a = t.traverse_order_adapter(order{});
         if (t.is_trivial()){
             return tensor(t.shape(),a.begin_trivial(),a.end_trivial());
