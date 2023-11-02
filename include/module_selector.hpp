@@ -15,7 +15,7 @@ namespace gtensor{
 //default module implementation forward declarations
 template<typename Config, typename T, typename Layout> class tensor_factory;
 class view_factory;
-template<typename F> class expression_template_operator;
+class expression_template_operator;
 class reducer;
 class manipulation;
 struct tensor_operators;
@@ -49,11 +49,10 @@ struct view_factory_selector
 template<typename...Ts> using view_factory_selector_t = typename view_factory_selector<Ts...>::type;
 
 //generalized operator selector
-//expected type of operation functor to perform on elements for F template parameter
-template<typename Config, typename F, typename...Ts>
+template<typename Config, typename...Ts>
 struct generalized_operator_selector
 {
-    using type = expression_template_operator<F>;
+    using type = expression_template_operator;
 };
 template<typename...Ts> using generalized_operator_selector_t = typename generalized_operator_selector<Ts...>::type;
 

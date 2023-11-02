@@ -431,11 +431,10 @@ TEST_CASE("test_expression_template_operator_n_operator","[test_expression_templ
     );
     auto test = [](const auto& t){
         auto f = std::get<0>(t);
-        using F = decltype(f);
         auto operands = std::get<1>(t);
         auto expected = std::get<2>(t);
         auto apply_n_operator = [f](auto&&...operands){
-            return expression_template_operator<F>::n_operator(f,operands...);
+            return expression_template_operator::n_operator(f,operands...);
         };
         auto result = std::apply(apply_n_operator, operands);
         REQUIRE(result == expected);
@@ -500,11 +499,10 @@ TEMPLATE_TEST_CASE("test_expression_template_operator_a_operator","[test_express
     );
     auto test = [](const auto& t){
         auto f = std::get<0>(t);
-        using F = decltype(f);
         auto lhs = std::get<1>(t);
         auto rhs = std::get<2>(t);
         auto expected = std::get<3>(t);
-        auto& result = expression_template_operator<F>::a_operator(f,lhs,rhs);
+        auto& result = expression_template_operator::a_operator(f,lhs,rhs);
         REQUIRE(&result == &lhs);
         REQUIRE(result == expected);
     };

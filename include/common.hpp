@@ -142,8 +142,9 @@ template<typename T, typename...Ts> struct first_tensor_type_helper<std::true_ty
 template<typename T, typename...Ts> struct first_tensor_type_helper<std::false_type,T,Ts...>{
     using type = typename first_tensor_type<Ts...>::type;
 };
-template<> struct first_tensor_type<>{
-    static_assert(false,"at least one tensor type required");
+template<typename T> struct first_tensor_type<T>{
+    static_assert(is_tensor_v<T>,"at least one tensor type required");
+    using type = T;
 };
 template<typename T, typename...Ts> struct first_tensor_type<T,Ts...>{
     using type = typename first_tensor_type_helper<std::bool_constant<is_tensor_v<T>>,T,Ts...>::type;

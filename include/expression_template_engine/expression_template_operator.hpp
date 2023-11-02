@@ -53,23 +53,22 @@ inline auto forward_as_tensor(T&& t){
 
 }   //end of namespace detail
 
-template<typename F>
 class expression_template_operator{
 
-    template<typename F_, typename Operand, typename...Operands>
-    static auto n_operator_(F_&& f, Operand&& operand, Operands&&...operands){
+    template<typename F, typename Operand, typename...Operands>
+    static auto n_operator_(F&& f, Operand&& operand, Operands&&...operands){
         using config_type = typename std::decay_t<Operand>::config_type;
         using implementation_type = tensor_implementation<
             expression_template_core<
                 config_type,
-                std::remove_reference_t<F_>,
+                std::remove_reference_t<F>,
                 detail::cv_like_t<decltype(std::forward<Operand>(operand).clone_shallow()),Operand>,
                 detail::cv_like_t<decltype(std::forward<Operands>(operands).clone_shallow()),Operands>...
             >
         >;
         return basic_tensor<implementation_type>{
             std::make_shared<implementation_type>(
-                std::forward<F_>(f),
+                std::forward<F>(f),
                 std::forward<Operand>(operand).clone_shallow(),
                 std::forward<Operands>(operands).clone_shallow()...
             )
@@ -78,20 +77,20 @@ class expression_template_operator{
 
 public:
     //optimized binary n_operator
-    template<typename F_, typename Operand1, typename Operand2>
-    static auto n_operator(F_&& f, Operand1&& operand1, Operand2&& operand2){
-        static_assert(std::is_same_v<F,std::decay_t<F_>>);
+    template<typename F, typename Operand1, typename Operand2>
+    static auto n_operator(F&& f, Operand1&& operand1, Operand2&& operand2){
+        using F_ = std::decay_t<F>;
         static constexpr bool is_operand1_tensor = detail::is_tensor_v<std::decay_t<Operand1>>;
         static constexpr bool is_operand2_tensor = detail::is_tensor_v<std::decay_t<Operand2>>;
         static_assert(is_operand1_tensor||is_operand2_tensor);
         if constexpr (is_operand1_tensor&&is_operand2_tensor){
-            return n_operator_(std::forward<F_>(f), std::forward<Operand1>(operand1), std::forward<Operand2>(operand2));
+            return n_operator_(std::forward<F>(f), std::forward<Operand1>(operand1), std::forward<Operand2>(operand2));
         }else if constexpr (is_operand1_tensor){
-            using operation_type = detail::binary_operation_scalar_wrapper<F,std::remove_reference_t<Operand2>,detail::scalar_second_type>;
-            return n_operator_(operation_type{std::forward<F_>(f),std::forward<Operand2>(operand2)},std::forward<Operand1>(operand1));
+            using operation_type = detail::binary_operation_scalar_wrapper<F_,std::remove_reference_t<Operand2>,detail::scalar_second_type>;
+            return n_operator_(operation_type{std::forward<F>(f),std::forward<Operand2>(operand2)},std::forward<Operand1>(operand1));
         }else{
-            using operation_type = detail::binary_operation_scalar_wrapper<F,std::remove_reference_t<Operand1>,detail::scalar_first_type>;
-            return n_operator_(operation_type{std::forward<F_>(f),std::forward<Operand1>(operand1)},std::forward<Operand2>(operand2));
+            using operation_type = detail::binary_operation_scalar_wrapper<F_,std::remove_reference_t<Operand1>,detail::scalar_first_type>;
+            return n_operator_(operation_type{std::forward<F>(f),std::forward<Operand1>(operand1)},std::forward<Operand2>(operand2));
         }
     }
 
@@ -100,24 +99,22 @@ public:
     //operands shapes must be broadcastable
     //scalar operands is allowed
     //actual evaluation happens only when result tensor iterator is dereferenced
-    template<typename F_, typename...Operands>
-    static auto n_operator(F_&& f, Operands&&...operands){
-        static_assert(std::is_same_v<F,std::decay_t<F_>>);
+    template<typename F, typename...Operands>
+    static auto n_operator(F&& f, Operands&&...operands){
         using config_type = typename detail::first_tensor_type_t<std::remove_cv_t<std::remove_reference_t<Operands>>...>::config_type;
-        return n_operator_(std::forward<F_>(f), detail::forward_as_tensor<config_type>(std::forward<Operands>(operands))...);
+        return n_operator_(std::forward<F>(f), detail::forward_as_tensor<config_type>(std::forward<Operands>(operands))...);
     }
 
     //generalized broadcast assign
     //shapes of lhs and rhs must be broadcastable, scalar rhs is allowed
     //assign operation is defined by F
     //not lazy
-    template<typename F_, typename Tensor, typename Rhs>
-    static auto& a_operator(F_&& f, Tensor&& lhs, Rhs&& rhs){
+    template<typename F, typename Tensor, typename Rhs>
+    static auto& a_operator(F&& f, Tensor&& lhs, Rhs&& rhs){
         using Tensor_ = std::decay_t<Tensor>;
-        static_assert(std::is_same_v<F,std::decay_t<F_>>);
         static_assert(detail::is_tensor_v<Tensor_>,"lhs must be tensor");
         using order = typename Tensor_::order;
-        auto tmp = n_operator(std::forward<F_>(f),std::forward<Tensor>(lhs),std::forward<Rhs>(rhs));
+        auto tmp = n_operator(std::forward<F>(f),std::forward<Tensor>(lhs),std::forward<Rhs>(rhs));
         auto a = tmp.traverse_order_adapter(order{});
         if (tmp.is_trivial()){
             for (auto it = a.begin_trivial(), last = a.end_trivial(); it!=last; ++it){

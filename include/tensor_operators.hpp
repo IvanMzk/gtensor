@@ -92,8 +92,7 @@ void str_helper(const basic_tensor<Ts...>& t, std::string separator, Stream& str
 template<typename F, typename...Operands>
 inline auto n_operator(F&& f, Operands&&...operands){
     using config_type = typename detail::first_tensor_type_t<std::remove_cv_t<std::remove_reference_t<Operands>>...>::config_type;
-    using operation_type = std::decay_t<F>;
-    return generalized_operator_selector_t<config_type, operation_type>::n_operator(std::forward<F>(f),std::forward<Operands>(operands)...);
+    return generalized_operator_selector_t<config_type>::n_operator(std::forward<F>(f),std::forward<Operands>(operands)...);
 }
 
 //generalized elementwise broadcast assign operator
@@ -103,10 +102,9 @@ inline auto n_operator(F&& f, Operands&&...operands){
 //result is reference to lhs
 template<typename F, typename Tensor, typename Rhs>
 inline std::decay_t<Tensor>& a_operator(F&& f, Tensor&& lhs, Rhs&& rhs){
-    using F_ = std::decay_t<F>;
     using Tensor_ = std::decay_t<Tensor>;
     using config_type = typename Tensor_::config_type;
-    generalized_operator_selector_t<config_type, F_>::a_operator(std::forward<F>(f),std::forward<Tensor>(lhs),std::forward<Rhs>(rhs));
+    generalized_operator_selector_t<config_type>::a_operator(std::forward<F>(f),std::forward<Tensor>(lhs),std::forward<Rhs>(rhs));
     return lhs;
 }
 
