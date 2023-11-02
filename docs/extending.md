@@ -140,3 +140,73 @@ std::cout<<std::endl<<b.prod(); //[(){[64,152,28,67]}]
 std::cout<<std::endl<<a.cumsum();   //[(4){[1,0,2,1],[3,1,3,1],[4,5,5,4],[7,8,7,6]}]
 std::cout<<std::endl<<b.cumprod();  //[(4){[2,1,1,0],[4,8,2,3],[24,40,11,17],[64,152,28,67]}]
 ```
+
+## Modules customization
+
+Most of GTensor library functionality is implemented in modules.
+Module is defined in separate header file, in `gtensor` namespace.
+Module contains module interface and module implementation.
+
+Module interface is set of free functions template which use traits defined in `module_selector.hpp` header file to dispatch call to right implementation.
+
+Module implementation is defined in class or class template which provides public member functions interface to be called from module interface free function.
+
+Next example shows main idea of how to extend existing module with a new routine.
+
+#### **`extended_tensor_math.hpp`**
+```cpp
+#include "tensor_math.hpp"
+namespace gtensor{
+
+//module implementation
+struct custom_tensor_math : gtensor::tensor_math{
+    template<typename...Args>
+    static auto sum_reciprocal(const Args&...args){
+        return n_operator([](const auto&...e){return ((1/e)+...);},args...);
+    }
+};
+
+//module interface
+template<typename...Args>
+    static auto sum_reciprocal(const Args&...args){
+    using config_type = typename detail::first_tensor_type_t<Args...>::config_type;
+    return tensor_math_selector_t<config_type>::sum_reciprocal(args...);
+}
+
+//specialization of dispatching trait
+template<typename Config>
+struct tensor_math_selector<Config>
+{
+    using type = custom_tensor_math;
+};
+
+}   //end of namespace gtensor
+```
+
+Here we extend `tensor_math` module with routine to compute sum of reciprocals of given arguments.
+Now we can use `sum_reciprocal` as well as all routines were defined in `tensor_math` module.
+
+#### **`main.cpp`**
+```cpp
+#include "tensor.hpp"
+#include "extended_tensor_math.hpp"
+
+int main(int argc, const char*argv[])
+{
+    gtensor::tensor<double> a{{1,2,3},{4,5,6}};
+    gtensor::tensor<double> b{3,2,1};
+
+    std::cout<<std::endl<<sum_reciprocal(a);    //[(2,3){{1,0.5,0.333},{0.25,0.2,0.167}}]
+    std::cout<<std::endl<<sum_reciprocal(a,b);  //[(2,3){{1.33,1,1.33},{0.583,0.7,1.17}}]
+    std::cout<<std::endl<<(1/a + 1/b);  //[(2,3){{1.33,1,1.33},{0.583,0.7,1.17}}]
+    std::cout<<std::endl<<sum_reciprocal(a,b,2.0);  //[(2,3){{1.83,1.5,1.83},{1.08,1.2,1.67}}]
+    std::cout<<std::endl<<pow(sum_reciprocal(a,b),0.5); //[(2,3){{1.15,1,1.15},{0.764,0.837,1.08}}]
+    std::cout<<std::endl<<sum(sum_reciprocal(a,b,2.0)); //[(){9.12}]
+
+    return 0;
+}
+```
+
+Although `sum_reciprocal(a,b)` is equivalent to `1/a + 1/b`, former may be more efficient when evaluated, due to more shallow expression tree.
+
+Changing implementation of existing routines

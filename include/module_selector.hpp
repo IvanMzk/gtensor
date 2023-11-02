@@ -27,173 +27,105 @@ struct random;
 struct indexing;
 
 //module selectors
-//should specialize inner struct selector_ to change module default implementation
+//to dispatch library routine to custom module, specialization of appropriate selector should be added
+//all library interface free functions pass valid config_type of its tensor argument for Config template type parameter
+//in most cases it is not used, but may be used to do dispatch based on particular Config type
 
 //storage implementation factory selector
-template<typename Config, typename...Ts>
-class tensor_factory_selector
+//expected Config, element type and layout tag as template type arguments
+template<typename Config, typename T, typename Layout, typename...Ts>
+struct tensor_factory_selector
 {
-    using config_type = Config;
-    template<typename T, typename Layout, typename...> struct selector_
-    {
-        using type = tensor_factory<config_type,T,Layout>;
-    };
-public:
-    using type = typename selector_<Ts...>::type;
+    using type = tensor_factory<Config,T,Layout>;
 };
 template<typename...Ts> using tensor_factory_selector_t = typename tensor_factory_selector<Ts...>::type;
 
 //view implementation factory selector
 template<typename Config, typename...Ts>
-class view_factory_selector
+struct view_factory_selector
 {
-    using config_type = Config;
-    template<typename...> struct selector_
-    {
-        using type = view_factory;
-    };
-public:
-    using type = typename selector_<Ts...>::type;
+    using type = view_factory;
 };
 template<typename...Ts> using view_factory_selector_t = typename view_factory_selector<Ts...>::type;
 
 //generalized operator selector
-template<typename Config, typename...Ts>
-class generalized_operator_selector
+//expected type of operation functor to perform on elements for F template parameter
+template<typename Config, typename F, typename...Ts>
+struct generalized_operator_selector
 {
-    using config_type = Config;
-    template<typename F, typename...> struct selector_
-    {
-        using type = expression_template_operator<F>;
-    };
-public:
-    using type = typename selector_<Ts...>::type;
+    using type = expression_template_operator<F>;
 };
 template<typename...Ts> using generalized_operator_selector_t = typename generalized_operator_selector<Ts...>::type;
 
 //tensor operators selector
 template<typename Config, typename...Ts>
-class tensor_operators_selector
+struct tensor_operators_selector
 {
-    using config_type = Config;
-    template<typename...> struct selector_
-    {
-        using type = tensor_operators;
-    };
-public:
-    using type = typename selector_<Ts...>::type;
+    using type = tensor_operators;
 };
 template<typename...Ts> using tensor_operators_selector_t = typename tensor_operators_selector<Ts...>::type;
 
 //tensor math selector
 template<typename Config, typename...Ts>
-class tensor_math_selector
+struct tensor_math_selector
 {
-    using config_type = Config;
-    template<typename...> struct selector_
-    {
-        using type = tensor_math;
-    };
-public:
-    using type = typename selector_<Ts...>::type;
+    using type = tensor_math;
 };
 template<typename...Ts> using tensor_math_selector_t = typename tensor_math_selector<Ts...>::type;
 
 //tensor statistic selector
 template<typename Config, typename...Ts>
-class statistic_selector
+struct statistic_selector
 {
-    using config_type = Config;
-    template<typename...> struct selector_
-    {
-        using type = statistic;
-    };
-public:
-    using type = typename selector_<Ts...>::type;
+    using type = statistic;
 };
 template<typename...Ts> using statistic_selector_t = typename statistic_selector<Ts...>::type;
 
 //tensor sort_search selector
 template<typename Config, typename...Ts>
-class sort_search_selector
+struct sort_search_selector
 {
-    using config_type = Config;
-    template<typename...> struct selector_
-    {
-        using type = sort_search;
-    };
-public:
-    using type = typename selector_<Ts...>::type;
+    using type = sort_search;
 };
 template<typename...Ts> using sort_search_selector_t = typename sort_search_selector<Ts...>::type;
 
 //reducer selector
 template<typename Config, typename...Ts>
-class reducer_selector
+struct reducer_selector
 {
-    using config_type = Config;
-    template<typename...> struct selector_
-    {
-        using type = reducer;
-    };
-public:
-    using type = typename selector_<Ts...>::type;
+    using type = reducer;
 };
 template<typename...Ts> using reducer_selector_t = typename reducer_selector<Ts...>::type;
 
 //manipulation selector
 template<typename Config, typename...Ts>
-class manipulation_selector
+struct manipulation_selector
 {
-    using config_type = Config;
-    template<typename...> struct selector_
-    {
-        using type = manipulation;
-    };
-public:
-    using type = typename selector_<Ts...>::type;
+    using type = manipulation;
 };
 template<typename...Ts> using manipulation_selector_t = typename manipulation_selector<Ts...>::type;
 
 //builder selector
 template<typename Config, typename...Ts>
-class builder_selector
+struct builder_selector
 {
-    using config_type = Config;
-    template<typename...> struct selector_
-    {
-        using type = builder;
-    };
-public:
-    using type = typename selector_<Ts...>::type;
+    using type = builder;
 };
 template<typename...Ts> using builder_selector_t = typename builder_selector<Ts...>::type;
 
 //random selector
 template<typename Config, typename...Ts>
-class random_selector
+struct random_selector
 {
-    using config_type = Config;
-    template<typename...> struct selector_
-    {
-        using type = random;
-    };
-public:
-    using type = typename selector_<Ts...>::type;
+    using type = random;
 };
 template<typename...Ts> using random_selector_t = typename random_selector<Ts...>::type;
 
 //indexing selector
 template<typename Config, typename...Ts>
-class indexing_selector
+struct indexing_selector
 {
-    using config_type = Config;
-    template<typename...> struct selector_
-    {
-        using type = indexing;
-    };
-public:
-    using type = typename selector_<Ts...>::type;
+    using type = indexing;
 };
 template<typename...Ts> using indexing_selector_t = typename indexing_selector<Ts...>::type;
 

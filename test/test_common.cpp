@@ -380,3 +380,15 @@ TEMPLATE_TEST_CASE("test_cv_like","[test_common]",
     REQUIRE(std::is_same_v<cv_like_t<res_type&&,const volatile other_type&>,const volatile res_type&&>);
     REQUIRE(std::is_same_v<cv_like_t<res_type&&,const volatile other_type&&>,const volatile res_type&&>);
 }
+
+TEST_CASE("test_first_tensor_type","[test_common]")
+{
+    using gtensor::detail::first_tensor_type_t;
+    using gtensor::tensor;
+
+    REQUIRE(std::is_same_v<first_tensor_type_t<tensor<int>>,tensor<int>>);
+    REQUIRE(std::is_same_v<first_tensor_type_t<tensor<double>,tensor<int>,double>,tensor<double>>);
+    REQUIRE(std::is_same_v<first_tensor_type_t<int,int,tensor<double>,tensor<int>,double>,tensor<double>>);
+    //REQUIRE(std::is_same_v<first_tensor_type_t<int,int,double>,int>); //static_assert
+
+}

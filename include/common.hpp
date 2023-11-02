@@ -133,7 +133,7 @@ struct cv_like{
 };
 template<typename T, typename Other> using cv_like_t = typename cv_like<T,Other>::type;
 
-//find first type in pack fo which is_tensor_v is true
+//find first type in pack for which is_tensor_v is true
 template<typename...Ts> struct first_tensor_type;
 template<typename...Ts> struct first_tensor_type_helper;
 template<typename T, typename...Ts> struct first_tensor_type_helper<std::true_type,T,Ts...>{
@@ -141,6 +141,9 @@ template<typename T, typename...Ts> struct first_tensor_type_helper<std::true_ty
 };
 template<typename T, typename...Ts> struct first_tensor_type_helper<std::false_type,T,Ts...>{
     using type = typename first_tensor_type<Ts...>::type;
+};
+template<> struct first_tensor_type<>{
+    static_assert(false,"at least one tensor type required");
 };
 template<typename T, typename...Ts> struct first_tensor_type<T,Ts...>{
     using type = typename first_tensor_type_helper<std::bool_constant<is_tensor_v<T>>,T,Ts...>::type;
