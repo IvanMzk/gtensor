@@ -4,7 +4,7 @@ GTensor library is designed to be easily extended in some different ways:
 
 - library doesn't depend on particular data types for containers, data and meta-data elements.
 So custom types can be used, provided they meet some common requirements.
-- thanks to modular design new modules can be added, functionality and implementation of existing modules can be changed.
+- thanks to modular design new modules can be added, existing modules can be extended with new functionality, existing functionality can be customized.
 - library provides generic way to implement routines to operate on tensors objects in broadcast elementwise and lazy manner.
 As well as universal way to evaluate such lazy results. For efficient evaluation of complex lazy expressions parallel execution subsystem is provided.
 
@@ -151,6 +151,8 @@ Module interface is set of free functions template which use traits defined in `
 
 Module implementation is defined in class or class template which provides public member functions interface to be called from module interface free function.
 
+### Adding new functionality
+
 Next example shows main idea of how to extend existing module with a new routine.
 
 #### **`extended_tensor_math.hpp`**
@@ -209,4 +211,60 @@ int main(int argc, const char*argv[])
 
 Although `sum_reciprocal(a,b)` is equivalent to `1/a + 1/b`, former may be more efficient when evaluated, due to more shallow expression tree.
 
-Changing implementation of existing routines
+### Customizing existing functionality
+
+In next example we define custom `n_operator` which is **not lazy** and always returns evaluated result.
+
+#### **`evaluating_expression_template_operator.hpp`**
+```cpp
+namespace gtensor{
+
+struct evaluating_expression_template_operator : expression_template_operator{
+    template<typename F, typename...Operands>
+    static auto n_operator(F&& f, Operands&&...operands){
+        using config_type = typename detail::first_tensor_type_t<std::decay_t<Operands>...>::config_type;
+        return expression_template_operator::n_operator(std::forward<F>(f), std::forward<Operands>(operands)...).eval();
+    }
+};
+
+template<typename Config>
+struct generalized_operator_selector<Config>
+{
+    using type = evaluating_expression_template_operator;
+};
+
+}   //end of namespace gtensor
+```
+
+#### **`main.cpp`**
+```cpp
+#include "tensor.hpp"
+#include "evaluating_expression_template_operator.hpp"
+
+int main(int argc, const char*argv[])
+{
+    gtensor::tensor<double> a{{1,2,3},{4,5,6}};
+    gtensor::tensor<double> b{1,2,0};
+
+    auto c = a+b;   //c is not expression view, but has storage implementation, as if were constructed using tensor<double>{...} expression
+    std::cout<<std::endl<<c.data()[2];  //3
+    c+=1;
+    std::cout<<std::endl<<c;    //[(2,3){{3,5,4},{6,8,7}}]
+    c(c>4)+=1;
+    std::cout<<std::endl<<c;    //[(2,3){{3,6,4},{7,9,8}}]
+
+    return 0;
+}
+```
+
+`n_operator` which parallelize evaluation can be implemented in similar manner:
+
+```cpp
+struct evaluating_expression_template_operator : expression_template_operator{
+    template<typename F, typename...Operands>
+    static auto n_operator(F&& f, Operands&&...operands){
+        using config_type = typename detail::first_tensor_type_t<std::decay_t<Operands>...>::config_type;
+        return expression_template_operator::n_operator(std::forward<F>(f), std::forward<Operands>(operands)...).eval(multithreading::exec_pol<4>{});
+    }
+};
+```
