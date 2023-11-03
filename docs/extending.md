@@ -6,7 +6,7 @@ GTensor library is designed to be easily extended in some different ways:
 So custom types can be used, provided they meet some common requirements.
 - thanks to modular design new modules can be added, existing modules can be extended with new functionality, existing functionality can be customized.
 - library provides generic way to implement routines to operate on tensors objects in broadcast elementwise and lazy manner.
-As well as universal way to evaluate such lazy results. For efficient evaluation of complex lazy expressions parallel execution subsystem is provided.
+As well as universal way to evaluate such lazy results. For efficient evaluation parallel execution subsystem is provided.
 
 ## Containers customization
 
@@ -22,7 +22,7 @@ public:
     using value_type = typename base_type::value_type;
     using size_type = typename base_type::size_type;
     using difference_type = typename base_type::difference_type;
-    minimal_onstack_storage(size_type n)
+    explicit minimal_onstack_storage(size_type n)
     {
         if (n > N){
             throw std::length_error("invalid storage size");
@@ -89,13 +89,13 @@ class matrix22
     base_type base_;
 public:
     template<typename...Ts>
-    matrix22(const gtensor::basic_tensor<Ts...>& other):
+    explicit matrix22(const gtensor::basic_tensor<Ts...>& other):
         base_(other)
     {}
     matrix22():
         base_{{T{},T{}},{T{},T{}}}
     {}
-    matrix22(const T& e):
+    explicit matrix22(const T& e):
         base_{{e,T{}},{T{},e}}
     {}
     matrix22(const T& e00,const T& e01,const T& e10,const T& e11):
