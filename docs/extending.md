@@ -171,7 +171,7 @@ struct custom_tensor_math : gtensor::tensor_math{
 //module interface
 template<typename...Args>
     static auto sum_reciprocal(const Args&...args){
-    using config_type = typename detail::first_tensor_type_t<Args...>::config_type;
+    using config_type = detail::common_config_type_t<Args...>;
     return tensor_math_selector_t<config_type>::sum_reciprocal(args...);
 }
 
@@ -222,7 +222,7 @@ namespace gtensor{
 struct evaluating_expression_template_operator : expression_template_operator{
     template<typename F, typename...Operands>
     static auto n_operator(F&& f, Operands&&...operands){
-        using config_type = typename detail::first_tensor_type_t<std::decay_t<Operands>...>::config_type;
+        using config_type = detail::common_config_type_t<std::decay_t<Operands>...>;
         return expression_template_operator::n_operator(std::forward<F>(f), std::forward<Operands>(operands)...).eval();
     }
 };
@@ -268,3 +268,5 @@ struct evaluating_expression_template_operator : expression_template_operator{
     }
 };
 ```
+
+Any other functionality, including operators, can be customized in this way to meet requirements.

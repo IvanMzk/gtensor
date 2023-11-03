@@ -101,7 +101,7 @@ public:
     //actual evaluation happens only when result tensor iterator is dereferenced
     template<typename F, typename...Operands>
     static auto n_operator(F&& f, Operands&&...operands){
-        using config_type = typename detail::first_tensor_type_t<std::remove_cv_t<std::remove_reference_t<Operands>>...>::config_type;
+        using config_type = typename detail::common_config_type_t<std::remove_cv_t<std::remove_reference_t<Operands>>...>;
         return n_operator_(std::forward<F>(f), detail::forward_as_tensor<config_type>(std::forward<Operands>(operands))...);
     }
 

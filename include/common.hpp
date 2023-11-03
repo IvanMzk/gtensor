@@ -151,6 +151,11 @@ template<typename T, typename...Ts> struct first_tensor_type<T,Ts...>{
 };
 template<typename...Ts> using first_tensor_type_t = typename first_tensor_type<Ts...>::type;
 
+//common config_type of tensors
+//using tensors with distinct config_type in expression is not prohibited, but should be used with care
+//config_type of first tensor in pack is used as common config_type
+template<typename...Ts> using common_config_type_t = typename first_tensor_type_t<Ts...>::config_type;
+
 //common order of tensors
 //if all tensors have same order than common order is that same order, Config::order otherwise
 template<typename...> struct common_order;

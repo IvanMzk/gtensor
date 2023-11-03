@@ -91,7 +91,7 @@ void str_helper(const basic_tensor<Ts...>& t, std::string separator, Stream& str
 //result is tensor, result's value_type is f's call operator result type;
 template<typename F, typename...Operands>
 inline auto n_operator(F&& f, Operands&&...operands){
-    using config_type = typename detail::first_tensor_type_t<std::remove_cv_t<std::remove_reference_t<Operands>>...>::config_type;
+    using config_type = detail::common_config_type_t<std::remove_cv_t<std::remove_reference_t<Operands>>...>;
     return generalized_operator_selector_t<config_type>::n_operator(std::forward<F>(f),std::forward<Operands>(operands)...);
 }
 
@@ -430,7 +430,7 @@ auto where(T&& t, U&& u, V&& v){
     using T_ = std::remove_cv_t<std::remove_reference_t<T>>;
     using U_ = std::remove_cv_t<std::remove_reference_t<U>>;
     using V_ = std::remove_cv_t<std::remove_reference_t<V>>;
-    using config_type = typename detail::first_tensor_type_t<T_,U_,V_>::config_type;
+    using config_type = typename detail::common_config_type_t<T_,U_,V_>;
     return gtensor::tensor_operators_selector_t<config_type>::where(std::forward<T>(t),std::forward<U>(u),std::forward<V>(v));
 }
 
@@ -464,14 +464,14 @@ template<typename T, typename U, typename Tol, typename EqualNan = std::false_ty
 inline auto isclose(T&& t, U&& u, Tol relative_tolerance, Tol absolute_tolerance, EqualNan equal_nan = EqualNan{}){
     using T_ = std::remove_cv_t<std::remove_reference_t<T>>;
     using U_ = std::remove_cv_t<std::remove_reference_t<U>>;
-    using config_type = typename detail::first_tensor_type_t<T_,U_>::config_type;
+    using config_type = detail::common_config_type_t<T_,U_>;
     return gtensor::tensor_operators_selector_t<config_type>::isclose(std::forward<T>(t),std::forward<U>(u),relative_tolerance,absolute_tolerance,equal_nan);
 }
 template<typename T, typename U, typename EqualNan = std::false_type>
 inline auto isclose(T&& t, U&& u, EqualNan equal_nan = EqualNan{}){
     using T_ = std::remove_cv_t<std::remove_reference_t<T>>;
     using U_ = std::remove_cv_t<std::remove_reference_t<U>>;
-    using config_type = typename detail::first_tensor_type_t<T_,U_>::config_type;
+    using config_type = detail::common_config_type_t<T_,U_>;
     return gtensor::tensor_operators_selector_t<config_type>::isclose(std::forward<T>(t),std::forward<U>(u),equal_nan);
 }
 

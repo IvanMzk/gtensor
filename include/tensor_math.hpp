@@ -465,7 +465,7 @@ private:
 #define GTENSOR_TENSOR_MATH_ROUTINE(NAME,F)\
 template<typename...Args>\
 auto NAME(Args&&...args){\
-    using config_type = typename detail::first_tensor_type_t<std::remove_cv_t<std::remove_reference_t<Args>>...>::config_type;\
+    using config_type = typename detail::common_config_type_t<std::remove_cv_t<std::remove_reference_t<Args>>...>;\
     return tensor_math_selector_t<config_type>::F(std::forward<Args>(args)...);\
 }
 

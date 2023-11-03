@@ -29,7 +29,7 @@ struct indexing;
 //module selectors
 //to dispatch library routine to custom module, specialization of appropriate selector should be added
 //all library interface free functions pass valid config_type of its tensor argument for Config template type parameter
-//in most cases it is not used, but may be used to do dispatch based on particular Config type
+//in most cases it is not used, but may be used to dispatch based on particular Config type
 
 //storage implementation factory selector
 //expected Config, element type and layout tag as template type arguments
