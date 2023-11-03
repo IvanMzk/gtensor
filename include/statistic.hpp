@@ -155,6 +155,8 @@ private:
                     }else{
                         if (r.second==0){
                             throw value_error("cant reduce zero size dimension without initial value");
+                        }else{
+                            return r.first/static_cast<const res_type&>(r.second);
                         }
                     }
                 }
@@ -223,24 +225,34 @@ private:
         template<typename Policy, typename...Ts,typename Axes>
         auto operator()(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims){
             using order = typename basic_tensor<Ts...>::order;
-            using value_type = typename basic_tensor<Ts...>::value_type;
+            using element_type = typename basic_tensor<Ts...>::element_type;
             using config_type = typename basic_tensor<Ts...>::config_type;
-            using integral_type = gtensor::math::make_integral_t<value_type>;
-            using res_type = gtensor::math::make_floating_point_like_t<value_type>;
+            using integral_type = gtensor::math::make_integral_t<element_type>;
             auto mean_ = nanmean_binary{}(policy,t,axes,true);
-            auto squared_diff = [](const auto& e, const auto& m){const auto d=e-m; return d*d;};
+            auto squared_diff = [](const auto& e, const auto& m){
+                if constexpr (math::is_complex_v<element_type>){
+                    const auto d=statistic_reduce_operations::abs_helper(e-m);
+                    return d*d;
+                }else{
+                    const auto d=e-m;
+                    return d*d;
+                }
+            };
             auto make_tuple = [](const auto& e1,const auto& e2){return std::make_tuple(e1,e2);};
             auto tmp = gtensor::n_operator(make_tuple,t,gtensor::n_operator(squared_diff,t,std::move(mean_)));
+            using res_value_type = std::tuple_element_t<1,typename decltype(tmp)::value_type>;
             using f_type = nan_ignoring_counting_plus<integral_type>;
-            auto sum = reduce_binary(tmp,axes,f_type{},keep_dims,std::make_pair(res_type{0},integral_type{0}));
-            tensor<res_type,order,config_type> res(sum.shape());
+            auto sum = reduce_binary(tmp,axes,f_type{},keep_dims,std::make_pair(res_value_type{0},integral_type{0}));
+            tensor<res_value_type,order,config_type> res(sum.shape());
             std::transform(sum.begin(),sum.end(),res.begin(),
                 [](const auto& r){
-                    if constexpr (gtensor::math::numeric_traits<res_type>::has_nan()){
-                        return r.first/static_cast<const res_type&>(r.second);
+                    if constexpr (gtensor::math::numeric_traits<res_value_type>::has_nan()){
+                        return r.first/static_cast<const res_value_type&>(r.second);
                     }else{
                         if (r.second==0){
                             throw value_error("cant reduce zero size dimension without initial value");
+                        }else{
+                            return r.first/static_cast<const res_value_type&>(r.second);
                         }
                     }
                 }

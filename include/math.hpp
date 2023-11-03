@@ -23,12 +23,15 @@ namespace math{
 template<typename> inline constexpr bool is_complex_v = false;
 template<typename T> inline constexpr bool is_complex_v<std::complex<T>> = true;
 
-template<typename, typename> struct default_numeric_traits;
+template<typename, typename> struct numeric_traits_spec;
+template<typename> struct numeric_traits;
 
 //arbitrary type
 template<typename T>
-struct default_numeric_traits<T,std::false_type>
+struct numeric_traits_spec<T,std::false_type>
 {
+    using floating_point_type = double;
+    using integral_type = long long int;
     static constexpr bool is_specialized(){return false;}
     static constexpr bool is_integral(){return false;}
     static constexpr bool is_floating_point(){return false;}
@@ -40,10 +43,32 @@ struct default_numeric_traits<T,std::false_type>
     static constexpr T epsilon(){static_assert(detail::always_false<T>,"not defined");}
     static constexpr T nan(){static_assert(detail::always_false<T>,"not defined");}
 };
+//std::complex
+template<typename T>
+struct numeric_traits_spec<std::complex<T>,std::false_type>
+{
+    using floating_point_type = typename numeric_traits<T>::floating_point_type;
+    using integral_type = typename numeric_traits<T>::integral_type;
+    static constexpr bool is_specialized(){return true;}
+    static constexpr bool is_integral(){return false;}
+    static constexpr bool is_floating_point(){return false;}
+    static constexpr bool is_iec559(){return false;}
+    static constexpr bool has_nan(){return numeric_traits<T>::has_nan();}
+    static constexpr std::complex<T> lowest(){static_assert(detail::always_false<T>,"not defined");}
+    static constexpr std::complex<T> min(){static_assert(detail::always_false<T>,"not defined");}
+    static constexpr std::complex<T> max(){static_assert(detail::always_false<T>,"not defined");}
+    static constexpr std::complex<T> epsilon(){static_assert(detail::always_false<T>,"not defined");}
+    static constexpr std::complex<T> nan(){
+        static_assert(has_nan(),"not defined");
+        return std::complex<T>{numeric_traits<T>::nan()};
+    }
+};
 //arithmetic type
 template<typename T>
-struct default_numeric_traits<T,std::true_type>
+struct numeric_traits_spec<T,std::true_type>
 {
+    using floating_point_type = double;
+    using integral_type = long long int;
     static constexpr bool is_specialized(){return true;}
     static constexpr bool is_integral(){return std::is_integral_v<T>;}
     static constexpr bool is_floating_point(){return std::is_floating_point_v<T>;}
@@ -62,14 +87,7 @@ struct default_numeric_traits<T,std::true_type>
     }
 };
 
-//should be specialized for other hierarchy of types
-template<typename T> struct numeric_traits : default_numeric_traits<T,typename std::is_arithmetic<T>::type>
-{
-    //default types for numeric_traits of arithmetic types
-    //may be changed in specialization when other hierarchy of data types is used
-    using floating_point_type = double;
-    using integral_type = long long int;
-};
+template<typename T> struct numeric_traits : numeric_traits_spec<T,typename std::is_arithmetic<T>::type>{};
 
 //make type similar to T, but with floating-point semantic
 //primary template - considers T scalar
