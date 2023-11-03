@@ -144,10 +144,12 @@ std::cout<<std::endl<<b.cumprod();  //[(4){[2,1,1,0],[4,8,2,3],[24,40,11,17],[64
 ## Modules customization
 
 Most of GTensor library functionality is implemented in modules.
-Module is defined in separate header file, in `gtensor` namespace.
+Each module has associated header file, to be included to use module.
+Modules are defined in `gtensor` namespace.
+
 Module contains module interface and module implementation.
 
-Module interface is set of free functions template which use traits defined in `module_selector.hpp` header file to dispatch call to right implementation.
+Module interface is set of free functions template which use traits defined in `module_selector.hpp` header file to dispatch call to right module implementation.
 
 Module implementation is defined in class or class template which provides public member functions interface to be called from module interface free function.
 
@@ -269,4 +271,4 @@ struct evaluating_expression_template_operator : expression_template_operator{
 };
 ```
 
-Any other functionality, including operators, can be customized in this way to meet requirements.
+Any other functionality, including operators, can be customized in ways described above to meet requirements.
