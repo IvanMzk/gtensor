@@ -171,15 +171,8 @@ private:
     struct var_binary{
         template<typename Policy, typename...Ts,typename Axes>
         auto operator()(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims){
-            using element_type = typename basic_tensor<Ts...>::element_type;
             auto squared_diff = [](const auto& e, const auto& m){
-                if constexpr (math::is_complex_v<element_type>){
-                    const auto d=statistic_reduce_operations::abs_helper(e-m);
-                    return d*d;
-                }else{
-                    const auto d=e-m;
-                    return d*d;
-                }
+                return statistic_reduce_operations::squared_diff(e,m);
             };
             auto mean_ = mean_binary{}(policy,t,axes,true);
             auto tmp = gtensor::n_operator(squared_diff,t,std::move(mean_));
@@ -230,13 +223,7 @@ private:
             using integral_type = gtensor::math::make_integral_t<element_type>;
             auto mean_ = nanmean_binary{}(policy,t,axes,true);
             auto squared_diff = [](const auto& e, const auto& m){
-                if constexpr (math::is_complex_v<element_type>){
-                    const auto d=statistic_reduce_operations::abs_helper(e-m);
-                    return d*d;
-                }else{
-                    const auto d=e-m;
-                    return d*d;
-                }
+                return statistic_reduce_operations::squared_diff(e,m);
             };
             auto make_tuple = [](const auto& e1,const auto& e2){return std::make_tuple(e1,e2);};
             auto tmp = gtensor::n_operator(make_tuple,t,gtensor::n_operator(squared_diff,t,std::move(mean_)));
@@ -277,7 +264,7 @@ private:
     struct nanstdev_binary{
         template<typename Policy, typename...Ts,typename Axes>
         auto operator()(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims){
-            return sqrt(nanvar_binary{}(policy,t,axes,keep_dims));
+            return sqrt(nanvar_binary{}(policy,t,axes,keep_dims)).eval(policy);
         }
         template<typename Policy, typename...Ts>
         auto operator()(Policy policy, const basic_tensor<Ts...>& t, bool keep_dims){

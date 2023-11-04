@@ -239,9 +239,14 @@ template<typename T, typename U> bool isless(T t, U u){return std::isless(t,u);}
 template<typename T, typename U> bool islessequal(T t, U u){return std::islessequal(t,u);}
 template<typename T, typename U> bool islessgreater(T t, U u){return std::islessgreater(t,u);}
 
+template<typename T>
+auto norm(const T& t){
+    return abs(t);
+}
+
 template<typename T, typename U, typename Tol>
 bool isclose(const T& t, const U& u, const Tol relative_tolerance, const Tol absolute_tolerance){
-    return t==u ? true : math::abs(t-u) < absolute_tolerance + relative_tolerance*(math::abs(t)+math::abs(u));
+    return t==u ? true : norm(t-u) < absolute_tolerance + relative_tolerance*(norm(t)+norm(u));
 }
 
 template<typename T, typename U>

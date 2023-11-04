@@ -71,6 +71,12 @@ Containers requirements are different.
 
 Constructors that takes **iterators range**, **size and value** will be considered if defined.
 
+The same with `data()` member function, if it is defined then tensor will provide access to underlaying data buffer.
+
+In general `storage` is abstraction which must provide interface to address data elements using flat index.
+Flat index must have semantic of signed integral type, its type must be provided using `difference_type` type alias.
+Implementation doesn't matter, data elements may be stored on file system, in memory, on network or database or something else, provided above requirements are met.
+
 `shape` and `container` generally should provide interface like `std::vector`.
 
 ## Data type customization
@@ -82,6 +88,8 @@ Next example shows possible implementation of `matrix22` class template that rep
 In `matrix22` implementation we will use `custom_tensor` defined in previous section.
 
 ```cpp
+namespace mat22{
+
 template<typename T>
 class matrix22
 {
@@ -110,19 +118,34 @@ auto& operator<<(std::ostream& os, const matrix22<T>& m){
     return os<<"["<<m.base().element(0,0)<<","<<m.base().element(0,1)<<","<<m.base().element(1,0)<<","<<m.base().element(1,1)<<"]";
 }
 template<typename T>
+bool operator==(const matrix22<T>& a, const matrix22<T>& b){
+    return a.base()==b.base();
+}
+template<typename T>
 auto operator+(const matrix22<T>& a, const matrix22<T>& b){
     return matrix22<T>(a.base()+b.base());
+}
+template<typename T>
+auto operator-(const matrix22<T>& a, const matrix22<T>& b){
+    return matrix22<T>(a.base()-b.base());
 }
 template<typename T>
 auto operator*(const matrix22<T>& a, const matrix22<T>& b){
     return matrix22<T>(matmul(a.base(),b.base()));
 }
+template<typename T>
+auto norm(const matrix22<T>& m){
+    const auto& b = m.base();
+    return std::max({std::abs(b.element(0,0)),std::abs(b.element(0,1)),std::abs(b.element(1,0)),std::abs(b.element(1,1))});
+}
+
+}   //end of namespace mat22
 ```
 
 Now we can use `matrix22` as tensor's element data type:
 
 ```cpp
-using value_type = matrix22<double>;
+using value_type = mat22::matrix22<double>;
 using tensor_type = gtensor::tensor<value_type>;
 
 tensor_type a{{value_type(1,0,2,1),value_type(2,1,1,0)},{value_type(1,4,2,3),value_type(3,3,2,2)}};
@@ -139,6 +162,8 @@ std::cout<<std::endl<<a.sum();  //[(){[7,8,7,6]}]
 std::cout<<std::endl<<b.prod(); //[(){[64,152,28,67]}]
 std::cout<<std::endl<<a.cumsum();   //[(4){[1,0,2,1],[3,1,3,1],[4,5,5,4],[7,8,7,6]}]
 std::cout<<std::endl<<b.cumprod();  //[(4){[2,1,1,0],[4,8,2,3],[24,40,11,17],[64,152,28,67]}]
+std::cout<<std::endl<<(a==b);   //0
+std::cout<<std::endl<<tensor_close(a,a);    //1
 ```
 
 ## Modules customization

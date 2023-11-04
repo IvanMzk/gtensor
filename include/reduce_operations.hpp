@@ -429,7 +429,7 @@ struct nanmean
 template<typename T>
 static auto abs_helper(const T& t){
     if constexpr (gtensor::detail::is_tensor_v<T>){
-        return abs(t).copy();
+        return abs(t).eval();
     }else{
         return gtensor::math::abs(t);
     }
@@ -438,9 +438,20 @@ static auto abs_helper(const T& t){
 template<typename T>
 auto sqrt_helper(const T& t){
     if constexpr (gtensor::detail::is_tensor_v<T>){
-        return sqrt(t).copy();
+        return sqrt(t).eval();
     }else{
         return gtensor::math::sqrt(t);
+    }
+}
+
+template<typename T, typename U>
+auto squared_diff(const T& e, const U& m){
+    if constexpr (math::is_complex_v<detail::element_type_t<T>>){
+        const auto d = abs_helper(e-m);
+        return d*d;
+    }else{
+        const auto d = e-m;
+        return d*d;
     }
 }
 
@@ -449,25 +460,17 @@ struct var
     template<typename It>
     auto operator()(It first, It last){
         using value_type = typename std::iterator_traits<It>::value_type;
-        using element_type = detail::element_type_t<value_type>;
-        using fp_type = gtensor::math::make_floating_point_like_t<element_type>;
-        using res_type = detail::copy_type_t<typename std::iterator_traits<It>::value_type,fp_type>;
+        using mean_type = decltype(mean{}(first,last));
+        using res_type = detail::copy_type_t<decltype(squared_diff(std::declval<value_type>(),std::declval<mean_type>()))>;
 
         if (first == last){
             return reduce_empty<res_type>();
         }
-        const auto n = static_cast<fp_type>(last-first);
+        const auto n = last-first;
         const auto mean_ = mean{}(first,last);
-
         auto res = std::accumulate(first,last,res_type{0},
             [mean_](const auto& r, const auto& e){
-                if constexpr (math::is_complex_v<element_type>){
-                    const auto d = abs_helper(e-mean_);
-                    return r+d*d;
-                }else{
-                    const auto d = e-mean_;
-                    return r+d*d;
-                }
+                return r+squared_diff(e,mean_);
             }
         );
         res/=n;
@@ -481,7 +484,9 @@ struct nanvar
     auto operator()(It first, It last){
         using value_type = typename std::iterator_traits<It>::value_type;
         using difference_type = typename std::iterator_traits<It>::difference_type;
-        using res_type = gtensor::math::make_floating_point_like_t<value_type>;
+        using mean_type = decltype(nanmean{}(first,last));
+        using res_type = decltype(squared_diff(std::declval<value_type>(),std::declval<mean_type>()));
+
         if (first == last){
             return reduce_empty<res_type>();
         }
@@ -492,15 +497,14 @@ struct nanvar
                 if (gtensor::math::isnan(e)){
                     return r;
                 }else{
-                    const auto d = e-nanmean_;
-                    return std::make_pair(r.first+d*d,r.second+1);
+                    return std::make_pair(r.first+squared_diff(e,nanmean_),r.second+1);
                 }
             }
         );
         if (res.second==0){
             return gtensor::math::numeric_traits<res_type>::nan();
         }else{
-            return res.first / static_cast<const res_type&>(res.second);
+            return res.first/res.second;
         }
     }
 };
@@ -517,7 +521,7 @@ struct nanstdev
 {
     template<typename It>
     auto operator()(It first, It last){
-        return gtensor::math::sqrt(nanvar{}(first,last));
+        return sqrt_helper(nanvar{}(first,last));
     }
 };
 
