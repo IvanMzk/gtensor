@@ -127,7 +127,7 @@ TEST_CASE("benchmark_statistic","[benchmark_tensor]")
 
     auto builder = [](auto& t_){
         generate_lehmer(t_.begin(),t_.end(),[](const auto& e){return e%5;},123);
-        return t_;
+        return t_.clone_shallow();
     };
 
     auto nan_builder = [](auto& t_){
@@ -138,7 +138,7 @@ TEST_CASE("benchmark_statistic","[benchmark_tensor]")
             }
             ,123
         );
-        return t_;
+        return t_.clone_shallow();
     };
 
     auto triv_expression_builder = [](auto& t_){

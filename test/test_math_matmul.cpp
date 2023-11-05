@@ -14,112 +14,68 @@
 #include "tensor.hpp"
 
 TEMPLATE_TEST_CASE("test_math_matmul","test_math",
-    gtensor::config::c_order,
-    gtensor::config::f_order
+    (std::tuple<gtensor::config::c_order,gtensor::config::c_order>),
+    (std::tuple<gtensor::config::f_order,gtensor::config::f_order>),
+    (std::tuple<gtensor::config::c_order,gtensor::config::f_order>),
+    (std::tuple<gtensor::config::f_order,gtensor::config::c_order>)
 )
 {
-    using layout = TestType;
+    using layout1 = std::tuple_element_t<0,TestType>;
+    using layout2 = std::tuple_element_t<1,TestType>;
     using value_type = double;
-    using tensor_type = gtensor::tensor<value_type,layout>;
+    using tensor_type1 = gtensor::tensor<value_type,layout1>;
+    using tensor_type2 = gtensor::tensor<value_type,layout2>;
+    using tensor_type = gtensor::tensor<value_type>;
     using gtensor::matmul;
     using helpers_for_testing::apply_by_element;
 
     //0ten_a,1ten_b,2expected
     auto test_data = std::make_tuple(
         //1d x 1d
-        std::make_tuple(tensor_type{},tensor_type{},tensor_type(0)),
-        std::make_tuple(tensor_type{1,2,3,4},tensor_type{5,6,7,8},tensor_type(70)),
+        std::make_tuple(tensor_type1{},tensor_type2{},tensor_type(0)),
+        std::make_tuple(tensor_type1{1,2,3,4},tensor_type2{5,6,7,8},tensor_type(70)),
         //1d x nd
-        std::make_tuple(tensor_type{1,2,3},tensor_type{{1,2,3,4},{4,5,6,7},{7,8,9,10}},tensor_type{30,36,42,48}),
-        std::make_tuple(tensor_type{1,2,3},tensor_type{{{1,2,3,4},{4,5,6,7},{7,8,9,10}}},tensor_type{{30,36,42,48}}),
-        std::make_tuple(tensor_type{1,2,3},tensor_type{{{1,2,3,4},{4,5,6,7},{7,8,9,10}},{{2,3,4,5},{5,6,7,8},{8,9,10,11}}},tensor_type{{30,36,42,48},{36,42,48,54}}),
-        std::make_tuple(tensor_type{1,2,3},tensor_type{{{{1,2,3,4},{4,5,6,7},{7,8,9,10}}},{{{2,3,4,5},{5,6,7,8},{8,9,10,11}}}},tensor_type{{{30,36,42,48}},{{36,42,48,54}}}),
-        std::make_tuple(tensor_type{2,4},
-            tensor_type{{{{0,0,1},{4,1,4}},{{3,4,0},{0,4,0}}},{{{3,1,4},{2,0,0}},{{1,1,4},{2,3,2}}},{{{2,2,3},{1,3,1}},{{3,2,3},{1,1,0}}}},
+        std::make_tuple(tensor_type1{1,2,3},tensor_type2{{1,2,3,4},{4,5,6,7},{7,8,9,10}},tensor_type{30,36,42,48}),
+        std::make_tuple(tensor_type1{1,2,3},tensor_type2{{{1,2,3,4},{4,5,6,7},{7,8,9,10}}},tensor_type{{30,36,42,48}}),
+        std::make_tuple(tensor_type1{1,2,3},tensor_type2{{{1,2,3,4},{4,5,6,7},{7,8,9,10}},{{2,3,4,5},{5,6,7,8},{8,9,10,11}}},tensor_type{{30,36,42,48},{36,42,48,54}}),
+        std::make_tuple(tensor_type1{1,2,3},tensor_type2{{{{1,2,3,4},{4,5,6,7},{7,8,9,10}}},{{{2,3,4,5},{5,6,7,8},{8,9,10,11}}}},tensor_type{{{30,36,42,48}},{{36,42,48,54}}}),
+        std::make_tuple(tensor_type1{2,4},
+            tensor_type2{{{{0,0,1},{4,1,4}},{{3,4,0},{0,4,0}}},{{{3,1,4},{2,0,0}},{{1,1,4},{2,3,2}}},{{{2,2,3},{1,3,1}},{{3,2,3},{1,1,0}}}},
             tensor_type{{{16,4,18},{6,24,0}},{{14,2,8},{10,14,16}},{{8,16,10},{10,8,6}}}
         ),
         //nd x 1d
-        std::make_tuple(tensor_type{{1,2,3,4},{4,5,6,7},{7,8,9,10}},tensor_type{4,3,2,1},tensor_type{20,50,80}),
-        std::make_tuple(tensor_type{{{1,2,3,4},{4,5,6,7},{7,8,9,10}}},tensor_type{4,3,2,1},tensor_type{{20,50,80}}),
-        std::make_tuple(tensor_type{{{1,2,3,4},{4,5,6,7},{7,8,9,10}},{{2,3,4,5},{5,6,7,8},{8,9,10,11}}},tensor_type{4,3,2,1},tensor_type{{20,50,80},{30,60,90}}),
-        std::make_tuple(tensor_type{{{{1,2,3,4},{4,5,6,7},{7,8,9,10}}},{{{2,3,4,5},{5,6,7,8},{8,9,10,11}}}},tensor_type{4,3,2,1},tensor_type{{{20,50,80}},{{30,60,90}}}),
-        std::make_tuple(tensor_type{{{{0,0,1},{4,1,4}},{{3,4,0},{0,4,0}}},{{{3,1,4},{2,0,0}},{{1,1,4},{2,3,2}}},{{{2,2,3},{1,3,1}},{{3,2,3},{1,1,0}}}},
-            tensor_type{2,0,3},
+        std::make_tuple(tensor_type1{{1,2,3,4},{4,5,6,7},{7,8,9,10}},tensor_type2{4,3,2,1},tensor_type{20,50,80}),
+        std::make_tuple(tensor_type1{{{1,2,3,4},{4,5,6,7},{7,8,9,10}}},tensor_type2{4,3,2,1},tensor_type{{20,50,80}}),
+        std::make_tuple(tensor_type1{{{1,2,3,4},{4,5,6,7},{7,8,9,10}},{{2,3,4,5},{5,6,7,8},{8,9,10,11}}},tensor_type2{4,3,2,1},tensor_type{{20,50,80},{30,60,90}}),
+        std::make_tuple(tensor_type1{{{{1,2,3,4},{4,5,6,7},{7,8,9,10}}},{{{2,3,4,5},{5,6,7,8},{8,9,10,11}}}},tensor_type2{4,3,2,1},tensor_type{{{20,50,80}},{{30,60,90}}}),
+        std::make_tuple(tensor_type1{{{{0,0,1},{4,1,4}},{{3,4,0},{0,4,0}}},{{{3,1,4},{2,0,0}},{{1,1,4},{2,3,2}}},{{{2,2,3},{1,3,1}},{{3,2,3},{1,1,0}}}},
+            tensor_type2{2,0,3},
             tensor_type{{{3,20},{6,0}},{{18,4},{14,10}},{{13,5},{15,2}}}
         ),
         //nd x nd
-        std::make_tuple(tensor_type{{1,2,3}},tensor_type{{7,8,1,2},{2,3,4,5},{5,6,8,9}},tensor_type{{26,32,33,39}}),
-        std::make_tuple(tensor_type{{7,8,1,2},{2,3,4,5},{5,6,8,9}},tensor_type{{1},{0},{2},{2}},tensor_type{{13},{20},{39}}),
-        std::make_tuple(tensor_type{{{1,2}}},
-            tensor_type{{{{0,0,1},{4,1,4}},{{3,4,0},{0,4,0}}},{{{3,1,4},{2,0,0}},{{1,1,4},{2,3,2}}},{{{2,2,3},{1,3,1}},{{3,2,3},{1,1,0}}}},
+        std::make_tuple(tensor_type1{{1,2,3}},tensor_type2{{7,8,1,2},{2,3,4,5},{5,6,8,9}},tensor_type{{26,32,33,39}}),
+        std::make_tuple(tensor_type1{{7,8,1,2},{2,3,4,5},{5,6,8,9}},tensor_type2{{1},{0},{2},{2}},tensor_type{{13},{20},{39}}),
+        std::make_tuple(tensor_type1{{{1,2}}},
+            tensor_type2{{{{0,0,1},{4,1,4}},{{3,4,0},{0,4,0}}},{{{3,1,4},{2,0,0}},{{1,1,4},{2,3,2}}},{{{2,2,3},{1,3,1}},{{3,2,3},{1,1,0}}}},
             tensor_type{{{{8,2,9}},{{3,12,0}}},{{{7,1,4}},{{5,7,8}}},{{{4,8,5}},{{5,4,3}}}}
         ),
-        std::make_tuple(tensor_type{{{{0,0,1},{4,1,4}},{{3,4,0},{0,4,0}}},{{{3,1,4},{2,0,0}},{{1,1,4},{2,3,2}}},{{{2,2,3},{1,3,1}},{{3,2,3},{1,1,0}}}},
-            tensor_type{{1},{0},{2}},
+        std::make_tuple(tensor_type1{{{{0,0,1},{4,1,4}},{{3,4,0},{0,4,0}}},{{{3,1,4},{2,0,0}},{{1,1,4},{2,3,2}}},{{{2,2,3},{1,3,1}},{{3,2,3},{1,1,0}}}},
+            tensor_type2{{1},{0},{2}},
             tensor_type{{{{2},{12}},{{3},{0}}},{{{11},{2}},{{9},{6}}},{{{8},{3}},{{9},{1}}}}
         ),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},tensor_type{{7,8,1,2},{2,3,4,5},{5,6,8,9}},tensor_type{{26,32,33,39},{68,83,72,87}}),
-        std::make_tuple(tensor_type{{1,2,3},{4,5,6}},tensor_type{{{1,2,3},{0,1,2},{2,3,4}},{{0,1,2},{3,4,5},{4,5,6}}},tensor_type{{{7,13,19},{16,31,46}},{{18,24,30},{39,54,69}}}),
-        std::make_tuple(tensor_type{{0,2},{3,2},{1,3},{2,2}},
-            tensor_type{{{{0,0,1},{4,1,4}},{{3,4,0},{0,4,0}}},{{{3,1,4},{2,0,0}},{{1,1,4},{2,3,2}}},{{{2,2,3},{1,3,1}},{{3,2,3},{1,1,0}}}},
+        std::make_tuple(tensor_type1{{1,2,3},{4,5,6}},tensor_type2{{7,8,1,2},{2,3,4,5},{5,6,8,9}},tensor_type{{26,32,33,39},{68,83,72,87}}),
+        std::make_tuple(tensor_type1{{1,2,3},{4,5,6}},tensor_type2{{{1,2,3},{0,1,2},{2,3,4}},{{0,1,2},{3,4,5},{4,5,6}}},tensor_type{{{7,13,19},{16,31,46}},{{18,24,30},{39,54,69}}}),
+        std::make_tuple(tensor_type1{{0,2},{3,2},{1,3},{2,2}},
+            tensor_type2{{{{0,0,1},{4,1,4}},{{3,4,0},{0,4,0}}},{{{3,1,4},{2,0,0}},{{1,1,4},{2,3,2}}},{{{2,2,3},{1,3,1}},{{3,2,3},{1,1,0}}}},
             tensor_type{{{{8,2,8},{8,2,11},{12,3,13},{8,2,10}},{{0,8,0},{9,20,0},{3,16,0},{6,16,0}}},{{{4,0,0},{13,3,12},{9,1,4},{10,2,8}},{{4,6,4},{7,9,16},{7,10,10},{6,8,12}}},{{{2,6,2},{8,12,11},{5,11,6},{6,10,8}},{{2,2,0},{11,8,9},{6,5,3},{8,6,6}}}}
         ),
-        std::make_tuple(tensor_type{{{{0,0,1},{4,1,4}},{{3,4,0},{0,4,0}}},{{{3,1,4},{2,0,0}},{{1,1,4},{2,3,2}}},{{{2,2,3},{1,3,1}},{{3,2,3},{1,1,0}}}},
-            tensor_type{{1,1,2,4},{4,2,3,4},{0,2,0,2}},
+        std::make_tuple(tensor_type1{{{{0,0,1},{4,1,4}},{{3,4,0},{0,4,0}}},{{{3,1,4},{2,0,0}},{{1,1,4},{2,3,2}}},{{{2,2,3},{1,3,1}},{{3,2,3},{1,1,0}}}},
+            tensor_type2{{1,1,2,4},{4,2,3,4},{0,2,0,2}},
             tensor_type{{{{0,2,0,2},{8,14,11,28}},{{19,11,18,28},{16,8,12,16}}},{{{7,13,9,24},{2,2,4,8}},{{5,11,5,16},{14,12,13,24}}},{{{10,12,10,22},{13,9,11,18}},{{11,13,12,26},{5,3,5,8}}}}
         ),
-        std::make_tuple(tensor_type{{{{0,0,1},{4,1,4}},{{3,4,0},{0,4,0}}},{{{3,1,4},{2,0,0}},{{1,1,4},{2,3,2}}},{{{2,2,3},{1,3,1}},{{3,2,3},{1,1,0}}}},
-            tensor_type{{{{2,2},{3,4},{1,1}}},{{{2,4},{2,2},{0,1}}},{{{4,2},{4,4},{4,1}}}},
+        std::make_tuple(tensor_type1{{{{0,0,1},{4,1,4}},{{3,4,0},{0,4,0}}},{{{3,1,4},{2,0,0}},{{1,1,4},{2,3,2}}},{{{2,2,3},{1,3,1}},{{3,2,3},{1,1,0}}}},
+            tensor_type2{{{{2,2},{3,4},{1,1}}},{{{2,4},{2,2},{0,1}}},{{{4,2},{4,4},{4,1}}}},
             tensor_type{{{{1,1},{15,16}},{{18,22},{12,16}}},{{{8,18},{4,8}},{{4,10},{10,16}}},{{{28,15},{20,15}},{{32,17},{8,6}}}}
-        )
-    );
-
-    auto test = [](const auto& t){
-        auto ten1 = std::get<0>(t);
-        auto ten2 = std::get<1>(t);
-        auto expected = std::get<2>(t);
-
-        auto result = matmul(ten1,ten2);
-        REQUIRE(result==expected);
-    };
-    apply_by_element(test,test_data);
-}
-
-TEST_CASE("test_math_matmul_different_layouts","test_math")
-{
-    using gtensor::config::c_order;
-    using gtensor::config::f_order;
-    using value_type = double;
-    using c_tensor_type = gtensor::tensor<value_type,c_order>;
-    using f_tensor_type = gtensor::tensor<value_type,f_order>;
-    using gtensor::matmul;
-    using helpers_for_testing::apply_by_element;
-
-    //0ten_a,1ten_b,2expected
-    auto test_data = std::make_tuple(
-        //1d x 1d
-        std::make_tuple(c_tensor_type{},f_tensor_type{},c_tensor_type(0)),
-        std::make_tuple(c_tensor_type{1,2,3,4},f_tensor_type{5,6,7,8},c_tensor_type(70)),
-        //1d x nd
-        std::make_tuple(c_tensor_type{1,2,3},f_tensor_type{{{1,2,3,4},{4,5,6,7},{7,8,9,10}},{{2,3,4,5},{5,6,7,8},{8,9,10,11}}},c_tensor_type{{30,36,42,48},{36,42,48,54}}),
-        std::make_tuple(f_tensor_type{2,4},
-            c_tensor_type{{{{0,0,1},{4,1,4}},{{3,4,0},{0,4,0}}},{{{3,1,4},{2,0,0}},{{1,1,4},{2,3,2}}},{{{2,2,3},{1,3,1}},{{3,2,3},{1,1,0}}}},
-            c_tensor_type{{{16,4,18},{6,24,0}},{{14,2,8},{10,14,16}},{{8,16,10},{10,8,6}}}
-        ),
-        //nd x 1d
-        std::make_tuple(c_tensor_type{{{{1,2,3,4},{4,5,6,7},{7,8,9,10}}},{{{2,3,4,5},{5,6,7,8},{8,9,10,11}}}},f_tensor_type{4,3,2,1},c_tensor_type{{{20,50,80}},{{30,60,90}}}),
-        std::make_tuple(f_tensor_type{{{{0,0,1},{4,1,4}},{{3,4,0},{0,4,0}}},{{{3,1,4},{2,0,0}},{{1,1,4},{2,3,2}}},{{{2,2,3},{1,3,1}},{{3,2,3},{1,1,0}}}},
-            c_tensor_type{2,0,3},
-            c_tensor_type{{{3,20},{6,0}},{{18,4},{14,10}},{{13,5},{15,2}}}
-        ),
-        //nd x nd
-        std::make_tuple(c_tensor_type{{{{0,0,1},{4,1,4}},{{3,4,0},{0,4,0}}},{{{3,1,4},{2,0,0}},{{1,1,4},{2,3,2}}},{{{2,2,3},{1,3,1}},{{3,2,3},{1,1,0}}}},
-            f_tensor_type{{1,1,2,4},{4,2,3,4},{0,2,0,2}},
-            c_tensor_type{{{{0,2,0,2},{8,14,11,28}},{{19,11,18,28},{16,8,12,16}}},{{{7,13,9,24},{2,2,4,8}},{{5,11,5,16},{14,12,13,24}}},{{{10,12,10,22},{13,9,11,18}},{{11,13,12,26},{5,3,5,8}}}}
-        ),
-        std::make_tuple(f_tensor_type{{{{0,0,1},{4,1,4}},{{3,4,0},{0,4,0}}},{{{3,1,4},{2,0,0}},{{1,1,4},{2,3,2}}},{{{2,2,3},{1,3,1}},{{3,2,3},{1,1,0}}}},
-            c_tensor_type{{{{2,2},{3,4},{1,1}}},{{{2,4},{2,2},{0,1}}},{{{4,2},{4,4},{4,1}}}},
-            c_tensor_type{{{{1,1},{15,16}},{{18,22},{12,16}}},{{{8,18},{4,8}},{{4,10},{10,16}}},{{{28,15},{20,15}},{{32,17},{8,6}}}}
         )
     );
 

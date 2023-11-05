@@ -307,8 +307,9 @@ struct tensor_math
         using value_type2 = typename tensor_type2::value_type;
         using order1 = typename tensor_type1::order;
         using order2 = typename tensor_type2::order;
+        using res_order = std::conditional_t<std::is_same_v<order1,order2>,order1,gtensor::config::c_order>;
         using config_type = typename tensor_type1::config_type;
-        using res_type = detail::tensor_copy_type_t<std::decay_t<decltype(std::declval<value_type1>()*std::declval<value_type2>())>,order1,config_type>;
+        using res_type = detail::tensor_copy_type_t<std::decay_t<decltype(std::declval<value_type1>()*std::declval<value_type2>())>,res_order,config_type>;
         using res_value_type = typename res_type::value_type;
 
         const auto& shape1 = t1.shape();
@@ -317,17 +318,17 @@ struct tensor_math
         const auto dim1 = detail::make_dim(shape1);
         const auto dim2 = detail::make_dim(shape2);
         if (dim1==1){
-            if (dim2==1){   //(3,) x (3,)
+            if (dim2==1){   //(n,) x (n,)
                 auto a1 = t1.traverse_order_adapter(order1{});
                 auto a2 = t2.traverse_order_adapter(order2{});
                 return res_type(std::inner_product(a1.begin(),a1.end(),a2.begin(),res_value_type{0}));
-            }else{  //(3,) x (...,3,4)
+            }else{  //(n,) x (...,n,m)
                 return matmul_1d_helper<res_type>(t1,t2,true);
             }
         }else{
-            if (dim2==1){   //(...,2,3) x (3,)
+            if (dim2==1){   //(...,n,m) x (m,)
                 return matmul_1d_helper<res_type>(t2,t1,false);
-            }else{  //(...,2,3) x (...,3,4)
+            }else{  //(...,n,m) x (...,m,k)
                 return matmul_nd_helper<res_type>(t1,t2);
             }
         }
@@ -355,6 +356,7 @@ private:
         using order = typename ResT::order;
         using config_type = typename ResT::config_type;
         using shape_type = typename ResT::shape_type;
+        using order_nd = typename basic_tensor<Us...>::order;
 
         const auto& t_nd_shape = t_nd.shape();
         const auto t_nd_dim = t_nd.dim();
@@ -374,26 +376,68 @@ private:
         const auto inner_size = t_nd_shape[inner_axis];
         const auto outer_size = t_nd_shape[outer_axis];
 
-        do{
-            auto w_nd = nd_tr.walker();
-            auto w_res = res_tr.walker();
+        auto matmul_nd_right_c = [res_axis](auto& res_tr, auto& nd_tr, auto& w_1d, const auto& inner_axis, const auto& outer_axis, const auto& inner_size, const auto& outer_size){
+            do{
+                auto w_nd = nd_tr.walker();
+                auto w_res = res_tr.walker();
 
-            for (auto i=outer_size;;--i){
-                for (auto j=inner_size;;--j){
-                    *w_res=*w_res+*w_nd**w_1d;
-                    if (j==1) break;
+                for (auto i=inner_size;;--i){
+                    const auto e_1d = *w_1d;
+                    for (auto j=outer_size;;--j){
+                        decltype(auto) res = *w_res;
+                        res=res+*w_nd*e_1d;
+                        if (j==1) break;
+                        w_nd.step(outer_axis);
+                        w_res.step(res_axis);
+                    }
+                    w_nd.reset_back(outer_axis);
+                    w_res.reset_back(res_axis);
+                    if (i==1) break;
                     w_nd.step(inner_axis);
                     w_1d.step(0);
                 }
-                w_nd.reset_back(inner_axis);
-                w_1d.reset_back(0);
-                if (i==1) break;
-                w_nd.step(outer_axis);
-                w_res.step(res_axis);
-            }
+                w_1d.reset_back();
+                nd_tr.template next<order>();
+            }while(res_tr.template next<order>());
+        };
 
-            nd_tr.template next<order>();
-        }while(res_tr.template next<order>());
+        auto matmul_nd_right_f = [res_axis](auto& res_tr, auto& nd_tr, auto& w_1d, const auto& inner_axis, const auto& outer_axis, const auto& inner_size, const auto& outer_size){
+            do{
+                auto w_nd = nd_tr.walker();
+                auto w_res = res_tr.walker();
+
+                for (auto i=outer_size;;--i){
+                    decltype(auto) res = *w_res;
+                    for (auto j=inner_size;;--j){
+                        res=res+*w_nd**w_1d;
+                        if (j==1) break;
+                        w_nd.step(inner_axis);
+                        w_1d.step(0);
+                    }
+                    w_nd.reset_back(inner_axis);
+                    w_1d.reset_back(0);
+                    if (i==1) break;
+                    w_nd.step(outer_axis);
+                    w_res.step(res_axis);
+                }
+                nd_tr.template next<order>();
+            }while(res_tr.template next<order>());
+        };
+
+        if constexpr (std::is_same_v<order_nd,gtensor::config::c_order>){
+            if (is_1d_left){
+                matmul_nd_right_c(res_tr,nd_tr,w_1d,inner_axis,outer_axis,inner_size,outer_size);
+            }else{
+                matmul_nd_right_f(res_tr,nd_tr,w_1d,inner_axis,outer_axis,inner_size,outer_size);
+            }
+        }else{
+            if (is_1d_left){
+                matmul_nd_right_f(res_tr,nd_tr,w_1d,inner_axis,outer_axis,inner_size,outer_size);
+            }else{
+                matmul_nd_right_c(res_tr,nd_tr,w_1d,inner_axis,outer_axis,inner_size,outer_size);
+
+            }
+        }
         return res;
     }
 
@@ -404,6 +448,10 @@ private:
         using config_type = typename res_type::config_type;
         using shape_type = typename res_type::shape_type;
         using order = typename res_type::order;
+        using order1 = typename basic_tensor<Ts...>::order;
+        using order2 = typename basic_tensor<Us...>::order;
+        using gtensor::config::c_order;
+        using gtensor::config::f_order;
 
         const auto& shape1 = t1.shape();
         const auto& shape2 = t2.shape();
@@ -419,40 +467,124 @@ private:
         auto tr1 = walker_forward_range_traverser<config_type,decltype(t1.create_walker(res_dim))>{res_shape,t1.create_walker(res_dim),0,res_dim-2};
         auto tr2 = walker_forward_range_traverser<config_type,decltype(t2.create_walker(res_dim))>{res_shape,t2.create_walker(res_dim),0,res_dim-2};
         auto res_tr = walker_forward_range_traverser<config_type,decltype(res.create_walker(res_dim))>{res_shape,res.create_walker(res_dim),0,res_dim-2};
-
-        const auto i_axis = res_dim-2;
-        const auto j_axis = res_dim-1;
         const auto k = *(shape1.end()-1);
-        const auto m = res_shape[res_dim-2];
-        const auto n = res_shape[res_dim-1];
 
-        do{
-            auto w1 = tr1.walker();
-            auto w2 = tr2.walker();
-            auto res_w = res_tr.walker();
-            for (auto i=m;;--i){
-                for (auto j=n;;--j){
-                    for(auto r=k;;--r){
-                        *res_w=*res_w+*w1**w2;
-                        if (r==1) break;
-                        w1.step(j_axis);
+        auto matmul_same_order = [k](auto& res_tr, auto& tr1, auto& tr2, const auto& i_axis, const auto& j_axis, const auto& m, const auto& n){
+            do{
+                auto w1 = tr1.walker();
+                auto w2 = tr2.walker();
+                auto res_w = res_tr.walker();
+                for (auto i=m;;--i){
+                    for (auto j=k;;--j){
+                        const auto e1 = *w1;
+                        for(auto r=n;;--r){
+                            decltype(auto) res = *res_w;
+                            res=res+e1**w2;
+                            if (r==1) break;
+                            w2.step(j_axis);
+                            res_w.step(j_axis);
+                        }
+                        w2.reset_back(j_axis);
+                        res_w.reset_back(j_axis);
+                        if (j==1) break;
                         w2.step(i_axis);
+                        w1.step(j_axis);
                     }
-                    w1.reset_back(j_axis);
                     w2.reset_back(i_axis);
-                    if (j==1) break;
-                    w2.step(j_axis);
-                    res_w.step(j_axis);
+                    w1.reset_back(j_axis);
+                    if (i==1) break;
+                    res_w.step(i_axis);
+                    w1.step(i_axis);
                 }
-                w2.reset_back(j_axis);
-                res_w.reset_back(j_axis);
-                if (i==1) break;
-                w1.step(i_axis);
-                res_w.step(i_axis);
+                tr1.template next<order>();
+                tr2.template next<order>();
+            }while(res_tr.template next<order>());
+        };
+
+        auto matmul_cf = [k](auto& res_tr, auto& tr1, auto& tr2, const auto& i_axis, const auto& j_axis, const auto& m, const auto& n){
+            do{
+                auto w1 = tr1.walker();
+                auto w2 = tr2.walker();
+                auto res_w = res_tr.walker();
+                for (auto i=m;;--i){
+                    for (auto j=n;;--j){
+                        decltype(auto) res = *res_w;
+                        for(auto r=k;;--r){
+                            res=res+*w1**w2;
+                            if (r==1) break;
+                            w1.step(j_axis);
+                            w2.step(i_axis);
+                        }
+                        w1.reset_back(j_axis);
+                        w2.reset_back(i_axis);
+                        if (j==1) break;
+                        w2.step(j_axis);
+                        res_w.step(j_axis);
+                    }
+                    w2.reset_back(j_axis);
+                    res_w.reset_back(j_axis);
+                    if (i==1) break;
+                    w1.step(i_axis);
+                    res_w.step(i_axis);
+                }
+                tr1.template next<order>();
+                tr2.template next<order>();
+            }while(res_tr.template next<order>());
+        };
+
+        auto matmul_fc = [k](auto& res_tr, auto& tr1, auto& tr2, const auto& i_axis, const auto& j_axis, const auto& m, const auto& n){
+            do{
+                auto w1 = tr1.walker();
+                auto w2 = tr2.walker();
+                auto res_w = res_tr.walker();
+                for (auto i=k;;--i){
+                    for (auto j=m;;--j){
+                        const auto e1 = *w1;
+                        for(auto r=n;;--r){
+                            decltype(auto) res = *res_w;
+                            res=res+e1**w2;
+                            if (r==1) break;
+                            w2.step(j_axis);
+                            res_w.step(j_axis);
+                        }
+                        w2.reset_back(j_axis);
+                        res_w.reset_back(j_axis);
+                        if (j==1) break;
+                        w1.step(i_axis);
+                        res_w.step(i_axis);
+                    }
+                    w1.reset_back(i_axis);
+                    res_w.reset_back(i_axis);
+                    if (i==1) break;
+                    w1.step(j_axis);
+                    w2.step(i_axis);
+                }
+                tr1.template next<order>();
+                tr2.template next<order>();
+            }while(res_tr.template next<order>());
+        };
+
+        if constexpr (std::is_same_v<order1,order2>){
+            if constexpr (std::is_same_v<order1,c_order>){
+                const auto i_axis = res_dim-2;
+                const auto j_axis = res_dim-1;
+                matmul_same_order(res_tr,tr1,tr2,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis]);
+            }else{
+                const auto i_axis = res_dim-1;
+                const auto j_axis = res_dim-2;
+                matmul_same_order(res_tr,tr2,tr1,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis]);
             }
-            tr1.template next<order>();
-            tr2.template next<order>();
-        }while(res_tr.template next<order>());
+        }else{
+            if constexpr (std::is_same_v<order1,c_order>){
+                const auto i_axis = res_dim-2;
+                const auto j_axis = res_dim-1;
+                matmul_cf(res_tr,tr1,tr2,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis]);
+            }else{
+                const auto i_axis = res_dim-2;
+                const auto j_axis = res_dim-1;
+                matmul_fc(res_tr,tr1,tr2,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis]);
+            }
+        }
         return res;
     }
 
