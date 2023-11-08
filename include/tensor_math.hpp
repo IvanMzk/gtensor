@@ -470,8 +470,10 @@ private:
         auto res_tr = walker_forward_range_traverser<config_type,decltype(res.create_walker(res_dim))>{res_shape,res.create_walker(res_dim),0,res_dim-2};
         const auto k = *(shape1.end()-1);
         //worker result block size, m_*n_*sizeof(value_type) must fit in L1
-        // const index_type m_ = 64;
-        // const index_type n_ = 64;
+        // const index_type m_ = 8;
+        // const index_type n_ = 8;
+        const index_type m_ = 64;
+        const index_type n_ = 64;
 
         auto core_2d_cc_ff = [k](auto res_w, auto w1, auto w2, const auto& i_axis, const auto& j_axis, const auto& m, const auto& n){
             for (auto i=m;;--i){
@@ -496,6 +498,33 @@ private:
                 res_w.step(i_axis);
                 w1.step(i_axis);
             }
+        };
+
+        auto core_2d_cc_ff_mt = [k](auto res_w, auto w1, auto w2, const auto& i_axis, const auto& j_axis, const auto& m, const auto& n){
+            //std::cout<<std::endl<<"start "<<std::this_thread::get_id();
+            for (auto i=m;;--i){
+                for (auto j=k;;--j){
+                    const auto e1 = *w1;
+                    for(auto r=n;;--r){
+                        decltype(auto) res = *res_w;
+                        res=res+e1**w2;
+                        if (r==1) break;
+                        w2.step(j_axis);
+                        res_w.step(j_axis);
+                    }
+                    w2.walk_back(j_axis,n-1);
+                    res_w.walk_back(j_axis,n-1);
+                    if (j==1) break;
+                    w2.step(i_axis);
+                    w1.step(j_axis);
+                }
+                w2.walk_back(i_axis,k-1);
+                w1.walk_back(j_axis,k-1);
+                if (i==1) break;
+                res_w.step(i_axis);
+                w1.step(i_axis);
+            }
+            //std::cout<<std::endl<<"stop "<<std::this_thread::get_id();
         };
 
         auto core_2d_cf = [k](auto res_w, auto w1, auto w2, const auto& i_axis, const auto& j_axis, const auto& m, const auto& n){
@@ -555,15 +584,40 @@ private:
             }while(res_tr.template next<order>());
         };
 
+        auto core_nd_mt = [](auto core_2d, auto& res_tr, auto& tr1, auto& tr2, const auto& i_axis, const auto& j_axis, const auto& m, const auto& n, const auto& m_, const auto& n_){
+            auto make_size_ = [](const auto& i, const auto& b_, const auto& b){return i+b_>b ? b-i : b_;};
+            using
+            do{
+                auto res_w = res_tr.walker();
+                auto w1 = tr1.walker();
+                auto w2 = tr2.walker();
+                for (index_type i=0; i<m; i+=m_){
+                    for (index_type j=0; j<n; j+=n_){
+                        res_w.walk(i_axis,i);
+                        res_w.walk(j_axis,j);
+                        w1.walk(i_axis,i);
+                        w2.walk(j_axis,j);
+                        //core_2d(res_w,w1,w2,i_axis,j_axis,make_size_(i,m_,m),make_size_(j,n_,n));
+                        multithreading::get_pool().push_async(core_2d,res_w,w1,w2,i_axis,j_axis,make_size_(i,m_,m),make_size_(j,n_,n));
+                        res_w.reset_back();
+                        w1.reset_back();
+                        w2.reset_back();
+                    }
+                }
+                tr1.template next<order>();
+                tr2.template next<order>();
+            }while(res_tr.template next<order>());
+        };
+
         if constexpr (std::is_same_v<order1,order2>){
             if constexpr (std::is_same_v<order1,c_order>){
                 const auto i_axis = res_dim-2;
                 const auto j_axis = res_dim-1;
-                core_nd(core_2d_cc_ff,res_tr,tr1,tr2,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis]);
+                core_nd_mt(core_2d_cc_ff_mt,res_tr,tr1,tr2,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis],m_,n_);
             }else{
                 const auto i_axis = res_dim-1;
                 const auto j_axis = res_dim-2;
-                core_nd(core_2d_cc_ff,res_tr,tr2,tr1,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis]);
+                core_nd_mt(core_2d_cc_ff_mt,res_tr,tr2,tr1,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis],n_,m_);
             }
         }else{
             if constexpr (std::is_same_v<order1,c_order>){

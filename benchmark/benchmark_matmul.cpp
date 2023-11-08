@@ -58,9 +58,9 @@ template<typename Shapes, typename Builder, typename Command>
 auto bench_matmul(std::string mes, std::size_t n_iters, Shapes shapes, Builder builder, Command command){
     using value_type = double;
     bench_matmul_helper<gtensor::tensor<value_type,c_order>,gtensor::tensor<value_type,c_order>>{}(mes,n_iters,shapes,builder,command);
-    bench_matmul_helper<gtensor::tensor<value_type,f_order>,gtensor::tensor<value_type,f_order>>{}(mes,n_iters,shapes,builder,command);
-    bench_matmul_helper<gtensor::tensor<value_type,c_order>,gtensor::tensor<value_type,f_order>>{}(mes,n_iters,shapes,builder,command);
-    bench_matmul_helper<gtensor::tensor<value_type,f_order>,gtensor::tensor<value_type,c_order>>{}(mes,n_iters,shapes,builder,command);
+    //bench_matmul_helper<gtensor::tensor<value_type,f_order>,gtensor::tensor<value_type,f_order>>{}(mes,n_iters,shapes,builder,command);
+    //bench_matmul_helper<gtensor::tensor<value_type,c_order>,gtensor::tensor<value_type,f_order>>{}(mes,n_iters,shapes,builder,command);
+    //bench_matmul_helper<gtensor::tensor<value_type,f_order>,gtensor::tensor<value_type,c_order>>{}(mes,n_iters,shapes,builder,command);
 }
 
 template<typename...Ts, typename...Us>
@@ -241,12 +241,16 @@ TEST_CASE("benchmark_matmul","[benchmark_tensor]")
 
     //REQUIRE(matmul_2d(tensor<double,c_order>{{1,2,4,2},{3,4,2,0},{5,3,1,1}},tensor<double,c_order>{{2,1,2},{0,3,1},{1,1,4},{4,3,3}})==tensor<double>{{14,17,26},{8,17,18},{15,18,20}});
     //REQUIRE(matmul_2d(tensor<double,f_order>{{1,2,4,2},{3,4,2,0},{5,3,1,1}},tensor<double,f_order>{{2,1,2},{0,3,1},{1,1,4},{4,3,3}})==tensor<double>{{14,17,26},{8,17,18},{15,18,20}});
-    REQUIRE(matmul_2d(aa,bb)==rr);
-    REQUIRE(matmul_2d(aa.copy(f_order{}),bb.copy(f_order{}))==rr);
-    REQUIRE(matmul_2d_tiled(aa,bb)==rr);
-    REQUIRE(matmul_2d_tiled(aa.copy(f_order{}),bb.copy(f_order{}))==rr);
-    REQUIRE(matmul_2d_tiled(tensor<double,c_order>{{1,2,4,2},{3,4,2,0},{5,3,1,1}},tensor<double,c_order>{{2,1,2},{0,3,1},{1,1,4},{4,3,3}})==tensor<double>{{14,17,26},{8,17,18},{15,18,20}});
+    // REQUIRE(matmul_2d(aa,bb)==rr);
+    // REQUIRE(matmul_2d(aa.copy(f_order{}),bb.copy(f_order{}))==rr);
+    // REQUIRE(matmul_2d_tiled(aa,bb)==rr);
+    // REQUIRE(matmul_2d_tiled(aa.copy(f_order{}),bb.copy(f_order{}))==rr);
+    // REQUIRE(matmul_2d_tiled(tensor<double,c_order>{{1,2,4,2},{3,4,2,0},{5,3,1,1}},tensor<double,c_order>{{2,1,2},{0,3,1},{1,1,4},{4,3,3}})==tensor<double>{{14,17,26},{8,17,18},{15,18,20}});
     //REQUIRE(matmul_2d_tiled(tensor<double,f_order>{{1,2,4,2},{3,4,2,0},{5,3,1,1}},tensor<double,f_order>{{2,1,2},{0,3,1},{1,1,4},{4,3,3}})==tensor<double>{{14,17,26},{8,17,18},{15,18,20}});
+
+    //REQUIRE(matmul(tensor<double,c_order>{{1,2,4,2},{3,4,2,0},{5,3,1,1}},tensor<double,c_order>{{2,1,2},{0,3,1},{1,1,4},{4,3,3}})==tensor<double>{{14,17,26},{8,17,18},{15,18,20}});
+    REQUIRE(matmul(aa,bb)==rr);
+    REQUIRE(matmul(aa.copy(f_order{}),bb.copy(f_order{}))==rr);
 
     auto command_matmul_2d = [](const auto& t1, const auto& t2){
         auto r = matmul_2d(t1,t2);

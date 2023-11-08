@@ -404,7 +404,7 @@ public:
 
 
 inline constexpr std::size_t pool_workers_n = 16;
-inline constexpr std::size_t pool_queue_size = 64;
+inline constexpr std::size_t pool_queue_size = 256;
 inline auto& get_pool(){
     static thread_pool_v3 pool_{pool_workers_n, pool_queue_size};
     return pool_;
