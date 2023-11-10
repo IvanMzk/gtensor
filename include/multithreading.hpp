@@ -33,23 +33,20 @@ public:
 
     template<typename...Args>
     void emplace(Args&&...args){
-        new(reinterpret_cast<void*>(buffer)) value_type{std::forward<Args>(args)...};
-    }
-    value_type&& move(){
-        return std::move(*reinterpret_cast<value_type*>(buffer));
+        new(buffer) value_type{std::forward<Args>(args)...};
     }
     template<typename V>
     void move(V& v){
-        v = std::move(*reinterpret_cast<value_type*>(buffer));
-    }
-    const value_type& get()const{
-        return *reinterpret_cast<value_type*>(buffer);
-    }
-    value_type& get(){
-        return *reinterpret_cast<value_type*>(buffer);
+        v = std::move(get());
     }
     void destroy(){
-        reinterpret_cast<value_type*>(buffer)->~value_type();
+        get().~value_type();
+    }
+    value_type& get(){
+        return *std::launder(reinterpret_cast<value_type*>(buffer));
+    }
+    const value_type& get()const{
+        return *std::launder(reinterpret_cast<const value_type*>(buffer));
     }
 private:
     alignas(value_type) std::byte buffer[sizeof(value_type)];
@@ -84,6 +81,7 @@ public:
         return *this;
     }
     element& operator=(value_type&& v){
+        clear();
         element__.emplace(std::move(v));
         empty_ = false;
         return *this;
@@ -106,13 +104,38 @@ private:
     }
     void init(element&& other){
         if (!other.empty_){
-            element__.emplace(other.element__.move());
+            element__.emplace(std::move(other.element__.get()));
             empty_ = false;
         }
     }
 
     element_<value_type> element__{};
     bool empty_{true};
+};
+
+//syncronize completion of group of tasks
+class task_group
+{
+    std::atomic<std::size_t> task_inprogress_counter_{0};
+    std::condition_variable all_complete_{};
+    std::mutex guard_{};
+public:
+    void inc(){
+        ++task_inprogress_counter_;
+    }
+    void dec(){
+        {
+            std::lock_guard<std::mutex> lock{guard_};
+            --task_inprogress_counter_;
+        }
+        all_complete_.notify_all();
+    }
+    void wait(){
+        std::unique_lock<std::mutex> lock{guard_};
+        while(task_inprogress_counter_.load()!=0){
+            all_complete_.wait(lock);
+        }
+    }
 };
 
 template<typename R>
@@ -173,6 +196,26 @@ public:
         }
 };
 
+template<typename F, typename...Args>
+class group_task_v3_impl : public task_v3_base
+{
+    using args_type = decltype(std::make_tuple(std::declval<Args>()...));
+    std::reference_wrapper<task_group> group_;
+    F f;
+    args_type args;
+    void call() override {
+        std::apply(f, std::move(args));
+        group_.get().dec();
+    }
+public:
+    template<typename F_, typename...Args_>
+    group_task_v3_impl(std::reference_wrapper<task_group> group__, F_&& f_, Args_&&...args_):
+        group_{group__},
+        f{std::forward<F_>(f_)},
+        args{std::make_tuple(std::forward<Args_>(args_)...)}
+    {}
+};
+
 class task_v3
 {
     std::unique_ptr<task_v3_base> impl;
@@ -186,6 +229,11 @@ public:
         using impl_type = task_v3_impl<std::decay_t<F>, std::decay_t<Args>...>;
         impl = std::make_unique<impl_type>(std::forward<F>(f),std::forward<Args>(args)...);
         return static_cast<impl_type*>(impl.get())->get_future(sync);
+    }
+    template<typename F, typename...Args>
+    void set_group_task(std::reference_wrapper<task_group> group, F&& f, Args&&...args){
+        using impl_type = group_task_v3_impl<std::decay_t<F>, std::decay_t<Args>...>;
+        impl = std::make_unique<impl_type>(group, std::forward<F>(f),std::forward<Args>(args)...);
     }
 };
 
@@ -288,6 +336,8 @@ private:
     size_type pop_index{0};
 };
 
+using detail::task_group;
+
 //single allocation thread pool with bounded task queue
 //allow different signatures and return types of task callable
 //push task template method returns task_future<R>, where R is return type of callable given arguments types
@@ -313,12 +363,29 @@ public:
         init();
     }
 
-    //return task_future<R>, where R is return type of F called with args
+    //return task_future<R> object, where R is return type of F called with args, future will sync when destroyed
     //std::reference_wrapper should be used to pass args by ref
     template<typename F, typename...Args>
     auto push(F&& f, Args&&...args){return push_<true>(std::forward<F>(f), std::forward<Args>(args)...);}
+    //returned future will not sync when destroyed
     template<typename F, typename...Args>
     auto push_async(F&& f, Args&&...args){return push_<false>(std::forward<F>(f), std::forward<Args>(args)...);}
+    //bind task to group
+    template<typename F, typename...Args>
+    void push_group(task_group& group, F&& f, Args&&...args){
+        std::unique_lock<mutex_type> lock{guard};
+        while(true){
+            if (auto task = tasks.try_push()){
+                group.inc();
+                task->set_group_task(group, std::forward<F>(f), std::forward<Args>(args)...);
+                lock.unlock();
+                has_task.notify_one();
+                break;
+            }else{
+                has_slot.wait(lock);
+            }
+        }
+    }
 
 private:
 
