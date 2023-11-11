@@ -445,10 +445,13 @@ private:
     template<typename ResT, typename...Ts, typename...Us>
     static auto matmul_nd_helper(const basic_tensor<Ts...>& t1, const basic_tensor<Us...>& t2){
         using res_type = ResT;
+        using order = typename res_type::order;
         using config_type = typename res_type::config_type;
         using shape_type = typename res_type::shape_type;
         using index_type = typename res_type::index_type;
         using order = typename res_type::order;
+        using value_type1 = typename basic_tensor<Ts...>::value_type;
+        using value_type2 = typename basic_tensor<Us...>::value_type;
         using order1 = typename basic_tensor<Ts...>::order;
         using order2 = typename basic_tensor<Us...>::order;
         using gtensor::config::c_order;
@@ -472,22 +475,15 @@ private:
         const auto k_ = 16;
         const auto n_ = 128;
 
+        static constexpr std::size_t mc_size = 256;
+        static constexpr std::size_t nc_size = 256;
+        static constexpr std::size_t kc_size = 128;
+        const index_type mc = mc_size;
+        const index_type nc = nc_size;
+        const index_type kc = kc_size;
 
-        //worker result block size, m_*n_*sizeof(value_type) must fit in L1
-        // const index_type m_ = 8;
-        // const index_type n_ = 8;
-        // const index_type m_ = 32;
-        // const index_type n_ = 64;
-        // const index_type m_ = 128;
-        // const index_type n_ = 128;
-        // const index_type m_ = 256;
-        // const index_type n_ = 256;
-        // const index_type m_ = 512;
-        // const index_type n_ = 512;
-        // const index_type m_ = 1024;
-        // const index_type n_ = 1024;
-        // const index_type m_ = 2048;
-        // const index_type n_ = 2048;
+        auto make_submatrix_size = [](const auto& idx, const auto& block_size, const auto& max){return idx+block_size>max ? max-idx : block_size;};
+
 
         auto core_2d_cc_ff = [k](auto res_w, auto w1, auto w2, const auto& i_axis, const auto& j_axis, const auto& m, const auto& n){
             for (auto i=m;;--i){
@@ -646,6 +642,228 @@ private:
             }while(res_tr.template next<order>());
         };
 
+        auto core_nd_tiled1 = [k,make_submatrix_size](auto& res_tr, auto& tr1, auto& tr2, const auto& i_axis, const auto& j_axis, const auto& m, const auto& n, const auto& mc, const auto& nc, const auto& kc){
+            std::array<value_type1,mc_size*kc_size> a_buf;
+            std::array<value_type2,kc_size*nc_size> b_buf;
+
+            auto fill_buf = [i_axis,j_axis](auto& w, auto dit, const auto& mc_, const auto& kc_){
+                for (auto i=mc_; i!=0; --i,w.step(i_axis)){
+                    for (auto j=kc_; j!=0; --j,w.step(j_axis),++dit){
+                        *dit = *w;
+                    }
+                    w.walk_back(j_axis,kc_);
+                }
+                w.walk_back(i_axis,mc_);
+            };
+
+            auto kernel = [](auto& res_w, auto a_it, auto b_it, const auto& i_axis, const auto& j_axis, const auto& mc_, const auto& kc_, const auto& nc_){
+                for (index_type ir=0; ir!=mc_; ++ir,res_w.step(i_axis)){
+                    const auto ii = ir*kc_;
+                    for (index_type kk=0; kk!=kc_; ++kk){
+                        const auto e = a_it[kk+ii];
+                        const auto jj = kk*nc_;
+                        for (index_type jr=0; jr!=nc_; ++jr, res_w.step(j_axis)){
+                            *res_w+=e*b_it[jr+jj];
+                        }
+                        res_w.walk_back(j_axis,nc_);
+                    }
+                }
+                res_w.walk_back(i_axis,mc_);
+            };
+
+            do{
+                auto res_w = res_tr.walker();
+                auto w1 = tr1.walker();
+                auto w2 = tr2.walker();
+
+                for (index_type jc=0; jc<n; jc+=nc){
+                    w2.walk(j_axis,jc);
+                    res_w.walk(j_axis,jc);
+                    for (index_type pc=0; pc<k; pc+=kc){
+                        w1.walk(j_axis,pc);
+                        w2.walk(i_axis,pc);
+                        const auto kc_ = make_submatrix_size(pc,kc,k);
+                        const auto nc_ = make_submatrix_size(jc,nc,n);
+                        fill_buf(w2,b_buf.begin(),kc_,nc_);
+                        for (index_type ic=0; ic<m; ic+=mc){
+                            w1.walk(i_axis,ic);
+                            res_w.walk(i_axis,ic);
+                            const auto mc_ = make_submatrix_size(ic,mc,m);
+                            fill_buf(w1,a_buf.begin(),mc_,kc_);
+                            kernel(res_w,a_buf.cbegin(),b_buf.cbegin(),i_axis,j_axis,mc_,kc_,nc_);
+                            w1.walk_back(i_axis,ic);
+                            res_w.walk_back(i_axis,ic);
+                        }
+                        w1.walk_back(j_axis,pc);
+                        w2.walk_back(i_axis,pc);
+                    }
+                    w2.walk_back(j_axis,jc);
+                    res_w.walk_back(j_axis,jc);
+                }
+
+                tr1.template next<order>();
+                tr2.template next<order>();
+            }while(res_tr.template next<order>());
+        };
+
+        auto core_nd_tiled2 = [k,make_submatrix_size](auto& res_tr, auto& tr1, auto& tr2, const auto& i_axis, const auto& j_axis, const auto& m, const auto& n, const auto& mc, const auto& nc, const auto& kc){
+            std::array<value_type1,mc_size*kc_size> a_buf;
+            std::array<value_type2,kc_size*nc_size> b_buf;
+
+            auto fill_buf = [](auto& w, auto dit, const auto& inner_axis, const auto& outer_axis, const auto& inner_size, const auto& outer_size){
+                for (auto i=outer_size; i!=0; --i,w.step(outer_axis)){
+                    for (auto j=inner_size; j!=0; --j,w.step(inner_axis),++dit){
+                        *dit = *w;
+                    }
+                    w.walk_back(inner_axis,inner_size);
+                }
+                w.walk_back(outer_axis,outer_size);
+            };
+
+            auto kernel_c = [](auto& res_w, auto a_it, auto b_it, const auto& i_axis, const auto& j_axis, const auto& mc_, const auto& kc_, const auto& nc_){
+                for (index_type kk=0; kk!=kc_; ++kk){
+                    const auto jj = kk*mc_;
+                    const auto ii = kk*nc_;
+                    for (index_type ir=0; ir!=mc_; ++ir,res_w.step(i_axis)){
+                        const auto e = a_it[ir+jj];
+                        for (index_type jr=0; jr!=nc_; ++jr,res_w.step(j_axis)){
+                            *res_w+=e*b_it[jr+ii];
+                        }
+                        res_w.walk_back(j_axis,nc_);
+                    }
+                    res_w.walk_back(i_axis,mc_);
+                }
+            };
+            auto kernel_f = [](auto& res_w, auto a_it, auto b_it, const auto& i_axis, const auto& j_axis, const auto& mc_, const auto& kc_, const auto& nc_){
+                for (index_type kk=0; kk!=kc_; ++kk){
+                    const auto jj = kk*mc_;
+                    const auto ii = kk*nc_;
+                    for (index_type jr=0; jr!=nc_; ++jr, res_w.step(j_axis)){
+                        const auto e = b_it[ii+jr];
+                        for (index_type ir=0; ir!=mc_; ++ir,res_w.step(i_axis)){
+                            *res_w+=a_it[ir+jj]*e;
+                        }
+                        res_w.walk_back(i_axis,mc_);
+                    }
+                    res_w.walk_back(j_axis,nc_);
+                }
+            };
+
+            do{
+                auto res_w = res_tr.walker();
+                auto w1 = tr1.walker();
+                auto w2 = tr2.walker();
+
+                for (index_type jc=0; jc<n; jc+=nc){
+                    w2.walk(j_axis,jc);
+                    res_w.walk(j_axis,jc);
+                    for (index_type pc=0; pc<k; pc+=kc){
+                        w1.walk(j_axis,pc);
+                        w2.walk(i_axis,pc);
+                        const auto kc_ = make_submatrix_size(pc,kc,k);
+                        const auto nc_ = make_submatrix_size(jc,nc,n);
+                        fill_buf(w2,b_buf.begin(),j_axis,i_axis,nc_,kc_);
+                        for (index_type ic=0; ic<m; ic+=mc){
+                            w1.walk(i_axis,ic);
+                            res_w.walk(i_axis,ic);
+                            const auto mc_ = make_submatrix_size(ic,mc,m);
+                            fill_buf(w1,a_buf.begin(),i_axis,j_axis,mc_,kc_);
+                            if constexpr (std::is_same_v<order,c_order>){
+                                kernel_c(res_w,a_buf.cbegin(),b_buf.cbegin(),i_axis,j_axis,mc_,kc_,nc_);
+                            }else{
+                                kernel_f(res_w,a_buf.cbegin(),b_buf.cbegin(),i_axis,j_axis,mc_,kc_,nc_);
+                            }
+                            w1.walk_back(i_axis,ic);
+                            res_w.walk_back(i_axis,ic);
+                        }
+                        w1.walk_back(j_axis,pc);
+                        w2.walk_back(i_axis,pc);
+                    }
+                    w2.walk_back(j_axis,jc);
+                    res_w.walk_back(j_axis,jc);
+                }
+
+                tr1.template next<order>();
+                tr2.template next<order>();
+            }while(res_tr.template next<order>());
+        };
+
+        auto core_nd_tiled1_mt = [k,make_submatrix_size](auto& res_tr, auto& tr1, auto& tr2, const auto& i_axis, const auto& j_axis, const auto& m, const auto& n, const auto& mc, const auto& nc, const auto& kc){
+            std::array<value_type1,mc_size*kc_size> a_buf;
+            std::array<value_type2,kc_size*nc_size> b_buf;
+
+            auto fill_buf = [i_axis,j_axis](auto& w, auto dit, const auto& mc_, const auto& kc_){
+                for (auto i=mc_; i!=0; --i,w.step(i_axis)){
+                    for (auto j=kc_; j!=0; --j,w.step(j_axis),++dit){
+                        *dit = *w;
+                    }
+                    w.walk_back(j_axis,kc_);
+                }
+                w.walk_back(i_axis,mc_);
+            };
+
+            auto kernel = [i_axis,j_axis](auto& res_w, auto a_it, auto b_it, const auto& mc_, const auto& kc_, const auto& nc_){
+                for (index_type ir=0; ir!=mc_; ++ir,res_w.step(i_axis)){
+                    const auto ii = ir*kc_;
+                    for (index_type kk=0; kk!=kc_; ++kk){
+                        const auto e = a_it[kk+ii];
+                        const auto jj = kk*nc_;
+                        for (index_type jr=0; jr!=nc_; ++jr, res_w.step(j_axis)){
+                            *res_w+=e*b_it[jr+jj];
+                        }
+                        res_w.walk_back(j_axis,nc_);
+                    }
+                }
+                res_w.walk_back(i_axis,mc_);
+            };
+
+            auto ic_body = [fill_buf,kernel](auto res_w, auto w1, auto b_it, const auto& mc_, const auto& kc_, const auto& nc_){
+                std::array<value_type1,mc_size*kc_size> a_buf;
+                fill_buf(w1,a_buf.begin(),mc_,kc_);
+                kernel(res_w,a_buf.cbegin(),b_it,mc_,kc_,nc_);
+            };
+
+            multithreading::task_group group{};
+
+            do{
+                auto res_w = res_tr.walker();
+                auto w1 = tr1.walker();
+                auto w2 = tr2.walker();
+
+                for (index_type jc=0; jc<n; jc+=nc){
+                    w2.walk(j_axis,jc);
+                    res_w.walk(j_axis,jc);
+                    for (index_type pc=0; pc<k; pc+=kc){
+                        w1.walk(j_axis,pc);
+                        w2.walk(i_axis,pc);
+                        const auto kc_ = make_submatrix_size(pc,kc,k);
+                        const auto nc_ = make_submatrix_size(jc,nc,n);
+                        fill_buf(w2,b_buf.begin(),kc_,nc_);
+                        for (index_type ic=0; ic<m; ic+=mc){
+                            w1.walk(i_axis,ic);
+                            res_w.walk(i_axis,ic);
+                            const auto mc_ = make_submatrix_size(ic,mc,m);
+
+                            multithreading::get_pool().push_group(group,ic_body,res_w,w1,b_buf.cbegin(),mc_,kc_,nc_);
+                            // fill_buf(w1,a_buf.begin(),mc_,kc_);
+                            // kernel(res_w,a_buf.cbegin(),b_buf.cbegin(),mc_,kc_,nc_);
+
+                            w1.walk_back(i_axis,ic);
+                            res_w.walk_back(i_axis,ic);
+                        }
+                        group.wait();
+                        w1.walk_back(j_axis,pc);
+                        w2.walk_back(i_axis,pc);
+                    }
+                    w2.walk_back(j_axis,jc);
+                    res_w.walk_back(j_axis,jc);
+                }
+
+                tr1.template next<order>();
+                tr2.template next<order>();
+            }while(res_tr.template next<order>());
+        };
+
         auto core_nd_mt = [](auto core_2d, auto& res_tr, auto& tr1, auto& tr2, const auto& i_axis, const auto& j_axis, const auto& m, const auto& n, const auto& m_, const auto& n_){
             auto make_size_ = [](const auto& i, const auto& b_, const auto& b){return i+b_>b ? b-i : b_;};
             multithreading::task_group group{};
@@ -672,28 +890,38 @@ private:
         };
 
         if constexpr (std::is_same_v<order1,order2>){
+            // const auto i_axis = res_dim-2;
+            // const auto j_axis = res_dim-1;
+            // core_nd_tiled2(res_tr,tr1,tr2,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis],mc,nc,kc);
             if constexpr (std::is_same_v<order1,c_order>){
                 const auto i_axis = res_dim-2;
                 const auto j_axis = res_dim-1;
                 //core_nd_mt(core_2d_cc_ff_mt,res_tr,tr1,tr2,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis],m_,n_);
                 //core_nd_tiled(core_2d_cc_ff_tiled,res_tr,tr1,tr2,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis],n_);
-                core_nd(core_2d_cc_ff,res_tr,tr1,tr2,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis]);
+                //core_nd(core_2d_cc_ff,res_tr,tr1,tr2,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis]);
+                core_nd_tiled1(res_tr,tr1,tr2,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis],mc,nc,kc);
+                //core_nd_tiled1_mt(res_tr,tr1,tr2,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis],mc,nc,kc);
             }else{
                 const auto i_axis = res_dim-1;
                 const auto j_axis = res_dim-2;
                 //core_nd_mt(core_2d_cc_ff_mt,res_tr,tr2,tr1,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis],n_,m_);
                 //core_nd_tiled(core_2d_cc_ff_tiled,res_tr,tr2,tr1,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis],n_);
-                core_nd(core_2d_cc_ff,res_tr,tr2,tr1,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis]);
+                //core_nd(core_2d_cc_ff,res_tr,tr2,tr1,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis]);
+                core_nd_tiled1(res_tr,tr2,tr1,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis],nc,mc,kc);
+                //core_nd_tiled1_mt(res_tr,tr2,tr1,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis],nc,mc,kc);
             }
         }else{
+            const auto i_axis = res_dim-2;
+            const auto j_axis = res_dim-1;
+            core_nd_tiled2(res_tr,tr1,tr2,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis],mc,nc,kc);
             if constexpr (std::is_same_v<order1,c_order>){
-                const auto i_axis = res_dim-2;
-                const auto j_axis = res_dim-1;
-                core_nd(core_2d_cf,res_tr,tr1,tr2,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis]);
+                // const auto i_axis = res_dim-2;
+                // const auto j_axis = res_dim-1;
+                // core_nd(core_2d_cf,res_tr,tr1,tr2,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis]);
             }else{
-                const auto i_axis = res_dim-2;
-                const auto j_axis = res_dim-1;
-                core_nd(core_2d_fc,res_tr,tr1,tr2,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis]);
+                // const auto i_axis = res_dim-2;
+                // const auto j_axis = res_dim-1;
+                // core_nd(core_2d_fc,res_tr,tr1,tr2,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis]);
             }
         }
         return res;
