@@ -441,6 +441,97 @@ private:
         return res;
     }
 
+    template<typename T1, typename T2, typename Order, typename Config, std::size_t Mc, std::size_t Nc, std::size_t Kc>
+    struct matmul_2d
+    {
+        using index_type = typename Config::index_type;
+        using dim_type = typename Config::dim_type;
+        const index_type m;
+        const index_type n;
+        const index_type k;
+        const dim_type i_axis;
+        const dim_type j_axis;
+        const index_type mc{Mc};
+        const index_type nc{Nc};
+        const index_type kc{Kc};
+        std::array<T1,Mc*Kc> a_buf;
+        std::array<T2,Kc*Nc> b_buf;
+
+        matmul_2d(const index_type& m_, const index_type& n_, const index_type& k_, const dim_type& i_axis_, const dim_type& j_axis_):
+            m{m_},
+            n{n_},
+            k{k_},
+            i_axis{i_axis_},
+            j_axis{j_axis_}
+        {}
+
+        template<typename W, typename It, typename DimT>
+        void fill_buf(W& w, It dit, const DimT& inner_axis, const DimT& outer_axis, const index_type& inner_size, const index_type& outer_size){
+            for (auto i=outer_size; i!=0; --i,w.step(outer_axis)){
+                for (auto j=inner_size; j!=0; --j,w.step(inner_axis),++dit){
+                    *dit = *w;
+                }
+                w.walk_back(inner_axis,inner_size);
+            }
+            w.walk_back(outer_axis,outer_size);
+        };
+
+        template<typename ResW, typename It, typename DimT>
+        void kernel(ResW& res_w, It a_it, It b_it, const DimT& i_axis, const DimT& j_axis, const index_type& mc_, const index_type& nc_, const index_type& kc_){
+            for (index_type kk=0; kk!=kc_; ++kk){
+                const auto jj = kk*mc_;
+                const auto ii = kk*nc_;
+                for (index_type ir=0; ir!=mc_; ++ir,res_w.step(i_axis)){
+                    const auto e = a_it[ir+jj];
+                    for (index_type jr=0; jr!=nc_; ++jr,res_w.step(j_axis)){
+                        *res_w+=e*b_it[jr+ii];
+                    }
+                    res_w.walk_back(j_axis,nc_);
+                }
+                res_w.walk_back(i_axis,mc_);
+            }
+        }
+
+        template<typename ResW, typename W1, typename W2>
+        void operator()(ResW res_w, W1 w1, W2 w2, const index_type& jc_min, const index_type& jc_max, const index_type& ic_min, const index_type& ic_max){
+            auto make_submatrix_size = [](const auto& idx, const auto& block_size, const auto& max){return idx+block_size>max ? max-idx : block_size;};
+            for (index_type jc=jc_min; jc<jc_max; jc+=nc){
+                w2.walk(j_axis,jc);
+                res_w.walk(j_axis,jc);
+                const auto nc_ = make_submatrix_size(jc,nc,jc_max);
+                for (index_type pc=0; pc<k; pc+=kc){
+                    w1.walk(j_axis,pc);
+                    w2.walk(i_axis,pc);
+                    const auto kc_ = make_submatrix_size(pc,kc,k);
+                    fill_buf(w2,b_buf.begin(),j_axis,i_axis,nc_,kc_);
+                    for (index_type ic=ic_min; ic<ic_max; ic+=mc){
+                        w1.walk(i_axis,ic);
+                        res_w.walk(i_axis,ic);
+                        const auto mc_ = make_submatrix_size(ic,mc,ic_max);
+                        fill_buf(w1,a_buf.begin(),i_axis,j_axis,mc_,kc_);
+                        if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
+                            kernel(res_w,a_buf.cbegin(),b_buf.cbegin(),i_axis,j_axis,mc_,nc_,kc_);
+                        }else{
+                            kernel(res_w,b_buf.cbegin(),a_buf.cbegin(),j_axis,i_axis,nc_,mc_,kc_);
+                        }
+                        w1.walk_back(i_axis,ic);
+                        res_w.walk_back(i_axis,ic);
+                    }
+                    w1.walk_back(j_axis,pc);
+                    w2.walk_back(i_axis,pc);
+                }
+                w2.walk_back(j_axis,jc);
+                res_w.walk_back(j_axis,jc);
+            }
+        }
+
+        template<typename ResW, typename W1, typename W2>
+        void operator()(ResW res_w, W1 w1, W2 w2){
+            this->operator()(res_w,w1,w2,0,n,0,m);
+        }
+
+    };
+
     //t1,t2,res are at least 2d
     template<typename ResT, typename...Ts, typename...Us>
     static auto matmul_nd_helper(const basic_tensor<Ts...>& t1, const basic_tensor<Us...>& t2){
@@ -476,8 +567,8 @@ private:
         const auto n_ = 128;
 
         static constexpr std::size_t mc_size = 64;
-        static constexpr std::size_t nc_size = 64;
-        static constexpr std::size_t kc_size = 64;
+        static constexpr std::size_t nc_size = 256;
+        static constexpr std::size_t kc_size = 128;
         const index_type mc = mc_size;
         const index_type nc = nc_size;
         const index_type kc = kc_size;
@@ -707,8 +798,113 @@ private:
         };
 
         auto core_nd_tiled2 = [k,make_submatrix_size](auto& res_tr, auto& tr1, auto& tr2, const auto& i_axis, const auto& j_axis, const auto& m, const auto& n, const auto& mc, const auto& nc, const auto& kc){
+
+
+
+            auto fill_buf = [](auto& w, auto dit, const auto& inner_axis, const auto& outer_axis, const auto& inner_size, const auto& outer_size){
+                for (auto i=outer_size; i!=0; --i,w.step(outer_axis)){
+                    for (auto j=inner_size; j!=0; --j,w.step(inner_axis),++dit){
+                        *dit = *w;
+                    }
+                    w.walk_back(inner_axis,inner_size);
+                }
+                w.walk_back(outer_axis,outer_size);
+            };
+
+            auto kernel = [](auto& res_w, auto a_it, auto b_it, const auto& i_axis, const auto& j_axis, const auto& mc_, const auto& kc_, const auto& nc_){
+                for (index_type kk=0; kk!=kc_; ++kk){
+                    const auto jj = kk*mc_;
+                    const auto ii = kk*nc_;
+                    for (index_type ir=0; ir!=mc_; ++ir,res_w.step(i_axis)){
+                        const auto e = a_it[ir+jj];
+                        for (index_type jr=0; jr!=nc_; ++jr,res_w.step(j_axis)){
+                            *res_w+=e*b_it[jr+ii];
+                        }
+                        res_w.walk_back(j_axis,nc_);
+                    }
+                    res_w.walk_back(i_axis,mc_);
+                }
+            };
+
             std::array<value_type1,mc_size*kc_size> a_buf;
             std::array<value_type2,kc_size*nc_size> b_buf;
+
+            auto body = [&a_buf,&b_buf,m,n,k,i_axis,j_axis,mc,nc,kc,fill_buf,make_submatrix_size,kernel](auto res_w, auto w1, auto w2, const auto& jc_min, const auto& jc_max, const auto& ic_min, const auto& ic_max){
+                for (index_type jc=0; jc<n; jc+=nc){
+                    w2.walk(j_axis,jc);
+                    res_w.walk(j_axis,jc);
+                    const auto nc_ = make_submatrix_size(jc,nc,n);
+                    for (index_type pc=0; pc<k; pc+=kc){
+                        w1.walk(j_axis,pc);
+                        w2.walk(i_axis,pc);
+                        const auto kc_ = make_submatrix_size(pc,kc,k);
+                        fill_buf(w2,b_buf.begin(),j_axis,i_axis,nc_,kc_);
+                        for (index_type ic=0; ic<m; ic+=mc){
+                            w1.walk(i_axis,ic);
+                            res_w.walk(i_axis,ic);
+                            const auto mc_ = make_submatrix_size(ic,mc,m);
+                            fill_buf(w1,a_buf.begin(),i_axis,j_axis,mc_,kc_);
+                            if constexpr (std::is_same_v<order,c_order>){
+                                kernel(res_w,a_buf.cbegin(),b_buf.cbegin(),i_axis,j_axis,mc_,kc_,nc_);
+                            }else{
+                                kernel(res_w,b_buf.cbegin(),a_buf.cbegin(),j_axis,i_axis,nc_,kc_,mc_);
+                            }
+                            w1.walk_back(i_axis,ic);
+                            res_w.walk_back(i_axis,ic);
+                        }
+                        w1.walk_back(j_axis,pc);
+                        w2.walk_back(i_axis,pc);
+                    }
+                    w2.walk_back(j_axis,jc);
+                    res_w.walk_back(j_axis,jc);
+                }
+            };
+
+            matmul_2d<value_type1,value_type2,order,config_type,mc_size,nc_size,kc_size> mm(m,n,k,i_axis,j_axis);
+
+            do{
+                auto res_w = res_tr.walker();
+                auto w1 = tr1.walker();
+                auto w2 = tr2.walker();
+                mm(res_w,w1,w2);
+                //mm(res_w,w1,w2,0,n,0,m);
+                //body(res_w,w1,w2,0,0,0,0);
+
+                // for (index_type jc=0; jc<n; jc+=nc){
+                //     w2.walk(j_axis,jc);
+                //     res_w.walk(j_axis,jc);
+                //     const auto nc_ = make_submatrix_size(jc,nc,n);
+                //     for (index_type pc=0; pc<k; pc+=kc){
+                //         w1.walk(j_axis,pc);
+                //         w2.walk(i_axis,pc);
+                //         const auto kc_ = make_submatrix_size(pc,kc,k);
+                //         fill_buf(w2,b_buf.begin(),j_axis,i_axis,nc_,kc_);
+                //         for (index_type ic=0; ic<m; ic+=mc){
+                //             w1.walk(i_axis,ic);
+                //             res_w.walk(i_axis,ic);
+                //             const auto mc_ = make_submatrix_size(ic,mc,m);
+                //             fill_buf(w1,a_buf.begin(),i_axis,j_axis,mc_,kc_);
+                //             if constexpr (std::is_same_v<order,c_order>){
+                //                 kernel(res_w,a_buf.cbegin(),b_buf.cbegin(),i_axis,j_axis,mc_,kc_,nc_);
+                //             }else{
+                //                 kernel(res_w,b_buf.cbegin(),a_buf.cbegin(),j_axis,i_axis,nc_,kc_,mc_);
+                //             }
+                //             w1.walk_back(i_axis,ic);
+                //             res_w.walk_back(i_axis,ic);
+                //         }
+                //         w1.walk_back(j_axis,pc);
+                //         w2.walk_back(i_axis,pc);
+                //     }
+                //     w2.walk_back(j_axis,jc);
+                //     res_w.walk_back(j_axis,jc);
+                // }
+
+                tr1.template next<order>();
+                tr2.template next<order>();
+            }while(res_tr.template next<order>());
+        };
+
+        auto core_nd_tiled2_mt = [k,make_submatrix_size,&res](auto& res_tr, auto& tr1, auto& tr2, const auto& i_axis, const auto& j_axis, const auto& m, const auto& n, const auto& mc, const auto& nc, const auto& kc){
 
             auto fill_buf = [](auto& w, auto dit, const auto& inner_axis, const auto& outer_axis, const auto& inner_size, const auto& outer_size){
                 for (auto i=outer_size; i!=0; --i,w.step(outer_axis)){
@@ -749,29 +945,30 @@ private:
                 }
             };
 
-            do{
-                auto res_w = res_tr.walker();
-                auto w1 = tr1.walker();
-                auto w2 = tr2.walker();
+            auto body = [k,i_axis,j_axis,mc,nc,kc,fill_buf,make_submatrix_size,kernel_c,kernel_f](auto res_w, auto w1, auto w2, const auto& jc_min, const auto& jc_max, const auto& ic_min, const auto& ic_max){
+                std::array<value_type1,mc_size*kc_size> a_buf;
+                std::array<value_type2,kc_size*nc_size> b_buf;
 
-                for (index_type jc=0; jc<n; jc+=nc){
+                for (index_type jc=jc_min; jc<jc_max; jc+=nc){
                     w2.walk(j_axis,jc);
                     res_w.walk(j_axis,jc);
+                    const auto nc_ = make_submatrix_size(jc,nc,jc_max);
                     for (index_type pc=0; pc<k; pc+=kc){
                         w1.walk(j_axis,pc);
                         w2.walk(i_axis,pc);
                         const auto kc_ = make_submatrix_size(pc,kc,k);
-                        const auto nc_ = make_submatrix_size(jc,nc,n);
                         fill_buf(w2,b_buf.begin(),j_axis,i_axis,nc_,kc_);
-                        for (index_type ic=0; ic<m; ic+=mc){
+                        for (index_type ic=ic_min; ic<ic_max; ic+=mc){
                             w1.walk(i_axis,ic);
                             res_w.walk(i_axis,ic);
-                            const auto mc_ = make_submatrix_size(ic,mc,m);
+                            const auto mc_ = make_submatrix_size(ic,mc,ic_max);
                             fill_buf(w1,a_buf.begin(),i_axis,j_axis,mc_,kc_);
                             if constexpr (std::is_same_v<order,c_order>){
+                                //micro_kernel(res_w,a_buf.cbegin(),b_buf.cbegin(),i_axis,j_axis,mc_,kc_,nc_);
                                 kernel_c(res_w,a_buf.cbegin(),b_buf.cbegin(),i_axis,j_axis,mc_,kc_,nc_);
                             }else{
                                 kernel_f(res_w,a_buf.cbegin(),b_buf.cbegin(),i_axis,j_axis,mc_,kc_,nc_);
+                                //micro_kernel(res_w,b_buf.cbegin(),a_buf.cbegin(),j_axis,i_axis,nc_,kc_,mc_);
                             }
                             w1.walk_back(i_axis,ic);
                             res_w.walk_back(i_axis,ic);
@@ -782,14 +979,98 @@ private:
                     w2.walk_back(j_axis,jc);
                     res_w.walk_back(j_axis,jc);
                 }
+            };
+
+            auto body_ = [m,n,k,i_axis,j_axis,mc,nc,kc,fill_buf,make_submatrix_size,kernel_c,kernel_f](auto res_w, auto w1, auto w2){
+                std::array<value_type1,mc_size*kc_size> a_buf;
+                std::array<value_type2,kc_size*nc_size> b_buf;
+
+                for (index_type jc=0; jc<n; jc+=nc){
+                    w2.walk(j_axis,jc);
+                    res_w.walk(j_axis,jc);
+                    const auto nc_ = make_submatrix_size(jc,nc,n);
+                    for (index_type pc=0; pc<k; pc+=kc){
+                        w1.walk(j_axis,pc);
+                        w2.walk(i_axis,pc);
+                        const auto kc_ = make_submatrix_size(pc,kc,k);
+                        fill_buf(w2,b_buf.begin(),j_axis,i_axis,nc_,kc_);
+                        for (index_type ic=0; ic<m; ic+=mc){
+                            w1.walk(i_axis,ic);
+                            res_w.walk(i_axis,ic);
+                            const auto mc_ = make_submatrix_size(ic,mc,m);
+                            fill_buf(w1,a_buf.begin(),i_axis,j_axis,mc_,kc_);
+                            if constexpr (std::is_same_v<order,c_order>){
+                                //micro_kernel(res_w,a_buf.cbegin(),b_buf.cbegin(),i_axis,j_axis,mc_,kc_,nc_);
+                                kernel_c(res_w,a_buf.cbegin(),b_buf.cbegin(),i_axis,j_axis,mc_,kc_,nc_);
+                            }else{
+                                kernel_f(res_w,a_buf.cbegin(),b_buf.cbegin(),i_axis,j_axis,mc_,kc_,nc_);
+                                //micro_kernel(res_w,b_buf.cbegin(),a_buf.cbegin(),j_axis,i_axis,nc_,kc_,mc_);
+                            }
+                            w1.walk_back(i_axis,ic);
+                            res_w.walk_back(i_axis,ic);
+                        }
+                        w1.walk_back(j_axis,pc);
+                        w2.walk_back(i_axis,pc);
+                    }
+                    w2.walk_back(j_axis,jc);
+                    res_w.walk_back(j_axis,jc);
+                }
+            };
+
+            const index_type j_parts = 4;
+            const index_type i_parts = 4;
+            const index_type j_step = n/j_parts;
+            const index_type i_step = m/i_parts;
+            multithreading::task_group group{};
+            matmul_2d<value_type1,value_type2,order,config_type,mc_size,nc_size,kc_size> mm(m,n,k,i_axis,j_axis);
+
+            do{
+                for (index_type j = 0; j<n; j+=j_step){
+                    for (index_type i = 0; i<m; i+=i_step){
+                        multithreading::get_pool().push_group(group,mm,res_tr.walker(),tr1.walker(),tr2.walker(),j,std::min(j+j_step,n),i,std::min(i+i_step,m));
+                    }
+                }
+                group.wait();
+
+
+                // for (index_type jc=0; jc<n; jc+=nc){
+                //     w2.walk(j_axis,jc);
+                //     res_w.walk(j_axis,jc);
+                //     const auto nc_ = make_submatrix_size(jc,nc,n);
+                //     for (index_type pc=0; pc<k; pc+=kc){
+                //         w1.walk(j_axis,pc);
+                //         w2.walk(i_axis,pc);
+                //         const auto kc_ = make_submatrix_size(pc,kc,k);
+                //         fill_buf(w2,b_buf.begin(),j_axis,i_axis,nc_,kc_);
+                //         for (index_type ic=0; ic<m; ic+=mc){
+                //             w1.walk(i_axis,ic);
+                //             res_w.walk(i_axis,ic);
+                //             const auto mc_ = make_submatrix_size(ic,mc,m);
+                //             fill_buf(w1,a_buf.begin(),i_axis,j_axis,mc_,kc_);
+                //             if constexpr (std::is_same_v<order,c_order>){
+                //                 //micro_kernel(res_w,a_buf.cbegin(),b_buf.cbegin(),i_axis,j_axis,mc_,kc_,nc_);
+                //                 kernel_c(res_w,a_buf.cbegin(),b_buf.cbegin(),i_axis,j_axis,mc_,kc_,nc_);
+                //             }else{
+                //                 kernel_f(res_w,a_buf.cbegin(),b_buf.cbegin(),i_axis,j_axis,mc_,kc_,nc_);
+                //                 //micro_kernel(res_w,b_buf.cbegin(),a_buf.cbegin(),j_axis,i_axis,nc_,kc_,mc_);
+                //             }
+                //             w1.walk_back(i_axis,ic);
+                //             res_w.walk_back(i_axis,ic);
+                //         }
+                //         w1.walk_back(j_axis,pc);
+                //         w2.walk_back(i_axis,pc);
+                //     }
+                //     w2.walk_back(j_axis,jc);
+                //     res_w.walk_back(j_axis,jc);
+                // }
+
 
                 tr1.template next<order>();
                 tr2.template next<order>();
             }while(res_tr.template next<order>());
         };
 
-        auto core_nd_tiled2_mt = [k,make_submatrix_size](auto& res_tr, auto& tr1, auto& tr2, const auto& i_axis, const auto& j_axis, const auto& m, const auto& n, const auto& mc, const auto& nc, const auto& kc){
-
+        auto core_nd_tiled3_mt = [k,make_submatrix_size,&res](auto& res_tr, auto& tr1, auto& tr2, const auto& i_axis, const auto& j_axis, const auto& m, const auto& n, const auto& mc, const auto& nc, const auto& kc){
 
             auto fill_buf = [](auto& w, auto dit, const auto& inner_axis, const auto& outer_axis, const auto& inner_size, const auto& outer_size){
                 for (auto i=outer_size; i!=0; --i,w.step(outer_axis)){
@@ -800,6 +1081,24 @@ private:
                 }
                 w.walk_back(outer_axis,outer_size);
             };
+
+            // auto micro_kernel = [](auto res_it, auto a_it, auto b_it, const auto& i_stride, const auto& j_stride, const auto& mc_, const auto& kc_, const auto& nc_){
+            //     const auto i_stride =
+            //     for (index_type kk=0; kk!=kc_; ++kk){
+            //         const auto jj = kk*mc_;
+            //         const auto ii = kk*nc_;
+            //         const auto a_it_ = a_it+jj;
+            //         const auto b_it_ = b_it+ii;
+            //         auto res_it_ = res_it;
+            //         for (index_type ir=0; ir!=mc_; ++ir,res_it_+=i_stride){
+            //             const auto e = *(a_it_+ir);
+            //             auto res_it__ = res_it_;
+            //             for (index_type jr=0; jr!=nc_; ++jr,res_it__+=j_stride){
+            //                 *res_it__+=e**(b_it_+jr);
+            //             }
+            //         }
+            //     }
+            // };
 
             auto micro_kernel = [](auto& res_w, auto a_it, auto b_it, const auto& i_axis, const auto& j_axis, const auto& mc_, const auto& kc_, const auto& nc_){
                 for (index_type kk=0; kk!=kc_; ++kk){
@@ -821,6 +1120,9 @@ private:
             auto body = [k,i_axis,j_axis,mc,nc,kc,fill_buf,make_submatrix_size,micro_kernel](auto res_w, auto w1, auto w2, const auto& jc_min, const auto& jc_max, const auto& ic_min, const auto& ic_max){
                 std::array<value_type1,mc_size*kc_size> a_buf;
                 std::array<value_type2,kc_size*nc_size> b_buf;
+
+                // const auto i_stride = res.descriptor().adapted_strides()[i_axis];
+                // const auto j_stride = res.descriptor().adapted_strides()[j_axis];
 
                 for (index_type jc=jc_min; jc<jc_max; jc+=nc){
                     w2.walk(j_axis,jc);
@@ -852,22 +1154,20 @@ private:
                 }
             };
 
-            const index_type j_parts = 4;
-            const index_type i_parts = 4;
-            const index_type j_step = n/j_parts;
-            const index_type i_step = m/i_parts;
-            multithreading::task_group group{};
+            // const index_type j_parts = 4;
+            // const index_type i_parts = 4;
+            // const index_type j_step = n/j_parts;
+            // const index_type i_step = m/i_parts;
+            // multithreading::task_group group{};
 
             do{
-                auto res_w = res_tr.walker();
-                auto w1 = tr1.walker();
-                auto w2 = tr2.walker();
-                for (index_type j = 0; j<n; j+=j_step){
-                    for (index_type i = 0; i<m; i+=i_step){
-                        multithreading::get_pool().push_group(group,body,res_w,w1,w2,j,std::min(j+j_step,n),i,std::min(i+i_step,m));
-                    }
-                }
-                group.wait();
+                // for (index_type j = 0; j<n; j+=j_step){
+                //     for (index_type i = 0; i<m; i+=i_step){
+                //         multithreading::get_pool().push_group(group,body,res_tr.walker(),tr1.walker(),tr2.walker(),j,std::min(j+j_step,n),i,std::min(i+i_step,m));
+                //     }
+                // }
+                // group.wait();
+                body(res_tr.walker(),tr1.walker(),tr2.walker(),0,n,0,m);
                 tr1.template next<order>();
                 tr2.template next<order>();
             }while(res_tr.template next<order>());

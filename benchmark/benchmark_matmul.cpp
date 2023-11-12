@@ -594,16 +594,16 @@ TEST_CASE("benchmark_matmul","[benchmark_tensor]")
         // //nd x 1d
         // std::make_pair(std::vector<int>{10000,10000},std::vector<int>{10000}),
         // //nd x nd
-        //std::make_pair(std::vector<int>{1000,1000},std::vector<int>{1000,1000})
+        std::make_pair(std::vector<int>{1000,1000},std::vector<int>{1000,1000})
         //std::make_pair(std::vector<int>{2000,2000},std::vector<int>{2000,2000})
-        std::make_pair(std::vector<int>{4000,4000},std::vector<int>{4000,4000})
+        //std::make_pair(std::vector<int>{4000,4000},std::vector<int>{4000,4000})
         //std::make_pair(std::vector<int>{6000,6000},std::vector<int>{6000,6000})
         //std::make_pair(std::vector<int>{2000,1000},std::vector<int>{1000,3000}),
         //std::make_pair(std::vector<int>{10000,10000},std::vector<int>{10000,10000})
         //std::make_pair(std::vector<int>{3,2,300,1000},std::vector<int>{2,1000,900})
         //std::make_pair(std::vector<int>{100,100,200,100},std::vector<int>{100,100,300})
     };
-    const auto n_iters = 1;
+    const auto n_iters = 10;
     //bench_matmul("bench matmul",n_iters,shapes,builder,command_matmul);
 
 
