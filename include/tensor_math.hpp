@@ -475,9 +475,9 @@ private:
         const auto k_ = 16;
         const auto n_ = 128;
 
-        static constexpr std::size_t mc_size = 256;
-        static constexpr std::size_t nc_size = 256;
-        static constexpr std::size_t kc_size = 128;
+        static constexpr std::size_t mc_size = 64;
+        static constexpr std::size_t nc_size = 64;
+        static constexpr std::size_t kc_size = 64;
         const index_type mc = mc_size;
         const index_type nc = nc_size;
         const index_type kc = kc_size;
@@ -788,6 +788,91 @@ private:
             }while(res_tr.template next<order>());
         };
 
+        auto core_nd_tiled2_mt = [k,make_submatrix_size](auto& res_tr, auto& tr1, auto& tr2, const auto& i_axis, const auto& j_axis, const auto& m, const auto& n, const auto& mc, const auto& nc, const auto& kc){
+
+
+            auto fill_buf = [](auto& w, auto dit, const auto& inner_axis, const auto& outer_axis, const auto& inner_size, const auto& outer_size){
+                for (auto i=outer_size; i!=0; --i,w.step(outer_axis)){
+                    for (auto j=inner_size; j!=0; --j,w.step(inner_axis),++dit){
+                        *dit = *w;
+                    }
+                    w.walk_back(inner_axis,inner_size);
+                }
+                w.walk_back(outer_axis,outer_size);
+            };
+
+            auto micro_kernel = [](auto& res_w, auto a_it, auto b_it, const auto& i_axis, const auto& j_axis, const auto& mc_, const auto& kc_, const auto& nc_){
+                for (index_type kk=0; kk!=kc_; ++kk){
+                    const auto jj = kk*mc_;
+                    const auto ii = kk*nc_;
+                    const auto a_it_ = a_it+jj;
+                    const auto b_it_ = b_it+ii;
+                    for (index_type ir=0; ir!=mc_; ++ir,res_w.step(i_axis)){
+                        const auto e = *(a_it_+ir);
+                        for (index_type jr=0; jr!=nc_; ++jr,res_w.step(j_axis)){
+                            *res_w+=e**(b_it_+jr);
+                        }
+                        res_w.walk_back(j_axis,nc_);
+                    }
+                    res_w.walk_back(i_axis,mc_);
+                }
+            };
+
+            auto body = [k,i_axis,j_axis,mc,nc,kc,fill_buf,make_submatrix_size,micro_kernel](auto res_w, auto w1, auto w2, const auto& jc_min, const auto& jc_max, const auto& ic_min, const auto& ic_max){
+                std::array<value_type1,mc_size*kc_size> a_buf;
+                std::array<value_type2,kc_size*nc_size> b_buf;
+
+                for (index_type jc=jc_min; jc<jc_max; jc+=nc){
+                    w2.walk(j_axis,jc);
+                    res_w.walk(j_axis,jc);
+                    const auto nc_ = make_submatrix_size(jc,nc,jc_max);
+                    for (index_type pc=0; pc<k; pc+=kc){
+                        w1.walk(j_axis,pc);
+                        w2.walk(i_axis,pc);
+                        const auto kc_ = make_submatrix_size(pc,kc,k);
+                        fill_buf(w2,b_buf.begin(),j_axis,i_axis,nc_,kc_);
+                        for (index_type ic=ic_min; ic<ic_max; ic+=mc){
+                            w1.walk(i_axis,ic);
+                            res_w.walk(i_axis,ic);
+                            const auto mc_ = make_submatrix_size(ic,mc,ic_max);
+                            fill_buf(w1,a_buf.begin(),i_axis,j_axis,mc_,kc_);
+                            if constexpr (std::is_same_v<order,c_order>){
+                                micro_kernel(res_w,a_buf.cbegin(),b_buf.cbegin(),i_axis,j_axis,mc_,kc_,nc_);
+                            }else{
+                                micro_kernel(res_w,b_buf.cbegin(),a_buf.cbegin(),j_axis,i_axis,nc_,kc_,mc_);
+                            }
+                            w1.walk_back(i_axis,ic);
+                            res_w.walk_back(i_axis,ic);
+                        }
+                        w1.walk_back(j_axis,pc);
+                        w2.walk_back(i_axis,pc);
+                    }
+                    w2.walk_back(j_axis,jc);
+                    res_w.walk_back(j_axis,jc);
+                }
+            };
+
+            const index_type j_parts = 4;
+            const index_type i_parts = 4;
+            const index_type j_step = n/j_parts;
+            const index_type i_step = m/i_parts;
+            multithreading::task_group group{};
+
+            do{
+                auto res_w = res_tr.walker();
+                auto w1 = tr1.walker();
+                auto w2 = tr2.walker();
+                for (index_type j = 0; j<n; j+=j_step){
+                    for (index_type i = 0; i<m; i+=i_step){
+                        multithreading::get_pool().push_group(group,body,res_w,w1,w2,j,std::min(j+j_step,n),i,std::min(i+i_step,m));
+                    }
+                }
+                group.wait();
+                tr1.template next<order>();
+                tr2.template next<order>();
+            }while(res_tr.template next<order>());
+        };
+
         auto core_nd_tiled1_mt = [k,make_submatrix_size](auto& res_tr, auto& tr1, auto& tr2, const auto& i_axis, const auto& j_axis, const auto& m, const auto& n, const auto& mc, const auto& nc, const auto& kc){
             std::array<value_type1,mc_size*kc_size> a_buf;
             std::array<value_type2,kc_size*nc_size> b_buf;
@@ -890,30 +975,30 @@ private:
         };
 
         if constexpr (std::is_same_v<order1,order2>){
-            // const auto i_axis = res_dim-2;
-            // const auto j_axis = res_dim-1;
-            // core_nd_tiled2(res_tr,tr1,tr2,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis],mc,nc,kc);
+            const auto i_axis = res_dim-2;
+            const auto j_axis = res_dim-1;
+            core_nd_tiled2_mt(res_tr,tr1,tr2,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis],mc,nc,kc);
             if constexpr (std::is_same_v<order1,c_order>){
-                const auto i_axis = res_dim-2;
-                const auto j_axis = res_dim-1;
-                //core_nd_mt(core_2d_cc_ff_mt,res_tr,tr1,tr2,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis],m_,n_);
-                //core_nd_tiled(core_2d_cc_ff_tiled,res_tr,tr1,tr2,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis],n_);
-                //core_nd(core_2d_cc_ff,res_tr,tr1,tr2,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis]);
-                core_nd_tiled1(res_tr,tr1,tr2,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis],mc,nc,kc);
-                //core_nd_tiled1_mt(res_tr,tr1,tr2,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis],mc,nc,kc);
+                // const auto i_axis = res_dim-2;
+                // const auto j_axis = res_dim-1;
+                // //core_nd_mt(core_2d_cc_ff_mt,res_tr,tr1,tr2,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis],m_,n_);
+                // //core_nd_tiled(core_2d_cc_ff_tiled,res_tr,tr1,tr2,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis],n_);
+                // //core_nd(core_2d_cc_ff,res_tr,tr1,tr2,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis]);
+                // core_nd_tiled1(res_tr,tr1,tr2,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis],mc,nc,kc);
+                // //core_nd_tiled1_mt(res_tr,tr1,tr2,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis],mc,nc,kc);
             }else{
-                const auto i_axis = res_dim-1;
-                const auto j_axis = res_dim-2;
-                //core_nd_mt(core_2d_cc_ff_mt,res_tr,tr2,tr1,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis],n_,m_);
-                //core_nd_tiled(core_2d_cc_ff_tiled,res_tr,tr2,tr1,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis],n_);
-                //core_nd(core_2d_cc_ff,res_tr,tr2,tr1,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis]);
-                core_nd_tiled1(res_tr,tr2,tr1,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis],nc,mc,kc);
-                //core_nd_tiled1_mt(res_tr,tr2,tr1,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis],nc,mc,kc);
+                // const auto i_axis = res_dim-1;
+                // const auto j_axis = res_dim-2;
+                // //core_nd_mt(core_2d_cc_ff_mt,res_tr,tr2,tr1,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis],n_,m_);
+                // //core_nd_tiled(core_2d_cc_ff_tiled,res_tr,tr2,tr1,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis],n_);
+                // //core_nd(core_2d_cc_ff,res_tr,tr2,tr1,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis]);
+                // core_nd_tiled1(res_tr,tr2,tr1,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis],nc,mc,kc);
+                // //core_nd_tiled1_mt(res_tr,tr2,tr1,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis],nc,mc,kc);
             }
         }else{
             const auto i_axis = res_dim-2;
             const auto j_axis = res_dim-1;
-            core_nd_tiled2(res_tr,tr1,tr2,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis],mc,nc,kc);
+            core_nd_tiled2_mt(res_tr,tr1,tr2,i_axis,j_axis,res_shape[i_axis],res_shape[j_axis],mc,nc,kc);
             if constexpr (std::is_same_v<order1,c_order>){
                 // const auto i_axis = res_dim-2;
                 // const auto j_axis = res_dim-1;
