@@ -435,7 +435,7 @@ auto matmul_2d_goto1(const basic_tensor<Ts...>& t1, const basic_tensor<Us...>& t
     const auto n = res_shape[1];
     static constexpr std::size_t mc_size = 128;
     static constexpr std::size_t nc_size = 128;
-    static constexpr std::size_t kc_size = 256;
+    static constexpr std::size_t kc_size = 128;
     const index_type mc = mc_size;
     const index_type nc = nc_size;
     const index_type kc = kc_size;
@@ -458,7 +458,7 @@ auto matmul_2d_goto1(const basic_tensor<Ts...>& t1, const basic_tensor<Us...>& t
         }
     };
 
-    auto kernel = [m](auto res_it, auto a_it, auto b_it, const auto& res_stride, const auto& mc_, const auto& nc_, const auto& kc_){
+    auto kernel = [](auto res_it, auto a_it, auto b_it, const auto& res_stride, const auto& mc_, const auto& nc_, const auto& kc_){
         for (index_type kk=0; kk!=kc_; ++kk){
             const auto jj = kk*mc_;
             const auto ii = kk*nc_;
@@ -472,6 +472,9 @@ auto matmul_2d_goto1(const basic_tensor<Ts...>& t1, const basic_tensor<Us...>& t
         }
     };
 
+    benchmark_helpers::cpu_interval timer;
+    double kernel_time = 0;
+
     //buffers
     std::array<value_type1,mc_size*kc_size> a_buf;
     std::array<value_type2,kc_size*nc_size> b_buf;
@@ -484,22 +487,24 @@ auto matmul_2d_goto1(const basic_tensor<Ts...>& t1, const basic_tensor<Us...>& t
     //The primary advantage of constraining panel B to the L3 cache is that it is cheaper to access memory in terms of energy efficiency in the L3 cache rather than main memory.
     for (index_type jc=0; jc<n; jc+=nc){
             const auto nc_ = make_submatrix_size(jc,nc,n);
-            const auto jj = jc*m;
         for (index_type pc=0; pc<k; pc+=kc){
                 const auto kc_ = make_submatrix_size(pc,kc,k);
                 fill_buf(b_it+(pc*outer_stride_b+jc*inner_stride_b),b_buf.begin(),inner_stride_b,outer_stride_b,nc_,kc_);
             for (index_type ic=0; ic<m; ic+=mc){
                 const auto mc_ = make_submatrix_size(ic,mc,m);
                 fill_buf(a_it+(ic*outer_stride_a+pc*inner_stride_a),a_buf.begin(),outer_stride_a,inner_stride_a,mc_,kc_);
+                timer.start();
                 if constexpr (std::is_same_v<res_order,c_order>){
-                    kernel(res_it+(ic+jj),b_buf.cbegin(),a_buf.cbegin(),n,nc_,mc_,kc_);
+                    kernel(res_it+(jc+ic*n),b_buf.cbegin(),a_buf.cbegin(),n,nc_,mc_,kc_);
                 }else{
-                    kernel(res_it+(ic+jj),a_buf.cbegin(),b_buf.cbegin(),m,mc_,nc_,kc_);
+                    kernel(res_it+(ic+jc*m),a_buf.cbegin(),b_buf.cbegin(),m,mc_,nc_,kc_);
                 }
+                timer.stop();
+                kernel_time+=timer;
             }
         }
     }
-
+    std::cout<<std::endl<<kernel_time;
     return res;
 }
 
@@ -582,16 +587,16 @@ TEST_CASE("benchmark_matmul","[benchmark_tensor]")
         // //nd x 1d
         // std::make_pair(std::vector<int>{10000,10000},std::vector<int>{10000}),
         // //nd x nd
-        std::make_pair(std::vector<int>{1000,1000},std::vector<int>{1000,1000})
+        //std::make_pair(std::vector<int>{1000,1000},std::vector<int>{1000,1000})
         //std::make_pair(std::vector<int>{2000,2000},std::vector<int>{2000,2000})
-        //std::make_pair(std::vector<int>{4000,4000},std::vector<int>{4000,4000})
+        std::make_pair(std::vector<int>{4000,4000},std::vector<int>{4000,4000})
         //std::make_pair(std::vector<int>{6000,6000},std::vector<int>{6000,6000})
         //std::make_pair(std::vector<int>{2000,1000},std::vector<int>{1000,3000}),
         //std::make_pair(std::vector<int>{10000,10000},std::vector<int>{10000,10000})
         //std::make_pair(std::vector<int>{3,2,300,1000},std::vector<int>{2,1000,900})
         //std::make_pair(std::vector<int>{100,100,200,100},std::vector<int>{100,100,300})
     };
-    const auto n_iters = 10;
+    const auto n_iters = 1;
     //bench_matmul("bench matmul",n_iters,shapes,builder,command_matmul);
 
 
@@ -626,10 +631,10 @@ TEST_CASE("benchmark_matmul","[benchmark_tensor]")
 
     // REQUIRE(matmul(tensor<double,c_order>{{1,2,4,2},{3,4,2,0},{5,3,1,1}},tensor<double,c_order>{{2,1,2},{0,3,1},{1,1,4},{4,3,3}})==tensor<double>{{14,17,26},{8,17,18},{15,18,20}});
 
-    // REQUIRE(matmul(aa.copy(c_order{}),bb.copy(c_order{}))==rr);
-    // REQUIRE(matmul(aa.copy(f_order{}),bb.copy(f_order{}))==rr);
-    // REQUIRE(matmul(aa.copy(c_order{}),bb.copy(f_order{}))==rr);
-    // REQUIRE(matmul(aa.copy(f_order{}),bb.copy(c_order{}))==rr);
+    REQUIRE(matmul(aa.copy(c_order{}),bb.copy(c_order{}))==rr);
+    REQUIRE(matmul(aa.copy(f_order{}),bb.copy(f_order{}))==rr);
+    REQUIRE(matmul(aa.copy(c_order{}),bb.copy(f_order{}))==rr);
+    REQUIRE(matmul(aa.copy(f_order{}),bb.copy(c_order{}))==rr);
 
     auto command_matmul_2d = [](const auto& t1, const auto& t2){
         auto r = matmul_2d(t1,t2);
@@ -651,6 +656,6 @@ TEST_CASE("benchmark_matmul","[benchmark_tensor]")
     //bench_matmul("bench matmul_2d",n_iters,shapes,builder,command_matmul_2d);
     //bench_matmul("bench matmul_2d_tiled",n_iters,shapes,builder,command_matmul_2d_tiled);
     //bench_matmul("bench matmul_2d_goto",n_iters,shapes,builder,command_matmul_2d_goto);
-    //bench_matmul("bench matmul",n_iters,shapes,builder,command_matmul);
+    bench_matmul("bench matmul",n_iters,shapes,builder,command_matmul);
 
 }
