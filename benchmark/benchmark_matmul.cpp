@@ -636,8 +636,7 @@ TEST_CASE("benchmark_matmul","[benchmark_tensor]")
     REQUIRE(matmul_2d_goto1(aa.copy(c_order{}),bb.copy(f_order{}))==rr);
     REQUIRE(matmul_2d_goto1(aa.copy(f_order{}),bb.copy(c_order{}))==rr);
 
-    //REQUIRE(matmul(tensor<double,c_order>{{1,2,4,2},{3,4,2,0},{5,3,1,1}},tensor<double,c_order>{{2,1,2},{0,3,1},{1,1,4},{4,3,3}})==tensor<double>{{14,17,26},{8,17,18},{15,18,20}});
-    //REQUIRE(matmul(aa,bb)==rr);
+    REQUIRE(matmul(tensor<double,c_order>{{1,2,4,2},{3,4,2,0},{5,3,1,1}},tensor<double,c_order>{{2,1,2},{0,3,1},{1,1,4},{4,3,3}})==tensor<double>{{14,17,26},{8,17,18},{15,18,20}});
 
     REQUIRE(matmul(aa.copy(c_order{}),bb.copy(c_order{}))==rr);
     REQUIRE(matmul(aa.copy(f_order{}),bb.copy(f_order{}))==rr);

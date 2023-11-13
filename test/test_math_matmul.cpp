@@ -31,7 +31,7 @@ TEMPLATE_TEST_CASE("test_math_matmul","test_math",
 
     //0ten_a,1ten_b,2expected
     auto test_data = std::make_tuple(
-        //1d x 1d
+        // //1d x 1d
         std::make_tuple(tensor_type1{},tensor_type2{},tensor_type(0)),
         std::make_tuple(tensor_type1{1,2,3,4},tensor_type2{5,6,7,8},tensor_type(70)),
         //1d x nd
