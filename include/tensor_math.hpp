@@ -14,6 +14,7 @@
 #include "tensor_operators.hpp"
 #include "reduce.hpp"
 #include "reduce_operations.hpp"
+#include "../benchmark/benchmark_helpers.hpp"
 
 
 namespace gtensor{
@@ -454,8 +455,9 @@ private:
         const index_type mc{Mc};
         const index_type nc{Nc};
         const index_type kc{Kc};
-        std::array<T1,Mc*Kc> a_buf;
-        std::array<T2,Kc*Nc> b_buf;
+
+        benchmark_helpers::cpu_interval timer;
+        inline static std::atomic<std::size_t> kernel_time = 0;
 
         matmul_2d(const index_type& m_, const index_type& n_, const index_type& k_, const dim_type& i_axis_, const dim_type& j_axis_):
             m{m_},
@@ -495,6 +497,8 @@ private:
         template<typename ResW, typename W1, typename W2>
         void operator()(ResW res_w, W1 w1, W2 w2, const index_type& ic_min, const index_type& ic_max, const index_type& jc_min, const index_type& jc_max){
             auto make_submatrix_size = [](const auto& idx, const auto& block_size, const auto& max){return idx+block_size>max ? max-idx : block_size;};
+            std::array<T1,Mc*Kc> a_buf;
+            std::array<T2,Kc*Nc> b_buf;
             for (index_type jc=jc_min; jc<jc_max; jc+=nc){
                 w2.walk(j_axis,jc);
                 res_w.walk(j_axis,jc);
@@ -509,11 +513,16 @@ private:
                         res_w.walk(i_axis,ic);
                         const auto mc_ = make_submatrix_size(ic,mc,ic_max);
                         fill_buf(w1,a_buf.begin(),i_axis,j_axis,mc_,kc_);
+
+                        timer.start();
                         if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
                             kernel(res_w,a_buf.cbegin(),b_buf.cbegin(),i_axis,j_axis,mc_,nc_,kc_);
                         }else{
                             kernel(res_w,b_buf.cbegin(),a_buf.cbegin(),j_axis,i_axis,nc_,mc_,kc_);
                         }
+                        timer.stop();
+                        kernel_time.fetch_add(timer);
+
                         w1.walk_back(i_axis,ic);
                         res_w.walk_back(i_axis,ic);
                     }
@@ -571,12 +580,14 @@ private:
         const auto n = res_shape[j_axis];
         const auto k = *(shape1.end()-1);
 
-        const index_type i_parts = 4;
-        const index_type j_parts = 4;
+        const index_type i_parts = 2;
+        const index_type j_parts = 2;
         const index_type i_step = m > i_parts ? m/i_parts : m;
         const index_type j_step = n > j_parts ? n/j_parts : n;
         multithreading::task_group group{};
-        matmul_2d<value_type1,value_type2,order,config_type,mc_size,nc_size,kc_size> mm(m,n,k,i_axis,j_axis);
+        using matmul_type = matmul_2d<value_type1,value_type2,order,config_type,mc_size,nc_size,kc_size>;
+        matmul_type::kernel_time = 0;
+        matmul_type mm(m,n,k,i_axis,j_axis);
         do{
             for (index_type j = 0; j<n; j+=j_step){
                 for (index_type i = 0; i<m; i+=i_step){
@@ -587,7 +598,7 @@ private:
             tr1.template next<order>();
             tr2.template next<order>();
         }while(res_tr.template next<order>());
-
+        std::cout<<std::endl<<matmul_type::kernel_time;
         return res;
     }
 

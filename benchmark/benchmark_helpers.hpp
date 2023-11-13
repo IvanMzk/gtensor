@@ -13,6 +13,7 @@
 #include <string>
 #include <cmath>
 #include <chrono>
+#include <atomic>
 #include "config.hpp"
 #include "descriptor.hpp"
 
