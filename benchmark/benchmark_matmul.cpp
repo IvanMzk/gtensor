@@ -673,7 +673,7 @@ auto matmul_2d_goto2(const basic_tensor<Ts...>& t1, const basic_tensor<Us...>& t
                 //     *res_buf_+=a_data_[ir]*e;
                 // }
 
-                for (index_type ir=0; ir!=mc_; ++ir,++res_buf_){
+                for (std::ptrdiff_t ir=0; ir!=mc_; ++ir,++res_buf_){
                     *res_buf_+=a_data_[ir]*e;
                 }
             }
@@ -801,16 +801,16 @@ TEST_CASE("benchmark_matmul","[benchmark_tensor]")
         // //nd x 1d
         // std::make_pair(std::vector<int>{10000,10000},std::vector<int>{10000}),
         // //nd x nd
-        std::make_pair(std::vector<int>{1000,1000},std::vector<int>{1000,1000})
+        //std::make_pair(std::vector<int>{1000,1000},std::vector<int>{1000,1000})
         //std::make_pair(std::vector<int>{2000,2000},std::vector<int>{2000,2000})
         //std::make_pair(std::vector<int>{4000,4000},std::vector<int>{4000,4000})
+        std::make_pair(std::vector<int>{200,100000},std::vector<int>{100000,200})
         //std::make_pair(std::vector<int>{6000,6000},std::vector<int>{6000,6000})
-        //std::make_pair(std::vector<int>{2000,1000},std::vector<int>{1000,3000}),
         //std::make_pair(std::vector<int>{10000,10000},std::vector<int>{10000,10000})
         //std::make_pair(std::vector<int>{3,2,300,1000},std::vector<int>{2,1000,900})
         //std::make_pair(std::vector<int>{100,100,200,100},std::vector<int>{100,100,300})
     };
-    const auto n_iters = 10;
+    const auto n_iters = 1;
     //bench_matmul("bench matmul",n_iters,shapes,builder,command_matmul);
 
 
@@ -876,11 +876,11 @@ TEST_CASE("benchmark_matmul","[benchmark_tensor]")
         auto r = matmul_2d_goto2(t1,t2);
         return *r.begin();
     };
-    bench_matmul("bench matmul_2d_goto2",n_iters,shapes,builder,command_matmul_2d_goto2);
+    //bench_matmul("bench matmul_2d_goto2",n_iters,shapes,builder,command_matmul_2d_goto2);
     //bench_matmul("bench matmul_2d_goto1",n_iters,shapes,builder,command_matmul_2d_goto1);
     //bench_matmul("bench matmul_2d",n_iters,shapes,builder,command_matmul_2d);
     //bench_matmul("bench matmul_2d_tiled",n_iters,shapes,builder,command_matmul_2d_tiled);
     //bench_matmul("bench matmul_2d_goto",n_iters,shapes,builder,command_matmul_2d_goto);
-    //bench_matmul("bench matmul",n_iters,shapes,builder,command_matmul);
+    bench_matmul("bench matmul",n_iters,shapes,builder,command_matmul);
 
 }

@@ -442,7 +442,7 @@ private:
         return res;
     }
 
-    template<typename T1, typename T2, typename Order, typename Config, std::size_t Mc, std::size_t Nc, std::size_t Kc>
+    template<typename T, typename T1, typename T2, typename Order, typename Config, std::size_t Mc, std::size_t Nc, std::size_t Kc>
     struct matmul_2d
     {
         using index_type = typename Config::index_type;
@@ -491,85 +491,56 @@ private:
             w.walk_back(outer_axis,outer_size);
         };
 
-        template<typename ResW>
-        ALWAYS_INLINE void kernel(ResW& res_w, const T1*const a_data, const T2* b_data, const std::ptrdiff_t& mc_, const std::ptrdiff_t& nc_, const std::ptrdiff_t& kc_){
-            const auto i_axis_ = std::is_same_v<Order,gtensor::config::f_order> ? i_axis : j_axis;
-            const auto j_axis_ = std::is_same_v<Order,gtensor::config::f_order> ? j_axis : i_axis;
-            for (std::ptrdiff_t kk=0; kk!=kc_; ++kk){
-                const auto a_data_ = a_data+kk*mc_;
-                for (const auto b_last=b_data+nc_; b_data!=b_last; ++b_data,res_w.step(j_axis_)){
-                    const auto e = *b_data;
-                    auto a_data__=a_data_;
-                    const auto a_last = a_data_+mc_;
-                    if (mc_ > 3){
-                        for (const auto a_last__=a_last-3; a_data__<a_last__; a_data__+=4){
-                            *res_w+=*a_data__*e;
-                            res_w.step(i_axis_);
-                            *res_w+=*(a_data__+1)*e;
-                            res_w.step(i_axis_);
-                            *res_w+=*(a_data__+2)*e;
-                            res_w.step(i_axis_);
-                            *res_w+=*(a_data__+3)*e;
-                            res_w.step(i_axis_);
-                        }
+        template<typename ResW, typename DimT>
+        ALWAYS_INLINE void fill_res(const T* buf, ResW& res_w, const DimT& inner_axis, const DimT& outer_axis, const index_type& inner_size, const index_type& outer_size){
+            for (auto i=outer_size; i!=0; --i,res_w.step(outer_axis)){
+                const auto buf_last = buf+static_cast<std::ptrdiff_t>(inner_size);
+                if (inner_size > 3){
+                    for (const auto buf_last_=buf_last-3; buf<buf_last_; buf+=4){
+                        *res_w += *buf;
+                        res_w.step(inner_axis);
+                        *res_w += *(buf+1);
+                        res_w.step(inner_axis);
+                        *res_w += *(buf+2);
+                        res_w.step(inner_axis);
+                        *res_w += *(buf+3);
+                        res_w.step(inner_axis);
                     }
-                    for (;a_data__!=a_last; ++a_data__,res_w.step(i_axis_)){
-                        *res_w+=*a_data__*e;
-                    }
-                    res_w.walk_back(i_axis_,mc_);
                 }
-                res_w.walk_back(j_axis_,nc_);
+                for (;buf!=buf_last; ++buf,res_w.step(inner_axis)){
+                    *res_w += *buf;
+                }
+                res_w.walk_back(inner_axis,inner_size);
+            }
+            res_w.walk_back(outer_axis,outer_size);
+        };
+
+        ALWAYS_INLINE void kernel(T* res_buf, const T1*const a_data, const T2* b_data, const std::ptrdiff_t& mc_, const std::ptrdiff_t& nc_, const std::ptrdiff_t& kc_){
+            auto res_buf_ = res_buf;
+            for (const auto b_last=b_data+nc_; b_data!=b_last; ++b_data){
+                const auto e = *b_data;
+                for (std::ptrdiff_t ir=0; ir!=mc_; ++ir,++res_buf_){
+                    *res_buf_=a_data[ir]*e;
+                }
+            }
+            for (std::ptrdiff_t kk=1; kk!=kc_; ++kk){
+                const auto a_data_ = a_data+kk*mc_;
+                auto res_buf_ = res_buf;
+                for (const auto b_last=b_data+nc_; b_data!=b_last; ++b_data){
+                    const auto e = *b_data;
+                    for (std::ptrdiff_t ir=0; ir!=mc_; ++ir,++res_buf_){
+                        *res_buf_+=a_data_[ir]*e;
+                    }
+                }
             }
         }
-
-        // template<typename ResW, typename DimT>
-        // ALWAYS_INLINE void kernel(ResW& res_w, const T1* a_data, const T2* b_data, const DimT& i_axis, const DimT& j_axis, const index_type& mc_, const index_type& nc_, const index_type& kc_){
-        //     for (index_type kk=0; kk!=kc_; ++kk){
-        //         const auto jj = kk*mc_;
-        //         const auto ii = kk*nc_;
-        //         for (index_type jr=0; jr!=nc_; ++jr,res_w.step(j_axis)){
-        //             const auto e = b_data[ii+jr];
-        //             index_type ir=0;
-        //             for (;ir<=mc_-4; ir+=4){
-        //                 *res_w+=a_data[ir+jj]*e;
-        //                 res_w.step(i_axis);
-        //                 *res_w+=a_data[ir+jj+1]*e;
-        //                 res_w.step(i_axis);
-        //                 *res_w+=a_data[ir+jj+2]*e;
-        //                 res_w.step(i_axis);
-        //                 *res_w+=a_data[ir+jj+3]*e;
-        //                 res_w.step(i_axis);
-        //             }
-        //             for (;ir!=mc_; ++ir,res_w.step(i_axis)){
-        //                 *res_w+=a_data[ir+jj]*e;
-        //             }
-        //             res_w.walk_back(i_axis,mc_);
-        //         }
-        //         res_w.walk_back(j_axis,nc_);
-        //     }
-        // }
-
-        // template<typename ResW, typename It, typename DimT>
-        // ALWAYS_INLINE void kernel(ResW& res_w, It a_it, It b_it, const DimT& i_axis, const DimT& j_axis, const index_type& mc_, const index_type& nc_, const index_type& kc_){
-        //     for (index_type kk=0; kk!=kc_; ++kk){
-        //         const auto jj = kk*mc_;
-        //         const auto ii = kk*nc_;
-        //         for (index_type jr=0; jr!=nc_; ++jr,res_w.step(j_axis)){
-        //             const auto e = b_it[ii+jr];
-        //             for (index_type ir=0; ir!=mc_; ++ir,res_w.step(i_axis)){
-        //                 *res_w+=a_it[ir+jj]*e;
-        //             }
-        //             res_w.walk_back(i_axis,mc_);
-        //         }
-        //         res_w.walk_back(j_axis,nc_);
-        //     }
-        // }
 
         template<typename ResW, typename W1, typename W2>
         void operator()(ResW res_w, W1 w1, W2 w2, const index_type& ic_min, const index_type& ic_max, const index_type& jc_min, const index_type& jc_max){
             auto make_submatrix_size = [](const auto& idx, const auto& block_size, const auto& max){return idx+block_size>max ? max-idx : block_size;};
             std::array<T1,Mc*Kc> a_buf;
             std::array<T2,Kc*Nc> b_buf;
+            std::array<T,Mc*Nc> res_buf;
             for (index_type jc=jc_min; jc<jc_max; jc+=nc){
                 w2.walk(j_axis,jc);
                 res_w.walk(j_axis,jc);
@@ -587,9 +558,11 @@ private:
 
                         //timer.start();
                         if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
-                            kernel(res_w,b_buf.data(),a_buf.data(),nc_,mc_,kc_);
+                            kernel(res_buf.data(),b_buf.data(),a_buf.data(),static_cast<std::ptrdiff_t>(nc_),static_cast<std::ptrdiff_t>(mc_),static_cast<std::ptrdiff_t>(kc_));
+                            fill_res(res_buf.data(),res_w,j_axis,i_axis,nc_,mc_);
                         }else{
-                            kernel(res_w,a_buf.data(),b_buf.data(),static_cast<std::ptrdiff_t>(mc_),static_cast<std::ptrdiff_t>(nc_),static_cast<std::ptrdiff_t>(kc_));
+                            kernel(res_buf.data(),a_buf.data(),b_buf.data(),static_cast<std::ptrdiff_t>(mc_),static_cast<std::ptrdiff_t>(nc_),static_cast<std::ptrdiff_t>(kc_));
+                            fill_res(res_buf.data(),res_w,i_axis,j_axis,mc_,nc_);
                         }
                         //timer.stop();
                         //kernel_time.fetch_add(timer);
@@ -617,9 +590,10 @@ private:
     static auto matmul_nd_helper(const basic_tensor<Ts...>& t1, const basic_tensor<Us...>& t2){
         using res_type = ResT;
         using order = typename res_type::order;
+        using value_type = typename res_type::value_type;
         using config_type = typename res_type::config_type;
-        using shape_type = typename res_type::shape_type;
         using index_type = typename res_type::index_type;
+        using shape_type = typename res_type::shape_type;
         using order = typename res_type::order;
         using value_type1 = typename basic_tensor<Ts...>::value_type;
         using value_type2 = typename basic_tensor<Us...>::value_type;
@@ -649,7 +623,7 @@ private:
         // static constexpr std::size_t kc_size = 128;
         static constexpr std::size_t mc_size = 128;
         static constexpr std::size_t nc_size = 128;
-        static constexpr std::size_t kc_size = 128;
+        static constexpr std::size_t kc_size = 256;
 
         const auto i_axis = res_dim-2;
         const auto j_axis = res_dim-1;
@@ -657,14 +631,42 @@ private:
         const auto n = res_shape[j_axis];
         const auto k = *(shape1.end()-1);
 
-        const index_type i_parts = 4;
-        const index_type j_parts = 4;
+        const std::size_t n_tasks = 16;
+        const auto max_axis_size = std::max(m,n);
+        auto ti = static_cast<std::size_t>(std::sqrt(n_tasks*static_cast<std::size_t>(m)/static_cast<double>(static_cast<std::size_t>(n))));
+        auto tj = static_cast<std::size_t>(std::sqrt(n_tasks*static_cast<std::size_t>(n)/static_cast<double>(static_cast<std::size_t>(m))));
+        // ti = ti == 0 ? 1 : ti;
+        // tj = tj == 0 ? 1 : tj;
+        if (ti == 0){
+            ti=1;
+            tj = n_tasks;
+        }else if (tj == 0){
+            tj=1;
+            ti = n_tasks;
+        }else if (ti < tj){
+            tj = n_tasks/ti;
+        }else if (tj < ti){
+            ti = n_tasks/tj;
+        }else if (n < m){  //ti==tj, and both are non zero
+            ti = n_tasks/tj;
+        }else{
+            tj = n_tasks/ti;
+        }
+        const auto delta = n_tasks - ti*tj;
+        //here we have ti and tj - parts number to split corresponding dimensions, each such rect part will be assigned to separate task
+        //ti*tj is total number of tasks
+        //delta may be non zero if matrix can't be splitted to n_tasks evenly
+
+        const index_type i_parts = static_cast<index_type>(ti);
+        const index_type j_parts = static_cast<index_type>(tj);
         const index_type i_step = m > i_parts ? m/i_parts : m;
         const index_type j_step = n > j_parts ? n/j_parts : n;
         multithreading::task_group group{};
-        using matmul_type = matmul_2d<value_type1,value_type2,order,config_type,mc_size,nc_size,kc_size>;
+        using matmul_type = matmul_2d<value_type,value_type1,value_type2,order,config_type,mc_size,nc_size,kc_size>;
         matmul_type::kernel_time = 0;
         matmul_type mm(m,n,k,i_axis,j_axis);
+        std::cout<<std::endl<<i_parts;
+        std::cout<<std::endl<<j_parts;
         do{
             for (index_type j = 0; j<n; j+=j_step){
                 for (index_type i = 0; i<m; i+=i_step){
