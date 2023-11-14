@@ -508,6 +508,220 @@ auto matmul_2d_goto1(const basic_tensor<Ts...>& t1, const basic_tensor<Us...>& t
     return res;
 }
 
+//add unroll
+template<typename...Ts, typename...Us>
+auto matmul_2d_goto2(const basic_tensor<Ts...>& t1, const basic_tensor<Us...>& t2){
+    using tensor_type1 = basic_tensor<Ts...>;
+    using tensor_type2 = basic_tensor<Us...>;
+    using value_type1 = typename tensor_type1::value_type;
+    using value_type2 = typename tensor_type2::value_type;
+    using order1 = typename basic_tensor<Ts...>::order;
+    using order2 = typename basic_tensor<Us...>::order;
+    using gtensor::config::c_order;
+    using gtensor::config::f_order;
+    using res_order = std::conditional_t<std::is_same_v<order1,order2>,order1,gtensor::config::c_order>;
+    using config_type = typename tensor_type1::config_type;
+    using res_type = gtensor::detail::tensor_copy_type_t<std::decay_t<decltype(std::declval<value_type1>()*std::declval<value_type2>())>,res_order,config_type>;
+    using shape_type = typename res_type::shape_type;
+    using index_type = typename res_type::index_type;
+    const auto& shape1 = t1.shape();
+    const auto& shape2 = t2.shape();
+    res_type res({shape1[0],shape2[1]},0);
+    const auto& res_shape = res.shape();
+    const auto res_dim = gtensor::detail::make_dim(res_shape);
+
+    const auto k = shape1[1];
+    const auto m = res_shape[0];
+    const auto n = res_shape[1];
+    static constexpr std::size_t mc_size = 128;
+    static constexpr std::size_t nc_size = 128;
+    static constexpr std::size_t kc_size = 128;
+    const index_type mc = mc_size;
+    const index_type nc = nc_size;
+    const index_type kc = kc_size;
+
+    const auto inner_stride_a = std::is_same_v<order1,c_order> ? index_type{1} : m;
+    const auto outer_stride_a = std::is_same_v<order1,c_order> ? k : index_type{1};
+    const auto inner_stride_b = std::is_same_v<order2,c_order> ? index_type{1} : k;
+    const auto outer_stride_b = std::is_same_v<order2,c_order> ? n : index_type{1};
+    const auto inner_stride_res = std::is_same_v<res_order,c_order> ? index_type{1} : m;
+    const auto outer_stride_res = std::is_same_v<res_order,c_order> ? n : index_type{1};
+
+    auto make_submatrix_size = [](const auto& idx, const auto& block_size, const auto& max){return idx+block_size>max ? max-idx : block_size;};
+
+    auto fill_buf = [](auto it, auto* dst, const auto& inner_stride, const auto& outer_stride, const auto& inner_size, const auto& outer_size){
+        for (const auto it_last=it+outer_stride*outer_size; it!=it_last; it+=outer_stride){
+            auto it_ = it;
+            const auto dst_last = dst+static_cast<std::ptrdiff_t>(inner_size);
+            if (inner_size > 3){
+                for (const auto dst_last_=dst_last-3; dst<dst_last_; dst+=4){
+                    *dst = *it_;
+                    it_+=inner_stride;
+                    *(dst+1) = *it_;
+                    it_+=inner_stride;
+                    *(dst+2) = *it_;
+                    it_+=inner_stride;
+                    *(dst+3) = *it_;
+                    it_+=inner_stride;
+                }
+            }
+            for (;dst!=dst_last; ++dst,it_+=inner_stride){
+                *dst = *it_;
+            }
+        }
+    };
+
+    auto fill_res = [](const auto* buf, auto res_it, const auto& outer_stride, const auto& inner_size, const auto& outer_size){
+        for (const auto res_last=res_it+outer_stride*outer_size; res_it!=res_last; res_it+=outer_stride){
+            auto res_it_ = res_it;
+            const auto buf_last = buf+static_cast<std::ptrdiff_t>(inner_size);
+            if (inner_size > 3){
+                for (const auto buf_last_=buf_last-3; buf<buf_last_; buf+=4,res_it_+=4){
+                    *res_it_ += *buf;
+                    *(res_it_+1) += *(buf+1);
+                    *(res_it_+2) += *(buf+2);
+                    *(res_it_+3) += *(buf+3);
+                }
+            }
+            for (;buf!=buf_last; ++buf,++res_it_){
+                *res_it_ += *buf;
+            }
+        }
+    };
+
+    auto kernel = [](auto* res_buf, const auto* const a_data, const auto* b_data, const std::ptrdiff_t& mc_, const std::ptrdiff_t& nc_, const std::ptrdiff_t& kc_){
+        auto res_buf_ = res_buf;
+        for (const auto b_last=b_data+nc_; b_data!=b_last; ++b_data){
+            const auto e = *b_data;
+            for (std::ptrdiff_t ir=0; ir!=mc_; ++ir,++res_buf_){
+                *res_buf_=a_data[ir]*e;
+            }
+        }
+        for (std::ptrdiff_t kk=1; kk!=kc_; ++kk){
+            const auto a_data_ = a_data+kk*mc_;
+            auto res_buf_ = res_buf;
+            for (const auto b_last=b_data+nc_; b_data!=b_last; ++b_data){
+                const auto e = *b_data;
+
+                // auto a_data__=a_data_;
+                // const auto a_last = a_data_+mc_;
+                // if (mc_>7){
+                //     for (const auto a_last__=a_last-7; a_data__<a_last__; a_data__+=8,res_buf_+=8){
+                //         *res_buf_+=*a_data__*e;
+                //         *(res_buf_+1)+=*(a_data__+1)*e;
+                //         *(res_buf_+2)+=*(a_data__+2)*e;
+                //         *(res_buf_+3)+=*(a_data__+3)*e;
+                //         *(res_buf_+4)+=*(a_data__+4)*e;
+                //         *(res_buf_+5)+=*(a_data__+5)*e;
+                //         *(res_buf_+6)+=*(a_data__+6)*e;
+                //         *(res_buf_+7)+=*(a_data__+7)*e;
+                //     }
+                // }
+                // for (;a_data__!=a_last; ++a_data__,++res_buf_){
+                //     *res_buf_+=*a_data__*e;
+                // }
+
+                // auto a_data__=a_data_;
+                // const auto a_last = a_data_+mc_;
+                // if (mc_>3){
+                //     for (const auto a_last__=a_last-3; a_data__<a_last__; a_data__+=4,res_buf_+=4){
+                //         *res_buf_+=*a_data__*e;
+                //         *(res_buf_+1)+=*(a_data__+1)*e;
+                //         *(res_buf_+2)+=*(a_data__+2)*e;
+                //         *(res_buf_+3)+=*(a_data__+3)*e;
+                //     }
+                // }
+                // for (;a_data__!=a_last; ++a_data__,++res_buf_){
+                //     *res_buf_+=*a_data__*e;
+                // }
+
+                // auto a_data__=a_data_;
+                // const auto a_last = a_data_+mc_;
+                // if (mc_>3){
+                //     for (const auto a_last__=a_last-3; a_data__<a_last__; a_data__+=4){
+                //         *res_buf_+=*a_data__*e;
+                //         ++res_buf_;
+                //         *res_buf_+=*(a_data__+1)*e;
+                //         ++res_buf_;
+                //         *res_buf_+=*(a_data__+2)*e;
+                //         ++res_buf_;
+                //         *res_buf_+=*(a_data__+3)*e;
+                //         ++res_buf_;
+                //     }
+                // }
+                // for (;a_data__!=a_last; ++a_data__,++res_buf_){
+                //     *res_buf_+=*a_data__*e;
+                // }
+
+                // auto a_data__=a_data_;
+                // for (const auto a_last__=a_data__+mc_; a_data__!=a_last__; ++a_data__,++res_buf_){
+                //     *res_buf_+=*a_data__*e;
+                // }
+
+                // auto a_data__=a_data_;
+                // for (const auto res_last=res_buf_+mc_; res_buf_!=res_last; ++res_buf_,++a_data__){
+                //     *res_buf_+=*a_data__*e;
+                // }
+                // std::ptrdiff_t ir=0;
+                // for (const auto ir_last=mc_-3; ir<ir_last; ir+=4,res_buf_+=4){
+                //     *res_buf_+=a_data_[ir]*e;
+                //     *(res_buf_+1)+=a_data_[ir+1]*e;
+                //     *(res_buf_+2)+=a_data_[ir+2]*e;
+                //     *(res_buf_+3)+=a_data_[ir+3]*e;
+                // }
+                // for (;ir!=mc_; ++ir,++res_buf_){
+                //     *res_buf_+=a_data_[ir]*e;
+                // }
+
+                for (index_type ir=0; ir!=mc_; ++ir,++res_buf_){
+                    *res_buf_+=a_data_[ir]*e;
+                }
+            }
+        }
+    };
+
+    // benchmark_helpers::cpu_interval timer;
+    // double kernel_time = 0;
+
+    //buffers
+    std::array<value_type1,mc_size*kc_size> a_buf;
+    std::array<value_type2,kc_size*nc_size> b_buf;
+    std::array<value_type2,mc_size*nc_size> res_buf;
+    //iterators
+    auto res_it = res.traverse_order_adapter(res_order{}).begin();
+    auto a_it = t1.traverse_order_adapter(order1{}).begin();
+    auto b_it = t2.traverse_order_adapter(order2{}).begin();
+    //The primary reason for the outer-most loop, indexed by jc, is to limit the amount of workspace required for panel B,
+    //with a secondary reason to allow panel B to remain in the L3 cache
+    //The primary advantage of constraining panel B to the L3 cache is that it is cheaper to access memory in terms of energy efficiency in the L3 cache rather than main memory.
+    for (index_type jc=0; jc<n; jc+=nc){
+            const auto nc_ = make_submatrix_size(jc,nc,n);
+        for (index_type pc=0; pc<k; pc+=kc){
+                const auto kc_ = make_submatrix_size(pc,kc,k);
+                fill_buf(b_it+(pc*outer_stride_b+jc*inner_stride_b),b_buf.data(),inner_stride_b,outer_stride_b,nc_,kc_);
+            for (index_type ic=0; ic<m; ic+=mc){
+                const auto mc_ = make_submatrix_size(ic,mc,m);
+                fill_buf(a_it+(ic*outer_stride_a+pc*inner_stride_a),a_buf.data(),outer_stride_a,inner_stride_a,mc_,kc_);
+                //timer.start();
+                //std::fill(res_buf.begin(),res_buf.end(),0);
+                if constexpr (std::is_same_v<res_order,c_order>){
+                    kernel(res_buf.data(),b_buf.cbegin(),a_buf.cbegin(),nc_,mc_,kc_);
+                    fill_res(res_buf.data(),res_it+(jc+ic*n),n,nc_,mc_);
+                }else{
+                    kernel(res_buf.data(),a_buf.cbegin(),b_buf.cbegin(),mc_,nc_,kc_);
+                    // std::copy(res_buf.begin(),res_buf.begin()+mc_*nc_,std::ostream_iterator<double>{std::cout,","});
+                    // std::cout<<std::endl;
+                    fill_res(res_buf.data(),res_it+(ic+jc*m),m,mc_,nc_);
+                }
+                //timer.stop();
+                //kernel_time+=timer;
+            }
+        }
+    }
+    //std::cout<<std::endl<<kernel_time;
+    return res;
+}
+
 
 }   //end of namespace benchmark_matmul_
 
@@ -587,16 +801,16 @@ TEST_CASE("benchmark_matmul","[benchmark_tensor]")
         // //nd x 1d
         // std::make_pair(std::vector<int>{10000,10000},std::vector<int>{10000}),
         // //nd x nd
-        //std::make_pair(std::vector<int>{1000,1000},std::vector<int>{1000,1000})
+        std::make_pair(std::vector<int>{1000,1000},std::vector<int>{1000,1000})
         //std::make_pair(std::vector<int>{2000,2000},std::vector<int>{2000,2000})
-        std::make_pair(std::vector<int>{4000,4000},std::vector<int>{4000,4000})
+        //std::make_pair(std::vector<int>{4000,4000},std::vector<int>{4000,4000})
         //std::make_pair(std::vector<int>{6000,6000},std::vector<int>{6000,6000})
         //std::make_pair(std::vector<int>{2000,1000},std::vector<int>{1000,3000}),
         //std::make_pair(std::vector<int>{10000,10000},std::vector<int>{10000,10000})
         //std::make_pair(std::vector<int>{3,2,300,1000},std::vector<int>{2,1000,900})
         //std::make_pair(std::vector<int>{100,100,200,100},std::vector<int>{100,100,300})
     };
-    const auto n_iters = 1;
+    const auto n_iters = 10;
     //bench_matmul("bench matmul",n_iters,shapes,builder,command_matmul);
 
 
@@ -604,6 +818,7 @@ TEST_CASE("benchmark_matmul","[benchmark_tensor]")
     using benchmark_matmul_::matmul_2d_tiled;
     using benchmark_matmul_::matmul_2d_goto;
     using benchmark_matmul_::matmul_2d_goto1;
+    using benchmark_matmul_::matmul_2d_goto2;
     using gtensor::config::c_order;
     using gtensor::config::f_order;
     auto aa = tensor<double>{{1,1,1,3,3,2,3,2,2,2,0,2,4,0,4,3,2,3,2,3,2,4,3,4,0,2,3,4,1,0,0,1,2,0,4,0,2,3,2,4},{4,4,2,2,4,1,1,1,4,4,1,2,3,4,0,4,3,4,3,2,2,1,3,2,1,4,1,0,1,0,1,2,4,1,4,3,1,4,4,0},{1,1,1,0,2,0,3,3,1,4,3,1,1,3,1,1,4,2,1,2,3,1,4,1,0,3,2,1,2,0,2,2,1,3,4,4,2,1,3,4},{0,3,2,3,1,2,0,4,3,3,4,3,0,1,0,0,3,0,0,0,0,0,3,1,1,2,2,4,1,3,0,1,2,0,3,1,3,1,3,2},{4,0,4,0,2,3,2,0,4,3,0,1,4,2,0,1,1,1,2,4,1,3,2,4,0,3,4,3,3,0,4,4,0,1,2,0,4,1,1,2},{3,3,1,2,2,1,4,0,1,4,0,2,3,4,1,3,0,0,1,3,4,4,1,4,3,1,1,1,1,2,0,2,2,1,3,4,4,0,0,3},{4,0,2,0,2,2,4,1,4,0,0,0,4,4,3,1,4,4,1,4,4,0,0,4,0,4,2,4,4,0,4,1,1,4,3,1,0,3,2,0},{0,0,3,0,0,1,1,3,2,1,0,4,3,2,3,1,2,1,4,4,1,0,1,3,2,1,1,2,0,3,1,3,2,0,2,2,1,3,3,1},{0,1,1,1,0,2,1,2,1,4,0,0,3,0,2,3,4,0,3,0,4,1,4,3,2,3,2,1,3,3,3,0,4,3,4,1,0,1,4,2},{3,4,1,1,1,2,1,3,3,1,3,3,2,2,1,2,1,0,4,3,0,4,3,1,0,3,2,4,3,3,0,1,2,1,3,2,3,2,3,3},{0,4,1,3,4,4,3,1,1,3,1,4,0,1,1,4,0,2,0,4,4,3,2,3,0,3,4,4,2,2,4,1,3,0,2,4,0,1,3,3},{0,2,4,1,2,0,2,1,0,4,1,0,3,4,3,2,0,1,3,1,3,3,2,4,1,0,0,1,4,4,4,3,3,2,0,4,3,4,3,4},{0,3,3,3,2,2,4,2,4,4,0,0,1,0,4,0,0,1,3,3,0,2,2,0,2,4,1,1,3,4,4,2,2,3,2,2,0,3,1,0},{0,0,2,3,3,0,3,0,1,4,2,3,3,0,2,4,3,1,2,1,4,1,0,3,1,4,2,3,3,4,0,1,4,2,4,4,1,4,2,0},{3,0,1,4,1,3,1,3,0,3,3,3,3,4,3,3,2,4,0,2,1,1,2,1,0,1,0,2,2,0,3,1,3,1,3,2,1,3,4,3},{4,4,1,0,2,3,1,3,2,1,1,0,2,0,2,3,0,1,2,2,4,1,3,3,4,4,2,4,0,3,2,4,4,0,2,2,3,2,1,0},{1,1,4,1,2,4,0,4,0,4,4,1,0,0,3,4,4,1,2,2,4,0,2,3,2,0,2,2,4,4,3,0,4,0,4,2,3,0,0,0},{2,1,2,4,2,4,1,4,3,0,0,0,2,1,4,1,1,0,4,1,1,4,4,3,3,0,2,2,1,4,3,3,4,3,2,0,2,3,1,4},{1,2,1,4,1,1,3,4,2,4,4,3,3,0,0,1,3,3,1,4,1,2,2,3,3,3,1,0,1,1,3,1,4,1,0,1,1,2,0,0},{2,4,3,1,3,1,1,1,2,3,0,1,4,4,2,4,1,2,0,0,0,3,1,2,3,3,4,3,1,1,1,1,0,1,0,1,0,2,4,3},{0,2,0,0,1,1,3,2,0,0,3,4,4,3,4,4,2,1,2,4,4,1,3,0,2,0,1,0,1,2,4,1,3,1,4,4,0,1,1,0},{1,0,3,1,3,4,3,4,1,0,0,1,4,4,1,4,4,4,0,3,2,4,4,0,2,1,4,3,0,2,0,3,2,0,0,2,0,1,0,3},{1,1,2,0,0,4,0,2,3,0,2,1,1,4,0,0,1,4,3,1,1,4,4,2,1,0,1,4,1,3,3,3,0,2,1,3,1,4,4,2},{4,0,2,4,4,3,1,1,2,2,1,2,0,2,4,1,4,1,2,0,3,3,1,2,3,3,2,0,2,0,0,4,2,1,4,0,4,2,4,2},{3,3,3,4,2,0,1,1,4,3,0,4,1,4,1,4,2,3,0,1,1,3,0,3,1,1,1,4,4,3,0,0,4,3,2,2,4,4,2,3},{1,4,2,0,3,3,3,2,1,2,1,1,0,0,0,3,3,4,1,0,1,1,3,2,3,1,1,2,2,3,3,1,3,0,2,0,3,0,3,4},{0,0,4,2,2,2,3,2,1,0,0,3,4,4,2,1,2,4,1,2,2,2,1,4,0,2,0,1,2,2,1,3,4,3,3,0,3,0,4,3},{0,2,3,3,3,2,1,0,3,1,0,4,0,4,2,2,2,4,1,1,4,1,1,4,4,0,3,2,3,3,4,0,2,1,4,0,1,1,2,3},{3,1,3,2,4,1,4,1,3,0,3,1,2,0,1,1,1,2,4,3,0,2,0,4,4,0,0,1,0,2,0,0,4,4,0,0,3,4,1,4},{0,4,1,2,2,0,3,1,3,4,1,2,1,0,4,4,0,4,0,0,0,3,0,4,4,3,0,3,3,0,2,0,1,3,4,2,3,3,4,3}};
@@ -629,6 +844,11 @@ TEST_CASE("benchmark_matmul","[benchmark_tensor]")
     REQUIRE(matmul_2d_goto1(aa.copy(c_order{}),bb.copy(f_order{}))==rr);
     REQUIRE(matmul_2d_goto1(aa.copy(f_order{}),bb.copy(c_order{}))==rr);
 
+    REQUIRE(matmul_2d_goto2(aa.copy(c_order{}),bb.copy(c_order{}))==rr);
+    REQUIRE(matmul_2d_goto2(aa.copy(f_order{}),bb.copy(f_order{}))==rr);
+    REQUIRE(matmul_2d_goto2(aa.copy(c_order{}),bb.copy(f_order{}))==rr);
+    REQUIRE(matmul_2d_goto2(aa.copy(f_order{}),bb.copy(c_order{}))==rr);
+
     // REQUIRE(matmul(tensor<double,c_order>{{1,2,4,2},{3,4,2,0},{5,3,1,1}},tensor<double,c_order>{{2,1,2},{0,3,1},{1,1,4},{4,3,3}})==tensor<double>{{14,17,26},{8,17,18},{15,18,20}});
 
     REQUIRE(matmul(aa.copy(c_order{}),bb.copy(c_order{}))==rr);
@@ -652,10 +872,15 @@ TEST_CASE("benchmark_matmul","[benchmark_tensor]")
         auto r = matmul_2d_goto1(t1,t2);
         return *r.begin();
     };
+    auto command_matmul_2d_goto2 = [](const auto& t1, const auto& t2){
+        auto r = matmul_2d_goto2(t1,t2);
+        return *r.begin();
+    };
+    bench_matmul("bench matmul_2d_goto2",n_iters,shapes,builder,command_matmul_2d_goto2);
     //bench_matmul("bench matmul_2d_goto1",n_iters,shapes,builder,command_matmul_2d_goto1);
     //bench_matmul("bench matmul_2d",n_iters,shapes,builder,command_matmul_2d);
     //bench_matmul("bench matmul_2d_tiled",n_iters,shapes,builder,command_matmul_2d_tiled);
     //bench_matmul("bench matmul_2d_goto",n_iters,shapes,builder,command_matmul_2d_goto);
-    bench_matmul("bench matmul",n_iters,shapes,builder,command_matmul);
+    //bench_matmul("bench matmul",n_iters,shapes,builder,command_matmul);
 
 }
