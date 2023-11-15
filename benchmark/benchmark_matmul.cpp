@@ -790,11 +790,6 @@ TEST_CASE("benchmark_matmul","[benchmark_tensor]")
         return t_.clone_shallow();
     };
 
-    auto command_matmul = [](const auto& t1, const auto& t2){
-        auto r = matmul(t1,t2);
-        return *r.begin();
-    };
-
     auto shapes = std::vector<std::pair<std::vector<int>,std::vector<int>>>{
         // //1d x nd
         // std::make_pair(std::vector<int>{10000},std::vector<int>{10000,10000}),
@@ -804,7 +799,7 @@ TEST_CASE("benchmark_matmul","[benchmark_tensor]")
         //std::make_pair(std::vector<int>{1000,1000},std::vector<int>{1000,1000})
         //std::make_pair(std::vector<int>{2000,2000},std::vector<int>{2000,2000})
         //std::make_pair(std::vector<int>{4000,4000},std::vector<int>{4000,4000})
-        std::make_pair(std::vector<int>{200,100000},std::vector<int>{100000,200})
+        std::make_pair(std::vector<int>{200,100000},std::vector<int>{100000,300})
         //std::make_pair(std::vector<int>{6000,6000},std::vector<int>{6000,6000})
         //std::make_pair(std::vector<int>{10000,10000},std::vector<int>{10000,10000})
         //std::make_pair(std::vector<int>{3,2,300,1000},std::vector<int>{2,1000,900})
@@ -855,7 +850,19 @@ TEST_CASE("benchmark_matmul","[benchmark_tensor]")
     REQUIRE(matmul(aa.copy(f_order{}),bb.copy(f_order{}))==rr);
     REQUIRE(matmul(aa.copy(c_order{}),bb.copy(f_order{}))==rr);
     REQUIRE(matmul(aa.copy(f_order{}),bb.copy(c_order{}))==rr);
+    REQUIRE(matmul(multithreading::exec_pol<4>{},aa.copy(c_order{}),bb.copy(c_order{}))==rr);
+    REQUIRE(matmul(multithreading::exec_pol<4>{},aa.copy(f_order{}),bb.copy(f_order{}))==rr);
+    REQUIRE(matmul(multithreading::exec_pol<4>{},aa.copy(c_order{}),bb.copy(f_order{}))==rr);
+    REQUIRE(matmul(multithreading::exec_pol<4>{},aa.copy(f_order{}),bb.copy(c_order{}))==rr);
 
+    auto command_matmul = [](const auto& t1, const auto& t2){
+        auto r = matmul(t1,t2);
+        return *r.begin();
+    };
+    auto command_matmul_par = [](const auto& t1, const auto& t2){
+        auto r = matmul(multithreading::exec_pol<10>{}, t1,t2);
+        return *r.begin();
+    };
     auto command_matmul_2d = [](const auto& t1, const auto& t2){
         auto r = matmul_2d(t1,t2);
         return *r.begin();
@@ -881,6 +888,7 @@ TEST_CASE("benchmark_matmul","[benchmark_tensor]")
     //bench_matmul("bench matmul_2d",n_iters,shapes,builder,command_matmul_2d);
     //bench_matmul("bench matmul_2d_tiled",n_iters,shapes,builder,command_matmul_2d_tiled);
     //bench_matmul("bench matmul_2d_goto",n_iters,shapes,builder,command_matmul_2d_goto);
-    bench_matmul("bench matmul",n_iters,shapes,builder,command_matmul);
+    //bench_matmul("bench matmul",n_iters,shapes,builder,command_matmul);
+    bench_matmul("bench matmul_par",n_iters,shapes,builder,command_matmul_par);
 
 }

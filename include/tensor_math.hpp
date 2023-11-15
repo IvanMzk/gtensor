@@ -14,8 +14,6 @@
 #include "tensor_operators.hpp"
 #include "reduce.hpp"
 #include "reduce_operations.hpp"
-#include "../benchmark/benchmark_helpers.hpp"
-
 
 namespace gtensor{
 
@@ -300,8 +298,8 @@ struct tensor_math
     }
 
     //matmul
-    template<typename...Ts,typename...Us>
-    static auto matmul(const basic_tensor<Ts...>& t1, const basic_tensor<Us...>& t2){
+    template<typename Policy, typename...Ts,typename...Us>
+    static auto matmul(Policy policy, const basic_tensor<Ts...>& t1, const basic_tensor<Us...>& t2){
         using tensor_type1 = basic_tensor<Ts...>;
         using tensor_type2 = basic_tensor<Us...>;
         using value_type1 = typename tensor_type1::value_type;
@@ -330,9 +328,14 @@ struct tensor_math
             if (dim2==1){   //(...,n,m) x (m,)
                 return matmul_1d_helper<res_type>(t2,t1,false);
             }else{  //(...,n,m) x (...,m,k)
-                return matmul_nd_helper<res_type>(t1,t2);
+                return matmul_nd_helper<res_type>(policy,t1,t2);
             }
         }
+    }
+
+    template<typename...Ts,typename...Us>
+    static auto matmul(const basic_tensor<Ts...>& t1, const basic_tensor<Us...>& t2){
+        return matmul(multithreading::exec_pol<1>{},t1,t2);
     }
 private:
 
@@ -447,8 +450,6 @@ private:
     {
         using index_type = typename Config::index_type;
         using dim_type = typename Config::dim_type;
-        const index_type m;
-        const index_type n;
         const index_type k;
         const dim_type i_axis;
         const dim_type j_axis;
@@ -456,12 +457,7 @@ private:
         const index_type nc{Nc};
         const index_type kc{Kc};
 
-        benchmark_helpers::cpu_interval timer;
-        inline static std::atomic<std::size_t> kernel_time = 0;
-
-        matmul_2d(const index_type& m_, const index_type& n_, const index_type& k_, const dim_type& i_axis_, const dim_type& j_axis_):
-            m{m_},
-            n{n_},
+        matmul_2d(const index_type& k_, const dim_type& i_axis_, const dim_type& j_axis_):
             k{k_},
             i_axis{i_axis_},
             j_axis{j_axis_}
@@ -555,8 +551,6 @@ private:
                         res_w.walk(i_axis,ic);
                         const auto mc_ = make_submatrix_size(ic,mc,ic_max);
                         fill_buf(w1,a_buf.data(),i_axis,j_axis,mc_,kc_);
-
-                        //timer.start();
                         if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
                             kernel(res_buf.data(),b_buf.data(),a_buf.data(),static_cast<std::ptrdiff_t>(nc_),static_cast<std::ptrdiff_t>(mc_),static_cast<std::ptrdiff_t>(kc_));
                             fill_res(res_buf.data(),res_w,j_axis,i_axis,nc_,mc_);
@@ -564,9 +558,6 @@ private:
                             kernel(res_buf.data(),a_buf.data(),b_buf.data(),static_cast<std::ptrdiff_t>(mc_),static_cast<std::ptrdiff_t>(nc_),static_cast<std::ptrdiff_t>(kc_));
                             fill_res(res_buf.data(),res_w,i_axis,j_axis,mc_,nc_);
                         }
-                        //timer.stop();
-                        //kernel_time.fetch_add(timer);
-
                         w1.walk_back(i_axis,ic);
                         res_w.walk_back(i_axis,ic);
                     }
@@ -578,16 +569,11 @@ private:
             }
         }
 
-        template<typename ResW, typename W1, typename W2>
-        void operator()(ResW res_w, W1 w1, W2 w2){
-            this->operator()(res_w,w1,w2,0,m,0,n);
-        }
-
     };
 
     //t1,t2,res are at least 2d
-    template<typename ResT, typename...Ts, typename...Us>
-    static auto matmul_nd_helper(const basic_tensor<Ts...>& t1, const basic_tensor<Us...>& t2){
+    template<typename ResT, typename Policy, typename...Ts, typename...Us>
+    static auto matmul_nd_helper(Policy policy, const basic_tensor<Ts...>& t1, const basic_tensor<Us...>& t2){
         using res_type = ResT;
         using order = typename res_type::order;
         using value_type = typename res_type::value_type;
@@ -608,7 +594,9 @@ private:
         *(res_shape_.end()-2) = *(shape1.end()-2);
         *(res_shape_.end()-1) = *(shape2.end()-1);
         res_type res(std::move(res_shape_),0);
-
+        if (res.empty()){
+            return res;
+        }
         const auto& res_shape = res.shape();
         const auto res_dim = detail::make_dim(res_shape);
         auto tr1 = walker_forward_range_traverser<config_type,decltype(t1.create_walker(res_dim))>{res_shape,t1.create_walker(res_dim),0,res_dim-2};
@@ -618,9 +606,6 @@ private:
         // static constexpr std::size_t mc_size = 4;
         // static constexpr std::size_t nc_size = 2;
         // static constexpr std::size_t kc_size = 3;
-        // static constexpr std::size_t mc_size = 64;
-        // static constexpr std::size_t nc_size = 256;
-        // static constexpr std::size_t kc_size = 128;
         static constexpr std::size_t mc_size = 128;
         static constexpr std::size_t nc_size = 128;
         static constexpr std::size_t kc_size = 256;
@@ -631,54 +616,57 @@ private:
         const auto n = res_shape[j_axis];
         const auto k = *(shape1.end()-1);
 
-        const std::size_t n_tasks = 16;
-        const auto max_axis_size = std::max(m,n);
-        auto ti = static_cast<std::size_t>(std::sqrt(n_tasks*static_cast<std::size_t>(m)/static_cast<double>(static_cast<std::size_t>(n))));
-        auto tj = static_cast<std::size_t>(std::sqrt(n_tasks*static_cast<std::size_t>(n)/static_cast<double>(static_cast<std::size_t>(m))));
-        // ti = ti == 0 ? 1 : ti;
-        // tj = tj == 0 ? 1 : tj;
-        if (ti == 0){
-            ti=1;
-            tj = n_tasks;
-        }else if (tj == 0){
-            tj=1;
-            ti = n_tasks;
-        }else if (ti < tj){
-            tj = n_tasks/ti;
-        }else if (tj < ti){
-            ti = n_tasks/tj;
-        }else if (n < m){  //ti==tj, and both are non zero
-            ti = n_tasks/tj;
-        }else{
-            tj = n_tasks/ti;
-        }
-        const auto delta = n_tasks - ti*tj;
-        //here we have ti and tj - parts number to split corresponding dimensions, each such rect part will be assigned to separate task
-        //ti*tj is total number of tasks
-        //delta may be non zero if matrix can't be splitted to n_tasks evenly
-
-        const index_type i_parts = static_cast<index_type>(ti);
-        const index_type j_parts = static_cast<index_type>(tj);
-        const index_type i_step = m > i_parts ? m/i_parts : m;
-        const index_type j_step = n > j_parts ? n/j_parts : n;
-        multithreading::task_group group{};
         using matmul_type = matmul_2d<value_type,value_type1,value_type2,order,config_type,mc_size,nc_size,kc_size>;
-        matmul_type::kernel_time = 0;
-        matmul_type mm(m,n,k,i_axis,j_axis);
-        std::cout<<std::endl<<i_parts;
-        std::cout<<std::endl<<j_parts;
-        do{
-            for (index_type j = 0; j<n; j+=j_step){
-                for (index_type i = 0; i<m; i+=i_step){
-                    multithreading::get_pool().push_group(group,mm,res_tr.walker(),tr1.walker(),tr2.walker(),i,std::min(i+i_step,m),j,std::min(j+j_step,n));
+        matmul_type mm(k,i_axis,j_axis);
+
+        if constexpr (multithreading::exec_policy_traits<Policy>::is_seq::value){
+            do{
+                mm(res_tr.walker(),tr1.walker(),tr2.walker(),0,m,0,n);
+                tr1.template next<order>();
+                tr2.template next<order>();
+            }while(res_tr.template next<order>());
+        }else{
+            const std::size_t n_tasks = multithreading::exec_policy_traits<Policy>::par_tasks::value;
+            auto ti = static_cast<std::size_t>(std::sqrt(n_tasks*static_cast<std::size_t>(m)/static_cast<double>(static_cast<std::size_t>(n))));
+            auto tj = static_cast<std::size_t>(std::sqrt(n_tasks*static_cast<std::size_t>(n)/static_cast<double>(static_cast<std::size_t>(m))));
+            if (ti == 0){
+                ti=1;
+                tj = n_tasks;
+            }else if (tj == 0){
+                tj=1;
+                ti = n_tasks;
+            }else{
+                const auto ti_ = n_tasks/tj;
+                const auto tj_ = n_tasks/ti;
+                const auto n_tasks1 = ti_*tj;
+                const auto n_tasks2 = ti*tj_;
+                if (n_tasks-n_tasks1 < n_tasks-n_tasks2){
+                    ti=ti_;
+                }else{
+                    tj=tj_;
                 }
             }
-            group.wait();
-            //mm(res_tr.walker(),tr1.walker(),tr2.walker());
-            tr1.template next<order>();
-            tr2.template next<order>();
-        }while(res_tr.template next<order>());
-        //td::cout<<std::endl<<matmul_type::kernel_time;
+            //here we have ti and tj - number of parts to split corresponding dimension and to split mxn result matrix into rect parts
+            //each such rect part will be assigned to separate task, ti*tj is total number of tasks
+            //ti*tj <= n_tasks, if matrix can't be splitted into rect parts by n_tasks, ti*tj will be less than requested tasks number
+
+            const index_type i_parts = static_cast<index_type>(ti);
+            const index_type j_parts = static_cast<index_type>(tj);
+            const index_type i_step = m > i_parts ? m/i_parts : 1;
+            const index_type j_step = n > j_parts ? n/j_parts : 1;
+            multithreading::task_group group{};
+            do{
+                for (index_type j = 0; j<n; j+=j_step){
+                    for (index_type i = 0; i<m; i+=i_step){
+                        multithreading::get_pool().push_group(group,mm,res_tr.walker(),tr1.walker(),tr2.walker(),i,std::min(i+i_step,m),j,std::min(j+j_step,n));
+                    }
+                }
+                group.wait();
+                tr1.template next<order>();
+                tr2.template next<order>();
+            }while(res_tr.template next<order>());
+        }
+
         return res;
     }
 
@@ -980,6 +968,11 @@ auto gradient(const basic_tensor<Ts...>& t, const DimT& axis){
 //if either argument is nd, n>2, it is treated as a stack of matrices residing in the last two indexes and broadcast accordingly.
 //if the first argument is 1d, it is promoted to a matrix by prepending a 1 to its dimensions. After matrix multiplication the prepended 1 is removed.
 //if the second argument is 1d, it is promoted to a matrix by appending a 1 to its dimensions. After matrix multiplication the appended 1 is removed.
+template<typename Policy, typename...Ts,typename...Us>
+auto matmul(Policy policy, const basic_tensor<Ts...>& a, const basic_tensor<Us...>& b){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return tensor_math_selector_t<config_type>::matmul(policy,a,b);
+}
 template<typename...Ts,typename...Us>
 auto matmul(const basic_tensor<Ts...>& a, const basic_tensor<Us...>& b){
     using config_type = typename basic_tensor<Ts...>::config_type;

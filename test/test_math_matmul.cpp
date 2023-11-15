@@ -79,15 +79,46 @@ TEMPLATE_TEST_CASE("test_math_matmul","test_math",
         )
     );
 
-    auto test = [](const auto& t){
-        auto ten1 = std::get<0>(t);
-        auto ten2 = std::get<1>(t);
-        auto expected = std::get<2>(t);
+    auto test_matmul = [&test_data](auto...policy){
+        auto test = [policy...](const auto& t){
 
-        auto result = matmul(ten1,ten2);
-        REQUIRE(result==expected);
+            auto ten1 = std::get<0>(t);
+            auto ten2 = std::get<1>(t);
+            auto expected = std::get<2>(t);
+            auto result = matmul(policy...,ten1,ten2);
+            REQUIRE(result==expected);
+        };
+        apply_by_element(test,test_data);
     };
-    apply_by_element(test,test_data);
+
+    SECTION("test_matmul_default_policy")
+    {
+        test_matmul();
+    }
+    SECTION("test_matmul_exec_pol<2>")
+    {
+        test_matmul(multithreading::exec_pol<2>{});
+    }
+    SECTION("test_matmul_exec_pol<3>")
+    {
+        test_matmul(multithreading::exec_pol<3>{});
+    }
+    SECTION("test_matmul_exec_pol<4>")
+    {
+        test_matmul(multithreading::exec_pol<4>{});
+    }
+    SECTION("test_matmul_exec_pol<5>")
+    {
+        test_matmul(multithreading::exec_pol<5>{});
+    }
+    SECTION("test_matmul_exec_pol<10>")
+    {
+        test_matmul(multithreading::exec_pol<10>{});
+    }
+    SECTION("test_matmul_exec_pol<16>")
+    {
+        test_matmul(multithreading::exec_pol<16>{});
+    }
 }
 
 TEST_CASE("test_math_matmul_exception","test_math")
