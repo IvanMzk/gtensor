@@ -493,18 +493,18 @@ private:
                 const auto buf_last = buf+static_cast<std::ptrdiff_t>(inner_size);
                 if (inner_size > 3){
                     for (const auto buf_last_=buf_last-3; buf<buf_last_; buf+=4){
-                        *res_w += *buf;
+                        *res_w = *res_w + *buf;
                         res_w.step(inner_axis);
-                        *res_w += *(buf+1);
+                        *res_w = *res_w + *(buf+1);
                         res_w.step(inner_axis);
-                        *res_w += *(buf+2);
+                        *res_w = *res_w + *(buf+2);
                         res_w.step(inner_axis);
-                        *res_w += *(buf+3);
+                        *res_w = *res_w + *(buf+3);
                         res_w.step(inner_axis);
                     }
                 }
                 for (;buf!=buf_last; ++buf,res_w.step(inner_axis)){
-                    *res_w += *buf;
+                    *res_w = *res_w + *buf;
                 }
                 res_w.walk_back(inner_axis,inner_size);
             }
@@ -525,7 +525,7 @@ private:
                 for (const auto b_last=b_data+nc_; b_data!=b_last; ++b_data){
                     const auto e = *b_data;
                     for (std::ptrdiff_t ir=0; ir!=mc_; ++ir,++res_buf_){
-                        *res_buf_+=a_data_[ir]*e;
+                        *res_buf_=*res_buf_+a_data_[ir]*e;
                     }
                 }
             }
@@ -581,8 +581,8 @@ private:
         using index_type = typename res_type::index_type;
         using shape_type = typename res_type::shape_type;
         using order = typename res_type::order;
-        using value_type1 = typename basic_tensor<Ts...>::value_type;
-        using value_type2 = typename basic_tensor<Us...>::value_type;
+        using value_type1 = detail::copy_type_t<typename basic_tensor<Ts...>::value_type>;
+        using value_type2 = detail::copy_type_t<typename basic_tensor<Us...>::value_type>;
         using gtensor::config::c_order;
         using gtensor::config::f_order;
 
@@ -608,7 +608,7 @@ private:
         // static constexpr std::size_t kc_size = 3;
         static constexpr std::size_t mc_size = 128;
         static constexpr std::size_t nc_size = 128;
-        static constexpr std::size_t kc_size = 256;
+        static constexpr std::size_t kc_size = 128;
 
         const auto i_axis = res_dim-2;
         const auto j_axis = res_dim-1;

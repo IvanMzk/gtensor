@@ -11,29 +11,18 @@ TEST_CASE("test_tmp_copy","[test_tmp]")
 
     using gtensor::tensor;
 
-    tensor<double> t{{1,0,3},{4,5,6}};
-    std::cout<<std::endl<<t;
+    tensor<double> t0{1,0,3};
+    tensor<double> t1{2,1,2};
+    tensor<double> t2{3,0,1};
+    tensor<double> t3{2,3,1};
 
-    tensor<bool> b{true,false,true};
+    tensor<tensor<double>> a{{t0,t1},{t2,t3}};
+    tensor<tensor<double>> b{{t1,t3},{t0,t2}};
+    std::cout<<std::endl<<a;
     std::cout<<std::endl<<b;
-    typename std::iterator_traits<decltype(b.begin())>::reference e = *b.begin();
-    e = false;
-    std::cout<<std::endl<<b;
+    std::cout<<std::endl<<sizeof(tensor<double>);
+    std::cout<<std::endl<<sizeof(tensor<tensor<double>>);
 
-    auto t1 = any(t,1);
-    std::cout<<std::endl<<t1;
-
-    auto t2 = all(t,1);
-    std::cout<<std::endl<<t2;
-
-    //REQUIRE(tensor_type{{{0,1,2,3},{1,2,3,0}},{{1,2,3,4},{1,2,3,4}}}.all(policy{},std::vector<int>{0,1}) == tensor<bool>{false,true,true,false});
-    //std::make_tuple(tensor_type{nan,pos_inf,0.0,nan,neg_inf},std::vector<int>{},false,bool_tensor_type{true,true,false,true,true})
-
-    //tensor<double>{{{0,1,2,3},{1,2,3,0}},{{1,2,3,4},{1,2,3,4}}}.all(policy{},std::vector<int>{0,1})
-    std::cout<<std::endl<<tensor<double>{{{0,1,2,3},{1,2,3,0}},{{1,2,3,4},{1,2,3,4}}}.all(multithreading::exec_pol<1>{},std::vector<int>{0,1});
-    std::cout<<std::endl<<tensor<double>{{{0,1,2,3},{1,2,3,0}},{{1,2,3,4},{1,2,3,4}}}.all(std::vector<int>{0,1});
-    std::cout<<std::endl<<tensor<int>{{{0,1,2,3},{1,2,3,0}},{{1,2,3,4},{1,2,3,4}}}.all(std::vector<int>{0,1});
-    std::cout<<std::endl<<tensor<int>{{{0,1,2,3},{1,2,3,0}},{{1,2,3,4},{1,2,3,4}}}.all(multithreading::exec_pol<1>{},std::vector<int>{0,1});
-    REQUIRE(tensor<int>{{{0,1,2,3},{1,2,3,0}},{{1,2,3,4},{1,2,3,4}}}.all(multithreading::exec_pol<1>{},std::vector<int>{0,1}) == tensor<bool>{false,true,true,false});
+    //std::cout<<std::endl<<matmul(a,a+b);
 
 }

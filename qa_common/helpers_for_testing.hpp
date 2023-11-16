@@ -91,7 +91,7 @@ auto generate_lehmer(It first, It last, UnaryF unary_f, std::size_t init){
         [unary_f,init](auto& e)mutable{
             auto e_=init*a%m;
             init=e_;
-            e=static_cast<const value_type&>(unary_f(e_));
+            e=static_cast<value_type>(unary_f(e_));
         }
     );
 }
