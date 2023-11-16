@@ -11,7 +11,7 @@ namespace allocation{
 #define HAS_ALIGNED_NEW_ 0
 #endif
 
-template<typename T, std::size_t Alignment>
+template<typename T, std::size_t Alignment = alignof(T)>
 class aligned_allocator
 {
     static_assert(HAS_ALIGNED_NEW_);
@@ -29,12 +29,14 @@ public:
     using propagate_on_container_swap = std::false_type;
     using propagate_on_container_copy_assignment = std::false_type;
 
+    template<typename U> struct rebind{using other = aligned_allocator<U,Alignment>;};
+
     aligned_allocator() noexcept
     {}
     aligned_allocator(const aligned_allocator&) noexcept
     {}
     template<typename U>
-    aligned_allocator(const aligned_allocator<U>&) noexcept
+    aligned_allocator(const aligned_allocator<U,Alignment>&) noexcept
     {}
 
     T* allocate(const std::size_t n){
@@ -52,8 +54,8 @@ public:
         return allocate(n);
     }
 
-    void deallocate(T* const p, std::size_t n){
-        ::operator delete(p,n*sizeof(T),std::align_val_t{Alignment});
+    void deallocate(T* const p, std::size_t){
+        ::operator delete(p,std::align_val_t{Alignment});
     }
 
     template<typename U, typename...Args>
@@ -68,12 +70,12 @@ public:
 
 };
 
-template<typename U, typename V>
-bool operator==(const aligned_allocator<U>&, const aligned_allocator<V>&){
+template<typename U, typename V, std::size_t A>
+bool operator==(const aligned_allocator<U,A>&, const aligned_allocator<V,A>&){
     return true;
 }
-template<typename U, typename V>
-bool operator!=(const aligned_allocator<U>&, const aligned_allocator<V>&){
+template<typename U, typename V, std::size_t A>
+bool operator!=(const aligned_allocator<U,A>&, const aligned_allocator<V,A>&){
     return false;
 }
 

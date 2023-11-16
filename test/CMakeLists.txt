@@ -20,7 +20,7 @@ endif()
 
 
 target_sources(Test PRIVATE
-    ${CMAKE_CURRENT_LIST_DIR}/test_tmp.cpp
+    #${CMAKE_CURRENT_LIST_DIR}/test_tmp.cpp
 
     #${CMAKE_CURRENT_LIST_DIR}/test_helpers_for_testing.cpp
 #
@@ -48,7 +48,7 @@ target_sources(Test PRIVATE
 #
     #${CMAKE_CURRENT_LIST_DIR}/test_tensor_operators.cpp
     #${CMAKE_CURRENT_LIST_DIR}/test_std_complex.cpp
-    #${CMAKE_CURRENT_LIST_DIR}/test_tensor_of_tensor.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_tensor_of_tensor.cpp
 #
     #${CMAKE_CURRENT_LIST_DIR}/test_tensor_cloning_semantics.cpp
     #${CMAKE_CURRENT_LIST_DIR}/test_tensor_construction.cpp
@@ -79,7 +79,7 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_LIST_DIR}/test_math_cumsum_cumprod.cpp
     #${CMAKE_CURRENT_LIST_DIR}/test_math_all_any.cpp
     #${CMAKE_CURRENT_LIST_DIR}/test_math_min_max.cpp
-    #${CMAKE_CURRENT_LIST_DIR}/test_math_matmul.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_math_matmul.cpp
 #
     #${CMAKE_CURRENT_LIST_DIR}/test_statistic_ptp_mean.cpp
     #${CMAKE_CURRENT_LIST_DIR}/test_statistic_var_std.cpp

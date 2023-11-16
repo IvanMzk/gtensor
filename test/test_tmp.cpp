@@ -20,9 +20,7 @@ TEST_CASE("test_tmp_copy","[test_tmp]")
     tensor<tensor<double>> b{{t1,t3},{t0,t2}};
     std::cout<<std::endl<<a;
     std::cout<<std::endl<<b;
-    std::cout<<std::endl<<sizeof(tensor<double>);
-    std::cout<<std::endl<<sizeof(tensor<tensor<double>>);
 
-    //std::cout<<std::endl<<matmul(a,a+b);
+    std::cout<<std::endl<<matmul(a,a+b);
 
 }

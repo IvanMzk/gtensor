@@ -11,6 +11,7 @@
 #include <functional>
 #include <algorithm>
 #include <numeric>
+#include "allocation.hpp"
 #include "tensor_operators.hpp"
 #include "reduce.hpp"
 #include "reduce_operations.hpp"
@@ -26,6 +27,24 @@ auto make_initial(const DefaultInitial& default_initial, const Initial& initial)
     }else{
         return initial;
     }
+}
+
+constexpr auto sqrti_helper(std::size_t n, std::size_t l, std::size_t r){
+    if (l==r){
+        return l;
+    }
+    const auto mid = ((l+r+1)/2);
+    const auto res = mid*mid;
+    if (res==n){
+        return mid;
+    }else if (res > n){
+        return sqrti_helper(n,l,mid-1);
+    }else{
+        return sqrti_helper(n,mid,r);
+    }
+}
+constexpr auto sqrti(std::size_t n){
+    return sqrti_helper(n,1,n);
 }
 
 }   //end of namespace detail
@@ -445,23 +464,14 @@ private:
         return res;
     }
 
-    template<typename T, typename T1, typename T2, typename Order, typename Config, std::size_t Mc, std::size_t Nc, std::size_t Kc>
-    struct matmul_2d
+    template<typename T, typename T1, typename T2, typename Order, typename Config, std::size_t Mc, std::size_t Nc, std::size_t Kc, typename BufferOnStack=std::false_type>
+    class matmul_2d
     {
         using index_type = typename Config::index_type;
         using dim_type = typename Config::dim_type;
         const index_type k;
         const dim_type i_axis;
         const dim_type j_axis;
-        const index_type mc{Mc};
-        const index_type nc{Nc};
-        const index_type kc{Kc};
-
-        matmul_2d(const index_type& k_, const dim_type& i_axis_, const dim_type& j_axis_):
-            k{k_},
-            i_axis{i_axis_},
-            j_axis{j_axis_}
-        {}
 
         template<typename W, typename U, typename DimT>
         ALWAYS_INLINE void fill_buf(W& w, U* dst, const DimT& inner_axis, const DimT& outer_axis, const index_type& inner_size, const index_type& outer_size){
@@ -531,32 +541,42 @@ private:
             }
         }
 
+        ALWAYS_INLINE auto adjust_block_size(const index_type& idx, const index_type& block_size, const index_type& max){
+            return idx+block_size>max ? max-idx : block_size;
+        }
+
+    public:
+        matmul_2d(const index_type& k_, const dim_type& i_axis_, const dim_type& j_axis_):
+            k{k_},
+            i_axis{i_axis_},
+            j_axis{j_axis_}
+        {}
+
         template<typename ResW, typename W1, typename W2>
-        void operator()(ResW res_w, W1 w1, W2 w2, const index_type& ic_min, const index_type& ic_max, const index_type& jc_min, const index_type& jc_max){
-            auto make_submatrix_size = [](const auto& idx, const auto& block_size, const auto& max){return idx+block_size>max ? max-idx : block_size;};
-            std::array<T1,Mc*Kc> a_buf;
-            std::array<T2,Kc*Nc> b_buf;
-            std::array<T,Mc*Nc> res_buf;
+        ALWAYS_INLINE void operator()(ResW res_w, W1 w1, W2 w2, const index_type& ic_min, const index_type& ic_max, const index_type& jc_min, const index_type& jc_max, T* res_buf, T1* a_buf, T2* b_buf){
+            const index_type mc{Mc};
+            const index_type nc{Nc};
+            const index_type kc{Kc};
             for (index_type jc=jc_min; jc<jc_max; jc+=nc){
                 w2.walk(j_axis,jc);
                 res_w.walk(j_axis,jc);
-                const auto nc_ = make_submatrix_size(jc,nc,jc_max);
+                const auto nc_ = adjust_block_size(jc,nc,jc_max);
                 for (index_type pc=0; pc<k; pc+=kc){
                     w1.walk(j_axis,pc);
                     w2.walk(i_axis,pc);
-                    const auto kc_ = make_submatrix_size(pc,kc,k);
-                    fill_buf(w2,b_buf.data(),j_axis,i_axis,nc_,kc_);
+                    const auto kc_ = adjust_block_size(pc,kc,k);
+                    fill_buf(w2,b_buf,j_axis,i_axis,nc_,kc_);
                     for (index_type ic=ic_min; ic<ic_max; ic+=mc){
                         w1.walk(i_axis,ic);
                         res_w.walk(i_axis,ic);
-                        const auto mc_ = make_submatrix_size(ic,mc,ic_max);
-                        fill_buf(w1,a_buf.data(),i_axis,j_axis,mc_,kc_);
+                        const auto mc_ = adjust_block_size(ic,mc,ic_max);
+                        fill_buf(w1,a_buf,i_axis,j_axis,mc_,kc_);
                         if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
-                            kernel(res_buf.data(),b_buf.data(),a_buf.data(),static_cast<std::ptrdiff_t>(nc_),static_cast<std::ptrdiff_t>(mc_),static_cast<std::ptrdiff_t>(kc_));
-                            fill_res(res_buf.data(),res_w,j_axis,i_axis,nc_,mc_);
+                            kernel(res_buf,b_buf,a_buf,static_cast<std::ptrdiff_t>(nc_),static_cast<std::ptrdiff_t>(mc_),static_cast<std::ptrdiff_t>(kc_));
+                            fill_res(res_buf,res_w,j_axis,i_axis,nc_,mc_);
                         }else{
-                            kernel(res_buf.data(),a_buf.data(),b_buf.data(),static_cast<std::ptrdiff_t>(mc_),static_cast<std::ptrdiff_t>(nc_),static_cast<std::ptrdiff_t>(kc_));
-                            fill_res(res_buf.data(),res_w,i_axis,j_axis,mc_,nc_);
+                            kernel(res_buf,a_buf,b_buf,static_cast<std::ptrdiff_t>(mc_),static_cast<std::ptrdiff_t>(nc_),static_cast<std::ptrdiff_t>(kc_));
+                            fill_res(res_buf,res_w,i_axis,j_axis,mc_,nc_);
                         }
                         w1.walk_back(i_axis,ic);
                         res_w.walk_back(i_axis,ic);
@@ -569,6 +589,27 @@ private:
             }
         }
 
+        template<typename ResW, typename W1, typename W2>
+        ALWAYS_INLINE void operator()(ResW res_w, W1 w1, W2 w2, const index_type& ic_min, const index_type& ic_max, const index_type& jc_min, const index_type& jc_max){
+            static constexpr std::size_t alignment = 64;
+            if constexpr (BufferOnStack::value){
+                alignas(alignment) std::array<T,Mc*Nc> res_buf;
+                alignas(alignment) std::array<T1,Mc*Kc> a_buf;
+                alignas(alignment) std::array<T2,Kc*Nc> b_buf;
+                this->operator()(res_w,w1,w2,ic_min,ic_max,jc_min,jc_max,res_buf.data(),a_buf.data(),b_buf.data());
+            }else{
+                auto make_buf_size = [](auto i_size, auto j_size, auto t_size){
+                    return alignment*(i_size*j_size*t_size/alignment+1);
+                };
+                const auto res_buf_size = make_buf_size(Mc,Nc,sizeof(T));
+                const auto a_buf_size = make_buf_size(Mc,Kc,sizeof(T1));
+                const auto b_buf_size = make_buf_size(Kc,Nc,sizeof(T2));
+                std::vector<T,allocation::aligned_allocator<T,alignment>> res_buf(res_buf_size);
+                std::vector<T1,allocation::aligned_allocator<T1,alignment>> a_buf(a_buf_size);
+                std::vector<T2,allocation::aligned_allocator<T2,alignment>> b_buf(b_buf_size);
+                this->operator()(res_w,w1,w2,ic_min,ic_max,jc_min,jc_max,res_buf.data(),a_buf.data(),b_buf.data());
+            }
+        }
     };
 
     //t1,t2,res are at least 2d
@@ -606,17 +647,18 @@ private:
         // static constexpr std::size_t mc_size = 4;
         // static constexpr std::size_t nc_size = 2;
         // static constexpr std::size_t kc_size = 3;
-        static constexpr std::size_t mc_size = 128;
-        static constexpr std::size_t nc_size = 128;
-        static constexpr std::size_t kc_size = 128;
-
         const auto i_axis = res_dim-2;
         const auto j_axis = res_dim-1;
         const auto m = res_shape[i_axis];
         const auto n = res_shape[j_axis];
         const auto k = *(shape1.end()-1);
+        static constexpr std::size_t L2_size = 262144;
+        static constexpr std::size_t mc_size = detail::sqrti(L2_size/(2*sizeof(value_type1)));
+        static constexpr std::size_t nc_size = mc_size;
+        static constexpr std::size_t kc_size = 2*mc_size;
 
-        using matmul_type = matmul_2d<value_type,value_type1,value_type2,order,config_type,mc_size,nc_size,kc_size>;
+        using buffer_on_stack = std::false_type;
+        using matmul_type = matmul_2d<value_type,value_type1,value_type2,order,config_type,mc_size,nc_size,kc_size,buffer_on_stack>;
         matmul_type mm(k,i_axis,j_axis);
 
         if constexpr (multithreading::exec_policy_traits<Policy>::is_seq::value){
@@ -626,7 +668,7 @@ private:
                 tr2.template next<order>();
             }while(res_tr.template next<order>());
         }else{
-            const std::size_t n_tasks = multithreading::exec_policy_traits<Policy>::par_tasks::value;
+            const auto n_tasks = multithreading::exec_policy_traits<Policy>::par_tasks::value;
             auto ti = static_cast<std::size_t>(std::sqrt(n_tasks*static_cast<std::size_t>(m)/static_cast<double>(static_cast<std::size_t>(n))));
             auto tj = static_cast<std::size_t>(std::sqrt(n_tasks*static_cast<std::size_t>(n)/static_cast<double>(static_cast<std::size_t>(m))));
             if (ti == 0){
@@ -655,9 +697,10 @@ private:
             const index_type i_step = m > i_parts ? m/i_parts : 1;
             const index_type j_step = n > j_parts ? n/j_parts : 1;
             multithreading::task_group group{};
+            std::size_t task_counter{0};
             do{
                 for (index_type j = 0; j<n; j+=j_step){
-                    for (index_type i = 0; i<m; i+=i_step){
+                    for (index_type i = 0; i<m; i+=i_step,++task_counter){
                         multithreading::get_pool().push_group(group,mm,res_tr.walker(),tr1.walker(),tr2.walker(),i,std::min(i+i_step,m),j,std::min(j+j_step,n));
                     }
                 }

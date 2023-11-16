@@ -798,7 +798,7 @@ TEMPLATE_TEST_CASE("test_tensor_of_tensor_routines_policy","[test_tensor_of_tens
         tensor_type_0{0,-1,-4},tensor_type_0{-1,3,3},tensor_type_0{-1,0,0},tensor_type_0{0,0,-3}}
     );
     //matmul
-    REQUIRE(matmul(a(0),a(1).transpose()) == tensor_type_1{{tensor_type_0{4,12,8},tensor_type_0{2,11,11}},{tensor_type_0{4,2,10},tensor_type_0{6,8,11}}});
+    REQUIRE(matmul(policy{},a(0),a(1).transpose()) == tensor_type_1{{tensor_type_0{4,12,8},tensor_type_0{2,11,11}},{tensor_type_0{4,2,10},tensor_type_0{6,8,11}}});
 
     //mean
     REQUIRE(tensor_close(a.mean(policy{}),tensor_type_1(tensor_type_0{1.16666667,1.66666667,1.91666667}),1E-6,1E-6));
@@ -951,7 +951,7 @@ TEMPLATE_TEST_CASE("test_tensor_of_tensor_expression_routines_policy","[test_ten
         tensor_type_0{4,-6,-6},tensor_type_0{3,-4,5},tensor_type_0{-5,6,-3},tensor_type_0{4,-3,3},tensor_type_0{-2,0,-3},tensor_type_0{-3,4,-2}}
     );
     //matmul
-    REQUIRE(matmul((a+b+c)(0),(a+b+c)(1).transpose()) == tensor_type_1{{tensor_type_0{32,59,62},tensor_type_0{43,54,72}},{tensor_type_0{48,52,79},tensor_type_0{64,53,80}}});
+    REQUIRE(matmul(policy{},(a+b+c)(0),(a+b+c)(1).transpose()) == tensor_type_1{{tensor_type_0{32,59,62},tensor_type_0{43,54,72}},{tensor_type_0{48,52,79},tensor_type_0{64,53,80}}});
 
     //mean
     REQUIRE(tensor_close((a+b+c).mean(policy{}),tensor_type_1(tensor_type_0{3.91666667,4.25,5.0}),1E-6,1E-6));
@@ -1156,7 +1156,7 @@ TEMPLATE_TEST_CASE("test_tensor_of_tensor_routines_std_complex_policy","[test_te
     ));
 
     //matmul
-    REQUIRE(tensor_close(matmul(a(0),a(1).transpose()),tensor_type_1{{tensor_type_0{-11.67 +8.46i,3.08+18.59i,2.05+17.4i},tensor_type_0{-9.77+4.86i,-0.66+20.57i,-0.55+17.4i}},
+    REQUIRE(tensor_close(matmul(policy{},a(0),a(1).transpose()),tensor_type_1{{tensor_type_0{-11.67 +8.46i,3.08+18.59i,2.05+17.4i},tensor_type_0{-9.77+4.86i,-0.66+20.57i,-0.55+17.4i}},
         {tensor_type_0{-9.48+13.64i,1.42+14.86i,7.47+10.06i},tensor_type_0{-9.58 +7.14i,0.99+17.27i,5.27+16.86i}}},1E-6,1E-6
     ));
 
