@@ -800,7 +800,10 @@ TEST_CASE("benchmark_matmul","[benchmark_tensor]")
         // std::make_pair(std::vector<int>{10000,10000},std::vector<int>{10000}),
         // //nd x nd
         //std::make_pair(std::vector<int>{1000,1000},std::vector<int>{1000,1000})
-        std::make_pair(std::vector<int>{1285,1000},std::vector<int>{1000,1000})
+        std::make_pair(std::vector<int>{1281,1000},std::vector<int>{1000,1282}),
+        std::make_pair(std::vector<int>{1282,1000},std::vector<int>{1000,1281}),
+        std::make_pair(std::vector<int>{1284,1000},std::vector<int>{1000,1283}),
+        std::make_pair(std::vector<int>{1283,1000},std::vector<int>{1000,1284})
         //std::make_pair(std::vector<int>{2000,2000},std::vector<int>{2000,2000})
         //std::make_pair(std::vector<int>{4000,4000},std::vector<int>{4000,4000})
         //std::make_pair(std::vector<int>{4567,4765},std::vector<int>{4765,4321})
