@@ -565,107 +565,39 @@ private:
             for (const auto b_last=b_data+nc_; b_data!=b_last; ++b_data){
                 auto a_data_=a_data;
                 const auto a_last = a_data_+mc_;
-                const vec4 b_y{_mm256_broadcast_sd(b_data)};
+                const auto b_y =_mm256_broadcast_sd(b_data);
                 if (mc_>3){
                     for (const auto a_last_=a_last-3; a_data_<a_last_; a_data_+=4,res_buf_+=4){
-                        _mm256_storeu_pd(res_buf_,_mm256_fmadd_pd(_mm256_load_pd(a_data_),b_y.m_,_mm256_loadu_pd(res_buf_)));
+                        _mm256_store_pd(res_buf_,_mm256_mul_pd(_mm256_load_pd(a_data_),b_y));
                     }
                 }
                 for (;a_data_!=a_last; ++a_data_,++res_buf_){
-                    *res_buf_+=*a_data_*b_y.e0_;
+                    *res_buf_=*a_data_*_mm256_cvtsd_f64(b_y);
                 }
-
             }
-            // for (const auto b_last=b_data+nc_; b_data!=b_last; ++b_data){
-            //     const auto e = *b_data;
-            //     for (std::ptrdiff_t ir=0; ir!=mc_; ++ir,++res_buf_){
-            //         *res_buf_=a_data[ir]*e;
-            //     }
-            // }
             for (std::ptrdiff_t kk=1; kk!=kc_; ++kk){
                 const auto a_data_ = a_data+kk*mc_;
                 auto res_buf_ = res_buf;
                 std::ptrdiff_t mm{0};
                 for (const auto b_last=b_data+nc_; b_data!=b_last; ++b_data){
-                    //const auto e = *b_data;
-                    // const vec4 e_y{_mm256_broadcast_sd(b_data)};
-                    // std::ptrdiff_t ir=0;
-                    // for (const auto ir_last=mc_-3; ir<ir_last; ir+=4,res_buf_+=4){
-                    //     const vec4 a_y{_mm256_loadu_pd(a_data_+ir)};
-                    //     const vec4 res_y{_mm256_loadu_pd(res_buf_)};
-                    //     //const vec4 res_y_{_mm256_fmadd_pd(a_y.m_,e_y.m_,res_y.m_)};
-                    //     //_mm256_store_pd(res_buf_,res_y_.m_);
-                    //     _mm256_storeu_pd(res_buf_,_mm256_fmadd_pd(a_y.m_,e_y.m_,res_y.m_));
-
-                    //     // *res_buf_=res_y_.e0_;
-                    //     // *(res_buf_+1)=res_y_.e1_;
-                    //     // *(res_buf_+2)=res_y_.e2_;
-                    //     // *(res_buf_+3)=res_y_.e3_;
-
-                    //     // *res_buf_+=a_data_[ir]*e;
-                    //     // *(res_buf_+1)+=a_data_[ir+1]*e;
-                    //     // *(res_buf_+2)+=a_data_[ir+2]*e;
-                    //     // *(res_buf_+3)+=a_data_[ir+3]*e;
-                    // }
-                    // for (;ir!=mc_; ++ir,++res_buf_){
-                    //     *res_buf_=*res_buf_+a_data_[ir]*e;
-                    // }
-
-
                     auto a_data__=a_data_;
                     const auto a_last = a_data_+mc_;
-                    const vec4 b_y{_mm256_broadcast_sd(b_data)};
-
-                    for (;mm!=0; --mm,++a_data__,++res_buf_){
-                        *res_buf_+=*a_data__*b_y.e0_;
-                    }
+                    const auto b_y = _mm256_broadcast_sd(b_data);
                     if (mc_>3){
+                        for (;mm!=0; --mm,++a_data__,++res_buf_){
+                            *res_buf_+=*a_data__*_mm256_cvtsd_f64(b_y);
+                        }
                         for (const auto a_last__=a_last-3; a_data__<a_last__; a_data__+=4,res_buf_+=4){
-                            //_mm256_store_pd(res_buf_,_mm256_fmadd_pd(_mm256_loadu_pd(a_data__),b_y.m_,_mm256_load_pd(res_buf_)));
-                            const vec4 r{_mm256_mul_pd(_mm256_loadu_pd(a_data__),b_y.m_)};
-                            *res_buf_+=r.e0_;
-                            *(res_buf_+1)+=r.e1_;
-                            *(res_buf_+2)+=r.e2_;
-                            *(res_buf_+3)+=r.e3_;
+                            _mm256_store_pd(res_buf_,_mm256_fmadd_pd(_mm256_load_pd(a_data__),b_y,_mm256_load_pd(res_buf_)));
+                        }
+                        for (mm=4; a_data__!=a_last; ++a_data__,++res_buf_,--mm){
+                            *res_buf_+=*a_data__*_mm256_cvtsd_f64(b_y);
+                        }
+                    }else{
+                        for (;a_data__!=a_last; ++a_data__,++res_buf_){
+                            *res_buf_+=*a_data__*_mm256_cvtsd_f64(b_y);
                         }
                     }
-                    for (mm=4; a_data__!=a_last; ++a_data__,++res_buf_,--mm){
-                        *res_buf_+=*a_data__*b_y.e0_;
-                    }
-
-                    // auto a_data__=a_data_;
-                    // const auto a_last = a_data_+mc_;
-                    // const auto b_y = _mm256_broadcast_sd(b_data);
-                    // if (mc_>3){
-                    //     for (const auto a_last__=a_last-3; a_data__<a_last__; a_data__+=4,res_buf_+=4){
-                    //         _mm256_storeu_pd(res_buf_,_mm256_fmadd_pd(_mm256_loadu_pd(a_data__),b_y,_mm256_loadu_pd(res_buf_)));
-                    //     }
-                    // }
-                    // for (;a_data__!=a_last; ++a_data__,++res_buf_){
-                    //     *res_buf_+=*a_data__*e;
-                    // }
-
-                    // auto a_data__=a_data_;
-                    // const auto a_last = a_data_+mc_;
-                    // if (mc_>3){
-                    //     for (const auto a_last__=a_last-3; a_data__<a_last__; a_data__+=4){
-                    //         *res_buf_+=*a_data__*e;
-                    //         ++res_buf_;
-                    //         *res_buf_+=*(a_data__+1)*e;
-                    //         ++res_buf_;
-                    //         *res_buf_+=*(a_data__+2)*e;
-                    //         ++res_buf_;
-                    //         *res_buf_+=*(a_data__+3)*e;
-                    //         ++res_buf_;
-                    //     }
-                    // }
-                    // for (;a_data__!=a_last; ++a_data__,++res_buf_){
-                    //     *res_buf_+=*a_data__*e;
-                    // }
-
-                    // for (std::ptrdiff_t ir=0; ir!=mc_; ++ir,++res_buf_){
-                    //     *res_buf_+=a_data_[ir]*e;
-                    // }
                 }
             }
         }
@@ -733,9 +665,9 @@ private:
                 const auto res_buf_size = make_buf_size(Mc,Nc,sizeof(T));
                 const auto a_buf_size = make_buf_size(Mc,Kc,sizeof(T1));
                 const auto b_buf_size = make_buf_size(Kc,Nc,sizeof(T2));
-                std::vector<T,allocation::aligned_allocator<T,alignment>> res_buf(res_buf_size);
-                std::vector<T1,allocation::aligned_allocator<T1,alignment>> a_buf(a_buf_size);
-                std::vector<T2,allocation::aligned_allocator<T2,alignment>> b_buf(b_buf_size);
+                gtensor::basic_storage<T,allocation::aligned_allocator<T,alignment>> res_buf(res_buf_size);
+                gtensor::basic_storage<T1,allocation::aligned_allocator<T1,alignment>> a_buf(a_buf_size);
+                gtensor::basic_storage<T2,allocation::aligned_allocator<T2,alignment>> b_buf(b_buf_size);
                 this->operator()(res_w,w1,w2,ic_min,ic_max,jc_min,jc_max,res_buf.data(),a_buf.data(),b_buf.data());
             }
         }
