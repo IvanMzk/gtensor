@@ -27,13 +27,48 @@ struct no_value{};
 #define ASSERT_TENSOR(t) static_assert(detail::is_tensor_v<t>,"tensor expected");
 
 #if defined(__clang__)
-#define ALWAYS_INLINE [[clang::always_inline]]
+    #define ALWAYS_INLINE [[clang::always_inline]]
 #elif defined(__GNUC__) || defined(__GNUG__)
-#define ALWAYS_INLINE __attribute__((always_inline)) inline
+    #define ALWAYS_INLINE __attribute__((always_inline)) inline
 #elif defined(_MSC_VER)
-#define ALWAYS_INLINE __forceinline
+    #define ALWAYS_INLINE __forceinline
 #else
-#define ALWAYS_INLINE inline
+    #define ALWAYS_INLINE inline
+#endif
+
+#if defined(__clang__) || defined(__GNUC__) || defined(__GNUG__)
+    #if defined(__AVX__)
+        #define HAS_AVX 1
+    #else
+        #define HAS_AVX 0
+    #endif
+    #if defined(__AVX2__)
+        #define HAS_AVX2 1
+    #else
+        #define HAS_AVX2 0
+    #endif
+    #if defined(__FMA__)
+        #define HAS_FMA 1
+    #else
+        #define HAS_FMA 0
+    #endif
+#elif defined(_MSC_VER)
+    #if defined(__AVX__)
+        #define HAS_AVX 1
+    #else
+        #define HAS_AVX 0
+    #endif
+    #if defined(__AVX2__)
+        #define HAS_AVX2 1
+        #define HAS_FMA 1
+    #else
+        #define HAS_AVX2 0
+        #define HAS_FMA 0
+    #endif
+#else
+    #define HAS_AVX 0
+    #define HAS_AVX2 0
+    #define HAS_FMA 0
 #endif
 
 #define GENERATE_HAS_METHOD_SIGNATURE(function_name,function_signature,trait_name)\

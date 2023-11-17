@@ -778,6 +778,8 @@ TEST_CASE("benchmark_pack","[benchmark_tensor]")
 TEST_CASE("benchmark_matmul","[benchmark_tensor]")
 {
     //using value_type = std::complex<double>;
+    //using value_type = std::int64_t;
+    //using value_type = int;
     using value_type = double;
     //using value_type = float;
     using gtensor::tensor;
@@ -797,16 +799,16 @@ TEST_CASE("benchmark_matmul","[benchmark_tensor]")
         // //nd x 1d
         // std::make_pair(std::vector<int>{10000,10000},std::vector<int>{10000}),
         // //nd x nd
-        std::make_pair(std::vector<int>{1000,1000},std::vector<int>{1000,1000})
+        //std::make_pair(std::vector<int>{1000,1000},std::vector<int>{1000,1000})
         //std::make_pair(std::vector<int>{2000,2000},std::vector<int>{2000,2000})
-        //std::make_pair(std::vector<int>{4000,4000},std::vector<int>{4000,4000})
+        std::make_pair(std::vector<int>{4000,4000},std::vector<int>{4000,4000})
         //std::make_pair(std::vector<int>{200,100000},std::vector<int>{100000,300})
         //std::make_pair(std::vector<int>{6000,6000},std::vector<int>{6000,6000})
         //std::make_pair(std::vector<int>{10000,10000},std::vector<int>{10000,10000})
         //std::make_pair(std::vector<int>{3,2,300,1000},std::vector<int>{2,1000,900})
         //std::make_pair(std::vector<int>{100,100,200,100},std::vector<int>{100,100,300})
     };
-    const auto n_iters = 10;
+    const auto n_iters = 1;
     //bench_matmul("bench matmul",n_iters,shapes,builder,command_matmul);
 
 
@@ -845,7 +847,8 @@ TEST_CASE("benchmark_matmul","[benchmark_tensor]")
     REQUIRE(matmul_2d_goto2(aa.copy(c_order{}),bb.copy(f_order{}))==rr);
     REQUIRE(matmul_2d_goto2(aa.copy(f_order{}),bb.copy(c_order{}))==rr);
 
-    // REQUIRE(matmul(tensor<double,c_order>{{1,2,4,2},{3,4,2,0},{5,3,1,1}},tensor<double,c_order>{{2,1,2},{0,3,1},{1,1,4},{4,3,3}})==tensor<double>{{14,17,26},{8,17,18},{15,18,20}});
+    //REQUIRE(matmul(tensor<double,c_order>{{1,2,4,2},{3,4,2,0},{5,3,1,1}},tensor<double,c_order>{{2,1,2},{0,3,1},{1,1,4},{4,3,3}})==tensor<double>{{14,17,26},{8,17,18},{15,18,20}});
+    //REQUIRE(matmul(tensor<double,f_order>{{1,2,4,2},{3,4,2,0},{5,3,1,1}},tensor<double,f_order>{{2,1,2},{0,3,1},{1,1,4},{4,3,3}})==tensor<double>{{14,17,26},{8,17,18},{15,18,20}});
 
     REQUIRE(matmul(aa.copy(c_order{}),bb.copy(c_order{}))==rr);
     REQUIRE(matmul(aa.copy(f_order{}),bb.copy(f_order{}))==rr);
