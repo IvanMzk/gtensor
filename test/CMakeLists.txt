@@ -11,7 +11,7 @@ target_compile_features(Test PRIVATE cxx_std_17)
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     target_compile_options(Test PRIVATE /W4 /Zc:__cplusplus /bigobj "$<$<CONFIG:RELEASE>:/O2>")
 else()
-    target_compile_options(Test PRIVATE -Wall "$<$<CONFIG:RELEASE>:-O2>")
+    target_compile_options(Test PRIVATE -Wall -march=native "$<$<CONFIG:RELEASE>:-O2>")
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         target_compile_options(Test PRIVATE -stdlib=libc++)
     else()
@@ -48,7 +48,7 @@ target_sources(Test PRIVATE
 #
     #${CMAKE_CURRENT_LIST_DIR}/test_tensor_operators.cpp
     #${CMAKE_CURRENT_LIST_DIR}/test_std_complex.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/test_tensor_of_tensor.cpp
+    #${CMAKE_CURRENT_LIST_DIR}/test_tensor_of_tensor.cpp
 #
     #${CMAKE_CURRENT_LIST_DIR}/test_tensor_cloning_semantics.cpp
     #${CMAKE_CURRENT_LIST_DIR}/test_tensor_construction.cpp

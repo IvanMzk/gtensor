@@ -524,6 +524,7 @@ private:
 
         template<typename T_, typename T1_, typename T2_>
         ALWAYS_INLINE void kernel(T_* res_buf, const T1_* const a_data, const T2_* b_data, const std::ptrdiff_t& mc_, const std::ptrdiff_t& nc_, const std::ptrdiff_t& kc_){
+            std::cout<<std::endl<<"ALWAYS_INLINE void kernel(T_* res_buf, const T1_* const a_data, const T2_* b_data, const std::ptrdiff_t& mc_, const std::ptrdiff_t& nc_, const std::ptrdiff_t& kc_){";
             auto res_buf_ = res_buf;
             for (const auto b_last=b_data+nc_; b_data!=b_last; ++b_data){
                 const auto e = *b_data;
@@ -543,9 +544,89 @@ private:
             }
         }
 
-        template<typename T_ = T, std::enable_if_t<std::is_same_v<T_,T_> && HAS_FMA && HAS_AVX, int> =0>
+        template<typename T_ = T, std::enable_if_t<std::is_same_v<T_,T_> && HAS_FMA && HAS_AVX && Mc==128, int> =0>
         ALWAYS_INLINE void kernel(double* res_buf, const double* const a_data, const double* b_data, const std::ptrdiff_t& mc_, const std::ptrdiff_t& nc_, const std::ptrdiff_t& kc_){
-            if (mc_>3){
+            if (mc_==Mc){
+                //std::cout<<std::endl<<"if (mc_==Mc && false){";
+                auto res_buf_ = res_buf;
+                for (const auto b_last=b_data+nc_; b_data!=b_last; ++b_data){
+                    const auto b_y =_mm256_broadcast_sd(b_data);
+                    _mm256_store_pd(res_buf_,_mm256_mul_pd(_mm256_load_pd(a_data),b_y));
+                    _mm256_store_pd(res_buf_+4,_mm256_mul_pd(_mm256_load_pd(a_data+4),b_y));
+                    _mm256_store_pd(res_buf_+8,_mm256_mul_pd(_mm256_load_pd(a_data+8),b_y));
+                    _mm256_store_pd(res_buf_+12,_mm256_mul_pd(_mm256_load_pd(a_data+12),b_y));
+                    _mm256_store_pd(res_buf_+16,_mm256_mul_pd(_mm256_load_pd(a_data+16),b_y));
+                    _mm256_store_pd(res_buf_+20,_mm256_mul_pd(_mm256_load_pd(a_data+20),b_y));
+                    _mm256_store_pd(res_buf_+24,_mm256_mul_pd(_mm256_load_pd(a_data+24),b_y));
+                    _mm256_store_pd(res_buf_+28,_mm256_mul_pd(_mm256_load_pd(a_data+28),b_y));
+                    _mm256_store_pd(res_buf_+32,_mm256_mul_pd(_mm256_load_pd(a_data+32),b_y));
+                    _mm256_store_pd(res_buf_+36,_mm256_mul_pd(_mm256_load_pd(a_data+36),b_y));
+                    _mm256_store_pd(res_buf_+40,_mm256_mul_pd(_mm256_load_pd(a_data+40),b_y));
+                    _mm256_store_pd(res_buf_+44,_mm256_mul_pd(_mm256_load_pd(a_data+44),b_y));
+                    _mm256_store_pd(res_buf_+48,_mm256_mul_pd(_mm256_load_pd(a_data+48),b_y));
+                    _mm256_store_pd(res_buf_+52,_mm256_mul_pd(_mm256_load_pd(a_data+52),b_y));
+                    _mm256_store_pd(res_buf_+56,_mm256_mul_pd(_mm256_load_pd(a_data+56),b_y));
+                    _mm256_store_pd(res_buf_+60,_mm256_mul_pd(_mm256_load_pd(a_data+60),b_y));
+                    _mm256_store_pd(res_buf_+64,_mm256_mul_pd(_mm256_load_pd(a_data+64),b_y));
+                    _mm256_store_pd(res_buf_+68,_mm256_mul_pd(_mm256_load_pd(a_data+68),b_y));
+                    _mm256_store_pd(res_buf_+72,_mm256_mul_pd(_mm256_load_pd(a_data+72),b_y));
+                    _mm256_store_pd(res_buf_+76,_mm256_mul_pd(_mm256_load_pd(a_data+76),b_y));
+                    _mm256_store_pd(res_buf_+80,_mm256_mul_pd(_mm256_load_pd(a_data+80),b_y));
+                    _mm256_store_pd(res_buf_+84,_mm256_mul_pd(_mm256_load_pd(a_data+84),b_y));
+                    _mm256_store_pd(res_buf_+88,_mm256_mul_pd(_mm256_load_pd(a_data+88),b_y));
+                    _mm256_store_pd(res_buf_+92,_mm256_mul_pd(_mm256_load_pd(a_data+92),b_y));
+                    _mm256_store_pd(res_buf_+96,_mm256_mul_pd(_mm256_load_pd(a_data+96),b_y));
+                    _mm256_store_pd(res_buf_+100,_mm256_mul_pd(_mm256_load_pd(a_data+100),b_y));
+                    _mm256_store_pd(res_buf_+104,_mm256_mul_pd(_mm256_load_pd(a_data+104),b_y));
+                    _mm256_store_pd(res_buf_+108,_mm256_mul_pd(_mm256_load_pd(a_data+108),b_y));
+                    _mm256_store_pd(res_buf_+112,_mm256_mul_pd(_mm256_load_pd(a_data+112),b_y));
+                    _mm256_store_pd(res_buf_+116,_mm256_mul_pd(_mm256_load_pd(a_data+116),b_y));
+                    _mm256_store_pd(res_buf_+120,_mm256_mul_pd(_mm256_load_pd(a_data+120),b_y));
+                    _mm256_store_pd(res_buf_+124,_mm256_mul_pd(_mm256_load_pd(a_data+124),b_y));
+                    res_buf_+=128;
+                }
+                for (std::ptrdiff_t kk=1; kk!=kc_; ++kk){
+                    const auto a_data_ = a_data+kk*mc_;
+                    auto res_buf_ = res_buf;
+                    for (const auto b_last=b_data+nc_; b_data!=b_last; ++b_data){
+                        const auto b_y = _mm256_broadcast_sd(b_data);
+                        _mm256_store_pd(res_buf_,_mm256_fmadd_pd(_mm256_loadu_pd(a_data_),b_y,_mm256_load_pd(res_buf_)));
+                        _mm256_store_pd(res_buf_+4,_mm256_fmadd_pd(_mm256_load_pd(a_data_+4),b_y,_mm256_load_pd(res_buf_+4)));
+                        _mm256_store_pd(res_buf_+8,_mm256_fmadd_pd(_mm256_load_pd(a_data_+8),b_y,_mm256_load_pd(res_buf_+8)));
+                        _mm256_store_pd(res_buf_+12,_mm256_fmadd_pd(_mm256_load_pd(a_data_+12),b_y,_mm256_load_pd(res_buf_+12)));
+                        _mm256_store_pd(res_buf_+16,_mm256_fmadd_pd(_mm256_load_pd(a_data_+16),b_y,_mm256_load_pd(res_buf_+16)));
+                        _mm256_store_pd(res_buf_+20,_mm256_fmadd_pd(_mm256_load_pd(a_data_+20),b_y,_mm256_load_pd(res_buf_+20)));
+                        _mm256_store_pd(res_buf_+24,_mm256_fmadd_pd(_mm256_load_pd(a_data_+24),b_y,_mm256_load_pd(res_buf_+24)));
+                        _mm256_store_pd(res_buf_+28,_mm256_fmadd_pd(_mm256_load_pd(a_data_+28),b_y,_mm256_load_pd(res_buf_+28)));
+                        _mm256_store_pd(res_buf_+32,_mm256_fmadd_pd(_mm256_load_pd(a_data_+32),b_y,_mm256_load_pd(res_buf_+32)));
+                        _mm256_store_pd(res_buf_+36,_mm256_fmadd_pd(_mm256_load_pd(a_data_+36),b_y,_mm256_load_pd(res_buf_+36)));
+                        _mm256_store_pd(res_buf_+40,_mm256_fmadd_pd(_mm256_load_pd(a_data_+40),b_y,_mm256_load_pd(res_buf_+40)));
+                        _mm256_store_pd(res_buf_+44,_mm256_fmadd_pd(_mm256_load_pd(a_data_+44),b_y,_mm256_load_pd(res_buf_+44)));
+                        _mm256_store_pd(res_buf_+48,_mm256_fmadd_pd(_mm256_load_pd(a_data_+48),b_y,_mm256_load_pd(res_buf_+48)));
+                        _mm256_store_pd(res_buf_+52,_mm256_fmadd_pd(_mm256_load_pd(a_data_+52),b_y,_mm256_load_pd(res_buf_+52)));
+                        _mm256_store_pd(res_buf_+56,_mm256_fmadd_pd(_mm256_load_pd(a_data_+56),b_y,_mm256_load_pd(res_buf_+56)));
+                        _mm256_store_pd(res_buf_+60,_mm256_fmadd_pd(_mm256_load_pd(a_data_+60),b_y,_mm256_load_pd(res_buf_+60)));
+                        _mm256_store_pd(res_buf_+64,_mm256_fmadd_pd(_mm256_load_pd(a_data_+64),b_y,_mm256_load_pd(res_buf_+64)));
+                        _mm256_store_pd(res_buf_+68,_mm256_fmadd_pd(_mm256_load_pd(a_data_+68),b_y,_mm256_load_pd(res_buf_+68)));
+                        _mm256_store_pd(res_buf_+72,_mm256_fmadd_pd(_mm256_load_pd(a_data_+72),b_y,_mm256_load_pd(res_buf_+72)));
+                        _mm256_store_pd(res_buf_+76,_mm256_fmadd_pd(_mm256_load_pd(a_data_+76),b_y,_mm256_load_pd(res_buf_+76)));
+                        _mm256_store_pd(res_buf_+80,_mm256_fmadd_pd(_mm256_load_pd(a_data_+80),b_y,_mm256_load_pd(res_buf_+80)));
+                        _mm256_store_pd(res_buf_+84,_mm256_fmadd_pd(_mm256_load_pd(a_data_+84),b_y,_mm256_load_pd(res_buf_+84)));
+                        _mm256_store_pd(res_buf_+88,_mm256_fmadd_pd(_mm256_load_pd(a_data_+88),b_y,_mm256_load_pd(res_buf_+88)));
+                        _mm256_store_pd(res_buf_+92,_mm256_fmadd_pd(_mm256_load_pd(a_data_+92),b_y,_mm256_load_pd(res_buf_+92)));
+                        _mm256_store_pd(res_buf_+96,_mm256_fmadd_pd(_mm256_load_pd(a_data_+96),b_y,_mm256_load_pd(res_buf_+96)));
+                        _mm256_store_pd(res_buf_+100,_mm256_fmadd_pd(_mm256_load_pd(a_data_+100),b_y,_mm256_load_pd(res_buf_+100)));
+                        _mm256_store_pd(res_buf_+104,_mm256_fmadd_pd(_mm256_load_pd(a_data_+104),b_y,_mm256_load_pd(res_buf_+104)));
+                        _mm256_store_pd(res_buf_+108,_mm256_fmadd_pd(_mm256_load_pd(a_data_+108),b_y,_mm256_load_pd(res_buf_+108)));
+                        _mm256_store_pd(res_buf_+112,_mm256_fmadd_pd(_mm256_load_pd(a_data_+112),b_y,_mm256_load_pd(res_buf_+112)));
+                        _mm256_store_pd(res_buf_+116,_mm256_fmadd_pd(_mm256_load_pd(a_data_+116),b_y,_mm256_load_pd(res_buf_+116)));
+                        _mm256_store_pd(res_buf_+120,_mm256_fmadd_pd(_mm256_load_pd(a_data_+120),b_y,_mm256_load_pd(res_buf_+120)));
+                        _mm256_store_pd(res_buf_+124,_mm256_fmadd_pd(_mm256_load_pd(a_data_+124),b_y,_mm256_load_pd(res_buf_+124)));
+                        res_buf_+=128;
+                    }
+                }
+            }else if (mc_>3){
+                //std::cout<<std::endl<<"if }else if (mc_>3){";
                 std::ptrdiff_t mm{0};
                 auto res_buf_ = res_buf;
                 for (const auto b_last=b_data+nc_; b_data!=b_last; ++b_data){

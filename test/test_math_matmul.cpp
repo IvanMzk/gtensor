@@ -143,3 +143,43 @@ TEST_CASE("test_math_matmul_exception","test_math")
     REQUIRE_THROWS_AS(matmul(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}}},tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}),value_error);
 }
 
+TEMPLATE_TEST_CASE("test_math_matmul_big","test_math",
+    (std::tuple<gtensor::config::c_order,gtensor::config::c_order>),
+    (std::tuple<gtensor::config::f_order,gtensor::config::f_order>),
+    (std::tuple<gtensor::config::c_order,gtensor::config::f_order>),
+    (std::tuple<gtensor::config::f_order,gtensor::config::c_order>)
+)
+{
+    using layout1 = std::tuple_element_t<0,TestType>;
+    using layout2 = std::tuple_element_t<1,TestType>;
+    using value_type = double;
+    using tensor_type1 = gtensor::tensor<value_type,layout1>;
+    using tensor_type2 = gtensor::tensor<value_type,layout2>;
+    using tensor_type = gtensor::tensor<value_type>;
+    using gtensor::matmul;
+    using gtensor::config::c_order;
+    using gtensor::config::f_order;
+    using helpers_for_testing::apply_by_element;
+
+    const auto m = 1025;
+    const auto n = 1029;
+    const auto k = 255;
+
+    tensor_type1 a({m,k},0);
+    tensor_type2 b({k,n},0);
+    tensor_type res({m,n},0);
+
+    helpers_for_testing::generate_lehmer(a.begin(),a.end(),[](auto e){return e%3;},123);
+    helpers_for_testing::generate_lehmer(b.begin(),b.end(),[](auto e){return e%3;},456);
+
+    for (auto i=0; i!=m; ++i){
+        for (auto j=0; j!=n; ++j){
+            for (auto r=0; r!=k; ++r){
+                res.element(i,j)+=a.element(i,r)*b.element(r,j);
+            }
+        }
+    }
+
+    REQUIRE(res==matmul(a,b));
+}
+
