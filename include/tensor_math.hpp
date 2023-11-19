@@ -465,6 +465,1036 @@ private:
         return res;
     }
 
+    template<typename T, typename T1, typename T2, typename Order, typename Config, std::size_t Mc, std::size_t Nc, std::size_t Kc, std::size_t Mr, std::size_t Nr, typename BufferOnStack=std::false_type>
+    class matmul_2d_blis1
+    {
+        using index_type = typename Config::index_type;
+        using dim_type = typename Config::dim_type;
+        const index_type k;
+        const dim_type i_axis;
+        const dim_type j_axis;
+
+        ALWAYS_INLINE auto adjust_block_size(const index_type& idx, const index_type& block_size, const index_type& max){
+            return idx+block_size>max ? max-idx : block_size;
+        }
+
+        template<typename W, typename U, typename DimT>
+        ALWAYS_INLINE void fill_buf(W& w, U* dst, const DimT& inner_axis, const DimT& outer_axis, const index_type& inner_size, const index_type& outer_size, const index_type& block_size){
+            index_type ii=0;
+            for (;ii<inner_size; ii+=block_size,w.walk(inner_axis,block_size)){
+                const auto block_size_ = adjust_block_size(ii,block_size,inner_size);
+                for (auto i=outer_size; i!=0; --i,w.step(outer_axis)){
+                    const auto dst_last = dst+static_cast<std::ptrdiff_t>(block_size_);
+                    if (block_size_ > 3){
+                        for (const auto dst_last_=dst_last-3; dst<dst_last_; dst+=4){
+                            *dst = *w;
+                            w.step(inner_axis);
+                            *(dst+1) = *w;
+                            w.step(inner_axis);
+                            *(dst+2) = *w;
+                            w.step(inner_axis);
+                            *(dst+3) = *w;
+                            w.step(inner_axis);
+                        }
+                    }
+                    for (;dst!=dst_last; ++dst,w.step(inner_axis)){
+                        *dst = *w;
+                    }
+                    w.walk_back(inner_axis,block_size_);
+                }
+                w.walk_back(outer_axis,outer_size);
+            }
+            w.walk_back(inner_axis,ii);
+        }
+
+        template<typename ResW, typename DimT>
+        ALWAYS_INLINE void fill_res(const T* buf, ResW& res_w, const DimT& inner_axis, const DimT& outer_axis, const index_type& inner_size, const index_type& outer_size){
+            for (auto i=outer_size; i!=0; --i,res_w.step(outer_axis)){
+                const auto buf_last = buf+static_cast<std::ptrdiff_t>(inner_size);
+                if (inner_size > 3){
+                    for (const auto buf_last_=buf_last-3; buf<buf_last_; buf+=4){
+                        *res_w = *res_w + *buf;
+                        res_w.step(inner_axis);
+                        *res_w = *res_w + *(buf+1);
+                        res_w.step(inner_axis);
+                        *res_w = *res_w + *(buf+2);
+                        res_w.step(inner_axis);
+                        *res_w = *res_w + *(buf+3);
+                        res_w.step(inner_axis);
+                    }
+                }
+                for (;buf!=buf_last; ++buf,res_w.step(inner_axis)){
+                    *res_w = *res_w + *buf;
+                }
+                res_w.walk_back(inner_axis,inner_size);
+            }
+            res_w.walk_back(outer_axis,outer_size);
+        }
+
+        // template<typename ResW, typename DimT>
+        // ALWAYS_INLINE void fill_res(const T* buf, ResW& res_w, const DimT& inner_axis, const DimT& outer_axis, const index_type& i_axis_size, const index_type& j_axis_size, const index_type& block_inner_size, const index_type& block_outer_size){
+        //     const index_type mr{Mr};
+        //     const index_type nr{Nr};
+        //     index_type jj=0;
+        //     for (;jj<j_axis_size; jj+=nr,res_w.walk(j_axis,nr)){
+        //         //const auto block_outer_size_ = adjust_block_size(jj,nr,j_axis_size);
+        //         const auto j_block_size_ = adjust_block_size(jj,nr,j_axis_size);
+        //         index_type ii=0;
+        //         for (;ii<i_axis_size; ii+=mr,res_w.walk(i_axis,mr)){
+        //             //const auto block_inner_size_ = adjust_block_size(ii,mr,i_axis_size);
+        //             const auto i_block_size_ = adjust_block_size(ii,mr,i_axis_size);
+
+        //             for (auto i=block_outer_size_; i!=0; --i,res_w.step(outer_axis)){
+        //                 const auto buf_last = buf+static_cast<std::ptrdiff_t>(block_inner_size_);
+        //                 if (block_inner_size_ > 3){
+        //                     for (const auto buf_last_=buf_last-3; buf<buf_last_; buf+=4){
+        //                         *res_w = *res_w + *buf;
+        //                         res_w.step(inner_axis);
+        //                         *res_w = *res_w + *(buf+1);
+        //                         res_w.step(inner_axis);
+        //                         *res_w = *res_w + *(buf+2);
+        //                         res_w.step(inner_axis);
+        //                         *res_w = *res_w + *(buf+3);
+        //                         res_w.step(inner_axis);
+        //                     }
+        //                 }
+        //                 for (;buf!=buf_last; ++buf,res_w.step(inner_axis)){
+        //                     *res_w = *res_w + *buf;
+        //                 }
+        //                 res_w.walk_back(inner_axis,block_inner_size_);
+        //             }
+        //             res_w.walk_back(outer_axis,block_outer_size_);
+
+        //         }
+        //         res_w.walk_back(i_axis,ii);
+        //     }
+        //     res_w.walk_back(j_axis,jj);
+        // }
+
+        template<typename T_, typename T1_, typename T2_>
+        ALWAYS_INLINE void micro_kernel(T_* res_buf, const T1_* const a_data, const T2_* b_data, const std::ptrdiff_t& mr_, const std::ptrdiff_t& nr_, const std::ptrdiff_t& kc_){
+            auto res_buf_ = res_buf;
+            for (const auto b_last=b_data+nr_; b_data!=b_last; ++b_data){
+                const auto e = *b_data;
+                for (std::ptrdiff_t ir=0; ir!=mr_; ++ir,++res_buf_){
+                    *res_buf_=a_data[ir]*e;
+                }
+            }
+            for (std::ptrdiff_t kk=1; kk!=kc_; ++kk){
+                const auto a_data_ = a_data+kk*mr_;
+                auto res_buf_ = res_buf;
+                for (const auto b_last=b_data+nr_; b_data!=b_last; ++b_data){
+                    const auto e = *b_data;
+                    for (std::ptrdiff_t ir=0; ir!=mr_; ++ir,++res_buf_){
+                        *res_buf_=*res_buf_+a_data_[ir]*e;
+                    }
+                }
+            }
+        }
+
+        template<typename ResW, typename T_, typename T1_, typename T2_, typename DimT>
+        ALWAYS_INLINE void macro_kernel(ResW& res_w, T_* res_buf, const T1_* const a_buf, const T2_* b_buf, const DimT& inner_axis, const DimT& outer_axis, const index_type& inner_size, const index_type& outer_size, const index_type& kc_, const index_type& block_inner_size, const index_type& block_outer_size){
+            auto res_buf_ = res_buf;
+            auto b_buf_ = b_buf;
+            index_type i=0;
+            for (;i<outer_size; i+=block_outer_size,res_w.walk(outer_axis,block_outer_size)){
+                const auto block_outer_size_ = adjust_block_size(i,block_outer_size,outer_size);
+                auto a_buf_ = a_buf;
+                index_type j=0;
+                for (;j<inner_size; j+=block_inner_size,res_w.walk(inner_axis,block_inner_size)){
+                    const auto block_inner_size_ = adjust_block_size(j,block_inner_size,inner_size);
+                    if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
+                        micro_kernel(res_buf_,b_buf_,a_buf_,static_cast<std::ptrdiff_t>(block_outer_size_),static_cast<std::ptrdiff_t>(block_inner_size_),static_cast<std::ptrdiff_t>(kc_));
+                        fill_res(res_buf_,res_w,outer_axis,inner_axis,block_outer_size_,block_inner_size_);
+                    }else{
+                        micro_kernel(res_buf_,a_buf_,b_buf_,static_cast<std::ptrdiff_t>(block_inner_size_),static_cast<std::ptrdiff_t>(block_outer_size_),static_cast<std::ptrdiff_t>(kc_));
+                        fill_res(res_buf_,res_w,inner_axis,outer_axis,block_inner_size_,block_outer_size_);
+                    }
+                    res_buf_+=static_cast<std::ptrdiff_t>(block_inner_size_*block_outer_size_);
+                    a_buf_+=static_cast<std::ptrdiff_t>(block_inner_size_*kc_);
+                }
+                res_w.walk_back(inner_axis,j);
+                b_buf_+=static_cast<std::ptrdiff_t>(kc_*block_outer_size_);
+            }
+            res_w.walk_back(outer_axis,i);
+        }
+
+        #define AVX_MATMUL_BROADCAST(V) asm ("vbroadcastsd %0,%%ymm0" ::"m"(V));
+
+        #define AVX_MATMUL_MUL(OFFSET)\
+        asm ("vmovapd %1,%%ymm1\n\t"\
+            "vmulpd %%ymm1,%%ymm0,%%ymm2\n\t"\
+            "vmovapd %%ymm2,%0"\
+            :"=m"(*(res_buf_+OFFSET)):"m"(*(a_data+OFFSET))\
+        );
+
+        #define AVX_MATMUL_FMA(OFFSET)\
+        asm ("vmovapd %2,%%ymm2\n\t"\
+            "vfmadd231pd %1,%%ymm0,%%ymm2\n\t"\
+            "vmovapd %%ymm2,%0"\
+            :"=m"(*(res_buf_+OFFSET)):"m"(*(a_data_+OFFSET)),"m"(*(res_buf_+OFFSET))\
+        );
+
+        template<typename T_ = T, std::enable_if_t<std::is_same_v<T_,T_> && HAS_FMA && HAS_AVX && false, int> =0>
+        ALWAYS_INLINE void kernel(double* res_buf, const double* const a_data, const double* b_data, const std::ptrdiff_t& mc_, const std::ptrdiff_t& nc_, const std::ptrdiff_t& kc_){
+            if (mc_==Mc){
+                //std::cout<<std::endl<<"if (mc_==Mc && false){";
+                auto res_buf_ = res_buf;
+                for (const auto b_last=b_data+nc_; b_data!=b_last; ++b_data){
+                    AVX_MATMUL_BROADCAST(*b_data);
+                    AVX_MATMUL_MUL(0);
+                    AVX_MATMUL_MUL(4);
+                    AVX_MATMUL_MUL(8);
+                    AVX_MATMUL_MUL(12);
+                    AVX_MATMUL_MUL(16);
+                    AVX_MATMUL_MUL(20);
+                    AVX_MATMUL_MUL(24);
+                    AVX_MATMUL_MUL(28);
+                    AVX_MATMUL_MUL(32);
+                    AVX_MATMUL_MUL(36);
+                    AVX_MATMUL_MUL(40);
+                    AVX_MATMUL_MUL(44);
+                    AVX_MATMUL_MUL(48);
+                    AVX_MATMUL_MUL(52);
+                    AVX_MATMUL_MUL(56);
+                    AVX_MATMUL_MUL(60);
+                    AVX_MATMUL_MUL(64);
+                    AVX_MATMUL_MUL(68);
+                    AVX_MATMUL_MUL(72);
+                    AVX_MATMUL_MUL(76);
+                    AVX_MATMUL_MUL(80);
+                    AVX_MATMUL_MUL(84);
+                    AVX_MATMUL_MUL(88);
+                    AVX_MATMUL_MUL(92);
+                    AVX_MATMUL_MUL(96);
+                    AVX_MATMUL_MUL(100);
+                    AVX_MATMUL_MUL(104);
+                    AVX_MATMUL_MUL(108);
+                    AVX_MATMUL_MUL(112);
+                    AVX_MATMUL_MUL(116);
+                    AVX_MATMUL_MUL(120);
+                    AVX_MATMUL_MUL(124);
+                    res_buf_+=128;
+                }
+                for (std::ptrdiff_t kk=1; kk!=kc_; ++kk){
+                    const auto a_data_ = a_data+kk*mc_;
+                    auto res_buf_ = res_buf;
+                    for (const auto b_last=b_data+nc_; b_data!=b_last; ++b_data){
+                        AVX_MATMUL_BROADCAST(*b_data);
+                        AVX_MATMUL_FMA(0);
+                        AVX_MATMUL_FMA(4);
+                        AVX_MATMUL_FMA(8);
+                        AVX_MATMUL_FMA(12);
+                        AVX_MATMUL_FMA(16);
+                        AVX_MATMUL_FMA(20);
+                        AVX_MATMUL_FMA(24);
+                        AVX_MATMUL_FMA(28);
+                        AVX_MATMUL_FMA(32);
+                        AVX_MATMUL_FMA(36);
+                        AVX_MATMUL_FMA(40);
+                        AVX_MATMUL_FMA(44);
+                        AVX_MATMUL_FMA(48);
+                        AVX_MATMUL_FMA(52);
+                        AVX_MATMUL_FMA(56);
+                        AVX_MATMUL_FMA(60);
+                        AVX_MATMUL_FMA(64);
+                        AVX_MATMUL_FMA(68);
+                        AVX_MATMUL_FMA(72);
+                        AVX_MATMUL_FMA(76);
+                        AVX_MATMUL_FMA(80);
+                        AVX_MATMUL_FMA(84);
+                        AVX_MATMUL_FMA(88);
+                        AVX_MATMUL_FMA(92);
+                        AVX_MATMUL_FMA(96);
+                        AVX_MATMUL_FMA(100);
+                        AVX_MATMUL_FMA(104);
+                        AVX_MATMUL_FMA(108);
+                        AVX_MATMUL_FMA(112);
+                        AVX_MATMUL_FMA(116);
+                        AVX_MATMUL_FMA(120);
+                        AVX_MATMUL_FMA(124);
+                        res_buf_+=128;
+                    }
+                }
+            }else if (mc_>3){
+                //std::cout<<std::endl<<"if }else if (mc_>3){";
+                std::ptrdiff_t mm{0};
+                auto res_buf_ = res_buf;
+                for (const auto b_last=b_data+nc_; b_data!=b_last; ++b_data){
+                    auto a_data_=a_data;
+                    const auto a_last = a_data_+mc_;
+                    const auto b_y =_mm256_broadcast_sd(b_data);
+                    for (;mm!=0; --mm,++a_data_,++res_buf_){
+                        *res_buf_=*a_data_*_mm256_cvtsd_f64(b_y);
+                    }
+                    for (const auto a_last_=a_last-3; a_data_<a_last_; a_data_+=4,res_buf_+=4){
+                        _mm256_store_pd(res_buf_,_mm256_mul_pd(_mm256_loadu_pd(a_data_),b_y));
+                    }
+                    for (mm=4; a_data_!=a_last; ++a_data_,++res_buf_,--mm){
+                        *res_buf_=*a_data_*_mm256_cvtsd_f64(b_y);
+                    }
+                }
+                for (std::ptrdiff_t kk=1; kk!=kc_; ++kk){
+                    const auto a_data_ = a_data+kk*mc_;
+                    res_buf_ = res_buf;
+                    std::ptrdiff_t mm{0};
+                    for (const auto b_last=b_data+nc_; b_data!=b_last; ++b_data){
+                        auto a_data__=a_data_;
+                        const auto a_last = a_data_+mc_;
+                        const auto b_y = _mm256_broadcast_sd(b_data);
+                        for (;mm!=0; --mm,++a_data__,++res_buf_){
+                            *res_buf_+=*a_data__*_mm256_cvtsd_f64(b_y);
+                        }
+                        for (const auto a_last__=a_last-3; a_data__<a_last__; a_data__+=4,res_buf_+=4){
+                            _mm256_store_pd(res_buf_,_mm256_fmadd_pd(_mm256_loadu_pd(a_data__),b_y,_mm256_load_pd(res_buf_)));
+                        }
+                        for (mm=4; a_data__!=a_last; ++a_data__,++res_buf_,--mm){
+                            *res_buf_+=*a_data__*_mm256_cvtsd_f64(b_y);
+                        }
+                    }
+                }
+            }else{
+                auto res_buf_ = res_buf;
+                for (const auto b_last=b_data+nc_; b_data!=b_last; ++b_data){
+                    const auto e = *b_data;
+                    for (std::ptrdiff_t ir=0; ir!=mc_; ++ir,++res_buf_){
+                        *res_buf_=a_data[ir]*e;
+                    }
+                }
+                for (std::ptrdiff_t kk=1; kk!=kc_; ++kk){
+                    const auto a_data_ = a_data+kk*mc_;
+                    auto res_buf_ = res_buf;
+                    for (const auto b_last=b_data+nc_; b_data!=b_last; ++b_data){
+                        auto a_data__=a_data_;
+                        const auto b_e = *b_data;
+                        for (const auto a_last = a_data_+mc_; a_data__!=a_last; ++a_data__,++res_buf_){
+                            *res_buf_+=*a_data__*b_e;
+                        }
+                    }
+                }
+            }
+        }
+
+
+        // template<typename T_ = T, std::enable_if_t<std::is_same_v<T_,T_> && HAS_FMA && HAS_AVX && Mc==128, int> =0>
+        // ALWAYS_INLINE void kernel(double* res_buf, const double* const a_data, const double* b_data, const std::ptrdiff_t& mc_, const std::ptrdiff_t& nc_, const std::ptrdiff_t& kc_){
+        //     if (mc_==Mc){
+        //         //std::cout<<std::endl<<"if (mc_==Mc && false){";
+        //         auto res_buf_ = res_buf;
+        //         for (const auto b_last=b_data+nc_; b_data!=b_last; ++b_data){
+        //             const auto b_y =_mm256_broadcast_sd(b_data);
+        //             _mm256_store_pd(res_buf_,_mm256_mul_pd(_mm256_load_pd(a_data),b_y));
+        //             _mm256_store_pd(res_buf_+4,_mm256_mul_pd(_mm256_load_pd(a_data+4),b_y));
+        //             _mm256_store_pd(res_buf_+8,_mm256_mul_pd(_mm256_load_pd(a_data+8),b_y));
+        //             _mm256_store_pd(res_buf_+12,_mm256_mul_pd(_mm256_load_pd(a_data+12),b_y));
+        //             _mm256_store_pd(res_buf_+16,_mm256_mul_pd(_mm256_load_pd(a_data+16),b_y));
+        //             _mm256_store_pd(res_buf_+20,_mm256_mul_pd(_mm256_load_pd(a_data+20),b_y));
+        //             _mm256_store_pd(res_buf_+24,_mm256_mul_pd(_mm256_load_pd(a_data+24),b_y));
+        //             _mm256_store_pd(res_buf_+28,_mm256_mul_pd(_mm256_load_pd(a_data+28),b_y));
+        //             _mm256_store_pd(res_buf_+32,_mm256_mul_pd(_mm256_load_pd(a_data+32),b_y));
+        //             _mm256_store_pd(res_buf_+36,_mm256_mul_pd(_mm256_load_pd(a_data+36),b_y));
+        //             _mm256_store_pd(res_buf_+40,_mm256_mul_pd(_mm256_load_pd(a_data+40),b_y));
+        //             _mm256_store_pd(res_buf_+44,_mm256_mul_pd(_mm256_load_pd(a_data+44),b_y));
+        //             _mm256_store_pd(res_buf_+48,_mm256_mul_pd(_mm256_load_pd(a_data+48),b_y));
+        //             _mm256_store_pd(res_buf_+52,_mm256_mul_pd(_mm256_load_pd(a_data+52),b_y));
+        //             _mm256_store_pd(res_buf_+56,_mm256_mul_pd(_mm256_load_pd(a_data+56),b_y));
+        //             _mm256_store_pd(res_buf_+60,_mm256_mul_pd(_mm256_load_pd(a_data+60),b_y));
+        //             _mm256_store_pd(res_buf_+64,_mm256_mul_pd(_mm256_load_pd(a_data+64),b_y));
+        //             _mm256_store_pd(res_buf_+68,_mm256_mul_pd(_mm256_load_pd(a_data+68),b_y));
+        //             _mm256_store_pd(res_buf_+72,_mm256_mul_pd(_mm256_load_pd(a_data+72),b_y));
+        //             _mm256_store_pd(res_buf_+76,_mm256_mul_pd(_mm256_load_pd(a_data+76),b_y));
+        //             _mm256_store_pd(res_buf_+80,_mm256_mul_pd(_mm256_load_pd(a_data+80),b_y));
+        //             _mm256_store_pd(res_buf_+84,_mm256_mul_pd(_mm256_load_pd(a_data+84),b_y));
+        //             _mm256_store_pd(res_buf_+88,_mm256_mul_pd(_mm256_load_pd(a_data+88),b_y));
+        //             _mm256_store_pd(res_buf_+92,_mm256_mul_pd(_mm256_load_pd(a_data+92),b_y));
+        //             _mm256_store_pd(res_buf_+96,_mm256_mul_pd(_mm256_load_pd(a_data+96),b_y));
+        //             _mm256_store_pd(res_buf_+100,_mm256_mul_pd(_mm256_load_pd(a_data+100),b_y));
+        //             _mm256_store_pd(res_buf_+104,_mm256_mul_pd(_mm256_load_pd(a_data+104),b_y));
+        //             _mm256_store_pd(res_buf_+108,_mm256_mul_pd(_mm256_load_pd(a_data+108),b_y));
+        //             _mm256_store_pd(res_buf_+112,_mm256_mul_pd(_mm256_load_pd(a_data+112),b_y));
+        //             _mm256_store_pd(res_buf_+116,_mm256_mul_pd(_mm256_load_pd(a_data+116),b_y));
+        //             _mm256_store_pd(res_buf_+120,_mm256_mul_pd(_mm256_load_pd(a_data+120),b_y));
+        //             _mm256_store_pd(res_buf_+124,_mm256_mul_pd(_mm256_load_pd(a_data+124),b_y));
+        //             res_buf_+=128;
+        //         }
+        //         for (std::ptrdiff_t kk=1; kk!=kc_; ++kk){
+        //             const auto a_data_ = a_data+kk*mc_;
+        //             auto res_buf_ = res_buf;
+        //             for (const auto b_last=b_data+nc_; b_data!=b_last; ++b_data){
+        //                 const auto b_y = _mm256_broadcast_sd(b_data);
+        //                 _mm256_store_pd(res_buf_,_mm256_fmadd_pd(_mm256_load_pd(a_data_),b_y,_mm256_load_pd(res_buf_)));
+        //                 _mm256_store_pd(res_buf_+4,_mm256_fmadd_pd(_mm256_load_pd(a_data_+4),b_y,_mm256_load_pd(res_buf_+4)));
+        //                 _mm256_store_pd(res_buf_+8,_mm256_fmadd_pd(_mm256_load_pd(a_data_+8),b_y,_mm256_load_pd(res_buf_+8)));
+        //                 _mm256_store_pd(res_buf_+12,_mm256_fmadd_pd(_mm256_load_pd(a_data_+12),b_y,_mm256_load_pd(res_buf_+12)));
+        //                 _mm256_store_pd(res_buf_+16,_mm256_fmadd_pd(_mm256_load_pd(a_data_+16),b_y,_mm256_load_pd(res_buf_+16)));
+        //                 _mm256_store_pd(res_buf_+20,_mm256_fmadd_pd(_mm256_load_pd(a_data_+20),b_y,_mm256_load_pd(res_buf_+20)));
+        //                 _mm256_store_pd(res_buf_+24,_mm256_fmadd_pd(_mm256_load_pd(a_data_+24),b_y,_mm256_load_pd(res_buf_+24)));
+        //                 _mm256_store_pd(res_buf_+28,_mm256_fmadd_pd(_mm256_load_pd(a_data_+28),b_y,_mm256_load_pd(res_buf_+28)));
+        //                 _mm256_store_pd(res_buf_+32,_mm256_fmadd_pd(_mm256_load_pd(a_data_+32),b_y,_mm256_load_pd(res_buf_+32)));
+        //                 _mm256_store_pd(res_buf_+36,_mm256_fmadd_pd(_mm256_load_pd(a_data_+36),b_y,_mm256_load_pd(res_buf_+36)));
+        //                 _mm256_store_pd(res_buf_+40,_mm256_fmadd_pd(_mm256_load_pd(a_data_+40),b_y,_mm256_load_pd(res_buf_+40)));
+        //                 _mm256_store_pd(res_buf_+44,_mm256_fmadd_pd(_mm256_load_pd(a_data_+44),b_y,_mm256_load_pd(res_buf_+44)));
+        //                 _mm256_store_pd(res_buf_+48,_mm256_fmadd_pd(_mm256_load_pd(a_data_+48),b_y,_mm256_load_pd(res_buf_+48)));
+        //                 _mm256_store_pd(res_buf_+52,_mm256_fmadd_pd(_mm256_load_pd(a_data_+52),b_y,_mm256_load_pd(res_buf_+52)));
+        //                 _mm256_store_pd(res_buf_+56,_mm256_fmadd_pd(_mm256_load_pd(a_data_+56),b_y,_mm256_load_pd(res_buf_+56)));
+        //                 _mm256_store_pd(res_buf_+60,_mm256_fmadd_pd(_mm256_load_pd(a_data_+60),b_y,_mm256_load_pd(res_buf_+60)));
+        //                 _mm256_store_pd(res_buf_+64,_mm256_fmadd_pd(_mm256_load_pd(a_data_+64),b_y,_mm256_load_pd(res_buf_+64)));
+        //                 _mm256_store_pd(res_buf_+68,_mm256_fmadd_pd(_mm256_load_pd(a_data_+68),b_y,_mm256_load_pd(res_buf_+68)));
+        //                 _mm256_store_pd(res_buf_+72,_mm256_fmadd_pd(_mm256_load_pd(a_data_+72),b_y,_mm256_load_pd(res_buf_+72)));
+        //                 _mm256_store_pd(res_buf_+76,_mm256_fmadd_pd(_mm256_load_pd(a_data_+76),b_y,_mm256_load_pd(res_buf_+76)));
+        //                 _mm256_store_pd(res_buf_+80,_mm256_fmadd_pd(_mm256_load_pd(a_data_+80),b_y,_mm256_load_pd(res_buf_+80)));
+        //                 _mm256_store_pd(res_buf_+84,_mm256_fmadd_pd(_mm256_load_pd(a_data_+84),b_y,_mm256_load_pd(res_buf_+84)));
+        //                 _mm256_store_pd(res_buf_+88,_mm256_fmadd_pd(_mm256_load_pd(a_data_+88),b_y,_mm256_load_pd(res_buf_+88)));
+        //                 _mm256_store_pd(res_buf_+92,_mm256_fmadd_pd(_mm256_load_pd(a_data_+92),b_y,_mm256_load_pd(res_buf_+92)));
+        //                 _mm256_store_pd(res_buf_+96,_mm256_fmadd_pd(_mm256_load_pd(a_data_+96),b_y,_mm256_load_pd(res_buf_+96)));
+        //                 _mm256_store_pd(res_buf_+100,_mm256_fmadd_pd(_mm256_load_pd(a_data_+100),b_y,_mm256_load_pd(res_buf_+100)));
+        //                 _mm256_store_pd(res_buf_+104,_mm256_fmadd_pd(_mm256_load_pd(a_data_+104),b_y,_mm256_load_pd(res_buf_+104)));
+        //                 _mm256_store_pd(res_buf_+108,_mm256_fmadd_pd(_mm256_load_pd(a_data_+108),b_y,_mm256_load_pd(res_buf_+108)));
+        //                 _mm256_store_pd(res_buf_+112,_mm256_fmadd_pd(_mm256_load_pd(a_data_+112),b_y,_mm256_load_pd(res_buf_+112)));
+        //                 _mm256_store_pd(res_buf_+116,_mm256_fmadd_pd(_mm256_load_pd(a_data_+116),b_y,_mm256_load_pd(res_buf_+116)));
+        //                 _mm256_store_pd(res_buf_+120,_mm256_fmadd_pd(_mm256_load_pd(a_data_+120),b_y,_mm256_load_pd(res_buf_+120)));
+        //                 _mm256_store_pd(res_buf_+124,_mm256_fmadd_pd(_mm256_load_pd(a_data_+124),b_y,_mm256_load_pd(res_buf_+124)));
+        //                 res_buf_+=128;
+        //             }
+        //         }
+        //     }else if (mc_>3){
+        //         //std::cout<<std::endl<<"if }else if (mc_>3){";
+        //         std::ptrdiff_t mm{0};
+        //         auto res_buf_ = res_buf;
+        //         for (const auto b_last=b_data+nc_; b_data!=b_last; ++b_data){
+        //             auto a_data_=a_data;
+        //             const auto a_last = a_data_+mc_;
+        //             const auto b_y =_mm256_broadcast_sd(b_data);
+        //             for (;mm!=0; --mm,++a_data_,++res_buf_){
+        //                 *res_buf_=*a_data_*_mm256_cvtsd_f64(b_y);
+        //             }
+        //             for (const auto a_last_=a_last-3; a_data_<a_last_; a_data_+=4,res_buf_+=4){
+        //                 _mm256_store_pd(res_buf_,_mm256_mul_pd(_mm256_loadu_pd(a_data_),b_y));
+        //             }
+        //             for (mm=4; a_data_!=a_last; ++a_data_,++res_buf_,--mm){
+        //                 *res_buf_=*a_data_*_mm256_cvtsd_f64(b_y);
+        //             }
+        //         }
+        //         for (std::ptrdiff_t kk=1; kk!=kc_; ++kk){
+        //             const auto a_data_ = a_data+kk*mc_;
+        //             res_buf_ = res_buf;
+        //             std::ptrdiff_t mm{0};
+        //             for (const auto b_last=b_data+nc_; b_data!=b_last; ++b_data){
+        //                 auto a_data__=a_data_;
+        //                 const auto a_last = a_data_+mc_;
+        //                 const auto b_y = _mm256_broadcast_sd(b_data);
+        //                 for (;mm!=0; --mm,++a_data__,++res_buf_){
+        //                     *res_buf_+=*a_data__*_mm256_cvtsd_f64(b_y);
+        //                 }
+        //                 for (const auto a_last__=a_last-3; a_data__<a_last__; a_data__+=4,res_buf_+=4){
+        //                     _mm256_store_pd(res_buf_,_mm256_fmadd_pd(_mm256_loadu_pd(a_data__),b_y,_mm256_load_pd(res_buf_)));
+        //                 }
+        //                 for (mm=4; a_data__!=a_last; ++a_data__,++res_buf_,--mm){
+        //                     *res_buf_+=*a_data__*_mm256_cvtsd_f64(b_y);
+        //                 }
+        //             }
+        //         }
+        //     }else{
+        //         auto res_buf_ = res_buf;
+        //         for (const auto b_last=b_data+nc_; b_data!=b_last; ++b_data){
+        //             const auto e = *b_data;
+        //             for (std::ptrdiff_t ir=0; ir!=mc_; ++ir,++res_buf_){
+        //                 *res_buf_=a_data[ir]*e;
+        //             }
+        //         }
+        //         for (std::ptrdiff_t kk=1; kk!=kc_; ++kk){
+        //             const auto a_data_ = a_data+kk*mc_;
+        //             auto res_buf_ = res_buf;
+        //             for (const auto b_last=b_data+nc_; b_data!=b_last; ++b_data){
+        //                 auto a_data__=a_data_;
+        //                 const auto b_e = *b_data;
+        //                 for (const auto a_last = a_data_+mc_; a_data__!=a_last; ++a_data__,++res_buf_){
+        //                     *res_buf_+=*a_data__*b_e;
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
+
+    public:
+        matmul_2d_blis1(const index_type& k_, const dim_type& i_axis_, const dim_type& j_axis_):
+            k{k_},
+            i_axis{i_axis_},
+            j_axis{j_axis_}
+        {}
+
+        template<typename ResW, typename W1, typename W2>
+        ALWAYS_INLINE void operator()(ResW res_w, W1 w1, W2 w2, const index_type& ic_min, const index_type& ic_max, const index_type& jc_min, const index_type& jc_max, T* res_buf, T1* a_buf, T2* b_buf){
+            const index_type mc{Mc};
+            const index_type nc{Nc};
+            const index_type kc{Kc};
+            const index_type mr{Mr};
+            const index_type nr{Nr};
+            for (index_type jc=jc_min; jc<jc_max; jc+=nc){
+                w2.walk(j_axis,jc);
+                res_w.walk(j_axis,jc);
+                const auto nc_ = adjust_block_size(jc,nc,jc_max);
+                for (index_type pc=0; pc<k; pc+=kc){
+                    w1.walk(j_axis,pc);
+                    w2.walk(i_axis,pc);
+                    const auto kc_ = adjust_block_size(pc,kc,k);
+                    fill_buf(w2,b_buf,j_axis,i_axis,nc_,kc_,nr);
+                    for (index_type ic=ic_min; ic<ic_max; ic+=mc){
+                        w1.walk(i_axis,ic);
+                        res_w.walk(i_axis,ic);
+                        const auto mc_ = adjust_block_size(ic,mc,ic_max);
+                        fill_buf(w1,a_buf,i_axis,j_axis,mc_,kc_,mr);
+                        if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
+                            macro_kernel(res_w,res_buf,b_buf,a_buf,j_axis,i_axis,nc_,mc_,kc_,nr,mr);
+                        }else{
+                            macro_kernel(res_w,res_buf,a_buf,b_buf,i_axis,j_axis,mc_,nc_,kc_,mr,nr);
+                        }
+                        w1.walk_back(i_axis,ic);
+                        res_w.walk_back(i_axis,ic);
+                    }
+                    w1.walk_back(j_axis,pc);
+                    w2.walk_back(i_axis,pc);
+                }
+                w2.walk_back(j_axis,jc);
+                res_w.walk_back(j_axis,jc);
+            }
+        }
+
+        template<typename ResW, typename W1, typename W2>
+        ALWAYS_INLINE void operator()(ResW res_w, W1 w1, W2 w2, const index_type& ic_min, const index_type& ic_max, const index_type& jc_min, const index_type& jc_max){
+            static constexpr std::size_t alignment = 64;
+            if constexpr (BufferOnStack::value){
+                alignas(alignment) std::array<T,Mc*Nc> res_buf;
+                alignas(alignment) std::array<T1,Mc*Kc> a_buf;
+                alignas(alignment) std::array<T2,Kc*Nc> b_buf;
+                this->operator()(res_w,w1,w2,ic_min,ic_max,jc_min,jc_max,res_buf.data(),a_buf.data(),b_buf.data());
+            }else{
+                auto make_buf_size = [](auto i_size, auto j_size, auto t_size){
+                    return alignment*(i_size*j_size*t_size/alignment+1);
+                };
+                const auto res_buf_size = make_buf_size(Mc,Nc,sizeof(T));
+                const auto a_buf_size = make_buf_size(Mc,Kc,sizeof(T1));
+                const auto b_buf_size = make_buf_size(Kc,Nc,sizeof(T2));
+                gtensor::basic_storage<T,allocation::aligned_allocator<T,alignment>> res_buf(res_buf_size);
+                gtensor::basic_storage<T1,allocation::aligned_allocator<T1,alignment>> a_buf(a_buf_size);
+                gtensor::basic_storage<T2,allocation::aligned_allocator<T2,alignment>> b_buf(b_buf_size);
+                this->operator()(res_w,w1,w2,ic_min,ic_max,jc_min,jc_max,res_buf.data(),a_buf.data(),b_buf.data());
+            }
+        }
+    };
+
+
+    template<typename T, typename T1, typename T2, typename Order, typename Config, std::size_t Mc, std::size_t Nc, std::size_t Kc, std::size_t Mr, std::size_t Nr, typename BufferOnStack=std::false_type>
+    class matmul_2d_blis
+    {
+        using index_type = typename Config::index_type;
+        using dim_type = typename Config::dim_type;
+        const index_type k;
+        const dim_type i_axis;
+        const dim_type j_axis;
+
+        ALWAYS_INLINE auto adjust_block_size(const index_type& idx, const index_type& block_size, const index_type& max){
+            return idx+block_size>max ? max-idx : block_size;
+        }
+
+        template<typename W, typename U, typename DimT>
+        ALWAYS_INLINE void fill_buf(W& w, U* dst, const DimT& inner_axis, const DimT& outer_axis, const index_type& inner_size, const index_type& outer_size, const index_type& block_size){
+            index_type ii=0;
+            for (;ii<inner_size; ii+=block_size,w.walk(inner_axis,block_size)){
+                const auto block_size_ = adjust_block_size(ii,block_size,inner_size);
+                for (auto i=outer_size; i!=0; --i,w.step(outer_axis)){
+                    const auto dst_last = dst+static_cast<std::ptrdiff_t>(block_size_);
+                    if (block_size_ > 3){
+                        for (const auto dst_last_=dst_last-3; dst<dst_last_; dst+=4){
+                            *dst = *w;
+                            w.step(inner_axis);
+                            *(dst+1) = *w;
+                            w.step(inner_axis);
+                            *(dst+2) = *w;
+                            w.step(inner_axis);
+                            *(dst+3) = *w;
+                            w.step(inner_axis);
+                        }
+                    }
+                    for (;dst!=dst_last; ++dst,w.step(inner_axis)){
+                        *dst = *w;
+                    }
+                    w.walk_back(inner_axis,block_size_);
+                }
+                w.walk_back(outer_axis,outer_size);
+            }
+            w.walk_back(inner_axis,ii);
+        }
+
+        template<typename ResW, typename DimT>
+        ALWAYS_INLINE void fill_res(const T* buf, ResW& res_w, const DimT& inner_axis, const DimT& outer_axis, const index_type& inner_size, const index_type& outer_size){
+            for (auto i=outer_size; i!=0; --i,res_w.step(outer_axis)){
+                const auto buf_last = buf+static_cast<std::ptrdiff_t>(inner_size);
+                if (inner_size > 3){
+                    for (const auto buf_last_=buf_last-3; buf<buf_last_; buf+=4){
+                        *res_w = *res_w + *buf;
+                        res_w.step(inner_axis);
+                        *res_w = *res_w + *(buf+1);
+                        res_w.step(inner_axis);
+                        *res_w = *res_w + *(buf+2);
+                        res_w.step(inner_axis);
+                        *res_w = *res_w + *(buf+3);
+                        res_w.step(inner_axis);
+                    }
+                }
+                for (;buf!=buf_last; ++buf,res_w.step(inner_axis)){
+                    *res_w = *res_w + *buf;
+                }
+                res_w.walk_back(inner_axis,inner_size);
+            }
+            res_w.walk_back(outer_axis,outer_size);
+        }
+
+        // template<typename ResW, typename DimT>
+        // ALWAYS_INLINE void fill_res(const T* buf, ResW& res_w, const DimT& inner_axis, const DimT& outer_axis, const index_type& i_axis_size, const index_type& j_axis_size, const index_type& block_inner_size, const index_type& block_outer_size){
+        //     const index_type mr{Mr};
+        //     const index_type nr{Nr};
+        //     index_type jj=0;
+        //     for (;jj<j_axis_size; jj+=nr,res_w.walk(j_axis,nr)){
+        //         //const auto block_outer_size_ = adjust_block_size(jj,nr,j_axis_size);
+        //         const auto j_block_size_ = adjust_block_size(jj,nr,j_axis_size);
+        //         index_type ii=0;
+        //         for (;ii<i_axis_size; ii+=mr,res_w.walk(i_axis,mr)){
+        //             //const auto block_inner_size_ = adjust_block_size(ii,mr,i_axis_size);
+        //             const auto i_block_size_ = adjust_block_size(ii,mr,i_axis_size);
+
+        //             for (auto i=block_outer_size_; i!=0; --i,res_w.step(outer_axis)){
+        //                 const auto buf_last = buf+static_cast<std::ptrdiff_t>(block_inner_size_);
+        //                 if (block_inner_size_ > 3){
+        //                     for (const auto buf_last_=buf_last-3; buf<buf_last_; buf+=4){
+        //                         *res_w = *res_w + *buf;
+        //                         res_w.step(inner_axis);
+        //                         *res_w = *res_w + *(buf+1);
+        //                         res_w.step(inner_axis);
+        //                         *res_w = *res_w + *(buf+2);
+        //                         res_w.step(inner_axis);
+        //                         *res_w = *res_w + *(buf+3);
+        //                         res_w.step(inner_axis);
+        //                     }
+        //                 }
+        //                 for (;buf!=buf_last; ++buf,res_w.step(inner_axis)){
+        //                     *res_w = *res_w + *buf;
+        //                 }
+        //                 res_w.walk_back(inner_axis,block_inner_size_);
+        //             }
+        //             res_w.walk_back(outer_axis,block_outer_size_);
+
+        //         }
+        //         res_w.walk_back(i_axis,ii);
+        //     }
+        //     res_w.walk_back(j_axis,jj);
+        // }
+
+        template<typename T_, typename T1_, typename T2_>
+        ALWAYS_INLINE void kernel(T_* res_buf, const T1_* const a_data, const T2_* b_data, const std::ptrdiff_t& mr_, const std::ptrdiff_t& nr_, const std::ptrdiff_t& kc_){
+            auto res_buf_ = res_buf;
+            for (const auto b_last=b_data+nr_; b_data!=b_last; ++b_data){
+                const auto e = *b_data;
+                for (std::ptrdiff_t ir=0; ir!=mr_; ++ir,++res_buf_){
+                    *res_buf_=a_data[ir]*e;
+                }
+            }
+            for (std::ptrdiff_t kk=1; kk!=kc_; ++kk){
+                const auto a_data_ = a_data+kk*mr_;
+                auto res_buf_ = res_buf;
+                for (const auto b_last=b_data+nr_; b_data!=b_last; ++b_data){
+                    const auto e = *b_data;
+                    for (std::ptrdiff_t ir=0; ir!=mr_; ++ir,++res_buf_){
+                        *res_buf_=*res_buf_+a_data_[ir]*e;
+                    }
+                }
+            }
+        }
+
+        #define AVX_MATMUL_BROADCAST(V) asm ("vbroadcastsd %0,%%ymm0" ::"m"(V));
+
+        #define AVX_MATMUL_MUL(OFFSET)\
+        asm ("vmovapd %1,%%ymm1\n\t"\
+            "vmulpd %%ymm1,%%ymm0,%%ymm2\n\t"\
+            "vmovapd %%ymm2,%0"\
+            :"=m"(*(res_buf_+OFFSET)):"m"(*(a_data+OFFSET))\
+        );
+
+        #define AVX_MATMUL_FMA(OFFSET)\
+        asm ("vmovapd %2,%%ymm2\n\t"\
+            "vfmadd231pd %1,%%ymm0,%%ymm2\n\t"\
+            "vmovapd %%ymm2,%0"\
+            :"=m"(*(res_buf_+OFFSET)):"m"(*(a_data_+OFFSET)),"m"(*(res_buf_+OFFSET))\
+        );
+
+        template<typename T_ = T, std::enable_if_t<std::is_same_v<T_,T_> && HAS_FMA && HAS_AVX && false, int> =0>
+        ALWAYS_INLINE void kernel(double* res_buf, const double* const a_data, const double* b_data, const std::ptrdiff_t& mc_, const std::ptrdiff_t& nc_, const std::ptrdiff_t& kc_){
+            if (mc_==Mc){
+                //std::cout<<std::endl<<"if (mc_==Mc && false){";
+                auto res_buf_ = res_buf;
+                for (const auto b_last=b_data+nc_; b_data!=b_last; ++b_data){
+                    AVX_MATMUL_BROADCAST(*b_data);
+                    AVX_MATMUL_MUL(0);
+                    AVX_MATMUL_MUL(4);
+                    AVX_MATMUL_MUL(8);
+                    AVX_MATMUL_MUL(12);
+                    AVX_MATMUL_MUL(16);
+                    AVX_MATMUL_MUL(20);
+                    AVX_MATMUL_MUL(24);
+                    AVX_MATMUL_MUL(28);
+                    AVX_MATMUL_MUL(32);
+                    AVX_MATMUL_MUL(36);
+                    AVX_MATMUL_MUL(40);
+                    AVX_MATMUL_MUL(44);
+                    AVX_MATMUL_MUL(48);
+                    AVX_MATMUL_MUL(52);
+                    AVX_MATMUL_MUL(56);
+                    AVX_MATMUL_MUL(60);
+                    AVX_MATMUL_MUL(64);
+                    AVX_MATMUL_MUL(68);
+                    AVX_MATMUL_MUL(72);
+                    AVX_MATMUL_MUL(76);
+                    AVX_MATMUL_MUL(80);
+                    AVX_MATMUL_MUL(84);
+                    AVX_MATMUL_MUL(88);
+                    AVX_MATMUL_MUL(92);
+                    AVX_MATMUL_MUL(96);
+                    AVX_MATMUL_MUL(100);
+                    AVX_MATMUL_MUL(104);
+                    AVX_MATMUL_MUL(108);
+                    AVX_MATMUL_MUL(112);
+                    AVX_MATMUL_MUL(116);
+                    AVX_MATMUL_MUL(120);
+                    AVX_MATMUL_MUL(124);
+                    res_buf_+=128;
+                }
+                for (std::ptrdiff_t kk=1; kk!=kc_; ++kk){
+                    const auto a_data_ = a_data+kk*mc_;
+                    auto res_buf_ = res_buf;
+                    for (const auto b_last=b_data+nc_; b_data!=b_last; ++b_data){
+                        AVX_MATMUL_BROADCAST(*b_data);
+                        AVX_MATMUL_FMA(0);
+                        AVX_MATMUL_FMA(4);
+                        AVX_MATMUL_FMA(8);
+                        AVX_MATMUL_FMA(12);
+                        AVX_MATMUL_FMA(16);
+                        AVX_MATMUL_FMA(20);
+                        AVX_MATMUL_FMA(24);
+                        AVX_MATMUL_FMA(28);
+                        AVX_MATMUL_FMA(32);
+                        AVX_MATMUL_FMA(36);
+                        AVX_MATMUL_FMA(40);
+                        AVX_MATMUL_FMA(44);
+                        AVX_MATMUL_FMA(48);
+                        AVX_MATMUL_FMA(52);
+                        AVX_MATMUL_FMA(56);
+                        AVX_MATMUL_FMA(60);
+                        AVX_MATMUL_FMA(64);
+                        AVX_MATMUL_FMA(68);
+                        AVX_MATMUL_FMA(72);
+                        AVX_MATMUL_FMA(76);
+                        AVX_MATMUL_FMA(80);
+                        AVX_MATMUL_FMA(84);
+                        AVX_MATMUL_FMA(88);
+                        AVX_MATMUL_FMA(92);
+                        AVX_MATMUL_FMA(96);
+                        AVX_MATMUL_FMA(100);
+                        AVX_MATMUL_FMA(104);
+                        AVX_MATMUL_FMA(108);
+                        AVX_MATMUL_FMA(112);
+                        AVX_MATMUL_FMA(116);
+                        AVX_MATMUL_FMA(120);
+                        AVX_MATMUL_FMA(124);
+                        res_buf_+=128;
+                    }
+                }
+            }else if (mc_>3){
+                //std::cout<<std::endl<<"if }else if (mc_>3){";
+                std::ptrdiff_t mm{0};
+                auto res_buf_ = res_buf;
+                for (const auto b_last=b_data+nc_; b_data!=b_last; ++b_data){
+                    auto a_data_=a_data;
+                    const auto a_last = a_data_+mc_;
+                    const auto b_y =_mm256_broadcast_sd(b_data);
+                    for (;mm!=0; --mm,++a_data_,++res_buf_){
+                        *res_buf_=*a_data_*_mm256_cvtsd_f64(b_y);
+                    }
+                    for (const auto a_last_=a_last-3; a_data_<a_last_; a_data_+=4,res_buf_+=4){
+                        _mm256_store_pd(res_buf_,_mm256_mul_pd(_mm256_loadu_pd(a_data_),b_y));
+                    }
+                    for (mm=4; a_data_!=a_last; ++a_data_,++res_buf_,--mm){
+                        *res_buf_=*a_data_*_mm256_cvtsd_f64(b_y);
+                    }
+                }
+                for (std::ptrdiff_t kk=1; kk!=kc_; ++kk){
+                    const auto a_data_ = a_data+kk*mc_;
+                    res_buf_ = res_buf;
+                    std::ptrdiff_t mm{0};
+                    for (const auto b_last=b_data+nc_; b_data!=b_last; ++b_data){
+                        auto a_data__=a_data_;
+                        const auto a_last = a_data_+mc_;
+                        const auto b_y = _mm256_broadcast_sd(b_data);
+                        for (;mm!=0; --mm,++a_data__,++res_buf_){
+                            *res_buf_+=*a_data__*_mm256_cvtsd_f64(b_y);
+                        }
+                        for (const auto a_last__=a_last-3; a_data__<a_last__; a_data__+=4,res_buf_+=4){
+                            _mm256_store_pd(res_buf_,_mm256_fmadd_pd(_mm256_loadu_pd(a_data__),b_y,_mm256_load_pd(res_buf_)));
+                        }
+                        for (mm=4; a_data__!=a_last; ++a_data__,++res_buf_,--mm){
+                            *res_buf_+=*a_data__*_mm256_cvtsd_f64(b_y);
+                        }
+                    }
+                }
+            }else{
+                auto res_buf_ = res_buf;
+                for (const auto b_last=b_data+nc_; b_data!=b_last; ++b_data){
+                    const auto e = *b_data;
+                    for (std::ptrdiff_t ir=0; ir!=mc_; ++ir,++res_buf_){
+                        *res_buf_=a_data[ir]*e;
+                    }
+                }
+                for (std::ptrdiff_t kk=1; kk!=kc_; ++kk){
+                    const auto a_data_ = a_data+kk*mc_;
+                    auto res_buf_ = res_buf;
+                    for (const auto b_last=b_data+nc_; b_data!=b_last; ++b_data){
+                        auto a_data__=a_data_;
+                        const auto b_e = *b_data;
+                        for (const auto a_last = a_data_+mc_; a_data__!=a_last; ++a_data__,++res_buf_){
+                            *res_buf_+=*a_data__*b_e;
+                        }
+                    }
+                }
+            }
+        }
+
+
+        // template<typename T_ = T, std::enable_if_t<std::is_same_v<T_,T_> && HAS_FMA && HAS_AVX && Mc==128, int> =0>
+        // ALWAYS_INLINE void kernel(double* res_buf, const double* const a_data, const double* b_data, const std::ptrdiff_t& mc_, const std::ptrdiff_t& nc_, const std::ptrdiff_t& kc_){
+        //     if (mc_==Mc){
+        //         //std::cout<<std::endl<<"if (mc_==Mc && false){";
+        //         auto res_buf_ = res_buf;
+        //         for (const auto b_last=b_data+nc_; b_data!=b_last; ++b_data){
+        //             const auto b_y =_mm256_broadcast_sd(b_data);
+        //             _mm256_store_pd(res_buf_,_mm256_mul_pd(_mm256_load_pd(a_data),b_y));
+        //             _mm256_store_pd(res_buf_+4,_mm256_mul_pd(_mm256_load_pd(a_data+4),b_y));
+        //             _mm256_store_pd(res_buf_+8,_mm256_mul_pd(_mm256_load_pd(a_data+8),b_y));
+        //             _mm256_store_pd(res_buf_+12,_mm256_mul_pd(_mm256_load_pd(a_data+12),b_y));
+        //             _mm256_store_pd(res_buf_+16,_mm256_mul_pd(_mm256_load_pd(a_data+16),b_y));
+        //             _mm256_store_pd(res_buf_+20,_mm256_mul_pd(_mm256_load_pd(a_data+20),b_y));
+        //             _mm256_store_pd(res_buf_+24,_mm256_mul_pd(_mm256_load_pd(a_data+24),b_y));
+        //             _mm256_store_pd(res_buf_+28,_mm256_mul_pd(_mm256_load_pd(a_data+28),b_y));
+        //             _mm256_store_pd(res_buf_+32,_mm256_mul_pd(_mm256_load_pd(a_data+32),b_y));
+        //             _mm256_store_pd(res_buf_+36,_mm256_mul_pd(_mm256_load_pd(a_data+36),b_y));
+        //             _mm256_store_pd(res_buf_+40,_mm256_mul_pd(_mm256_load_pd(a_data+40),b_y));
+        //             _mm256_store_pd(res_buf_+44,_mm256_mul_pd(_mm256_load_pd(a_data+44),b_y));
+        //             _mm256_store_pd(res_buf_+48,_mm256_mul_pd(_mm256_load_pd(a_data+48),b_y));
+        //             _mm256_store_pd(res_buf_+52,_mm256_mul_pd(_mm256_load_pd(a_data+52),b_y));
+        //             _mm256_store_pd(res_buf_+56,_mm256_mul_pd(_mm256_load_pd(a_data+56),b_y));
+        //             _mm256_store_pd(res_buf_+60,_mm256_mul_pd(_mm256_load_pd(a_data+60),b_y));
+        //             _mm256_store_pd(res_buf_+64,_mm256_mul_pd(_mm256_load_pd(a_data+64),b_y));
+        //             _mm256_store_pd(res_buf_+68,_mm256_mul_pd(_mm256_load_pd(a_data+68),b_y));
+        //             _mm256_store_pd(res_buf_+72,_mm256_mul_pd(_mm256_load_pd(a_data+72),b_y));
+        //             _mm256_store_pd(res_buf_+76,_mm256_mul_pd(_mm256_load_pd(a_data+76),b_y));
+        //             _mm256_store_pd(res_buf_+80,_mm256_mul_pd(_mm256_load_pd(a_data+80),b_y));
+        //             _mm256_store_pd(res_buf_+84,_mm256_mul_pd(_mm256_load_pd(a_data+84),b_y));
+        //             _mm256_store_pd(res_buf_+88,_mm256_mul_pd(_mm256_load_pd(a_data+88),b_y));
+        //             _mm256_store_pd(res_buf_+92,_mm256_mul_pd(_mm256_load_pd(a_data+92),b_y));
+        //             _mm256_store_pd(res_buf_+96,_mm256_mul_pd(_mm256_load_pd(a_data+96),b_y));
+        //             _mm256_store_pd(res_buf_+100,_mm256_mul_pd(_mm256_load_pd(a_data+100),b_y));
+        //             _mm256_store_pd(res_buf_+104,_mm256_mul_pd(_mm256_load_pd(a_data+104),b_y));
+        //             _mm256_store_pd(res_buf_+108,_mm256_mul_pd(_mm256_load_pd(a_data+108),b_y));
+        //             _mm256_store_pd(res_buf_+112,_mm256_mul_pd(_mm256_load_pd(a_data+112),b_y));
+        //             _mm256_store_pd(res_buf_+116,_mm256_mul_pd(_mm256_load_pd(a_data+116),b_y));
+        //             _mm256_store_pd(res_buf_+120,_mm256_mul_pd(_mm256_load_pd(a_data+120),b_y));
+        //             _mm256_store_pd(res_buf_+124,_mm256_mul_pd(_mm256_load_pd(a_data+124),b_y));
+        //             res_buf_+=128;
+        //         }
+        //         for (std::ptrdiff_t kk=1; kk!=kc_; ++kk){
+        //             const auto a_data_ = a_data+kk*mc_;
+        //             auto res_buf_ = res_buf;
+        //             for (const auto b_last=b_data+nc_; b_data!=b_last; ++b_data){
+        //                 const auto b_y = _mm256_broadcast_sd(b_data);
+        //                 _mm256_store_pd(res_buf_,_mm256_fmadd_pd(_mm256_load_pd(a_data_),b_y,_mm256_load_pd(res_buf_)));
+        //                 _mm256_store_pd(res_buf_+4,_mm256_fmadd_pd(_mm256_load_pd(a_data_+4),b_y,_mm256_load_pd(res_buf_+4)));
+        //                 _mm256_store_pd(res_buf_+8,_mm256_fmadd_pd(_mm256_load_pd(a_data_+8),b_y,_mm256_load_pd(res_buf_+8)));
+        //                 _mm256_store_pd(res_buf_+12,_mm256_fmadd_pd(_mm256_load_pd(a_data_+12),b_y,_mm256_load_pd(res_buf_+12)));
+        //                 _mm256_store_pd(res_buf_+16,_mm256_fmadd_pd(_mm256_load_pd(a_data_+16),b_y,_mm256_load_pd(res_buf_+16)));
+        //                 _mm256_store_pd(res_buf_+20,_mm256_fmadd_pd(_mm256_load_pd(a_data_+20),b_y,_mm256_load_pd(res_buf_+20)));
+        //                 _mm256_store_pd(res_buf_+24,_mm256_fmadd_pd(_mm256_load_pd(a_data_+24),b_y,_mm256_load_pd(res_buf_+24)));
+        //                 _mm256_store_pd(res_buf_+28,_mm256_fmadd_pd(_mm256_load_pd(a_data_+28),b_y,_mm256_load_pd(res_buf_+28)));
+        //                 _mm256_store_pd(res_buf_+32,_mm256_fmadd_pd(_mm256_load_pd(a_data_+32),b_y,_mm256_load_pd(res_buf_+32)));
+        //                 _mm256_store_pd(res_buf_+36,_mm256_fmadd_pd(_mm256_load_pd(a_data_+36),b_y,_mm256_load_pd(res_buf_+36)));
+        //                 _mm256_store_pd(res_buf_+40,_mm256_fmadd_pd(_mm256_load_pd(a_data_+40),b_y,_mm256_load_pd(res_buf_+40)));
+        //                 _mm256_store_pd(res_buf_+44,_mm256_fmadd_pd(_mm256_load_pd(a_data_+44),b_y,_mm256_load_pd(res_buf_+44)));
+        //                 _mm256_store_pd(res_buf_+48,_mm256_fmadd_pd(_mm256_load_pd(a_data_+48),b_y,_mm256_load_pd(res_buf_+48)));
+        //                 _mm256_store_pd(res_buf_+52,_mm256_fmadd_pd(_mm256_load_pd(a_data_+52),b_y,_mm256_load_pd(res_buf_+52)));
+        //                 _mm256_store_pd(res_buf_+56,_mm256_fmadd_pd(_mm256_load_pd(a_data_+56),b_y,_mm256_load_pd(res_buf_+56)));
+        //                 _mm256_store_pd(res_buf_+60,_mm256_fmadd_pd(_mm256_load_pd(a_data_+60),b_y,_mm256_load_pd(res_buf_+60)));
+        //                 _mm256_store_pd(res_buf_+64,_mm256_fmadd_pd(_mm256_load_pd(a_data_+64),b_y,_mm256_load_pd(res_buf_+64)));
+        //                 _mm256_store_pd(res_buf_+68,_mm256_fmadd_pd(_mm256_load_pd(a_data_+68),b_y,_mm256_load_pd(res_buf_+68)));
+        //                 _mm256_store_pd(res_buf_+72,_mm256_fmadd_pd(_mm256_load_pd(a_data_+72),b_y,_mm256_load_pd(res_buf_+72)));
+        //                 _mm256_store_pd(res_buf_+76,_mm256_fmadd_pd(_mm256_load_pd(a_data_+76),b_y,_mm256_load_pd(res_buf_+76)));
+        //                 _mm256_store_pd(res_buf_+80,_mm256_fmadd_pd(_mm256_load_pd(a_data_+80),b_y,_mm256_load_pd(res_buf_+80)));
+        //                 _mm256_store_pd(res_buf_+84,_mm256_fmadd_pd(_mm256_load_pd(a_data_+84),b_y,_mm256_load_pd(res_buf_+84)));
+        //                 _mm256_store_pd(res_buf_+88,_mm256_fmadd_pd(_mm256_load_pd(a_data_+88),b_y,_mm256_load_pd(res_buf_+88)));
+        //                 _mm256_store_pd(res_buf_+92,_mm256_fmadd_pd(_mm256_load_pd(a_data_+92),b_y,_mm256_load_pd(res_buf_+92)));
+        //                 _mm256_store_pd(res_buf_+96,_mm256_fmadd_pd(_mm256_load_pd(a_data_+96),b_y,_mm256_load_pd(res_buf_+96)));
+        //                 _mm256_store_pd(res_buf_+100,_mm256_fmadd_pd(_mm256_load_pd(a_data_+100),b_y,_mm256_load_pd(res_buf_+100)));
+        //                 _mm256_store_pd(res_buf_+104,_mm256_fmadd_pd(_mm256_load_pd(a_data_+104),b_y,_mm256_load_pd(res_buf_+104)));
+        //                 _mm256_store_pd(res_buf_+108,_mm256_fmadd_pd(_mm256_load_pd(a_data_+108),b_y,_mm256_load_pd(res_buf_+108)));
+        //                 _mm256_store_pd(res_buf_+112,_mm256_fmadd_pd(_mm256_load_pd(a_data_+112),b_y,_mm256_load_pd(res_buf_+112)));
+        //                 _mm256_store_pd(res_buf_+116,_mm256_fmadd_pd(_mm256_load_pd(a_data_+116),b_y,_mm256_load_pd(res_buf_+116)));
+        //                 _mm256_store_pd(res_buf_+120,_mm256_fmadd_pd(_mm256_load_pd(a_data_+120),b_y,_mm256_load_pd(res_buf_+120)));
+        //                 _mm256_store_pd(res_buf_+124,_mm256_fmadd_pd(_mm256_load_pd(a_data_+124),b_y,_mm256_load_pd(res_buf_+124)));
+        //                 res_buf_+=128;
+        //             }
+        //         }
+        //     }else if (mc_>3){
+        //         //std::cout<<std::endl<<"if }else if (mc_>3){";
+        //         std::ptrdiff_t mm{0};
+        //         auto res_buf_ = res_buf;
+        //         for (const auto b_last=b_data+nc_; b_data!=b_last; ++b_data){
+        //             auto a_data_=a_data;
+        //             const auto a_last = a_data_+mc_;
+        //             const auto b_y =_mm256_broadcast_sd(b_data);
+        //             for (;mm!=0; --mm,++a_data_,++res_buf_){
+        //                 *res_buf_=*a_data_*_mm256_cvtsd_f64(b_y);
+        //             }
+        //             for (const auto a_last_=a_last-3; a_data_<a_last_; a_data_+=4,res_buf_+=4){
+        //                 _mm256_store_pd(res_buf_,_mm256_mul_pd(_mm256_loadu_pd(a_data_),b_y));
+        //             }
+        //             for (mm=4; a_data_!=a_last; ++a_data_,++res_buf_,--mm){
+        //                 *res_buf_=*a_data_*_mm256_cvtsd_f64(b_y);
+        //             }
+        //         }
+        //         for (std::ptrdiff_t kk=1; kk!=kc_; ++kk){
+        //             const auto a_data_ = a_data+kk*mc_;
+        //             res_buf_ = res_buf;
+        //             std::ptrdiff_t mm{0};
+        //             for (const auto b_last=b_data+nc_; b_data!=b_last; ++b_data){
+        //                 auto a_data__=a_data_;
+        //                 const auto a_last = a_data_+mc_;
+        //                 const auto b_y = _mm256_broadcast_sd(b_data);
+        //                 for (;mm!=0; --mm,++a_data__,++res_buf_){
+        //                     *res_buf_+=*a_data__*_mm256_cvtsd_f64(b_y);
+        //                 }
+        //                 for (const auto a_last__=a_last-3; a_data__<a_last__; a_data__+=4,res_buf_+=4){
+        //                     _mm256_store_pd(res_buf_,_mm256_fmadd_pd(_mm256_loadu_pd(a_data__),b_y,_mm256_load_pd(res_buf_)));
+        //                 }
+        //                 for (mm=4; a_data__!=a_last; ++a_data__,++res_buf_,--mm){
+        //                     *res_buf_+=*a_data__*_mm256_cvtsd_f64(b_y);
+        //                 }
+        //             }
+        //         }
+        //     }else{
+        //         auto res_buf_ = res_buf;
+        //         for (const auto b_last=b_data+nc_; b_data!=b_last; ++b_data){
+        //             const auto e = *b_data;
+        //             for (std::ptrdiff_t ir=0; ir!=mc_; ++ir,++res_buf_){
+        //                 *res_buf_=a_data[ir]*e;
+        //             }
+        //         }
+        //         for (std::ptrdiff_t kk=1; kk!=kc_; ++kk){
+        //             const auto a_data_ = a_data+kk*mc_;
+        //             auto res_buf_ = res_buf;
+        //             for (const auto b_last=b_data+nc_; b_data!=b_last; ++b_data){
+        //                 auto a_data__=a_data_;
+        //                 const auto b_e = *b_data;
+        //                 for (const auto a_last = a_data_+mc_; a_data__!=a_last; ++a_data__,++res_buf_){
+        //                     *res_buf_+=*a_data__*b_e;
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
+
+    public:
+        matmul_2d_blis(const index_type& k_, const dim_type& i_axis_, const dim_type& j_axis_):
+            k{k_},
+            i_axis{i_axis_},
+            j_axis{j_axis_}
+        {}
+
+        template<typename ResW, typename W1, typename W2>
+        ALWAYS_INLINE void operator()(ResW res_w, W1 w1, W2 w2, const index_type& ic_min, const index_type& ic_max, const index_type& jc_min, const index_type& jc_max, T* res_buf, T1* a_buf, T2* b_buf){
+            const index_type mc{Mc};
+            const index_type nc{Nc};
+            const index_type kc{Kc};
+            const index_type mr{Mr};
+            const index_type nr{Nr};
+            for (index_type jc=jc_min; jc<jc_max; jc+=nc){
+                w2.walk(j_axis,jc);
+                res_w.walk(j_axis,jc);
+                const auto nc_ = adjust_block_size(jc,nc,jc_max);
+                for (index_type pc=0; pc<k; pc+=kc){
+                    w1.walk(j_axis,pc);
+                    w2.walk(i_axis,pc);
+                    const auto kc_ = adjust_block_size(pc,kc,k);
+                    fill_buf(w2,b_buf,j_axis,i_axis,nc_,kc_,nr);
+                    for (index_type ic=ic_min; ic<ic_max; ic+=mc){
+                        w1.walk(i_axis,ic);
+                        res_w.walk(i_axis,ic);
+                        const auto mc_ = adjust_block_size(ic,mc,ic_max);
+                        fill_buf(w1,a_buf,i_axis,j_axis,mc_,kc_,mr);
+
+                        auto res_buf_ = res_buf;
+                        auto b_buf_ = b_buf;
+                        index_type jr=0;
+                        for (;jr<nc_; jr+=nr,res_w.walk(j_axis,nr)){
+                            const auto nr_ = adjust_block_size(jr,nr,nc_);
+                            auto a_buf_ = a_buf;
+                            index_type ir=0;
+                            for (;ir<mc_; ir+=mr,res_w.walk(i_axis,mr)){
+                                const auto mr_ = adjust_block_size(ir,mr,mc_);
+                                if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
+                                    kernel(res_buf_,b_buf_,a_buf_,static_cast<std::ptrdiff_t>(nr_),static_cast<std::ptrdiff_t>(mr_),static_cast<std::ptrdiff_t>(kc_));
+                                    fill_res(res_buf_,res_w,j_axis,i_axis,nr_,mr_);
+                                }else{
+                                    kernel(res_buf_,a_buf_,b_buf_,static_cast<std::ptrdiff_t>(mr_),static_cast<std::ptrdiff_t>(nr_),static_cast<std::ptrdiff_t>(kc_));
+                                    fill_res(res_buf_,res_w,i_axis,j_axis,mr_,nr_);
+                                }
+                                res_buf_+=mr_*nr_;
+                                a_buf_+=mr_*kc_;
+                            }
+                            res_w.walk_back(i_axis,ir);
+                            b_buf_+=kc_*nr_;
+                        }
+                        res_w.walk_back(j_axis,jr);
+
+                        w1.walk_back(i_axis,ic);
+                        res_w.walk_back(i_axis,ic);
+                    }
+                    w1.walk_back(j_axis,pc);
+                    w2.walk_back(i_axis,pc);
+                }
+                w2.walk_back(j_axis,jc);
+                res_w.walk_back(j_axis,jc);
+            }
+        }
+
+        template<typename ResW, typename W1, typename W2>
+        ALWAYS_INLINE void operator()(ResW res_w, W1 w1, W2 w2, const index_type& ic_min, const index_type& ic_max, const index_type& jc_min, const index_type& jc_max){
+            static constexpr std::size_t alignment = 64;
+            if constexpr (BufferOnStack::value){
+                alignas(alignment) std::array<T,Mc*Nc> res_buf;
+                alignas(alignment) std::array<T1,Mc*Kc> a_buf;
+                alignas(alignment) std::array<T2,Kc*Nc> b_buf;
+                this->operator()(res_w,w1,w2,ic_min,ic_max,jc_min,jc_max,res_buf.data(),a_buf.data(),b_buf.data());
+            }else{
+                auto make_buf_size = [](auto i_size, auto j_size, auto t_size){
+                    return alignment*(i_size*j_size*t_size/alignment+1);
+                };
+                const auto res_buf_size = make_buf_size(Mc,Nc,sizeof(T));
+                const auto a_buf_size = make_buf_size(Mc,Kc,sizeof(T1));
+                const auto b_buf_size = make_buf_size(Kc,Nc,sizeof(T2));
+                gtensor::basic_storage<T,allocation::aligned_allocator<T,alignment>> res_buf(res_buf_size);
+                gtensor::basic_storage<T1,allocation::aligned_allocator<T1,alignment>> a_buf(a_buf_size);
+                gtensor::basic_storage<T2,allocation::aligned_allocator<T2,alignment>> b_buf(b_buf_size);
+                this->operator()(res_w,w1,w2,ic_min,ic_max,jc_min,jc_max,res_buf.data(),a_buf.data(),b_buf.data());
+            }
+        }
+    };
+
     template<typename T, typename T1, typename T2, typename Order, typename Config, std::size_t Mc, std::size_t Nc, std::size_t Kc, typename BufferOnStack=std::false_type>
     class matmul_2d
     {
@@ -524,7 +1554,6 @@ private:
 
         template<typename T_, typename T1_, typename T2_>
         ALWAYS_INLINE void kernel(T_* res_buf, const T1_* const a_data, const T2_* b_data, const std::ptrdiff_t& mc_, const std::ptrdiff_t& nc_, const std::ptrdiff_t& kc_){
-            //std::cout<<std::endl<<"ALWAYS_INLINE void kernel(T_* res_buf, const T1_* const a_data, const T2_* b_data, const std::ptrdiff_t& mc_, const std::ptrdiff_t& nc_, const std::ptrdiff_t& kc_){";
             auto res_buf_ = res_buf;
             for (const auto b_last=b_data+nc_; b_data!=b_last; ++b_data){
                 const auto e = *b_data;
@@ -560,7 +1589,7 @@ private:
             :"=m"(*(res_buf_+OFFSET)):"m"(*(a_data_+OFFSET)),"m"(*(res_buf_+OFFSET))\
         );
 
-        template<typename T_ = T, std::enable_if_t<std::is_same_v<T_,T_> && HAS_FMA && HAS_AVX && Mc==128, int> =0>
+        template<typename T_ = T, std::enable_if_t<std::is_same_v<T_,T_> && HAS_FMA && HAS_AVX && false, int> =0>
         ALWAYS_INLINE void kernel(double* res_buf, const double* const a_data, const double* b_data, const std::ptrdiff_t& mc_, const std::ptrdiff_t& nc_, const std::ptrdiff_t& kc_){
             if (mc_==Mc){
                 //std::cout<<std::endl<<"if (mc_==Mc && false){";
@@ -954,13 +1983,20 @@ private:
         const auto m = res_shape[i_axis];
         const auto n = res_shape[j_axis];
         const auto k = *(shape1.end()-1);
+        static constexpr std::size_t L1_size = 32768;
         static constexpr std::size_t L2_size = 262144;
         static constexpr std::size_t mc_size = detail::sqrti(L2_size/(2*sizeof(value_type1)));
         static constexpr std::size_t nc_size = mc_size;
         static constexpr std::size_t kc_size = 2*mc_size;
+        static constexpr std::size_t nr_size = L1_size/(kc_size*sizeof(value_type2));
+        //static constexpr std::size_t mr_size = 4*nr_size;
+        static constexpr std::size_t mr_size = mc_size;
+
 
         using buffer_on_stack = std::false_type;
-        using matmul_type = matmul_2d<value_type,value_type1,value_type2,order,config_type,mc_size,nc_size,kc_size,buffer_on_stack>;
+        using matmul_type = matmul_2d_blis1<value_type,value_type1,value_type2,order,config_type,mc_size,nc_size,kc_size,mr_size,nr_size,buffer_on_stack>;
+        //using matmul_type = matmul_2d_blis<value_type,value_type1,value_type2,order,config_type,mc_size,nc_size,kc_size,mr_size,nr_size,buffer_on_stack>;
+        //using matmul_type = matmul_2d<value_type,value_type1,value_type2,order,config_type,mc_size,nc_size,kc_size,buffer_on_stack>;
         matmul_type mm(k,i_axis,j_axis);
 
         if constexpr (multithreading::exec_policy_traits<Policy>::is_seq::value){

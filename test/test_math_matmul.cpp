@@ -181,5 +181,8 @@ TEMPLATE_TEST_CASE("test_math_matmul_big","test_math",
     }
 
     REQUIRE(res==matmul(a,b));
+    REQUIRE(res==matmul(multithreading::exec_pol<4>{},a,b));
+    REQUIRE(res==matmul(multithreading::exec_pol<10>{},a,b));
+    REQUIRE(res==matmul(multithreading::exec_pol<16>{},a,b));
 }
 
