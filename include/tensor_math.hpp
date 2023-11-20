@@ -508,16 +508,18 @@ private:
         }
 
         template<typename ResW>
-        ALWAYS_INLINE void fill_res(const T* buf, ResW& res_w, const index_type& inner_size, const index_type& outer_size, const index_type& block_inner_size, const index_type& block_outer_size){
+        ALWAYS_INLINE void fill_res(const T* buf, ResW& res_w, const index_type& mc_, const index_type& nc_){
+            const index_type mr{Mr};
+            const index_type nr{Nr};
             index_type ii=0;
-            for (;ii<outer_size; ii+=block_outer_size,res_w.walk(j_axis,block_outer_size)){
-                const auto block_outer_size_ = adjust_block_size(ii,block_outer_size,outer_size);
+            for (;ii<nc_; ii+=nr,res_w.walk(j_axis,nr)){
+                const auto nr_ = adjust_block_size(ii,nr,nc_);
                 index_type jj=0;
-                for (;jj<inner_size; jj+=block_inner_size,res_w.walk(i_axis,block_inner_size)){
-                    const auto block_inner_size_ = adjust_block_size(jj,block_inner_size,inner_size);
-                    for (auto i=block_outer_size_; i!=0; --i,res_w.step(j_axis)){
-                        const auto buf_last = buf+static_cast<std::ptrdiff_t>(block_inner_size_);
-                        if (block_inner_size_ > 3){
+                for (;jj<mc_; jj+=mr,res_w.walk(i_axis,mr)){
+                    const auto mr_ = adjust_block_size(jj,mr,mc_);
+                    for (auto i=nr_; i!=0; --i,res_w.step(j_axis)){
+                        const auto buf_last = buf+static_cast<std::ptrdiff_t>(mr_);
+                        if (mr_ > 3){
                             for (const auto buf_last_=buf_last-3; buf<buf_last_; buf+=4){
                                 *res_w = *res_w + *buf;
                                 res_w.step(i_axis);
@@ -532,9 +534,9 @@ private:
                         for (;buf!=buf_last; ++buf,res_w.step(i_axis)){
                             *res_w = *res_w + *buf;
                         }
-                        res_w.walk_back(i_axis,block_inner_size_);
+                        res_w.walk_back(i_axis,mr_);
                     }
-                    res_w.walk_back(j_axis,block_outer_size_);
+                    res_w.walk_back(j_axis,nr_);
 
                 }
                 res_w.walk_back(i_axis,jj);
@@ -563,22 +565,20 @@ private:
             }
         }
 
-        template<typename T_, typename T1_, typename T2_, typename DimT>
-        ALWAYS_INLINE void macro_kernel(T_* res_buf, const T1_* const a_buf, const T2_* b_buf, const DimT& inner_axis, const DimT& outer_axis, const index_type& inner_size, const index_type& outer_size, const index_type& kc_, const index_type& block_inner_size, const index_type& block_outer_size){
-            for (index_type i=0; i<outer_size; i+=block_outer_size){
-                const auto block_outer_size_ = adjust_block_size(i,block_outer_size,outer_size);
+        template<typename T_, typename T1_, typename T2_>
+        ALWAYS_INLINE void macro_kernel(T_* res_buf, const T1_* const a_buf, const T2_* b_buf, const index_type& mc_, const index_type& nc_, const index_type& kc_){
+            const index_type mr{Mr};
+            const index_type nr{Nr};
+            for (index_type i=0; i<nc_; i+=nr){
+                const auto nr_ = adjust_block_size(i,nr,nc_);
                 auto a_buf_ = a_buf;
-                for (index_type j=0; j<inner_size; j+=block_inner_size){
-                    const auto block_inner_size_ = adjust_block_size(j,block_inner_size,inner_size);
-                    if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
-                        micro_kernel(res_buf,b_buf,a_buf_,static_cast<std::ptrdiff_t>(block_outer_size_),static_cast<std::ptrdiff_t>(block_inner_size_),static_cast<std::ptrdiff_t>(kc_));
-                    }else{
-                        micro_kernel(res_buf,a_buf_,b_buf,static_cast<std::ptrdiff_t>(block_inner_size_),static_cast<std::ptrdiff_t>(block_outer_size_),static_cast<std::ptrdiff_t>(kc_));
-                    }
-                    res_buf+=static_cast<std::ptrdiff_t>(block_inner_size_*block_outer_size_);
-                    a_buf_+=static_cast<std::ptrdiff_t>(block_inner_size_*kc_);
+                for (index_type j=0; j<mc_; j+=mr){
+                    const auto mr_ = adjust_block_size(j,mr,mc_);
+                    micro_kernel(res_buf,a_buf_,b_buf,static_cast<std::ptrdiff_t>(mr_),static_cast<std::ptrdiff_t>(nr_),static_cast<std::ptrdiff_t>(kc_));
+                    res_buf+=static_cast<std::ptrdiff_t>(mr_*nr_);
+                    a_buf_+=static_cast<std::ptrdiff_t>(mr_*kc_);
                 }
-                b_buf+=static_cast<std::ptrdiff_t>(kc_*block_outer_size_);
+                b_buf+=static_cast<std::ptrdiff_t>(kc_*nr_);
             }
         }
 
@@ -907,13 +907,8 @@ private:
                         res_w.walk(i_axis,ic);
                         const auto mc_ = adjust_block_size(ic,mc,ic_max);
                         fill_buf(w1,a_buf,i_axis,j_axis,mc_,kc_,mr);
-                        if constexpr (std::is_same_v<Order,gtensor::config::c_order>){
-                            macro_kernel(res_buf,b_buf,a_buf,j_axis,i_axis,nc_,mc_,kc_,nr,mr);
-                            fill_res(res_buf,res_w,mc_,nc_,mr,nr);
-                        }else{
-                            macro_kernel(res_buf,a_buf,b_buf,i_axis,j_axis,mc_,nc_,kc_,mr,nr);
-                            fill_res(res_buf,res_w,mc_,nc_,mr,nr);
-                        }
+                        macro_kernel(res_buf,a_buf,b_buf,mc_,nc_,kc_);
+                        fill_res(res_buf,res_w,mc_,nc_);
                         w1.walk_back(i_axis,ic);
                         res_w.walk_back(i_axis,ic);
                     }
@@ -1955,7 +1950,8 @@ private:
         static constexpr std::size_t kc_size = 2*mc_size;
         static constexpr std::size_t nr_size = L1_size/(kc_size*sizeof(value_type2));
         //static constexpr std::size_t mr_size = 4*nr_size;
-        static constexpr std::size_t mr_size = mc_size;
+        //static constexpr std::size_t mr_size = mc_size;
+        static constexpr std::size_t mr_size = mc_size/4;
 
 
         using buffer_on_stack = std::false_type;

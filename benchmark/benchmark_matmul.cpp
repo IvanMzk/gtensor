@@ -813,7 +813,7 @@ TEST_CASE("benchmark_matmul","[benchmark_tensor]")
         //std::make_pair(std::vector<int>{3,2,300,1000},std::vector<int>{2,1000,900})
         //std::make_pair(std::vector<int>{100,100,200,100},std::vector<int>{100,100,300})
     };
-    const auto n_iters = 10;
+    const auto n_iters = 1;
     //bench_matmul("bench matmul",n_iters,shapes,builder,command_matmul);
 
 
