@@ -545,40 +545,40 @@ private:
         }
 
         template<typename T_, typename T1_, typename T2_>
-        ALWAYS_INLINE void micro_kernel(T_* res_buf, const T1_* const a_data, const T2_* b_data, const std::ptrdiff_t& mr_, const std::ptrdiff_t& nr_, const std::ptrdiff_t& kc_){
+        ALWAYS_INLINE void micro_kernel(T_* res_buf, const T1_* const a_buf, const T2_* b_buf, const std::ptrdiff_t& mr_, const std::ptrdiff_t& nr_, const std::ptrdiff_t& kc_){
             auto res_buf_ = res_buf;
-            for (const auto b_last=b_data+nr_; b_data!=b_last; ++b_data){
-                const auto e = *b_data;
+            for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
+                const auto e = *b_buf;
                 for (std::ptrdiff_t ir=0; ir!=mr_; ++ir,++res_buf_){
-                    *res_buf_=a_data[ir]*e;
+                    *res_buf_=a_buf[ir]*e;
                 }
             }
             for (std::ptrdiff_t kk=1; kk!=kc_; ++kk){
-                const auto a_data_ = a_data+kk*mr_;
+                const auto a_buf_ = a_buf+kk*mr_;
                 auto res_buf_ = res_buf;
-                for (const auto b_last=b_data+nr_; b_data!=b_last; ++b_data){
-                    const auto e = *b_data;
+                for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
+                    const auto e = *b_buf;
                     for (std::ptrdiff_t ir=0; ir!=mr_; ++ir,++res_buf_){
-                        *res_buf_=*res_buf_+a_data_[ir]*e;
+                        *res_buf_=*res_buf_+a_buf_[ir]*e;
                     }
                 }
             }
         }
 
         template<typename T_, typename T1_, typename T2_>
-        ALWAYS_INLINE void macro_kernel(T_* res_buf, const T1_* const a_buf, const T2_* b_buf, const index_type& mc_, const index_type& nc_, const index_type& kc_){
-            const index_type mr{Mr};
-            const index_type nr{Nr};
-            for (index_type i=0; i<nc_; i+=nr){
+        ALWAYS_INLINE void macro_kernel(T_* res_buf, const T1_* const a_buf, const T2_* b_buf, const std::ptrdiff_t& mc_, const std::ptrdiff_t& nc_, const std::ptrdiff_t& kc_){
+            const std::ptrdiff_t mr{Mr};
+            const std::ptrdiff_t nr{Nr};
+            for (std::ptrdiff_t i=0; i<nc_; i+=nr){
                 const auto nr_ = adjust_block_size(i,nr,nc_);
                 auto a_buf_ = a_buf;
-                for (index_type j=0; j<mc_; j+=mr){
+                for (std::ptrdiff_t j=0; j<mc_; j+=mr){
                     const auto mr_ = adjust_block_size(j,mr,mc_);
-                    micro_kernel(res_buf,a_buf_,b_buf,static_cast<std::ptrdiff_t>(mr_),static_cast<std::ptrdiff_t>(nr_),static_cast<std::ptrdiff_t>(kc_));
-                    res_buf+=static_cast<std::ptrdiff_t>(mr_*nr_);
-                    a_buf_+=static_cast<std::ptrdiff_t>(mr_*kc_);
+                    micro_kernel(res_buf,a_buf_,b_buf,mr_,nr_,kc_);
+                    res_buf+=mr_*nr_;
+                    a_buf_+=mr_*kc_;
                 }
-                b_buf+=static_cast<std::ptrdiff_t>(kc_*nr_);
+                b_buf+=kc_*nr_;
             }
         }
 
@@ -907,7 +907,7 @@ private:
                         res_w.walk(i_axis,ic);
                         const auto mc_ = adjust_block_size(ic,mc,ic_max);
                         fill_buf(w1,a_buf,i_axis,j_axis,mc_,kc_,mr);
-                        macro_kernel(res_buf,a_buf,b_buf,mc_,nc_,kc_);
+                        macro_kernel(res_buf,a_buf,b_buf,static_cast<std::ptrdiff_t>(mc_),static_cast<std::ptrdiff_t>(nc_),static_cast<std::ptrdiff_t>(kc_));
                         fill_res(res_buf,res_w,mc_,nc_);
                         w1.walk_back(i_axis,ic);
                         res_w.walk_back(i_axis,ic);
@@ -1950,8 +1950,8 @@ private:
         static constexpr std::size_t kc_size = 2*mc_size;
         static constexpr std::size_t nr_size = L1_size/(kc_size*sizeof(value_type2));
         //static constexpr std::size_t mr_size = 4*nr_size;
-        //static constexpr std::size_t mr_size = mc_size;
-        static constexpr std::size_t mr_size = mc_size/4;
+        static constexpr std::size_t mr_size = mc_size;
+        //static constexpr std::size_t mr_size = mc_size/4;
 
 
         using buffer_on_stack = std::false_type;
