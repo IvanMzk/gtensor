@@ -780,8 +780,8 @@ TEST_CASE("benchmark_matmul","[benchmark_tensor]")
     //using value_type = std::complex<double>;
     //using value_type = std::int64_t;
     //using value_type = int;
-    using value_type = double;
-    //using value_type = float;
+    //using value_type = double;
+    using value_type = float;
     using gtensor::tensor;
     using tensor_type = tensor<value_type>;
     using helpers_for_testing::generate_lehmer;
@@ -805,15 +805,15 @@ TEST_CASE("benchmark_matmul","[benchmark_tensor]")
         //std::make_pair(std::vector<int>{1284,1000},std::vector<int>{1000,1283}),
         //std::make_pair(std::vector<int>{1283,1000},std::vector<int>{1000,1284})
         //std::make_pair(std::vector<int>{2000,2000},std::vector<int>{2000,2000})
-        //std::make_pair(std::vector<int>{4000,4000},std::vector<int>{4000,4000})
+        std::make_pair(std::vector<int>{4000,4000},std::vector<int>{4000,4000})
         //std::make_pair(std::vector<int>{4567,4765},std::vector<int>{4765,4321})
         //std::make_pair(std::vector<int>{200,100000},std::vector<int>{100000,300})
         //std::make_pair(std::vector<int>{6000,6000},std::vector<int>{6000,6000})
-        std::make_pair(std::vector<int>{10000,10000},std::vector<int>{10000,10000})
+        //std::make_pair(std::vector<int>{10000,10000},std::vector<int>{10000,10000})
         //std::make_pair(std::vector<int>{3,2,300,1000},std::vector<int>{2,1000,900})
         //std::make_pair(std::vector<int>{100,100,200,100},std::vector<int>{100,100,300})
     };
-    const auto n_iters = 1;
+    const auto n_iters = 10;
     //bench_matmul("bench matmul",n_iters,shapes,builder,command_matmul);
 
 
@@ -862,14 +862,14 @@ TEST_CASE("benchmark_matmul","[benchmark_tensor]")
     //REQUIRE(matmul(tensor<double,c_order>{{1,2,4,2},{3,4,2,0},{5,3,1,1}},tensor<double,c_order>{{2,1,2},{0,3,1},{1,1,4},{4,3,3}})==tensor<double>{{14,17,26},{8,17,18},{15,18,20}});
     //REQUIRE(matmul(tensor<double,f_order>{{1,2,4,2},{3,4,2,0},{5,3,1,1}},tensor<double,f_order>{{2,1,2},{0,3,1},{1,1,4},{4,3,3}})==tensor<double>{{14,17,26},{8,17,18},{15,18,20}});
 
-    // REQUIRE(matmul(aa.copy(c_order{}),bb.copy(c_order{}))==rr);
+    REQUIRE(matmul(aa.copy(c_order{}),bb.copy(c_order{}))==rr);
     REQUIRE(matmul(aa.copy(f_order{}),bb.copy(f_order{}))==rr);
-    // REQUIRE(matmul(aa.copy(c_order{}),bb.copy(f_order{}))==rr);
-    // REQUIRE(matmul(aa.copy(f_order{}),bb.copy(c_order{}))==rr);
-    // REQUIRE(matmul(multithreading::exec_pol<4>{},aa.copy(c_order{}),bb.copy(c_order{}))==rr);
-    // REQUIRE(matmul(multithreading::exec_pol<4>{},aa.copy(f_order{}),bb.copy(f_order{}))==rr);
-    // REQUIRE(matmul(multithreading::exec_pol<4>{},aa.copy(c_order{}),bb.copy(f_order{}))==rr);
-    // REQUIRE(matmul(multithreading::exec_pol<4>{},aa.copy(f_order{}),bb.copy(c_order{}))==rr);
+    REQUIRE(matmul(aa.copy(c_order{}),bb.copy(f_order{}))==rr);
+    REQUIRE(matmul(aa.copy(f_order{}),bb.copy(c_order{}))==rr);
+    REQUIRE(matmul(multithreading::exec_pol<4>{},aa.copy(c_order{}),bb.copy(c_order{}))==rr);
+    REQUIRE(matmul(multithreading::exec_pol<4>{},aa.copy(f_order{}),bb.copy(f_order{}))==rr);
+    REQUIRE(matmul(multithreading::exec_pol<4>{},aa.copy(c_order{}),bb.copy(f_order{}))==rr);
+    REQUIRE(matmul(multithreading::exec_pol<4>{},aa.copy(f_order{}),bb.copy(c_order{}))==rr);
 
     auto command_matmul = [](const auto& t1, const auto& t2){
         auto r = matmul(t1,t2);
@@ -905,6 +905,6 @@ TEST_CASE("benchmark_matmul","[benchmark_tensor]")
     //bench_matmul("bench matmul_2d_tiled",n_iters,shapes,builder,command_matmul_2d_tiled);
     //bench_matmul("bench matmul_2d_goto",n_iters,shapes,builder,command_matmul_2d_goto);
     //bench_matmul("bench matmul",n_iters,shapes,builder,command_matmul);
-    //bench_matmul<value_type>("bench matmul_par",n_iters,shapes,builder,command_matmul_par);
+    bench_matmul<value_type>("bench matmul_par",n_iters,shapes,builder,command_matmul_par);
 
 }

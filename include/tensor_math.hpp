@@ -48,6 +48,15 @@ constexpr auto sqrti(std::size_t n){
     return sqrti_helper(n,1,n);
 }
 
+//non zero multiple of A, nearest to n, A must be pow of 2
+template<std::size_t A>
+constexpr std::size_t nearest_multiple(std::size_t n){
+    static_assert(A != 0);
+    static_assert((A&(A-1))  == 0);
+    auto n_ = n & ~(A-1);
+    return n%A==0 ? (n==0 ? A : n) : (n_==0 ? A : n_);
+}
+
 }   //end of namespace detail
 
 //tensor math implementation
@@ -466,6 +475,340 @@ private:
     }
 
     template<typename T, typename T1, typename T2, typename Config>
+    class matmul_2d_blis2
+    {
+        using index_type = typename Config::index_type;
+        using dim_type = typename Config::dim_type;
+
+        static constexpr bool use_common_type = std::is_arithmetic_v<T> && std::is_arithmetic_v<T1> && std::is_arithmetic_v<T2> ||
+            gtensor::math::is_complex_v<T> &&gtensor::math::is_complex_v<T1> && gtensor::math::is_complex_v<T2>;
+        using value_type1 = std::conditional_t<use_common_type,T,T1>;
+        using value_type2 = std::conditional_t<use_common_type,T,T2>;
+        using res_value_type = T;
+
+        static constexpr bool is_buffer_on_stack = false;
+        static constexpr std::size_t alignment = 64;
+        static constexpr std::size_t L1_size = 32768;
+        static constexpr std::size_t L2_size = 262144;
+        static constexpr std::size_t Mc = detail::nearest_multiple<alignment>(detail::sqrti(L2_size/(2*sizeof(value_type1))));
+        static constexpr std::size_t Nc = Mc;
+        static constexpr std::size_t Kc = L2_size/(Mc*sizeof(value_type1));
+        static constexpr std::size_t Nr = L1_size/(Kc*sizeof(value_type2));
+        static constexpr std::size_t Mr = Mc;
+        static_assert(Mr%alignment==0);
+
+        const index_type k;
+        const dim_type i_axis;
+        const dim_type j_axis;
+
+        ALWAYS_INLINE auto adjust_block_size(const index_type& idx, const index_type& block_size, const index_type& max){
+            return idx+block_size>max ? max-idx : block_size;
+        }
+
+        template<typename W, typename U, typename DimT>
+        ALWAYS_INLINE void fill_buf(W& w, U* dst, const DimT& inner_axis, const DimT& outer_axis, const index_type& inner_size, const index_type& outer_size, const index_type& block_size){
+            index_type ii=0;
+            for (;ii<inner_size; ii+=block_size,w.walk(inner_axis,block_size)){
+                const auto block_size_ = adjust_block_size(ii,block_size,inner_size);
+                for (auto i=outer_size; i!=0; --i,w.step(outer_axis)){
+                    const auto dst_last = dst+static_cast<std::ptrdiff_t>(block_size_);
+                    if (block_size_ > 3){
+                        for (const auto dst_last_=dst_last-3; dst<dst_last_; dst+=4){
+                            *dst = *w;
+                            w.step(inner_axis);
+                            *(dst+1) = *w;
+                            w.step(inner_axis);
+                            *(dst+2) = *w;
+                            w.step(inner_axis);
+                            *(dst+3) = *w;
+                            w.step(inner_axis);
+                        }
+                    }
+                    for (;dst!=dst_last; ++dst,w.step(inner_axis)){
+                        *dst = *w;
+                    }
+                    w.walk_back(inner_axis,block_size_);
+                }
+                w.walk_back(outer_axis,outer_size);
+            }
+            w.walk_back(inner_axis,ii);
+        }
+
+        template<typename ResW>
+        ALWAYS_INLINE void fill_res(const res_value_type* buf, ResW& res_w, const index_type& mr_, const index_type& nr_){
+            for (auto i=nr_; i!=0; --i,res_w.step(j_axis)){
+                const auto buf_last = buf+static_cast<std::ptrdiff_t>(mr_);
+                if (mr_ > 3){
+                    for (const auto buf_last_=buf_last-3; buf<buf_last_; buf+=4){
+                        *res_w = *res_w + *buf;
+                        res_w.step(i_axis);
+                        *res_w = *res_w + *(buf+1);
+                        res_w.step(i_axis);
+                        *res_w = *res_w + *(buf+2);
+                        res_w.step(i_axis);
+                        *res_w = *res_w + *(buf+3);
+                        res_w.step(i_axis);
+                    }
+                }
+                for (;buf!=buf_last; ++buf,res_w.step(i_axis)){
+                    *res_w = *res_w + *buf;
+                }
+                res_w.walk_back(i_axis,mr_);
+            }
+            res_w.walk_back(j_axis,nr_);
+        }
+
+        template<typename T_, typename T1_, typename T2_>
+        ALWAYS_INLINE void micro_kernel_generic(T_* res_buf, const T1_* const a_buf, const T2_* b_buf, const std::ptrdiff_t& mr_, const std::ptrdiff_t& nr_, const std::ptrdiff_t& kc_){
+            auto res_buf_ = res_buf;
+            for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
+                const auto e = *b_buf;
+                for (std::ptrdiff_t ir=0; ir!=mr_; ++ir,++res_buf_){
+                    *res_buf_=a_buf[ir]*e;
+                }
+            }
+            for (std::ptrdiff_t kk=1; kk!=kc_; ++kk){
+                const auto a_buf_ = a_buf+kk*mr_;
+                auto res_buf_ = res_buf;
+                for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
+                    const auto e = *b_buf;
+                    for (std::ptrdiff_t ir=0; ir!=mr_; ++ir,++res_buf_){
+                        *res_buf_=*res_buf_+a_buf_[ir]*e;
+                    }
+                }
+            }
+        }
+
+        template<typename T_, typename T1_, typename T2_>
+        ALWAYS_INLINE void micro_kernel(T_* res_buf, const T1_* const a_buf, const T2_* b_buf, const std::ptrdiff_t& mr_, const std::ptrdiff_t& nr_, const std::ptrdiff_t& kc_){
+            micro_kernel_generic(res_buf,a_buf,b_buf,mr_,nr_,kc_);
+        }
+
+        template<typename U=T, std::enable_if_t<std::is_same_v<U,U> && HAS_FMA && HAS_AVX && sizeof(double)==8, int> =0>
+        ALWAYS_INLINE void micro_kernel(double* res_buf, const double* const a_buf, const double* b_buf, const std::ptrdiff_t& mr_, const std::ptrdiff_t& nr_, const std::ptrdiff_t& kc_){
+            micro_kernel_sd(res_buf,a_buf,b_buf,mr_,nr_,kc_);
+        }
+
+        template<typename U=T, std::enable_if_t<std::is_same_v<U,U> && HAS_FMA && HAS_AVX && sizeof(float)==4, int> =0>
+        ALWAYS_INLINE void micro_kernel(float* res_buf, const float* const a_buf, const float* b_buf, const std::ptrdiff_t& mr_, const std::ptrdiff_t& nr_, const std::ptrdiff_t& kc_){
+            micro_kernel_sd(res_buf,a_buf,b_buf,mr_,nr_,kc_);
+        }
+
+        template<typename ResW, typename T_, typename T1_, typename T2_>
+        ALWAYS_INLINE void macro_kernel(ResW& res_w, T_* res_buf, const T1_* const a_buf, const T2_* b_buf, const std::ptrdiff_t& mc_, const std::ptrdiff_t& nc_, const std::ptrdiff_t& kc_){
+            const std::ptrdiff_t mr{Mr};
+            const std::ptrdiff_t nr{Nr};
+            std::ptrdiff_t i=0;
+            for (;i<nc_; i+=nr,res_w.walk(j_axis,nr)){
+                const auto nr_ = adjust_block_size(i,nr,nc_);
+                auto a_buf_ = a_buf;
+                std::ptrdiff_t j=0;
+                for (;j<mc_; j+=mr,res_w.walk(i_axis,mr)){
+                    const auto mr_ = adjust_block_size(j,mr,mc_);
+                    micro_kernel(res_buf,a_buf_,b_buf,mr_,nr_,kc_);
+                    fill_res(res_buf,res_w,mr_,nr_);
+                    a_buf_+=mr_*kc_;
+                }
+                b_buf+=kc_*nr_;
+                res_w.walk_back(i_axis,j);
+            }
+            res_w.walk_back(j_axis,i);
+        }
+
+        // #define AVX_MATMUL_BROADCAST(Ptr) asm ("vbroadcastsd %0,%%ymm0" ::"m"(*Ptr));
+
+        // #define AVX_MATMUL_MUL(OFFSET)\
+        // asm ("vmovapd %1,%%ymm1\n\t"\
+        //     "vmulpd %%ymm1,%%ymm0,%%ymm2\n\t"\
+        //     "vmovapd %%ymm2,%0"\
+        //     :"=m"(*(res_buf_+OFFSET)):"m"(*(a_data+OFFSET))\
+        // );
+
+        // #define AVX_MATMUL_FMA(OFFSET)\
+        // asm ("vmovapd %2,%%ymm2\n\t"\
+        //     "vfmadd231pd %1,%%ymm0,%%ymm2\n\t"\
+        //     "vmovapd %%ymm2,%0"\
+        //     :"=m"(*(res_buf_+OFFSET)):"m"(*(a_data_+OFFSET)),"m"(*(res_buf_+OFFSET))\
+        // );
+
+        //#define AVX_MATMUL_BROADCAST(Ptr) auto b_y = _mm256_broadcast_sd(Ptr);
+        // #define AVX_MATMUL_MUL(OFFSET) _mm256_store_pd(res_buf_+OFFSET,_mm256_mul_pd(_mm256_load_pd(a_data+OFFSET),b_y));
+        // #define AVX_MATMUL_FMA(OFFSET) _mm256_store_pd(res_buf_+OFFSET,_mm256_fmadd_pd(_mm256_load_pd(a_data_+OFFSET),b_y,_mm256_load_pd(res_buf_+OFFSET)));
+
+        ALWAYS_INLINE auto avx_broadcast(const double* buf){
+            return _mm256_broadcast_sd(buf);
+        }
+        ALWAYS_INLINE auto avx_broadcast(const float* buf){
+            return _mm256_broadcast_ss(buf);
+        }
+        ALWAYS_INLINE auto avx_element(const __m256d& y){
+            return _mm256_cvtsd_f64(y);
+        }
+        ALWAYS_INLINE auto avx_element(const __m256& y){
+            return _mm256_cvtss_f32(y);
+        }
+
+        ALWAYS_INLINE void avx_mul(double* res_buf, const double* a_buf, const __m256d& b_y,  const std::size_t& offset){
+            _mm256_store_pd(res_buf+offset,_mm256_mul_pd(_mm256_load_pd(a_buf+offset),b_y));
+        }
+        ALWAYS_INLINE void avx_mul(float* res_buf, const float* a_buf, const __m256& b_y,  const std::size_t& offset){
+            _mm256_store_ps(res_buf+offset,_mm256_mul_ps(_mm256_load_ps(a_buf+offset),b_y));
+        }
+        template<std::size_t NPacked, std::size_t...I, typename U, typename P, typename V>
+        ALWAYS_INLINE void avx_mul_n(std::index_sequence<I...>, U* res_buf, P* a_buf, const V& b_y){
+            (avx_mul(res_buf,a_buf,b_y,I*NPacked),...);
+        }
+
+        ALWAYS_INLINE void avx_fma(double* res_buf, const double* a_buf, const __m256d& b_y,  const std::size_t& offset){
+            _mm256_store_pd(res_buf+offset,_mm256_fmadd_pd(_mm256_load_pd(a_buf+offset),b_y,_mm256_load_pd(res_buf+offset)));
+        }
+        ALWAYS_INLINE void avx_fma(float* res_buf, const float* a_buf, const __m256& b_y,  const std::size_t& offset){
+            _mm256_store_ps(res_buf+offset,_mm256_fmadd_ps(_mm256_load_ps(a_buf+offset),b_y,_mm256_load_ps(res_buf+offset)));
+        }
+        template<std::size_t NPacked, std::size_t...I, typename U, typename P, typename V>
+        ALWAYS_INLINE void avx_fma_n(std::index_sequence<I...>, U* res_buf, P* a_buf, const V& b_y){
+            (avx_fma(res_buf,a_buf,b_y,I*NPacked),...);
+        }
+
+        template<typename U>
+        ALWAYS_INLINE void micro_kernel_sd(U* res_buf, const U* const a_data, const U* b_data, const std::ptrdiff_t& mr_, const std::ptrdiff_t& nr_, const std::ptrdiff_t& kc_){
+            static_assert(std::is_floating_point_v<U>);
+            static_assert(sizeof(U)==4 || sizeof(U)==8);
+            static constexpr std::size_t n_packed = 32/sizeof(U);
+            if (mr_==Mr){   //Mr is guaranteed to be multiple of alignment
+                auto res_buf_ = res_buf;
+                for (const auto b_last=b_data+nr_; b_data!=b_last; ++b_data){
+                    const auto b_y = avx_broadcast(b_data);
+                    avx_mul_n<n_packed>(std::make_index_sequence<Mr/n_packed>{},res_buf_,a_data,b_y);
+                    res_buf_+=Mr;
+                }
+                for (std::ptrdiff_t kk=1; kk!=kc_; ++kk){
+                    const auto a_data_ = a_data+kk*mr_;
+                    auto res_buf_ = res_buf;
+                    for (const auto b_last=b_data+nr_; b_data!=b_last; ++b_data){
+                        const auto b_y = avx_broadcast(b_data);
+                        avx_fma_n<n_packed>(std::make_index_sequence<Mr/n_packed>{},res_buf_,a_data_,b_y);
+                        res_buf_+=Mr;
+                    }
+                }
+            }else if (mr_>n_packed-1){
+                std::ptrdiff_t mm{0};
+                auto res_buf_ = res_buf;
+                for (const auto b_last=b_data+nr_; b_data!=b_last; ++b_data){
+                    auto a_data_=a_data;
+                    const auto a_last = a_data_+mr_;
+                    const auto b_y = avx_broadcast(b_data);
+                    for (;mm!=0; --mm,++a_data_,++res_buf_){
+                        *res_buf_=*a_data_*avx_element(b_y);
+                    }
+                    for (const auto a_last_=a_last-(n_packed-1); a_data_<a_last_; a_data_+=n_packed,res_buf_+=n_packed){
+                        if constexpr (n_packed==4){
+                            _mm256_store_pd(res_buf_,_mm256_mul_pd(_mm256_loadu_pd(a_data_),b_y));
+                        }else{
+                            _mm256_store_ps(res_buf_,_mm256_mul_ps(_mm256_loadu_ps(a_data_),b_y));
+                        }
+                    }
+                    for (mm=n_packed; a_data_!=a_last; ++a_data_,++res_buf_,--mm){
+                        *res_buf_=*a_data_*avx_element(b_y);
+                    }
+                }
+                for (std::ptrdiff_t kk=1; kk!=kc_; ++kk){
+                    const auto a_data_ = a_data+kk*mr_;
+                    res_buf_ = res_buf;
+                    std::ptrdiff_t mm{0};
+                    for (const auto b_last=b_data+nr_; b_data!=b_last; ++b_data){
+                        auto a_data__=a_data_;
+                        const auto a_last = a_data_+mr_;
+                        const auto b_y = avx_broadcast(b_data);
+                        for (;mm!=0; --mm,++a_data__,++res_buf_){
+                            *res_buf_+=*a_data__*avx_element(b_y);
+                        }
+                        for (const auto a_last__=a_last-(n_packed-1); a_data__<a_last__; a_data__+=n_packed,res_buf_+=n_packed){
+                            if constexpr (n_packed==4){
+                                _mm256_store_pd(res_buf_,_mm256_fmadd_pd(_mm256_loadu_pd(a_data__),b_y,_mm256_load_pd(res_buf_)));
+                            }else{
+                                _mm256_store_ps(res_buf_,_mm256_fmadd_ps(_mm256_loadu_ps(a_data__),b_y,_mm256_load_ps(res_buf_)));
+                            }
+                        }
+                        for (mm=n_packed; a_data__!=a_last; ++a_data__,++res_buf_,--mm){
+                            *res_buf_+=*a_data__*avx_element(b_y);
+                        }
+                    }
+                }
+            }else{
+                micro_kernel_generic(res_buf,a_data,b_data,mr_,nr_,kc_);
+            }
+        }
+
+    public:
+        matmul_2d_blis2(const index_type& k_, const dim_type& i_axis_, const dim_type& j_axis_):
+            k{k_},
+            i_axis{i_axis_},
+            j_axis{j_axis_}
+        {}
+
+        template<typename ResW, typename W1, typename W2>
+        ALWAYS_INLINE void operator()(ResW res_w, W1 w1, W2 w2, const index_type& ic_min, const index_type& ic_max, const index_type& jc_min, const index_type& jc_max, res_value_type* res_buf, value_type1* a_buf, value_type2* b_buf){
+            const index_type mc{Mc};
+            const index_type nc{Nc};
+            const index_type kc{Kc};
+            const index_type mr{Mr};
+            const index_type nr{Nr};
+            for (index_type jc=jc_min; jc<jc_max; jc+=nc){
+                w2.walk(j_axis,jc);
+                res_w.walk(j_axis,jc);
+                const auto nc_ = adjust_block_size(jc,nc,jc_max);
+                for (index_type pc=0; pc<k; pc+=kc){
+                    w1.walk(j_axis,pc);
+                    w2.walk(i_axis,pc);
+                    const auto kc_ = adjust_block_size(pc,kc,k);
+                    fill_buf(w2,b_buf,j_axis,i_axis,nc_,kc_,nr);
+                    for (index_type ic=ic_min; ic<ic_max; ic+=mc){
+                        w1.walk(i_axis,ic);
+                        res_w.walk(i_axis,ic);
+                        const auto mc_ = adjust_block_size(ic,mc,ic_max);
+                        fill_buf(w1,a_buf,i_axis,j_axis,mc_,kc_,mr);
+                        macro_kernel(res_w,res_buf,a_buf,b_buf,static_cast<std::ptrdiff_t>(mc_),static_cast<std::ptrdiff_t>(nc_),static_cast<std::ptrdiff_t>(kc_));
+                        w1.walk_back(i_axis,ic);
+                        res_w.walk_back(i_axis,ic);
+                    }
+                    w1.walk_back(j_axis,pc);
+                    w2.walk_back(i_axis,pc);
+                }
+                w2.walk_back(j_axis,jc);
+                res_w.walk_back(j_axis,jc);
+            }
+        }
+
+        template<typename ResW, typename W1, typename W2>
+        ALWAYS_INLINE void operator()(ResW res_w, W1 w1, W2 w2, const index_type& ic_min, const index_type& ic_max, const index_type& jc_min, const index_type& jc_max){
+            if constexpr (is_buffer_on_stack){
+                alignas(alignment) std::array<res_value_type,Mr*Nr> res_buf;
+                alignas(alignment) std::array<value_type1,Mc*Kc> a_buf;
+                alignas(alignment) std::array<value_type2,Kc*Nc> b_buf;
+                this->operator()(res_w,w1,w2,ic_min,ic_max,jc_min,jc_max,res_buf.data(),a_buf.data(),b_buf.data());
+            }else{
+                auto make_buf_size = [](auto i_size, auto j_size, auto t_size){
+                    return alignment*(i_size*j_size*t_size/alignment+1);
+                };
+                const auto res_buf_size = make_buf_size(Mr,Nr,sizeof(res_value_type));
+                const auto a_buf_size = make_buf_size(Mc,Kc,sizeof(value_type1));
+                const auto b_buf_size = make_buf_size(Kc,Nc,sizeof(value_type2));
+                if constexpr (std::is_same_v<res_value_type,value_type1> && std::is_same_v<res_value_type,value_type2>){
+                    gtensor::basic_storage<res_value_type,allocation::aligned_allocator<res_value_type,alignment>> buf(res_buf_size+a_buf_size+b_buf_size);
+                    this->operator()(res_w,w1,w2,ic_min,ic_max,jc_min,jc_max,buf.data(),buf.data()+res_buf_size,buf.data()+res_buf_size+a_buf_size);
+
+                }else{
+                    gtensor::basic_storage<res_value_type,allocation::aligned_allocator<res_value_type,alignment>> res_buf(res_buf_size);
+                    gtensor::basic_storage<value_type1,allocation::aligned_allocator<value_type1,alignment>> a_buf(a_buf_size);
+                    gtensor::basic_storage<value_type2,allocation::aligned_allocator<value_type2,alignment>> b_buf(b_buf_size);
+                    this->operator()(res_w,w1,w2,ic_min,ic_max,jc_min,jc_max,res_buf.data(),a_buf.data(),b_buf.data());
+                }
+            }
+        }
+    };
+
+    template<typename T, typename T1, typename T2, typename Config>
     class matmul_2d_blis1
     {
         using index_type = typename Config::index_type;
@@ -481,11 +824,12 @@ private:
         static constexpr std::size_t alignment = 64;
         static constexpr std::size_t L1_size = 32768;
         static constexpr std::size_t L2_size = 262144;
-        static constexpr std::size_t Mc = detail::sqrti(L2_size/(2*sizeof(value_type1)));
+        static constexpr std::size_t Mc = detail::nearest_multiple<alignment>(detail::sqrti(L2_size/(2*sizeof(value_type1))));
         static constexpr std::size_t Nc = Mc;
-        static constexpr std::size_t Kc = 2*Mc;
+        static constexpr std::size_t Kc = L2_size/(Mc*sizeof(value_type1));
         static constexpr std::size_t Nr = L1_size/(Kc*sizeof(value_type2));
         static constexpr std::size_t Mr = Mc;
+        static_assert(Mr%alignment==0);
 
 
         const index_type k;
@@ -607,7 +951,7 @@ private:
                 auto a_buf_ = a_buf;
                 for (std::ptrdiff_t j=0; j<mc_; j+=mr){
                     const auto mr_ = adjust_block_size(j,mr,mc_);
-                    std::cout<<std::endl<<mr_<<" "<<nr_;
+                    //std::cout<<std::endl<<mr_<<" "<<nr_<<" "<<detail::alignment(res_buf)<<" "<<detail::alignment(res_buf+mr_*nr_);
                     micro_kernel(res_buf,a_buf_,b_buf,mr_,nr_,kc_);
                     res_buf+=mr_*nr_;
                     a_buf_+=mr_*kc_;
@@ -654,7 +998,7 @@ private:
             _mm256_store_pd(res_buf+offset,_mm256_mul_pd(_mm256_load_pd(a_buf+offset),b_y));
         }
         ALWAYS_INLINE void avx_mul(float* res_buf, const float* a_buf, const __m256& b_y,  const std::size_t& offset){
-            std::cout<<std::endl<<"avx_mul "<<detail::alignment(res_buf+offset);
+            //std::cout<<std::endl<<"avx_mul "<<detail::alignment(res_buf+offset);
             _mm256_store_ps(res_buf+offset,_mm256_mul_ps(_mm256_load_ps(a_buf+offset),b_y));
         }
         template<std::size_t NPacked, std::size_t...I, typename U, typename P, typename V>
@@ -678,9 +1022,9 @@ private:
             static_assert(std::is_floating_point_v<U>);
             static_assert(sizeof(U)==4 || sizeof(U)==8);
             static constexpr std::size_t n_packed = 32/sizeof(U);
-            std::cout<<std::endl<<"res_buf alignment "<<detail::alignment(res_buf);
+            //std::cout<<std::endl<<"res_buf alignment "<<detail::alignment(res_buf);
             if (Mr%n_packed==0 && mr_==Mr){
-                std::cout<<std::endl<<"if (Mrn_packed==0 && mr_==Mr){";
+                //std::cout<<std::endl<<"if (Mrn_packed==0 && mr_==Mr){";
                 auto res_buf_ = res_buf;
                 for (const auto b_last=b_data+nr_; b_data!=b_last; ++b_data){
                     const auto b_y = avx_broadcast(b_data);
@@ -697,7 +1041,7 @@ private:
                     }
                 }
             }else if (mr_>n_packed-1){
-                std::cout<<std::endl<<"}else if (mr_>n_packed-1){";
+                //std::cout<<std::endl<<"}else if (mr_>n_packed-1){ "<<mr_<<" "<<nr_<<" "<<detail::alignment(res_buf);
                 std::ptrdiff_t mm{0};
                 auto res_buf_ = res_buf;
                 for (const auto b_last=b_data+nr_; b_data!=b_last; ++b_data){
@@ -711,7 +1055,7 @@ private:
                         if constexpr (n_packed==4){
                             _mm256_store_pd(res_buf_,_mm256_mul_pd(_mm256_loadu_pd(a_data_),b_y));
                         }else{
-                            _mm256_storeu_ps(res_buf_,_mm256_mul_ps(_mm256_loadu_ps(a_data_),b_y));
+                            _mm256_store_ps(res_buf_,_mm256_mul_ps(_mm256_loadu_ps(a_data_),b_y));
                         }
                         //avx_mul(res_buf_,a_data_,b_y,0);
                     }
@@ -734,7 +1078,7 @@ private:
                             if constexpr (n_packed==4){
                                 _mm256_store_pd(res_buf_,_mm256_fmadd_pd(_mm256_loadu_pd(a_data__),b_y,_mm256_load_pd(res_buf_)));
                             }else{
-                                _mm256_storeu_ps(res_buf_,_mm256_fmadd_ps(_mm256_loadu_ps(a_data__),b_y,_mm256_loadu_ps(res_buf_)));
+                                _mm256_store_ps(res_buf_,_mm256_fmadd_ps(_mm256_loadu_ps(a_data__),b_y,_mm256_load_ps(res_buf_)));
                             }
                             //avx_fma(res_buf_,a_data__,b_y,0);
                         }
@@ -816,7 +1160,6 @@ private:
             }
         }
     };
-
 
     template<typename T, typename T1, typename T2, typename Order, typename Config, std::size_t Mc, std::size_t Nc, std::size_t Kc, std::size_t Mr, std::size_t Nr, typename BufferOnStack=std::false_type>
     class matmul_2d_blis
@@ -1813,7 +2156,8 @@ private:
         const auto n = res_shape[j_axis];
         const auto k = *(shape1.end()-1);
 
-        using matmul_type = matmul_2d_blis1<value_type,value_type1,value_type2,config_type>;
+        using matmul_type = matmul_2d_blis2<value_type,value_type1,value_type2,config_type>;
+        //using matmul_type = matmul_2d_blis1<value_type,value_type1,value_type2,config_type>;
         //using matmul_type = matmul_2d_blis<value_type,value_type1,value_type2,order,config_type,mc_size,nc_size,kc_size,mr_size,nr_size,buffer_on_stack>;
         //using matmul_type = matmul_2d<value_type,value_type1,value_type2,order,config_type,mc_size,nc_size,kc_size,buffer_on_stack>;
         matmul_type mm(k,i_axis,j_axis);
