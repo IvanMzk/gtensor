@@ -286,6 +286,11 @@ bool reserve(Container& container, const T& n){
     }
 }
 
+//pointer alignment in bytes
+inline auto alignment(const void* p){
+   return (reinterpret_cast<std::uintptr_t>(p) & (~reinterpret_cast<std::uintptr_t>(p) + 1));
+}
+
 //returns dimension for given shape argument
 //guarantes result is signed (assuming shape container difference_type is signed, as it must be)
 template<typename ShT>

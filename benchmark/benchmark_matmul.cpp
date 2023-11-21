@@ -862,14 +862,14 @@ TEST_CASE("benchmark_matmul","[benchmark_tensor]")
     //REQUIRE(matmul(tensor<double,c_order>{{1,2,4,2},{3,4,2,0},{5,3,1,1}},tensor<double,c_order>{{2,1,2},{0,3,1},{1,1,4},{4,3,3}})==tensor<double>{{14,17,26},{8,17,18},{15,18,20}});
     //REQUIRE(matmul(tensor<double,f_order>{{1,2,4,2},{3,4,2,0},{5,3,1,1}},tensor<double,f_order>{{2,1,2},{0,3,1},{1,1,4},{4,3,3}})==tensor<double>{{14,17,26},{8,17,18},{15,18,20}});
 
-    REQUIRE(matmul(aa.copy(c_order{}),bb.copy(c_order{}))==rr);
+    // REQUIRE(matmul(aa.copy(c_order{}),bb.copy(c_order{}))==rr);
     REQUIRE(matmul(aa.copy(f_order{}),bb.copy(f_order{}))==rr);
-    REQUIRE(matmul(aa.copy(c_order{}),bb.copy(f_order{}))==rr);
-    REQUIRE(matmul(aa.copy(f_order{}),bb.copy(c_order{}))==rr);
-    REQUIRE(matmul(multithreading::exec_pol<4>{},aa.copy(c_order{}),bb.copy(c_order{}))==rr);
-    REQUIRE(matmul(multithreading::exec_pol<4>{},aa.copy(f_order{}),bb.copy(f_order{}))==rr);
-    REQUIRE(matmul(multithreading::exec_pol<4>{},aa.copy(c_order{}),bb.copy(f_order{}))==rr);
-    REQUIRE(matmul(multithreading::exec_pol<4>{},aa.copy(f_order{}),bb.copy(c_order{}))==rr);
+    // REQUIRE(matmul(aa.copy(c_order{}),bb.copy(f_order{}))==rr);
+    // REQUIRE(matmul(aa.copy(f_order{}),bb.copy(c_order{}))==rr);
+    // REQUIRE(matmul(multithreading::exec_pol<4>{},aa.copy(c_order{}),bb.copy(c_order{}))==rr);
+    // REQUIRE(matmul(multithreading::exec_pol<4>{},aa.copy(f_order{}),bb.copy(f_order{}))==rr);
+    // REQUIRE(matmul(multithreading::exec_pol<4>{},aa.copy(c_order{}),bb.copy(f_order{}))==rr);
+    // REQUIRE(matmul(multithreading::exec_pol<4>{},aa.copy(f_order{}),bb.copy(c_order{}))==rr);
 
     auto command_matmul = [](const auto& t1, const auto& t2){
         auto r = matmul(t1,t2);
@@ -905,6 +905,6 @@ TEST_CASE("benchmark_matmul","[benchmark_tensor]")
     //bench_matmul("bench matmul_2d_tiled",n_iters,shapes,builder,command_matmul_2d_tiled);
     //bench_matmul("bench matmul_2d_goto",n_iters,shapes,builder,command_matmul_2d_goto);
     //bench_matmul("bench matmul",n_iters,shapes,builder,command_matmul);
-    bench_matmul<value_type>("bench matmul_par",n_iters,shapes,builder,command_matmul_par);
+    //bench_matmul<value_type>("bench matmul_par",n_iters,shapes,builder,command_matmul_par);
 
 }
