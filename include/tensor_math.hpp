@@ -351,11 +351,11 @@ struct tensor_math
                 auto a2 = t2.traverse_order_adapter(order2{});
                 return res_type(std::inner_product(a1.begin(),a1.end(),a2.begin(),res_value_type{0}));
             }else{  //(n,) x (...,n,m)
-                return matmul_1d_helper<res_type>(t1,t2,true);
+                return matmul_1d_helper<res_type>(policy,t1,t2,true);
             }
         }else{
             if (dim2==1){   //(...,n,m) x (m,)
-                return matmul_1d_helper<res_type>(t2,t1,false);
+                return matmul_1d_helper<res_type>(policy,t2,t1,false);
             }else{  //(...,n,m) x (...,m,k)
                 return matmul_nd_helper<res_type>(policy,t1,t2);
             }
@@ -384,12 +384,14 @@ private:
 
     //t_1d.dim()==1, t_nd.dim()>1
     template<typename ResT, typename...Ts, typename...Us>
-    static auto matmul_1d_helper(const basic_tensor<Ts...>& t_1d, const basic_tensor<Us...>& t_nd, const bool is_1d_left){
+    static auto matmul_1d_helper_(const basic_tensor<Ts...>& t_1d, const basic_tensor<Us...>& t_nd, const bool is_1d_left){
         using res_type = ResT;
         using order = typename ResT::order;
         using config_type = typename ResT::config_type;
         using shape_type = typename ResT::shape_type;
         using order_nd = typename basic_tensor<Us...>::order;
+
+        std::cout<<std::endl<<"static auto matmul_1d_helper(const basic_tensor<Ts...>& t_1d, const basic_tensor<Us...>& t_nd, const bool is_1d_left){";
 
         const auto& t_nd_shape = t_nd.shape();
         const auto t_nd_dim = t_nd.dim();
@@ -468,6 +470,119 @@ private:
                 matmul_nd_right_f(res_tr,nd_tr,w_1d,inner_axis,outer_axis,inner_size,outer_size);
             }else{
                 matmul_nd_right_c(res_tr,nd_tr,w_1d,inner_axis,outer_axis,inner_size,outer_size);
+
+            }
+        }
+        return res;
+    }
+
+    template<typename ResT, typename Policy, typename...Ts, typename...Us>
+    static auto matmul_1d_helper(Policy policy, const basic_tensor<Ts...>& t_1d, const basic_tensor<Us...>& t_nd, const bool is_1d_left){
+        using res_type = ResT;
+        using order = typename ResT::order;
+        using config_type = typename ResT::config_type;
+        using shape_type = typename ResT::shape_type;
+        using index_type = typename ResT::index_type;
+        using order_nd = typename basic_tensor<Us...>::order;
+
+        //std::cout<<std::endl<<"static auto matmul_1d_helper(const basic_tensor<Ts...>& t_1d, const basic_tensor<Us...>& t_nd, const bool is_1d_left){";
+
+        const auto& t_nd_shape = t_nd.shape();
+        const auto t_nd_dim = t_nd.dim();
+
+        shape_type res_shape_(t_nd_dim-1);
+        std::copy(t_nd_shape.begin(),t_nd_shape.end()-2,res_shape_.begin());
+        *(res_shape_.end()-1) = is_1d_left ? *(t_nd_shape.end()-1) : *(t_nd_shape.end()-2);
+        res_type res(std::move(res_shape_),0);
+
+        auto nd_tr = walker_forward_range_traverser<config_type,decltype(t_nd.create_walker())>{t_nd_shape,t_nd.create_walker(),0,t_nd_dim-2};
+        auto res_tr = walker_forward_range_traverser<config_type,decltype(res.create_walker())>{res.shape(),res.create_walker(),0,res.dim()-1};
+        auto w_1d = t_1d.create_walker();
+
+        const auto res_axis = res.dim()-1;
+        const auto i_axis = t_nd_dim-2;
+        const auto j_axis = t_nd_dim-1;
+        const auto k = t_nd_shape[i_axis];
+        const auto n = t_nd_shape[j_axis];
+
+        auto matmul_outer = [res_axis](auto& res_tr, auto& nd_tr, auto& w_1d, const auto& inner_axis, const auto& outer_axis, const auto& inner_size, const auto& outer_size){
+            do{
+                auto w_nd = nd_tr.walker();
+                auto w_res = res_tr.walker();
+
+                for (auto i=outer_size;;--i){
+                    const auto e_1d = *w_1d;
+                    for (auto j=inner_size;;--j){
+                        decltype(auto) res = *w_res;
+                        res=res+*w_nd*e_1d;
+                        if (j==1) break;
+                        w_nd.step(inner_axis);
+                        w_res.step(res_axis);
+                    }
+                    w_nd.reset_back(inner_axis);
+                    w_res.reset_back(res_axis);
+                    if (i==1) break;
+                    w_nd.step(outer_axis);
+                    w_1d.step(0);
+                }
+                w_1d.reset_back();
+                nd_tr.template next<order>();
+            }while(res_tr.template next<order>());
+        };
+
+        auto matmul_dot = [res_axis](auto& res_tr, auto& nd_tr, auto& w_1d, const auto& inner_axis, const auto& outer_axis, const auto& inner_size, const auto& outer_size){
+
+            auto body = [res_axis,inner_axis,outer_axis,inner_size](auto w_res, auto w_nd, auto w_1d, auto outer_size){
+                for (auto i=outer_size;;--i){
+                    decltype(auto) res = *w_res;
+                    for (auto j=inner_size;;--j){
+                        res=res+*w_nd**w_1d;
+                        if (j==1) break;
+                        w_nd.step(inner_axis);
+                        w_1d.step(0);
+                    }
+                    w_nd.reset_back(inner_axis);
+                    w_1d.reset_back(0);
+                    if (i==1) break;
+                    w_nd.step(outer_axis);
+                    w_res.step(res_axis);
+                }
+            };
+
+            do{
+                auto w_nd = nd_tr.walker();
+                auto w_res = res_tr.walker();
+
+                if constexpr (multithreading::exec_policy_traits<Policy>::is_seq::value){
+                    body(w_res,w_nd,w_1d,outer_size);
+                }else{  //parallelize
+                    constexpr std::size_t max_par_tasks = multithreading::exec_policy_traits<Policy>::par_tasks::value;
+                    constexpr std::size_t min_tasks_per_par_task = 1;
+                    multithreading::par_task_size<index_type> par_sizes{outer_size,max_par_tasks,min_tasks_per_par_task};
+                    multithreading::task_group group{};
+                    for (std::size_t i{0}; i!=par_sizes.size(); ++i){
+                        const auto par_task_size = par_sizes[i];
+                        multithreading::get_pool().push_group(group, body, w_res, w_nd, w_1d, par_task_size);
+                        w_res.walk(res_axis,par_task_size);
+                        w_nd.walk(outer_axis,par_task_size);
+                    }
+                    group.wait();
+                }
+                nd_tr.template next<order>();
+            }while(res_tr.template next<order>());
+        };
+
+        if constexpr (std::is_same_v<order_nd,gtensor::config::c_order>){
+            if (is_1d_left){
+                matmul_outer(res_tr,nd_tr,w_1d,j_axis,i_axis,n,k);
+            }else{
+                matmul_dot(res_tr,nd_tr,w_1d,j_axis,i_axis,n,k);
+            }
+        }else{
+            if (is_1d_left){
+                matmul_dot(res_tr,nd_tr,w_1d,i_axis,j_axis,k,n);
+            }else{
+                matmul_outer(res_tr,nd_tr,w_1d,i_axis,j_axis,k,n);
 
             }
         }
@@ -2132,6 +2247,8 @@ private:
         using value_type2 = detail::copy_type_t<typename basic_tensor<Us...>::value_type>;
         using gtensor::config::c_order;
         using gtensor::config::f_order;
+
+        //std::cout<<std::endl<<"static auto matmul_nd_helper(Policy policy, const basic_tensor<Ts...>& t1, const basic_tensor<Us...>& t2){";
 
         const auto& shape1 = t1.shape();
         const auto& shape2 = t2.shape();
