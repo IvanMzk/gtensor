@@ -485,8 +485,6 @@ private:
         using index_type = typename ResT::index_type;
         using order_nd = typename basic_tensor<Us...>::order;
 
-        //std::cout<<std::endl<<"static auto matmul_1d_helper(const basic_tensor<Ts...>& t_1d, const basic_tensor<Us...>& t_nd, const bool is_1d_left){";
-
         const auto& t_nd_shape = t_nd.shape();
         const auto t_nd_dim = t_nd.dim();
 
@@ -2250,8 +2248,6 @@ private:
         using gtensor::config::c_order;
         using gtensor::config::f_order;
 
-        //std::cout<<std::endl<<"static auto matmul_nd_helper(Policy policy, const basic_tensor<Ts...>& t1, const basic_tensor<Us...>& t2){";
-
         const auto& shape1 = t1.shape();
         const auto& shape2 = t2.shape();
         auto br_shape = detail::make_broadcast_shape<shape_type>(shape_type(shape1.begin(),shape1.end()-2), shape_type(shape2.begin(),shape2.end()-2));
@@ -2276,9 +2272,6 @@ private:
         const auto k = *(shape1.end()-1);
 
         using matmul_type = matmul_2d_blis2<value_type,value_type1,value_type2,config_type>;
-        //using matmul_type = matmul_2d_blis1<value_type,value_type1,value_type2,config_type>;
-        //using matmul_type = matmul_2d_blis<value_type,value_type1,value_type2,order,config_type,mc_size,nc_size,kc_size,mr_size,nr_size,buffer_on_stack>;
-        //using matmul_type = matmul_2d<value_type,value_type1,value_type2,order,config_type,mc_size,nc_size,kc_size,buffer_on_stack>;
         matmul_type mm(k,i_axis,j_axis);
 
         if constexpr (multithreading::exec_policy_traits<Policy>::is_seq::value){
@@ -2289,15 +2282,18 @@ private:
             }while(res_tr.template next<order>());
         }else{
             const auto n_tasks = multithreading::exec_policy_traits<Policy>::par_tasks::value;
-            auto ti = static_cast<std::size_t>(std::sqrt(n_tasks*static_cast<std::size_t>(m)/static_cast<double>(static_cast<std::size_t>(n))));
-            auto tj = static_cast<std::size_t>(std::sqrt(n_tasks*static_cast<std::size_t>(n)/static_cast<double>(static_cast<std::size_t>(m))));
+            const auto m_size = static_cast<std::size_t>(m);
+            const auto n_size = static_cast<std::size_t>(n);
+            auto ti = static_cast<std::size_t>(std::round(std::sqrt(n_tasks*m_size/static_cast<double>(n_size))));
+            auto tj = static_cast<std::size_t>(std::round(std::sqrt(n_tasks*n_size/static_cast<double>(m_size))));
+
             if (ti == 0){
                 ti=1;
                 tj = n_tasks;
             }else if (tj == 0){
                 tj=1;
                 ti = n_tasks;
-            }else{
+            }else if (ti*tj!=n_tasks){
                 const auto ti_ = n_tasks/tj;
                 const auto tj_ = n_tasks/ti;
                 const auto n_tasks1 = ti_*tj;
@@ -2312,28 +2308,19 @@ private:
             //each such rect part will be assigned to separate task, ti*tj is total number of tasks
             //ti*tj <= n_tasks, if matrix can't be splitted into rect parts by n_tasks, ti*tj will be less than requested tasks number
 
-
-            const index_type i_parts = static_cast<index_type>(ti);
-            const index_type j_parts = static_cast<index_type>(tj);
-            const index_type i_step = m > i_parts ? m/i_parts : 1;
-            const index_type j_step = n > j_parts ? n/j_parts : 1;
+            const index_type i_step = m/std::min(static_cast<index_type>(ti),m);
+            const index_type j_step = n/std::min(static_cast<index_type>(tj),n);
             multithreading::task_group group{};
-            //std::cout<<std::endl<<ti<<" "<<tj;
-            //std::cout<<std::endl<<i_step<<" "<<j_step;
 
             do{
-                // for (index_type j = 0; tj!=0; --tj,j+=j_step){
-                //     for (index_type i = 0; ti!=0; --ti,i+=i_step){
-                //         //multithreading::get_pool().push_group(group,mm,res_tr.walker(),tr1.walker(),tr2.walker(),i,std::min(i+i_step,m),j,std::min(j+j_step,n));
-                //         multithreading::get_pool().push(mm,res_tr.walker(),tr1.walker(),tr2.walker(),i,std::min(i+i_step,m),j,std::min(j+j_step,n));
-                //         std::cout<<std::endl<<"multithreading::get_pool().push(mm,res_tr.walker(),tr1.walker(),tr2.walker(),i,std::min(i+i_step,m),j,std::min(j+j_step,n));";
-                //     }
-                // }
-                for (index_type j = 0; j<n; j+=j_step){
-                    for (index_type i = 0; i<m; i+=i_step){
-                        multithreading::get_pool().push_group(group,mm,res_tr.walker(),tr1.walker(),tr2.walker(),i,std::min(i+i_step,m),j,std::min(j+j_step,n));
-                        //multithreading::get_pool().push(mm,res_tr.walker(),tr1.walker(),tr2.walker(),i,std::min(i+i_step,m),j,std::min(j+j_step,n));
+                for (index_type j = 0; j<n;){
+                    const auto j_last = j+j_step+j_step>n ? n : j+j_step;
+                    for (index_type i = 0; i<m;){
+                        const auto i_last = i+i_step+i_step>m ? m : i+i_step;
+                        multithreading::get_pool().push_group(group,mm,res_tr.walker(),tr1.walker(),tr2.walker(),i,i_last,j,j_last);
+                        i = i_last;
                     }
+                    j = j_last;
                 }
                 group.wait();
                 tr1.template next<order>();

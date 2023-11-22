@@ -183,6 +183,13 @@ TEMPLATE_TEST_CASE("test_math_matmul_big","test_math",
         k = 255;
     }
 
+    SECTION("matrix_matrix")
+    {
+        m = 513;
+        n = 2050;
+        k = 255;
+    }
+
     SECTION("vector_matrix")
     {
         m = 1;
@@ -210,8 +217,8 @@ TEMPLATE_TEST_CASE("test_math_matmul_big","test_math",
         }
     }
     REQUIRE(res==matmul(a,b));
-    REQUIRE(res==matmul(multithreading::exec_pol<5>{},a,b));
     REQUIRE(res==matmul(multithreading::exec_pol<4>{},a,b));
+    REQUIRE(res==matmul(multithreading::exec_pol<5>{},a,b));
     REQUIRE(res==matmul(multithreading::exec_pol<10>{},a,b));
     REQUIRE(res==matmul(multithreading::exec_pol<16>{},a,b));
 }
