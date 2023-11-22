@@ -622,8 +622,7 @@ private:
 
         template<typename W, typename U, typename DimT>
         ALWAYS_INLINE void fill_buf(W& w, U* dst, const DimT& inner_axis, const DimT& outer_axis, const index_type& inner_size, const index_type& outer_size, const index_type& block_size){
-            index_type ii=0;
-            for (;ii<inner_size; ii+=block_size,w.walk(inner_axis,block_size)){
+            for (index_type ii=0; ii<inner_size; ii+=block_size){
                 const auto block_size_ = adjust_block_size(ii,block_size,inner_size);
                 for (auto i=outer_size; i!=0; --i,w.step(outer_axis)){
                     const auto dst_last = dst+static_cast<std::ptrdiff_t>(block_size_);
@@ -644,9 +643,10 @@ private:
                     }
                     w.walk_back(inner_axis,block_size_);
                 }
+                w.walk(inner_axis,block_size_);
                 w.walk_back(outer_axis,outer_size);
             }
-            w.walk_back(inner_axis,ii);
+            w.walk_back(inner_axis,inner_size);
         }
 
         template<typename ResW>
@@ -713,21 +713,21 @@ private:
         ALWAYS_INLINE void macro_kernel(ResW& res_w, T_* res_buf, const T1_* const a_buf, const T2_* b_buf, const std::ptrdiff_t& mc_, const std::ptrdiff_t& nc_, const std::ptrdiff_t& kc_){
             const std::ptrdiff_t mr{Mr};
             const std::ptrdiff_t nr{Nr};
-            std::ptrdiff_t i=0;
-            for (;i<nc_; i+=nr,res_w.walk(j_axis,nr)){
+            for (std::ptrdiff_t i=0; i<nc_; i+=nr){
                 const auto nr_ = adjust_block_size(i,nr,nc_);
                 auto a_buf_ = a_buf;
-                std::ptrdiff_t j=0;
-                for (;j<mc_; j+=mr,res_w.walk(i_axis,mr)){
+                for (std::ptrdiff_t j=0; j<mc_; j+=mr){
                     const auto mr_ = adjust_block_size(j,mr,mc_);
                     micro_kernel(res_buf,a_buf_,b_buf,mr_,nr_,kc_);
                     fill_res(res_buf,res_w,mr_,nr_);
                     a_buf_+=mr_*kc_;
+                    res_w.walk(i_axis,mr_);
                 }
                 b_buf+=kc_*nr_;
-                res_w.walk_back(i_axis,j);
+                res_w.walk(j_axis,nr_);
+                res_w.walk_back(i_axis,mc_);
             }
-            res_w.walk_back(j_axis,i);
+            res_w.walk_back(j_axis,nc_);
         }
 
         // #define AVX_MATMUL_BROADCAST(Ptr) asm ("vbroadcastsd %0,%%ymm0" ::"m"(*Ptr));
@@ -869,29 +869,31 @@ private:
             const index_type kc{Kc};
             const index_type mr{Mr};
             const index_type nr{Nr};
+            res_w.walk(j_axis,jc_min);
+            res_w.walk(i_axis,ic_min);
+            w1.walk(i_axis,ic_min);
+            w2.walk(j_axis,jc_min);
             for (index_type jc=jc_min; jc<jc_max; jc+=nc){
-                w2.walk(j_axis,jc);
-                res_w.walk(j_axis,jc);
                 const auto nc_ = adjust_block_size(jc,nc,jc_max);
                 for (index_type pc=0; pc<k; pc+=kc){
-                    w1.walk(j_axis,pc);
-                    w2.walk(i_axis,pc);
                     const auto kc_ = adjust_block_size(pc,kc,k);
                     fill_buf(w2,b_buf,j_axis,i_axis,nc_,kc_,nr);
                     for (index_type ic=ic_min; ic<ic_max; ic+=mc){
-                        w1.walk(i_axis,ic);
-                        res_w.walk(i_axis,ic);
                         const auto mc_ = adjust_block_size(ic,mc,ic_max);
                         fill_buf(w1,a_buf,i_axis,j_axis,mc_,kc_,mr);
                         macro_kernel(res_w,res_buf,a_buf,b_buf,static_cast<std::ptrdiff_t>(mc_),static_cast<std::ptrdiff_t>(nc_),static_cast<std::ptrdiff_t>(kc_));
-                        w1.walk_back(i_axis,ic);
-                        res_w.walk_back(i_axis,ic);
+                        w1.walk(i_axis,mc_);
+                        res_w.walk(i_axis,mc_);
                     }
-                    w1.walk_back(j_axis,pc);
-                    w2.walk_back(i_axis,pc);
+                    w1.walk_back(i_axis,ic_max-ic_min);
+                    res_w.walk_back(i_axis,ic_max-ic_min);
+                    w1.walk(j_axis,kc_);
+                    w2.walk(i_axis,kc_);
                 }
-                w2.walk_back(j_axis,jc);
-                res_w.walk_back(j_axis,jc);
+                w1.walk_back(j_axis,k);
+                w2.walk_back(i_axis,k);
+                w2.walk(j_axis,nc_);
+                res_w.walk(j_axis,nc_);
             }
         }
 
@@ -2310,16 +2312,27 @@ private:
             //each such rect part will be assigned to separate task, ti*tj is total number of tasks
             //ti*tj <= n_tasks, if matrix can't be splitted into rect parts by n_tasks, ti*tj will be less than requested tasks number
 
+
             const index_type i_parts = static_cast<index_type>(ti);
             const index_type j_parts = static_cast<index_type>(tj);
             const index_type i_step = m > i_parts ? m/i_parts : 1;
             const index_type j_step = n > j_parts ? n/j_parts : 1;
             multithreading::task_group group{};
-            std::size_t task_counter{0};
+            //std::cout<<std::endl<<ti<<" "<<tj;
+            //std::cout<<std::endl<<i_step<<" "<<j_step;
+
             do{
+                // for (index_type j = 0; tj!=0; --tj,j+=j_step){
+                //     for (index_type i = 0; ti!=0; --ti,i+=i_step){
+                //         //multithreading::get_pool().push_group(group,mm,res_tr.walker(),tr1.walker(),tr2.walker(),i,std::min(i+i_step,m),j,std::min(j+j_step,n));
+                //         multithreading::get_pool().push(mm,res_tr.walker(),tr1.walker(),tr2.walker(),i,std::min(i+i_step,m),j,std::min(j+j_step,n));
+                //         std::cout<<std::endl<<"multithreading::get_pool().push(mm,res_tr.walker(),tr1.walker(),tr2.walker(),i,std::min(i+i_step,m),j,std::min(j+j_step,n));";
+                //     }
+                // }
                 for (index_type j = 0; j<n; j+=j_step){
-                    for (index_type i = 0; i<m; i+=i_step,++task_counter){
+                    for (index_type i = 0; i<m; i+=i_step){
                         multithreading::get_pool().push_group(group,mm,res_tr.walker(),tr1.walker(),tr2.walker(),i,std::min(i+i_step,m),j,std::min(j+j_step,n));
+                        //multithreading::get_pool().push(mm,res_tr.walker(),tr1.walker(),tr2.walker(),i,std::min(i+i_step,m),j,std::min(j+j_step,n));
                     }
                 }
                 group.wait();
