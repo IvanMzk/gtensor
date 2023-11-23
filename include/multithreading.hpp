@@ -652,7 +652,7 @@ auto  inner_product(Policy, It1 first1, It1 last1, It2 first2, Initial initial){
         static constexpr std::size_t min_tasks_per_par_task = 1;
         par_task_size<difference_type1> par_sizes{n,max_par_tasks_n,min_tasks_per_par_task};
         if (par_sizes.size()<2){
-            return initial+body(first1,last1,first2);
+            return Initial(initial+body(first1,last1,first2));
         }
         using future_type = decltype(get_pool().push(body,first1,last1,first2));
         std::array<future_type, max_par_tasks_n> futures{};
@@ -664,7 +664,7 @@ auto  inner_product(Policy, It1 first1, It1 last1, It2 first2, Initial initial){
         }
         return std::accumulate(futures.begin(),futures.begin()+par_sizes.size(),initial,[](const auto& init, auto& future){return init+future.get();});
     }else{
-        return initial+body(first1,last1,first2);
+        return Initial(initial+body(first1,last1,first2));
     }
 }
 
