@@ -810,10 +810,11 @@ TEST_CASE("benchmark_matmul","[benchmark_tensor]")
         //std::make_pair(std::vector<int>{200,100000},std::vector<int>{100000,300})
         //std::make_pair(std::vector<int>{6000,6000},std::vector<int>{6000,6000})
         //std::make_pair(std::vector<int>{10000,10000},std::vector<int>{10000,10000})
-        std::make_pair(std::vector<int>{10000},std::vector<int>{10000,10000}),
-        std::make_pair(std::vector<int>{10000,10000},std::vector<int>{10000}),
-        std::make_pair(std::vector<int>{1,10000},std::vector<int>{10000,10000}),
-        std::make_pair(std::vector<int>{10000,10000},std::vector<int>{10000,1})
+        std::make_pair(std::vector<int>{123456789},std::vector<int>{123456789})
+        // std::make_pair(std::vector<int>{10000},std::vector<int>{10000,10000}),
+        // std::make_pair(std::vector<int>{10000,10000},std::vector<int>{10000}),
+        // std::make_pair(std::vector<int>{1,10000},std::vector<int>{10000,10000}),
+        // std::make_pair(std::vector<int>{10000,10000},std::vector<int>{10000,1}),
         //std::make_pair(std::vector<int>{3,2,300,1000},std::vector<int>{2,1000,900})
         //std::make_pair(std::vector<int>{100,100,200,100},std::vector<int>{100,100,300})
     };
@@ -908,7 +909,7 @@ TEST_CASE("benchmark_matmul","[benchmark_tensor]")
     //bench_matmul("bench matmul_2d",n_iters,shapes,builder,command_matmul_2d);
     //bench_matmul("bench matmul_2d_tiled",n_iters,shapes,builder,command_matmul_2d_tiled);
     //bench_matmul("bench matmul_2d_goto",n_iters,shapes,builder,command_matmul_2d_goto);
-    //bench_matmul("bench matmul",n_iters,shapes,builder,command_matmul);
+    bench_matmul("bench matmul",n_iters,shapes,builder,command_matmul);
     bench_matmul<value_type>("bench matmul_par",n_iters,shapes,builder,command_matmul_par);
 
 }

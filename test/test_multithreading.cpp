@@ -318,6 +318,8 @@ TEMPLATE_TEST_CASE("test_multithreading_inner_product","[test_multithreading]",
 
     //0vec1,1vec2,2initial,3expected
     auto test_data = std::make_tuple(
+        std::make_tuple(std::vector<value_type>{},std::vector<value_type>{},value_type{0},value_type{0}),
+        std::make_tuple(std::vector<value_type>{},std::vector<value_type>{},value_type{2},value_type{2}),
         std::make_tuple(std::vector<value_type>{2},std::vector<value_type>{3},value_type{0},value_type{6}),
         std::make_tuple(std::vector<value_type>{2},std::vector<value_type>{3},value_type{1},value_type{7}),
         std::make_tuple(std::vector<value_type>{2},std::vector<value_type>{3,4,5,6},value_type{2},value_type{8}),

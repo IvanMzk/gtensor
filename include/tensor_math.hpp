@@ -349,7 +349,7 @@ struct tensor_math
             if (dim2==1){   //(n,) x (n,)
                 auto a1 = t1.traverse_order_adapter(order1{});
                 auto a2 = t2.traverse_order_adapter(order2{});
-                return res_type(std::inner_product(a1.begin(),a1.end(),a2.begin(),res_value_type{0}));
+                return res_type(multithreading::inner_product(policy,a1.begin(),a1.end(),a2.begin(),res_value_type{0}));
             }else{  //(n,) x (...,n,m)
                 return matmul_1d_helper<res_type>(policy,t1,t2,true);
             }

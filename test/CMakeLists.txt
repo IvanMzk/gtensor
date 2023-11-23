@@ -24,7 +24,7 @@ target_sources(Test PRIVATE
 
     #${CMAKE_CURRENT_LIST_DIR}/test_helpers_for_testing.cpp
 #
-    #${CMAKE_CURRENT_LIST_DIR}/test_multithreading.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_multithreading.cpp
     #${CMAKE_CURRENT_LIST_DIR}/test_storage.cpp
     #${CMAKE_CURRENT_LIST_DIR}/test_common.cpp
     #${CMAKE_CURRENT_LIST_DIR}/test_libdivide_helper.cpp
