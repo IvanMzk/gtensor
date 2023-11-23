@@ -31,7 +31,7 @@ TEMPLATE_TEST_CASE("test_math_matmul","test_math",
 
     //0ten_a,1ten_b,2expected
     auto test_data = std::make_tuple(
-        // //1d x 1d
+        //1d x 1d
         std::make_tuple(tensor_type1{},tensor_type2{},tensor_type(0)),
         std::make_tuple(tensor_type1{1,2,3,4},tensor_type2{5,6,7,8},tensor_type(70)),
         //1d x nd
@@ -143,7 +143,7 @@ TEST_CASE("test_math_matmul_exception","test_math")
     REQUIRE_THROWS_AS(matmul(tensor_type{{{1,2},{3,4}},{{5,6},{7,8}},{{9,10},{11,12}}},tensor_type{{{1,2},{3,4}},{{5,6},{7,8}}}),value_error);
 }
 
-TEMPLATE_TEST_CASE("test_math_matmul_big","test_math",
+TEMPLATE_TEST_CASE("test_math_matmul_nd_nd_big","test_math",
     (std::tuple<gtensor::config::c_order,gtensor::config::c_order,double,double>),
     (std::tuple<gtensor::config::f_order,gtensor::config::f_order,double,double>),
     (std::tuple<gtensor::config::c_order,gtensor::config::f_order,double,double>),
@@ -221,5 +221,67 @@ TEMPLATE_TEST_CASE("test_math_matmul_big","test_math",
     REQUIRE(res==matmul(multithreading::exec_pol<5>{},a,b));
     REQUIRE(res==matmul(multithreading::exec_pol<10>{},a,b));
     REQUIRE(res==matmul(multithreading::exec_pol<16>{},a,b));
+}
+
+TEMPLATE_TEST_CASE("test_math_matmul_1d_nd_big","test_math",
+    (std::tuple<gtensor::config::c_order,gtensor::config::c_order,double,double>),
+    (std::tuple<gtensor::config::f_order,gtensor::config::f_order,double,double>),
+    (std::tuple<gtensor::config::c_order,gtensor::config::f_order,double,double>),
+    (std::tuple<gtensor::config::f_order,gtensor::config::c_order,double,double>)
+)
+{
+    using layout1 = std::tuple_element_t<0,TestType>;
+    using layout2 = std::tuple_element_t<1,TestType>;
+    using value_type1 = std::tuple_element_t<2,TestType>;
+    using value_type2 = std::tuple_element_t<3,TestType>;
+    using tensor_type1 = gtensor::tensor<value_type1,layout1>;
+    using tensor_type2 = gtensor::tensor<value_type2,layout2>;
+    using tensor_type = gtensor::tensor<value_type1>;
+    using gtensor::matmul;
+    using gtensor::config::c_order;
+    using gtensor::config::f_order;
+    using helpers_for_testing::apply_by_element;
+
+    SECTION("nd_left_(m,k)x(k)")
+    {
+        auto m{1025};
+        auto k{255};
+        tensor_type1 a({m,k},0);
+        tensor_type2 b({k},0);
+        tensor_type expected({m},0);
+        helpers_for_testing::generate_lehmer(a.begin(),a.end(),[](auto e){return e%3;},123);
+        helpers_for_testing::generate_lehmer(b.begin(),b.end(),[](auto e){return e%3;},456);
+        for (auto i=0; i!=m; ++i){
+            for (auto r=0; r!=k; ++r){
+                expected.element(i)+=a.element(i,r)*b.element(r);
+            }
+        }
+        REQUIRE(expected==matmul(a,b));
+        REQUIRE(expected==matmul(multithreading::exec_pol<4>{},a,b));
+        REQUIRE(expected==matmul(multithreading::exec_pol<5>{},a,b));
+        REQUIRE(expected==matmul(multithreading::exec_pol<10>{},a,b));
+        REQUIRE(expected==matmul(multithreading::exec_pol<16>{},a,b));
+    }
+
+    SECTION("nd_right_(k)x(k,n)")
+    {
+        const auto k{255};
+        const auto n{1029};
+        tensor_type1 a({k},0);
+        tensor_type2 b({k,n},0);
+        tensor_type expected({n},0);
+        helpers_for_testing::generate_lehmer(a.begin(),a.end(),[](auto e){return e%3;},123);
+        helpers_for_testing::generate_lehmer(b.begin(),b.end(),[](auto e){return e%3;},456);
+        for (auto i=0; i!=n; ++i){
+            for (auto r=0; r!=k; ++r){
+                expected.element(i)+=a.element(r)*b.element(r,i);
+            }
+        }
+        REQUIRE(expected==matmul(a,b));
+        REQUIRE(expected==matmul(multithreading::exec_pol<4>{},a,b));
+        REQUIRE(expected==matmul(multithreading::exec_pol<5>{},a,b));
+        REQUIRE(expected==matmul(multithreading::exec_pol<10>{},a,b));
+        REQUIRE(expected==matmul(multithreading::exec_pol<16>{},a,b));
+    }
 }
 
