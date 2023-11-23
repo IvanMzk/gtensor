@@ -625,5 +625,43 @@ auto copy(Policy, It first, It last, DstIt dfirst){
     }
 }
 
+template<typename Policy, typename It1, typename It2, typename Initial>
+auto  inner_product(Policy, It1 first1, It1 last1, It2 first2, Initial initial){
+
+    auto body = [](auto first1_, auto last1_, auto first2_){
+        Initial initial_(*first1_**first2_);
+        for(++first1_,++first2_; first1_!=last1_; ++first1_,++first2_){
+            initial_ = initial_+*first1_**first2_;
+        }
+        return initial_;
+    };
+
+    if constexpr (
+        std::is_convertible_v<typename std::iterator_traits<It1>::iterator_category,std::random_access_iterator_tag> &&
+        std::is_convertible_v<typename std::iterator_traits<It2>::iterator_category,std::random_access_iterator_tag> &&
+        !exec_policy_traits<Policy>::is_seq::value)
+    { //parallelize
+        using difference_type1 = typename std::iterator_traits<It1>::difference_type;
+        using difference_type2 = typename std::iterator_traits<It2>::difference_type;
+        static constexpr std::size_t max_par_tasks_n = exec_policy_traits<Policy>::par_tasks::value;
+        static constexpr std::size_t min_tasks_per_par_task = 1;
+        par_task_size<difference_type1> par_sizes{last1-first1,max_par_tasks_n,min_tasks_per_par_task};
+        if (par_sizes.size()<2){
+            return initial+body(first1,last1,first2);
+        }
+        using future_type = decltype(get_pool().push(body,first1,last1,first2));
+        std::array<future_type, max_par_tasks_n> futures{};
+        for (std::size_t i=0; i!=par_sizes.size(); ++i){
+            const auto par_task_size = par_sizes[i];
+            futures[i] = get_pool().push(body,first1,first1+par_task_size,first2);
+            first1+=par_task_size;
+            first2+=static_cast<difference_type2>(par_task_size);
+        }
+        return std::accumulate(futures.begin(),futures.begin()+par_sizes.size(),initial,[](const auto& init, auto& future){return init+future.get();});
+    }else{
+        return initial+body(first1,last1,first2);
+    }
+}
+
 }   //end of namespace multithreading
 #endif

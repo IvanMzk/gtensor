@@ -296,3 +296,45 @@ TEMPLATE_TEST_CASE("test_multithreading_copy","[test_multithreading]",
     };
     apply_by_element(test,test_data);
 }
+
+TEMPLATE_TEST_CASE("test_multithreading_inner_product","[test_multithreading]",
+    (multithreading::exec_pol<1>),
+    (multithreading::exec_pol<2>),
+    (multithreading::exec_pol<4>),
+    (multithreading::exec_pol<8>),
+    (multithreading::exec_pol<0>)
+)
+{
+    using policy = TestType;
+    using value_type = double;
+    using helpers_for_testing::apply_by_element;
+    using helpers_for_testing::generate_lehmer;
+
+    const auto n = 1234567;
+    std::vector<value_type> test_vec1(n,0);
+    std::vector<value_type> test_vec2(n,0);
+    generate_lehmer(test_vec1.begin(),test_vec1.end(),[](auto e){return e%3;},123);
+    generate_lehmer(test_vec2.begin(),test_vec2.end(),[](auto e){return e%3;},456);
+
+    //0vec1,1vec2,2initial,3expected
+    auto test_data = std::make_tuple(
+        std::make_tuple(std::vector<value_type>{2},std::vector<value_type>{3},value_type{0},value_type{6}),
+        std::make_tuple(std::vector<value_type>{2},std::vector<value_type>{3},value_type{1},value_type{7}),
+        std::make_tuple(std::vector<value_type>{2},std::vector<value_type>{3,4,5,6},value_type{2},value_type{8}),
+        std::make_tuple(std::vector<value_type>{2,5},std::vector<value_type>{-2,3},value_type{0},value_type{11}),
+        std::make_tuple(std::vector<value_type>{1,2,3,4,5},std::vector<value_type>{2,3,4,5,6},value_type{0},value_type{70}),
+        std::make_tuple(std::vector<value_type>{1,2,3,4,5},std::vector<value_type>{2,3,4,5,6},value_type{-1},value_type{69}),
+        std::make_tuple(std::cref(test_vec1),std::cref(test_vec2),value_type{0},value_type{1236077}),
+        std::make_tuple(std::cref(test_vec2),std::cref(test_vec1),value_type{3},value_type{1236080})
+    );
+
+    auto test = [](const auto& t){
+        auto& vec1 = std::get<0>(t);
+        auto& vec2 = std::get<1>(t);
+        auto initial = std::get<2>(t);
+        auto expected = std::get<3>(t);
+        auto result = multithreading::inner_product(policy{},vec1.begin(),vec1.end(),vec2.begin(),initial);
+        REQUIRE(result == expected);
+    };
+    apply_by_element(test,test_data);
+}
