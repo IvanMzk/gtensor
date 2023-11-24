@@ -13,6 +13,7 @@
 #include <array>
 #include <functional>
 #include <sstream>
+#include <complex>
 
 namespace helpers_for_testing{
 
@@ -84,16 +85,30 @@ auto range_to_str(It first, It last){
     return ss.str();
 }
 
+template<typename> inline constexpr bool is_std_complex_v = false;
+template<typename T> inline constexpr bool is_std_complex_v<std::complex<T>> = true;
+
 template<std::size_t a=279470273, std::size_t m=0xfffffffb, typename It, typename UnaryF>
 auto generate_lehmer(It first, It last, UnaryF unary_f, std::size_t init){
     using value_type = typename std::iterator_traits<It>::value_type;
-    std::for_each(first,last,
-        [unary_f,init](auto& e)mutable{
-            auto e_=init*a%m;
-            init=e_;
-            e=static_cast<value_type>(unary_f(e_));
-        }
-    );
+    if constexpr (is_std_complex_v<value_type>){
+        std::for_each(first,last,
+            [unary_f,init](auto& e)mutable{
+                auto e_1=init*a%m;
+                auto e_2=e_1*a%m;
+                init=e_2;
+                e=std::complex<double>(unary_f(e_1),unary_f(e_2));
+            }
+        );
+    }else{
+        std::for_each(first,last,
+            [unary_f,init](auto& e)mutable{
+                auto e_=init*a%m;
+                init=e_;
+                e=static_cast<value_type>(unary_f(e_));
+            }
+        );
+    }
 }
 
 template<std::size_t a=279470273, std::size_t m=0xfffffffb, typename It>

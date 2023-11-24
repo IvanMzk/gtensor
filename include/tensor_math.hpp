@@ -57,6 +57,9 @@ constexpr std::size_t nearest_multiple(std::size_t n){
     return n%A==0 ? (n==0 ? A : n) : (n_==0 ? A : n_);
 }
 
+template<typename> inline constexpr bool is_complex_of_arithmetic_v = false;
+template<typename T> inline constexpr bool is_complex_of_arithmetic_v<std::complex<T>> = std::is_arithmetic_v<T>;
+
 }   //end of namespace detail
 
 //tensor math implementation
@@ -516,7 +519,7 @@ private:
         using dim_type = typename Config::dim_type;
 
         static constexpr bool use_common_type = std::is_arithmetic_v<T> && std::is_arithmetic_v<T1> && std::is_arithmetic_v<T2> ||
-            gtensor::math::is_complex_v<T> &&gtensor::math::is_complex_v<T1> && gtensor::math::is_complex_v<T2>;
+            detail::is_complex_of_arithmetic_v<T> && detail::is_complex_of_arithmetic_v<T1> && detail::is_complex_of_arithmetic_v<T2>;
         using value_type1 = std::conditional_t<use_common_type,T,T1>;
         using value_type2 = std::conditional_t<use_common_type,T,T2>;
         using res_value_type = T;
@@ -623,37 +626,6 @@ private:
             return std::complex<T>(_mm_cvtsd_f64(x),_mm_cvtsd_f64(_mm_shuffle_pd(x,x,1)));
         }
 
-        ALWAYS_INLINE void micro_kernel_dcomplex(std::complex<double>* res_buf, const std::complex<double>* const a_buf, const std::complex<double>* b_buf, const std::ptrdiff_t& mr_, const std::ptrdiff_t& nr_, const std::ptrdiff_t& kc_){
-            //std::cout<<std::endl<<"ALWAYS_INLINE void micro_kernel_dcomplex(std::complex<double>* res_buf, const std::complex<double>* const a_buf, const std::complex<double>* b_buf, const std::ptrdiff_t& mr_, const std::ptrdiff_t& nr_, const std::ptrdiff_t& kc_){";
-            auto res_buf_ = res_buf;
-            for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
-                const auto b_r = b_buf->real();
-                const auto b_i = b_buf->imag();
-                const auto b_y = _mm256_setr_pd(b_r,-b_i,b_r,b_i);
-                for (std::ptrdiff_t ir=0; ir!=mr_; ++ir,++res_buf_){
-                    auto a_y = _mm256_permute_pd(_mm256_broadcast_pd(reinterpret_cast<const __m128d*>(a_buf+ir)),0b0110);
-                    auto y = _mm256_mul_pd(a_y,b_y);
-                    auto x = _mm_hadd_pd(_mm256_castpd256_pd128(y), _mm256_extractf128_pd(y,1));
-                    _mm_storeu_pd(reinterpret_cast<double*>(res_buf_),x);
-                }
-            }
-            for (std::ptrdiff_t kk=1; kk!=kc_; ++kk){
-                const auto a_buf_ = a_buf+kk*mr_;
-                auto res_buf_ = res_buf;
-                for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
-                    const auto b_r = b_buf->real();
-                    const auto b_i = b_buf->imag();
-                    const auto b_y = _mm256_setr_pd(b_r,-b_i,b_r,b_i);
-                    for (std::ptrdiff_t ir=0; ir!=mr_; ++ir,++res_buf_){
-                        auto a_y = _mm256_permute_pd(_mm256_broadcast_pd(reinterpret_cast<const __m128d*>(a_buf_+ir)),0b0110);
-                        auto y = _mm256_mul_pd(a_y,b_y);
-                        auto x = _mm_hadd_pd(_mm256_castpd256_pd128(y), _mm256_extractf128_pd(y,1));
-                        _mm_storeu_pd(reinterpret_cast<double*>(res_buf_),_mm_add_pd(_mm_loadu_pd(reinterpret_cast<double*>(res_buf_)),x));
-                    }
-                }
-            }
-        }
-
         template<typename T_, typename T1_, typename T2_>
         ALWAYS_INLINE void micro_kernel(T_* res_buf, const T1_* const a_buf, const T2_* b_buf, const std::ptrdiff_t& mr_, const std::ptrdiff_t& nr_, const std::ptrdiff_t& kc_){
             micro_kernel_generic(res_buf,a_buf,b_buf,mr_,nr_,kc_);
@@ -669,9 +641,14 @@ private:
             micro_kernel_sd(res_buf,a_buf,b_buf,mr_,nr_,kc_);
         }
 
-        template<typename U=T, std::enable_if_t<std::is_same_v<U,U> && HAS_AVX && sizeof(double)==8 && false, int> =0>
+        template<typename U=T, std::enable_if_t<std::is_same_v<U,U> && HAS_AVX && HAS_AVX2 && sizeof(double)==8, int> =0>
         ALWAYS_INLINE void micro_kernel(std::complex<double>* res_buf, const std::complex<double>* const a_buf, const std::complex<double>* b_buf, const std::ptrdiff_t& mr_, const std::ptrdiff_t& nr_, const std::ptrdiff_t& kc_){
-            micro_kernel_dcomplex(res_buf,a_buf,b_buf,mr_,nr_,kc_);
+            micro_kernel_complex(res_buf,a_buf,b_buf,mr_,nr_,kc_);
+        }
+
+        template<typename U=T, std::enable_if_t<std::is_same_v<U,U> && HAS_AVX && HAS_AVX2 && sizeof(float)==4, int> =0>
+        ALWAYS_INLINE void micro_kernel(std::complex<float>* res_buf, const std::complex<float>* const a_buf, const std::complex<float>* b_buf, const std::ptrdiff_t& mr_, const std::ptrdiff_t& nr_, const std::ptrdiff_t& kc_){
+            micro_kernel_complex(res_buf,a_buf,b_buf,mr_,nr_,kc_);
         }
 
         template<typename ResW, typename T_, typename T1_, typename T2_>
@@ -711,10 +688,8 @@ private:
         //     :"=m"(*(res_buf_+OFFSET)):"m"(*(a_data_+OFFSET)),"m"(*(res_buf_+OFFSET))\
         // );
 
-        //#define AVX_MATMUL_BROADCAST(Ptr) auto b_y = _mm256_broadcast_sd(Ptr);
-        // #define AVX_MATMUL_MUL(OFFSET) _mm256_store_pd(res_buf_+OFFSET,_mm256_mul_pd(_mm256_load_pd(a_data+OFFSET),b_y));
-        // #define AVX_MATMUL_FMA(OFFSET) _mm256_store_pd(res_buf_+OFFSET,_mm256_fmadd_pd(_mm256_load_pd(a_data_+OFFSET),b_y,_mm256_load_pd(res_buf_+OFFSET)));
 
+        //floating point kernel
         ALWAYS_INLINE auto avx_broadcast(const double* buf){
             return _mm256_broadcast_sd(buf);
         }
@@ -751,73 +726,175 @@ private:
         }
 
         template<typename U>
-        ALWAYS_INLINE void micro_kernel_sd(U* res_buf, const U* const a_data, const U* b_data, const std::ptrdiff_t& mr_, const std::ptrdiff_t& nr_, const std::ptrdiff_t& kc_){
-            std::cout<<std::endl<<"ALWAYS_INLINE void micro_kernel_sd(U* res_buf, const U* const a_data, const U* b_data, const std::ptrdiff_t& mr_, const std::ptrdiff_t& nr_, const std::ptrdiff_t& kc_){";
+        ALWAYS_INLINE void micro_kernel_sd(U* res_buf, const U* const a_buf, const U* b_buf, const std::ptrdiff_t& mr_, const std::ptrdiff_t& nr_, const std::ptrdiff_t& kc_){
+            //std::cout<<std::endl<<"ALWAYS_INLINE void micro_kernel_sd(U* res_buf, const U* const a_buf, const U* b_buf, const std::ptrdiff_t& mr_, const std::ptrdiff_t& nr_, const std::ptrdiff_t& kc_){";
             static_assert(std::is_floating_point_v<U>);
             static_assert(sizeof(U)==4 || sizeof(U)==8);
             static constexpr std::size_t n_packed = 32/sizeof(U);
             if (mr_==Mr){   //Mr is guaranteed to be multiple of alignment
                 auto res_buf_ = res_buf;
-                for (const auto b_last=b_data+nr_; b_data!=b_last; ++b_data){
-                    const auto b_y = avx_broadcast(b_data);
-                    avx_mul_n<n_packed>(std::make_index_sequence<Mr/n_packed>{},res_buf_,a_data,b_y);
+                for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
+                    const auto b_y = avx_broadcast(b_buf);
+                    avx_mul_n<n_packed>(std::make_index_sequence<Mr/n_packed>{},res_buf_,a_buf,b_y);
                     res_buf_+=Mr;
                 }
                 for (std::ptrdiff_t kk=1; kk!=kc_; ++kk){
-                    const auto a_data_ = a_data+kk*mr_;
+                    const auto a_buf_ = a_buf+kk*mr_;
                     auto res_buf_ = res_buf;
-                    for (const auto b_last=b_data+nr_; b_data!=b_last; ++b_data){
-                        const auto b_y = avx_broadcast(b_data);
-                        avx_fma_n<n_packed>(std::make_index_sequence<Mr/n_packed>{},res_buf_,a_data_,b_y);
+                    for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
+                        const auto b_y = avx_broadcast(b_buf);
+                        avx_fma_n<n_packed>(std::make_index_sequence<Mr/n_packed>{},res_buf_,a_buf_,b_y);
                         res_buf_+=Mr;
                     }
                 }
             }else if (mr_>n_packed-1){
                 std::ptrdiff_t mm{0};
                 auto res_buf_ = res_buf;
-                for (const auto b_last=b_data+nr_; b_data!=b_last; ++b_data){
-                    auto a_data_=a_data;
-                    const auto a_last = a_data_+mr_;
-                    const auto b_y = avx_broadcast(b_data);
-                    for (;mm!=0; --mm,++a_data_,++res_buf_){
-                        *res_buf_=*a_data_*avx_element(b_y);
+                for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
+                    auto a_buf_=a_buf;
+                    const auto a_last = a_buf_+mr_;
+                    const auto b_y = avx_broadcast(b_buf);
+                    for (;mm!=0; --mm,++a_buf_,++res_buf_){
+                        *res_buf_=*a_buf_*avx_element(b_y);
                     }
-                    for (const auto a_last_=a_last-(n_packed-1); a_data_<a_last_; a_data_+=n_packed,res_buf_+=n_packed){
+                    for (const auto a_last_=a_last-(n_packed-1); a_buf_<a_last_; a_buf_+=n_packed,res_buf_+=n_packed){
                         if constexpr (n_packed==4){
-                            _mm256_store_pd(res_buf_,_mm256_mul_pd(_mm256_loadu_pd(a_data_),b_y));
+                            _mm256_store_pd(res_buf_,_mm256_mul_pd(_mm256_loadu_pd(a_buf_),b_y));
                         }else{
-                            _mm256_store_ps(res_buf_,_mm256_mul_ps(_mm256_loadu_ps(a_data_),b_y));
+                            _mm256_store_ps(res_buf_,_mm256_mul_ps(_mm256_loadu_ps(a_buf_),b_y));
                         }
                     }
-                    for (mm=n_packed; a_data_!=a_last; ++a_data_,++res_buf_,--mm){
-                        *res_buf_=*a_data_*avx_element(b_y);
+                    for (mm=n_packed; a_buf_!=a_last; ++a_buf_,++res_buf_,--mm){
+                        *res_buf_=*a_buf_*avx_element(b_y);
                     }
                 }
                 for (std::ptrdiff_t kk=1; kk!=kc_; ++kk){
-                    const auto a_data_ = a_data+kk*mr_;
+                    const auto a_buf_ = a_buf+kk*mr_;
                     res_buf_ = res_buf;
                     std::ptrdiff_t mm{0};
-                    for (const auto b_last=b_data+nr_; b_data!=b_last; ++b_data){
-                        auto a_data__=a_data_;
-                        const auto a_last = a_data_+mr_;
-                        const auto b_y = avx_broadcast(b_data);
-                        for (;mm!=0; --mm,++a_data__,++res_buf_){
-                            *res_buf_+=*a_data__*avx_element(b_y);
+                    for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
+                        auto a_buf__=a_buf_;
+                        const auto a_last = a_buf_+mr_;
+                        const auto b_y = avx_broadcast(b_buf);
+                        for (;mm!=0; --mm,++a_buf__,++res_buf_){
+                            *res_buf_+=*a_buf__*avx_element(b_y);
                         }
-                        for (const auto a_last__=a_last-(n_packed-1); a_data__<a_last__; a_data__+=n_packed,res_buf_+=n_packed){
+                        for (const auto a_last__=a_last-(n_packed-1); a_buf__<a_last__; a_buf__+=n_packed,res_buf_+=n_packed){
                             if constexpr (n_packed==4){
-                                _mm256_store_pd(res_buf_,_mm256_fmadd_pd(_mm256_loadu_pd(a_data__),b_y,_mm256_load_pd(res_buf_)));
+                                _mm256_store_pd(res_buf_,_mm256_fmadd_pd(_mm256_loadu_pd(a_buf__),b_y,_mm256_load_pd(res_buf_)));
                             }else{
-                                _mm256_store_ps(res_buf_,_mm256_fmadd_ps(_mm256_loadu_ps(a_data__),b_y,_mm256_load_ps(res_buf_)));
+                                _mm256_store_ps(res_buf_,_mm256_fmadd_ps(_mm256_loadu_ps(a_buf__),b_y,_mm256_load_ps(res_buf_)));
                             }
                         }
-                        for (mm=n_packed; a_data__!=a_last; ++a_data__,++res_buf_,--mm){
-                            *res_buf_+=*a_data__*avx_element(b_y);
+                        for (mm=n_packed; a_buf__!=a_last; ++a_buf__,++res_buf_,--mm){
+                            *res_buf_+=*a_buf__*avx_element(b_y);
                         }
                     }
                 }
             }else{
-                micro_kernel_generic(res_buf,a_data,b_data,mr_,nr_,kc_);
+                micro_kernel_generic(res_buf,a_buf,b_buf,mr_,nr_,kc_);
+            }
+        }
+
+        //complex kernel
+        ALWAYS_INLINE auto avx_complex_broadcast(const std::complex<double>* buf){
+            const auto r = buf->real();
+            const auto i = buf->imag();
+            return _mm256_setr_pd(r,-i,r,i);
+        }
+        ALWAYS_INLINE auto avx_complex_broadcast(const std::complex<float>* buf){
+            const auto r = buf->real();
+            const auto i = buf->imag();
+            return _mm256_setr_ps(r,-i,r,i,r,-i,r,i);
+        }
+
+        ALWAYS_INLINE void avx_complex_mul(std::complex<double>* res_buf, const std::complex<double>* a_buf, const __m256d& b_y,  const std::size_t& offset){
+            auto a_y1 = _mm256_permute_pd(_mm256_broadcast_pd(reinterpret_cast<const __m128d*>(a_buf+offset)),0b0110);
+            auto a_y2 = _mm256_permute_pd(_mm256_broadcast_pd(reinterpret_cast<const __m128d*>(a_buf+offset+1)),0b0110);
+            auto y3 = _mm256_mul_pd(a_y1,b_y);
+            auto y4 = _mm256_mul_pd(a_y2,b_y);
+            auto y5 = _mm256_permute4x64_pd(_mm256_hadd_pd(y3,y4),0b11'01'10'00);
+            _mm256_store_pd(reinterpret_cast<double*>(res_buf+offset),y5);
+        }
+        ALWAYS_INLINE void avx_complex_mul(std::complex<float>* res_buf, const std::complex<float>* a_buf, const __m256& b_y,  const std::size_t& offset){
+            auto a_y1 = _mm256_permutevar8x32_ps(_mm256_broadcast_ps(reinterpret_cast<const __m128*>(a_buf+offset)),_mm256_setr_epi32(0,1,5,4,2,3,7,6));
+            auto a_y2 = _mm256_permutevar8x32_ps(_mm256_broadcast_ps(reinterpret_cast<const __m128*>(a_buf+offset+2)),_mm256_setr_epi32(0,1,5,4,2,3,7,6));
+            auto y3 = _mm256_mul_ps(a_y1,b_y);
+            auto y4 = _mm256_mul_ps(a_y2,b_y);
+            auto y5 = _mm256_permutevar8x32_ps(_mm256_hadd_ps(y3,y4),_mm256_setr_epi32(0,1,4,5,2,3,6,7));
+            _mm256_store_ps(reinterpret_cast<float*>(res_buf+offset),y5);
+        }
+        template<std::size_t NPacked, std::size_t...I, typename U, typename P, typename V>
+        ALWAYS_INLINE void avx_complex_mul_n(std::index_sequence<I...>, U* res_buf, P* a_buf, const V& b_y){
+            (avx_complex_mul(res_buf,a_buf,b_y,I*NPacked),...);
+        }
+        ALWAYS_INLINE void avx_complex_mul_add(std::complex<double>* res_buf, const std::complex<double>* a_buf, const __m256d& b_y,  const std::size_t& offset){
+            auto a_y1 = _mm256_permute_pd(_mm256_broadcast_pd(reinterpret_cast<const __m128d*>(a_buf+offset)),0b0110);
+            auto a_y2 = _mm256_permute_pd(_mm256_broadcast_pd(reinterpret_cast<const __m128d*>(a_buf+offset+1)),0b0110);
+            auto y3 = _mm256_mul_pd(a_y1,b_y);
+            auto y4 = _mm256_mul_pd(a_y2,b_y);
+            auto y5 = _mm256_permute4x64_pd(_mm256_hadd_pd(y3,y4),0b11'01'10'00);
+            _mm256_store_pd(reinterpret_cast<double*>(res_buf+offset),_mm256_add_pd(_mm256_load_pd(reinterpret_cast<double*>(res_buf+offset)),y5));
+
+        }
+        ALWAYS_INLINE void avx_complex_mul_add(std::complex<float>* res_buf, const std::complex<float>* a_buf, const __m256& b_y,  const std::size_t& offset){
+            auto a_y1 = _mm256_permutevar8x32_ps(_mm256_broadcast_ps(reinterpret_cast<const __m128*>(a_buf+offset)),_mm256_setr_epi32(0,1,5,4,2,3,7,6));
+            auto a_y2 = _mm256_permutevar8x32_ps(_mm256_broadcast_ps(reinterpret_cast<const __m128*>(a_buf+offset+2)),_mm256_setr_epi32(0,1,5,4,2,3,7,6));
+            auto y3 = _mm256_mul_ps(a_y1,b_y);
+            auto y4 = _mm256_mul_ps(a_y2,b_y);
+            auto y5 = _mm256_permutevar8x32_ps(_mm256_hadd_ps(y3,y4),_mm256_setr_epi32(0,1,4,5,2,3,6,7));
+            _mm256_store_ps(reinterpret_cast<float*>(res_buf+offset),_mm256_add_ps(_mm256_load_ps(reinterpret_cast<float*>(res_buf+offset)),y5));
+        }
+        template<std::size_t NPacked, std::size_t...I, typename U, typename P, typename V>
+        ALWAYS_INLINE void avx_complex_mul_add_n(std::index_sequence<I...>, U* res_buf, P* a_buf, const V& b_y){
+            (avx_complex_mul_add(res_buf,a_buf,b_y,I*NPacked),...);
+        }
+
+        template<typename U>
+        ALWAYS_INLINE void micro_kernel_complex(U* res_buf, const U* const a_buf, const U* b_buf, const std::ptrdiff_t& mr_, const std::ptrdiff_t& nr_, const std::ptrdiff_t& kc_){
+            //std::cout<<std::endl<<"ALWAYS_INLINE void micro_kernel_complex(U* res_buf, const U* const a_buf, const U* b_buf, const std::ptrdiff_t& mr_, const std::ptrdiff_t& nr_, const std::ptrdiff_t& kc_){";
+            static constexpr std::size_t n_packed = 32/sizeof(U);
+            if (mr_==Mr){   //Mr is guaranteed to be multiple of alignment
+                auto res_buf_ = res_buf;
+                for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
+                    const auto b_y = avx_complex_broadcast(b_buf);
+                    avx_complex_mul_n<n_packed>(std::make_index_sequence<Mr/n_packed>{},res_buf_,a_buf,b_y);
+                    res_buf_+=Mr;
+                }
+                for (std::ptrdiff_t kk=1; kk!=kc_; ++kk){
+                    const auto a_buf_ = a_buf+kk*mr_;
+                    auto res_buf_ = res_buf;
+                    for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
+                        const auto b_y = avx_complex_broadcast(b_buf);
+                        avx_complex_mul_add_n<n_packed>(std::make_index_sequence<Mr/n_packed>{},res_buf_,a_buf_,b_y);
+                        res_buf_+=Mr;
+                    }
+                }
+            }else{
+                micro_kernel_generic(res_buf,a_buf,b_buf,mr_,nr_,kc_);
+                // auto res_buf_ = res_buf;
+                // for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
+                //     const auto b_y = avx_complex_broadcast(b_buf);
+                //     for (std::ptrdiff_t ir=0; ir!=mr_; ++ir,++res_buf_){
+                //         auto a_y = _mm256_permute_pd(_mm256_broadcast_pd(reinterpret_cast<const __m128d*>(a_buf+ir)),0b0110);
+                //         auto y = _mm256_mul_pd(a_y,b_y);
+                //         auto x = _mm_hadd_pd(_mm256_castpd256_pd128(y), _mm256_extractf128_pd(y,1));
+                //         _mm_storeu_pd(reinterpret_cast<double*>(res_buf_),x);
+                //     }
+                // }
+                // for (std::ptrdiff_t kk=1; kk!=kc_; ++kk){
+                //     const auto a_buf_ = a_buf+kk*mr_;
+                //     auto res_buf_ = res_buf;
+                //     for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
+                //         const auto b_y = avx_complex_broadcast(b_buf);
+                //         for (std::ptrdiff_t ir=0; ir!=mr_; ++ir,++res_buf_){
+                //             auto a_y = _mm256_permute_pd(_mm256_broadcast_pd(reinterpret_cast<const __m128d*>(a_buf_+ir)),0b0110);
+                //             auto y = _mm256_mul_pd(a_y,b_y);
+                //             auto x = _mm_hadd_pd(_mm256_castpd256_pd128(y), _mm256_extractf128_pd(y,1));
+                //             _mm_storeu_pd(reinterpret_cast<double*>(res_buf_),_mm_add_pd(_mm_loadu_pd(reinterpret_cast<double*>(res_buf_)),x));
+                //         }
+                //     }
+                // }
             }
         }
 
