@@ -595,6 +595,7 @@ private:
 
         template<typename T_, typename T1_, typename T2_>
         ALWAYS_INLINE void micro_kernel_generic(T_* res_buf, const T1_* const a_buf, const T2_* b_buf, const std::ptrdiff_t& mr_, const std::ptrdiff_t& nr_, const std::ptrdiff_t& kc_){
+            //std::cout<<std::endl<<"ALWAYS_INLINE void micro_kernel_generic(T_* res_buf, const T1_* const a_buf, const T2_* b_buf, const std::ptrdiff_t& mr_, const std::ptrdiff_t& nr_, const std::ptrdiff_t& kc_){";
             auto res_buf_ = res_buf;
             for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
                 const auto e = *b_buf;
@@ -614,6 +615,45 @@ private:
             }
         }
 
+        auto avx_mul_complex(const std::complex<T>& a, const std::complex<T>& b){
+            auto y1 = _mm256_setr_pd(a.real(),-a.imag(),a.real(),a.imag());
+            auto y2 = _mm256_setr_pd(b.real(),b.imag(),b.imag(),b.real());
+            auto y3 = _mm256_mul_pd(y1,y2);
+            auto x = _mm_hadd_pd(_mm256_extractf128_pd(y3,0), _mm256_extractf128_pd(y3,1));
+            return std::complex<T>(_mm_cvtsd_f64(x),_mm_cvtsd_f64(_mm_shuffle_pd(x,x,1)));
+        }
+
+        ALWAYS_INLINE void micro_kernel_dcomplex(std::complex<double>* res_buf, const std::complex<double>* const a_buf, const std::complex<double>* b_buf, const std::ptrdiff_t& mr_, const std::ptrdiff_t& nr_, const std::ptrdiff_t& kc_){
+            //std::cout<<std::endl<<"ALWAYS_INLINE void micro_kernel_dcomplex(std::complex<double>* res_buf, const std::complex<double>* const a_buf, const std::complex<double>* b_buf, const std::ptrdiff_t& mr_, const std::ptrdiff_t& nr_, const std::ptrdiff_t& kc_){";
+            auto res_buf_ = res_buf;
+            for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
+                const auto b_r = b_buf->real();
+                const auto b_i = b_buf->imag();
+                const auto b_y = _mm256_setr_pd(b_r,-b_i,b_r,b_i);
+                for (std::ptrdiff_t ir=0; ir!=mr_; ++ir,++res_buf_){
+                    auto a_y = _mm256_permute_pd(_mm256_broadcast_pd(reinterpret_cast<const __m128d*>(a_buf+ir)),0b0110);
+                    auto y = _mm256_mul_pd(a_y,b_y);
+                    auto x = _mm_hadd_pd(_mm256_castpd256_pd128(y), _mm256_extractf128_pd(y,1));
+                    _mm_storeu_pd(reinterpret_cast<double*>(res_buf_),x);
+                }
+            }
+            for (std::ptrdiff_t kk=1; kk!=kc_; ++kk){
+                const auto a_buf_ = a_buf+kk*mr_;
+                auto res_buf_ = res_buf;
+                for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
+                    const auto b_r = b_buf->real();
+                    const auto b_i = b_buf->imag();
+                    const auto b_y = _mm256_setr_pd(b_r,-b_i,b_r,b_i);
+                    for (std::ptrdiff_t ir=0; ir!=mr_; ++ir,++res_buf_){
+                        auto a_y = _mm256_permute_pd(_mm256_broadcast_pd(reinterpret_cast<const __m128d*>(a_buf_+ir)),0b0110);
+                        auto y = _mm256_mul_pd(a_y,b_y);
+                        auto x = _mm_hadd_pd(_mm256_castpd256_pd128(y), _mm256_extractf128_pd(y,1));
+                        _mm_storeu_pd(reinterpret_cast<double*>(res_buf_),_mm_add_pd(_mm_loadu_pd(reinterpret_cast<double*>(res_buf_)),x));
+                    }
+                }
+            }
+        }
+
         template<typename T_, typename T1_, typename T2_>
         ALWAYS_INLINE void micro_kernel(T_* res_buf, const T1_* const a_buf, const T2_* b_buf, const std::ptrdiff_t& mr_, const std::ptrdiff_t& nr_, const std::ptrdiff_t& kc_){
             micro_kernel_generic(res_buf,a_buf,b_buf,mr_,nr_,kc_);
@@ -627,6 +667,11 @@ private:
         template<typename U=T, std::enable_if_t<std::is_same_v<U,U> && HAS_FMA && HAS_AVX && sizeof(float)==4, int> =0>
         ALWAYS_INLINE void micro_kernel(float* res_buf, const float* const a_buf, const float* b_buf, const std::ptrdiff_t& mr_, const std::ptrdiff_t& nr_, const std::ptrdiff_t& kc_){
             micro_kernel_sd(res_buf,a_buf,b_buf,mr_,nr_,kc_);
+        }
+
+        template<typename U=T, std::enable_if_t<std::is_same_v<U,U> && HAS_AVX && sizeof(double)==8 && false, int> =0>
+        ALWAYS_INLINE void micro_kernel(std::complex<double>* res_buf, const std::complex<double>* const a_buf, const std::complex<double>* b_buf, const std::ptrdiff_t& mr_, const std::ptrdiff_t& nr_, const std::ptrdiff_t& kc_){
+            micro_kernel_dcomplex(res_buf,a_buf,b_buf,mr_,nr_,kc_);
         }
 
         template<typename ResW, typename T_, typename T1_, typename T2_>
@@ -707,6 +752,7 @@ private:
 
         template<typename U>
         ALWAYS_INLINE void micro_kernel_sd(U* res_buf, const U* const a_data, const U* b_data, const std::ptrdiff_t& mr_, const std::ptrdiff_t& nr_, const std::ptrdiff_t& kc_){
+            std::cout<<std::endl<<"ALWAYS_INLINE void micro_kernel_sd(U* res_buf, const U* const a_data, const U* b_data, const std::ptrdiff_t& mr_, const std::ptrdiff_t& nr_, const std::ptrdiff_t& kc_){";
             static_assert(std::is_floating_point_v<U>);
             static_assert(sizeof(U)==4 || sizeof(U)==8);
             static constexpr std::size_t n_packed = 32/sizeof(U);
