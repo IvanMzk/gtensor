@@ -777,8 +777,8 @@ TEST_CASE("benchmark_pack","[benchmark_tensor]")
 
 TEST_CASE("benchmark_matmul","[benchmark_tensor]")
 {
-    //using value_type = std::complex<double>;
-    using value_type = std::complex<float>;
+    using value_type = std::complex<double>;
+    //using value_type = std::complex<float>;
     //using value_type = std::int64_t;
     //using value_type = int;
     //using value_type = double;
@@ -910,7 +910,7 @@ TEST_CASE("benchmark_matmul","[benchmark_tensor]")
     //bench_matmul("bench matmul_2d",n_iters,shapes,builder,command_matmul_2d);
     //bench_matmul("bench matmul_2d_tiled",n_iters,shapes,builder,command_matmul_2d_tiled);
     //bench_matmul("bench matmul_2d_goto",n_iters,shapes,builder,command_matmul_2d_goto);
-    bench_matmul<value_type>("bench matmul",n_iters,shapes,builder,command_matmul);
-    //bench_matmul<value_type>("bench matmul_par",n_iters,shapes,builder,command_matmul_par);
+    //bench_matmul<value_type>("bench matmul",n_iters,shapes,builder,command_matmul);
+    bench_matmul<value_type>("bench matmul_par",n_iters,shapes,builder,command_matmul_par);
 
 }
