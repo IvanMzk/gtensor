@@ -597,37 +597,8 @@ private:
         }
 
         template<typename T_, typename T1_, typename T2_>
-        ALWAYS_INLINE void micro_kernel_generic(T_* res_buf, const T1_* const a_buf, const T2_* b_buf, const std::size_t& mr_, const std::size_t& nr_, const std::size_t& kc_){
-            auto res_buf_ = res_buf;
-            for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
-                const auto e = *b_buf;
-                for (std::size_t ir=0; ir!=mr_; ++ir,++res_buf_){
-                    *res_buf_=a_buf[ir]*e;
-                }
-            }
-            for (std::size_t kk=1; kk!=kc_; ++kk){
-                const auto a_buf_ = a_buf+kk*mr_;
-                auto res_buf_ = res_buf;
-                for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
-                    const auto e = *b_buf;
-                    for (std::size_t ir=0; ir!=mr_; ++ir,++res_buf_){
-                        *res_buf_=*res_buf_+a_buf_[ir]*e;
-                    }
-                }
-            }
-        }
-
-        auto avx_mul_complex(const std::complex<T>& a, const std::complex<T>& b){
-            auto y1 = _mm256_setr_pd(a.real(),-a.imag(),a.real(),a.imag());
-            auto y2 = _mm256_setr_pd(b.real(),b.imag(),b.imag(),b.real());
-            auto y3 = _mm256_mul_pd(y1,y2);
-            auto x = _mm_hadd_pd(_mm256_extractf128_pd(y3,0), _mm256_extractf128_pd(y3,1));
-            return std::complex<T>(_mm_cvtsd_f64(x),_mm_cvtsd_f64(_mm_shuffle_pd(x,x,1)));
-        }
-
-        template<typename T_, typename T1_, typename T2_>
         ALWAYS_INLINE void micro_kernel(T_* res_buf, const T1_* const a_buf, const T2_* b_buf, const std::size_t& mr_, const std::size_t& nr_, const std::size_t& kc_){
-            micro_kernel_generic(res_buf,a_buf,b_buf,mr_,nr_,kc_);
+            micro_kernel_generic_unrolled(res_buf,a_buf,b_buf,mr_,nr_,kc_);
         }
 
         template<typename U=T, std::enable_if_t<std::is_same_v<U,U> && HAS_FMA && HAS_AVX && sizeof(double)==8, int> =0>
@@ -669,6 +640,99 @@ private:
                 res_w.walk_back(i_axis,mc_);
             }
             res_w.walk_back(j_axis,nc_);
+        }
+
+        //generic kernel
+        template<typename T_, typename T1_, typename T2_>
+        ALWAYS_INLINE void micro_kernel_generic(T_* res_buf, const T1_* const a_buf, const T2_* b_buf, const std::size_t& mr_, const std::size_t& nr_, const std::size_t& kc_){
+            auto res_buf_ = res_buf;
+            for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
+                const auto& b_e = *b_buf;
+                for (std::size_t ir=0; ir!=mr_; ++ir,++res_buf_){
+                    *res_buf_=a_buf[ir]*b_e;
+                }
+            }
+            for (std::size_t kk=1; kk!=kc_; ++kk){
+                const auto a_buf_ = a_buf+kk*mr_;
+                auto res_buf_ = res_buf;
+                for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
+                    const auto& b_e = *b_buf;
+                    for (std::size_t ir=0; ir!=mr_; ++ir,++res_buf_){
+                        *res_buf_=*res_buf_+a_buf_[ir]*b_e;
+                    }
+                }
+            }
+        }
+
+        //generic unrolled kernel helpers
+        template<typename T_, typename T1_, typename T2_>
+        ALWAYS_INLINE void generic_load_mul_store(T_* const res_buf, const T1_* const a_buf, const T2_& b_e, const std::size_t& offset){
+            *(res_buf+offset) = *(a_buf+offset)*b_e;
+        }
+        template<typename T_, typename T1_, typename T2_>
+        ALWAYS_INLINE void generic_load_madd_store(T_* const res_buf, const T1_* const a_buf, const T2_& b_e, const std::size_t& offset){
+            *(res_buf+offset) = *(res_buf+offset) + *(a_buf+offset)*b_e;
+        }
+        template<std::size_t...I, typename U, typename P, typename V>
+        ALWAYS_INLINE void generic_load_mul_store_n(std::index_sequence<I...>, U* res_buf, P* a_buf, const V& b_e){
+            (generic_load_mul_store(res_buf,a_buf,b_e,I),...);
+        }
+        template<std::size_t...I, typename U, typename P, typename V>
+        ALWAYS_INLINE void generic_load_madd_store_n(std::index_sequence<I...>, U* res_buf, P* a_buf, const V& b_e){
+            (generic_load_madd_store(res_buf,a_buf,b_e,I),...);
+        }
+
+        //generic unrolled kernel
+        template<typename T_, typename T1_, typename T2_>
+        ALWAYS_INLINE void micro_kernel_generic_unrolled(T_* res_buf, const T1_* const a_buf, const T2_* b_buf, const std::size_t& mr_, const std::size_t& nr_, const std::size_t& kc_){
+            static constexpr std::size_t unroll_factor = 4;
+            if (mr_==Mr){
+                auto res_buf_ = res_buf;
+                for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
+                    const auto& b_e = *b_buf;
+                    generic_load_mul_store_n(std::make_index_sequence<Mr>{},res_buf_,a_buf,b_e);
+                    res_buf_+=Mr;
+                }
+                for (std::size_t kk=1; kk!=kc_; ++kk){
+                    const auto a_buf_ = a_buf+kk*mr_;
+                    auto res_buf_ = res_buf;
+                    for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
+                        const auto& b_e = *b_buf;
+                        generic_load_madd_store_n(std::make_index_sequence<Mr>{},res_buf_,a_buf_,b_e);
+                        res_buf_+=Mr;
+                    }
+                }
+            }else if (mr_>unroll_factor-1){
+                auto res_buf_ = res_buf;
+                for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
+                    const auto& b_e = *b_buf;
+                    auto a_buf_=a_buf;
+                    const auto a_last = a_buf_+mr_;
+                    for (const auto a_last_=a_last-(unroll_factor-1); a_buf_<a_last_; a_buf_+=unroll_factor,res_buf_+=unroll_factor){
+                        generic_load_mul_store_n(std::make_index_sequence<unroll_factor>{},res_buf_,a_buf_,b_e);
+                    }
+                    for (;a_buf_!=a_last; ++a_buf_,++res_buf_){
+                        generic_load_mul_store(res_buf_,a_buf_,b_e,0);
+                    }
+                }
+                for (std::size_t kk=1; kk!=kc_; ++kk){
+                    const auto a_buf_ = a_buf+kk*mr_;
+                    auto res_buf_ = res_buf;
+                    for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
+                        const auto& b_e = *b_buf;
+                        auto a_buf__=a_buf_;
+                        const auto a_last = a_buf_+mr_;
+                        for (const auto a_last__=a_last-(unroll_factor-1); a_buf__<a_last__; a_buf__+=unroll_factor,res_buf_+=unroll_factor){
+                            generic_load_madd_store_n(std::make_index_sequence<unroll_factor>{},res_buf_,a_buf__,b_e);
+                        }
+                        for (;a_buf__!=a_last; ++a_buf__,++res_buf_){
+                            generic_load_madd_store(res_buf_,a_buf__,b_e,0);
+                        }
+                    }
+                }
+            }else{
+                micro_kernel_generic(res_buf,a_buf,b_buf,mr_,nr_,kc_);
+            }
         }
 
         //floating point kernel helpers
@@ -771,6 +835,7 @@ private:
             (avx_load_madd_store(res_buf,a_buf,b_y,I*NPacked),...);
         }
 
+        //floating point, complex kernel
         template<typename U>
         ALWAYS_INLINE void micro_kernel_sd(U* res_buf, const U* const a_buf, const U* b_buf, const std::size_t& mr_, const std::size_t& nr_, const std::size_t& kc_){
             static_assert(sizeof(U)==4 || sizeof(U)==8 || sizeof(U)==16);

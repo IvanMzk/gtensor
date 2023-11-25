@@ -777,9 +777,9 @@ TEST_CASE("benchmark_pack","[benchmark_tensor]")
 
 TEST_CASE("benchmark_matmul","[benchmark_tensor]")
 {
-    using value_type = std::complex<double>;
+    //using value_type = std::complex<double>;
     //using value_type = std::complex<float>;
-    //using value_type = std::int64_t;
+    using value_type = std::int64_t;
     //using value_type = int;
     //using value_type = double;
     //using value_type = float;
@@ -805,8 +805,8 @@ TEST_CASE("benchmark_matmul","[benchmark_tensor]")
         //std::make_pair(std::vector<int>{1282,1000},std::vector<int>{1000,1281}),
         //std::make_pair(std::vector<int>{1284,1000},std::vector<int>{1000,1283}),
         //std::make_pair(std::vector<int>{1283,1000},std::vector<int>{1000,1284})
-        //std::make_pair(std::vector<int>{2000,2000},std::vector<int>{2000,2000})
-        std::make_pair(std::vector<int>{4000,4000},std::vector<int>{4000,4000})
+        std::make_pair(std::vector<int>{2000,2000},std::vector<int>{2000,2000})
+        //std::make_pair(std::vector<int>{4000,4000},std::vector<int>{4000,4000})
         //std::make_pair(std::vector<int>{4567,4765},std::vector<int>{4765,4321})
         //std::make_pair(std::vector<int>{200,100000},std::vector<int>{100000,300})
         //std::make_pair(std::vector<int>{6000,6000},std::vector<int>{6000,6000})
@@ -910,7 +910,7 @@ TEST_CASE("benchmark_matmul","[benchmark_tensor]")
     //bench_matmul("bench matmul_2d",n_iters,shapes,builder,command_matmul_2d);
     //bench_matmul("bench matmul_2d_tiled",n_iters,shapes,builder,command_matmul_2d_tiled);
     //bench_matmul("bench matmul_2d_goto",n_iters,shapes,builder,command_matmul_2d_goto);
-    //bench_matmul<value_type>("bench matmul",n_iters,shapes,builder,command_matmul);
-    bench_matmul<value_type>("bench matmul_par",n_iters,shapes,builder,command_matmul_par);
+    bench_matmul<value_type>("bench matmul",n_iters,shapes,builder,command_matmul);
+    //bench_matmul<value_type>("bench matmul_par",n_iters,shapes,builder,command_matmul_par);
 
 }
