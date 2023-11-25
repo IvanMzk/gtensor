@@ -548,7 +548,7 @@ private:
             for (index_type ii=0; ii<inner_size; ii+=block_size){
                 const auto block_size_ = adjust_block_size(ii,block_size,inner_size);
                 for (auto i=outer_size; i!=0; --i,w.step(outer_axis)){
-                    const auto dst_last = dst+static_cast<std::ptrdiff_t>(block_size_);
+                    const auto dst_last = dst+static_cast<std::size_t>(block_size_);
                     if (block_size_ > 3){
                         for (const auto dst_last_=dst_last-3; dst<dst_last_; dst+=4){
                             *dst = *w;
@@ -575,7 +575,7 @@ private:
         template<typename ResW>
         ALWAYS_INLINE void fill_res(const res_value_type* buf, ResW& res_w, const index_type& mr_, const index_type& nr_){
             for (auto i=nr_; i!=0; --i,res_w.step(j_axis)){
-                const auto buf_last = buf+static_cast<std::ptrdiff_t>(mr_);
+                const auto buf_last = buf+static_cast<std::size_t>(mr_);
                 if (mr_ > 3){
                     for (const auto buf_last_=buf_last-3; buf<buf_last_; buf+=4){
                         *res_w = *res_w + *buf;
@@ -597,20 +597,20 @@ private:
         }
 
         template<typename T_, typename T1_, typename T2_>
-        ALWAYS_INLINE void micro_kernel_generic(T_* res_buf, const T1_* const a_buf, const T2_* b_buf, const std::ptrdiff_t& mr_, const std::ptrdiff_t& nr_, const std::ptrdiff_t& kc_){
+        ALWAYS_INLINE void micro_kernel_generic(T_* res_buf, const T1_* const a_buf, const T2_* b_buf, const std::size_t& mr_, const std::size_t& nr_, const std::size_t& kc_){
             auto res_buf_ = res_buf;
             for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
                 const auto e = *b_buf;
-                for (std::ptrdiff_t ir=0; ir!=mr_; ++ir,++res_buf_){
+                for (std::size_t ir=0; ir!=mr_; ++ir,++res_buf_){
                     *res_buf_=a_buf[ir]*e;
                 }
             }
-            for (std::ptrdiff_t kk=1; kk!=kc_; ++kk){
+            for (std::size_t kk=1; kk!=kc_; ++kk){
                 const auto a_buf_ = a_buf+kk*mr_;
                 auto res_buf_ = res_buf;
                 for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
                     const auto e = *b_buf;
-                    for (std::ptrdiff_t ir=0; ir!=mr_; ++ir,++res_buf_){
+                    for (std::size_t ir=0; ir!=mr_; ++ir,++res_buf_){
                         *res_buf_=*res_buf_+a_buf_[ir]*e;
                     }
                 }
@@ -626,38 +626,38 @@ private:
         }
 
         template<typename T_, typename T1_, typename T2_>
-        ALWAYS_INLINE void micro_kernel(T_* res_buf, const T1_* const a_buf, const T2_* b_buf, const std::ptrdiff_t& mr_, const std::ptrdiff_t& nr_, const std::ptrdiff_t& kc_){
+        ALWAYS_INLINE void micro_kernel(T_* res_buf, const T1_* const a_buf, const T2_* b_buf, const std::size_t& mr_, const std::size_t& nr_, const std::size_t& kc_){
             micro_kernel_generic(res_buf,a_buf,b_buf,mr_,nr_,kc_);
         }
 
         template<typename U=T, std::enable_if_t<std::is_same_v<U,U> && HAS_FMA && HAS_AVX && sizeof(double)==8, int> =0>
-        ALWAYS_INLINE void micro_kernel(double* res_buf, const double* const a_buf, const double* b_buf, const std::ptrdiff_t& mr_, const std::ptrdiff_t& nr_, const std::ptrdiff_t& kc_){
+        ALWAYS_INLINE void micro_kernel(double* res_buf, const double* const a_buf, const double* b_buf, const std::size_t& mr_, const std::size_t& nr_, const std::size_t& kc_){
             micro_kernel_sd(res_buf,a_buf,b_buf,mr_,nr_,kc_);
         }
 
         template<typename U=T, std::enable_if_t<std::is_same_v<U,U> && HAS_FMA && HAS_AVX && sizeof(float)==4, int> =0>
-        ALWAYS_INLINE void micro_kernel(float* res_buf, const float* const a_buf, const float* b_buf, const std::ptrdiff_t& mr_, const std::ptrdiff_t& nr_, const std::ptrdiff_t& kc_){
+        ALWAYS_INLINE void micro_kernel(float* res_buf, const float* const a_buf, const float* b_buf, const std::size_t& mr_, const std::size_t& nr_, const std::size_t& kc_){
             micro_kernel_sd(res_buf,a_buf,b_buf,mr_,nr_,kc_);
         }
 
         template<typename U=T, std::enable_if_t<std::is_same_v<U,U> && HAS_AVX && HAS_AVX2 && sizeof(double)==8, int> =0>
-        ALWAYS_INLINE void micro_kernel(std::complex<double>* res_buf, const std::complex<double>* const a_buf, const std::complex<double>* b_buf, const std::ptrdiff_t& mr_, const std::ptrdiff_t& nr_, const std::ptrdiff_t& kc_){
+        ALWAYS_INLINE void micro_kernel(std::complex<double>* res_buf, const std::complex<double>* const a_buf, const std::complex<double>* b_buf, const std::size_t& mr_, const std::size_t& nr_, const std::size_t& kc_){
             micro_kernel_complex(res_buf,a_buf,b_buf,mr_,nr_,kc_);
         }
 
         template<typename U=T, std::enable_if_t<std::is_same_v<U,U> && HAS_AVX && HAS_AVX2 && sizeof(float)==4, int> =0>
-        ALWAYS_INLINE void micro_kernel(std::complex<float>* res_buf, const std::complex<float>* const a_buf, const std::complex<float>* b_buf, const std::ptrdiff_t& mr_, const std::ptrdiff_t& nr_, const std::ptrdiff_t& kc_){
+        ALWAYS_INLINE void micro_kernel(std::complex<float>* res_buf, const std::complex<float>* const a_buf, const std::complex<float>* b_buf, const std::size_t& mr_, const std::size_t& nr_, const std::size_t& kc_){
             micro_kernel_complex(res_buf,a_buf,b_buf,mr_,nr_,kc_);
         }
 
         template<typename ResW, typename T_, typename T1_, typename T2_>
-        ALWAYS_INLINE void macro_kernel(ResW& res_w, T_* res_buf, const T1_* const a_buf, const T2_* b_buf, const std::ptrdiff_t& mc_, const std::ptrdiff_t& nc_, const std::ptrdiff_t& kc_){
-            const std::ptrdiff_t mr{Mr};
-            const std::ptrdiff_t nr{Nr};
-            for (std::ptrdiff_t i=0; i<nc_; i+=nr){
+        ALWAYS_INLINE void macro_kernel(ResW& res_w, T_* res_buf, const T1_* const a_buf, const T2_* b_buf, const std::size_t& mc_, const std::size_t& nc_, const std::size_t& kc_){
+            const std::size_t mr{Mr};
+            const std::size_t nr{Nr};
+            for (std::size_t i=0; i<nc_; i+=nr){
                 const auto nr_ = adjust_block_size(i,nr,nc_);
                 auto a_buf_ = a_buf;
-                for (std::ptrdiff_t j=0; j<mc_; j+=mr){
+                for (std::size_t j=0; j<mc_; j+=mr){
                     const auto mr_ = adjust_block_size(j,mr,mc_);
                     micro_kernel(res_buf,a_buf_,b_buf,mr_,nr_,kc_);
                     fill_res(res_buf,res_w,mr_,nr_);
@@ -670,23 +670,6 @@ private:
             }
             res_w.walk_back(j_axis,nc_);
         }
-
-        // #define AVX_MATMUL_BROADCAST(Ptr) asm ("vbroadcastsd %0,%%ymm0" ::"m"(*Ptr));
-
-        // #define AVX_MATMUL_MUL(OFFSET)\
-        // asm ("vmovapd %1,%%ymm1\n\t"\
-        //     "vmulpd %%ymm1,%%ymm0,%%ymm2\n\t"\
-        //     "vmovapd %%ymm2,%0"\
-        //     :"=m"(*(res_buf_+OFFSET)):"m"(*(a_data+OFFSET))\
-        // );
-
-        // #define AVX_MATMUL_FMA(OFFSET)\
-        // asm ("vmovapd %2,%%ymm2\n\t"\
-        //     "vfmadd231pd %1,%%ymm0,%%ymm2\n\t"\
-        //     "vmovapd %%ymm2,%0"\
-        //     :"=m"(*(res_buf_+OFFSET)):"m"(*(a_data_+OFFSET)),"m"(*(res_buf_+OFFSET))\
-        // );
-
 
         //floating point kernel
         ALWAYS_INLINE auto avx_broadcast(const double* buf){
@@ -725,8 +708,7 @@ private:
         }
 
         template<typename U>
-        ALWAYS_INLINE void micro_kernel_sd(U* res_buf, const U* const a_buf, const U* b_buf, const std::ptrdiff_t& mr_, const std::ptrdiff_t& nr_, const std::ptrdiff_t& kc_){
-            //std::cout<<std::endl<<"ALWAYS_INLINE void micro_kernel_sd(U* res_buf, const U* const a_buf, const U* b_buf, const std::ptrdiff_t& mr_, const std::ptrdiff_t& nr_, const std::ptrdiff_t& kc_){";
+        ALWAYS_INLINE void micro_kernel_sd(U* res_buf, const U* const a_buf, const U* b_buf, const std::size_t& mr_, const std::size_t& nr_, const std::size_t& kc_){
             static_assert(std::is_floating_point_v<U>);
             static_assert(sizeof(U)==4 || sizeof(U)==8);
             static constexpr std::size_t n_packed = 32/sizeof(U);
@@ -737,7 +719,7 @@ private:
                     avx_mul_n<n_packed>(std::make_index_sequence<Mr/n_packed>{},res_buf_,a_buf,b_y);
                     res_buf_+=Mr;
                 }
-                for (std::ptrdiff_t kk=1; kk!=kc_; ++kk){
+                for (std::size_t kk=1; kk!=kc_; ++kk){
                     const auto a_buf_ = a_buf+kk*mr_;
                     auto res_buf_ = res_buf;
                     for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
@@ -747,7 +729,7 @@ private:
                     }
                 }
             }else if (mr_>n_packed-1){
-                std::ptrdiff_t mm{0};
+                std::size_t mm{0};
                 auto res_buf_ = res_buf;
                 for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
                     auto a_buf_=a_buf;
@@ -767,10 +749,10 @@ private:
                         *res_buf_=*a_buf_*avx_element(b_y);
                     }
                 }
-                for (std::ptrdiff_t kk=1; kk!=kc_; ++kk){
+                for (std::size_t kk=1; kk!=kc_; ++kk){
                     const auto a_buf_ = a_buf+kk*mr_;
                     res_buf_ = res_buf;
-                    std::ptrdiff_t mm{0};
+                    std::size_t mm{0};
                     for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
                         auto a_buf__=a_buf_;
                         const auto a_last = a_buf_+mr_;
@@ -856,7 +838,7 @@ private:
         }
 
         template<typename U>
-        ALWAYS_INLINE void micro_kernel_complex(U* res_buf, const U* const a_buf, const U* b_buf, const std::ptrdiff_t& mr_, const std::ptrdiff_t& nr_, const std::ptrdiff_t& kc_){
+        ALWAYS_INLINE void micro_kernel_complex(U* res_buf, const U* const a_buf, const U* b_buf, const std::size_t& mr_, const std::size_t& nr_, const std::size_t& kc_){
             static constexpr std::size_t n_packed = 32/sizeof(U);
             if (mr_==Mr){   //Mr is guaranteed to be multiple of alignment
                 auto res_buf_ = res_buf;
@@ -865,7 +847,7 @@ private:
                     avx_complex_mul_store_n<n_packed>(std::make_index_sequence<Mr/n_packed>{},res_buf_,a_buf,b_y);
                     res_buf_+=Mr;
                 }
-                for (std::ptrdiff_t kk=1; kk!=kc_; ++kk){
+                for (std::size_t kk=1; kk!=kc_; ++kk){
                     const auto a_buf_ = a_buf+kk*mr_;
                     auto res_buf_ = res_buf;
                     for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
@@ -887,7 +869,7 @@ private:
                         *res_buf_ = *a_buf_*b_e;
                     }
                 }
-                for (std::ptrdiff_t kk=1; kk!=kc_; ++kk){
+                for (std::size_t kk=1; kk!=kc_; ++kk){
                     const auto a_buf_ = a_buf+kk*mr_;
                     auto res_buf_ = res_buf;
                     for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
@@ -933,7 +915,7 @@ private:
                     for (index_type ic=ic_min; ic<ic_max; ic+=mc){
                         const auto mc_ = adjust_block_size(ic,mc,ic_max);
                         fill_buf(w1,a_buf,i_axis,j_axis,mc_,kc_,mr);
-                        macro_kernel(res_w,res_buf,a_buf,b_buf,static_cast<std::ptrdiff_t>(mc_),static_cast<std::ptrdiff_t>(nc_),static_cast<std::ptrdiff_t>(kc_));
+                        macro_kernel(res_w,res_buf,a_buf,b_buf,static_cast<std::size_t>(mc_),static_cast<std::size_t>(nc_),static_cast<std::size_t>(kc_));
                         w1.walk(i_axis,mc_);
                         res_w.walk(i_axis,mc_);
                     }
