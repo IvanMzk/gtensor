@@ -387,8 +387,9 @@ struct mean
     auto operator()(It first, It last){
         using value_type = typename std::iterator_traits<It>::value_type;
         using element_type = detail::element_type_t<value_type>;
-        using fp_type = gtensor::math::make_floating_point_like_t<element_type>;
-        using res_type = detail::copy_type_t<typename std::iterator_traits<It>::value_type,fp_type>;
+        using fp_type = gtensor::math::make_floating_point_t<element_type>;
+        using fp_like_type = gtensor::math::make_floating_point_like_t<element_type>;
+        using res_type = detail::copy_type_t<typename std::iterator_traits<It>::value_type,fp_like_type>;
         if (first == last){
             return reduce_empty<res_type>();
         }
@@ -405,6 +406,7 @@ struct nanmean
     auto operator()(It first, It last){
         using value_type = typename std::iterator_traits<It>::value_type;
         using difference_type = typename std::iterator_traits<It>::difference_type;
+        using fp_type = gtensor::math::make_floating_point_t<value_type>;
         using res_type = gtensor::math::make_floating_point_like_t<value_type>;
         if (first == last){
             return reduce_empty<res_type>();
@@ -421,7 +423,7 @@ struct nanmean
         if (res.second == 0){
             return gtensor::math::numeric_traits<res_type>::nan();
         }else{
-            return res.first / static_cast<const res_type&>(res.second);
+            return res.first / static_cast<fp_type>(res.second);
         }
     }
 };

@@ -113,8 +113,9 @@ private:
         auto operator()(Policy policy, const basic_tensor<Ts...>& t, const Axes& axes, bool keep_dims){
             using element_type = typename basic_tensor<Ts...>::element_type;
             using integral_type = gtensor::math::make_integral_t<element_type>;
-            using fp_type = gtensor::math::make_floating_point_like_t<element_type>;
-            using res_value_type = typename detail::copy_type_t<basic_tensor<Ts...>,fp_type>::value_type;
+            using fp_type = gtensor::math::make_floating_point_t<element_type>;
+            using fp_like_type = gtensor::math::make_floating_point_like_t<element_type>;
+            using res_value_type = typename detail::copy_type_t<basic_tensor<Ts...>,fp_like_type>::value_type;
             using f_type = gtensor::math_reduce_operations::nan_propagate_operation<gtensor::math_reduce_operations::plus<void>>;
             auto tmp = reduce_binary(policy,t,axes,f_type{},keep_dims,res_value_type(0));
             if (!tmp.empty()){
@@ -127,7 +128,7 @@ private:
                     }
                 }else{
                     const auto axes_size = t.size()/tmp.size();
-                    tmp/=static_cast<const fp_type&>(static_cast<const integral_type&>(axes_size));
+                    tmp/=static_cast<fp_type>(static_cast<integral_type>(axes_size));
                 }
             }
             return tmp;
@@ -144,6 +145,7 @@ private:
             using value_type = typename basic_tensor<Ts...>::value_type;
             using config_type = typename basic_tensor<Ts...>::config_type;
             using integral_type = gtensor::math::make_integral_t<value_type>;
+            using fp_type = gtensor::math::make_floating_point_t<value_type>;
             using res_type = gtensor::math::make_floating_point_like_t<value_type>;
             using f_type = gtensor::statistic_reduce_operations::nan_ignoring_counting_operation<gtensor::math_reduce_operations::plus<res_type>,integral_type>;
             auto tmp = reduce_binary(policy,t,axes,f_type{},keep_dims,std::make_pair(res_type{0},integral_type{0}));
@@ -151,12 +153,12 @@ private:
             std::transform(tmp.begin(),tmp.end(),res.begin(),
                 [](const auto& r){
                     if constexpr (gtensor::math::numeric_traits<res_type>::has_nan()){
-                        return r.first/static_cast<const res_type&>(r.second);
+                        return r.first/static_cast<res_type>(static_cast<fp_type>(r.second));
                     }else{
                         if (r.second==0){
                             throw value_error("cant reduce zero size dimension without initial value");
                         }else{
-                            return r.first/static_cast<const res_type&>(r.second);
+                            return r.first/static_cast<fp_type>(r.second);
                         }
                     }
                 }

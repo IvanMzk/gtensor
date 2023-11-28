@@ -47,7 +47,7 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_LIST_DIR}/test_view_factory_mapping_view.cpp
 #
     #${CMAKE_CURRENT_LIST_DIR}/test_tensor_operators.cpp
-    #${CMAKE_CURRENT_LIST_DIR}/test_std_complex.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_std_complex.cpp
     #${CMAKE_CURRENT_LIST_DIR}/test_tensor_of_tensor.cpp
 #
     #${CMAKE_CURRENT_LIST_DIR}/test_tensor_cloning_semantics.cpp
