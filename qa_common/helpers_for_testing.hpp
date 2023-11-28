@@ -92,12 +92,13 @@ template<std::size_t a=279470273, std::size_t m=0xfffffffb, typename It, typenam
 auto generate_lehmer(It first, It last, UnaryF unary_f, std::size_t init){
     using value_type = typename std::iterator_traits<It>::value_type;
     if constexpr (is_std_complex_v<value_type>){
+        using inner_value_type = typename value_type::value_type;
         std::for_each(first,last,
             [unary_f,init](auto& e)mutable{
                 auto e_1=init*a%m;
                 auto e_2=e_1*a%m;
                 init=e_2;
-                e=std::complex<double>(unary_f(e_1),unary_f(e_2));
+                e=value_type(static_cast<inner_value_type>(unary_f(e_1)), static_cast<inner_value_type>(unary_f(e_2)));
             }
         );
     }else{

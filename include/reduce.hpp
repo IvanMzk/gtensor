@@ -418,8 +418,8 @@ class reducer
                             if constexpr (has_initial){
                                 e = detail::accumulate_n(it,outer_size,detail::make_copy(initial),reduce_f);
                             }else{  //no initial
-                                auto initial = detail::make_copy(*it);
-                                e = detail::accumulate_n(++it,outer_size-1,initial,reduce_f);
+                                auto initial_ = detail::make_copy(*it);
+                                e = detail::accumulate_n(++it,outer_size-1,initial_,reduce_f);
                             }
                         }else{  //e initialized
                             e = detail::accumulate_n(it,outer_size,e,reduce_f);

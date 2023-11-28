@@ -16,7 +16,6 @@
 #include "tensor_operators.hpp"
 #include "reduce.hpp"
 #include "reduce_operations.hpp"
-#include "../benchmark/benchmark_helpers.hpp"
 
 namespace gtensor{
 
@@ -341,7 +340,8 @@ struct tensor_math
         using order2 = typename tensor_type2::order;
         using res_order = std::conditional_t<std::is_same_v<order1,order2>,order1,gtensor::config::c_order>;
         using config_type = typename tensor_type1::config_type;
-        using res_type = detail::tensor_copy_type_t<std::decay_t<decltype(std::declval<value_type1>()*std::declval<value_type2>())>,res_order,config_type>;
+        using common_value_type = std::decay_t<decltype(std::declval<value_type1>()*std::declval<value_type2>())>;
+        using res_type = detail::tensor_copy_type_t<common_value_type,res_order,config_type>;
         using res_value_type = typename res_type::value_type;
 
         const auto& shape1 = t1.shape();
@@ -387,7 +387,7 @@ private:
     }
 
     template<typename ResT, typename Policy, typename...Ts, typename...Us>
-    static auto matmul_1d_helper(Policy policy, const basic_tensor<Ts...>& t_1d, const basic_tensor<Us...>& t_nd, const bool is_1d_left){
+    static auto matmul_1d_helper(Policy, const basic_tensor<Ts...>& t_1d, const basic_tensor<Us...>& t_nd, const bool is_1d_left){
         using res_type = ResT;
         using order = typename ResT::order;
         using config_type = typename ResT::config_type;
@@ -510,7 +510,9 @@ private:
 
             }
         }
+
         return res;
+
     }
 
     template<typename T, typename T1, typename T2, typename Config>
@@ -552,18 +554,18 @@ private:
                     const auto dst_last = dst+static_cast<std::size_t>(block_size_);
                     if (block_size_ > 3){
                         for (const auto dst_last_=dst_last-3; dst<dst_last_; dst+=4){
-                            *dst = *w;
+                            *dst = static_cast<U>(*w);
                             w.step(inner_axis);
-                            *(dst+1) = *w;
+                            *(dst+1) = static_cast<U>(*w);
                             w.step(inner_axis);
-                            *(dst+2) = *w;
+                            *(dst+2) = static_cast<U>(*w);
                             w.step(inner_axis);
-                            *(dst+3) = *w;
+                            *(dst+3) = static_cast<U>(*w);
                             w.step(inner_axis);
                         }
                     }
                     for (;dst!=dst_last; ++dst,w.step(inner_axis)){
-                        *dst = *w;
+                        *dst = static_cast<U>(*w);
                     }
                     w.walk_back(inner_axis,block_size_);
                 }
@@ -674,7 +676,7 @@ private:
             }
             for (std::size_t kk=1; kk!=kc_; ++kk){
                 const auto a_buf_ = a_buf+kk*mr_;
-                auto res_buf_ = res_buf;
+                res_buf_ = res_buf;
                 for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
                     const auto& b_e = *b_buf;
                     for (std::size_t ir=0; ir!=mr_; ++ir,++res_buf_){
@@ -715,7 +717,7 @@ private:
                 }
                 for (std::size_t kk=1; kk!=kc_; ++kk){
                     const auto a_buf_ = a_buf+kk*mr_;
-                    auto res_buf_ = res_buf;
+                    res_buf_ = res_buf;
                     for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
                         const auto& b_e = *b_buf;
                         generic_load_madd_store_n(std::make_index_sequence<Mr>{},res_buf_,a_buf_,b_e);
@@ -737,7 +739,7 @@ private:
                 }
                 for (std::size_t kk=1; kk!=kc_; ++kk){
                     const auto a_buf_ = a_buf+kk*mr_;
-                    auto res_buf_ = res_buf;
+                    res_buf_ = res_buf;
                     for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
                         const auto& b_e = *b_buf;
                         auto a_buf__=a_buf_;
@@ -861,7 +863,7 @@ private:
                 }
                 const auto a_last=a_buf+kc_*Mr;
                 for (a_buf+=Mr; a_buf!=a_last; a_buf+=Mr){
-                    auto res_buf_ = res_buf;
+                    res_buf_ = res_buf;
                     for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
                         const auto b_y = avx_broadcast(b_buf);
                         avx_load_madd_store_n<n_packed>(std::make_index_sequence<Mr/n_packed>{},res_buf_,a_buf,b_y);
@@ -889,7 +891,7 @@ private:
                 for (std::size_t kk=1; kk!=kc_; ++kk){
                     const auto a_buf_ = a_buf+kk*mr_;
                     res_buf_ = res_buf;
-                    std::size_t mm{0};
+                    mm = 0;
                     for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
                         auto a_buf__=a_buf_;
                         const auto a_last = a_buf_+mr_;
@@ -989,7 +991,7 @@ private:
 
     //t1,t2,res are at least 2d
     template<typename ResT, typename Policy, typename...Ts, typename...Us>
-    static auto matmul_nd_helper(Policy policy, const basic_tensor<Ts...>& t1, const basic_tensor<Us...>& t2){
+    static auto matmul_nd_helper(Policy, const basic_tensor<Ts...>& t1, const basic_tensor<Us...>& t2){
         using res_type = ResT;
         using order = typename res_type::order;
         using value_type = typename res_type::value_type;

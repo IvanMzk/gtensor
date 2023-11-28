@@ -172,8 +172,8 @@ TEMPLATE_TEST_CASE("test_math_matmul_nd_nd_big","test_math",
     using value_type2 = std::tuple_element_t<3,TestType>;
     using tensor_type1 = gtensor::tensor<value_type1,layout1>;
     using tensor_type2 = gtensor::tensor<value_type2,layout2>;
-    using tensor_type = gtensor::tensor<value_type1>;
     using gtensor::matmul;
+    using tensor_type = decltype(matmul(std::declval<tensor_type1>(),std::declval<tensor_type2>()));
     using gtensor::config::c_order;
     using gtensor::config::f_order;
     using helpers_for_testing::apply_by_element;

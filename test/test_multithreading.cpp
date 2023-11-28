@@ -55,11 +55,11 @@ TEST_CASE("test_multithreading_par_task_size","[test_multithreading]")
         par_task_size<size_type> par_sizes{tasks_number,max_par_tasks_number,min_tasks_per_par_task};
 
         std::vector<int> result_elements{};
-        for(auto i=0; i!=par_sizes.size(); ++i){
+        for(std::size_t i=0; i!=par_sizes.size(); ++i){
             result_elements.push_back(par_sizes[i]);
         }
         auto result_size = par_sizes.size();
-        REQUIRE(result_size == expected_size);
+        REQUIRE(result_size == static_cast<std::size_t>(expected_size));
         REQUIRE(result_elements == expected_elements);
     };
     apply_by_element(test,test_data);
