@@ -913,10 +913,6 @@ private:
 
     public:
 
-        //inline static double micro_time{0};
-        inline static std::atomic<std::size_t> micro_time{0};
-        benchmark_helpers::cpu_interval timer{};
-
         matmul_2d(const index_type& k_, const dim_type& i_axis_, const dim_type& j_axis_):
             k{k_},
             i_axis{i_axis_},
@@ -1032,8 +1028,6 @@ private:
         using matmul_type = matmul_2d<value_type,value_type1,value_type2,config_type>;
         matmul_type mm(k,i_axis,j_axis);
 
-        //std::cout<<std::endl<<mm;
-
         if constexpr (multithreading::exec_policy_traits<Policy>::is_seq::value){
             do{
                 mm(res_tr.walker(),tr1.walker(),tr2.walker(),0,m,0,n);
@@ -1087,7 +1081,6 @@ private:
                 tr2.template next<order>();
             }while(res_tr.template next<order>());
         }
-        //std::cout<<std::endl<<matmul_type::micro_time/1000/16;
         return res;
     }
 

@@ -75,9 +75,9 @@ TEST_CASE("benchmark_matmul","[benchmark_tensor]")
     };
 
     auto shapes = std::vector<std::pair<std::vector<int>,std::vector<int>>>{
-        //std::make_pair(std::vector<int>{4000,4000},std::vector<int>{4000,4000})
+        std::make_pair(std::vector<int>{4000,4000},std::vector<int>{4000,4000})
         //std::make_pair(std::vector<int>{6000,6000},std::vector<int>{6000,6000})
-        std::make_pair(std::vector<int>{10000,10000},std::vector<int>{10000,10000})
+        //std::make_pair(std::vector<int>{10000,10000},std::vector<int>{10000,10000})
     };
     const auto n_iters = 1;
 
@@ -87,7 +87,7 @@ TEST_CASE("benchmark_matmul","[benchmark_tensor]")
     };
 
     bench_matmul<double>("bench matmul_par double",n_iters,shapes,builder,command_matmul_par);
-    //bench_matmul<float>("bench matmul_par float",n_iters,shapes,builder,command_matmul_par);
-    //bench_matmul<std::complex<double>>("bench matmul_par std::complex<double>",n_iters,shapes,builder,command_matmul_par);
-    //bench_matmul<std::complex<float>>("bench matmul_par std::complex<float>",n_iters,shapes,builder,command_matmul_par);
+    bench_matmul<float>("bench matmul_par float",n_iters,shapes,builder,command_matmul_par);
+    bench_matmul<std::complex<double>>("bench matmul_par std::complex<double>",n_iters,shapes,builder,command_matmul_par);
+    bench_matmul<std::complex<float>>("bench matmul_par std::complex<float>",n_iters,shapes,builder,command_matmul_par);
 }
