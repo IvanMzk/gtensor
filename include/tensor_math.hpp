@@ -859,7 +859,6 @@ private:
                     avx_load_mul_store_n<n_packed>(std::make_index_sequence<Mr/n_packed>{},res_buf_,a_buf,b_y);
                     res_buf_+=Mr;
                 }
-                //timer.start();
                 const auto a_last=a_buf+kc_*Mr;
                 for (a_buf+=Mr; a_buf!=a_last; a_buf+=Mr){
                     auto res_buf_ = res_buf;
@@ -869,17 +868,6 @@ private:
                         res_buf_+=Mr;
                     }
                 }
-                // for (std::size_t kk=1; kk!=kc_; ++kk){
-                //     const auto a_buf_ = a_buf+kk*mr_;
-                //     auto res_buf_ = res_buf;
-                //     for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
-                //         const auto b_y = avx_broadcast(b_buf);
-                //         avx_load_madd_store_n<n_packed>(std::make_index_sequence<Mr/n_packed>{},res_buf_,a_buf_,b_y);
-                //         res_buf_+=Mr;
-                //     }
-                // }
-                //timer.stop();
-                //micro_time+=1000*timer;
             }else if (mr_>n_packed-1){
                 std::size_t mm{0};
                 auto res_buf_ = res_buf;
