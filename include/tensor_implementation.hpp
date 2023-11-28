@@ -486,6 +486,7 @@ inline bool is_trivial(Core& t){
 //element
 template<typename Core, std::size_t...I, typename...IdxT>
 inline auto element_index(Core& t, std::index_sequence<I...>, const IdxT&...idx){
+    (void)t;
     if constexpr (sizeof...(IdxT)==0){
         return 0;
     }else{
@@ -495,6 +496,7 @@ inline auto element_index(Core& t, std::index_sequence<I...>, const IdxT&...idx)
 }
 template<typename Core, std::size_t...I, typename...IdxT>
 inline decltype(auto) element_helper(Core& t, std::index_sequence<I...> seq, const IdxT&...idx){
+    (void)seq;
     if constexpr (has_callable_create_walker<Core>::value){
         auto w = t.create_walker();
         (w.walk(I,idx),...);
