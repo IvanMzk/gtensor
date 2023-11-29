@@ -151,7 +151,7 @@ private:
             using f_type = gtensor::statistic_reduce_operations::nan_ignoring_counting_operation<gtensor::math_reduce_operations::plus<res_type>,integral_type>;
             auto tmp = reduce_binary(policy,t,axes,f_type{},keep_dims,std::make_pair(res_type{0},integral_type{0}));
             tensor<res_type,order,config_type> res(tmp.shape());
-            std::transform(tmp.begin(),tmp.end(),res.begin(),
+            multithreading::transform(policy,tmp.begin(),tmp.end(),res.begin(),
                 [](const auto& r){
                     if constexpr (gtensor::math::numeric_traits<res_type>::has_nan()){
                         return r.first/static_cast<res_type>(static_cast<fp_type>(r.second));
@@ -192,16 +192,16 @@ private:
         {
             template<typename T, typename R>
             auto operator()(const std::tuple<T,R>& e1, const std::tuple<T,R>& e2){
-                const auto e1_not_nan = gtensor::math::isnan(std::get<0>(e1));
-                const auto e2_not_nan = gtensor::math::isnan(std::get<0>(e2));
-                if (e1_not_nan && e2_not_nan){
-                    return std::make_pair(std::get<1>(e1)+std::get<1>(e2),Size{2});
-                }else if (e1_not_nan){
-                    return std::make_pair(std::get<1>(e1),Size{1});
-                }else if (e2_not_nan){
-                    return std::make_pair(std::get<1>(e2),Size{1});
-                }else{
+                const auto e1_nan = gtensor::math::isnan(std::get<0>(e1));
+                const auto e2_nan = gtensor::math::isnan(std::get<0>(e2));
+                if (e1_nan && e2_nan){
                     return std::make_pair(R(0),Size{0});
+                }else if (e1_nan){
+                    return std::make_pair(std::get<1>(e2),Size{1});
+                }else if (e2_nan){
+                    return std::make_pair(std::get<1>(e1),Size{1});
+                }else{
+                    return std::make_pair(std::get<1>(e1)+std::get<1>(e2),Size{2});
                 }
             }
             template<typename R>
@@ -232,9 +232,9 @@ private:
             auto tmp = gtensor::n_operator(make_tuple,t,gtensor::n_operator(squared_diff,t,std::move(mean_)));
             using res_value_type = std::tuple_element_t<1,typename decltype(tmp)::value_type>;
             using f_type = nan_ignoring_counting_plus<integral_type>;
-            auto sum = reduce_binary(tmp,axes,f_type{},keep_dims,std::make_pair(res_value_type{0},integral_type{0}));
+            auto sum = reduce_binary(policy,tmp,axes,f_type{},keep_dims,std::make_pair(res_value_type{0},integral_type{0}));
             tensor<res_value_type,order,config_type> res(sum.shape());
-            std::transform(sum.begin(),sum.end(),res.begin(),
+            multithreading::transform(policy,sum.begin(),sum.end(),res.begin(),
                 [](const auto& r){
                     if constexpr (gtensor::math::numeric_traits<res_value_type>::has_nan()){
                         return r.first/static_cast<const res_value_type&>(r.second);

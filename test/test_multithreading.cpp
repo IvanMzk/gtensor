@@ -212,7 +212,7 @@ TEMPLATE_TEST_CASE("test_multithreading_transform_first1","[test_multithreading]
     apply_by_element(test,test_data);
 }
 
-TEMPLATE_TEST_CASE("test_multithreading_transform_two_range_overload","[test_multithreading]",
+TEMPLATE_TEST_CASE("test_multithreading_transform_unary","[test_multithreading]",
     (multithreading::exec_pol<1>),
     (multithreading::exec_pol<2>),
     (multithreading::exec_pol<4>),
@@ -224,39 +224,36 @@ TEMPLATE_TEST_CASE("test_multithreading_transform_two_range_overload","[test_mul
     using value_type = std::size_t;
     using helpers_for_testing::apply_by_element;
 
+    auto twice_dec = [](const auto& e){
+        return 2*e-1;
+    };
+    auto sqr = [](const auto& e){
+        return e*e;
+    };
+
     const std::size_t n = 123456789;
-    std::vector<value_type> test_vec1(n);
-    std::iota(test_vec1.begin(),test_vec1.end(),1);
-    std::vector<value_type> test_vec2(n);
-    std::iota(test_vec2.rbegin(),test_vec2.rend(),1);
-    std::vector<value_type> expected_vec(n,n+1);
+    std::vector<value_type> test_vec(n);
+    std::iota(test_vec.begin(),test_vec.end(),1);
+    std::vector<value_type> expected_vec(n);
+    std::iota(expected_vec.begin(),expected_vec.end(),1);
+    std::transform(expected_vec.begin(),expected_vec.end(),expected_vec.begin(),twice_dec);
 
-
-    auto min = [](const auto& l, const auto& r){
-        return l<r ? l : r;
-    };
-    auto max = [](const auto& l, const auto& r){
-        return l<r ? r : l;
-    };
-
-    //0vec1,1vec2,2reduce_f,3expected
+    //0vec1,1reduce_f,3expected
     auto test_data = std::make_tuple(
-        std::make_tuple(test_vec1,std::cref(test_vec2),std::plus<void>{},std::cref(expected_vec)),
-        std::make_tuple(std::vector<value_type>{},std::vector<value_type>{},std::plus<void>{},std::vector<value_type>{}),
-        std::make_tuple(std::vector<value_type>{1},std::vector<value_type>{2},std::plus<void>{},std::vector<value_type>{3}),
-        std::make_tuple(std::vector<value_type>{1,2,3,4,5},std::vector<value_type>{6,7,8,9,10},std::plus<void>{},std::vector<value_type>{7,9,11,13,15}),
-        std::make_tuple(std::vector<value_type>{1,6,3,8,2},std::vector<value_type>{2,7,0,9,1},min,std::vector<value_type>{1,6,0,8,1}),
-        std::make_tuple(std::vector<value_type>{1,6,3,8,2},std::vector<value_type>{2,7,0,9,1},max,std::vector<value_type>{2,7,3,9,2})
+        std::make_tuple(std::cref(test_vec),twice_dec,std::cref(expected_vec)),
+        std::make_tuple(std::vector<value_type>{},sqr,std::vector<value_type>{}),
+        std::make_tuple(std::vector<value_type>{2},sqr,std::vector<value_type>{4}),
+        std::make_tuple(std::vector<value_type>{1,2,3,4,5},sqr,std::vector<value_type>{1,4,9,16,25})
     );
 
     auto test = [](const auto& t){
-        auto vec1 = std::get<0>(t);
-        auto& vec2 = std::get<1>(t);
-        auto reduce_f = std::get<2>(t);
-        auto& expected = std::get<3>(t);
+        auto& vec = std::get<0>(t);
+        auto reduce_f = std::get<1>(t);
+        auto& expected = std::get<2>(t);
 
-        multithreading::transform(policy{},vec1.begin(),vec1.end(),vec2.begin(),reduce_f);
-        REQUIRE(vec1 == expected);
+        std::vector<value_type> result(vec.size());
+        multithreading::transform(policy{},vec.begin(),vec.end(),result.begin(),reduce_f);
+        REQUIRE(result == expected);
     };
     apply_by_element(test,test_data);
 }

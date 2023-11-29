@@ -559,19 +559,18 @@ auto transform(Policy, It1 first1, It1 last1, It2 first2, DstIt dfirst, BinaryF 
     }
 }
 
-template<typename Policy, typename DstIt, typename It, typename BinaryF>
-void transform(Policy, DstIt first1, DstIt last1, It first2, BinaryF f){
+template<typename Policy, typename DstIt, typename It, typename UnaryF>
+void transform(Policy, DstIt first1, DstIt last1, It first2, UnaryF f){
 
     auto body = [](auto first1_, auto last1_, auto first2_, auto f_){
-        for(;first1_!=last1_; ++first1_,++first2_){
-            *first1_ = f_(*first1_,*first2_);
-        }
+        std::transform(first1_,last1_,first2_,f_);
     };
 
     if constexpr (
         std::is_convertible_v<typename std::iterator_traits<DstIt>::iterator_category,std::random_access_iterator_tag> &&
         std::is_convertible_v<typename std::iterator_traits<It>::iterator_category,std::random_access_iterator_tag> &&
-        !exec_policy_traits<Policy>::is_seq::value)
+        !exec_policy_traits<Policy>::is_seq::value
+    )
     { //parallelize
         using difference_type1 = typename std::iterator_traits<DstIt>::difference_type;
         using difference_type2 = typename std::iterator_traits<It>::difference_type;
