@@ -856,18 +856,16 @@ private:
             static constexpr std::size_t n_packed = 32/sizeof(U);
             if (mr_==Mr){   //Mr is guaranteed to be multiple of alignment
                 auto res_buf_ = res_buf;
-                for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
+                for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf,res_buf_+=Mr){
                     const auto b_y = avx_broadcast(b_buf);
                     avx_load_mul_store_n<n_packed>(std::make_index_sequence<Mr/n_packed>{},res_buf_,a_buf,b_y);
-                    res_buf_+=Mr;
                 }
                 const auto a_last=a_buf+kc_*Mr;
                 for (a_buf+=Mr; a_buf!=a_last; a_buf+=Mr){
                     res_buf_ = res_buf;
-                    for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf){
+                    for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf,res_buf_+=Mr){
                         const auto b_y = avx_broadcast(b_buf);
                         avx_load_madd_store_n<n_packed>(std::make_index_sequence<Mr/n_packed>{},res_buf_,a_buf,b_y);
-                        res_buf_+=Mr;
                     }
                 }
             }else if (mr_>n_packed-1){

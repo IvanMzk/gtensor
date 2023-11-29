@@ -20,7 +20,7 @@ endif()
 
 
 target_sources(Test PRIVATE
-    ${CMAKE_CURRENT_LIST_DIR}/test_tmp.cpp
+    #${CMAKE_CURRENT_LIST_DIR}/test_tmp.cpp
 
     #${CMAKE_CURRENT_LIST_DIR}/test_helpers_for_testing.cpp
 
@@ -86,6 +86,7 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_LIST_DIR}/test_statistic_quantile_median.cpp
     #${CMAKE_CURRENT_LIST_DIR}/test_statistic_average_moving_average.cpp
     #${CMAKE_CURRENT_LIST_DIR}/test_statistic_moving_mean_histogram.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_statistic_cov.cpp
     #${CMAKE_CURRENT_LIST_DIR}/test_statistic_big.cpp
 #
     #${CMAKE_CURRENT_LIST_DIR}/test_sort_search_sort_argsort.cpp
@@ -94,7 +95,7 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_LIST_DIR}/test_sort_search_nonzero_argwhere_searchsorted.cpp
     #${CMAKE_CURRENT_LIST_DIR}/test_sort_search_unique.cpp
 #
-    ${CMAKE_CURRENT_LIST_DIR}/test_builder.cpp
+    #${CMAKE_CURRENT_LIST_DIR}/test_builder.cpp
     #${CMAKE_CURRENT_LIST_DIR}/test_random.cpp
 
     ${CMAKE_CURRENT_LIST_DIR}/test.cpp

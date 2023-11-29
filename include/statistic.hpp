@@ -544,6 +544,33 @@ public:
     static auto histogram(const basic_tensor<Ts...>& t, const Bins& bins = 10, bool density = false){
         return histogram(t,bins,detail::no_value{},density,detail::no_value{});
     }
+
+    //covariance matrix
+    //t is 1d or 2d tensor which contains variables and observations
+    //If rowvar is true, then each row of t represents a variable, if false - each column represnts a variable
+    template<typename Policy, typename...Ts>
+    static auto cov(Policy policy, const basic_tensor<Ts...>& t, bool rowvar = true){
+        using value_type = typename basic_tensor<Ts...>::value_type;
+        using integral_type = gtensor::math::make_integral_t<value_type>;
+        using fp_type = gtensor::math::make_floating_point_t<value_type>;
+        const auto dim = t.dim();
+        if (dim!=1 && dim!=2){
+            throw value_error("t must be 1d or 2d tensor");
+        }
+        const auto obs_axis = dim==1 ? 0 : rowvar ? 1 : 0;
+        const auto t_cnt = t - t.mean(policy,obs_axis,true);
+        const auto n = static_cast<fp_type>(static_cast<integral_type>(t.shape()[obs_axis]-1));
+        if (rowvar){
+            return matmul(policy,t_cnt,t_cnt.transpose())/n;
+        }else{
+            return matmul(policy,t_cnt.transpose(),t_cnt)/n;
+        }
+    }
+    template<typename...Ts>
+    static auto cov(const basic_tensor<Ts...>& t, bool rowvar = true){
+        return cov(multithreading::exec_pol<1>{},t,rowvar);
+    }
+
 private:
 
     template<typename... Ts, typename Bins, typename Range, typename Weights>
@@ -1010,6 +1037,20 @@ template<typename...Ts, typename Bins=int>
 auto histogram(const basic_tensor<Ts...>& t, const Bins& bins=10, bool density=false){
     using config_type = typename basic_tensor<Ts...>::config_type;
     return statistic_selector_t<config_type>::histogram(t,bins,detail::no_value{},density,detail::no_value{});
+}
+
+//covariance matrix
+//t is 1d or 2d tensor which contains variables and observations
+//If rowvar is true, then each row of t represents a variable, if false - each column represnts a variable
+template<typename Policy, typename...Ts>
+auto cov(Policy policy, const basic_tensor<Ts...>& t, bool rowvar = true){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return statistic_selector_t<config_type>::cov(policy,t,rowvar);
+}
+template<typename...Ts>
+auto cov(const basic_tensor<Ts...>& t, bool rowvar = true){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return statistic_selector_t<config_type>::cov(t,rowvar);
 }
 
 #undef GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION
