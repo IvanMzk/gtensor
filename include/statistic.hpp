@@ -15,6 +15,7 @@
 #include "reduce.hpp"
 #include "tensor_math.hpp"
 #include "reduce_operations.hpp"
+#include "builder.hpp"
 
 namespace gtensor{
 
@@ -561,15 +562,33 @@ public:
         const auto t_cnt = t - t.mean(policy,obs_axis,true);
         const auto n = static_cast<fp_type>(static_cast<integral_type>(t.shape()[obs_axis]-1));
         if (rowvar){
-            return matmul(policy,t_cnt,t_cnt.transpose())/n;
+            return (matmul(policy,t_cnt,t_cnt.transpose())/n).eval(policy);
         }else{
-            return matmul(policy,t_cnt.transpose(),t_cnt)/n;
+            return (matmul(policy,t_cnt.transpose(),t_cnt)/n).eval(policy);
         }
     }
     template<typename...Ts>
     static auto cov(const basic_tensor<Ts...>& t, bool rowvar = true){
         return cov(multithreading::exec_pol<1>{},t,rowvar);
     }
+
+    //Pearson product-moment correlation coefficients
+    template<typename Policy, typename...Ts>
+    static auto corrcoef(Policy policy, const basic_tensor<Ts...>& t, bool rowvar = true){
+        auto c = cov(policy,t,rowvar);
+        if (c.dim()==0){
+            return (c / c).eval(policy);
+        }else{
+            auto vars = diag(c);
+            auto normalizer = sqrt(vars.reshape(-1,1) * vars);
+            return (c / normalizer).eval(policy);
+        }
+    }
+    template<typename...Ts>
+    static auto corrcoef(const basic_tensor<Ts...>& t, bool rowvar = true){
+        return corrcoef(multithreading::exec_pol<1>{},t,rowvar);
+    }
+
 
 private:
 
@@ -1051,6 +1070,18 @@ template<typename...Ts>
 auto cov(const basic_tensor<Ts...>& t, bool rowvar = true){
     using config_type = typename basic_tensor<Ts...>::config_type;
     return statistic_selector_t<config_type>::cov(t,rowvar);
+}
+
+//Pearson product-moment correlation coefficients
+template<typename Policy, typename...Ts>
+auto corrcoef(Policy policy, const basic_tensor<Ts...>& t, bool rowvar = true){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return statistic_selector_t<config_type>::corrcoef(policy,t,rowvar);
+}
+template<typename...Ts>
+auto corrcoef(const basic_tensor<Ts...>& t, bool rowvar = true){
+    using config_type = typename basic_tensor<Ts...>::config_type;
+    return statistic_selector_t<config_type>::corrcoef(t,rowvar);
 }
 
 #undef GTENSOR_TENSOR_STATISTIC_REDUCE_FUNCTION
