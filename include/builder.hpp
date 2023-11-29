@@ -218,7 +218,7 @@ struct builder
             auto res = empty<value_type,order,config_type>(shape_type{d});
             traverse_diagonal<order>(
                 t.traverse_order_adapter(order{}).begin(),
-                [it=res.traverse_order_adapter(order{}).begin()](auto& e)mutable{
+                [it=res.traverse_order_adapter(order{}).begin()](const auto& e)mutable{
                     *it = e;
                     ++it;
                 },

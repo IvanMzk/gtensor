@@ -94,7 +94,7 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_LIST_DIR}/test_sort_search_nonzero_argwhere_searchsorted.cpp
     #${CMAKE_CURRENT_LIST_DIR}/test_sort_search_unique.cpp
 #
-    #${CMAKE_CURRENT_LIST_DIR}/test_builder.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_builder.cpp
     #${CMAKE_CURRENT_LIST_DIR}/test_random.cpp
 
     ${CMAKE_CURRENT_LIST_DIR}/test.cpp
