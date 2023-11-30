@@ -528,15 +528,21 @@ private:
         using res_value_type = T;
 
         static constexpr bool is_buffer_on_stack = false;
-        static constexpr std::size_t alignment = 64;
+        static constexpr std::size_t alignment = 32;
         static constexpr std::size_t L1_size = 32768;
         static constexpr std::size_t L2_size = 262144;
-        static constexpr std::size_t Mc = detail::nearest_multiple<alignment>(detail::sqrti(L2_size/(sizeof(value_type1))));
-        static constexpr std::size_t Kc = L2_size/(Mc*sizeof(value_type1));
+
+        // static constexpr std::size_t Mc = detail::nearest_multiple<alignment>(detail::sqrti(L2_size/(sizeof(value_type1))));
+        // static constexpr std::size_t Kc = L2_size/(Mc*sizeof(value_type1));
+        // static constexpr std::size_t Nc = Mc;
+        // static_assert(Mr%alignment==0);
+
+        static constexpr std::size_t Nr = 6;
+        static constexpr std::size_t Mr = 2*alignment/sizeof(value_type1);
+        static constexpr std::size_t Kc = L1_size/(Mr*sizeof(value_type1) + Nr*sizeof(value_type2));
+        static constexpr std::size_t Mc = L2_size/(Kc*sizeof(value_type1));
         static constexpr std::size_t Nc = Mc;
-        static constexpr std::size_t Nr = L1_size/(Kc*2*sizeof(value_type2));
-        static constexpr std::size_t Mr = Mc;
-        static_assert(Mr%alignment==0);
+        static_assert(Mr*sizeof(value_type1)%alignment==0);
 
         const index_type k;
         const dim_type i_axis;
@@ -982,7 +988,7 @@ private:
         }
 
         friend std::ostream& operator<<(std::ostream& os, const matmul_2d& mm){
-            return os<<"Mc "<<Mc<<" Nc "<<Nc<<" Kc "<<Kc<<" Mr "<<Mr<<" Nr "<<Nr;
+            return os<<"Mr "<<Mr<<" Nr "<<Nr<<" Kc "<<Kc<<" Mc "<<Mc<<" Nc "<<Nc;
         }
 
     };  //end of class matmul_2d
@@ -1027,6 +1033,7 @@ private:
 
         using matmul_type = matmul_2d<value_type,value_type1,value_type2,config_type>;
         matmul_type mm(k,i_axis,j_axis);
+        std::cout<<std::endl<<mm;
 
         if constexpr (multithreading::exec_policy_traits<Policy>::is_seq::value){
             do{
