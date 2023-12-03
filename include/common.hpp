@@ -123,6 +123,10 @@ template<typename...> inline constexpr bool always_false = false;
 
 struct unused_args{template<typename...Args> unused_args(const Args&...){}};
 
+template<typename T, typename = void> struct inner_value_type{using type = T;};
+template<typename T> struct inner_value_type<T,std::void_t<typename T::value_type>>{using type = typename T::value_type;};
+template<typename T> using inner_value_type_t = typename inner_value_type<T>::type;
+
 template<typename T, typename = void> inline constexpr bool is_container_v = false;
 template<typename T> inline constexpr bool is_container_v<T, std::void_t<decltype(std::begin(std::declval<T&>())), decltype(std::size(std::declval<T&>())), typename T::value_type>> = true;
 

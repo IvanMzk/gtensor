@@ -11,8 +11,8 @@
 #include <functional>
 #include <algorithm>
 #include <numeric>
-#include <immintrin.h>
 #include "allocation.hpp"
+#include "avx_helper.hpp"
 #include "tensor_operators.hpp"
 #include "reduce.hpp"
 #include "reduce_operations.hpp"
@@ -532,17 +532,12 @@ private:
         static constexpr std::size_t L1_size = 32768;
         static constexpr std::size_t L2_size = 262144;
 
-        // static constexpr std::size_t Mc = detail::nearest_multiple<alignment>(detail::sqrti(L2_size/(sizeof(value_type1))));
-        // static constexpr std::size_t Kc = L2_size/(Mc*sizeof(value_type1));
-        // static constexpr std::size_t Nc = Mc;
-        // static_assert(Mr%alignment==0);
-
         static constexpr std::size_t Nr = 6;
         static constexpr std::size_t Mr = 2*alignment/sizeof(value_type1);
         static constexpr std::size_t Kc = L1_size/(Mr*sizeof(value_type1) + Nr*sizeof(value_type2));
         static constexpr std::size_t Mc = L2_size/(Kc*sizeof(value_type1));
         static constexpr std::size_t Nc = Mc;
-        static_assert(Mr*sizeof(value_type1)%alignment==0);
+        //static_assert(Mr*sizeof(value_type1)%alignment==0);
 
         const index_type k;
         const dim_type i_axis;
@@ -713,6 +708,7 @@ private:
         //generic unrolled kernel
         template<typename T_, typename T1_, typename T2_>
         ALWAYS_INLINE void micro_kernel_generic_unrolled(T_* res_buf, const T1_* const a_buf, const T2_* b_buf, const std::size_t& mr_, const std::size_t& nr_, const std::size_t& kc_){
+            //std::cout<<std::endl<<"ALWAYS_INLINE void micro_kernel_generic_unrolled(T_* res_buf, const T1_* const a_buf, const T2_* b_buf, const std::size_t& mr_, const std::size_t& nr_, const std::size_t& kc_){";
             static constexpr std::size_t unroll_factor = 4;
             if (mr_==Mr){
                 auto res_buf_ = res_buf;
@@ -763,117 +759,80 @@ private:
             }
         }
 
-        //floating point kernel helpers
-        ALWAYS_INLINE auto avx_broadcast(const double* const buf){
-            return _mm256_broadcast_sd(buf);
-        }
-        ALWAYS_INLINE auto avx_broadcast(const float* const buf){
-            return _mm256_broadcast_ss(buf);
-        }
-        ALWAYS_INLINE void avx_load_mul_store(double* const res_buf, const double* const a_buf, const __m256d& b_y){
-            _mm256_store_pd(res_buf,_mm256_mul_pd(_mm256_load_pd(a_buf),b_y));
-        }
-        ALWAYS_INLINE void avx_loadu_mul_store(double* const res_buf, const double* const a_buf, const __m256d& b_y){
-            _mm256_store_pd(res_buf,_mm256_mul_pd(_mm256_loadu_pd(a_buf),b_y));
-        }
-        ALWAYS_INLINE void avx_load_mul_store(float* const res_buf, const float* const a_buf, const __m256& b_y){
-            _mm256_store_ps(res_buf,_mm256_mul_ps(_mm256_load_ps(a_buf),b_y));
-        }
-        ALWAYS_INLINE void avx_loadu_mul_store(float* const res_buf, const float* const a_buf, const __m256& b_y){
-            _mm256_store_ps(res_buf,_mm256_mul_ps(_mm256_loadu_ps(a_buf),b_y));
-        }
-        ALWAYS_INLINE void avx_load_madd_store(double* const res_buf, const double* const a_buf, const __m256d& b_y){
-            _mm256_store_pd(res_buf,_mm256_fmadd_pd(_mm256_load_pd(a_buf),b_y,_mm256_load_pd(res_buf)));
-        }
-        ALWAYS_INLINE void avx_loadu_madd_store(double* const res_buf, const double* const a_buf, const __m256d& b_y){
-            _mm256_store_pd(res_buf,_mm256_fmadd_pd(_mm256_loadu_pd(a_buf),b_y,_mm256_load_pd(res_buf)));
-        }
-        ALWAYS_INLINE void avx_load_madd_store(float* const res_buf, const float* const a_buf, const __m256& b_y){
-            _mm256_store_ps(res_buf,_mm256_fmadd_ps(_mm256_load_ps(a_buf),b_y,_mm256_load_ps(res_buf)));
-        }
-        ALWAYS_INLINE void avx_loadu_madd_store(float* const res_buf, const float* const a_buf, const __m256& b_y){
-            _mm256_store_ps(res_buf,_mm256_fmadd_ps(_mm256_loadu_ps(a_buf),b_y,_mm256_load_ps(res_buf)));
-        }
-
-        //complex kernel helpers
-        ALWAYS_INLINE auto avx_broadcast(const std::complex<double>* const buf){
-            const auto r = buf->real();
-            const auto i = buf->imag();
-            return _mm256_setr_pd(r,-i,r,i);
-        }
-        ALWAYS_INLINE auto avx_broadcast(const std::complex<float>* const buf){
-            const auto r = buf->real();
-            const auto i = buf->imag();
-            return _mm256_setr_ps(r,-i,r,i,r,-i,r,i);
-        }
-        ALWAYS_INLINE auto avx_loadu_mul(const std::complex<double>* const a_buf, const __m256d& b_y){
-            auto a_y1 = _mm256_permute_pd(_mm256_broadcast_pd(reinterpret_cast<const __m128d*>(a_buf)),0b0110);
-            auto a_y2 = _mm256_permute_pd(_mm256_broadcast_pd(reinterpret_cast<const __m128d*>(a_buf+1)),0b0110);
-            auto y3 = _mm256_mul_pd(a_y1,b_y);
-            auto y4 = _mm256_mul_pd(a_y2,b_y);
-            return _mm256_permute4x64_pd(_mm256_hadd_pd(y3,y4),0b11'01'10'00);
-        }
-        ALWAYS_INLINE auto avx_loadu_mul(const std::complex<float>* const a_buf, const __m256& b_y){
-            auto a_y1 = _mm256_permutevar8x32_ps(_mm256_broadcast_ps(reinterpret_cast<const __m128*>(a_buf)),_mm256_setr_epi32(0,1,5,4,2,3,7,6));
-            auto a_y2 = _mm256_permutevar8x32_ps(_mm256_broadcast_ps(reinterpret_cast<const __m128*>(a_buf+2)),_mm256_setr_epi32(0,1,5,4,2,3,7,6));
-            auto y3 = _mm256_mul_ps(a_y1,b_y);
-            auto y4 = _mm256_mul_ps(a_y2,b_y);
-            return _mm256_permutevar8x32_ps(_mm256_hadd_ps(y3,y4),_mm256_setr_epi32(0,1,4,5,2,3,6,7));
-        }
-        ALWAYS_INLINE void avx_loadu_mul_store(std::complex<double>* const res_buf, const std::complex<double>* const a_buf, const __m256d& b_y){
-            _mm256_store_pd(reinterpret_cast<double*>(res_buf),avx_loadu_mul(a_buf,b_y));
-        }
-        ALWAYS_INLINE void avx_load_mul_store(std::complex<double>* const res_buf, const std::complex<double>* const a_buf, const __m256d& b_y){
-            avx_loadu_mul_store(res_buf,a_buf,b_y);
-        }
-        ALWAYS_INLINE void avx_loadu_mul_store(std::complex<float>* const res_buf, const std::complex<float>* const a_buf, const __m256& b_y){
-            _mm256_store_ps(reinterpret_cast<float*>(res_buf),avx_loadu_mul(a_buf,b_y));
-        }
-        ALWAYS_INLINE void avx_load_mul_store(std::complex<float>* const res_buf, const std::complex<float>* const a_buf, const __m256& b_y){
-            avx_loadu_mul_store(res_buf,a_buf,b_y);
-        }
-        ALWAYS_INLINE void avx_loadu_madd_store(std::complex<double>* const res_buf, const std::complex<double>* const a_buf, const __m256d& b_y){
-            _mm256_store_pd(reinterpret_cast<double*>(res_buf),_mm256_add_pd(_mm256_load_pd(reinterpret_cast<double*>(res_buf)),avx_loadu_mul(a_buf,b_y)));
-        }
-        ALWAYS_INLINE void avx_load_madd_store(std::complex<double>* const res_buf, const std::complex<double>* const a_buf, const __m256d& b_y){
-            avx_loadu_madd_store(res_buf,a_buf,b_y);
-        }
-        ALWAYS_INLINE void avx_loadu_madd_store(std::complex<float>* const res_buf, const std::complex<float>* const a_buf, const __m256& b_y){
-            _mm256_store_ps(reinterpret_cast<float*>(res_buf),_mm256_add_ps(_mm256_load_ps(reinterpret_cast<float*>(res_buf)),avx_loadu_mul(a_buf,b_y)));
-        }
-        ALWAYS_INLINE void avx_load_madd_store(std::complex<float>* const res_buf, const std::complex<float>* const a_buf, const __m256& b_y){
-            avx_loadu_madd_store(res_buf,a_buf,b_y);
-        }
-
-        //avx unroll helpers
-        template<std::size_t NPacked, std::size_t...I, typename U, typename V>
-        ALWAYS_INLINE void avx_load_mul_store_n(std::index_sequence<I...>, U* const res_buf, const U* const a_buf, const V& b_y){
-            (avx_load_mul_store(res_buf+I*NPacked,a_buf+I*NPacked,b_y),...);
-        }
-        template<std::size_t NPacked, std::size_t...I, typename U, typename V>
-        ALWAYS_INLINE void avx_load_madd_store_n(std::index_sequence<I...>, U* const res_buf, const U* const a_buf, const V& b_y){
-            (avx_load_madd_store(res_buf+I*NPacked,a_buf+I*NPacked,b_y),...);
+        //2rx6 floating point, complex kernel
+        template<typename U>
+        ALWAYS_INLINE void avx_micro_kernel_2rx6(U* const res_buf, const U* a_buf, const U* b_buf, const std::size_t& kc_){
+            static_assert(sizeof(U)==4 || sizeof(U)==8 || sizeof(U)==16);
+            static_assert(Nr==6);
+            static_assert(Mr==2*alignment/sizeof(U));
+            static constexpr std::size_t n_packed = alignment/sizeof(U);
+            using inner_value_type = detail::inner_value_type_t<U>;
+            using gtensor::detail::avx_zero;
+            using gtensor::detail::avx_load;
+            using gtensor::detail::avx_store;
+            using gtensor::detail::avx_madd;
+            using gtensor::detail::avx_broadcast;
+            auto y4 = avx_zero<inner_value_type>();
+            auto y5 = avx_zero<inner_value_type>();
+            auto y6 = avx_zero<inner_value_type>();
+            auto y7 = avx_zero<inner_value_type>();
+            auto y8 = avx_zero<inner_value_type>();
+            auto y9 = avx_zero<inner_value_type>();
+            auto y10 = avx_zero<inner_value_type>();
+            auto y11 = avx_zero<inner_value_type>();
+            auto y12 = avx_zero<inner_value_type>();
+            auto y13 = avx_zero<inner_value_type>();
+            auto y14 = avx_zero<inner_value_type>();
+            auto y15 = avx_zero<inner_value_type>();
+            for (const auto a_last=a_buf+kc_*Mr; a_buf!=a_last; a_buf+=Mr,b_buf+=Nr){
+                const auto y0 = avx_load(a_buf);
+                const auto y1 = avx_load(a_buf+n_packed);
+                auto y2 = avx_broadcast(b_buf);
+                auto y3 = avx_broadcast(b_buf+1);
+                y4 = avx_madd<U>(y0,y2,y4);
+                y5 = avx_madd<U>(y1,y2,y5);
+                y6 = avx_madd<U>(y0,y3,y6);
+                y7 = avx_madd<U>(y1,y3,y7);
+                y2 = avx_broadcast(b_buf+2);
+                y3 = avx_broadcast(b_buf+3);
+                y8 = avx_madd<U>(y0,y2,y8);
+                y9 = avx_madd<U>(y1,y2,y9);
+                y10 = avx_madd<U>(y0,y3,y10);
+                y11 = avx_madd<U>(y1,y3,y11);
+                y2 = avx_broadcast(b_buf+4);
+                y3 = avx_broadcast(b_buf+5);
+                y12 = avx_madd<U>(y0,y2,y12);
+                y13 = avx_madd<U>(y1,y2,y13);
+                y14 = avx_madd<U>(y0,y3,y14);
+                y15 = avx_madd<U>(y1,y3,y15);
+            }
+            avx_store(res_buf,y4);
+            avx_store(res_buf+1*n_packed,y5);
+            avx_store(res_buf+2*n_packed,y6);
+            avx_store(res_buf+3*n_packed,y7);
+            avx_store(res_buf+4*n_packed,y8);
+            avx_store(res_buf+5*n_packed,y9);
+            avx_store(res_buf+6*n_packed,y10);
+            avx_store(res_buf+7*n_packed,y11);
+            avx_store(res_buf+8*n_packed,y12);
+            avx_store(res_buf+9*n_packed,y13);
+            avx_store(res_buf+10*n_packed,y14);
+            avx_store(res_buf+11*n_packed,y15);
         }
 
         //floating point, complex kernel
         template<typename U>
         ALWAYS_INLINE void micro_kernel_sd(U* res_buf, const U* a_buf, const U* b_buf, const std::size_t& mr_, const std::size_t& nr_, const std::size_t& kc_){
             static_assert(sizeof(U)==4 || sizeof(U)==8 || sizeof(U)==16);
-            static constexpr std::size_t n_packed = 32/sizeof(U);
-            if (mr_==Mr){   //Mr is guaranteed to be multiple of alignment
-                auto res_buf_ = res_buf;
-                for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf,res_buf_+=Mr){
-                    const auto b_y = avx_broadcast(b_buf);
-                    avx_load_mul_store_n<n_packed>(std::make_index_sequence<Mr/n_packed>{},res_buf_,a_buf,b_y);
-                }
-                const auto a_last=a_buf+kc_*Mr;
-                for (a_buf+=Mr; a_buf!=a_last; a_buf+=Mr){
-                    res_buf_ = res_buf;
-                    for (const auto b_last=b_buf+nr_; b_buf!=b_last; ++b_buf,res_buf_+=Mr){
-                        const auto b_y = avx_broadcast(b_buf);
-                        avx_load_madd_store_n<n_packed>(std::make_index_sequence<Mr/n_packed>{},res_buf_,a_buf,b_y);
-                    }
-                }
+            static constexpr std::size_t n_packed = alignment/sizeof(U);
+            using gtensor::detail::avx_broadcast;
+            using gtensor::detail::avx_load;
+            using gtensor::detail::avx_loadu;
+            using gtensor::detail::avx_store;
+            using gtensor::detail::avx_madd;
+            using gtensor::detail::avx_mul;
+            if (mr_==Mr && nr_==Nr){
+                avx_micro_kernel_2rx6(res_buf,a_buf,b_buf,kc_);
             }else if (mr_>n_packed-1){
                 std::size_t mm{0};
                 auto res_buf_ = res_buf;
@@ -886,7 +845,7 @@ private:
                         *res_buf_=*a_buf_*b_e;
                     }
                     for (const auto a_last_=a_last-(n_packed-1); a_buf_<a_last_; a_buf_+=n_packed,res_buf_+=n_packed){
-                        avx_loadu_mul_store(res_buf_,a_buf_,b_y);
+                        avx_store(res_buf_,avx_mul<U>(avx_loadu(a_buf_),b_y));
                     }
                     for (mm=n_packed; a_buf_!=a_last; ++a_buf_,++res_buf_,--mm){
                         *res_buf_=*a_buf_*b_e;
@@ -905,7 +864,7 @@ private:
                             *res_buf_+=*a_buf__*b_e;
                         }
                         for (const auto a_last__=a_last-(n_packed-1); a_buf__<a_last__; a_buf__+=n_packed,res_buf_+=n_packed){
-                            avx_loadu_madd_store(res_buf_,a_buf__,b_y);
+                            avx_store(res_buf_,avx_madd<U>(avx_loadu(a_buf__),b_y,avx_load(res_buf_)));
                         }
                         for (mm=n_packed; a_buf__!=a_last; ++a_buf__,++res_buf_,--mm){
                             *res_buf_+=*a_buf__*b_e;
@@ -1033,7 +992,6 @@ private:
 
         using matmul_type = matmul_2d<value_type,value_type1,value_type2,config_type>;
         matmul_type mm(k,i_axis,j_axis);
-        std::cout<<std::endl<<mm;
 
         if constexpr (multithreading::exec_policy_traits<Policy>::is_seq::value){
             do{
