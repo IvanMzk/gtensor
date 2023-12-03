@@ -580,32 +580,15 @@ class reducer
                     constexpr std::size_t max_par_tasks = multithreading::exec_policy_traits<Policy>::par_tasks::value;
                     constexpr std::size_t min_tasks_per_par_task = 1;
                     multithreading::par_task_size<index_type> par_sizes{res_size,max_par_tasks,min_tasks_per_par_task};
-
-                    using future_type = decltype(
-                        std::declval<decltype(multithreading::get_pool())>().push(
-                            body,
-                            reduce_f,
-                            res_it,
-                            res_it,
-                            traverser,
-                            std::cref(args_)...
-                        )
-                    );
-                    std::array<future_type,max_par_tasks> futures{};
+                    multithreading::task_group group{};
                     index_type pos{0};
                     for (std::size_t i{0}; i!=par_sizes.size(); ++i){
                         const auto par_task_size = par_sizes[i];
-                        futures[i] = multithreading::get_pool().push(
-                            body,
-                            reduce_f,
-                            res_it,
-                            res_it+par_task_size,
-                            traverser,
-                            std::cref(args_)...
-                        );
+                        multithreading::get_pool().push_group(group,body,reduce_f,res_it,res_it+par_task_size,traverser,std::cref(args_)...);
                         res_it+=par_task_size;
                         traverser.to(pos+=par_task_size);
                     }
+                    group.wait();
                 }
             };
             auto a = res.traverse_order_adapter(traverse_order{});
@@ -724,32 +707,15 @@ class reducer
                         constexpr std::size_t max_par_tasks = multithreading::exec_policy_traits<Policy>::par_tasks::value;
                         constexpr std::size_t min_tasks_per_par_task = 1;
                         multithreading::par_task_size<index_type> par_sizes{tasks_number,max_par_tasks,min_tasks_per_par_task};
-
-                        using future_type = decltype(
-                            std::declval<decltype(multithreading::get_pool())>().push(
-                                body,
-                                slide_f,
-                                parent_traverser,
-                                res_traverser,
-                                tasks_number,
-                                std::cref(args)...
-                            )
-                        );
-                        std::array<future_type,max_par_tasks> futures{};
+                        multithreading::task_group group{};
                         index_type pos{0};
                         for (std::size_t i{0}; i!=par_sizes.size(); ++i){
                             const auto par_task_size = par_sizes[i];
-                            futures[i] = multithreading::get_pool().push(
-                                body,
-                                slide_f,
-                                parent_traverser,
-                                res_traverser,
-                                par_task_size,
-                                std::cref(args)...
-                            );
+                            multithreading::get_pool().push_group(group,body,slide_f,parent_traverser,res_traverser,par_task_size,std::cref(args)...);
                             parent_traverser.to(pos+=par_task_size);
                             res_traverser.to(pos);
                         }
+                        group.wait();
                     }
                 }
             };
