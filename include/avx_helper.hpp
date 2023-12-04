@@ -5,6 +5,41 @@
 #include <immintrin.h>
 #include "common.hpp"
 
+#if defined(__clang__) || defined(__GNUC__) || defined(__GNUG__)
+    #if defined(__AVX__)
+        #define HAS_AVX 1
+    #else
+        #define HAS_AVX 0
+    #endif
+    #if defined(__AVX2__)
+        #define HAS_AVX2 1
+    #else
+        #define HAS_AVX2 0
+    #endif
+    #if defined(__FMA__)
+        #define HAS_FMA 1
+    #else
+        #define HAS_FMA 0
+    #endif
+#elif defined(_MSC_VER)
+    #if defined(__AVX__)
+        #define HAS_AVX 1
+    #else
+        #define HAS_AVX 0
+    #endif
+    #if defined(__AVX2__)
+        #define HAS_AVX2 1
+        #define HAS_FMA 1
+    #else
+        #define HAS_AVX2 0
+        #define HAS_FMA 0
+    #endif
+#else
+    #define HAS_AVX 0
+    #define HAS_AVX2 0
+    #define HAS_FMA 0
+#endif
+
 namespace gtensor{
 namespace detail{
 
@@ -121,7 +156,6 @@ template<>
 ALWAYS_INLINE auto avx_madd<std::complex<float>>(__m256 a, __m256 b, __m256 c){
     return _mm256_add_ps(c,avx_mul<std::complex<float>>(a,b));
 }
-
 }   //end of namespace detail
 }   //end of namespace gtensor
 #endif

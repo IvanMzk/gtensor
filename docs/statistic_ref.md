@@ -269,8 +269,15 @@ auto cov(Policy policy, const basic_tensor<Ts...>& t, bool rowvar = true);
 ```
 
 `t` should be 1d or 2d tensor containing variables and observations.
+
 If `rowvar` is `true`, then each row of `t` represents a variable with observations in the columns.
 If `rowvar` is `false`, then each column of `t` represents a variable with observations in the rows.
+
+```cpp
+gtensor::tensor<double> a{{1,2,3},{3,2,1},{3,0,1}};
+std::cout<<std::endl<<cov(a);   //[(3,3){{1,-1,-1},{-1,1,1},{-1,1,2.33}}]
+std::cout<<std::endl<<cov(a.transpose(),false); //[(3,3){{1,-1,-1},{-1,1,1},{-1,1,2.33}}]
+```
 
 ## corrcoef
 
@@ -285,3 +292,9 @@ auto corrcoef(Policy policy, const basic_tensor<Ts...>& t, bool rowvar = true);
 ```
 
 The meaning of parameters is the same as for `cov`.
+
+```cpp
+gtensor::tensor<double> a{{1,2,3},{3,2,1},{3,0,1}};
+std::cout<<std::endl<<corrcoef(a);  //[(3,3){{1,-1,-0.655},{-1,1,0.655},{-0.655,0.655,1}}]
+std::cout<<std::endl<<corrcoef(a.transpose(),false);    //[(3,3){{1,-1,-0.655},{-1,1,0.655},{-0.655,0.655,1}}]
+```
