@@ -416,11 +416,15 @@ std::cout<<std::endl<<res3; //[(5,5){{-3,-2,0.5,1.5,1},{0,1.5,3,0.5,-2},{3,-1,0,
 
 ### matmul
 
-Matrix product of two tensors.
+Matrix product of two tensors. Implementation is optimized for single and double precision floating point data type as well as `std::complex` specialization
+for such types.
 
 ```cpp
 template<typename...Ts,typename...Us>
 auto matmul(const basic_tensor<Ts...>& a, const basic_tensor<Us...>& b);
+//parallel version
+template<typename Policy, typename...Ts,typename...Us>
+auto matmul(Policy policy, const basic_tensor<Ts...>& a, const basic_tensor<Us...>& b);
 ```
 The behavior depends on the arguments in the following way:
 - if both arguments are 2d they are multiplied like conventional matrices.

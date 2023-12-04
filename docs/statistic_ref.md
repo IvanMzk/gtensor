@@ -255,3 +255,33 @@ std::cout<<std::endl<<"edges1 "<<res1.second;   //edges1 [(11){-3.23,-2.65,-2.06
 std::cout<<std::endl<<"bins2 "<<res2.first;     //bins2 [(14){0.024,0.024,0.024,0.0961,0.048,0.264,0.336,0.456,0.576,0.216,0.072,0.192,0.048,0.024}]
 std::cout<<std::endl<<"edges2 "<<res2.second;   //edges2 [(15){-3.23,-2.81,-2.4,-1.98,-1.56,-1.15,-0.731,-0.315,0.101,0.518,0.934,1.35,1.77,2.18,2.6}]
 ```
+
+## cov
+
+Estimate a covariance matrix.
+
+```cpp
+template<typename...Ts>
+auto cov(const basic_tensor<Ts...>& t, bool rowvar = true);
+//parallel version
+template<typename Policy, typename...Ts>
+auto cov(Policy policy, const basic_tensor<Ts...>& t, bool rowvar = true);
+```
+
+`t` should be 1d or 2d tensor containing variables and observations.
+If `rowvar` is `true`, then each row of `t` represents a variable with observations in the columns.
+If `rowvar` is `false`, then each column of `t` represents a variable with observations in the rows.
+
+## corrcoef
+
+Estimate Pearson product-moment correlation coefficients.
+
+```cpp
+template<typename...Ts>
+auto corrcoef(const basic_tensor<Ts...>& t, bool rowvar = true);
+//parallel version
+template<typename Policy, typename...Ts>
+auto corrcoef(Policy policy, const basic_tensor<Ts...>& t, bool rowvar = true);
+```
+
+The meaning of parameters is the same as for `cov`.
