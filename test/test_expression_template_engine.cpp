@@ -112,7 +112,7 @@ TEST_CASE("test_expression_template_walker","[test_expression_template_engine]")
         auto make_walker_helper = [](auto f_, auto...walkers_){
             return expression_template_walker<config_type,F,decltype(walkers_)...>{f_,walkers_...};
         };
-        auto make_walker = [max_dim,f,make_walker_helper](auto...operands){
+        auto make_walker = [max_dim,f,make_walker_helper](auto&&...operands){
             return make_walker_helper(f,operands.create_walker(max_dim)...);
         };
         auto result_walker = std::apply(make_walker, operands);
