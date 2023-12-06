@@ -624,22 +624,22 @@ private:
             micro_kernel_generic_unrolled(res_buf,a_buf,b_buf,mr_,nr_,kc_);
         }
 
-        template<typename U=T, std::enable_if_t<std::is_same_v<U,U> && HAS_FMA && HAS_AVX && sizeof(double)==8, int> =0>
+        template<typename U=T, std::enable_if_t<std::is_same_v<U,U> && HAS_AVX && sizeof(double)==8, int> =0>
         ALWAYS_INLINE void micro_kernel(double* res_buf, const double* const a_buf, const double* b_buf, const std::size_t& mr_, const std::size_t& nr_, const std::size_t& kc_){
             micro_kernel_sd(res_buf,a_buf,b_buf,mr_,nr_,kc_);
         }
 
-        template<typename U=T, std::enable_if_t<std::is_same_v<U,U> && HAS_FMA && HAS_AVX && sizeof(float)==4, int> =0>
+        template<typename U=T, std::enable_if_t<std::is_same_v<U,U> && HAS_AVX && sizeof(float)==4, int> =0>
         ALWAYS_INLINE void micro_kernel(float* res_buf, const float* const a_buf, const float* b_buf, const std::size_t& mr_, const std::size_t& nr_, const std::size_t& kc_){
             micro_kernel_sd(res_buf,a_buf,b_buf,mr_,nr_,kc_);
         }
 
-        template<typename U=T, std::enable_if_t<std::is_same_v<U,U> && HAS_AVX && HAS_AVX2 && sizeof(double)==8, int> =0>
+        template<typename U=T, std::enable_if_t<std::is_same_v<U,U> && HAS_AVX && sizeof(double)==8, int> =0>
         ALWAYS_INLINE void micro_kernel(std::complex<double>* res_buf, const std::complex<double>* const a_buf, const std::complex<double>* b_buf, const std::size_t& mr_, const std::size_t& nr_, const std::size_t& kc_){
             micro_kernel_sd(res_buf,a_buf,b_buf,mr_,nr_,kc_);
         }
 
-        template<typename U=T, std::enable_if_t<std::is_same_v<U,U> && HAS_AVX && HAS_AVX2 && sizeof(float)==4, int> =0>
+        template<typename U=T, std::enable_if_t<std::is_same_v<U,U> && HAS_AVX && sizeof(float)==4, int> =0>
         ALWAYS_INLINE void micro_kernel(std::complex<float>* res_buf, const std::complex<float>* const a_buf, const std::complex<float>* b_buf, const std::size_t& mr_, const std::size_t& nr_, const std::size_t& kc_){
             micro_kernel_sd(res_buf,a_buf,b_buf,mr_,nr_,kc_);
         }
@@ -708,7 +708,6 @@ private:
         //generic unrolled kernel
         template<typename T_, typename T1_, typename T2_>
         ALWAYS_INLINE void micro_kernel_generic_unrolled(T_* res_buf, const T1_* const a_buf, const T2_* b_buf, const std::size_t& mr_, const std::size_t& nr_, const std::size_t& kc_){
-            //std::cout<<std::endl<<"ALWAYS_INLINE void micro_kernel_generic_unrolled(T_* res_buf, const T1_* const a_buf, const T2_* b_buf, const std::size_t& mr_, const std::size_t& nr_, const std::size_t& kc_){";
             static constexpr std::size_t unroll_factor = 4;
             if (mr_==Mr){
                 auto res_buf_ = res_buf;

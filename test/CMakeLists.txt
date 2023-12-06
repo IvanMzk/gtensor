@@ -11,7 +11,7 @@ target_compile_features(Test PRIVATE cxx_std_17)
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     target_compile_options(Test PRIVATE /W4 /Zc:__cplusplus  /arch:AVX2 /bigobj "$<$<CONFIG:RELEASE>:/O2>")
 else()
-    target_compile_options(Test PRIVATE -Wall "$<$<CONFIG:RELEASE>:-O2>")
+    target_compile_options(Test PRIVATE -Wall -march=native "$<$<CONFIG:RELEASE>:-O2>")
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         target_compile_options(Test PRIVATE -stdlib=libc++)
     else()
@@ -39,7 +39,7 @@ target_sources(Test PRIVATE
 #
     #${CMAKE_CURRENT_LIST_DIR}/test_tensor_core.cpp
     #${CMAKE_CURRENT_LIST_DIR}/test_tensor_implementation.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/test_expression_template_engine.cpp
+    #${CMAKE_CURRENT_LIST_DIR}/test_expression_template_engine.cpp
 #
     #${CMAKE_CURRENT_LIST_DIR}/test_view_factory_detail.cpp
     #${CMAKE_CURRENT_LIST_DIR}/test_view_factory_reshape_transpose_view.cpp
@@ -79,7 +79,7 @@ target_sources(Test PRIVATE
     #${CMAKE_CURRENT_LIST_DIR}/test_math_cumsum_cumprod.cpp
     #${CMAKE_CURRENT_LIST_DIR}/test_math_all_any.cpp
     #${CMAKE_CURRENT_LIST_DIR}/test_math_min_max.cpp
-    #${CMAKE_CURRENT_LIST_DIR}/test_math_matmul.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_math_matmul.cpp
 #
     #${CMAKE_CURRENT_LIST_DIR}/test_statistic_ptp_mean.cpp
     #${CMAKE_CURRENT_LIST_DIR}/test_statistic_var_std.cpp
