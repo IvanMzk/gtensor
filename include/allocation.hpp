@@ -2,6 +2,7 @@
 #define ALLOCATION_HPP_
 
 #include <new>
+#include <limits>
 
 namespace allocation{
 
