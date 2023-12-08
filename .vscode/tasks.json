@@ -6,7 +6,7 @@
         {
             "type": "shell",
             "label": "cmake generate",
-            "command": "cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TEST=ON -DBUILD_BENCHMARK=ON -G \"Ninja\" -S ${workspaceFolder} -B ${workspaceFolder}/build",
+            "command": "cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DBUILD_TEST=ON -DBUILD_BENCHMARK=ON -G \"Ninja\" -S ${workspaceFolder} -B ${workspaceFolder}/build",
             "args": [],
             "options": {
                 "cwd": "${workspaceFolder}"
