@@ -9,14 +9,20 @@ cmake_minimum_required(VERSION 3.2)
 project(gtensor)
 
 set(include_dir ${CMAKE_CURRENT_LIST_DIR}/include)
+set(cmake_dir ${CMAKE_CURRENT_LIST_DIR}/cmake)
+
+set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
+set(THREADS_PREFER_PTHREAD_FLAG TRUE)
+find_package(Threads REQUIRED)
 
 add_library(gtensor INTERFACE)
 target_include_directories(gtensor INTERFACE
-    $<BUILD_INTERFACE:${include_dir}>
-    $<BUILD_INTERFACE:${include_dir}/expression_template_engine>
-    $<BUILD_INTERFACE:${include_dir}/libdivide>
+$<BUILD_INTERFACE:${include_dir}>
+$<BUILD_INTERFACE:${include_dir}/expression_template_engine>
+$<BUILD_INTERFACE:${include_dir}/libdivide>
 )
 target_compile_features(gtensor INTERFACE cxx_std_17)
+target_link_libraries(gtensor INTERFACE Threads::Threads)
 add_library(gtensor::gtensor ALIAS gtensor)
 
 option(BUILD_TEST "build gtensor tests" OFF)
@@ -39,13 +45,14 @@ install(TARGETS gtensor
         ${CMAKE_INSTALL_INCLUDEDIR}/gtensor/libdivide
 )
 install(EXPORT gtensor_targets
-    FILE gtensor_targets.cmake
+    FILE gtensorTargets.cmake
     NAMESPACE gtensor::
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/gtensor
 )
+install(FILES ${cmake_dir}/gtensorConfig.cmake DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/gtensor)
 install(DIRECTORY ${include_dir}/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtensor)
 
 export(EXPORT gtensor_targets
-    FILE ${CMAKE_CURRENT_BINARY_DIR}/cmake/gtensor_targets.cmake
+    FILE ${CMAKE_CURRENT_BINARY_DIR}/cmake/gtensorTargets.cmake
     NAMESPACE gtensor::
 )
