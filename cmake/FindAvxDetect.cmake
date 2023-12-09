@@ -12,12 +12,13 @@ include(CheckCXXSourceRuns)
 set (AVX_DETECT_SOURCE [[
 #include <immintrin.h>
 int main(){
-    float src{2.0};
+    const float src = 2.0f;
+    const float expected = 4.0f;
     float dst[8];
     auto y = _mm256_broadcast_ss(&src);
     _mm256_storeu_ps(dst,_mm256_add_ps(y,y));
     for (auto i=0; i!=8; ++i){
-        if (dst[i]!=float{4}){
+        if (dst[i]!=expected){
             return 1;
         }
     }
@@ -44,12 +45,13 @@ int main(){
 set (FMA_DETECT_SOURCE [[
 #include <immintrin.h>
 int main(){
-    const float src{2.0};
+    const float src = 2.0f;
+    const float expected = 6.0f;
     float dst[8];
     auto y = _mm256_broadcast_ss(&src);
     _mm256_storeu_ps(dst,_mm256_fmadd_ps(y,y,y));
     for (auto i=0; i!=8; ++i){
-        if (dst[i]!=float{6}){
+        if (dst[i]!=expected){
             return 1;
         }
     }
