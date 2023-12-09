@@ -4,7 +4,7 @@
 # Distributed under the Boost Software License, Version 1.0.
 # The full license is in the file LICENSE.txt, distributed with this software.
 
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.5)
 project(gtensor)
 
 set(include_dir ${CMAKE_CURRENT_LIST_DIR}/include)
