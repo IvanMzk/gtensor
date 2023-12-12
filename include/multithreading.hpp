@@ -124,10 +124,8 @@ public:
         ++task_inprogress_counter_;
     }
     void dec(){
-        {
-            std::lock_guard<std::mutex> lock{guard_};
-            --task_inprogress_counter_;
-        }
+        std::lock_guard<std::mutex> lock{guard_};
+        --task_inprogress_counter_;
         all_complete_.notify_all();
     }
     void wait(){
@@ -378,8 +376,8 @@ public:
             if (auto task = tasks.try_push()){
                 group.inc();
                 task->set_group_task(group, std::forward<F>(f), std::forward<Args>(args)...);
-                lock.unlock();
                 has_task.notify_one();
+                lock.unlock();
                 break;
             }else{
                 has_slot.wait(lock);
@@ -396,8 +394,8 @@ private:
         while(true){
             if (auto task = tasks.try_push()){
                 future_type future = task->set_task(Sync, std::forward<F>(f), std::forward<Args>(args)...);
-                lock.unlock();
                 has_task.notify_one();
+                lock.unlock();
                 return future;
             }else{
                 has_slot.wait(lock);
@@ -424,8 +422,8 @@ private:
             std::unique_lock<mutex_type> lock{guard};
             while(!finish_workers.load()){  //has_task conditional loop
                 if (auto t = tasks.try_pop()){
-                    lock.unlock();
                     has_slot.notify_one();
+                    lock.unlock();
                     t.get().call();
                     break;
                 }else{
