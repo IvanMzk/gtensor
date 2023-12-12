@@ -1026,19 +1026,20 @@ private:
             //each such rect part will be assigned to separate task, ti*tj is total number of tasks
             //ti*tj <= n_tasks, if matrix can't be splitted into rect parts by n_tasks, ti*tj will be less than requested tasks number
 
-            const index_type i_step = m/std::min(static_cast<index_type>(ti),m);
-            const index_type j_step = n/std::min(static_cast<index_type>(tj),n);
+            multithreading::par_task_size<index_type> i_par_sizes{m,ti};
+            multithreading::par_task_size<index_type> j_par_sizes{n,tj};
             multithreading::task_group group{};
-
             do{
-                for (index_type j = 0; j<n;){
-                    const auto j_last = j+j_step+j_step>n ? n : j+j_step;
-                    for (index_type i = 0; i<m;){
-                        const auto i_last = i+i_step+i_step>m ? m : i+i_step;
-                        multithreading::get_pool().push_group(group,mm,res_tr.walker(),tr1.walker(),tr2.walker(),i,i_last,j,j_last);
-                        i = i_last;
+                index_type j_pos{0};
+                for (std::size_t j = 0; j!=j_par_sizes.size(); ++j){
+                    const auto j_par_task_size = j_par_sizes[j];
+                    index_type i_pos{0};
+                    for (std::size_t i = 0; i!=i_par_sizes.size(); ++i){
+                        const auto i_par_task_size = i_par_sizes[i];
+                        multithreading::get_pool().push_group(group,mm,res_tr.walker(),tr1.walker(),tr2.walker(),i_pos,i_pos+i_par_task_size,j_pos,j_pos+j_par_task_size);
+                        i_pos+=i_par_task_size;
                     }
-                    j = j_last;
+                    j_pos+=j_par_task_size;
                 }
                 group.wait();
                 tr1.template next<order>();
