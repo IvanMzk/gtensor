@@ -19,9 +19,7 @@ endif()
 
 
 target_sources(Test PRIVATE
-    #${CMAKE_CURRENT_LIST_DIR}/test_tmp.cpp
-
-    #${CMAKE_CURRENT_LIST_DIR}/test_helpers_for_testing.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_helpers_for_testing.cpp
 
     ${CMAKE_CURRENT_LIST_DIR}/test_multithreading.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_storage.cpp
