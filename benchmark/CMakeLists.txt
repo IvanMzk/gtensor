@@ -19,9 +19,9 @@ else()
 endif()
 
 target_sources(Benchmark PRIVATE
-    #${CMAKE_CURRENT_LIST_DIR}/benchmark_copy_eval.cpp
-    #${CMAKE_CURRENT_LIST_DIR}/benchmark_iterator.cpp
-    #${CMAKE_CURRENT_LIST_DIR}/benchmark_statistic.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/benchmark_iterator.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/benchmark_eval.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/benchmark_statistic.cpp
     ${CMAKE_CURRENT_LIST_DIR}/benchmark_matmul.cpp
     ${CMAKE_CURRENT_LIST_DIR}/benchmark.cpp
 )

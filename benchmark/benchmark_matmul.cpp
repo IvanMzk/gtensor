@@ -75,10 +75,9 @@ TEST_CASE("benchmark_matmul","[benchmark_tensor]")
     };
 
     auto shapes = std::vector<std::pair<std::vector<int>,std::vector<int>>>{
-        //std::make_pair(std::vector<int>{1000,1000},std::vector<int>{1000,1000})
-        std::make_pair(std::vector<int>{4000,4000},std::vector<int>{4000,4000})
-        //std::make_pair(std::vector<int>{6000,6000},std::vector<int>{6000,6000})
-        //std::make_pair(std::vector<int>{10000,10000},std::vector<int>{10000,10000})
+        std::make_pair(std::vector<int>{2000,8000},std::vector<int>{8000,2000}),
+        std::make_pair(std::vector<int>{4000,4000},std::vector<int>{4000,4000}),
+        std::make_pair(std::vector<int>{8000,2000},std::vector<int>{2000,8000})
     };
     const auto n_iters = 1;
 

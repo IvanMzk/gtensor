@@ -47,8 +47,6 @@ struct bench_statistic_helper{
                 std::vector<double> intervals{};
                 auto ax = *axes_it;
                 for (auto n=n_iters; n!=0; --n){
-                    // auto t_ = tensor_type(shape);
-                    // auto t=builder(t_);
                     if (!is_t_shape){
                         t_shape=t.shape();
                         is_t_shape=true;
@@ -130,84 +128,33 @@ TEST_CASE("benchmark_statistic","[benchmark_tensor]")
         return t_.clone_shallow();
     };
 
-    auto nan_builder = [](auto& t_){
-        generate_lehmer(t_.begin(),t_.end(),
-            [](const auto& e){
-                const auto res = e%5;
-                return res==3 ? gtensor::math::numeric_traits<double>::nan() : double(res);
-            }
-            ,123
-        );
-        return t_.clone_shallow();
-    };
-
-    auto triv_expression_builder = [](auto& t_){
-        generate_lehmer(t_.begin(),t_.end(),[](const auto& e){return e%5;},123);
-        return t_+t_+t_+t_+t_+t_+t_+t_+t_+t_;
-    };
-
-    auto make_mean_def = [](const auto& t, const auto& axes){
-        auto res = gtensor::mean(t,axes);
-        return *res.begin();
-    };
-    auto make_mean_par_8 = [](const auto& t, const auto& axes){
-        auto res = gtensor::mean(multithreading::exec_pol<8>{}, t,axes);
-        return *res.begin();
-    };
-
-    auto make_var_def = [](const auto& t, const auto& axes){
-        auto res = gtensor::var(t,axes);
-        return *res.begin();
-    };
-    auto make_var_par_8 = [](const auto& t, const auto& axes){
-        auto res = gtensor::var(multithreading::exec_pol<8>{}, t,axes);
-        return *res.begin();
-    };
-
-    auto make_nanvar_def = [](const auto& t, const auto& axes){
-        auto res = gtensor::nanvar(t,axes);
-        return *res.begin();
-    };
-    auto make_nanvar_par_8 = [](const auto& t, const auto& axes){
-        auto res = gtensor::nanvar(multithreading::exec_pol<8>{},t,axes);
-        return *res.begin();
-    };
-
-
-
-
-    const auto axes = benchmark_helpers::axes;
-    //const auto axes = benchmark_helpers::axes_scalar_2d;
-    //const auto axes = benchmark_helpers::axes_scalar;
-    //const auto axes = benchmark_helpers::axes_container;
-
-    // const auto n_iters = 100;
-    // const auto shapes = benchmark_helpers::small_shapes;
-
     const auto n_iters = 1;
-    const auto shapes = benchmark_helpers::shapes;
-    //const auto shapes = benchmark_helpers::shapes_2d;
+    const std::vector<std::vector<int>> shapes{
+        std::vector<int>{100000000,3,1,2},
+        std::vector<int>{1000000,3,10,20},
+        std::vector<int>{10000,3,100,200},
+        std::vector<int>{50,6,1000,2000}
+    };
+    const auto axes = std::vector<std::vector<int>>{
+        std::vector<int>{0},
+        std::vector<int>{1},
+        std::vector<int>{2},
+        std::vector<int>{3},
+        std::vector<int>{0,1},
+        std::vector<int>{2,3},
+        std::vector<int>{0,1,2}
+    };
 
+    //mean
+    bench_statistic_flatten("mean flatten default",n_iters,shapes,builder,[](const auto& t){auto res = gtensor::mean(t); return *res.begin();});
+    bench_statistic_flatten("mean flatten exec_pol<8>",n_iters,shapes,builder,[](const auto& t){auto res = gtensor::mean(multithreading::exec_pol<8>{}, t); return *res.begin();});
+    bench_statistic("mean over axes default",n_iters,shapes,axes,builder,[](const auto& t, const auto& axes){auto res = gtensor::mean(t,axes); return *res.begin();});
+    bench_statistic("mean over axes exec_pol<8>",n_iters,shapes,axes,builder,[](const auto& t, const auto& axes){auto res = gtensor::mean(multithreading::exec_pol<8>{},t,axes); return *res.begin();});
 
-    //bench_statistic("mean default",n_iters,shapes,axes,builder,make_mean_def);
-    //bench_statistic("mean exec_pol<8>",n_iters,shapes,axes,builder,make_mean_par_8);
-
-    // bench_statistic("mean triv expression default",n_iters,shapes,axes,triv_expression_builder,make_mean_def);
-    // bench_statistic("mean triv expression exec_pol<8>",n_iters,shapes,axes,triv_expression_builder,make_mean_par_8);
-
-    //bench_statistic("var default squared diff",n_iters,shapes,axes,builder,make_var_def);
-    //bench_statistic("var default",n_iters,shapes,axes,builder,make_var_def);
-    //bench_statistic("var exec_pol<8> squared diff",n_iters,shapes,axes,builder,make_var_par_8);
-
-    //bench_statistic("nanvar default",n_iters,shapes,axes,nan_builder,make_nanvar_def);
-    //bench_statistic("nanvar exec_pol<8> squared diff",n_iters,shapes,axes,nan_builder,make_nanvar_par_8);
-
-
-
-    //bench_statistic_flatten("mean flatten default",n_iters,shapes,builder,[](const auto& t){auto res = gtensor::mean(t); return *res.begin();});
-    //bench_statistic_flatten("mean flatten exec_pol<8>",n_iters,shapes,builder,[](const auto& t){auto res = gtensor::mean(multithreading::exec_pol<8>{}, t); return *res.begin();});
-
-    bench_statistic_flatten("stdev flatten default",n_iters,shapes,builder,[](const auto& t){auto res = gtensor::stdev(t); return *res.begin();});
-    bench_statistic_flatten("stdev flatten exec_pol<8>",n_iters,shapes,builder,[](const auto& t){auto res = gtensor::stdev(multithreading::exec_pol<8>{}, t); return *res.begin();});
+    //stdev
+    bench_statistic_flatten("stdev flatten default",n_iters,shapes,builder,[](const auto& t){auto res = stdev(t); return *res.begin();});
+    bench_statistic_flatten("stdev flatten exec_pol<8>",n_iters,shapes,builder,[](const auto& t){auto res = stdev(multithreading::exec_pol<8>{}, t); return *res.begin();});
+    bench_statistic("stdev over axes default",n_iters,shapes,axes,builder,[](const auto& t, const auto& axes){auto res = stdev(t,axes); return *res.begin();});
+    bench_statistic("stdev over axes exec_pol<8>",n_iters,shapes,axes,builder,[](const auto& t, const auto& axes){auto res = stdev(multithreading::exec_pol<8>{},t,axes); return *res.begin();});
 }
 
