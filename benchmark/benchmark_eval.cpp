@@ -82,12 +82,12 @@ TEST_CASE("benchmark_copy","[benchmark_copy]")
     };
 
 
-    const auto n_iters = 1;
+    const auto n_iters = 10;
     const std::vector<std::vector<int>> shapes{
-        std::vector<int>{100000000,3,1,2},
-        std::vector<int>{1000000,3,10,20},
-        std::vector<int>{10000,3,100,200},
-        std::vector<int>{50,6,1000,2000}
+        std::vector<int>{10000000,3,1,2},
+        std::vector<int>{100000,3,10,20},
+        std::vector<int>{1000,3,100,200},
+        std::vector<int>{50,6,100,2000}
     };
 
     bench_copy("eval trivial expression (((((((((t+1)+2)+3)+4)+5)+6)+7)+8)+9)",n_iters,shapes,[](auto&& t){return (((((((((t+1)+2)+3)+4)+5)+6)+7)+8)+9);},make_eval_seq);

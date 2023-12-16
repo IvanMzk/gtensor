@@ -128,12 +128,12 @@ TEST_CASE("benchmark_statistic","[benchmark_tensor]")
         return t_.clone_shallow();
     };
 
-    const auto n_iters = 1;
+    const auto n_iters = 10;
     const std::vector<std::vector<int>> shapes{
-        std::vector<int>{100000000,3,1,2},
-        std::vector<int>{1000000,3,10,20},
-        std::vector<int>{10000,3,100,200},
-        std::vector<int>{50,6,1000,2000}
+        std::vector<int>{10000000,3,1,2},
+        std::vector<int>{100000,3,10,20},
+        std::vector<int>{1000,3,100,200},
+        std::vector<int>{50,6,100,2000}
     };
     const auto axes = std::vector<std::vector<int>>{
         std::vector<int>{0},
