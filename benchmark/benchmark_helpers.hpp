@@ -74,8 +74,8 @@ public:
 #if defined(__clang__) || defined(__GNUC__) || defined(__GNUG__)
 template<typename T> void fake_use(const T& t){asm volatile("":"+g"(const_cast<T&>(t)));}
 #elif defined(_MSC_VER)
-extern void msvc_fake_use(const void*);
-template<typename T> void fake_use(T&& t){msvc_fake_use(&t);}
+extern void msvc_fake_use(void*);
+template<typename T> void fake_use(const T& t){msvc_fake_use(&const_cast<T&>(t));}
 #endif
 
 template<typename F, typename...Args>
