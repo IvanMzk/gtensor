@@ -48,13 +48,12 @@ first_example
 
 #### **`CMakeLists.txt`**
 ```cmake
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.5)
 project(first_example)
 add_subdirectory(path/to/gtensor gtensor)
 add_executable(first_example)
 target_link_libraries(first_example PRIVATE gtensor::gtensor)
 target_sources(first_example PRIVATE src/first_example.cpp)
-target_compile_features(first_example PRIVATE cxx_std_17)
 ```
 
 The following commands create build_dir folder inside first_example folder, build and run first_example project:

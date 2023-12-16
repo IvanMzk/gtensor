@@ -89,7 +89,7 @@ TEST_CASE("benchmark_matmul","[benchmark_tensor]")
 
     bench_matmul<double>("bench matmul_par double",n_iters,shapes,builder,command_matmul_par);
     bench_matmul<float>("bench matmul_par float",n_iters,shapes,builder,command_matmul_par);
-    //bench_matmul<std::int64_t>("bench matmul_par int64",n_iters,shapes,builder,command_matmul_par);
+    bench_matmul<std::int64_t>("bench matmul_par int64",n_iters,shapes,builder,command_matmul_par);
     bench_matmul<std::complex<double>>("bench matmul_par std::complex<double>",n_iters,shapes,builder,command_matmul_par);
     bench_matmul<std::complex<float>>("bench matmul_par std::complex<float>",n_iters,shapes,builder,command_matmul_par);
 }

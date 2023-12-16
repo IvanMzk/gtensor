@@ -16,6 +16,7 @@ find_package(Threads REQUIRED)
 include(${cmake_dir}/FindAvxDetect.cmake)
 
 add_library(gtensor INTERFACE)
+add_library(gtensor::gtensor ALIAS gtensor)
 target_include_directories(gtensor INTERFACE
 $<BUILD_INTERFACE:${include_dir}>
 $<BUILD_INTERFACE:${include_dir}/expression_template_engine>
@@ -23,7 +24,6 @@ $<BUILD_INTERFACE:${include_dir}/libdivide>
 )
 target_compile_features(gtensor INTERFACE cxx_std_17)
 target_link_libraries(gtensor INTERFACE Threads::Threads AvxDetect::AvxDetect)
-add_library(gtensor::gtensor ALIAS gtensor)
 
 option(BUILD_TEST "build gtensor tests" OFF)
 option(BUILD_BENCHMARK "build gtensor benchmark" OFF)

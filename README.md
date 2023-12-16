@@ -35,30 +35,31 @@ Cmake build system is used to build tests, benchmarks and to automate installati
 GTensor is header only library so to use it in project you can include needed header files and everything will work. GTensor doesn't provide any binaries to
 link to, all library code is defined in headers.
 
-If you use Cmake build system, you can utilize `add_subdirectory(...)` CMake command, e.g.:
-
-```cmake
-cmake_minimum_required(VERSION 3.2)
-project(my_project)
-add_subdirectory(path_to_gtensor_dir gtensor)
-add_executable(my_target)
-target_link_libraries(my_target PRIVATE gtensor::gtensor)
-...
-```
-
-CMake install is also supported:
+To install `gtensor package` on system:
 
 ```cmake
 cmake -B build_dir -DCMAKE_INSTALL_PREFIX=your_install_prefix
 cmake --install build_dir
 ```
 
-After that you can include header files from `your_install_prefix` directory or use `include(...)` CMake command, e.g.:
+To add installed package to your project:
 
 ```cmake
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.5)
 project(my_project)
-include(your_install_prefix/lib/cmake/gtensor/gtensor_targets.cmake)
+list(APPEND CMAKE_PREFIX_PATH your_install_prefix)
+find_package(gtensor)
+add_executable(my_target)
+target_link_libraries(my_target PRIVATE gtensor::gtensor)
+...
+```
+
+To use GTensor without installation you can utilize `add_subdirectory(...)` CMake command, e.g.:
+
+```cmake
+cmake_minimum_required(VERSION 3.5)
+project(my_project)
+add_subdirectory(path_to_gtensor_dir gtensor)
 add_executable(my_target)
 target_link_libraries(my_target PRIVATE gtensor::gtensor)
 ...
@@ -68,18 +69,20 @@ target_link_libraries(my_target PRIVATE gtensor::gtensor)
 
 GTensor uses [Catch](https://github.com/catchorg/Catch2) framework for testing.
 
-To build tests:
+To build and run tests:
 
 ```cmake
 cmake -B build_dir -DBUILD_TEST=ON
 cmake --build build_dir
+build_dir/test/Test
 ```
 
-To build benchmarks:
+To build and run benchmarks:
 
 ```cmake
 cmake -B build_dir -DBUILD_BENCHMARK=ON
 cmake --build build_dir
+build_dir/benchmark/Benchmark
 ```
 
 ## License
