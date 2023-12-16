@@ -4,6 +4,7 @@
 # Distributed under the Boost Software License, Version 1.0.
 # The full license is in the file LICENSE.txt, distributed with this software.
 
+include(${cmake_dir}/FindStdLibDetect.cmake)
 add_executable(Test)
 target_link_libraries(Test PRIVATE gtensor)
 target_include_directories(Test PRIVATE ${CMAKE_CURRENT_LIST_DIR}/../qa_common)
@@ -17,6 +18,12 @@ else()
     endif()
 endif()
 
+
+#random require libc++ to pass tests,
+#since libstdc++ will generate different random sequences for distributions
+if (StdLibDetect_LIBC++)
+    target_sources(Test PRIVATE ${CMAKE_CURRENT_LIST_DIR}/test_random.cpp)
+endif()
 
 target_sources(Test PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/test_helpers_for_testing.cpp
@@ -93,7 +100,6 @@ target_sources(Test PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/test_sort_search_unique.cpp
 
     ${CMAKE_CURRENT_LIST_DIR}/test_builder.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/test_random.cpp
 
     ${CMAKE_CURRENT_LIST_DIR}/test.cpp
 )
